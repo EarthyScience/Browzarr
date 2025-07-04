@@ -201,7 +201,7 @@ const Navbar = React.memo(function Navbar(){
         </Select>
       
       {!isFlat && plotOn && <PlotTweaker/>}
-      {plotType === "volume" && plotOn && !isFlat && <PlotLineButton />}
+      {(plotType === "volume" || plotType === "sphere")  && plotOn && !isFlat && <PlotLineButton />}
       </div>
       <ThemeSwitch />
       <AboutButton />

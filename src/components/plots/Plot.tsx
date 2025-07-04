@@ -195,7 +195,7 @@ const Plot = ({values,setShowLoading}:PlotParameters) => {
           <UVCube ZarrDS={ZarrDS} />
         </>}
         {plotType == "point-cloud" && show && <PointCloud textures={{texture,colormap}} />}
-        {plotType == "sphere" && show && <Sphere texture={texture} /> }
+        {plotType == "sphere" && show && <Sphere texture={texture} ZarrDS={ZarrDS} /> }
         <OrbitControls minPolarAngle={0} maxPolarAngle={Math.PI / 2} enablePan={false} maxDistance={50}/>
       </Canvas>
       </>}
