@@ -50,6 +50,8 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* App background gradient (overridable per theme) */
+  --app-background: linear-gradient(to bottom right, #f3f3f3, #e7e7e7);
 }
 /* Light Theme */
 [data-theme='light'] {
@@ -71,6 +73,7 @@
   --text-paragraph: hsla(0, 0%, 29%, 1);
   --text-link: hsla(0, 0%, 15%, 1);
   --text-link-hover: hsla(0, 0%, 13%, 1);
+  --app-background: linear-gradient(to bottom right, #f3f3f3, #e7e7e7);
 }
 
 /* Dark Theme */
@@ -123,11 +126,12 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --app-background: linear-gradient(to bottom right, #2a2a2a, #1c1c1c);
 }
 
 body {
   font-size: 12px;
-  background: linear-gradient(to bottom right, #2a2a2a, #1c1c1c);
+  background: var(--app-background, var(--background));
 }
 
 .canvas {

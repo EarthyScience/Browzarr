@@ -6,7 +6,7 @@ import { Moon, Sun } from "lucide-react"
 import './css/ThemeSwitch.css'
 const ThemeSwitch = () => {
   const [mounted, setMounted] = useState(false)
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, resolvedTheme } = useTheme()
   
   const toggleTheme = () => {
     if (theme === 'dark') {
@@ -20,13 +20,11 @@ const ThemeSwitch = () => {
     setMounted(true)
   }, [])
 
-  if (!mounted) {
-    return null
-  }
+  const current = mounted ? (theme ?? resolvedTheme) : undefined
 
   return (
     <button onClick={toggleTheme} className="toggle">
-      {theme === 'dark' ? <Moon/> : <Sun />}
+      {!mounted ? <Sun /> : current === 'dark' ? <Moon/> : <Sun />}
     </button>
   )
 }

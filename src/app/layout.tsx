@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html suppressHydrationWarning lang="en">
       <body className="antialiased">
-        <ThemeProvider defaultTheme="system">
+        <ThemeProvider attribute="data-theme" enableSystem defaultTheme="system" disableTransitionOnChange>
           <Overlays />
           <main className="min-h-screen">
             {children}
