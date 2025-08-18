@@ -75,8 +75,6 @@
 
 /* Dark Theme */
 [data-theme='dark'] {
-  --background: #0a0a0a;
-  --foreground: hsla(0, 0%, 100%, 0.9);
   --background-plot: hsla(0, 0%, 0%, 0.3);
   --text-plot: hsla(0, 0%, 100%, 0.9);
   --background-modal: hsla(0, 0%, 0%, 0.65);

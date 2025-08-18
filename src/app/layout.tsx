@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from 'next-themes'
-import { Navbar, Footer, Overlays} from "@/components/ui";
+import { Footer, Overlays } from "@/components/ui";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -21,10 +21,13 @@ export default function RootLayout({
   return (
     <html suppressHydrationWarning lang="en">
       <body className="antialiased">
-      <ThemeProvider defaultTheme="system">
-        <Overlays />
-        {children}
-      </ThemeProvider>
+        <ThemeProvider defaultTheme="system">
+          <Overlays />
+          <main className="min-h-screen">
+            {children}
+          </main>
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );
