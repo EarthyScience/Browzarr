@@ -269,10 +269,10 @@
     right: max(8px, env(safe-area-inset-right));
     bottom: auto;
     left: auto;
-    transform: none; /* no translateY so it won’t shift down */
+    transform: none;
 
     width: auto;
-    max-height: 90vh;  /* keeps panel from overflowing */
+    max-height: 70vh;  /* keeps panel from overflowing */
     padding: 0.25rem 0.5rem;
     gap: 0.5rem;
     margin: 0 !important;
