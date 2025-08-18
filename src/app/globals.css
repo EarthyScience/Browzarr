@@ -19,7 +19,7 @@
   --text-link-hover: hsla(0, 0%, 13%, 1);
   /* added by https://ui.shadcn.com */
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: rgb(237, 237, 237);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -52,6 +52,10 @@
   --sidebar-ring: oklch(0.708 0 0);
   /* App background gradient (overridable per theme) */
   --app-background: linear-gradient(to bottom right, #f3f3f3, #e7e7e7);
+  /* Glass effect variables */
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: rgba(0, 0, 0, 0.1);
 }
 /* Light Theme */
 [data-theme='light'] {
@@ -74,6 +78,9 @@
   --text-link: hsla(0, 0%, 15%, 1);
   --text-link-hover: hsla(0, 0%, 13%, 1);
   --app-background: linear-gradient(to bottom right, #f3f3f3, #e7e7e7);
+  --glass-bg: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.25);
+  --glass-shadow: rgba(0, 0, 0, 0.15);
 }
 
 /* Dark Theme */
@@ -95,7 +102,7 @@
   --text-link-hover: hsla(0, 0%, 100%, 1);
   --button-hover: hsla(0, 0%, 20%, 1);
   /* added by https://ui.shadcn.com */
-  --background: oklch(0.145 0 0);
+  --background: rgb(29, 29, 29);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
@@ -127,11 +134,13 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
   --app-background: linear-gradient(to bottom right, #2a2a2a, #1c1c1c);
+  --glass-bg: rgba(0, 0, 0, 0.2);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: rgba(0, 0, 0, 0.3);
 }
 
 body {
   font-size: 12px;
-  background: var(--app-background, var(--background));
 }
 
 .canvas {

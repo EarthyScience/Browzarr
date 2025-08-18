@@ -4,12 +4,19 @@
     align-items: center;
     z-index: 1;
     font-size: 13.5px;
-    padding: 0.25rem 0.5rem;
+    padding: 0.5rem 1rem;
     width: 100%;
     height: 48px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px) saturate(180%);
+    /* border: 1px solid var(--glass-border); */
+    /* border-radius: 12px; */
+    margin: 0;
+    box-shadow: 0 4px 6px var(--glass-shadow);
 }
 .footer img {
     max-height: 36px;
+    padding: 4px 12px;
 }
 
 [data-theme='light'] .footer img {
@@ -59,7 +66,8 @@
     flex: 1;
     white-space: nowrap;
     justify-content: flex-end;
-    margin-right: 4px;
+    margin-right: 8px;
+    text-align: right;
 }
 
 /* Responsive design for screens below 600px */
@@ -76,6 +84,9 @@
         flex: unset;
         margin: 0;
     }
+    .footer img {
+        padding: 0;
+    }
 
     .large-screen-logo {
         display: none;
@@ -89,5 +100,6 @@
         display: unset;
         margin-left: 0;
         margin-right: 0;
+        text-align: center;
     }
 }
