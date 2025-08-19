@@ -24,7 +24,7 @@ const ThemeSwitch = () => {
 
   return (
     <button onClick={toggleTheme} className="toggle">
-      {!mounted ? <Sun /> : current === 'dark' ? <Moon/> : <Sun />}
+      {!mounted ? <Sun /> : current === 'dark' ? <Moon size={32}/> : <Sun size={32}/>}
     </button>
   )
 }

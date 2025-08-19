@@ -119,7 +119,7 @@ const Navbar = React.memo(function Navbar(){
       <div className="navbar-left">
         <Drawer>
           <DrawerTrigger asChild>
-            <div role="button" tabIndex={0} aria-label="About Browzarr" title="About Browzarr">
+            <div role="button " className="cursor-pointer" tabIndex={0} aria-label="About Browzarr" title="About Browzarr">
               <Image src={logo} alt="browzarr" />
             </div>
           </DrawerTrigger>
