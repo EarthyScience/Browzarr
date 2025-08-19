@@ -1,7 +1,7 @@
 .metadata-container {
     position: fixed;
-    top: calc(1rem + 2px); /* 2.5rem from plot-pane + some spacing */
-    left: calc(0.35rem + 8px);
+    top: calc(0.5rem + 2px); /* 2.5rem from plot-pane + some spacing */
+    left: calc(0.2rem + 8px);
     z-index: 15;
     display: inline-block;
 }

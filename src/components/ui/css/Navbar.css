@@ -5,7 +5,7 @@
   flex-direction: column;
   align-items: center;
   align-content: center;
-  left: 0px;
+  left: 8px;
   right: auto;
   top: 15%;
   transform: translateY(-15%);
@@ -63,4 +63,51 @@
 
 .nav-dropdown {
   margin-left: 8px;
+}
+
+/* Trigger button (5 dots) */
+.navbar-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  margin-bottom: -8px;
+  cursor: pointer;
+}
+
+.navbar-trigger-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.rotating {
+  animation: navbar-rotate 5s linear infinite;
+}
+
+@keyframes navbar-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Collapsible content container */
+.navbar-content {
+  overflow: hidden;
+  transition: max-height 300ms ease, opacity 200ms ease, transform 300ms ease;
+  will-change: max-height, opacity, transform;
+}
+
+.navbar-content.closed {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+
+.navbar-content.open {
+  max-height: 600px; /* Should exceed expected content height */
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
