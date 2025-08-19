@@ -1,6 +1,7 @@
 'use client';
 
 import {useState, useRef, useEffect } from "react";
+import { TiInfo } from "react-icons/ti";
 import './css/MetaData.css'
 
 const defaultAttributes = [
@@ -40,7 +41,7 @@ const Metadata = ({ data }: { data: Record<string, any> }) => {
                 onMouseEnter={() => setIsVisible(true)}
                 onClick={handleIconClick}
             >
-                ?
+                <TiInfo size={32} />
             </div>
             {isVisible && (
                 <div 

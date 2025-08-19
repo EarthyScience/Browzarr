@@ -137,7 +137,7 @@ const Colorbar = ({units, valueScales} : {units: string, valueScales: {maxVal: n
         <canvas  ref={canvasRef} width={512} height={24} onMouseDown={handleMouseDown}/>
     <p style={{
         position:'absolute',
-        top:'-25px',
+        top:'-24px',
         left:'50%',
         transform:'translateX(-50%)',
     }}>

@@ -1,15 +1,15 @@
 .metadata-container {
     position: fixed;
-    top: calc(0.5rem + 2px); /* 2.5rem from plot-pane + some spacing */
-    right: calc(5rem + 8px);
+    top: calc(1rem + 2px); /* 2.5rem from plot-pane + some spacing */
+    left: calc(0.35rem + 8px);
     z-index: 15;
     display: inline-block;
 }
 
 .metadata-icon {
     cursor: pointer;
-    width: 20px;
-    height: 20px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background-color: var(--background-plot);
     color: var(--text-plot);
@@ -32,8 +32,8 @@
     width: 250px;
     max-height: 400px;
     font-size: 12px;
-    right: 0;
-    top: 24px;
+    left: 0;
+    top: 32px;
     background-image: linear-gradient(-125deg, var(--background) 0%, var(--background-modal) 100%);
     padding: 10px;
     border-radius: 10px;

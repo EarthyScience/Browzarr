@@ -7,8 +7,8 @@
   align-content: center;
   left: 0px;
   right: auto;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 15%;
+  transform: translateY(-15%);
   z-index: 1;
   user-select: none;
   background: var(--glass-bg);
@@ -17,7 +17,7 @@
   border-radius: 12px;
   width: fit-content;
   height: auto;
-  padding: 8px;
+  padding: 4px;
   gap: 16px;
   /* box-shadow: 0 4px 6px var(--glass-shadow); */
 }
