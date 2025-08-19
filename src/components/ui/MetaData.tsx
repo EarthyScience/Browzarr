@@ -1,8 +1,15 @@
 'use client';
 
-import {useState, useRef, useEffect } from "react";
 import { TiInfo } from "react-icons/ti";
 import './css/MetaData.css'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 const defaultAttributes = [
     "long_name",
@@ -12,58 +19,42 @@ const defaultAttributes = [
 ]
 
 const Metadata = ({ data }: { data: Record<string, any> }) => {
-    const [showAll, setShowAll] = useState<boolean>(false)
-    const [isVisible, setIsVisible] = useState<boolean>(false)
-    const containerRef = useRef<HTMLDivElement>(null)
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setIsVisible(false)
-            }
-        }
-
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
-    }, [])
-
-    const handleIconClick = (e: React.MouseEvent) => {
-        e.stopPropagation()
-        setIsVisible(!isVisible)
-    }
-
     return (
-        <div className="metadata-container" ref={containerRef}>
-            <div 
-                className="metadata-icon"
-                onMouseEnter={() => setIsVisible(true)}
-                onClick={handleIconClick}
-            >
-                <TiInfo size={32} />
-            </div>
-            {isVisible && (
-                <div 
-                    className="metadata"
-                    onMouseEnter={() => setIsVisible(true)}
-                    onMouseLeave={() => setIsVisible(false)}
-                >
-                    {defaultAttributes.map((value)=>(
-                        data[value] && (
-                        <p key={value}>
-                            <strong>{value}: </strong>{String(data[value])}
-                        </p>)
-                    ))}
-                    {showAll && <>
-                    {Object.entries(data).map(([key, value]) => (
-                        !defaultAttributes.includes(key) && (<p key={key}>
-                        <strong>{key}:</strong> {String(value)}
-                        </p>)
-                    ))}</>}
-                    <button className="button" onClick={()=>setShowAll(x=>!x)}>{showAll ? "Hide" : "Show"} Extra </button>
-                </div>
-            )}
+        <div className="metadata-container">
+            <Dialog>
+                <DialogTrigger asChild>
+                    <div className="metadata-icon">
+                        <TiInfo size={32} />
+                    </div>
+                </DialogTrigger>
+                <DialogContent className="metadata-dialog">
+                    <DialogHeader>
+                        <DialogTitle>Variable Metadata</DialogTitle>
+                        <DialogDescription>
+                            Detailed information about the selected variable
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="metadata-content">
+                        {/* Show default attributes first */}
+                        {defaultAttributes.map((value) => (
+                            data[value] && (
+                                <p key={value}>
+                                    <strong>{value}: </strong>{String(data[value])}
+                                </p>
+                            )
+                        ))}
+                        
+                        {/* Show all other attributes */}
+                        {Object.entries(data).map(([key, value]) => (
+                            !defaultAttributes.includes(key) && (
+                                <p key={key}>
+                                    <strong>{key}:</strong> {String(value)}
+                                </p>
+                            )
+                        ))}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

@@ -27,27 +27,26 @@
     color: var(--background-plot);
 }
 
-.metadata {
-    position: absolute;
-    width: 250px;
-    max-height: 400px;
+.metadata-dialog {
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 400px;
+}
+
+.metadata-content {
+    max-height: 60vh;
     font-size: 12px;
-    left: 0;
-    top: 32px;
-    background-image: linear-gradient(-125deg, var(--background) 0%, var(--background-modal) 100%);
-    padding: 10px;
-    border-radius: 10px;
-    border: 1px solid var(--accent-2);
     overflow-wrap: break-word;
     overflow-y: auto;
     user-select: none;
-    z-index: 15;
+    padding: 0;
 }
 
-.metadata p {
+.metadata-content p {
     font-size: 12px;
     line-height: 1.2;
     margin: 0.2em 0;
+    word-break: break-word;
 }
 
 .button {
