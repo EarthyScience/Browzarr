@@ -2,18 +2,23 @@
 .navbar {
   display: flex;
   position: fixed;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
   align-content: center;
-  /* top: 0px; */
   left: 0px;
-  right: 0px;
+  right: auto;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 1;
   user-select: none;
   background: var(--glass-bg);
   backdrop-filter: blur(10px) saturate(180%);
   /* border: 1px solid var(--glass-border); */
-  /* border-radius: 12px; */
-  padding: 4px 8px;
+  border-radius: 12px;
+  width: fit-content;
+  height: auto;
+  padding: 8px;
+  gap: 16px;
   /* box-shadow: 0 4px 6px var(--glass-shadow); */
 }
 
@@ -50,8 +55,10 @@
 
 .navbar-left {
   display: flex;
+  flex-direction: column;
   align-items: center;
   align-content: center;
+  gap: 12px;
 }
 
 .nav-dropdown {

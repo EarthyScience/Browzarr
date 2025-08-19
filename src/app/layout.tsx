@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from 'next-themes'
-import { Footer, Overlays } from "@/components/ui";
+import { Footer } from "@/components/ui";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -22,7 +22,6 @@ export default function RootLayout({
     <html suppressHydrationWarning lang="en">
       <body className="antialiased">
         <ThemeProvider attribute="data-theme" enableSystem defaultTheme="system" disableTransitionOnChange>
-          <Overlays />
           <main className="min-h-screen">
             {children}
           </main>

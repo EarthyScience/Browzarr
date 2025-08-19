@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 import { LuChevronsUpDown } from "react-icons/lu";
 import { IoIosCheckmark } from "react-icons/io";
 import Image from "next/image";
-import { AboutButton, PlotLineButton, LocalZarr } from "@/components/ui";
+import { PlotLineButton } from "@/components/ui";
 import ThemeSwitch  from "@/components/ui/ThemeSwitch";
 import logo from "@/app/logo.png"
 import './css/Navbar.css'
@@ -15,6 +15,8 @@ import { GetColorMapTexture } from "@/components/textures";
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { MdFlipCameraIos } from "react-icons/md";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import AboutInfo from "@/components/ui/AboutInfo";
 
 import {
   Command,
@@ -115,9 +117,21 @@ const Navbar = React.memo(function Navbar(){
   return (
     <nav className="navbar">
       <div className="navbar-left">
-        <a href="https://github.com/EarthyScience/Browzarr/" target="_blank" rel="noopener noreferrer">
-          <Image src={logo} alt="browzarr" />
-        </a>
+        <Drawer>
+          <DrawerTrigger asChild>
+            <div role="button" tabIndex={0} aria-label="About Browzarr" title="About Browzarr">
+              <Image src={logo} alt="browzarr" />
+            </div>
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>About</DrawerTitle>
+            </DrawerHeader>
+            <div className="p-4">
+              <AboutInfo />
+            </div>
+          </DrawerContent>
+        </Drawer>
         
       {plotOn && <div
           role="button"
@@ -135,7 +149,6 @@ const Navbar = React.memo(function Navbar(){
       
       </div>
       <ThemeSwitch />
-      <AboutButton />
     </nav>
   );
 });

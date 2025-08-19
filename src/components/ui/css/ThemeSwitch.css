@@ -1,7 +1,5 @@
 .toggle {
-    position: absolute;
-    right: 48px;
-    top: -4px;
+    position: static;
     cursor: pointer;
     padding: 0.5rem;
     display: flex;
