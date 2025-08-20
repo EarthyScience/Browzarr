@@ -139,13 +139,17 @@
   --glass-shadow: rgba(0, 0, 0, 0.3);
 }
 
+html, body {
+  min-height: 100svh;
+}
+
 body {
   font-size: 12px;
 }
 
 .canvas {
   display: block;
-  height: 100vh;
+  height: 100svh;
   width: 100vw;
   margin: 0;
   padding: 0;
