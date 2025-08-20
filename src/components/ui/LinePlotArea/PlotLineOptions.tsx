@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
+import { Slider } from "@/components/ui/slider"
 
 // Memoized Point Options
 const PointOptions = React.memo(function PointOptions(){
@@ -26,18 +27,18 @@ const PointOptions = React.memo(function PointOptions(){
   if (!showPoints) return null
   return (
     <>
-      <div className='w-full flex items-center'>
+      <div className='w-full flex items-center mb-2'>
         <div className='w-[40%]'><b>Point Size</b></div>
-        <input
-          type="range"
+        <Slider
           min={1}
           max={10}
-          step={.1}
-          value={linePointSize}
-          onChange={e => setLinePointSize(parseFloat(e.target.value))}
+          step={0.1}
+          value={[linePointSize]}
+          className='flex-1 my-2'
+          onValueChange={(vals: number[]) => setLinePointSize(vals[0])}
         />
       </div>
-      <div className='w-full flex items-center'>
+      <div className='w-full flex items-center mb-2'>
         <div className='w-[40%]'><b>Point Color</b></div>
 
         {useCustomPointColor && <input
@@ -76,26 +77,26 @@ const LineOptions = React.memo(function LineOptions(){
   })))
   return (
     <>
-      <div className='w-full flex items-center'>
+      <div className='w-full flex items-center mb-2'>
         <div className='w-[40%]'><b>Line Width</b></div>
-        <input
-          type="range"
+        <Slider
           min={1}
           max={10}
           step={0.2}
-          value={lineWidth}
-          onChange={e => setLineWidth(parseFloat(e.target.value))}
+          value={[lineWidth]}
+          className='flex-1 my-2'
+          onValueChange={(vals: number[]) => setLineWidth(vals[0])}
         />
       </div>
-      <div className='w-full flex items-center'>
+      <div className='w-full flex items-center mb-2'>
         <div className='w-[40%]'><b>Line Resolution</b></div>
-        <input
-          type="range"
+        <Slider
           min={1}
           max={10}
           step={1}
-          value={lineResolution}
-          onChange={e => setLineResolution(parseFloat(e.target.value))}
+          value={[lineResolution]}
+          className='flex-1 my-2'
+          onValueChange={(vals: number[]) => setLineResolution(vals[0])}
         />
       </div>
       <div className='w-full flex items-center'>
