@@ -11,6 +11,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 
+import { Button } from "@/components/ui/button"
+
 const defaultAttributes = [
     "long_name",
     "description",
@@ -23,9 +25,16 @@ const Metadata = ({ data }: { data: Record<string, any> }) => {
         <div className="metadata-container">
             <Dialog>
                 <DialogTrigger asChild>
-                    <div className="metadata-icon">
-                        <TiInfo size={32} />
-                    </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-10"
+                        tabIndex={0}
+                        aria-label="Metadata information"
+                        title="Metadata information"
+                        >
+                        <TiInfo className="size-8" />
+                    </Button>
                 </DialogTrigger>
                 <DialogContent className="metadata-dialog">
                     <DialogHeader>
