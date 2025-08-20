@@ -7,6 +7,7 @@ import { colormaps } from '@/components/textures';
 import { useShallow } from 'zustand/shallow';
 import { MdOutlineSwapVert } from "react-icons/md";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { Button } from "@/components/ui/button";
 import Image from 'next/image';
 
 const Colormaps = () => {
@@ -40,15 +41,18 @@ const Colormaps = () => {
   return (
     <div className="relative">
       <Popover>
-      <PopoverTrigger>
-        <div
-          className="panel-item"
+      <PopoverTrigger asChild>
+        <Button
+          size="icon"
+          className='hover:scale-90 transition-transform duration-100 ease-out rounded-full'
           style={{
             backgroundImage: `url(./colormap_icons/${cmap}.webp)` ,
             backgroundSize: "100%",
             transform: flipCmap ? "scaleX(-1)" : "",
+            width: "32px",
+            height: "32px",
           }}
-        />
+        > </Button>
       </PopoverTrigger>
       <PopoverContent
         side={popoverSide}

@@ -144,11 +144,19 @@ const PlayButton = () => {
     const enableCond = (!isFlat && plotOn)
   return (
     <div>
-      <PiPlayPauseFill className='panel-item' 
-        color={enableCond ? '' : 'var(--text-disabled)'}
-        onClick={e=>{if (cond){setShowOptions(x=>!x)}}}
-        style={{transform: enableCond ? '' : 'scale(1)',  cursor: enableCond ? 'pointer' : 'auto'}}
-    />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
+        disabled={!enableCond}
+        onClick={() => {if (cond){setShowOptions(x=>!x)}}}
+        style={{
+          color: enableCond ? '' : 'var(--text-disabled)',
+          transform: enableCond ? '' : 'scale(1)',
+        }}
+      >
+        <PiPlayPauseFill className="size-8" />
+      </Button>
       <PlayInterFace visible={showOptions}/>
     </div>
   )

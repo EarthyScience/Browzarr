@@ -40,15 +40,15 @@ const PlotType = () => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <div
-          role="button"
-          className='panel-item'
-          style={{transform: 'scale(1)'}}
+        <Button
+          variant="ghost"
+          size="icon"
+          className='hover:scale-90 transition-transform duration-100 ease-out'
           tabIndex={0}
           aria-label="Select plot type"
         >
           {plotIcons[plotType as keyof typeof plotIcons]}
-        </div>
+        </Button>
 
       </PopoverTrigger>
       <PopoverContent

@@ -10,6 +10,7 @@ import { Input } from '../input';
 import { Button } from '../button';
 import { CiUndo } from "react-icons/ci";
 import {KernelVisualizer} from "@/components/ui";
+
 import {
   Select,
   SelectContent,
@@ -136,15 +137,19 @@ const AnalysisOptions = () => {
 
   return (
     <Popover>
-      <PopoverTrigger disabled={!plotOn}>
-        <PiMathOperationsBold
-          color={plotOn ? '' : 'var(--text-disabled)'}
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
+          disabled={!plotOn}
           style={{
-            cursor: plotOn ? 'pointer' : 'auto',
+            color: plotOn ? '' : 'var(--text-disabled)',
             transform: plotOn ? '' : 'scale(1)'
           }}
-          className="panel-item"
-        />
+        >
+          <PiMathOperationsBold className="size-8"/>
+        </Button>
       </PopoverTrigger>
       
       <PopoverContent

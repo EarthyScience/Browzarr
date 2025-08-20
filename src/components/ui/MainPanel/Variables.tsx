@@ -7,6 +7,7 @@ import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
 import MetaDataInfo from "./MetaDataInfo";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { Button } from "@/components/ui/button";
 
 const Variables = () => {
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
@@ -40,8 +41,15 @@ const Variables = () => {
 
   return (
         <Popover>
-        <PopoverTrigger>
-          <TbVariable className="panel-item"/>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hover:scale-90 transition-transform duration-100 ease-out"
+            tabIndex={0}
+            aria-label="Select variable">
+              <TbVariable className="panel-item"/>
+          </Button>
         </PopoverTrigger>
         <PopoverContent
           side={popoverSide}
