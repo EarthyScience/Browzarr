@@ -44,7 +44,7 @@ const Colormaps = () => {
       <PopoverTrigger asChild>
         <Button
           size="icon"
-          className='hover:scale-90 transition-transform duration-100 ease-out rounded-full'
+          className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full'
           style={{
             backgroundImage: `url(./colormap_icons/${cmap}.webp)` ,
             backgroundSize: "100%",

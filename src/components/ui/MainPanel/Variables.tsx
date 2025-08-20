@@ -45,10 +45,10 @@ const Variables = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="hover:scale-90 transition-transform duration-100 ease-out"
+            className="cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
             tabIndex={0}
             aria-label="Select variable">
-              <TbVariable className="panel-item"/>
+              <TbVariable className="size-8"/>
           </Button>
         </PopoverTrigger>
         <PopoverContent
