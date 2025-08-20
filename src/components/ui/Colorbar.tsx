@@ -136,14 +136,15 @@ const Colorbar = ({units, valueScales} : {units: string, valueScales: {maxVal: n
         </p>
         ))}
         <canvas  ref={canvasRef} width={512} height={24} onMouseDown={handleMouseDown}/>
-    <p style={{
-        position:'absolute',
-        top:'-24px',
-        left:'50%',
-        transform:'translateX(-50%)',
-    }}>
-        {units}
-    </p>
+        <p className="colorbar-title"
+            style={{
+            position:'absolute',
+            top:'-24px',
+            left:'50%',
+            transform:'translateX(-50%)',
+        }}>
+            {`${variable} [ ${units} ]`}
+        </p>
     {(cScale != 1 || cOffset != 0) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} onClick={()=>{setCScale(1); setCOffset(0)}}/>}
     <div
         style={{
@@ -158,13 +159,6 @@ const Colorbar = ({units, valueScales} : {units: string, valueScales: {maxVal: n
         <FaMinus className='cursor-pointer' onClick={()=>setTickCount(Math.max(tickCount-1, 2))}/>
         <FaPlus className='cursor-pointer' onClick={()=>setTickCount(Math.min(tickCount+1, 10))}/>
     </div>
-    <p style={{
-        position:'absolute',
-        top:'-24px',
-        left:'0%',
-    }}>
-        {variable}
-    </p>
     </div>
 
     </>

@@ -24,6 +24,14 @@
     padding: 0 4px;
 }
 
+.colorbar-title {
+    white-space: nowrap;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+
 @media (max-width: 768px) {
     .colorbar {
         width: 75%;
