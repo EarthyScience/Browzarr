@@ -180,11 +180,11 @@ const Navbar = React.memo(function Navbar(){
                 <Image src={logo} alt="browzarr" />
               </div>
             </DrawerTrigger>
-            <DrawerContent>
+            <DrawerContent className="max-w-md mx-auto">
               <DrawerHeader>
                 <DrawerTitle>About</DrawerTitle>
               </DrawerHeader>
-              <div className="p-4">
+              <div className="flex-1 overflow-y-auto px-4 pb-4">
                 <AboutInfo />
               </div>
             </DrawerContent>
