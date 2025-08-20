@@ -123,7 +123,7 @@ const VolumeOptions = ()=>{
           />
           Better
       </div>
-      <Button variant="destructive" className="w-[100%] h-[20px] cursor-[pointer]" onClick={() => setUseFragOpt(!useFragOpt)}>{useFragOpt ? "Revert to Normal" : "Use Optimized Shader"}</Button>
+      <Button variant="pink" className="w-[100%] h-[20px] cursor-[pointer]" onClick={() => setUseFragOpt(!useFragOpt)}>{useFragOpt ? "Revert to Normal" : "Use Optimized Shader"}</Button>
       <b>Transparency</b>
 
       <input type="range"
@@ -178,7 +178,7 @@ const PointOptions = () =>{
               defaultValue={pointSize} 
           onChange={e => setPointSize(parseInt(e.target.value))}
           />
-      <Button variant="destructive" className="w-[100%] h-[20px] cursor-[pointer]" onClick={() => setScalePoints(!scalePoints)}>{scalePoints ? "Remove Scaling" : "Scale By Value" }</Button>
+      <Button variant="pink" className="w-[100%] h-[20px] cursor-[pointer]" onClick={() => setScalePoints(!scalePoints)}>{scalePoints ? "Remove Scaling" : "Scale By Value" }</Button>
       {scalePoints && 
       <><b>Scale Intensity</b>
       <input type="range"
@@ -269,7 +269,7 @@ const GlobalOptions = () =>{
 
   return (
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
-      <Button variant="destructive" className="w-[100%] h-[20px] cursor-[pointer]" onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
+      <Button variant="pink" className="w-[100%] h-[20px] cursor-[pointer]" onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
       {showBorders && <div>
       <b>Border Color</b>
       <input type="color"
