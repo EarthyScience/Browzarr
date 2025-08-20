@@ -4,6 +4,7 @@ import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
 import '../css/MainPanel.css'
 import { useShallow } from 'zustand/shallow';
 import Slider from 'rc-slider';
+import { Slider as UISlider } from '@/components/ui/slider';
 import { Button } from '../button';
 import { LuSettings } from "react-icons/lu";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -112,34 +113,37 @@ const VolumeOptions = ()=>{
   return(
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
       <b>Quality</b>
-      <div className='w-full flex justify-between text-xs'>
+      <div className='w-full flex justify-between text-xs items-center gap-2'>
           Worse
-          <input type="range"
+          <UISlider
               min={50}
               max={1000}
               step={50}
-              value={quality}
-          onChange={e => setQuality(parseInt(e.target.value))}
+              value={[quality]}
+              className='flex-1'
+              onValueChange={(vals:number[]) => setQuality(vals[0])}
           />
           Better
       </div>
       <Button variant="pink" className="w-[100%] h-[20px] cursor-[pointer]" onClick={() => setUseFragOpt(!useFragOpt)}>{useFragOpt ? "Revert to Normal" : "Use Optimized Shader"}</Button>
       <b>Transparency</b>
 
-      <input type="range"
+      <UISlider
               min={0}
               max={10}
-              step={.2}
-              value={transparency}
-          onChange={e => setTransparency(parseFloat(e.target.value))}
+              step={0.2}
+              value={[transparency]}
+              className='w-full'
+          onValueChange={(vals:number[]) => setTransparency(vals[0])}
           />
       <b>NaN Transparency</b>
-      <input type="range"
+      <UISlider
               min={0}
               max={1}
-              step={.05}
-              value={nanTransparency}
-          onChange={e => setNanTransparency(parseFloat(e.target.value))}
+              step={0.05}
+              value={[nanTransparency]}
+              className='w-full'
+          onValueChange={(vals:number[]) => setNanTransparency(vals[0])}
           />
         <b>NaN Color</b>
       <input type="color"
@@ -170,33 +174,33 @@ const PointOptions = () =>{
   return(
     <div className='flex-column items-center w-50 text-center'>
           <b>Point Size</b>
-          <input type="range"
+          <UISlider
               className='w-full'
               min={1}
               max={50}
               step={1}
-              defaultValue={pointSize} 
-          onChange={e => setPointSize(parseInt(e.target.value))}
+              value={[pointSize]}
+          onValueChange={(vals:number[]) => setPointSize(vals[0])}
           />
       <Button variant="pink" className="w-[100%] h-[20px] cursor-[pointer]" onClick={() => setScalePoints(!scalePoints)}>{scalePoints ? "Remove Scaling" : "Scale By Value" }</Button>
       {scalePoints && 
       <><b>Scale Intensity</b>
-      <input type="range"
+      <UISlider
           className='w-full'
           min={1}
           max={100}
           step={1}
-          defaultValue={scaleIntensity} 
-      onChange={e => setScaleIntensity(parseInt(e.target.value))}
+          value={[scaleIntensity]}
+      onValueChange={(vals:number[]) => setScaleIntensity(vals[0])}
       /></>}
       <b>Resize Time Dimension</b>
-        <input type="range"
+        <UISlider
             className='w-full'
-            min={.05}
+            min={0.05}
             max={5}
-            step={.05}
-            defaultValue={timeScale} 
-        onChange={e => setTimeScale(parseFloat(e.target.value))}
+            step={0.05}
+            value={[timeScale]}
+        onValueChange={(vals:number[]) => setTimeScale(vals[0])}
         />
     </div>
   )
