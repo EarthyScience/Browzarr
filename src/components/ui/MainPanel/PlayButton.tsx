@@ -8,6 +8,7 @@ import { FaPlay, FaPause } from "react-icons/fa6";
 import { parseLoc } from '@/utils/HelperFuncs';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
 
 
 const frameRates = [1, 2, 4, 6, 8, 12, 16, 24, 36, 48, 54, 60, 80, 120]
@@ -68,30 +69,26 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
 
     return (
         <div style={{ display: visible ? '' : 'none' }}>
-          <Card className='play-interface'>
-            <CardContent className='flex flex-col gap-2 w-full h-full'>
-      
-              {/* Middle Section: Labels and Slider */}
-              <div className='flex flex-col gap-2 w-full'>
-                <div className='text-xs sm:text-sm text-center'>
-                  {currentLabel}
-                </div>
-                <div className='flex items-center gap-2 w-full'>
-                  <span className='text-xs'>{firstLabel}</span>
-                  <input
-                    type="range"
-                    className='flex-1 cursor-pointer'
-                    value={animProg * timeLength}
-                    min={0}
-                    max={timeLength}
-                    step={1}
-                    onChange={e => setAnimProg(parseInt(e.target.value) / timeLength)}
-                  />
-                  <span className='text-xs'>{lastLabel}</span>
-                </div>
+          <Card className='play-interface py-1'>
+            <CardContent className='flex flex-col gap-1 w-full h-full px-1 py-1'>
+              <div className='text-xs sm:text-sm text-center'>
+                {currentLabel}
               </div>
-      
-              {/* Bottom Section: Playback Controls */}
+              <div className='flex items-center gap-1 w-full'>
+                <span className='text-xs'>{firstLabel}</span>
+                <Slider
+                  value={[Math.round(animProg * timeLength)]}
+                  min={0}
+                  max={timeLength}
+                  step={1}
+                  className='flex-1'
+                  onValueChange={(vals: number[])=>{
+                    const v = Array.isArray(vals) ? vals[0] : 0;
+                    setAnimProg(v / timeLength);
+                  }}
+                />
+                <span className='text-xs'>{lastLabel}</span>
+              </div>
               <div className='grid grid-cols-3 items-center w-full'>
                 <div className='justify-self-start'>
                   <Button
