@@ -131,6 +131,7 @@ const MetaDataInfo = ({ meta, setShowMeta }: { meta: any, setShowMeta: React.Dis
       </div>
       <Button
         variant="pink"
+        size="sm"
         className="cursor-pointer hover:scale-[1.05]"
         disabled={(is4D && idx4D == null)}
         onClick={() => {
