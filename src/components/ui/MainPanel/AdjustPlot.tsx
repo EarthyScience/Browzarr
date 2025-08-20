@@ -120,7 +120,7 @@ const VolumeOptions = ()=>{
               max={1000}
               step={50}
               value={[quality]}
-              className='flex-1'
+              className='flex-1 mb-2'
               onValueChange={(vals:number[]) => setQuality(vals[0])}
           />
           Better
@@ -133,7 +133,7 @@ const VolumeOptions = ()=>{
               max={10}
               step={0.2}
               value={[transparency]}
-              className='w-full'
+              className='w-full mb-2'
           onValueChange={(vals:number[]) => setTransparency(vals[0])}
           />
       <b>NaN Transparency</b>
@@ -142,7 +142,7 @@ const VolumeOptions = ()=>{
               max={1}
               step={0.05}
               value={[nanTransparency]}
-              className='w-full'
+              className='w-full mb-2'
           onValueChange={(vals:number[]) => setNanTransparency(vals[0])}
           />
         <b>NaN Color</b>
@@ -175,18 +175,18 @@ const PointOptions = () =>{
     <div className='flex-column items-center w-50 text-center'>
           <b>Point Size</b>
           <UISlider
-              className='w-full'
+              className='w-full mb-4 mt-2'
               min={1}
               max={50}
               step={1}
               value={[pointSize]}
           onValueChange={(vals:number[]) => setPointSize(vals[0])}
           />
-      <Button variant="pink" className="w-[100%] h-[20px] cursor-[pointer]" onClick={() => setScalePoints(!scalePoints)}>{scalePoints ? "Remove Scaling" : "Scale By Value" }</Button>
+      <Button variant="pink" className="w-[100%] h-[20px] cursor-[pointer] mb-2" onClick={() => setScalePoints(!scalePoints)}>{scalePoints ? "Remove Scaling" : "Scale By Value" }</Button>
       {scalePoints && 
       <><b>Scale Intensity</b>
       <UISlider
-          className='w-full'
+          className='w-full mb-2 mt-2'
           min={1}
           max={100}
           step={1}
@@ -195,7 +195,7 @@ const PointOptions = () =>{
       /></>}
       <b>Resize Time Dimension</b>
         <UISlider
-            className='w-full'
+            className='w-full mb-2 mt-2'
             min={0.05}
             max={5}
             step={0.05}
