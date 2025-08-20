@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { ThemeProvider } from 'next-themes'
-import { Footer } from "@/components/ui";
+import ClientRoot from "./ClientRoot";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -17,16 +16,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
   return (
     <html suppressHydrationWarning lang="en">
       <body className="antialiased">
-        <ThemeProvider attribute="data-theme" enableSystem defaultTheme="system" disableTransitionOnChange>
-          <main className="min-h-screen">
-            {children}
-          </main>
-          <Footer />
-        </ThemeProvider>
+        <ClientRoot>
+          {children}
+        </ClientRoot>
       </body>
     </html>
   );

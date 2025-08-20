@@ -75,33 +75,6 @@
 /* Responsive design for screens below 600px */
 @media (max-width: 600px) {
     .footer {
-        display: grid;
-        grid-template-columns: auto 1fr auto;
-        align-items: center;
-        text-align: center;
-    }
-
-    .footer p {
-        text-align: center;
-        flex: unset;
-        margin: 0;
-    }
-    .footer img {
-        padding: 0;
-    }
-
-    .large-screen-logo {
         display: none;
-    }
-
-    .small-screen-logo {
-        display: flex;
-        justify-content: space-between;
-    }
-    .expandable-text {
-        display: unset;
-        margin-left: 0;
-        margin-right: 0;
-        text-align: center;
     }
 }
