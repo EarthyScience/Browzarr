@@ -57,6 +57,7 @@
   --glass-border: rgba(255, 255, 255, 0.2);
   --glass-shadow: rgba(0, 0, 0, 0.1);
 }
+
 /* Light Theme */
 [data-theme='light'] {
   --background: rgb(237, 237, 237);
@@ -72,7 +73,6 @@
   --accent-3: hsla(0, 0%, 0%, 0.1);
   --background-funding: hsla(0, 0%, 95%, 1);
   --toggle-hover: hsla(0, 0%, 51%, 1);
- 
   --text-heading: hsla(0, 0%, 10%, 1);
   --text-paragraph: hsla(0, 0%, 29%, 1);
   --text-link: hsla(0, 0%, 15%, 1);
@@ -139,8 +139,11 @@
   --glass-shadow: rgba(0, 0, 0, 0.3);
 }
 
+/* Height fix for mobile browser UI */
 html, body {
-  min-height: 100svh;
+  min-height: 100vh;   /* fallback */
+  min-height: 100svh;  /* stable (with chrome) */
+  min-height: 100dvh;  /* dynamic (preferred) */
 }
 
 body {
@@ -149,13 +152,18 @@ body {
 
 .canvas {
   display: block;
-  height: 100svh;
   width: 100vw;
   margin: 0;
   padding: 0;
   position: relative;
   z-index: 0;
+
+  /* Same height strategy */
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
 }
+
 .canvas-title {
   position: absolute;
   top: 2rem;
@@ -244,16 +252,7 @@ a[href]:hover::after {
   width: 100%;
 }
 
- /* This is the native css for the tweakpane */
-/* .tp-dfwv { */
-  /* position: absolute !important; */
-  /* right: 15% !important; */
-  /* top: 1rem !important ; */
-  /* user-select: none; */
-  /* z-index: 100 !important; */
-/* } */
-
-/* This is my custom tweakpane container  */
+/* Custom tweakpane containers */
 .data-stores-pane {
   position: fixed;
   top: 2.75rem;
@@ -349,7 +348,6 @@ a[href]:hover::after {
   left: 3%;
   z-index: 10;
 }
-
 
 @keyframes spin {
   to {
