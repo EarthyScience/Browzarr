@@ -6,6 +6,8 @@ import '../css/MainPanel.css'
 import { PiPlayPauseFill } from "react-icons/pi";
 import { FaPlay, FaPause } from "react-icons/fa6";
 import { parseLoc } from '@/utils/HelperFuncs';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 
 const frameRates = [1, 2, 4, 6, 8, 12, 16, 24, 36, 48, 54, 60, 80, 120]
@@ -60,38 +62,79 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
         
     }, [animate, fps]);
 
+    const currentLabel = parseLoc(dimArrays[0][Math.min(Math.round(animProg*timeLength),timeLength-1)], dimUnits[0], true)
+    const firstLabel = parseLoc(dimArrays[0][0], dimUnits[0], true)
+    const lastLabel = parseLoc(dimArrays[0][timeLength-1], dimUnits[0], true)
+
     return (
-        <div style={{display: visible ? '' : 'none'}}>
-            <div className='play-interface'>
-                {parseLoc(dimArrays[0][Math.min(Math.round(animProg*timeLength),timeLength-1)], dimUnits[0], true)}
-                <div>
-                    {parseLoc(dimArrays[0][0], dimUnits[0], true)}
-                    <input type="range" 
-                        className='w-[300px]'
-                        value={animProg*timeLength}
-                        min={0}
-                        max={timeLength}
-                        step={1}
-                        onChange={e=>setAnimProg(parseInt(e.target.value)/timeLength)}
-                    />
-                    {parseLoc(dimArrays[0][timeLength-1], dimUnits[0], true)}
+        <div style={{ display: visible ? '' : 'none' }}>
+          <Card className='play-interface'>
+            <CardContent className='flex flex-col gap-2 w-full h-full'>
+      
+              {/* Middle Section: Labels and Slider */}
+              <div className='flex flex-col gap-2 w-full'>
+                <div className='text-xs sm:text-sm text-center'>
+                  {currentLabel}
                 </div>
-                <div className='flex items-center justify-between w-100'>
-                    <div 
-                        style={{visibility: fps > 0 ? 'visible' : 'hidden'}}
-                        className='cursor-pointer hover:scale-[115%]' 
-                        onClick={e=>setFPS(x=>Math.max(0, x-1))}> <b>Slower</b></div>
-                {animate ? <FaPause className='cursor-pointer hover:scale-[115%]' onClick={e=>setAnimate(false)}/> : <FaPlay className='cursor-pointer hover:scale-[115%]' onClick={e=>setAnimate(true)}/>}
-                     <div className='cursor-pointer hover:scale-[115%]' 
-                        style={{visibility: fps < frameRates.length-1 ? 'visible' : 'hidden'}}
-                        onClick={e=>setFPS(x=>Math.min(frameRates.length-1, x+1))}><b>Faster</b></div>
+                <div className='flex items-center gap-2 w-full'>
+                  <span className='text-xs'>{firstLabel}</span>
+                  <input
+                    type="range"
+                    className='flex-1 cursor-pointer'
+                    value={animProg * timeLength}
+                    min={0}
+                    max={timeLength}
+                    step={1}
+                    onChange={e => setAnimProg(parseInt(e.target.value) / timeLength)}
+                  />
+                  <span className='text-xs'>{lastLabel}</span>
                 </div>
-                <div style={{textAlign:'right'}}>
+              </div>
+      
+              {/* Bottom Section: Playback Controls */}
+              <div className='grid grid-cols-3 items-center w-full'>
+                <div className='justify-self-start'>
+                  <Button
+                    variant='secondary'
+                    size='sm'
+                    className='cursor-pointer'
+                    disabled={fps <= 0}
+                    onClick={() => setFPS(x => Math.max(0, x - 1))}
+                  >
+                    Slower
+                  </Button>
+                </div>
+                <div className='flex flex-col items-center justify-center gap-1 w-full'>
+                  <Button
+                    variant='default'
+                    size='sm'
+                    className='cursor-pointer'
+                    onClick={() => setAnimate(!animate)}
+                    aria-label={animate ? 'Pause' : 'Play'}
+                    title={animate ? 'Pause' : 'Play'}
+                  >
+                    {animate ? <FaPause /> : <FaPlay />}
+                  </Button>
+                  <div className='text-[11px] leading-none'>
                     <b>{frameRates[fps]}</b> FPS
+                  </div>
                 </div>
-            </div>
+                <div className='justify-self-end'>
+                  <Button
+                    variant='secondary'
+                    size='sm'
+                    className='cursor-pointer'
+                    disabled={fps >= frameRates.length - 1}
+                    onClick={() => setFPS(x => Math.min(frameRates.length - 1, x + 1))}
+                  >
+                    Faster
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-    )
+      )      
 }
 
 const PlayButton = () => {
