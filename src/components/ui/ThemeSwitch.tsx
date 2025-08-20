@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
-import { Moon, Sun } from "lucide-react"
-import './css/ThemeSwitch.css'
+import { BsMoonStarsFill } from "react-icons/bs";
+import { BsSunFill } from "react-icons/bs";
+import { Button } from "@/components/ui/button"
+// import './css/ThemeSwitch.css'
+
 const ThemeSwitch = () => {
   const [mounted, setMounted] = useState(false)
   const { theme, setTheme, resolvedTheme } = useTheme()
@@ -23,9 +26,14 @@ const ThemeSwitch = () => {
   const current = mounted ? (theme ?? resolvedTheme) : undefined
 
   return (
-    <button onClick={toggleTheme} className="toggle">
-      {!mounted ? <Sun /> : current === 'dark' ? <Moon size={32}/> : <Sun size={32}/>}
-    </button>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="size-10"
+      onClick={toggleTheme} 
+      >
+        {!mounted ? <BsSunFill className="size-6" /> : current === 'dark' ? <BsMoonStarsFill className="size-6"/> : <BsSunFill className="size-6"/>}
+    </Button>
   )
 }
 

@@ -161,24 +161,31 @@ const Navbar = React.memo(function Navbar(){
   
   return (
     <nav className="navbar" ref={navRef}>
-      <button
-        type="button"
-        className="navbar-trigger"
+      <Button
+        variant="ghost"
+        size="icon"
+        className="navbar-trigger size-10"
         aria-expanded={isOpen}
         aria-label={isOpen ? "Close navigation" : "Open navigation"}
         title={isOpen ? "Close navigation" : "Open navigation"}
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        <FiveDotsIcon className="navbar-trigger-icon rotating" />
-      </button>
+        <FiveDotsIcon className="navbar-trigger-icon rotating size-6" />
+      </Button>
 
       <div className={cn("navbar-content", isOpen ? "open" : "closed")}>        
         <div className="navbar-left">
           <Drawer>
             <DrawerTrigger asChild>
-              <div role="button " className="cursor-pointer" tabIndex={0} aria-label="About Browzarr" title="About Browzarr">
-                <Image src={logo} alt="browzarr" />
-              </div>
+              <Button 
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer"
+                tabIndex={0}
+                aria-label="About Browzarr"
+                title="About Browzarr">
+                  <Image src={logo} alt="browzarr" />
+              </Button>
             </DrawerTrigger>
             <DrawerContent className="max-w-md mx-auto">
               <DrawerHeader>
@@ -191,16 +198,17 @@ const Navbar = React.memo(function Navbar(){
           </Drawer>
           
           {plotOn && (
-            <div
-              role="button"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-10"
               tabIndex={0}
               aria-label="Reset camera view"
               title="Reset camera view"
               onClick={() => setResetCamera(!resetCamera)}
-              className="w-[32px] h-[32px] cursor-pointer flex items-center justify-center transition-transform hover:shadow-white/40 transition-shadow hover:scale-90 hover:shadow-lg"
             >
-              <MdFlipCameraIos className="w-full h-full" />
-            </div>
+              <MdFlipCameraIos className="size-8" />
+            </Button>
           )}
           {/* {!isFlat && plotOn && <PlotTweaker/>} */}
           {plotOn && !isFlat && <PlotLineButton />}

@@ -6,6 +6,7 @@ import { usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow';
 import './css/PlotLineButton.css'
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Button } from "@/components/ui/button"
 
 const PlotLineButton = () => {
     const {selectTS, resetAnim, animate, setSelectTS, setResetAnim} = usePlotStore(useShallow(state => ({
@@ -17,20 +18,23 @@ const PlotLineButton = () => {
     })))
 
   return (
-
     <div className='selectTS' 
-      style={{display: animate ? 'none' : ''}}
-    
-    onClick={()=> {setResetAnim(!resetAnim); setSelectTS(!selectTS)}}>
+      style={{display: animate ? 'none' : ''}}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <VscGraphLine size={32}
-            style={{
-              color:selectTS ? "gold" : "grey",
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-10"
+            onClick={() => {setResetAnim(!resetAnim); setSelectTS(!selectTS)}}
+          >
+            <VscGraphLine
+              className="size-6"
+              style={{
+              color: selectTS ? "gold" : "grey",
               filter: selectTS ? "drop-shadow(0px 0px 10px gold)" : "",
-              cursor:'pointer'
-            }}
-          />
+            }}/>
+          </Button>
         </TooltipTrigger>
         <TooltipContent side="right" align="start">
           <p style={{ maxWidth: 220 }}>While active, click the volume to view 1D transects through the given dimension.</p>
