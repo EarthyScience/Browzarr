@@ -25,7 +25,7 @@ const PlotLineButton = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="size-10"
+            className="size-10 cursor-pointer"
             onClick={() => {setResetAnim(!resetAnim); setSelectTS(!selectTS)}}
           >
             <VscGraphLine

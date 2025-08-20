@@ -201,7 +201,7 @@ const Navbar = React.memo(function Navbar(){
             <Button
               variant="ghost"
               size="icon"
-              className="size-10"
+              className="size-10 cursor-pointer"
               tabIndex={0}
               aria-label="Reset camera view"
               title="Reset camera view"

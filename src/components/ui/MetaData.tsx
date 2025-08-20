@@ -28,7 +28,7 @@ const Metadata = ({ data }: { data: Record<string, any> }) => {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="size-10"
+                        className="size-10 cursor-pointer"
                         tabIndex={0}
                         aria-label="Metadata information"
                         title="Metadata information"

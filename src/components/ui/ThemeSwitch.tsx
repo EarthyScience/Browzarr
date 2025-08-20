@@ -29,7 +29,7 @@ const ThemeSwitch = () => {
     <Button
       variant="ghost"
       size="icon"
-      className="size-10"
+      className="size-10 cursor-pointer"
       onClick={toggleTheme} 
       >
         {!mounted ? <BsSunFill className="size-6" /> : current === 'dark' ? <BsMoonStarsFill className="size-6"/> : <BsSunFill className="size-6"/>}
