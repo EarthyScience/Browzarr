@@ -55,7 +55,7 @@ const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueSca
             />
 
         {/* Min/Max labels */}
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 18 }}>
+            <div className="flex justify-between text-xs mt-2 mb-2">
                 <span>Min: {trueMin}</span>
                 <span>Max: {trueMax}</span>
             </div>
@@ -81,18 +81,40 @@ const DimSlicer = () =>{
       const {valueScales, dimArrays} = useGlobalStore(useShallow(state => ({valueScales : state.valueScales, dimArrays : state.dimArrays, isFlat: state.isFlat})))
 
   return (
-    <div>
-      <div className='flex-column text-center w-[200px]'>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col items-center w-[200px] gap-4">
         <b>Value Cropping</b>
-        <MinMaxSlider range={valueRange} setRange={setValueRange} valueScales={valueScales} min={0}/>
+        <MinMaxSlider 
+          range={valueRange} 
+          setRange={setValueRange} 
+          valueScales={valueScales} 
+          min={0} 
+        />
       </div>
-      <div className='flex-column text-center'>
+
+      <div className="flex flex-col items-center w-[200px] gap-4 -mt-4">
         <b>Spatial Cropping</b>
-        <MinMaxSlider range={xRange} setRange={setXRange} valueScales={defaultScales} array={dimArrays[2]}/>
-        <MinMaxSlider range={yRange} setRange={setYRange} valueScales={defaultScales} array={dimArrays[1]}/>
-        <MinMaxSlider range={zRange} setRange={setZRange} valueScales={defaultScales} array={dimArrays[0]}/>
+        <MinMaxSlider 
+          range={xRange} 
+          setRange={setXRange} 
+          valueScales={defaultScales} 
+          array={dimArrays[2]} 
+        />
+        <MinMaxSlider 
+          range={yRange} 
+          setRange={setYRange} 
+          valueScales={defaultScales} 
+          array={dimArrays[1]} 
+        />
+        <MinMaxSlider 
+          range={zRange} 
+          setRange={setZRange} 
+          valueScales={defaultScales} 
+          array={dimArrays[0]} 
+        />
       </div>
     </div>
+
   )
 }
 
