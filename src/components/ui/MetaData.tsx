@@ -1,6 +1,6 @@
 'use client';
 
-import { TiInfo } from "react-icons/ti";
+import { HiInformationCircle } from "react-icons/hi";
 import './css/MetaData.css'
 import {
   Dialog,
@@ -28,12 +28,12 @@ const Metadata = ({ data }: { data: Record<string, any> }) => {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="size-10 cursor-pointer"
+                        className="size-6 cursor-pointer"
                         tabIndex={0}
                         aria-label="Metadata information"
                         title="Metadata information"
                         >
-                        <TiInfo className="size-8" />
+                        <HiInformationCircle className="size-6" />
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="metadata-dialog">
