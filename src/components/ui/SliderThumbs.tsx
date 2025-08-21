@@ -16,6 +16,7 @@ const SliderThumbs = React.forwardRef<
       value,
       min = 0,
       max = 100,
+      step = 1,                  // default step
       minStepsBetweenThumbs = 1, // prevent overlap
       ...props
     },
@@ -39,6 +40,7 @@ const SliderThumbs = React.forwardRef<
         defaultValue={defaultValue}
         min={min}
         max={max}
+        step={step}                       // use default
         minStepsBetweenThumbs={minStepsBetweenThumbs}
         className={cn(
           "relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col",

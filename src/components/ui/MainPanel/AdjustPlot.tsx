@@ -3,8 +3,8 @@ import React, {useState, useEffect} from 'react'
 import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
 import '../css/MainPanel.css'
 import { useShallow } from 'zustand/shallow';
-import Slider from 'rc-slider';
 import { Slider as UISlider } from '@/components/ui/slider';
+import { SliderThumbs } from '@/components/ui/SliderThumbs';
 import { Button } from '../button';
 import { LuSettings } from "react-icons/lu";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -46,13 +46,12 @@ const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueSca
 
     return(
         <div className='w-full flex justify-between flex-col'>
-            <Slider
-                range
+            <SliderThumbs
                 min={min}
                 max={1}
-                defaultValue={range}
+                value={range}
                 step={0.01}
-                onChange={(values) => setRange(values as number[])}
+                onValueChange={(values: number[]) => setRange(values)}
             />
 
         {/* Min/Max labels */}
