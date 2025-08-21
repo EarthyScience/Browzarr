@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react"
 import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
-import Slider from 'rc-slider'
+import { SliderThumbs } from "@/components/ui/SliderThumbs"
 import { Card } from "@/components/ui/card"
 // import { Button } from "./button"
 import { Button } from "@/components/ui/button"
@@ -101,13 +101,12 @@ const MetaDataInfo = ({ meta, setShowMeta }: { meta: any, setShowMeta: React.Dis
                   <b>Select Data Range</b>
                 </div>
                 <div className="w-full flex flex-col justify-between">
-                  <Slider
-                    range
+                  <SliderThumbs
                     min={0}
                     max={length}
                     value={[slice[0] ? slice[0] : 0, slice[1] ? slice[1] : length]}
                     step={1}
-                    onChange={(values) => setSlice(values as [number, number | null])}
+                    onValueChange={(values: number[]) => setSlice([values[0], values[1]] as [number, number | null])}
                   />
                   <div className="flex justify-between text-xs mt-4">
                     <span>Min: <br /> <input className='w-[50px]' type="number" value={slice[0]} onChange={e=>setSlice([parseInt(e.target.value), slice[1]])}/></span>
