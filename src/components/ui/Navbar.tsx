@@ -127,37 +127,12 @@ const Navbar = React.memo(function Navbar(){
   const [cmap, setCmap] = useState<string>("Default")
   const [flipCmap, setFlipCmap] = useState<boolean>(false)
   const colormap = useGlobalStore(useShallow(state=>state.colormap))
-  const [isOpen, setIsOpen] = useState<boolean>(false)
+  const [isOpen, setIsOpen] = useState<boolean>(true)
   const navRef = useRef<HTMLElement | null>(null)
 
   useEffect(()=>{
     setColormap(GetColorMapTexture(colormap, cmap === "Default" ? "Spectral" : cmap, 1, "#000000", 0, flipCmap));
   },[cmap, flipCmap])
-
-  // Close when clicking outside or pressing Escape
-  useEffect(() => {
-    function handleDocumentPointer(event: MouseEvent | TouchEvent) {
-      if (!isOpen) return;
-      const target = event.target as Node | null;
-      if (navRef.current && target && !navRef.current.contains(target)) {
-        setIsOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (!isOpen) return;
-      if (event.key === "Escape") setIsOpen(false);
-    }
-
-    document.addEventListener("mousedown", handleDocumentPointer);
-    document.addEventListener("touchstart", handleDocumentPointer, { passive: true });
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handleDocumentPointer);
-      document.removeEventListener("touchstart", handleDocumentPointer);
-      document.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [isOpen]);
   
   return (
     <nav className="navbar" ref={navRef}>
