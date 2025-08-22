@@ -9,6 +9,7 @@ import { parseLoc } from '@/utils/HelperFuncs';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 
 const frameRates = [1, 2, 4, 6, 8, 12, 16, 24, 36, 48, 54, 60, 80, 120]
@@ -144,19 +145,39 @@ const PlayButton = () => {
     const enableCond = (!isFlat && plotOn)
   return (
     <div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
-        disabled={!enableCond}
-        onClick={() => {if (cond){setShowOptions(x=>!x)}}}
-        style={{
-          color: enableCond ? '' : 'var(--text-disabled)',
-          transform: enableCond ? '' : 'scale(1)',
-        }}
-      >
-        <PiPlayPauseFill className="size-8" />
-      </Button>
+      {enableCond ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
+              onClick={() => {if (cond){setShowOptions(x=>!x)}}}
+            >
+              <PiPlayPauseFill className="size-8" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" align="start" className="flex flex-col">
+            <span>Animation <strong>controls:</strong></span>
+            <span className="ml-1">• <strong>Play</strong> / Pause</span>
+            <span className="ml-1">• <strong>Speed</strong> control</span>
+            <span className="ml-1">• <strong>Time</strong> Slider</span>
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-10"
+          disabled
+          style={{
+            color: 'var(--text-disabled)',
+            transform: 'scale(1)',
+          }}
+        >
+          <PiPlayPauseFill className="size-8" />
+        </Button>
+      )}
       <PlayInterFace visible={showOptions}/>
     </div>
   )

@@ -9,6 +9,11 @@ import { MdOutlineSwapVert } from "react-icons/md";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const Colormaps = () => {
 
@@ -43,17 +48,24 @@ const Colormaps = () => {
       <Popover>
       <PopoverTrigger asChild>
         <div>
-        <Button
-          size="icon"
-          className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full'
-          style={{
-            backgroundImage: `url(./colormap_icons/${cmap}.webp)` ,
-            backgroundSize: "100%",
-            transform: flipCmap ? "scaleX(-1)" : "",
-            width: "32px",
-            height: "32px",
-          }}
-        > </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full'
+              style={{
+                backgroundImage: `url(./colormap_icons/${cmap}.webp)` ,
+                backgroundSize: "100%",
+                transform: flipCmap ? "scaleX(-1)" : "",
+                width: "32px",
+                height: "32px",
+              }}
+            > </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" align="start">
+            <span>Change Colormap</span>
+          </TooltipContent>
+        </Tooltip>
         </div>
       </PopoverTrigger>
       <PopoverContent

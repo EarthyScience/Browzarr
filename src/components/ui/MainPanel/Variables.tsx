@@ -8,6 +8,12 @@ import { Separator } from "@/components/ui/separator";
 import MetaDataInfo from "./MetaDataInfo";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 const Variables = ({openVariables, setOpenVariables}:{openVariables: boolean, setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>}) => {
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
@@ -43,14 +49,21 @@ const Variables = ({openVariables, setOpenVariables}:{openVariables: boolean, se
         <Popover open={openVariables} onOpenChange={setOpenVariables}>
         <PopoverTrigger asChild>
           <div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
-              tabIndex={0}
-              aria-label="Select variable">
-                <TbVariable className="size-8"/>
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
+                tabIndex={0}
+                aria-label="Select variable">
+                  <TbVariable className="size-8"/>
+              </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="start">
+                <span>Select Variable</span>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </PopoverTrigger>
         <PopoverContent

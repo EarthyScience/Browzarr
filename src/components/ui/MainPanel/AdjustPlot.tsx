@@ -9,6 +9,11 @@ import { Button } from '../button';
 import { LuSettings } from "react-icons/lu";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Input } from '../input';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -344,37 +349,56 @@ const AdjustPlot = () => {
 
   const enableCond = (plotOn)
   return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
-              disabled={!enableCond}
-              style={{
-                color: enableCond ? '' : 'var(--text-disabled)',
-                transform: enableCond ? '' : 'scale(1)'
-              }}
-            >
-              <LuSettings className="size-8" />
-            </Button>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent
-          side={isMobile ? 'top' : 'left'}
-          className={`overflow-y-auto w-[240px] mt-2 mr-1 ${
-            isMobile 
-              ? 'max-h-[80vh] mb-1' 
-              : 'max-h-[70vh]'
-          }`}
+    <>
+      {enableCond ? (
+        <Popover>
+          <PopoverTrigger asChild>
+            <div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
+                  >
+                    <LuSettings className="size-8" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="start">
+                  <span>Plot Settings</span>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </PopoverTrigger>
+          <PopoverContent
+            side={isMobile ? 'top' : 'left'}
+            className={`overflow-y-auto w-[240px] mt-2 mr-1 ${
+              isMobile 
+                ? 'max-h-[80vh] mb-1' 
+                : 'max-h-[70vh]'
+            }`}
+          >
+            {plotType === 'volume' && <VolumeOptions />}
+            {plotType === 'point-cloud' && <PointOptions />}
+            {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
+            {plotType != 'point-cloud' && <GlobalOptions />}
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-10"
+          disabled
+          style={{
+            color: 'var(--text-disabled)',
+            transform: 'scale(1)'
+          }}
         >
-          {plotType === 'volume' && <VolumeOptions />}
-          {plotType === 'point-cloud' && <PointOptions />}
-          {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
-          {plotType != 'point-cloud' && <GlobalOptions />}
-        </PopoverContent>
-      </Popover>
+          <LuSettings className="size-8" />
+        </Button>
+      )}
+    </>
   )
 }
 

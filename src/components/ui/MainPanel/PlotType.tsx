@@ -10,6 +10,11 @@ import { PiCubeLight } from "react-icons/pi";
 import { MdOutlineSquare } from "react-icons/md";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const plotTypes = ['volume', 'point-cloud', 'sphere', 'flat']
 const plotIcons = {
@@ -41,15 +46,26 @@ const PlotType = () => {
     <Popover>
       <PopoverTrigger asChild>
         <div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out'
-            tabIndex={0}
-            aria-label="Select plot type"
-          >
-            {plotIcons[plotType as keyof typeof plotIcons]}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+              variant="ghost"
+              size="icon"
+              className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out'
+              tabIndex={0}
+              aria-label="Select plot type"
+            >
+              {plotIcons[plotType as keyof typeof plotIcons]}
+            </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="start" className="flex flex-col">
+              <span><strong>Select plot type:</strong></span>
+              <span className="ml-1">• Volume (3D)</span>
+              <span className="ml-1">• Point Cloud (3D)</span>
+              <span className="ml-1">• Sphere Projection</span>
+              <span className="ml-1">• Flat View</span>
+            </TooltipContent>
+          </Tooltip>
       </div>
       </PopoverTrigger>
       <PopoverContent
