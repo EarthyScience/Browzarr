@@ -5,7 +5,12 @@ import { useTheme } from 'next-themes'
 import { BsMoonStarsFill } from "react-icons/bs";
 import { BsSunFill } from "react-icons/bs";
 import { Button } from "@/components/ui/button"
-// import './css/ThemeSwitch.css'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 const ThemeSwitch = () => {
   const [mounted, setMounted] = useState(false)
@@ -26,6 +31,8 @@ const ThemeSwitch = () => {
   const current = mounted ? (theme ?? resolvedTheme) : undefined
 
   return (
+    <Tooltip>
+      <TooltipTrigger asChild>
     <Button
       variant="ghost"
       size="icon"
@@ -34,6 +41,14 @@ const ThemeSwitch = () => {
       >
         {!mounted ? <BsSunFill className="size-6" /> : current === 'dark' ? <BsMoonStarsFill className="size-6"/> : <BsSunFill className="size-6"/>}
     </Button>
+    </TooltipTrigger>
+      <TooltipContent side="right" align="start">
+        {current === 'dark' ? 
+          <span>Switch to Light Mode</span> : 
+          <span>Switch to Dark Mode</span>
+        }
+      </TooltipContent>
+    </Tooltip>
   )
 }
 

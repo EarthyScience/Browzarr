@@ -17,6 +17,14 @@ import { cn } from "@/lib/utils"
 import { MdFlipCameraIos } from "react-icons/md";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import AboutInfo from "@/components/ui/AboutInfo";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
+
 // Custom rotating five-dots icon
 const FiveDotsIcon: React.FC<{ className?: string }> = ({ className }) => {
   return (
@@ -136,31 +144,47 @@ const Navbar = React.memo(function Navbar(){
   
   return (
     <nav className="navbar" ref={navRef}>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="navbar-trigger size-10"
-        aria-expanded={isOpen}
-        aria-label={isOpen ? "Close navigation" : "Open navigation"}
-        title={isOpen ? "Close navigation" : "Open navigation"}
-        onClick={() => setIsOpen((prev) => !prev)}
-      >
-        <FiveDotsIcon className="navbar-trigger-icon rotating size-6" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+           <Button
+            variant="ghost"
+            size="icon"
+            className="navbar-trigger size-10"
+            aria-expanded={isOpen}
+            aria-label={isOpen ? "Close navigation" : "Open navigation"}
+            title={isOpen ? "Close navigation" : "Open navigation"}
+            onClick={() => setIsOpen((prev) => !prev)}
+          >
+            <FiveDotsIcon className="navbar-trigger-icon rotating size-6" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right" align="start">
+          {isOpen ? <span>Close navigation</span> : <span>Open navigation</span>}
+        </TooltipContent>
+      </Tooltip>
 
       <div className={cn("navbar-content", isOpen ? "open" : "closed")}>        
         <div className="navbar-left">
           <Drawer>
             <DrawerTrigger asChild>
-              <Button 
-                variant="ghost"
-                size="icon"
-                className="cursor-pointer"
-                tabIndex={0}
-                aria-label="About Browzarr"
-                title="About Browzarr">
-                  <Image src={logo} alt="browzarr" />
-              </Button>
+              <div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost"
+                      size="icon"
+                      className="cursor-pointer"
+                      tabIndex={0}
+                      aria-label="About Browzarr"
+                      title="About Browzarr">
+                        <Image src={logo} alt="browzarr" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="start">
+                    <span>About BrowZarr</span>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </DrawerTrigger>
             <DrawerContent className="max-w-md mx-auto">
               <DrawerHeader>
@@ -173,17 +197,25 @@ const Navbar = React.memo(function Navbar(){
           </Drawer>
           
           {plotOn && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-10 cursor-pointer"
-              tabIndex={0}
-              aria-label="Reset camera view"
-              title="Reset camera view"
-              onClick={() => setResetCamera(!resetCamera)}
-            >
-              <MdFlipCameraIos className="size-8" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10 cursor-pointer"
+                  tabIndex={0}
+                  aria-label="Reset camera view"
+                  title="Reset camera view"
+                  onClick={() => setResetCamera(!resetCamera)}
+                >
+                  <MdFlipCameraIos className="size-8" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" align="start">
+                <span>Reset camera view</span>
+              </TooltipContent>
+            </Tooltip>
+
           )}
           {/* {!isFlat && plotOn && <PlotTweaker/>} */}
           {plotOn && !isFlat && <PlotLineButton />}

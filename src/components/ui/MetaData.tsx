@@ -11,6 +11,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
+
 import { Button } from "@/components/ui/button"
 
 const defaultAttributes = [
@@ -24,18 +31,25 @@ const Metadata = ({ data }: { data: Record<string, any> }) => {
     return (
         <div className="metadata-container">
             <Dialog>
-                <DialogTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-6 cursor-pointer"
-                        tabIndex={0}
-                        aria-label="Metadata information"
-                        title="Metadata information"
-                        >
-                        <HiInformationCircle className="size-6" />
-                    </Button>
-                </DialogTrigger>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-6 cursor-pointer"
+                            tabIndex={0}
+                            // aria-label="Metadata information"
+                            // title="Metadata information"
+                            >
+                            <HiInformationCircle className="size-6" />
+                        </Button>
+                        </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="start">
+                        <span>Show Variable Metadata</span>
+                    </TooltipContent>
+                </Tooltip>
                 <DialogContent className="metadata-dialog">
                     <DialogHeader>
                         <DialogTitle>Variable Metadata</DialogTitle>
