@@ -43,32 +43,32 @@ export default function VariablesTable() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-6">
-      <Card className="w-full max-w-[80%] shadow-xl rounded-2xl">
+    <div className="min-h-screen w-full flex items-center justify-center p-0">
+      <Card className="w-full max-w-full md:max-w-[80%] shadow-xl rounded-2xl border-0 bg-transparent">
         <CardHeader className="gap-3">
-          <CardTitle className="text-2xl text-center">Variables</CardTitle>
-          <div className="flex items-center gap-2 justify-center">
+          {/* <CardTitle className="text-2xl text-center">Variables</CardTitle> */}
+          <div className="flex items-center gap-2 justify-center max-w-[240px] md:max-w-sm mx-auto">
             <Input
               placeholder="Search variable..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="max-w-sm"
+              className="flex-1"
             />
             <Button variant="secondary" onClick={() => setQuery("")}>Clear</Button>
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[60vh] rounded-md border">
+          <ScrollArea className="h-[60vh] rounded-md border-0">
             <Table>
-              <TableHeader>
+              {/* <TableHeader>
                 <TableRow>
                   <TableHead className="text-center">Variable Name</TableHead>
                 </TableRow>
-              </TableHeader>
+              </TableHeader> */}
               <TableBody>
                 {filtered.length > 0 ? (
                   filtered.map((variable, idx) => (
-                    <TableRow key={idx} className="hover:bg-muted/50">
+                    <TableRow key={idx} className="hover:bg-gray">
                       <TableCell className="text-center">
                         <Dialog open={showMetaDialog && selectedMeta?.name === variable} onOpenChange={(open) => {
                           if (!open) {
@@ -79,16 +79,16 @@ export default function VariablesTable() {
                           <DialogTrigger asChild>
                             <Button 
                               variant="ghost" 
-                              className="w-full text-center font-medium hover:bg-muted/70 cursor-pointer"
+                              className="w-full text-center text-lg cursor-pointer"
                               onClick={() => handleViewDetails(variable)}
                             >
                               {variable}
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Variable Details: {variable}</DialogTitle>
-                            </DialogHeader>
+                          <DialogContent className="max-w-[85%] md:max-w-2xl max-h-[80vh] overflow-y-auto">
+                              <DialogTitle className="text-center text-lg font-semibold">
+                                {variable}
+                              </DialogTitle>
                             <div className="mt-4">
                               {selectedMeta && (
                                 <MetaDataInfo
