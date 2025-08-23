@@ -12,6 +12,7 @@ import { Metadata, Loading, Navbar, Error } from '@/components/ui';
 import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow, shallow } from 'zustand/shallow';
 import { GetTitleDescription } from '@/components/zarr/GetMetadata';
+import ScrollableLinksTable from './ui/VariablesTable';
 
 
 export function LandingHome() {
@@ -68,7 +69,7 @@ export function LandingHome() {
     <Error />
     {!plotOn && <Navbar />}
     <Loading />
-    {variable === "Default" && <VariableScroller />}
+    {variable === "Default" && <ScrollableLinksTable />}
     {variable != "Default" && <Plot ZarrDS={ZarrDS} />}
     {metadata && <Metadata data={metadata} /> }
     {Object.keys(timeSeries).length >= 1 && <PlotArea />}
