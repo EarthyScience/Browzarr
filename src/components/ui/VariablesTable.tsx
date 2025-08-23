@@ -43,7 +43,7 @@ export default function VariablesTable() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-0">
+    <div className="min-h-screen w-full flex items-start justify-center pt-[8vh] p-0 relative">
       <Card className="w-full max-w-full md:max-w-[80%] shadow-xl rounded-2xl border-0 bg-transparent">
         <CardHeader className="gap-3">
           {/* <CardTitle className="text-2xl text-center">Variables</CardTitle> */}
@@ -58,7 +58,7 @@ export default function VariablesTable() {
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[60vh] rounded-md border-0">
+          <ScrollArea className="h-[65vh] rounded-md border-0">
             <Table>
               {/* <TableHeader>
                 <TableRow>
