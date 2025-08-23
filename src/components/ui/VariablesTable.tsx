@@ -94,6 +94,7 @@ export default function VariablesTable() {
                                 <MetaDataInfo
                                   meta={selectedMeta}
                                   setShowMeta={setShowMetaDialog}
+                                  noCard={true}
                                 />
                               )}
                             </div>
