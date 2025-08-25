@@ -3,6 +3,7 @@
 import { ThemeProvider } from "next-themes";
 import MobileUIHider from "@/components/ui/MobileUIHider";
 import { Footer } from "@/components/ui";
+import { LogoDrawer } from "@/components/ui";
 
 export default function ClientRoot({ children }: { children: React.ReactNode }) {
 	return (
@@ -11,6 +12,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
 			<div className="absolute top-4 right-4 text-sm font-medium text-muted-foreground z-50">
 				browzarr.io
 			</div>
+			<LogoDrawer />
 			<main className="min-h-screen">
 				{children}
 			</main>

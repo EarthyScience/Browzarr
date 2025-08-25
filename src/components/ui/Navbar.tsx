@@ -1,9 +1,7 @@
 "use client";
 import React from "react";
-import Image from "next/image";
 import { PlotLineButton, ExportImageSettings  } from "@/components/ui";
 import ThemeSwitch  from "@/components/ui/ThemeSwitch";
-import logo from "@/app/logo.png"
 import './css/Navbar.css'
 import { useShallow } from "zustand/shallow";
 import { useGlobalStore, useImageExportStore, usePlotStore } from "@/utils/GlobalStates";
@@ -11,9 +9,6 @@ import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { MdFlipCameraIos } from "react-icons/md";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
-import AboutInfo from "@/components/ui/AboutInfo";
-
 
 import {
   Tooltip,
@@ -78,36 +73,6 @@ const Navbar = React.memo(function Navbar(){
 
       <div className={cn("navbar-content", isOpen ? "open" : "closed")}>        
         <div className="navbar-left">
-          <Drawer>
-            <DrawerTrigger asChild>
-              <div>
-                <Tooltip delayDuration={500} >
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost"
-                      size="icon"
-                      className="cursor-pointer"
-                      tabIndex={0}
-                      title="About Browzarr">
-                        <Image src={logo} alt="browzarr" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" align="start">
-                    <span>About BrowZarr</span>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </DrawerTrigger>
-            <DrawerContent className="max-w-md mx-auto">
-              <DrawerHeader>
-                <DrawerTitle>About</DrawerTitle>
-              </DrawerHeader>
-              <div className="flex-1 overflow-y-auto px-4 pb-4">
-                <AboutInfo />
-              </div>
-            </DrawerContent>
-          </Drawer>
-          
           {plotOn && (
             <Tooltip delayDuration={500} >
               <TooltipTrigger asChild>

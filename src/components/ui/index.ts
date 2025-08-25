@@ -23,10 +23,13 @@ import Error from "./Error";
 import AnalysisOptions from "./MainPanel/AnalysisOptions";
 import KernelVisualizer from "./KernelVisualizer";
 import ExportImageSettings from "./ExportImageSettings";
+import LogoDrawer from "./AboutDrawer";
+
 export {
   Navbar,
   Footer,
   AboutInfo,
+  LogoDrawer,
   Metadata,
   ResizeBar,
   YScaler,
