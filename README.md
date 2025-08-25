@@ -2,7 +2,7 @@
 A browser-based visualization toolkit for exploring and analyzing Zarr data stores.
 
 > [!IMPORTANT]
-> Visit at browzarr.io
+> Visit at [browzarr.io](https://browzarr.io)
 
 Stay tuned for updates! 🚀
 
