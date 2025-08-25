@@ -2,7 +2,7 @@
     z-index: 10;
     position: absolute;
     left: 50%;
-    top: 60px;
+    top: 32px;
     width: 40%;
     max-width: 450px;
     transform: translateX(-50%);
@@ -34,6 +34,7 @@
 
 @media (max-width: 768px) {
     .colorbar {
-        width: 75%;
+        width: 70%;
+        top: 64px;
     }
 }

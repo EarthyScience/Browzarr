@@ -1,6 +1,6 @@
 .metadata-container {
     position: absolute;
-    top: 52px;
+    top: 28px;
     right: calc(50% - min(40vw, 450px) / 2 - 30px);
     z-index: 15;
     display: inline-block;
@@ -31,5 +31,6 @@
 @media (max-width: 768px) {
     .metadata-container {
         right: calc(50% - min(75vw, 450px) / 2 - 30px);
+        top: 52px;
     }
 }

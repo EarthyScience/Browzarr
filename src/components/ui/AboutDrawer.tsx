@@ -9,7 +9,7 @@ export default function LogoDrawer() {
   return (
     <Drawer>
       <DrawerTrigger asChild>
-        <div className="absolute top-4 left-4 z-50">
+        <div className="left-4 z-2 py-2">
           <Tooltip delayDuration={500}>
             <TooltipTrigger asChild>
               <Button
