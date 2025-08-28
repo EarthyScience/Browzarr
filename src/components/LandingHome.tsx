@@ -3,14 +3,17 @@ import * as THREE from 'three'
 THREE.Cache.enabled = true;
 import { GetZarrMetadata, GetVariableNames, GetTitleDescription } from '@/components/zarr/GetMetadata';
 import { ZarrDataset, GetStore } from '@/components/zarr/ZarrLoaderLRU';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PlotArea, Plot } from '@/components/plots';
+import { PlotWithSliceControl } from '@/components/plots';
 import { MainPanel } from '@/components/ui';
 import { Metadata, Loading, Navbar, Error } from '@/components/ui';
 import { useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import ScrollableLinksTable from './ui/VariablesTable';
 import { DatasetToast }  from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { ToggleLeft, ToggleRight } from 'lucide-react';
 
 export function LandingHome() {
   const {
@@ -37,6 +40,9 @@ export function LandingHome() {
     currentStore: state.currentStore,
     setCurrentStore: state.setCurrentStore
   })))
+
+  // New state for workflow selection
+  const [useSliceControl, setUseSliceControl] = useState<boolean>(false);
 
   useEffect(() => { // Update store if URL changes
     const newStore = GetStore(initStore)
@@ -66,8 +72,8 @@ export function LandingHome() {
     const gl = renderer.getContext();
     setMaxTextureSize(gl.getParameter(gl.MAX_TEXTURE_SIZE))
     return () => {
-    renderer.dispose();
-  };
+      renderer.dispose();
+    };
   },[setMaxTextureSize])
 
   useEffect(()=>{ // Maybe we change remove this. Do we want to go back to home screen?
@@ -76,19 +82,52 @@ export function LandingHome() {
     }
   }, [variable, setPlotOn])
 
+  // Workflow toggle component
+  const WorkflowToggle = () => (
+    <div className="fixed top-4 left-16 z-50 bg-background/80 backdrop-blur-sm rounded-lg p-2 border">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium">Mode:</span>
+        <Button
+          variant={useSliceControl ? "outline" : "default"}
+          size="sm"
+          onClick={() => setUseSliceControl(false)}
+          className="text-xs"
+        >
+          Standard
+        </Button>
+        <Button
+          variant={useSliceControl ? "default" : "outline"}
+          size="sm"
+          onClick={() => setUseSliceControl(true)}
+          className="text-xs"
+        >
+          <ToggleRight className="w-3 h-3 mr-1" />
+          Slice Control
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <>
-    <MainPanel/> 
+      <MainPanel/> 
 
-    <Error />
-    {!plotOn && <Navbar />}
-    <Loading />
-    <DatasetToast />
+      <Error />
+      {!plotOn && <Navbar />}
+      <Loading />
+      <DatasetToast />
 
-    {variable === "Default" && <ScrollableLinksTable />}
-    {variable != "Default" && <Plot ZarrDS={ZarrDS} />}
-    {metadata && <Metadata data={metadata} /> }
-    {Object.keys(timeSeries).length >= 1 && <PlotArea />}
+      {/* Show workflow toggle when a variable is selected */}
+      {variable !== "Default" && <WorkflowToggle />}
+
+      {variable === "Default" && <ScrollableLinksTable />}
+      
+      {/* Conditional rendering based on workflow selection */}
+      {variable !== "Default" && !useSliceControl && <Plot ZarrDS={ZarrDS} />}
+      {variable !== "Default" && useSliceControl && <PlotWithSliceControl ZarrDS={ZarrDS} />}
+      
+      {metadata && <Metadata data={metadata} /> }
+      {Object.keys(timeSeries).length >= 1 && <PlotArea />}
     </>
   );
 }
