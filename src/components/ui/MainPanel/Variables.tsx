@@ -68,25 +68,33 @@ const Variables = ({
 
   const VariableList = (
     <div className="overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden">
-      {filtered.map((val, idx) => (
-        <React.Fragment key={idx}>
-          <div
-            className="cursor-pointer pl-2 py-1 text-sm hover:bg-muted rounded"
-            style={{
-              background:
-                idx === selectedIndex ? "var(--muted-foreground)" : "",
-            }}
-            onClick={() => {
-              setSelectedIndex(idx);
-              setSelectedVar(val);
-              setShowMeta(true);
-            }}
-          >
-            {val}
-          </div>
-          {idx !== filtered.length - 1 && <Separator className="my-1" />}
-        </React.Fragment>
-      ))}
+      {filtered.length > 0 ? (
+        filtered.map((val, idx) => (
+          <React.Fragment key={idx}>
+            <div
+              className="cursor-pointer pl-2 py-1 text-sm hover:bg-muted rounded"
+              style={{
+                background:
+                  idx === selectedIndex ? "var(--muted-foreground)" : "",
+              }}
+              onClick={() => {
+                setSelectedIndex(idx);
+                setSelectedVar(val);
+                setShowMeta(true);
+              }}
+            >
+              {val}
+            </div>
+            {idx !== filtered.length - 1 && <Separator className="my-1" />}
+          </React.Fragment>
+        ))
+      ) : (
+        <div className="text-center text-muted-foreground py-2">
+          {query
+            ? "No variables found matching your search."
+            : "No variables available."}
+        </div>
+      )}
     </div>
   );
 
