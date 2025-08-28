@@ -190,11 +190,15 @@ const AnalysisOptions = () => {
                   </Button>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="left" align="start" className="flex flex-col">
-                  <div>
-                    Apply operations
-                  </div>
-                </TooltipContent>
+                {popoverSide === "left" ? (
+                  <TooltipContent side="left" align="start">
+                    <span>Apply operations</span>
+                  </TooltipContent>
+                ) : (
+                  <TooltipContent side="top" align="center">
+                    <span>Apply operations</span>
+                  </TooltipContent>
+                )}
               </Tooltip>
             </div>
           </PopoverTrigger>

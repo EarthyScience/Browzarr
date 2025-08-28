@@ -116,9 +116,15 @@ const Variables = ({
                 </Button>
               </div>
             </TooltipTrigger>
-            <TooltipContent side="left" align="start">
-              <span>Select Variable</span>
-            </TooltipContent>
+            {popoverSide === "left" ? (
+              <TooltipContent side="left" align="start">
+                <span>Select Variable</span>
+              </TooltipContent>
+            ) : (
+              <TooltipContent side="top" align="center">
+                <span>Select Variable</span>
+              </TooltipContent>
+            )}
           </Tooltip>
         </div>
       </PopoverTrigger>

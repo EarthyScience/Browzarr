@@ -63,9 +63,15 @@ const Colormaps = () => {
                 }} /> 
             </div>
           </TooltipTrigger>
-          <TooltipContent side="left" align="start">
-            <span>Change Colormap</span>
-          </TooltipContent>
+          {popoverSide === "left" ? (
+            <TooltipContent side="left" align="start">
+              <span>Change Colormap</span>
+            </TooltipContent>
+          ) : (
+            <TooltipContent side="top" align="center">
+              <span>Change Colormap</span>
+            </TooltipContent>
+          )}
         </Tooltip>
         </div>
       </PopoverTrigger>

@@ -60,9 +60,15 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
                 </Button>
               </div>
             </TooltipTrigger>
-            <TooltipContent side="left" align="start" className="flex flex-col">
-              <span>Select dataset</span>
-            </TooltipContent>
+            {popoverSide === "left" ? (
+              <TooltipContent side="left" align="start">
+                <span>Select dataset</span>
+              </TooltipContent>
+            ) : (
+              <TooltipContent side="top" align="center">
+                <span>Select dataset</span>
+              </TooltipContent>
+            )}
           </Tooltip>
         </div>
 

@@ -60,9 +60,15 @@ const PlotType = () => {
               </Button>
             </div>
             </TooltipTrigger>
-            <TooltipContent side="left" align="start" className="flex flex-col">
-              <span>Change plot type</span>
-            </TooltipContent>
+            {popoverSide === "left" ? (
+              <TooltipContent side="left" align="start">
+                <span>Change plot type</span>
+              </TooltipContent>
+            ) : (
+              <TooltipContent side="top" align="center">
+                <span>Change plot type</span>
+              </TooltipContent>
+            )}
           </Tooltip>
       </div>
       </PopoverTrigger>
