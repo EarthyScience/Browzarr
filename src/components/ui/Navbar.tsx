@@ -9,7 +9,7 @@ import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { MdFlipCameraIos } from "react-icons/md";
-import { LogoDrawer } from "@/components/ui";
+// import { LogoDrawer } from "@/components/ui";
 
 import {
   Tooltip,
@@ -73,7 +73,7 @@ const Navbar = React.memo(function Navbar(){
       </Tooltip>
 
       <div className={cn("navbar-content", isOpen ? "open" : "closed")}>        
-        <LogoDrawer />
+        {/* <LogoDrawer /> */}
         <div className="navbar-left">
           {plotOn && (
             <Tooltip delayDuration={500} >
