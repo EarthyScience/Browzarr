@@ -1,15 +1,34 @@
 {
   "name": "browzarr",
   "description": "A browser-based visualization toolkit for exploring and analyzing Zarr data stores.",
+  "keywords": [
+    "zarr",
+    "3d",
+    "graphics",
+    "threejs",
+    "rendering",
+    "geometry",
+    "webgpu"
+  ],
+  "homepage": "https://browzarr.io",
   "license": "Apache-2.0",
   "author": {
-    "name": "Lazaro Alonso & Jeran Poehls",
-    "email": "lazarus.alon@gmail.com",
-    "url": "https://lazarusa.github.io"
+    "name": "Jeran Poehls",
+    "email": "jpoehls@bgc-jena.mpg.de"
   },
+  "contributors": [
+    {
+      "name": "Lazaro Alonso",
+      "email": "lazarus.alon@gmail.com",
+      "url": "https://lazarusa.github.io"
+    }
+  ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/EarthyScience/Browzarr.git"
+    "url": "git+https://github.com/EarthyScience/Browzarr.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EarthyScience/Browzarr/issues/"
   },
   "version": "0.1.0",
   "private": true,
