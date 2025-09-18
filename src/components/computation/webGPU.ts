@@ -191,7 +191,13 @@ export async function BufferCopy(inputArray :  ArrayBufferView, shape: number[])
             // and you know the dimensions (e.g., width, height, depth)
             let width: u32 = ${shape[2]};/* set this to your actual width */;
             let height: u32 = ${shape[1]};/* set this to your actual height */;
-
+            let depth: u32 = ${shape[0]}u;
+            
+            // Bounds check
+            if (global_id.x >= width || global_id.y >= height || global_id.z >= depth) {
+                return;
+            }
+            
             // Flatten the 3D index into a 1D index
             let linear_index = global_id.z * width * height +
                             global_id.y * width +
@@ -254,7 +260,7 @@ export async function BufferCopy(inputArray :  ArrayBufferView, shape: number[])
 
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bindGroup);
-    pass.dispatchWorkgroups(workGroups[0], workGroups[1]);
+    pass.dispatchWorkgroups(workGroups[2], workGroups[1], workGroups[0]);
     pass.end();
 
     encoder.copyBufferToBuffer(
