@@ -25,6 +25,7 @@ import KernelVisualizer from "./KernelVisualizer";
 import ExportImageSettings from "./ExportImageSettings";
 import LogoDrawer from "./AboutDrawer";
 import DatasetToast from "./DatasetToast";
+import VersionSelector from "./VersionSelector";
 
 export {
   Navbar,
@@ -53,5 +54,6 @@ export {
   Error,
   AnalysisOptions,
   KernelVisualizer,
-  ExportImageSettings
+  ExportImageSettings,
+  VersionSelector,
 };
