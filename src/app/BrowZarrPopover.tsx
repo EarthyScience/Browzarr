@@ -13,7 +13,7 @@ export function BrowZarrPopover() {
         <Button
           variant="ghost"
           size="sm"
-          className="absolute cursor-pointer top-4 right-4 font-medium text-muted-foreground hover:text-foreground transition"
+          className="cursor-pointer font-medium text-muted-foreground hover:text-foreground transition"
         >
           browzarr.io
         </Button>
