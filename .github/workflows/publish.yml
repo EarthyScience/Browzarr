@@ -36,4 +36,4 @@ jobs:
         with:
           folder: out
           branch: gh-pages
-          clean: true
+          clean: false
