@@ -1,0 +1,68 @@
+name: Generate versions.json
+
+on:
+  workflow_run:
+    workflows: ["Deploy tag → gh-pages/tag"] # This workflow will run after "Deploy Tags" completes
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Generate versions.json
+        id: generate
+        run: |
+          set -euo pipefail
+
+          # List top-level directories, excluding dotfiles.
+          DIRS=$(find . -maxdepth 1 -mindepth 1 -type d ! -name '.*' -printf '%f\n' || true)
+
+          # Extract semver-style directories (e.g., v1.2.3) and detect "latest"
+          TAGS=$(echo "$DIRS" | grep -E '^v[0-9]+(\.[0-9]+)*$' || true)
+          HAS_LATEST=$(echo "$DIRS" | grep -x 'latest' || true)
+
+          # Sort semantic versions descending
+          VERSIONS_ARRAY='[]'
+          if [ -n "$TAGS" ]; then
+            SORTED=$(echo "$TAGS" | sort -V -r)
+            VERSIONS_ARRAY=$(printf '%s\n' "$SORTED" | jq -R -s -c 'split("\n")[:-1]')
+          fi
+
+          # Prepend 'latest' to the array if it exists
+          if [ -n "$HAS_LATEST" ]; then
+            VERSIONS_JSON=$(echo "$VERSIONS_ARRAY" | jq -c '["latest"] + .')
+          else
+            VERSIONS_JSON=$VERSIONS_ARRAY
+          fi
+
+          # Create the versions.json file
+          echo "$VERSIONS_JSON" > versions.json
+
+          echo "Generated versions.json:"
+          cat versions.json
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add versions.json
+
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes in versions.json, skipping commit."
+            exit 0
+          fi
+
+          git commit -m "Update versions.json"
+          git push origin gh-pages
