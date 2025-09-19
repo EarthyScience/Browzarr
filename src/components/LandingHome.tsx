@@ -65,15 +65,6 @@ export function LandingHome() {
     return () => { isMounted = false; };
   }, [currentStore, setZMeta, setVariables, setTitleDescription])
 
-  useEffect(() => { // Set maxtexture size to warn users if custom data is too big
-    const renderer = new THREE.WebGLRenderer();
-    const gl = renderer.getContext();
-    setMaxTextureSize(gl.getParameter(gl.MAX_TEXTURE_SIZE))
-    return () => {
-      renderer.dispose();
-    };
-  },[setMaxTextureSize])
-
   useEffect(()=>{ // Maybe we change remove this. Do we want to go back to home screen?
     if (variable === "Default"){
       setPlotOn(false)

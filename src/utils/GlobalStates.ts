@@ -45,6 +45,7 @@ type StoreState = {
   is4D: boolean;
   idx4D: number | null;
   titleDescription: { title: string | null; description: string | null };
+  dataArray: Uint8Array | Float32Array | Float16Array | null; // Added this line
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -75,6 +76,7 @@ type StoreState = {
   setIs4D: (is4D: boolean) => void;
   setIdx4D: (idx4D: number | null) => void;
   setTitleDescription: (titleDescription: { title: string | null; description: string | null }) => void;
+  setDataArray: (dataArray: Uint8Array | Float32Array | Float16Array | null) => void; // Added this line
 };
 
 export const useGlobalStore = create<StoreState>((set, get) => ({
@@ -104,6 +106,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   idx4D: null,
   titleDescription: {title:null, description: null},
   decompressing: false,
+  dataArray: null, // Added this line
 
   setDataShape: (dataShape) => set({ dataShape }),
   setShape: (shape) => set({ shape }),
@@ -151,8 +154,8 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setDecompressing: (decompressing) => set({ decompressing }),
   setIs4D: (is4D) => set({ is4D }),
   setIdx4D: (idx4D) => set({ idx4D }),
-
   setTitleDescription: (titleDescription) => set({ titleDescription }),
+  setDataArray: (dataArray) => set({ dataArray }), // Added this line
 }));
 
 type PlotState ={
