@@ -3,13 +3,13 @@ import * as THREE from 'three'
 import { useGlobalStore, usePlotStore, useZarrStore, useCacheStore } from './GlobalStates';
 import { decompressSync } from 'fflate';
 
-export function parseTimeUnit(units: string | undefined): number {
+export function parseTimeUnit(units: string | undefined): [number, number | null] {
     if (units === "Default"){
-        return 1;
+        return [1, null];
     }
 
     if (!units || typeof units !== 'string' || units.trim() === '') {
-      return 1;
+      return [  1, null]; 
     }
     
     // Regular expression to match CF time units (e.g., "seconds since 1970-01-01")
@@ -43,7 +43,7 @@ export function parseTimeUnit(units: string | undefined): number {
     if (!(effectiveUnit in unitToMilliseconds)) {
       throw new Error(`Unsupported time unit: "${unit}". Supported units: ${Object.keys(unitToMilliseconds).join(', ')}`);
     }
-    return (unitToMilliseconds[effectiveUnit] + baseDate.getTime());
+    return [unitToMilliseconds[effectiveUnit], baseDate.getTime()];
 }
 
 const months = [
@@ -61,9 +61,9 @@ export function parseLoc(input:number, units: string | undefined, verbose: boole
         return Number(input)
       }
       try{
-        const scale = parseTimeUnit(units)
+        const [scale, offset] = parseTimeUnit(units)
         const timeStamp = Number(input) * scale;
-        const date = new Date(timeStamp);
+        const date = new Date(timeStamp + (offset ? offset : 0));
         if (verbose) {
           return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`; // e.g., "18 Aug 2025"
         } else {
