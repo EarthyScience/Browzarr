@@ -176,6 +176,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
           dimMetas = dimMetas.slice(1);
           dimNames = dimNames.slice(1);
         }
+        console.log(dimArrs[0])
         setDimArrays(dimArrs)
         setDimNames(dimNames)
         if (dimArrs.length > 2){

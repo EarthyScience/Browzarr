@@ -4,7 +4,7 @@ import React, {useEffect, useMemo, useState, useRef} from 'react'
 import { useShallow } from 'zustand/shallow'
 import '../css/MainPanel.css'
 import { PiPlayPauseFill } from "react-icons/pi";
-import { FaPlay, FaPause } from "react-icons/fa6";
+import { FaPlay, FaPause, FaForwardStep , FaBackwardStep  } from "react-icons/fa6";
 import { parseLoc } from '@/utils/HelperFuncs';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -110,16 +110,52 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
                   </Button>
                 </div>
                 <div className='flex flex-col items-center justify-center gap-1 w-full'>
-                  <Button
-                    variant='default'
-                    size='sm'
-                    className='cursor-pointer'
-                    onClick={() => setAnimate(!animate)}
-                    aria-label={animate ? 'Pause' : 'Play'}
-                    title={animate ? 'Pause' : 'Play'}
-                  >
-                    {animate ? <FaPause /> : <FaPlay />}
-                  </Button>
+                  <div className='flex justify-around '>
+                    <Button
+                      disabled={animate}
+                      variant='default'
+                      size='sm'
+                      className='cursor-pointer'
+                      onClick={() => {
+                        previousVal.current = Math.round(animProg*timeLength) - 1;
+                        if (previousVal.current == -1){
+                          previousVal.current = timeLength-1;
+                        }
+                        setAnimProg(((previousVal.current) % timeLength)/timeLength);
+                      }}
+                      aria-label={animate ? 'Pause' : 'Play'}
+                      title={animate ? 'Pause' : 'Play'}
+                    >
+                      { <FaBackwardStep />}
+                    </Button>
+
+                    <Button
+                      variant='default'
+                      size='sm'
+                      className='cursor-pointer mx-2'
+                      onClick={() => setAnimate(!animate)}
+                      aria-label={animate ? 'Pause' : 'Play'}
+                      title={animate ? 'Pause' : 'Play'}
+                    >
+                      {animate ? <FaPause /> : <FaPlay />}
+                    </Button>
+
+                    <Button
+                      disabled={animate}
+                      variant='default'
+                      size='sm'
+                      className='cursor-pointer'
+                      onClick={() => {
+                        previousVal.current = Math.round(animProg*timeLength) + 1;
+                        setAnimProg(((previousVal.current) % timeLength)/timeLength);
+                      }}
+                      aria-label={animate ? 'Pause' : 'Play'}
+                      title={animate ? 'Pause' : 'Play'}
+                    >
+                      { <FaForwardStep />}
+                    </Button>
+                  </div>
+                  
                   <div className='text-[11px] leading-none'>
                     <b>{frameRates[fps]}</b> FPS
                   </div>
