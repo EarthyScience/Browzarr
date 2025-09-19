@@ -62,12 +62,12 @@ export function FixedTicks({
       if (isBig){
         const check = Object.keys(coords).length > 0;
         const firstID = check ? Object.keys(coords)[0] : null
-        const unit = firstID ? parseTimeUnit(coords[firstID].plot.units) : 1;
+        const [unit, offset] = firstID ? parseTimeUnit(coords[firstID].plot.units) : [1, 0];
         const timeStrings = []
         for (let i = 0 ; i < xDimArray.length; i++){
           const timeStamp = Number(xDimArray[i])*unit
           // timeStrings.push(new Date(timeStamp).toDateString())
-          const date = new Date(timeStamp);
+          const date = new Date(timeStamp+offset);
           // const dateString = date.toDateString().replace(/\s(\d{4})$/, '\n$1');
           const dateString = `${date.getDate().toString().padStart(2, '0')} ${months[date.getMonth()]}\n${date.getFullYear()}`;
           // // timeStrings.push(dateString);
