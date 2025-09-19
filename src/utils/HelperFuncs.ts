@@ -3,13 +3,13 @@ import * as THREE from 'three'
 import { useGlobalStore, usePlotStore, useZarrStore, useCacheStore } from './GlobalStates';
 import { decompressSync } from 'fflate';
 
-export function parseTimeUnit(units: string | undefined): [number, number | null] {
+export function parseTimeUnit(units: string | undefined): [number, number] {
     if (units === "Default"){
-        return [1, null];
+        return [1, 0];
     }
 
     if (!units || typeof units !== 'string' || units.trim() === '') {
-      return [  1, null]; 
+      return [1, 0]; 
     }
     
     // Regular expression to match CF time units (e.g., "seconds since 1970-01-01")
@@ -63,7 +63,7 @@ export function parseLoc(input:number, units: string | undefined, verbose: boole
       try{
         const [scale, offset] = parseTimeUnit(units)
         const timeStamp = Number(input) * scale;
-        const date = new Date(timeStamp + (offset ? offset : 0));
+        const date = new Date(timeStamp + offset);
         if (verbose) {
           return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`; // e.g., "18 Aug 2025"
         } else {
