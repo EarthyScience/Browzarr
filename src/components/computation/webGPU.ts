@@ -173,111 +173,45 @@ export async function BufferCopy(inputArray :  ArrayBufferView, shape: number[])
         Error('need a browser that supports WebGPU');
         return;
     }
-    const workGroups = shape.map(e => Math.ceil(e/4));
+   
     const outputSize = shape[0] * shape[1] * shape[2];
-    const shader = /* wgsl */`
-        // Define the input buffer
-        @group(0) @binding(0)
-        var<storage, read> inputBuffer: array<f32>;
-
-        // Define the output buffer
-        @group(0) @binding(1)
-        var<storage, read_write> outputBuffer: array<f32>;
-
-        // Workgroup size matches your dispatch configuration
-        @compute @workgroup_size(4, 4, 4)
-        fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-            // Assuming your 3D data is laid out in a linear buffer,
-            // and you know the dimensions (e.g., width, height, depth)
-            let width: u32 = ${shape[2]};/* set this to your actual width */;
-            let height: u32 = ${shape[1]};/* set this to your actual height */;
-            let depth: u32 = ${shape[0]}u;
-            
-            // Bounds check
-            if (global_id.x >= width || global_id.y >= height || global_id.z >= depth) {
-                return;
-            }
-            
-            // Flatten the 3D index into a 1D index
-            let linear_index = global_id.z * width * height +
-                            global_id.y * width +
-                            global_id.x;
-
-            // Copy data from input to output
-            outputBuffer[linear_index] = inputBuffer[linear_index];
-        }
-    `
-    const computeModule = device.createShaderModule({
-        label: 'reduction compute module',
-        code:shader,
-    });
-
-    const pipeline = device.createComputePipeline({
-        label: 'reduction compute pipeline',
-        layout: 'auto',
-        compute: {
-        module: computeModule,
-        },
-    });
 
     const inputBuffer = device.createBuffer({
         label: 'Input Buffer',
         size: inputArray.byteLength * (hasF16 ? 1 : 2),
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
     });
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
         size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     });
 
-
-
-    const readBuffer = device.createBuffer({
-        label:'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
     // Write Buffers to GPU
     device.queue.writeBuffer(inputBuffer, 0, (hasF16 ? inputArray : new Float32Array(inputArray as Float16Array)) as GPUAllowSharedBufferSource);
 
-
-    const bindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-            { binding: 0, resource: { buffer: inputBuffer } },
-            { binding: 1, resource: { buffer: outputBuffer } },
-        ],
-    });
-
-    const encoder = device.createCommandEncoder({
-        label: 'reduction encoder',
-    });
-    const pass = encoder.beginComputePass({
-        label: 'reduction compute pass',
-    });
-
-    pass.setPipeline(pipeline);
-    pass.setBindGroup(0, bindGroup);
-    pass.dispatchWorkgroups(workGroups[2], workGroups[1], workGroups[0]);
-    pass.end();
-
-    encoder.copyBufferToBuffer(
-    outputBuffer, 0,
-    readBuffer, 0,
-    outputSize * (hasF16 ? 2 : 4)
+    const commandEncoder = device.createCommandEncoder();
+    commandEncoder.copyBufferToBuffer(
+        inputBuffer,      // source
+        0,              // sourceOffset
+        outputBuffer,  // destination
+        0,              // destinationOffset
+        outputSize * (hasF16 ? 2 : 4),      // size
     );
 
-    // Submit work to GPU
-    device.queue.submit([encoder.finish()]);
+    const gpuCommands = commandEncoder.finish();
+
+    // Submit the commands to the GPU queue for execution.
+    device.queue.submit([gpuCommands]);
+
 
     // Map staging buffer to read results
-    await readBuffer.mapAsync(GPUMapMode.READ);
-    const resultArrayBuffer = readBuffer.getMappedRange();
+    await outputBuffer.mapAsync(GPUMapMode.READ);
+    const resultArrayBuffer = outputBuffer.getMappedRange();
     const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
     // Clean up
-    readBuffer.unmap();
+    outputBuffer.unmap();
     return results;
 
 }
