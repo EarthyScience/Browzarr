@@ -356,6 +356,7 @@ type AnalysisState = {
   gpuTime: number | null;
   getBufferSpeed: boolean;
   bufferSpeed: number | null;
+  hasF16: boolean;
 
   setAnalysisMode: (analysisMode: boolean) => void;
   setAxis: (axis: number) => void;
@@ -375,6 +376,7 @@ type AnalysisState = {
   setGpuTime: (gpuTime: number | null) => void;
   setGetBufferSpeed: (getBufferSpeed: boolean) => void;
   setBufferSpeed: (bufferSpeed: number | null) => void;
+  setHasF16: (hasF16: boolean) => void;
 }
 
 export const useAnalysisStore = create<AnalysisState>((set) => ({
@@ -396,6 +398,7 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   gpuTime: null,
   getBufferSpeed: false,
   bufferSpeed: null,
+  hasF16: false,
 
   setGetBufferSpeed: (getBufferSpeed) => set({ getBufferSpeed }),
 
@@ -416,7 +419,8 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   setReverseDirection: (reverseDirection) => set( { reverseDirection} ),
   setAnalysisStore: (analysisStore) => set({ analysisStore }),
   setUseCPU: (useCPU) => set({ useCPU }),
-  setBufferSpeed: (bufferSpeed) => set({ bufferSpeed })
+  setBufferSpeed: (bufferSpeed) => set({ bufferSpeed }),
+  setHasF16: (hasF16) => set({ hasF16 }),
 }));
 
 type ZarrState = {

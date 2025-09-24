@@ -75,6 +75,7 @@ const AnalysisOptions = () => {
     cpuTime,
     gpuTime,
     bufferSpeed,
+    hasF16,
     setUseCPU,
     setExecute,
     setAxis,
@@ -101,6 +102,7 @@ const AnalysisOptions = () => {
     cpuTime: state.cpuTime,
     gpuTime: state.gpuTime,
     bufferSpeed: state.bufferSpeed,
+    hasF16: state.hasF16,
     setUseCPU: state.setUseCPU,
     setExecute: state.setExecute,
     setAxis: state.setAxis,
@@ -234,6 +236,9 @@ const AnalysisOptions = () => {
               webGPUError
             ) : (
               <>
+                {!hasF16 && <p className='text-red-300'>
+                  GPU does not support Float16
+                  </p>}
                 <table style={{ textAlign: 'right' }}>
                   <tbody>
                     <tr>

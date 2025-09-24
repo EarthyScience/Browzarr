@@ -7,7 +7,7 @@ import { useEffect, useMemo } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
 import { MainPanel } from '@/components/ui';
 import { Metadata, Loading, Navbar, Error } from '@/components/ui';
-import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 
 export function LandingHome() {
@@ -26,7 +26,7 @@ export function LandingHome() {
     setTitleDescription: state.setTitleDescription,
   })))
 
-  
+  const {setHasF16} = useAnalysisStore.getState()
 
   const { currentStore, setCurrentStore } = useZarrStore(useShallow(state => ({
     currentStore: state.currentStore,
@@ -58,7 +58,16 @@ export function LandingHome() {
 
     return () => { isMounted = false; };
   }, [currentStore, setZMeta, setVariables, setTitleDescription])
-
+  useEffect(()=>{
+    async function CheckF16(){
+      const adapter = await navigator.gpu?.requestAdapter();
+      const maxSize = adapter?.limits.maxBufferSize;
+      const maxStorage = adapter?.limits.maxStorageBufferBindingSize;
+      const hasF16 = adapter ? adapter.features.has("shader-f16") : false
+      return hasF16;
+    }
+    CheckF16().then(e=> setHasF16(e) )
+  },[])
 
   return (
     <>
