@@ -32,7 +32,6 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
   const selectTS = usePlotStore(state => state.selectTS)
 
   const aspectRatio = width/height;
-  const depthRatio = depth/height;
   const {dimArrays, dimUnits, dimNames, strides, dataShape, setPlotDim, setTimeSeries, updateTimeSeries, setDimCoords, updateDimCoords} = useGlobalStore(useShallow(state => ({
     dimArrays: state.dimArrays,
     dimUnits: state.dimUnits,
@@ -51,13 +50,17 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
   })))
 
   const lastNormal = useRef<number | null> ( null )
-
+  
   const {timeScale, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
     timeScale: state.timeScale,
     getColorIdx: state.getColorIdx,
     incrementColorIdx: state.incrementColorIdx
   })))
 
+  const globalScale = dataShape[2]/500
+  
+  const depthRatio = useMemo(()=>dataShape[0]/dataShape[2]*timeScale,[dataShape, timeScale]);
+  const shapeRatio = useMemo(()=>dataShape[1]/dataShape[2], [dataShape])
   function HandleTimeSeries(event: THREE.Intersection){
       if (!selectTS){
         return
@@ -127,7 +130,7 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
 
     }
   return(
-    <mesh scale={[aspectRatio, 1, depthRatio*timeScale]} onClick={HandleTimeSeries}>
+    <mesh scale={[2*globalScale, 2*shapeRatio*globalScale, 2*depthRatio*timeScale*globalScale]} onClick={HandleTimeSeries}>
         <boxGeometry />
         <meshBasicMaterial transparent opacity={0}/>
     </mesh>
@@ -154,8 +157,7 @@ export const PointCloud = ({textures, ZarrDS} : {textures:PCProps, ZarrDS: ZarrD
       yRange: state.yRange,
       zRange: state.zRange
     })))
-
-    const setError = useErrorStore(state => state.setError)
+    
     const [pointsObj, setPointsObj] = useState<Record<string, number>>({})
     const [pointIDs, setPointIDs] = useState<number[]>(new Array(10).fill(-1))
     const [stride, setStride] = useState<number>(1)
