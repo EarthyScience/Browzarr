@@ -207,8 +207,8 @@ const AnalysisWG = ({setTexture, ZarrDS} : {setTexture : React.Dispatch<React.Se
                 //Future Proof
             }
             else{
-                let thisShape = dataShape.length > 2 ? dataShape.filter((_val,idx)=> idx != analysisDim) : dataShape //This should only trigger with 3D data if an analysisDim was set
-                let thisStrides = strides.length > 2 ? [thisShape[1], 1] : strides
+                const thisShape = dataShape.length > 2 ? dataShape.filter((_val,idx)=> idx != analysisDim) : dataShape //This should only trigger with 3D data if an analysisDim was set
+                const thisStrides = strides.length > 2 ? [thisShape[1], 1] : strides
                 Convolve2D(analysisMode ? analysisArray : dataArray, {shape:thisShape, strides:thisStrides}, kernelOperation, kernelSize).then(newArray=>{
                     if (!newArray){return;}
                     let minVal, maxVal;
