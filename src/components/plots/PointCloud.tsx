@@ -31,7 +31,6 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
   const {setPoints, setStride, setDimWidth} = setters;
   const selectTS = usePlotStore(state => state.selectTS)
 
-  const aspectRatio = width/height;
   const {dimArrays, dimUnits, dimNames, strides, dataShape, setPlotDim, setTimeSeries, updateTimeSeries, setDimCoords, updateDimCoords} = useGlobalStore(useShallow(state => ({
     dimArrays: state.dimArrays,
     dimUnits: state.dimUnits,
@@ -58,6 +57,7 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
   })))
 
   const globalScale = dataShape[2]/500
+  const offset = 1/500; //I don't really understand that. But the cube is off by one pixel in each dimension
   
   const depthRatio = useMemo(()=>dataShape[0]/dataShape[2]*timeScale,[dataShape, timeScale]);
   const shapeRatio = useMemo(()=>dataShape[1]/dataShape[2], [dataShape])
@@ -130,7 +130,7 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
 
     }
   return(
-    <mesh scale={[2*globalScale, 2*shapeRatio*globalScale, 2*depthRatio*timeScale*globalScale]} onClick={HandleTimeSeries}>
+    <mesh scale={[2*globalScale, 2*shapeRatio*globalScale, 2*depthRatio*timeScale*globalScale]} position={[-offset, -offset, offset]} onClick={HandleTimeSeries}>
         <boxGeometry />
         <meshBasicMaterial transparent opacity={0}/>
     </mesh>
