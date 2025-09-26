@@ -23,8 +23,8 @@ const AnalysisWG = ({setTexture, ZarrDS} : {setTexture : React.Dispatch<React.Se
 
     const setPlotType = usePlotStore(state => state.setPlotType)
     const {axis, execute, operation, useTwo, variable2, 
-        valueScalesOrig, kernelSize, kernelDepth, kernelOperation, reverseDirection, analysisStore, analysisMode, analysisArray,
-        setValueScalesOrig, setAnalysisArray, setAnalysisMode} = useAnalysisStore(useShallow(state => ({
+        valueScalesOrig, kernelSize, kernelDepth, kernelOperation, reverseDirection, analysisStore, analysisMode, analysisArray,analysisDim,
+        setValueScalesOrig, setAnalysisArray, setAnalysisMode, setOperation} = useAnalysisStore(useShallow(state => ({
         axis: state.axis,
         execute: state.execute,
         operation: state.operation,
@@ -38,9 +38,11 @@ const AnalysisWG = ({setTexture, ZarrDS} : {setTexture : React.Dispatch<React.Se
         analysisStore: state.analysisStore,
         analysisMode: state.analysisMode,
         analysisArray: state.analysisArray,
+        analysisDim: state.analysisDim,
         setValueScalesOrig: state.setValueScalesOrig,
         setAnalysisArray: state.setAnalysisArray,
-        setAnalysisMode: state.setAnalysisMode
+        setAnalysisMode: state.setAnalysisMode,
+        setOperation: state.setOperation
     })))
 
     const zarrSlice = useZarrStore(state => state.slice)
@@ -75,16 +77,8 @@ const AnalysisWG = ({setTexture, ZarrDS} : {setTexture : React.Dispatch<React.Se
                         }
                         setValueScales({minVal,maxVal})
                     }else{
-                        if (!valueScalesOrig){
                             minVal = valueScales.minVal;
                             maxVal = valueScales.maxVal
-                        }
-                        else{
-                            minVal = valueScalesOrig.minVal;
-                            maxVal = valueScalesOrig.maxVal
-                            setValueScales(valueScalesOrig)
-                            setValueScalesOrig(null)
-                        }
                     }
                     const normed = newArray.map(e=> (e-minVal)/(maxVal-minVal))
                     const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254)); 
@@ -213,8 +207,8 @@ const AnalysisWG = ({setTexture, ZarrDS} : {setTexture : React.Dispatch<React.Se
                 //Future Proof
             }
             else{
-                const thisShape = dataShape.length > 2 ? dataShape.slice(1) : dataShape // This may seem counter-productive since we can't get here if "isFlat". However, if 3D data was flattened the original shapes are still 3D
-                const thisStrides = strides.length > 2 ? strides.slice(1) : strides
+                let thisShape = dataShape.length > 2 ? dataShape.filter((_val,idx)=> idx != analysisDim) : dataShape //This should only trigger with 3D data if an analysisDim was set
+                let thisStrides = strides.length > 2 ? [thisShape[1], 1] : strides
                 Convolve2D(analysisMode ? analysisArray : dataArray, {shape:thisShape, strides:thisStrides}, kernelOperation, kernelSize).then(newArray=>{
                     if (!newArray){return;}
                     let minVal, maxVal;
@@ -225,16 +219,8 @@ const AnalysisWG = ({setTexture, ZarrDS} : {setTexture : React.Dispatch<React.Se
                         }
                         setValueScales({minVal,maxVal})
                     }else{
-                        if (!valueScalesOrig){
                             minVal = valueScales.minVal;
                             maxVal = valueScales.maxVal
-                        }
-                        else{
-                            minVal = valueScalesOrig.minVal;
-                            maxVal = valueScalesOrig.maxVal
-                            setValueScales(valueScalesOrig)
-                            setValueScalesOrig(null)
-                        }
                     }
                     const normed = newArray.map(e=> (e-minVal)/(maxVal-minVal))
                     const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254));

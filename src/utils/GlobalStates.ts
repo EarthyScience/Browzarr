@@ -351,6 +351,7 @@ type AnalysisState = {
   analysisArray: Uint8Array | Float32Array | Float16Array;
   reverseDirection: number;
   analysisStore: string;
+  analysisDim: number | null;
 
   setAnalysisMode: (analysisMode: boolean) => void;
   setAxis: (axis: number) => void;
@@ -365,6 +366,7 @@ type AnalysisState = {
   setAnalysisArray: (analysisArray: Uint8Array | Float32Array | Float16Array) => void;
   setReverseDirection: (reverseDirection: number) => void;
   setAnalysisStore: (analysisStore: string) => void;
+  setAnalysisDim: (analysisDim: number | null) => void;
 }
 
 export const useAnalysisStore = create<AnalysisState>((set) => ({
@@ -381,6 +383,7 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   analysisArray: new Uint8Array(1),
   reverseDirection: 0,
   analysisStore: ESDC,
+  analysisDim: null,
 
   setAnalysisMode: (analysisMode) => set({ analysisMode }),
   setAxis: (axis) => set({ axis }),
@@ -394,7 +397,8 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   setKernelOperation: (kernelOperation) => set({ kernelOperation}),
   setAnalysisArray: (analysisArray) => set({ analysisArray }),
   setReverseDirection: (reverseDirection) => set( { reverseDirection} ),
-  setAnalysisStore: (analysisStore) => set({ analysisStore })
+  setAnalysisStore: (analysisStore) => set({ analysisStore }),
+  setAnalysisDim: (analysisDim) => set({ analysisDim }),
 }));
 
 type ZarrState = {

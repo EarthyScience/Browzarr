@@ -74,8 +74,8 @@ const Colorbar = ({units, valueScales} : {units: string, valueScales: {maxVal: n
         const thisOffset = deltaX  / 100
         const lastMin = prevVals.current.min
         const lastMax = prevVals.current.max
-        setNewMin(lastMin+(range*thisOffset))
-        setNewMax(lastMax+(range*thisOffset))
+        setNewMin(TwoDecimals(lastMin+(range*thisOffset)))
+        setNewMax(TwoDecimals(lastMax+(range*thisOffset)))
 
     };
 
