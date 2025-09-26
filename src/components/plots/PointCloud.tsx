@@ -132,7 +132,7 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
   return(
     <mesh scale={[2*globalScale, 2*shapeRatio*globalScale, 2*depthRatio*globalScale]} position={[-offset, -offset, offset]} onClick={HandleTimeSeries}>
         <boxGeometry />
-        <meshBasicMaterial transparent opacity={.5}/>
+        <meshBasicMaterial transparent opacity={0}/>
     </mesh>
   )
 }
