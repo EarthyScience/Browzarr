@@ -46,13 +46,14 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
       analysisArray: state.analysisArray
     })))
 
-    const {dimArrays,dimNames,dimUnits, timeSeries, dataShape, strides} = useGlobalStore(useShallow(state=>({
+    const {dimArrays,dimNames,dimUnits, timeSeries, dataShape, strides, flipY} = useGlobalStore(useShallow(state=>({
         dimArrays:state.dimArrays,
         dimNames:state.dimNames,
         dimUnits:state.dimUnits,
         timeSeries: state.timeSeries,
         dataShape: state.dataShape,
-        strides: state.strides
+        strides: state.strides,
+        flipY: state.flipY
     })))
 
     const {animate, animProg, cOffset, cScale, selectTS, lonExtent, latExtent, 
@@ -177,18 +178,13 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
 
         //const uv = XYZtoUV(point, texture?.source.data.width, texture?.source.data.height);
         const uv = XYZtoRemap(point, latBounds, lonBounds);
-
         const normal = new THREE.Vector3(0,0,1)
     
         if(ZarrDS){
-          const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv,normal})
-          const plotDim = (normal.toArray()).map((val, idx) => {
-            if (Math.abs(val) > 0) {
-              return idx;
-            }
-            return null;}).filter(idx => idx !== null);
-          setPlotDim(2-plotDim[0]) //I think this 2 is only if there are 3-dims. Need to rework the logic
-    
+          const tsUV = flipY ? new THREE.Vector2(uv.x, 1-uv.y) : uv
+          const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:tsUV,normal})
+          setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
+            
           const coordUV = parseUVCoords({normal:normal,uv:uv})
           let dimCoords = coordUV.map((val,idx)=>val ? dimArrays[idx][Math.round(val*dimArrays[idx].length)] : null)
           const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
@@ -213,7 +209,7 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
               units:thisDimUnits[1]
             },
             plot:{
-              units:dimUnits[2-plotDim[0]]
+              units:dimUnits[0]
             }
           }
           updateDimCoords({[tsID] : dimObj})
