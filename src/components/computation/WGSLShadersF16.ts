@@ -585,14 +585,11 @@ const ConvolutionBoilerPlate = /* WGSL */`
         let xy_radius: i32 = i32(kernelSize/2u);
         let z_radius: i32 = i32(kernelDepth/2u);
 
-        var xyOffset: i32 = 0; //These offsets are for kernelsizes of 1. I didn't wanna rewrite everything else for that case
-        var zOffset: i32 = 0;
-        if (xy_radius == 0){
-            xyOffset = -1;
-        }
-        if (z_radius == 0){
-            zOffset = -1;
-        }
+        let xy_start: i32 = select(-xy_radius, 0, kernelSize == 1u);
+        let xy_end: i32 = select(xy_radius + 1, 1, kernelSize == 1u);
+        let z_start: i32 = select(-z_radius, 0, kernelDepth == 1u);
+        let z_end: i32 = select(z_radius + 1, 1, kernelDepth == 1u);
+
 `
 const ConvolutionBoilerPlate2D = /* WGSL */`
     enable f16;
@@ -639,9 +636,9 @@ const MeanConvolution = /* wgsl */`
         ${ConvolutionBoilerPlate}    
         var sum: f32 = 0.0;
         var count: u32 = 0u;
-        for (var kx: i32 = -xy_radius + xyOffset; kx < xy_radius; kx++) {
-            for (var ky: i32 = -xy_radius + xyOffset; ky < xy_radius; ky++) {
-                for (var kz: i32 = -z_radius + zOffset; kz < z_radius; kz++){
+        for (var kx: i32 = xy_start; kx < xy_end; kx++) {
+            for (var ky: i32 = xy_start; ky < xy_end; ky++) {
+                for (var kz: i32 = z_start; kz < z_end; kz++){
                     let in_coord = vec3<i32>(global_id) + vec3<i32>(kx, ky, kz);
                     if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
                         in_coord.y >= 0 && in_coord.y < i32(ySize) &&
@@ -650,9 +647,14 @@ const MeanConvolution = /* wgsl */`
                         let yOffset = ky * i32(yStride);
                         let zOffset = kz * i32(zStride);
                         let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
-
-                        sum += f32(inputData[u32(newIdx)]);
+                        let newVal = f32(inputData[u32(newIdx)]);
+                        if (newVal != newVal){ //This only evaluates if newVal is NaN
+                            continue;
+                        }
+                        sum += newVal;
                         count ++;
+                    } else {
+                        continue;
                     }
                 }
             }
@@ -665,9 +667,9 @@ const MinConvolution = /* wgsl */`
     ${ConvolutionBoilerPlate}  
         var minVal: f32 = 1e12;
         var count: u32 = 0u;
-        for (var kx: i32 = -xy_radius + xyOffset; kx < xy_radius; kx++) {
-            for (var ky: i32 = -xy_radius + xyOffset; ky < xy_radius; ky++) {
-                for (var kz: i32 = -z_radius + zOffset; kz < z_radius; kz++){
+        for (var kx: i32 = xy_start; kx < xy_end; kx++) {
+            for (var ky: i32 = xy_start; ky < xy_end; ky++) {
+                for (var kz: i32 = z_start; kz < z_end; kz++){
                     let in_coord = vec3<i32>(global_id) + vec3<i32>(kx, ky, kz);
 
                     if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
@@ -695,9 +697,9 @@ const MaxConvolution = /* wgsl */`
 
         var maxVal: f32 = -1e12;
         var count: u32 = 0u;
-        for (var kx: i32 = -xy_radius + xyOffset; kx < xy_radius; kx++) {
-            for (var ky: i32 = -xy_radius + xyOffset; ky < xy_radius; ky++) {
-                for (var kz: i32 = -z_radius + zOffset; kz < z_radius; kz++){
+        for (var kx: i32 = xy_start; kx < xy_end; kx++) {
+            for (var ky: i32 = xy_start; ky < xy_end; ky++) {
+                for (var kz: i32 = z_start; kz < z_end; kz++){
                     let in_coord = vec3<i32>(global_id) + vec3<i32>(kx, ky, kz);
 
                     if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
@@ -723,9 +725,9 @@ const StDevConvolution = /* wgsl */`
     ${ConvolutionBoilerPlate}  
         var sum: f32 = 0.0;
         var count: u32 = 0u;
-        for (var kx: i32 = -xy_radius + xyOffset; kx < xy_radius; kx++) {
-            for (var ky: i32 = -xy_radius + xyOffset; ky < xy_radius; ky++) {
-                for (var kz: i32 = -z_radius + zOffset; kz < z_radius; kz++){
+        for (var kx: i32 = xy_start; kx < xy_end; kx++) {
+            for (var ky: i32 = xy_start; ky < xy_end; ky++) {
+                for (var kz: i32 = z_start; kz < z_end; kz++){
                     let in_coord = vec3<i32>(global_id) + vec3<i32>(kx, ky, kz);
 
                     if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
@@ -750,9 +752,9 @@ const StDevConvolution = /* wgsl */`
 
         var squaredDiffSum: f32 = 0.0;
 
-        for (var kx: i32 = -xy_radius + xyOffset; kx < xy_radius; kx++) {
-            for (var ky: i32 = -xy_radius + xyOffset; ky < xy_radius; ky++) {
-                for (var kz: i32 = -z_radius + zOffset; kz < z_radius; kz++){
+        for (var kx: i32 = xy_start; kx < xy_end; kx++) {
+            for (var ky: i32 = xy_start; ky < xy_end; ky++) {
+                for (var kz: i32 = z_start; kz < z_end; kz++){
                     let in_coord = vec3<i32>(global_id) + vec3<i32>(kx, ky, kz);
 
                     if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
