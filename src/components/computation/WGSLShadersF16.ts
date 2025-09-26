@@ -42,19 +42,31 @@ const MeanReduction = /* wgsl */`
             let cCoord = outX * xStride + outY * yStride;
             for (var z: u32 = 0u; z < dimLength; z++) {
                 let inputIndex = cCoord + (z * zStride);
-                sum += f32(inputData[inputIndex]);
+                let newVal = f32(inputData[u32(inputIndex)]);
+                if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    continue;
+                }
+                sum += newVal;
             }
         } else if (reduceDim == 1u) { // Average along Y
             let cCoord = outX * xStride + outY * zStride;
             for (var y: u32 = 0u; y < dimLength; y++) {
                 let inputIndex = cCoord + (y * yStride);
-                sum += f32(inputData[inputIndex]);
+                let newVal = f32(inputData[u32(inputIndex)]);
+                if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    continue;
+                }
+                sum += newVal;
             }
         } else { // Average along X
             let cCoord = outX * yStride + outY * zStride;
             for (var x: u32 = 0u; x < dimLength; x++) {
                 let inputIndex = cCoord + (x * xStride);
-                sum += f32(inputData[inputIndex]);
+                let newVal = f32(inputData[u32(inputIndex)]);
+                if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    continue;
+                }
+                sum += newVal;
             }
         }
         
@@ -149,20 +161,32 @@ const StDevReduction = /* wgsl */`
         if (reduceDim == 0u) { // Average along Z
             let cCoord = outX * xStride + outY * yStride;
             for (var z: u32 = 0u; z < dimLength; z++) {
-                let inputIndex = cCoord + (z * zStride);
-                sum += f32(inputData[inputIndex]);
+                let inputIndex = cCoord + (x * xStride);
+                let newVal = f32(inputData[u32(inputIndex)]);
+                if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    continue;
+                }
+                sum += newVal;
             }
         } else if (reduceDim == 1u) { // Average along Y
             let cCoord = outX * xStride + outY * zStride;
             for (var y: u32 = 0u; y < dimLength; y++) {
-                let inputIndex = cCoord + (y * yStride);
-                sum += f32(inputData[inputIndex]);
+                let inputIndex = cCoord + (x * xStride);
+                let newVal = f32(inputData[u32(inputIndex)]);
+                if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    continue;
+                }
+                sum += newVal;
             }
         } else { // Average along X
             let cCoord = outX * yStride + outY * zStride;
             for (var x: u32 = 0u; x < dimLength; x++) {
                 let inputIndex = cCoord + (x * xStride);
-                sum += f32(inputData[inputIndex]);
+                let newVal = f32(inputData[u32(inputIndex)]);
+                if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    continue;
+                }
+                sum += newVal;
             }
         }
         
@@ -174,22 +198,34 @@ const StDevReduction = /* wgsl */`
         if (reduceDim == 0u) { // Average along Z
             let cCoord = outX * xStride + outY * yStride;
             for (var z: u32 = 0u; z < dimLength; z++) {
-                let inputIndex = cCoord + (z * zStride);
-                let diff: f32 = mean - f32(inputData[inputIndex]);
+                let inputIndex = cCoord + (x * xStride);
+                let newVal = f32(inputData[u32(inputIndex)]);
+                if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    continue;
+                }
+                let diff: f32 = mean - newVal;
                 squaredDiffSum += diff*diff;
             }
         } else if (reduceDim == 1u) { // Average along Y
             let cCoord = outX * xStride + outY * zStride;
             for (var y: u32 = 0u; y < dimLength; y++) {
-                let inputIndex = cCoord + (y * yStride);
-                let diff: f32 = mean - f32(inputData[inputIndex]);
+                let inputIndex = cCoord + (x * xStride);
+                let newVal = f32(inputData[u32(inputIndex)]);
+                if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    continue;
+                }
+                let diff: f32 = mean - newVal;
                 squaredDiffSum += diff*diff;
             }
         } else { // Average along X
             let cCoord = outX * yStride + outY * zStride;
             for (var x: u32 = 0u; x < dimLength; x++) {
                 let inputIndex = cCoord + (x * xStride);
-                let diff: f32 = mean - f32(inputData[inputIndex]);
+                let newVal = f32(inputData[u32(inputIndex)]);
+                if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    continue;
+                }
+                let diff: f32 = mean - newVal;
                 squaredDiffSum += diff*diff;
             }
         }
@@ -699,8 +735,11 @@ const StDevConvolution = /* wgsl */`
                         let yOffset = ky * i32(yStride);
                         let zOffset = kz * i32(zStride);
                         let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
-
-                        sum += f32(inputData[u32(newIdx)]);
+                        let newVal = f32(inputData[u32(newIdx)]);
+                        if (newVal != newVal){ //This only evaluates if newVal is NaN
+                            continue;
+                        }
+                        sum += newVal;
                         count ++;
                     }
                 }
@@ -723,8 +762,11 @@ const StDevConvolution = /* wgsl */`
                         let yOffset = ky * i32(yStride);
                         let zOffset = kz * i32(zStride);
                         let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
-
-                        let diff: f32 = mean - f32(inputData[u32(newIdx)]);
+                        let newVal = f32(inputData[u32(newIdx)]);
+                        if (newVal != newVal){ //This only evaluates if newVal is NaN
+                            continue;
+                        }
+                        let diff: f32 = mean - newVal;
                         squaredDiffSum += diff*diff;
                     }
                 }

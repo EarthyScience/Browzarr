@@ -96,7 +96,7 @@ void main() {
     }
     
     if (showTransect){
-        gl_PointSize = isValid ? pointScale*40.*globalScale : pointScale;
+        gl_PointSize = isValid ? pointScale*5.*globalScale : pointScale;
     }
     else{
         gl_PointSize =  pointScale;
