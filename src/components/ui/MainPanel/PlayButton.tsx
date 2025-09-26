@@ -11,11 +11,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
+interface PlayButtonProps {
+  onSliceUpdate?: (slice: [number, number | null]) => Promise<boolean>;
+  isUpdating?: boolean;
+  totalTimeLength?: number;
+}
 
 const frameRates = [1, 2, 4, 6, 8, 12, 16, 24, 36, 48, 54, 60, 80, 120]
 
-const PlayInterFace = ({visible}:{visible : boolean}) =>{
-    
+const PlayInterface = ({
+  visible, 
+  onSliceUpdate, 
+  isUpdating = false,
+  totalTimeLength,
+}: {
+  visible: boolean;
+  onSliceUpdate?: (slice: [number, number | null]) => Promise<boolean>;
+  isUpdating?: boolean;
+  totalTimeLength?: number;
+}) => {  
     const {animate, animProg, setAnimate, setAnimProg} = usePlotStore(useShallow(state => ({
         animate: state.animate,
         animProg: state.animProg,
@@ -33,7 +47,8 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
       reFetch: state.reFetch
     })))
     const timeLength = useMemo(()=>dimArrays[0].length,[dimArrays])
-    
+    const effectiveTimeLength = totalTimeLength ?? timeLength;
+
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const previousVal = useRef<number>(0)
     const [fps, setFPS] = useState<number>(5)
@@ -87,7 +102,7 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
                 <Slider
                   value={[Math.round(animProg * timeLength)]}
                   min={0}
-                  max={timeLength-1}
+                  max={effectiveTimeLength-1}
                   step={1}
                   className='flex-1'
                   onValueChange={(vals: number[])=>{
@@ -177,8 +192,8 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
       )      
 }
 
-const PlayButton = () => {
-    const {isFlat, plotOn} = useGlobalStore(useShallow(state => ({
+const PlayButton: React.FC<PlayButtonProps> = ({ onSliceUpdate, isUpdating = false, totalTimeLength }) => {
+    const { isFlat, plotOn } = useGlobalStore(useShallow(state => ({
         isFlat: state.isFlat,
         plotOn: state.plotOn,
     })))
@@ -216,7 +231,12 @@ const PlayButton = () => {
           <span>Animation controls</span>
         </TooltipContent>
       </Tooltip>
-      <PlayInterFace visible={(showOptions && enableCond)}/>
+      <PlayInterface 
+        visible={showOptions && enableCond} 
+        onSliceUpdate={onSliceUpdate}
+        isUpdating={isUpdating}
+        totalTimeLength={totalTimeLength}
+      />
     </>
   )
 }
