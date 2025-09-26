@@ -112,16 +112,8 @@ const AnalysisWG = ({setTexture, ZarrDS} : {setTexture : React.Dispatch<React.Se
                         }
                         setValueScales({minVal,maxVal});
                     }else{
-                        if (!valueScalesOrig){
-                            minVal = valueScales.minVal;
-                            maxVal = valueScales.maxVal;
-                        }
-                        else{
-                            minVal = valueScalesOrig.minVal;
-                            maxVal = valueScalesOrig.maxVal;
-                            setValueScales(valueScalesOrig);
-                            setValueScalesOrig(null);
-                        }
+                        minVal = valueScales.minVal;
+                        maxVal = valueScales.maxVal;
                     }
                     const normed = newArray.map(e=> (e-minVal)/(maxVal-minVal))
                     const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254)); 
