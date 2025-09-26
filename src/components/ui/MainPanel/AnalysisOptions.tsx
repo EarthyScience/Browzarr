@@ -82,7 +82,8 @@ const AnalysisOptions = () => {
     setKernelOperation,
     setAnalysisMode,
     setReverseDirection,
-    setAnalysisStore
+    setAnalysisStore,
+    setAnalysisDim
   } = useAnalysisStore(useShallow(state => ({
     execute: state.execute,
     operation: state.operation,
@@ -104,7 +105,8 @@ const AnalysisOptions = () => {
     setKernelOperation: state.setKernelOperation,
     setAnalysisMode: state.setAnalysisMode,
     setReverseDirection: state.setReverseDirection,
-    setAnalysisStore: state.setAnalysisStore
+    setAnalysisStore: state.setAnalysisStore,
+    setAnalysisDim: state.setAnalysisDim
     })));
 
   const {reFetch, setReFetch} = useZarrStore(useShallow(state => ({
@@ -229,7 +231,7 @@ const AnalysisOptions = () => {
             <>
               {!isFlat && 
                 <Button
-                className="cursor-pointer active:scale-[0.95]"
+                className="cursor-pointer active:scale-[0.95] bg-gray-500"
                 disabled={incompatible}
                 onClick={() => {
                   setUseTwo(!useTwo);
@@ -242,7 +244,6 @@ const AnalysisOptions = () => {
               <table style={{ textAlign: 'right' }}>
                 <tbody>
                   <tr>
-                    
                     <th>Current Variable</th>
                     <td className="text-center w-[100%] align-middle justify-center content-center">
                       <div className='grid grid-cols-[65%_auto] w-[90%] mx-auto'>
@@ -267,7 +268,7 @@ const AnalysisOptions = () => {
                             cursor: analysisMode ? 'pointer' : '',
                           }}
                           disabled={!analysisMode}
-                          onClick={e=>{setReFetch(!reFetch);setAnalysisMode(false)}}
+                          onClick={e=>{setReFetch(!reFetch);setAnalysisMode(false);setAnalysisDim(null)}}
                         >
                           {analysisMode && <CiUndo 
                             size={20}
@@ -310,14 +311,14 @@ const AnalysisOptions = () => {
                 <th>Operation</th>
                 {!useTwo && (
                   <td>
-                    <Select onValueChange={setOperation}>
+                    <Select value={operation == "Default" ? undefined : operation} 
+                      onValueChange={setOperation}>
                       <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
                         <SelectValue
-                          placeholder={operation === 'Default' ? 'Select...' : operation}
+                          placeholder='Select...'
                         />
                       </SelectTrigger>
                       <SelectContent>
-
                         {!isFlat &&
                           <SelectGroup>
                           <SelectLabel>Dimension Reduction</SelectLabel>
@@ -330,7 +331,7 @@ const AnalysisOptions = () => {
                         <SelectGroup>
                           <SelectLabel>{isFlat ? '' : 'Three Dimensional'}</SelectLabel>
                           <SelectItem value="Convolution">Convolution</SelectItem>
-                          {!isFlat && <SelectItem value="CUMSUM3D">CUMSUM</SelectItem>}
+                          {!isFlat && !analysisMode &&<SelectItem value="CUMSUM3D">CUMSUM</SelectItem>}
                         </SelectGroup>
                       </SelectContent>
                     </Select>
@@ -339,10 +340,12 @@ const AnalysisOptions = () => {
                 
                 {useTwo && (
                   <td>
-                    <Select onValueChange={setOperation}>
+                    <Select 
+                      value={operation == "Default" ? undefined : operation} 
+                      onValueChange={setOperation}>
                       <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
                         <SelectValue
-                          placeholder={operation === 'Default' ? 'Select...' : operation}
+                          placeholder='Select...'
                         />
                       </SelectTrigger>
                       <SelectContent>
@@ -381,7 +384,7 @@ const AnalysisOptions = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                          {['CUMSUM3D'].includes(operation) &&
+                          {['CUMSUM3D'].includes(operation) && 
                           <Tooltip delayDuration={300}>
                             <TooltipTrigger asChild>
                               <div style={{width:'50%', display:'flex', alignItems:'center'}}>
@@ -475,8 +478,10 @@ const AnalysisOptions = () => {
                   (operation === 'Convolution' && kernelOperation === 'Default') ||
                   (useTwo && variable2 === 'Default')
                 }
+                variant='pink'
                 onClick={() => {
                   setAxis(newDim)
+                  setAnalysisDim(operation == 'CUMSUM3D' ? null : newDim)
                   setExecute(!execute);
                   setTimeSeries({});
                 }}

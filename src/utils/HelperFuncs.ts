@@ -79,7 +79,12 @@ export function parseLoc(input:number, units: string | undefined, verbose: boole
         
     }
     if ( units.match(/(degree|degrees|deg|°)/i) ){
-        return `${input.toFixed(2)}°`
+        if (input){
+          return `${input.toFixed(2)}°`
+        } else{
+          return input
+        }
+        
     }
     else {
         return input.toFixed(2);
