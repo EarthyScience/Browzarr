@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 
 :root {
-  --background-plot: hsla(0, 0%, 80%, 0.8);
+  --background-plot: white;
   --background-modal: hsla(0, 0%, 80%, 0.8);
   --modal-shadow: hsla(0, 0%, 95%, 0.7);
   --modal-gradient: hsla(0, 0%, 80%, 1);
@@ -19,7 +19,7 @@
   --text-link-hover: hsla(0, 0%, 13%, 1);
   /* added by https://ui.shadcn.com */
   --radius: 0.625rem;
-  --background: rgb(237, 237, 237);
+  --background: white;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -60,9 +60,9 @@
 
 /* Light Theme */
 [data-theme='light'] {
-  --background: rgb(237, 237, 237);
+  --background: white;
   --foreground: hsla(0, 0%, 9%, 1);
-  --background-plot: hsla(0, 5%, 85%, 0.8);
+  --background-plot: white;
   --text-plot: hsl(0, 0%, 2%);
   --background-modal: hsla(0, 0%, 80%, 0.8);
   --modal-shadow: hsla(0, 0%, 95%, 0.7);
