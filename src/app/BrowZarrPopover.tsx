@@ -62,7 +62,7 @@ export function BrowZarrPopover() {
               </Button>
             </Link>
 
-            <div>
+            <div className="py-4">
               <h3 className="text-sm font-medium mb-1">Background</h3>
               <p className="text-sm text-muted-foreground">
                 BrowZarr builds on lessons learned from the earlier prototype{" "}

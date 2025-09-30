@@ -145,11 +145,11 @@ function PointCoords(){
         {`${parseLoc(coords[val]['second'].loc,coords[val]['second'].units)}`}
         <IoCloseCircleSharp 
         onClick={()=>RemoveLine(val)}
-          color='red'
           style={{
             cursor:'pointer',
             zIndex:3
           }}
+          size={24}
         />
       </div>
       ))

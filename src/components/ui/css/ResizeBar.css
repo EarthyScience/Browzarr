@@ -1,7 +1,7 @@
 .resize-bar{
     position: fixed;
     width: 100vw;
-    height: 4px;
+    height: 8px;
     z-index: 5;
     cursor: n-resize;
     background-color: transparent;
