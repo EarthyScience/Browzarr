@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
 import Image from "next/image"
 import { logoBGC_MPI } from "@/assets/index"
-import { FaStar } from "react-icons/fa"
+import { FaStar, FaGithub } from "react-icons/fa"
 
 export function BrowZarrPopover() {
   return (
@@ -48,17 +48,19 @@ export function BrowZarrPopover() {
           </div>
 
           <div className="space-y-4">
-            <Button className="w-full" variant={"pink"}>
-              <Link
-                href="https://github.com/EarthyScience/Browzarr"
-                target="_blank"
-                className="flex items-center justify-center"
-              >
-                <span className="flex items-center gap-2">
-                  <FaStar className="h-4 w-4" /> Star us!
+            <Link
+              href="https://github.com/EarthyScience/Browzarr"
+              target="_blank"
+              className="w-full"
+            >
+              <Button className="w-full" variant={"pink"}>
+                <span className="flex items-center justify-center gap-2">
+                  <FaGithub className="h-4 w-4" />
+                  <FaStar className="h-4 w-4" /> 
+                  Star us!
                 </span>
-              </Link>
-            </Button>
+              </Button>
+            </Link>
 
             <div>
               <h3 className="text-sm font-medium mb-1">Background</h3>
