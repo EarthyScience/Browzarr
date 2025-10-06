@@ -169,11 +169,10 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
                 e.preventDefault();
                 const input = e.currentTarget.elements[0] as HTMLInputElement;
                 setInitStore(input.value);
-                setOpenVariables(true)
               }}
             >
               <Input className="w-[100px]" placeholder="Store URL" />
-              <Button type="submit" variant="outline">
+              <Button type="submit" variant="outline" className='cursor-pointer'>
                 Fetch
               </Button>
             </form>

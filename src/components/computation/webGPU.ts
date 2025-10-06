@@ -3,43 +3,38 @@ import {
   makeStructuredView,
 } from 'webgpu-utils';
 
-import * as Shaders32 from './WGSLShaders';
-import * as Shaders16 from './WGSLShadersF16'
+import { createShaders } from './WGSLShaders';
 
-const operations = {
+
+const ShaderMap = {
+    // Reductions
     Mean: "MeanReduction",
     Min: "MinReduction",
     Max: "MaxReduction",
     StDev: "StDevReduction",
-    CUMSUM: "CUMSUMReduction",
-    LinearSlope: "LinearSlopeReduction"
-}
-
-const kernelOperations3D = {
-    Mean: "MeanConvolution",
-    Min: "MinConvolution",
-    Max: "MaxConvolution",
-    StDev: "StDevConvolution"
-}
-
-const kernelOperations2D = {
-    Mean: "MeanConvolution2D",
-    Min: "MinConvolution2D",
-    Max: "MaxConvolution2D",
-    StDev: "StDevConvolution2D"
-}
-
-const multiVariateOps = {
-    Correlation2D: "Correlation2D",
+    LinearSlope: "LinearSlopeReduction",
+    // 3D Convolutions
+    Mean3D: "MeanConvolution",
+    Min3D: "MinConvolution",
+    Max3D: "MaxConvolution",
+    StDev3D: "StDevConvolution",
+    // 2D Convolutions
+    Mean2D: "MeanConvolution2D",
+    Min2D: "MinConvolution2D",
+    Max2D: "MaxConvolution2D",
+    StDev2D: "StDevConvolution2D",
+    // Multivariate
+    Correlation2D: "CorrelationReduction",
     Correlation3D: "CorrelationConvolution",
     TwoVarLinearSlope2D: "TwoVarLinearSlopeReduction",
     TwoVarLinearSlope3D: "TwoVarLinearSlopeConvolution",
     Covariance2D: "CovarianceReduction",
-    Covariance3D: "CovarianceConvolution"
-}
+    Covariance3D: "CovarianceConvolution",
+    // Special
+    CUMSUM3D: "CUMSUM3D"
+};
 
-
-export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, reduceDim: number, operation: string, ){
+const InitializeDevice = async () => {
     const adapter = await navigator.gpu?.requestAdapter();
     const maxSize = adapter?.limits.maxBufferSize;
     const maxStorage = adapter?.limits.maxStorageBufferBindingSize;
@@ -53,10 +48,18 @@ export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {sha
     }});
     if (!device) {
         Error('need a browser that supports WebGPU');
+        return {device, hasF16};
+    } else{
+        return {device, hasF16}
+    }
+}
+
+export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, reduceDim: number, operation: string, ){
+    const {device, hasF16} = await InitializeDevice();
+    if (!device) { // Redundant check but needed to satisfy typescript that device is not undefined
+        Error('need a browser that supports WebGPU');
         return;
     }
-
-
     const {strides, shape} = dimInfo;
     const [zStride, yStride, xStride] = strides;
 
@@ -64,9 +67,9 @@ export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {sha
     const dimLength = shape[reduceDim]
     const outputSize = thisShape[0] * thisShape[1];
     const workGroups = thisShape.map(e => Math.ceil(e/16)) //We assume the workgroups are 16 threads. We see how many of those 16 thread workgroups are needed for each dimension
-
-    const shaders = hasF16 ? Shaders16 : Shaders32
-    const shaderKey = operations[operation as keyof typeof operations] as keyof typeof shaders;
+    const precision = hasF16 ? 'f16' : 'f32';
+    const shaders = createShaders(precision);
+    const shaderKey = ShaderMap[operation as keyof typeof ShaderMap] as keyof typeof shaders;
     const shader = shaders[shaderKey];
 
     const computeModule = device.createShaderModule({
@@ -163,18 +166,8 @@ export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {sha
 }
 
 export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, operation: string, kernel: {kernelSize: number, kernelDepth: number}){
-    const adapter = await navigator.gpu?.requestAdapter();
-    const maxSize = adapter?.limits.maxBufferSize;
-    const maxStorage = adapter?.limits.maxStorageBufferBindingSize;
-    const hasF16 = adapter ? adapter.features.has("shader-f16") : false
-    const device = hasF16 ? await adapter?.requestDevice({requiredFeatures: ["shader-f16"], requiredLimits: {
-        maxBufferSize: maxSize,
-        maxStorageBufferBindingSize: maxStorage}}) : 
-        await adapter?.requestDevice({requiredLimits: {
-            maxBufferSize: maxSize,
-            maxStorageBufferBindingSize: maxStorage 
-    }});
-    if (!device) {
+    const {device, hasF16} = await InitializeDevice();
+    if (!device) { // Redundant check but needed to satisfy typescript that device is not undefined
         Error('need a browser that supports WebGPU');
         return;
     }
@@ -184,10 +177,10 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
     const [zStride, yStride, xStride] = strides;
     const workGroups = shape.map(e => Math.ceil(e/4)); //We assume the workgroups are 4 threads per dimension. We see how many of those 4 thread workgroups are needed for each dimension
 
-    const shaders = hasF16 ? Shaders16 : Shaders32
-    const shaderKey = kernelOperations3D[operation as keyof typeof kernelOperations3D] as keyof typeof shaders;
+    const precision = hasF16 ? 'f16' : 'f32';
+    const shaders = createShaders(precision);
+    const shaderKey = ShaderMap[operation as keyof typeof ShaderMap] as keyof typeof shaders;
     const shader = shaders[shaderKey];
-    
     const computeModule = device.createShaderModule({
         label: 'convolution compute module',
         code:shader,
@@ -284,18 +277,8 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
 }
 
 export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, reduceDim: number, operation:string){
-    const adapter = await navigator.gpu?.requestAdapter();
-    const maxSize = adapter?.limits.maxBufferSize;
-    const maxStorage = adapter?.limits.maxStorageBufferBindingSize;
-    const hasF16 = adapter ? adapter.features.has("shader-f16") : false
-    const device = hasF16 ? await adapter?.requestDevice({requiredFeatures: ["shader-f16"], requiredLimits: {
-        maxBufferSize: maxSize,
-        maxStorageBufferBindingSize: maxStorage}}) : 
-        await adapter?.requestDevice({requiredLimits: {
-            maxBufferSize: maxSize,
-            maxStorageBufferBindingSize: maxStorage 
-    }});
-    if (!device) {
+   const {device, hasF16} = await InitializeDevice();
+    if (!device) { // Redundant check but needed to satisfy typescript that device is not undefined
         Error('need a browser that supports WebGPU');
         return;
     }
@@ -307,8 +290,9 @@ export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: A
     const outputSize = thisShape[0] * thisShape[1];
     const workGroups = thisShape.map(e => Math.ceil(e/16)) //We assume the workgroups are 16 threads each dimension. We see how many of those 16 thread workgroups are needed for each dimension
 
-    const shaders = hasF16 ? Shaders16 : Shaders32
-    const shaderKey = multiVariateOps[operation as keyof typeof multiVariateOps] as keyof typeof shaders
+    const precision = hasF16 ? 'f16' : 'f32';
+    const shaders = createShaders(precision);
+    const shaderKey = ShaderMap[operation as keyof typeof ShaderMap] as keyof typeof shaders
     const shader = shaders[shaderKey]
 
     const computeModule = device.createShaderModule({
@@ -413,18 +397,8 @@ export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: A
 }
 
 export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, kernel: {kernelSize: number, kernelDepth: number}, operation: string){
-    const adapter = await navigator.gpu?.requestAdapter();
-    const maxSize = adapter?.limits.maxBufferSize;
-    const maxStorage = adapter?.limits.maxStorageBufferBindingSize;
-    const hasF16 = adapter ? adapter.features.has("shader-f16") : false
-    const device = hasF16 ? await adapter?.requestDevice({requiredFeatures: ["shader-f16"], requiredLimits: {
-        maxBufferSize: maxSize,
-        maxStorageBufferBindingSize: maxStorage}}) : 
-        await adapter?.requestDevice({requiredLimits: {
-            maxBufferSize: maxSize,
-            maxStorageBufferBindingSize: maxStorage 
-    }});
-    if (!device) {
+    const {device, hasF16} = await InitializeDevice();
+    if (!device) { // Redundant check but needed to satisfy typescript that device is not undefined
         Error('need a browser that supports WebGPU');
         return;
     }
@@ -435,8 +409,9 @@ export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: A
     const outputSize = shape[0] * shape[1] * shape[2];
     const workGroups = shape.map(e => Math.ceil(e/4)) //We assume the workgroups are 4 threads each dimension. We see how many of those 4 thread workgroups are needed for each dimension
 
-    const shaders = hasF16 ? Shaders16 : Shaders32
-    const shaderKey = multiVariateOps[operation as keyof typeof multiVariateOps] as keyof typeof shaders;
+    const precision = hasF16 ? 'f16' : 'f32';
+    const shaders = createShaders(precision);
+    const shaderKey = ShaderMap[operation as keyof typeof ShaderMap] as keyof typeof shaders;
     const shader = shaders[shaderKey]
 
     const computeModule = device.createShaderModule({
@@ -491,7 +466,7 @@ export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: A
     });
 
     const readBuffer = device.createBuffer({
-        label:'Output Buffer',
+        label:'Read Buffer',
         size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
@@ -543,18 +518,8 @@ export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: A
 }
 
 export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, reduceDim: number, reverse: number){
-    const adapter = await navigator.gpu?.requestAdapter();
-    const maxSize = adapter?.limits.maxBufferSize;
-    const maxStorage = adapter?.limits.maxStorageBufferBindingSize;
-    const hasF16 = adapter ? adapter.features.has("shader-f16") : false
-    const device = hasF16 ? await adapter?.requestDevice({requiredFeatures: ["shader-f16"], requiredLimits: {
-        maxBufferSize: maxSize,
-        maxStorageBufferBindingSize: maxStorage}}) : 
-        await adapter?.requestDevice({requiredLimits: {
-            maxBufferSize: maxSize,
-            maxStorageBufferBindingSize: maxStorage 
-    }});
-    if (!device) {
+    const {device, hasF16} = await InitializeDevice();
+    if (!device) { // Redundant check but needed to satisfy typescript that device is not undefined
         Error('need a browser that supports WebGPU');
         return;
     }
@@ -564,7 +529,8 @@ export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: 
     const [zStride, yStride, xStride] = strides;
     const workGroups = shape.map(e => Math.ceil(e/4)); //We assume the workgroups are 4 threads per dimension. We see how many of those 4 thread workgroups are needed for each dimension
 
-    const shaders = hasF16 ? Shaders16 : Shaders32
+    const precision = hasF16 ? 'f16' : 'f32';
+    const shaders = createShaders(precision);
     const shader = shaders['CUMSUM3D']
 
     const computeModule = device.createShaderModule({
@@ -663,18 +629,8 @@ export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: 
 }
 
 export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, operation: string, kernelSize: number){
-    const adapter = await navigator.gpu?.requestAdapter();
-    const maxSize = adapter?.limits.maxBufferSize;
-    const maxStorage = adapter?.limits.maxStorageBufferBindingSize;
-    const hasF16 = adapter ? adapter.features.has("shader-f16") : false
-    const device = hasF16 ? await adapter?.requestDevice({requiredFeatures: ["shader-f16"], requiredLimits: {
-        maxBufferSize: maxSize,
-        maxStorageBufferBindingSize: maxStorage}}) : 
-        await adapter?.requestDevice({requiredLimits: {
-            maxBufferSize: maxSize,
-            maxStorageBufferBindingSize: maxStorage 
-    }});
-    if (!device) {
+    const {device, hasF16} = await InitializeDevice();
+    if (!device) { // Redundant check but needed to satisfy typescript that device is not undefined
         Error('need a browser that supports WebGPU');
         return;
     }
@@ -683,8 +639,9 @@ export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape
     const [yStride, xStride] = [strides[0], strides[1]];
     const workGroups = [Math.ceil(shape[1]/16), Math.ceil(shape[0]/16)]; //We assume the workgroups are 16 threads per dimension. We see how many of those 16 thread workgroups are needed for each dimension
     
-    const shaders = hasF16 ? Shaders16 : Shaders32
-    const shaderKey = kernelOperations2D[operation as keyof typeof kernelOperations2D] as keyof typeof shaders;
+    const precision = hasF16 ? 'f16' : 'f32';
+    const shaders = createShaders(precision);
+    const shaderKey = ShaderMap[operation as keyof typeof ShaderMap] as keyof typeof shaders;
     const shader = shaders[shaderKey]
 
     const computeModule = device.createShaderModule({
