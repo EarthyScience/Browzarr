@@ -27,6 +27,41 @@ const operations = ['Mean', 'Min', 'Max', 'StDev', 'LinearSlope'];
 const kernelOperations = ['Mean', 'Min', 'Max', 'StDev', 'CUMSUM3D'];
 const multivariate2DOps = ['Correlate2D', 'TwoVarLinearSlope2D']
 
+const singleVarReductionOps = [
+  { value: 'Mean', label: 'Mean' },
+  { value: 'Min', label: 'Min' },
+  { value: 'Max', label: 'Max' },
+  { value: 'StDev', label: 'Standard Deviation' },
+  { value: 'LinearSlope', label: 'Linear Slope' },
+];
+
+const singleVar3DOps = [
+  { value: 'Mean3D', label: 'Mean' },
+  { value: 'Min3D', label: 'Min' },
+  { value: 'Max3D', label: 'Max' },
+  { value: 'StDev3D', label: 'Standard Deviation' },
+];
+
+const singleVar2DOps = [
+  { value: 'Mean2D', label: 'Mean' },
+  { value: 'Min2D', label: 'Min' },
+  { value: 'Max2D', label: 'Max' },
+  { value: 'StDev2D',label: 'Standard Deviation' },
+];
+
+const multiVar2DOps = [
+    { value: 'Correlation2D', label: 'Correlation' },
+    { value: 'TwoVarLinearSlope2D', label: 'Linear Slope' },
+    { value: 'Covariance2D', label: 'Covariance' },
+];
+
+const multiVar3DOps = [
+    { value: 'Correlation3D', label: 'Correlation' },
+    { value: 'TwoVarLinearSlope3D', label: 'Linear Slope' },
+    { value: 'Covariance3D', label: 'Covariance' },
+];
+
+
 const webGPUError = (
   <div className="m-0 p-5 font-sans flex-column justify-center items-center">
     <span className="text-5xl mb-4 block self-center">⚠️</span>
@@ -62,51 +97,26 @@ const AnalysisOptions = () => {
   const [incompatible, setIncompatible] = useState(false); 
   
   const {
-    execute,
-    operation,
-    useTwo,
-    kernelSize,
-    kernelDepth,
-    kernelOperation,
-    axis,
-    variable2,
-    analysisMode,
+    execute, operation, useTwo, kernelSize, kernelDepth,
+    kernelOperation, axis, variable2, analysisMode,
     reverseDirection,
-    setExecute,
-    setAxis,
-    setOperation,
-    setUseTwo,
-    setVariable2,
-    setKernelSize,
-    setKernelDepth,
-    setKernelOperation,
-    setAnalysisMode,
-    setReverseDirection,
-    setAnalysisStore,
+    setExecute, setAxis, setOperation, setUseTwo,
+    setVariable2, setKernelSize, setKernelDepth,
+    setKernelOperation, setAnalysisMode,
+    setReverseDirection, setAnalysisStore,
     setAnalysisDim
   } = useAnalysisStore(useShallow(state => ({
-    execute: state.execute,
-    operation: state.operation,
-    useTwo: state.useTwo,
-    kernelSize: state.kernelSize,
-    kernelDepth: state.kernelDepth,
-    kernelOperation: state.kernelOperation,
-    axis: state.axis,
-    variable2: state.variable2,
-    analysisMode: state.analysisMode,
-    reverseDirection: state.reverseDirection,
-    setExecute: state.setExecute,
-    setAxis: state.setAxis,
-    setOperation: state.setOperation,
-    setUseTwo: state.setUseTwo,
-    setVariable2: state.setVariable2,
-    setKernelSize: state.setKernelSize,
-    setKernelDepth: state.setKernelDepth,
-    setKernelOperation: state.setKernelOperation,
-    setAnalysisMode: state.setAnalysisMode,
-    setReverseDirection: state.setReverseDirection,
-    setAnalysisStore: state.setAnalysisStore,
-    setAnalysisDim: state.setAnalysisDim
+    execute: state.execute, operation: state.operation,
+    useTwo: state.useTwo, kernelSize: state.kernelSize,
+    kernelDepth: state.kernelDepth, kernelOperation: state.kernelOperation,
+    axis: state.axis, variable2: state.variable2,
+    analysisMode: state.analysisMode, reverseDirection: state.reverseDirection,
+    setExecute: state.setExecute, setAxis: state.setAxis,
+    setOperation: state.setOperation, setUseTwo: state.setUseTwo,
+    setVariable2: state.setVariable2, setKernelSize: state.setKernelSize,
+    setKernelDepth: state.setKernelDepth, setKernelOperation: state.setKernelOperation,
+    setAnalysisMode: state.setAnalysisMode, setReverseDirection: state.setReverseDirection,
+    setAnalysisStore: state.setAnalysisStore, setAnalysisDim: state.setAnalysisDim
     })));
 
   const {reFetch, setReFetch} = useZarrStore(useShallow(state => ({
@@ -118,21 +128,19 @@ const AnalysisOptions = () => {
   
   useEffect(() => {
     const checkWebGPU = async () => {
-    if (!navigator.gpu) {
-        setShowError(true);
-        return;
-    }
-
-    try {
-        await navigator.gpu.requestAdapter();
-        setShowError(false);
-    } catch {
-        setShowError(true);
-    }
+      if (!navigator.gpu) {
+          setShowError(true);
+          return;
+      }
+      try {
+          await navigator.gpu.requestAdapter();
+          setShowError(false);
+      } catch {
+          setShowError(true);
+      }
     };
-
     checkWebGPU();
-    }, [plotOn]);
+  }, [plotOn]);
 
 
   useEffect(()=>{ // Changing stores makes it so you can't use two variable operations. 
@@ -170,14 +178,14 @@ const AnalysisOptions = () => {
   },[axis])
 
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
-    useEffect(() => {
-        const handleResize = () => {
-        setPopoverSide(window.innerWidth < 768 ? "top" : "left");
-        };
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
+  useEffect(() => {
+      const handleResize = () => {
+      setPopoverSide(window.innerWidth < 768 ? "top" : "left");
+      };
+      handleResize();
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   function HandleKernelNums(e: string){
     const newVal = parseInt(e);
@@ -188,7 +196,7 @@ const AnalysisOptions = () => {
       return newVal
     }
   }
-
+  console.log(kernelOperation)
   return (
     <>
       <Popover>
@@ -229,6 +237,7 @@ const AnalysisOptions = () => {
             webGPUError
           ) : (
             <>
+              {/*  */}
               {!isFlat && 
                 <Button
                 className="cursor-pointer active:scale-[0.95] bg-gray-500"
@@ -243,6 +252,7 @@ const AnalysisOptions = () => {
 
               <table style={{ textAlign: 'right' }}>
                 <tbody>
+                  {/* Current Plotted Variable */}
                   <tr>
                     <th>Current Variable</th>
                     <td className="text-center w-[100%] align-middle justify-center content-center">
@@ -281,8 +291,8 @@ const AnalysisOptions = () => {
                           {analysisMode ? 'Reset' : variable}
                         </button>
                       </div>
-                </td>
-              </tr>
+                    </td>
+                  </tr>
               {useTwo && <>
               <tr>
                 <th>Second Variable</th>
@@ -311,8 +321,7 @@ const AnalysisOptions = () => {
                 <th>Operation</th>
                 {!useTwo && (
                   <td>
-                    <Select value={operation == "Default" ? undefined : operation} 
-                      onValueChange={setOperation}>
+                    <Select onValueChange={setOperation}>
                       <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
                         <SelectValue
                           placeholder='Select...'
@@ -322,9 +331,9 @@ const AnalysisOptions = () => {
                         {!isFlat &&
                           <SelectGroup>
                           <SelectLabel>Dimension Reduction</SelectLabel>
-                          {operations.map((op, idx) => (
-                            <SelectItem key={idx} value={op}>
-                              {op}
+                          {singleVarReductionOps.map((op, idx) => (
+                            <SelectItem key={idx} value={op.value}>
+                              {op.label}
                             </SelectItem>
                           ))}
                         </SelectGroup>}
@@ -337,7 +346,6 @@ const AnalysisOptions = () => {
                     </Select>
                   </td>
                 )}
-                
                 {useTwo && (
                   <td>
                     <Select 
@@ -351,24 +359,24 @@ const AnalysisOptions = () => {
                       <SelectContent>
                         <SelectGroup>
                           <SelectLabel>Dimension Reduction</SelectLabel>
-                          <SelectItem value="Correlation2D">Correlation</SelectItem>
-                          <SelectItem value="TwoVarLinearSlope2D">Linear Slope</SelectItem>
-                          <SelectItem value="Covariance2D">Covariance</SelectItem>
+                          {multiVar2DOps.map((op, idx) => (
+                            <SelectItem key={idx} value={op.value}>
+                              {op.label}
+                            </SelectItem>
+                          ))}
                         </SelectGroup>
 
                         <SelectGroup>
                           <SelectLabel>Three Dimensional</SelectLabel>
-                          <SelectItem value="Correlation3D">Correlation</SelectItem>
-                          <SelectItem value="TwoVarLinearSlope3D">Linear Slope</SelectItem>
-                          <SelectItem value="Covariance3D">Covariance</SelectItem>
+                          <SelectItem value="Convolution">Convolution</SelectItem>
                         </SelectGroup>
                       </SelectContent>
                     </Select>
                   </td>
                 )}
               </tr>
-                  {!['Convolution', 'Correlation3D', 'Default', 'Covariance3D', 'TwoVarLinearSlope3D'].includes(operation) && //Hide if NOT in left arrays
-                      (
+                  {[...singleVarReductionOps.map(op => op.value), ...multiVar2DOps.map(op => op.value), 'CUMSUM3D'].includes(operation) && 
+                    (
                       <tr>
                         <th>Axis</th>
                         <td style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -399,75 +407,82 @@ const AnalysisOptions = () => {
                           }
                         </td>
                       </tr>
-                    )}
-                  {['Convolution' ,'Correlation3D', 'Covariance3D', 'TwoVarLinearSlope3D'].includes(operation) && ( //Show if IN left arrays
+                    )
+                  }
+                  {operation == 'Convolution' &&
                     <>
-
-                      {operation == 'Convolution' &&
-                        <tr>
-                        <th>Kernel Op.</th>
-                        <td>
-                          <Select onValueChange={setKernelOperation}>
-                            <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
-                              <SelectValue
-                                placeholder={
-                                  kernelOperation === 'Default' ? 'Select...' : kernelOperation
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {kernelOperations.map((kernelOp, idx) => {
-                                if ( kernelOp == 'CUMSUM3D'){
-                                  return null;
-                                }else{
-                                  return (
-                                  <SelectItem key={idx} value={kernelOp}>
-                                    {kernelOp}
+                    <tr>
+                      <th>Kernel Op.</th>
+                      <td>
+                        <Select onValueChange={setKernelOperation}>
+                          <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
+                            <SelectValue
+                              placeholder={
+                                kernelOperation === 'Default' ? 'Select...' : kernelOperation
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {useTwo && multiVar3DOps.map((op, idx) =>  (
+                                <SelectItem key={idx} value={op.value}>
+                                  {op.label}
+                                </SelectItem>
+                                )
+                            )}
+                            {!useTwo && isFlat ? 
+                                singleVar2DOps.map((op, idx) =>  (
+                                  <SelectItem key={idx} value={op.value}>
+                                    {op.label}
                                   </SelectItem>
-                                  )
-                                }              
-                              })}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                      </tr>}
-                      <tr>
-                        <th style={{padding:'0px 12px'}}>Kernel Size</th>
-                        <td>
-                          <table style={{ width: '100%', tableLayout: 'fixed' }}>
-                            <tbody>
-                              {!isFlat &&<tr>
-                                <td style={{ textAlign: 'center' }}>Size</td>
-                                  <td style={{ textAlign: 'center' }}>Depth</td>
-                              </tr>}
-                              <tr>
-                                <td style={{ textAlign: 'center', padding:'0px 12px'}}>
-                                  <Input type='number' min='1' step='2' value={String(kernelSize)} 
-                                    onChange={e=>setKernelSize(parseInt(e.target.value))}
-                                    onBlur={e=>setKernelSize(HandleKernelNums(e.target.value))}
-                                  />
-                                </td>
-                                {!isFlat &&
-                                  <td  style={{ textAlign: 'center', padding:'0px 12px' }}>
-                                  <Input type='number' min='1' step='2' value={String(kernelDepth)} 
-                                    onChange={e=>setKernelDepth(parseInt(e.target.value))}
-                                    onBlur={e=>setKernelDepth(HandleKernelNums(e.target.value))}
-                                  />
-                                </td>}
-                              </tr>
-                            </tbody>
-                          </table>
-                        </td>
-                      </tr>
-                      <tr >
-                        <td/>
-                        <th >
-                              <KernelVisualizer size={Math.min(kernelSize,15)} depth={Math.min(kernelDepth, 15)} />
-                        </th>
-                      </tr>
-                      
+                                )) 
+                                :
+                                singleVar3DOps.map((op, idx) =>  (
+                                  <SelectItem key={idx} value={op.value}>
+                                    {op.label}
+                                  </SelectItem>
+                                ))
+                            }
+                          </SelectContent>
+                        </Select>
+                      </td>
+                    </tr>
+                  
+                    <tr>
+                      <th style={{padding:'0px 12px'}}>Kernel Size</th>
+                      <td>
+                        <table style={{ width: '100%', tableLayout: 'fixed' }}>
+                          <tbody>
+                            {!isFlat &&<tr>
+                              <td style={{ textAlign: 'center' }}>Size</td>
+                                <td style={{ textAlign: 'center' }}>Depth</td>
+                            </tr>}
+                            <tr>
+                              <td style={{ textAlign: 'center', padding:'0px 12px'}}>
+                                <Input type='number' min='1' step='2' value={String(kernelSize)} 
+                                  onChange={e=>setKernelSize(parseInt(e.target.value))}
+                                  onBlur={e=>setKernelSize(HandleKernelNums(e.target.value))}
+                                />
+                              </td>
+                              {!isFlat &&
+                                <td  style={{ textAlign: 'center', padding:'0px 12px' }}>
+                                <Input type='number' min='1' step='2' value={String(kernelDepth)} 
+                                  onChange={e=>setKernelDepth(parseInt(e.target.value))}
+                                  onBlur={e=>setKernelDepth(HandleKernelNums(e.target.value))}
+                                />
+                              </td>}
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr >
+                      <td/>
+                      <th >
+                            <KernelVisualizer size={Math.min(kernelSize,15)} depth={Math.min(kernelDepth, 15)} />
+                      </th>
+                    </tr>
                     </>
-                  )}
+                  }
                 </tbody>
               </table>
 
