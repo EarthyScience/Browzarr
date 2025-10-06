@@ -109,7 +109,7 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
                 case 'Mean2D': case 'Min2D': case 'Max2D': case 'StDev2D':
                     const shape2D = dataShape.length > 2 ? dataShape.filter((_, idx) => idx !== analysisDim) : dataShape;
                     const strides2D = strides.length > 2 ? [shape2D[1], 1] : strides;
-                    newArray = await Convolve2D(inputArray, { shape: shape2D, strides: strides2D }, currentOperation.replace('2D', ''), kernelSize);
+                    newArray = await Convolve2D(inputArray, { shape: shape2D, strides: strides2D }, currentOperation, kernelSize);
                     is3DResult = false;
                     break;
 
@@ -158,7 +158,6 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
                 ({ minVal, maxVal } = valueScales);
             }
             setValueScales({ minVal, maxVal });
-
             // --- Texture creation logic ---
             const range = maxVal - minVal;
             const normed = newArray.map(e => (e - minVal) / (range === 0 ? 1 : range));
@@ -171,7 +170,7 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
                 newTexture.minFilter = THREE.NearestFilter;
                 newTexture.magFilter = THREE.NearestFilter;
             } else {
-                const thisShape = dataShape.filter((_, idx) => idx !== axis);
+                const thisShape = dataShape.length > 2 ? dataShape.filter((_, idx) => idx !== axis) : dataShape;
                 newTexture = new THREE.DataTexture(textureData, thisShape[1], thisShape[0], THREE.RedFormat, THREE.UnsignedByteType);
             }
             newTexture.needsUpdate = true;

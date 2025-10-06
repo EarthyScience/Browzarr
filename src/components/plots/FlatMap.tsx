@@ -82,7 +82,6 @@ const FlatMap = ({texture, infoSetters} : {texture : THREE.DataTexture | THREE.D
         uniforms.cScale.value = cScale;
       }
     },[cScale, cOffset, texture, colormap, animProg, nanColor, nanTransparency])
-
     useEffect(()=>{
         geometry.dispose()
     },[geometry])
@@ -104,7 +103,6 @@ const FlatMap = ({texture, infoSetters} : {texture : THREE.DataTexture | THREE.D
         coords.current = isFlat ? analysisMode ? [analysisDims[0][yIdx], analysisDims[1][xIdx]] : [dimArrays[0][yIdx], dimArrays[1][xIdx]] : [dimArrays[1][yIdx], dimArrays[2][xIdx]]
       }
     }, [sampleArray, dimArrays, animProg]);
-
   return (
     <>
     <mesh 

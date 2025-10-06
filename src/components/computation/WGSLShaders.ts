@@ -260,7 +260,7 @@ export const createShaders = (precision: Precision) => {
             if (reduceDim == 0u) { // Average along Z
                 let cCoord = outX * xStride + outY * yStride;
                 for (var z: u32 = 0u; z < dimLength; z++) {
-                    let inputIndex = cCoord + (x * xStride);
+                    let inputIndex = cCoord + (z * zStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (newVal != newVal){ //This only evaluates if newVal is NaN
                         continue;
@@ -270,7 +270,7 @@ export const createShaders = (precision: Precision) => {
             } else if (reduceDim == 1u) { // Average along Y
                 let cCoord = outX * xStride + outY * zStride;
                 for (var y: u32 = 0u; y < dimLength; y++) {
-                    let inputIndex = cCoord + (x * xStride);
+                    let inputIndex = cCoord + (y * yStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (newVal != newVal){ //This only evaluates if newVal is NaN
                         continue;
@@ -297,7 +297,7 @@ export const createShaders = (precision: Precision) => {
             if (reduceDim == 0u) { // Average along Z
                 let cCoord = outX * xStride + outY * yStride;
                 for (var z: u32 = 0u; z < dimLength; z++) {
-                    let inputIndex = cCoord + (x * xStride);
+                    let inputIndex = cCoord + (z * zStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (newVal != newVal){ //This only evaluates if newVal is NaN
                         continue;
@@ -308,7 +308,7 @@ export const createShaders = (precision: Precision) => {
             } else if (reduceDim == 1u) { // Average along Y
                 let cCoord = outX * xStride + outY * zStride;
                 for (var y: u32 = 0u; y < dimLength; y++) {
-                    let inputIndex = cCoord + (x * xStride);
+                    let inputIndex = cCoord + (y * yStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (newVal != newVal){ //This only evaluates if newVal is NaN
                         continue;
@@ -458,7 +458,6 @@ export const createShaders = (precision: Precision) => {
     `,
 
     // #endregion
-
 
     // #region TWO VARIABLE REDUCTION SHADERS
     TwoVarLinearSlopeReduction: /* wgsl */`
@@ -730,7 +729,6 @@ export const createShaders = (precision: Precision) => {
         }
     `,
     // #endregion
-
 
     // #region CONVOLUTION SHADERS
     MeanConvolution: /* wgsl */`
@@ -1326,7 +1324,6 @@ export const createShaders = (precision: Precision) => {
         }
     `,
     // #endregion
-
 
     CUMSUM3D: /* wgsl */`
         ${enableF16}

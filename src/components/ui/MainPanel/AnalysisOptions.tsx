@@ -23,10 +23,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const operations = ['Mean', 'Min', 'Max', 'StDev', 'LinearSlope'];
-const kernelOperations = ['Mean', 'Min', 'Max', 'StDev', 'CUMSUM3D'];
-const multivariate2DOps = ['Correlate2D', 'TwoVarLinearSlope2D']
-
 const singleVarReductionOps = [
   { value: 'Mean', label: 'Mean' },
   { value: 'Min', label: 'Min' },
@@ -62,8 +58,7 @@ const multiVar3DOps = [
 ];
 
 
-const webGPUError = (
-  <div className="m-0 p-5 font-sans flex-column justify-center items-center">
+const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center items-center">
     <span className="text-5xl mb-4 block self-center">⚠️</span>
     <h1 className="text-2xl font-bold mb-4">WebGPU Not Available</h1>
     <p className="text-base leading-relaxed mb-1 opacity-95">
@@ -80,7 +75,6 @@ const webGPUError = (
       </ul>
     </div>
   </div>
-);
 
 const AnalysisOptions = () => {
   const {plotOn, variable, variables, dimNames, initStore, isFlat, setTimeSeries} = useGlobalStore(useShallow(state => ({
@@ -196,7 +190,7 @@ const AnalysisOptions = () => {
       return newVal
     }
   }
-  console.log(kernelOperation)
+
   return (
     <>
       <Popover>
@@ -299,7 +293,7 @@ const AnalysisOptions = () => {
                 <td>
                     <Select onValueChange={setVariable2}>
                       <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
-                        <SelectValue placeholder={variable2 == 'Default' ? "Select..." : variable2} />
+                        <SelectValue placeholder={ "Select..."} />
                       </SelectTrigger>
                       <SelectContent>
                         {variables.map((iVar, idx) => { //Dont allow correlation of two variables
@@ -321,7 +315,7 @@ const AnalysisOptions = () => {
                 <th>Operation</th>
                 {!useTwo && (
                   <td>
-                    <Select onValueChange={setOperation}>
+                    <Select value={operation} onValueChange={setOperation}>
                       <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
                         <SelectValue
                           placeholder='Select...'
@@ -349,7 +343,7 @@ const AnalysisOptions = () => {
                 {useTwo && (
                   <td>
                     <Select 
-                      value={operation == "Default" ? undefined : operation} 
+                      value={operation} 
                       onValueChange={setOperation}>
                       <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
                         <SelectValue
@@ -375,7 +369,7 @@ const AnalysisOptions = () => {
                   </td>
                 )}
               </tr>
-                  {[...singleVarReductionOps.map(op => op.value), ...multiVar2DOps.map(op => op.value), 'CUMSUM3D'].includes(operation) && 
+                  {[...singleVarReductionOps.map(op => op.value), ...multiVar2DOps.map(op => op.value), 'CUMSUM3D'].includes(operation) && !isFlat &&
                     (
                       <tr>
                         <th>Axis</th>

@@ -634,7 +634,6 @@ export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape
         Error('need a browser that supports WebGPU');
         return;
     }
-
     const {strides, shape} = dimInfo;
     const outputSize = shape[0] * shape[1];
     const [yStride, xStride] = [strides[0], strides[1]];
