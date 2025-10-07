@@ -90,7 +90,11 @@ function DecompressArray(compressed : Uint8Array){
 	return floatArray
 }
 
-
+interface Slices{
+	xSlice: [number, number | null],
+	ySlice: [number, number | null],
+	zSlice: [number, number | null]
+}
 interface TimeSeriesInfo{
 	uv:THREE.Vector2,
 	normal:THREE.Vector3
@@ -113,12 +117,12 @@ export class ZarrDataset{
 		this.chunkShape = [1, 1, 1]
 	}
 
-	async GetArray(variable: string, slice: [number, number | null]){
+	async GetArray(variable: string, slices: Slices){
 
 		const {is4D, idx4D, initStore, setProgress, setStrides, setDownloading} = useGlobalStore.getState();
 		const {compress, setCurrentChunks, setArraySize} = useZarrStore.getState()
 		const {cache} = useCacheStore.getState();
-
+		const {xSlice, ySlice, zSlice} = slices
 		//Check if cached
 		this.variable = variable;
 		if (cache.has(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`)){
@@ -190,87 +194,99 @@ export class ZarrDataset{
 				setDownloading(true)
 				setProgress(0)
 
-				const startIdx = Math.floor(slice[0]/chunkShape[0])
-				const endIdx = slice[1] ? Math.ceil(slice[1]/chunkShape[0]) : is4D ? Math.ceil(outVar.shape[1]/chunkShape[0]) : Math.ceil(outVar.shape[0]/chunkShape[0]) //If Slice[1] is null, use the end of the array
-				const chunkCount = endIdx-startIdx
-				const timeSize = is4D ? outVar.shape[2]*outVar.shape[3] : outVar.shape[1]*outVar.shape[2]
-				const arraySize = (endIdx-startIdx)*chunkShape[0]*timeSize
+				const zStartIdx = Math.floor(zSlice[0]/chunkShape[0])
+				const zEndIdx = zSlice[1] ? Math.ceil(zSlice[1]/chunkShape[0]) : is4D ? Math.ceil(outVar.shape[1]/chunkShape[0]) : Math.ceil(outVar.shape[0]/chunkShape[0]) //If Slice[1] is null, use the end of the array
+				const zChunkCount = zEndIdx-zStartIdx
+				const yStartIdx = Math.floor(ySlice[0]/chunkShape[1])
+				const yEndIdx = ySlice[1] ? Math.ceil(ySlice[1]/chunkShape[1]) : is4D ? Math.ceil(outVar.shape[2]/chunkShape[1]) : Math.ceil(outVar.shape[1]/chunkShape[1])
+				const yChunkCount = yEndIdx - yStartIdx
+				const xStartIdx = Math.floor(xSlice[0]/chunkShape[2])
+				const xEndIdx = xSlice[1] ? Math.ceil(xSlice[1]/chunkShape[2]) : is4D ? Math.ceil(outVar.shape[3]/chunkShape[2]) : Math.ceil(outVar.shape[2]/chunkShape[2])
+				const xChunkCount = xEndIdx - xStartIdx
+				const chunkCount = zChunkCount*yChunkCount*xChunkCount
+
+				const arraySize = chunkShape[0]*zChunkCount*chunkShape[1]*yChunkCount*chunkShape[2]*xChunkCount // Total size of the output array
 				setArraySize(arraySize) // This is used for the getcurrentarray function
 
-				shape = is4D ? [(endIdx-startIdx)*chunkShape[0], outVar.shape[2],outVar.shape[3]] :
-				[(endIdx-startIdx)*chunkShape[0], outVar.shape[1],outVar.shape[2]]
-
+				shape =  [zChunkCount*chunkShape[0], chunkShape[1]*yChunkCount, chunkShape[2]*xChunkCount] 
 				typedArray = new Float16Array(arraySize);
 				let accum = 0;
-				let iter = 1;
-				const chunkIDs = []
+				let iter = 1; // For progress bar
+				const chunkIDs: string[] = []
 				const rescaleIDs = [] // These are the downloaded chunks that need to be rescaled
 
-				for (let i= startIdx ; i < endIdx ; i++){ // Iterate through chunks we need
-					const cacheName = is4D ? `${initStore}_${idx4D}_${variable}_chunk_${i}` : `${initStore}_${variable}_chunk_${i}`
-					chunkIDs.push(i) // identify which chunks to use when recombining cache for getcurrentarray function
-					if (this.cache.has(cacheName)){
-						chunk = cache.get(cacheName)
-						setStrides(chunk.stride)
-						const chunkData = chunk.compressed ? DecompressArray(chunk.data) : chunk.data // Decompress if needed
-						typedArray.set(chunkData,accum)
-						setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
-						accum += chunk.data.length;
-						iter ++;
-					}
-					else{
-						// Download Chunk
-						for (let attempt = 0; attempt <= maxRetries; attempt++) {
-							try {
-								chunk = await zarr.get(outVar, is4D ? [idx4D , zarr.slice(i*chunkShape[0], (i+1)*chunkShape[0]), null, null] : [zarr.slice(i*chunkShape[0], (i+1)*chunkShape[0]), null, null])
-								break; // If successful, exit the loop
-							} catch (error) {
-								// If this is the final attempt, handle the error
-								if (attempt === maxRetries) {
-									useErrorStore.getState().setError('zarrFetch')
-									useGlobalStore.getState().setShowLoading(false)
-									setDownloading(false)
-									setProgress(0)
-									throw new ZarrError(`Failed to fetch chunk ${i} for variable ${variable}`, error);
+				for (let z= zStartIdx ; z < zEndIdx ; z++){ // Iterate through chunks we need
+					for (let y= yStartIdx ; y < yEndIdx ; y++){
+						for (let x= xStartIdx ; x < xEndIdx ; x++){
+							const chunkID = `z${z}_y${y}_x${x}`
+							const cacheName = is4D ? `${initStore}_${idx4D}_${variable}_chunk_${chunkID}` : `${initStore}_${variable}_chunk_${chunkID}`
+							chunkIDs.push(chunkID) // identify which chunks to use when recombining cache for getcurrentarray function
+							if (this.cache.has(cacheName)){
+								chunk = cache.get(cacheName)
+								setStrides(chunk.stride)
+								const chunkData = chunk.compressed ? DecompressArray(chunk.data) : chunk.data // Decompress if needed
+								typedArray.set(chunkData,accum)
+								setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
+								accum += chunk.data.length;
+								iter ++;
+							}
+							else{
+								// Download Chunk
+								for (let attempt = 0; attempt <= maxRetries; attempt++) {
+									try {
+										chunk = await zarr.get(outVar, is4D ? 
+											[idx4D , zarr.slice(z*chunkShape[0], (z+1)*chunkShape[0]), zarr.slice(y*chunkShape[1], (y+1)*chunkShape[1]), zarr.slice(x*chunkShape[2], (x+1)*chunkShape[2])] : 
+											[zarr.slice(z*chunkShape[0], (z+1)*chunkShape[0]), zarr.slice(y*chunkShape[1], (y+1)*chunkShape[1]), zarr.slice(x*chunkShape[2], (x+1)*chunkShape[2])])
+										break; // If successful, exit the loop
+									} catch (error) {
+										// If this is the final attempt, handle the error
+										if (attempt === maxRetries) {
+											useErrorStore.getState().setError('zarrFetch')
+											useGlobalStore.getState().setShowLoading(false)
+											setDownloading(false)
+											setProgress(0)
+											throw new ZarrError(`Failed to fetch chunk ${i} for variable ${variable}`, error);
+										}
+										
+										// Wait before retrying (except on the last attempt which we've already handled above)
+										await new Promise(resolve => setTimeout(resolve, retryDelay));
+									}
+								}	
+								if (chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
+									throw new Error("BigInt arrays are not supported for conversion to Float32Array.");
+								} 
+								const [chunkF16, newScalingFactor] = ToFloat16(chunk.data as Float32Array, scalingFactor)
+								if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
+									if (scalingFactor == null || newScalingFactor > scalingFactor){ 
+										const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
+										RescaleArray(typedArray, thisScaling)
+										scalingFactor = newScalingFactor
+										for (const id of rescaleIDs){ // Set new scalingFactor on the chunks
+											const tempName = replaceChunkNumber(cacheName, id)
+											const tempChunk = cache.get(tempName)
+											tempChunk.scaling = scalingFactor
+											RescaleArray(tempChunk.data, thisScaling)
+											cache.set(tempName, tempChunk)
+										}
+									}
 								}
+								typedArray.set(chunkF16,accum)
+								const cacheChunk = {
+									data: compress ? CompressArray(chunkF16, 7) : chunkF16,
+									shape: chunk.shape,
+									stride: chunk.stride,
+									scaling: scalingFactor,
+									compressed: compress
+								}
+								cache.set(cacheName,cacheChunk)
+								accum += chunk.data.length;
+								setStrides(chunk.stride)
+								setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
+								iter ++;
 								
-								// Wait before retrying (except on the last attempt which we've already handled above)
-								await new Promise(resolve => setTimeout(resolve, retryDelay));
-							}
-						}	
-						if (chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
-							throw new Error("BigInt arrays are not supported for conversion to Float32Array.");
-						} 
-						const [chunkF16, newScalingFactor] = ToFloat16(chunk.data as Float32Array, scalingFactor)
-						if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
-							if (scalingFactor == null || newScalingFactor > scalingFactor){ 
-								const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
-								RescaleArray(typedArray, thisScaling)
-								scalingFactor = newScalingFactor
-								for (const id of rescaleIDs){ // Set new scalingFactor on the chunks
-									const tempName = replaceChunkNumber(cacheName, id)
-									const tempChunk = cache.get(tempName)
-									tempChunk.scaling = scalingFactor
-									RescaleArray(tempChunk.data, thisScaling)
-									cache.set(tempName, tempChunk)
-								}
+								rescaleIDs.push(chunkID)
 							}
 						}
-						typedArray.set(chunkF16,accum)
-						const cacheChunk = {
-							data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-							shape: chunk.shape,
-							stride: chunk.stride,
-							scaling: scalingFactor,
-							compressed: compress
-						}
-						cache.set(cacheName,cacheChunk)
-						accum += chunk.data.length;
-						setStrides(chunk.stride)
-						setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
-						iter ++;
-						
-						rescaleIDs.push(i)
 					}
 				}
 				setCurrentChunks(chunkIDs) // These are used for the Getcurrentarray 

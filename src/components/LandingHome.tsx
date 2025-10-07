@@ -26,8 +26,6 @@ export function LandingHome() {
     setTitleDescription: state.setTitleDescription,
   })))
 
-  
-
   const { currentStore, setCurrentStore } = useZarrStore(useShallow(state => ({
     currentStore: state.currentStore,
     setCurrentStore: state.setCurrentStore
