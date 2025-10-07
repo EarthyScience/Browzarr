@@ -36,7 +36,6 @@ const HorizontalAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolea
 
   const dimLengths = [dimArrays[0].length, dimArrays[1].length, dimArrays[2].length]
 
-
   const [xResolution, setXResolution] = useState<number>(7)
   const [yResolution, setYResolution] = useState<number>(7)
   const [zResolution, setZResolution] = useState<number>(7)

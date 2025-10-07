@@ -5,6 +5,7 @@ precision highp sampler3D;
 out vec4 color;
 
 in vec3 aPosition;
+in vec2 Vuv;
 
 uniform sampler3D map;
 uniform sampler2D cmap;
