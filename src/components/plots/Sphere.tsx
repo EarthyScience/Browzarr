@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
 import { ZarrDataset } from '@/components/zarr/ZarrLoaderLRU';
 import { useShallow } from 'zustand/shallow'
-import { vertexShader, sphereFrag, flatSphereFrag } from '../textures/shaders'
+import { sphereVertex, sphereVertexFlat, sphereFrag, flatSphereFrag } from '../textures/shaders'
 import { parseUVCoords, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 
@@ -32,10 +32,6 @@ function deg2rad(deg: number){
 }
 
 export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE.DataTexture | null, ZarrDS: ZarrDataset}) => {
-    const {colormap, isFlat} = useGlobalStore(useShallow(state=> ({
-        colormap: state.colormap,
-        isFlat: state.isFlat
-    })))
     const {setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(state=>({
       setPlotDim:state.setPlotDim, 
       updateDimCoords:state.updateDimCoords,
@@ -46,10 +42,13 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
       analysisArray: state.analysisArray
     })))
 
-    const {dimArrays,dimNames,dimUnits, timeSeries, dataShape, strides, flipY} = useGlobalStore(useShallow(state=>({
+    const {colormap, isFlat, dimArrays, dimNames, dimUnits, valueScales, timeSeries, dataShape, strides, flipY} = useGlobalStore(useShallow(state=>({
+        colormap: state.colormap,
+        isFlat: state.isFlat,  
         dimArrays:state.dimArrays,
         dimNames:state.dimNames,
         dimUnits:state.dimUnits,
+        valueScales: state.valueScales,
         timeSeries: state.timeSeries,
         dataShape: state.dataShape,
         strides: state.strides,
@@ -57,7 +56,7 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
     })))
 
     const {animate, animProg, cOffset, cScale, selectTS, lonExtent, latExtent, 
-      lonResolution, latResolution, nanColor, nanTransparency,
+      lonResolution, latResolution, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
         animate: state.animate,
         animProg: state.animProg,
@@ -70,6 +69,8 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
         latResolution: state.latResolution,
         nanColor: state.nanColor,
         nanTransparency: state.nanTransparency,
+        sphereDisplacement: state.sphereDisplacement,
+        sphereResolution: state.sphereResolution,
         getColorIdx: state.getColorIdx,
         incrementColorIdx: state.incrementColorIdx
     })))
@@ -111,8 +112,7 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
       return [newLonBounds, newLatBounds]
     },[latExtent, lonExtent, lonResolution, latResolution])
 
-    const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, 9), []);
-    
+    const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
@@ -127,20 +127,24 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
                 latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
                 lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
                 nanColor: {value: new THREE.Color(nanColor)},
-                nanAlpha: {value: 1 - nanTransparency}
+                nanAlpha: {value: 1 - nanTransparency},
+                displaceZero: {value: -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)},
+                displacement: {value: sphereDisplacement}
             },
-            vertexShader,
+            vertexShader: isFlat ? sphereVertexFlat : sphereVertex,
             fragmentShader: isFlat ? flatSphereFrag : sphereFrag,
             blending: THREE.NormalBlending,
             side:THREE.FrontSide,
             transparent: true,
-            depthWrite:false,
+            depthWrite:true,
 
         })
         return shader
     },[isFlat])
+
     const backMaterial = shaderMaterial.clone()
     backMaterial.side = THREE.BackSide;
+
     useEffect(()=>{
       if (shaderMaterial){
         const uniforms = shaderMaterial.uniforms;
@@ -155,6 +159,8 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
         uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
         uniforms.nanColor.value =  new THREE.Color(nanColor)
         uniforms.nanAlpha.value =  1 - nanTransparency
+        uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
+        uniforms.displacement.value = sphereDisplacement
       }
       if (backMaterial){
         const uniforms = backMaterial.uniforms;
@@ -169,8 +175,10 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
         uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
         uniforms.nanColor.value =  new THREE.Color(nanColor)
         uniforms.nanAlpha.value =  1 - nanTransparency
+        uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
+        uniforms.displacement.value = sphereDisplacement
       }
-    },[texture, animProg, colormap, cOffset, cScale, animate, bounds, selectTS, lonBounds, latBounds, nanColor, nanTransparency])
+    },[texture, animProg, colormap, cOffset, cScale, animate, bounds, selectTS, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, valueScales])
     
     
     function HandleTimeSeries(event: THREE.Intersection){

@@ -302,6 +302,38 @@ const PointOptions = () =>{
   )
 }
 
+const SphereOptions = () =>{
+  const {sphereResolution, sphereDisplacement, setSphereResolution, setSphereDisplacement} = usePlotStore(useShallow(state => ({
+    sphereResolution: state.sphereResolution,
+    sphereDisplacement: state.sphereDisplacement,
+    setSphereResolution: state.setSphereResolution,
+    setSphereDisplacement: state.setSphereDisplacement
+  })))
+
+  return(<>
+  <div className='grid gap-y-[5px] items-center w-50 text-center'>
+    <b>Displace Surface</b>
+    <UISlider
+      min={0}
+      max={2}
+      step={0.05}
+      value={[sphereDisplacement]}
+      className='w-full mb-2'
+      onValueChange={(vals:number[]) => (setSphereDisplacement(vals[0]))}
+    />
+    <b>Displacement Resolution</b>
+    <UISlider
+      min={4}
+      max={20}
+      step={1}
+      value={[sphereResolution]}
+      className='w-full mb-2'
+      onValueChange={(vals:number[]) => (setSphereResolution(vals[0]))}
+    />
+  </div>
+  </>)
+
+}
 
 const SpatialExtent = () =>{
 
@@ -495,7 +527,7 @@ const AdjustPlot = () => {
         >
           {plotType === 'volume' && <VolumeOptions />}
           {plotType === 'point-cloud' && <PointOptions />}
-
+          {plotType === 'sphere' && <SphereOptions/>}
           {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
           <GlobalOptions />
         </PopoverContent>

@@ -67,7 +67,5 @@ void main(){
         color = vec4(nanColor, 1.); // Black
         color.a = nanAlpha;
     }
-    
-    // color = vec4(sampleCoord, 0., 1.0);
 
 }
