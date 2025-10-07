@@ -5,7 +5,6 @@ precision highp sampler3D;
 out vec4 color;
 
 in vec3 aPosition;
-in vec2 Vuv;
 
 uniform sampler3D map;
 uniform sampler2D cmap;
@@ -68,7 +67,5 @@ void main(){
         color = vec4(nanColor, 1.); // Black
         color.a = nanAlpha;
     }
-    
-    // color = vec4(sampleCoord, 0., 1.0);
 
 }
