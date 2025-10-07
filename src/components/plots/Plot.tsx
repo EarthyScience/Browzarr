@@ -113,8 +113,8 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       plotType: state.plotType,
     })))
 
-    const {slice, reFetch} = useZarrStore(useShallow(state=> ({
-      slice: state.slice,
+    const {zSlice, reFetch} = useZarrStore(useShallow(state=> ({
+      zSlice: state.zSlice,
       reFetch: state.reFetch
     })))
 
@@ -133,7 +133,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       setShowLoading(true);
       setShow(false)
       try{
-        ZarrDS.GetArray(variable, slice).then((result) => {
+        ZarrDS.GetArray(variable, zSlice).then((result) => {
         const [texture, scaling] = ArrayToTexture({
           data: result.data,
           shape: result.shape

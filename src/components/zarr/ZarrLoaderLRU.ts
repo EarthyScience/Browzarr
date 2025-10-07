@@ -321,17 +321,17 @@ export class ZarrDataset{
 	GetDimArrays(){
 		const {initStore, is4D} = useGlobalStore.getState();
 		const {cache} = useCacheStore.getState();
-		const {slice} = useZarrStore.getState();
+		const {zSlice} = useZarrStore.getState();
 		const dimArr = [];
 		const dimMetas = []
 		for (const dim of this.dimNames){
 			dimArr.push(cache.get(`${initStore}_${dim}`));
 			dimMetas.push(cache.get(`${initStore}_${dim}_meta`))
 		}
-		if (slice[0] != 0 || slice[1] != null){ //Trim the time dimension based on slice
+		if (zSlice[0] != 0 || zSlice[1] != null){ //Trim the time dimension based on slice
 			const chunkDepth = is4D ? this.chunkShape[1] : this.chunkShape[0]
-			const startVal = Math.max(slice[0] - (slice[0] % chunkDepth), 0)
-			const endVal = slice[1] ? slice[1] + (chunkDepth-(slice[1] % chunkDepth)) : null
+			const startVal = Math.max(zSlice[0] - (zSlice[0] % chunkDepth), 0)
+			const endVal = zSlice[1] ? zSlice[1] + (chunkDepth-(zSlice[1] % chunkDepth)) : null
 			dimArr[0] = dimArr[0].slice(startVal,endVal)
         }
 		return [dimArr,dimMetas, this.dimNames];

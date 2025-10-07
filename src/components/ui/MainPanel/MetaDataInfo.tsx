@@ -5,7 +5,7 @@ import { SliderThumbs } from "@/components/ui/SliderThumbs"
 import { Button } from "@/components/ui/button"
 import { Input } from "../input"
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-
+import { parseLoc } from "@/utils/HelperFuncs"
 import {
   Tooltip,
   TooltipContent,
@@ -37,23 +37,29 @@ function ChunkIDs(chunkDepth: number, slice:[number, number | null], range:numbe
 }
 
 const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>  }) => {
-  const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable} = useGlobalStore(useShallow(state => ({
+  const {is4D, idx4D, variable, initStore, dimNames, dimArrays, dimUnits, setIs4D, setIdx4D, setVariable} = useGlobalStore(useShallow(state => ({
     is4D: state.is4D,
     idx4D: state.idx4D,
     variable: state.variable,
     initStore: state.initStore,
+    dimNames: state.dimNames,
+    dimArrays: state.dimArrays,
+    dimUnits: state.dimUnits,
     setIs4D: state.setIs4D,
     setIdx4D: state.setIdx4D,
     setVariable: state.setVariable,
   })))
   const {maxSize, setMaxSize} = useCacheStore.getState()
   const [cacheSize, setCacheSize] = useState(maxSize)
-
-  const { slice, reFetch, compress, setSlice, setReFetch, setCompress } = useZarrStore(useShallow(state => ({
+  const { zSlice, ySlice, xSlice, reFetch, compress, setZSlice, setYSlice, setXSlice, setReFetch, setCompress } = useZarrStore(useShallow(state => ({
     reFetch: state.reFetch,
-    slice: state.slice,
+    zSlice: state.zSlice,
+    ySlice: state.ySlice,
+    xSlice: state.xSlice,
     compress: state.compress,
-    setSlice: state.setSlice,
+    setZSlice: state.setZSlice,
+    setYSlice: state.setYSlice,
+    setXSlice: state.setXSlice,
     setReFetch: state.setReFetch,
     setCompress: state.setCompress
   })))
@@ -65,37 +71,69 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
   const [cachedChunks, setCachedChunks] = useState<string | null>(null)
 
   const totalSize = useMemo(() => meta.totalSize ? meta.totalSize : 0, [meta])
-  const length = useMemo(() => meta.shape ? meta.shape.length == 4 ? meta.shape[1] : meta.shape[0] : 0, [meta])
+  const zLength = useMemo(() => meta.shape ? meta.shape.length == 4 ? meta.shape[1] : meta.shape[0] : 0, [meta])
+  const yLength = useMemo(() => meta.shape ? meta.shape.length == 4 ? meta.shape[2] : meta.shape[1] : 0, [meta])
+  const xLength = useMemo(() => meta.shape ? meta.shape.length == 4 ? meta.shape[3] : meta.shape[2] : 0, [meta])
+
   const is3D = useMemo(() => meta.shape ? meta.shape.length == 3 : false, [meta])
   const hasTimeChunks = is4D ? meta.shape[1]/meta.chunks[1] > 1 : meta.shape[0]/meta.chunks[0] > 1
+  const hasYChunks = is4D ? meta.shape[2]/meta.chunks[2] > 1 : meta.shape[1]/meta.chunks[1] > 1
+  const hasXChunks = is4D ? meta.shape[3]/meta.chunks[3] > 1 : meta.shape[2]/meta.chunks[2] > 1
   const chunkIDs = useMemo(()=>{
     if (hasTimeChunks){
-      const ids = ChunkIDs(meta.chunks[0], slice, is4D ? meta.shape[1] : meta.shape[0])
+      const ids = ChunkIDs(meta.chunks[0], zSlice, is4D ? meta.shape[1] : meta.shape[0])
       return ids;
     } else { return ;}
-  },[slice, meta])
-
-  const currentSize = useMemo(() => {
-    if (is3D){
-      const firstStep = slice[0] ? slice[0] : 0
-      const secondStep = slice[1] ? slice[1] : length
-      const timeSteps = secondStep - firstStep
-      const xChunks = meta.shape[2] / meta.chunks[2]
-      const yChunks = meta.shape[1] / meta.chunks[1]
-      const timeChunkSize = xChunks * yChunks * meta.chunkSize
-      const chunkTimeStride = meta.chunks ? meta.chunks[0] : 1
-      return Math.ceil(timeSteps / chunkTimeStride) * timeChunkSize
-    }else if(is4D){
-      const firstStep = slice[0] ? slice[0] : 0
-      const secondStep = slice[1] ? slice[1] : length
-      const timeSteps = secondStep - firstStep
-      const xChunks = meta.shape[3] / meta.chunks[3]
-      const yChunks = meta.shape[2] / meta.chunks[2]
-      const timeChunkSize = xChunks * yChunks * meta.chunkSize
-      const chunkTimeStride = meta.chunks ? meta.chunks[1] : 1
-      return Math.ceil(timeSteps / chunkTimeStride) * timeChunkSize
-    }else{return 0;}
-  }, [meta, slice])
+  },[zSlice, meta])
+const currentSize = useMemo(() => {
+  if (is3D) {
+    const zFirst = zSlice[0] ?? 0;
+    const zSecond = zSlice[1] ?? zLength;
+    const zSteps = zSecond - zFirst;
+    
+    const xFirst = xSlice[0] ?? 0;
+    const xSecond = xSlice[1] ?? meta.shape[2];
+    const xSteps = xSecond - xFirst;
+    
+    const yFirst = ySlice[0] ?? 0;
+    const ySecond = ySlice[1] ?? meta.shape[1];
+    const ySteps = ySecond - yFirst;
+    
+    const xChunkSize = meta.chunks[2];
+    const yChunkSize = meta.chunks[1];
+    const zChunkSize = meta.chunks[0];
+    
+    const xChunksNeeded = Math.ceil(xSteps / xChunkSize);
+    const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
+    const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
+    
+    return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
+  } else if (is4D) {
+    const zFirst = zSlice[0] ?? 0;
+    const zSecond = zSlice[1] ?? zLength;
+    const zSteps = zSecond - zFirst;
+    
+    const xFirst = xSlice[0] ?? 0;
+    const xSecond = xSlice[1] ?? meta.shape[3];
+    const xSteps = xSecond - xFirst;
+    
+    const yFirst = ySlice[0] ?? 0;
+    const ySecond = ySlice[1] ?? meta.shape[2];
+    const ySteps = ySecond - yFirst;
+    
+    const xChunkSize = meta.chunks[3];
+    const yChunkSize = meta.chunks[2];
+    const zChunkSize = meta.chunks[1];
+    
+    const xChunksNeeded = Math.ceil(xSteps / xChunkSize);
+    const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
+    const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
+    
+    return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
+  } else {
+    return 0;
+  }
+}, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D]);
 
   const cachedSize = useMemo(()=>{
     const thisDtype = meta.dtype as string
@@ -118,7 +156,7 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
   },[meta])
 
   useEffect(()=>{
-    setSlice([0, null])
+    setZSlice([0, null])
   },[initStore])
 
   const isFlat = meta.shape.length == 2
@@ -165,7 +203,6 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
     }
     
   },[meta, maxTextureSize, chunkIDs])
-
   return (
       // Don't put any more work in the landing page version. Since it won't be visible in the future
       // The logic here was to just get divs to be used later in a Card or Dialog component!
@@ -174,17 +211,19 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
         <b>Long Name</b> <br/>
         {`${meta.long_name}`}<br/>
         <br/>
-        <b>Shape</b><br/> 
-        {`[${formatArray(meta.shape)}]`}<br/>
-        <br/>
-        {tooBig && 
-        <div className="bg-[#FFBEB388] rounded-md p-1">
-          <span className="text-xs font-medium text-red-800 dark:text-red-200">
-            One or more of the dimensions in your dataset exceed this browsers maximum texture size: <b>{isFlat ? maxTextureSize : max3DTextureSize}</b>
-          </span>
+        <div className="grid grid-cols-2">
+          <div>
+            <b>Data Shape</b><br/> 
+          {`[${formatArray(meta.shape)}]`}
+          </div>
+          <div>
+            <b>Chunk Shape</b><br/> 
+          {`[${formatArray(meta.chunks)}]`}
+          </div>
         </div>
-        }
-        {!tooBig && 
+        
+        <br/>
+        {true && 
         <>
         {is4D &&
         <>
@@ -199,26 +238,62 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
         }
         {((is3D || idx4D != null) && !(cached && !cachedChunks)) &&
           <>
-            {totalSize > 1e8 && hasTimeChunks && (
+            {(hasTimeChunks || hasXChunks || hasYChunks )&& (
               <>
-                <div className="flex justify-center">
-                  <b>Select Data Range</b>
-                </div>
-                <div className="w-full flex flex-col justify-between">
+              <span className="block text-center text-xl font-bold">Trim Data</span>
+              <div className="grid gap-4 ">    
+                {hasTimeChunks && <div className="grid gap-1">
+                  <div className="flex justify-center">
+                    <b>{dimNames[0] == "Default" ? 'Axis 0': dimNames[0] }</b>
+                  </div>
                   <SliderThumbs
                     min={0}
-                    max={length}
-                    value={[slice[0] ? slice[0] : 0, slice[1] ? slice[1] : length]}
+                    max={zLength}
+                    value={[zSlice[0] ? zSlice[0] : 0, zSlice[1] ? zSlice[1] : zLength]}
                     step={1}
-                    onValueChange={(values: number[]) => setSlice([values[0], values[1]] as [number, number | null])}
+                    onValueChange={(values: number[]) => setZSlice([values[0], values[1]] as [number, number | null])}
                   />
-                  <div className="flex justify-between text-xs mt-4">
-                    <span>Min: <br /> <input className='w-[50px]' type="number" value={slice[0]} onChange={e=>setSlice([parseInt(e.target.value), slice[1]])}/></span>
-                    <span>Max: <br /> <input className='w-[50px] text-right' type="number" value={slice[1] ? slice[1] : length} onChange={e=>setSlice([slice[0] , parseInt(e.target.value)])}/></span>
+                  <div className="grid grid-cols-2">
+                    <span >Min: <b>{parseLoc(dimArrays[0][zSlice[0]], dimUnits[0])}</b>  <br /> Index: <input className='w-[50px]' type="number" value={zSlice[0]} onChange={e=>setZSlice([parseInt(e.target.value), zSlice[1]])}/></span>
+                    <span >Max: <b>{parseLoc(dimArrays[0][zSlice[1] ? zSlice[1]-1 : zLength-1], dimUnits[0])}</b><br /> Index: <input className='w-[50px]' type="number" value={zSlice[1] ? zSlice[1] : zLength} onChange={e=>setZSlice([zSlice[0] , parseInt(e.target.value)])}/></span>
                   </div>
-                </div>
+                </div>  }
+                {hasYChunks && <div className="grid gap-1">
+                  <div className="flex justify-center">
+                    <b>{dimNames[1] == "Default" ? 'Axis 1': dimNames[1] }</b>
+                  </div>
+                  <SliderThumbs
+                    min={0}
+                    max={yLength}
+                    value={[ySlice[0] ? ySlice[0] : 0, ySlice[1] ? ySlice[1] : yLength]}
+                    step={1}
+                    onValueChange={(values: number[]) => setYSlice([values[0], values[1]] as [number, number | null])}
+                  />
+                  <div className="grid grid-cols-2">
+                    <span >Min: <b>{parseLoc(dimArrays[1][ySlice[0]], dimUnits[1])}</b>  <br /> Index: <input className='w-[50px]' type="number" value={ySlice[0]} onChange={e=>setYSlice([parseInt(e.target.value), ySlice[1]])}/></span>
+                    <span >Max: <b>{parseLoc(dimArrays[1][ySlice[1] ? ySlice[1]-1 : yLength-1], dimUnits[1])}</b><br /> Index: <input className='w-[50px]' type="number" value={ySlice[1] ? ySlice[1] : yLength} onChange={e=>setYSlice([ySlice[0] , parseInt(e.target.value)])}/></span>
+                  </div>
+                </div>  }
+                {hasXChunks && <div className="grid gap-1">
+                  <div className="flex justify-center">
+                    <b>{dimNames[2] == "Default" ? 'Axis 2': dimNames[2] }</b>
+                  </div>
+                  <SliderThumbs
+                    min={0}
+                    max={xLength}
+                    value={[xSlice[0] ? xSlice[0] : 0, xSlice[1] ? xSlice[1] : xLength]}
+                    step={1}
+                    onValueChange={(values: number[]) => setXSlice([values[0], values[1]] as [number, number | null])}
+                  />
+                  <div className="grid grid-cols-2">
+                    <span >Min: <b>{parseLoc(dimArrays[2][xSlice[0]], dimUnits[2])}</b>  <br /> Index: <input className='w-[50px]' type="number" value={xSlice[0]} onChange={e=>setXSlice([parseInt(e.target.value), xSlice[1]])}/></span>
+                    <span >Max: <b>{parseLoc(dimArrays[2][xSlice[1] ? xSlice[1]-1 : xLength-1], dimUnits[2])}</b><br /> Index: <input className='w-[50px]' type="number" value={xSlice[1] ? xSlice[1] : xLength} onChange={e=>setXSlice([xSlice[0] , parseInt(e.target.value)])}/></span>
+                  </div>
+                </div> }
+              </div>
               </>
             )}
+            <br/>
             <div className="grid gap-2">
               <div>
                 <b>Raw Size: </b>{formatBytes(currentSize)}

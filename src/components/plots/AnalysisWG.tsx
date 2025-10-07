@@ -59,7 +59,7 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
             setAnalysisArray: state.setAnalysisArray, setAnalysisMode: state.setAnalysisMode, setOperation: state.setOperation
         })));
 
-    const zarrSlice = useZarrStore(state => state.slice);
+    const zarrSlice = useZarrStore(state => state.zSlice);
 
     useEffect(() => {
         const dataArray = GetCurrentArray(analysisStore);

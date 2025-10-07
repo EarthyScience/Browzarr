@@ -2,7 +2,8 @@
 import * as THREE from 'three'
 import { useGlobalStore, usePlotStore, useZarrStore, useCacheStore } from './GlobalStates';
 import { decompressSync } from 'fflate';
-
+import * as zarr from 'zarrita';
+import { GetStore } from '@/components/zarr/ZarrLoaderLRU';
 export function parseTimeUnit(units: string | undefined): [number, number] {
     if (units === "Default"){
         return [1, 0];
@@ -52,7 +53,6 @@ const months = [
 ];
   
 export function parseLoc(input:number, units: string | undefined, verbose: boolean = false) {
-    
     if (!units){
         return input
     }
@@ -87,7 +87,7 @@ export function parseLoc(input:number, units: string | undefined, verbose: boole
         
     }
     else {
-        return input.toFixed(2);
+        return input ? input.toFixed(2) : input;
     }
 }
 
@@ -186,44 +186,6 @@ export function ParseExtent(dimUnits: string[], dimArrays: number[][]){
   }
 }
 
-export async function testCORSConfiguration(storePath: string): Promise<{
-    isAccessible: boolean;
-    corsEnabled: boolean;
-    errorDetails: string | null;
-}> {
-    try {
-        // Test with CORS mode
-        const corsResponse = await fetch(storePath, {
-            method: 'HEAD',
-            mode: 'cors'
-        });
-        return {
-            isAccessible: true,
-            corsEnabled: true,
-            errorDetails: String(corsResponse.status)
-        };
-    } catch (corsError) {
-        try {
-            // Test with no-cors mode
-            await fetch(storePath, {
-                method: 'HEAD',
-                mode: 'no-cors'
-            });
-            
-            return {
-                isAccessible: true,
-                corsEnabled: false,
-                errorDetails: 'Server is accessible but CORS is not properly configured'
-            };
-        } catch (networkError) {
-            return {
-                isAccessible: false,
-                corsEnabled: false,
-                errorDetails: 'Server is not accessible or URL is incorrect'
-            };
-        }
-    }
-}
 
 interface TimeSeriesInfo{
   uv:THREE.Vector2,
@@ -292,5 +254,43 @@ export function GetCurrentArray(overrideStore?:string){
         }
       setDecompressing(false)
       return typedArray
+  }
+}
+
+export async function GetDimInfo(variable:string){
+  const {cache} = useCacheStore.getState();
+  const {initStore} = useGlobalStore.getState();
+  const cacheName = `${initStore}_${variable}_meta`
+  const dimArrays = []
+  const dimUnits = []
+  if (cache.has(cacheName)){
+    const meta = cache.get(cacheName)
+    const dimNames = meta._ARRAY_DIMENSIONS as string[]
+    for (const dim of dimNames){
+      dimArrays.push(cache.get(`${initStore}_${dim}`))
+      dimUnits.push(cache.get(`${initStore}_${dim}_meta`).units)
+    }
+    return {dimNames, dimArrays, dimUnits};
+  }
+  else{
+    const group = await GetStore(initStore);
+    if (!group) {
+      throw new Error(`Failed to open Zarr store: ${initStore}`);
+    }
+    const outVar = await zarr.open(group.resolve(variable), {kind:"array"});
+    const meta = outVar.attrs;
+    cache.set(cacheName, meta);
+    const dimNames = meta._ARRAY_DIMENSIONS as string[]
+    for (const dim of dimNames){
+      const dimArray = await zarr.open(group.resolve(dim), {kind:"array"})
+          .then((result) => zarr.get(result));
+      const dimMeta = await zarr.open(group.resolve(dim), {kind:"array"})
+        .then((result) => result.attrs)
+      cache.set(`${initStore}_${dim}`, dimArray.data);
+      cache.set(`${initStore}_${dim}_meta`, dimMeta)
+      dimArrays.push(dimArray.data)
+      dimUnits.push(dimMeta.units)
+    }
+    return {dimNames, dimArrays, dimUnits};
   }
 }

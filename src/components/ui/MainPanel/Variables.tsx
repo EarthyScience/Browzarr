@@ -6,6 +6,7 @@ import { useGlobalStore } from "@/utils/GlobalStates";
 import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
 import MetaDataInfo from "./MetaDataInfo";
+import { GetDimInfo } from "@/utils/HelperFuncs";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "../input";
@@ -32,10 +33,13 @@ const Variables = ({
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
   const [showMeta, setShowMeta] = useState(false);
-  const { variables, zMeta } = useGlobalStore(
+  const { variables, zMeta, setDimNames, setDimArrays, setDimUnits } = useGlobalStore(
     useShallow((state) => ({
       variables: state.variables,
       zMeta: state.zMeta,
+      setDimNames: state.setDimNames,
+      setDimArrays: state.setDimArrays,
+      setDimUnits: state.setDimUnits
     }))
   );
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -81,6 +85,7 @@ const Variables = ({
               onClick={() => {
                 setSelectedIndex(idx);
                 setSelectedVar(val);
+                GetDimInfo(val).then(e=>{setDimNames(e.dimNames); setDimArrays(e.dimArrays); setDimUnits(e.dimUnits)})
                 setShowMeta(true);
               }}
             >

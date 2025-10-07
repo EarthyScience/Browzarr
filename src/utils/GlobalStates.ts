@@ -402,14 +402,18 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
 }));
 
 type ZarrState = {
-  slice: [number  , number | null],
+  zSlice: [number  , number | null],
+  ySlice: [number  , number | null],
+  xSlice: [number  , number | null],
   compress: boolean,
   currentStore: any;
   reFetch: boolean;
   currentChunks: number[];
   arraySize: number,
 
-  setSlice: (slice: [number , number | null]) => void;
+  setZSlice: (zSlice: [number , number | null]) => void;
+  setYSlice: (ySlice: [number , number | null]) => void;
+  setXSlice: (xSlice: [number , number | null]) => void;
   setCompress: (compress: boolean) => void;
   setCurrentStore: (currentStore: any) => void;
   setReFetch: (reFetch: boolean) => void;
@@ -418,14 +422,18 @@ type ZarrState = {
 }
 
 export const useZarrStore = create<ZarrState>((set, get) => ({
-  slice: [0, null],
+  zSlice: [0, null],
+  ySlice: [0, null],
+  xSlice: [0, null],
   compress: false,
   currentStore: GetStore(ESDC),
   reFetch: false,
   currentChunks: [],
   arraySize: 0,
 
-  setSlice: (slice) => set({ slice }),
+  setZSlice: (zSlice) => set({ zSlice }),
+  setYSlice: (ySlice) => set({ ySlice }),
+  setXSlice: (xSlice) => set({ xSlice }),
   setCompress: (compress) => set({ compress }),
   setCurrentStore: (currentStore) => set({ currentStore }),
   setReFetch: (reFetch) => set({ reFetch }),
