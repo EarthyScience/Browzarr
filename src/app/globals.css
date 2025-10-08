@@ -3,7 +3,7 @@
 
 :root {
   --background-plot: white;
-  --background-modal: hsla(0, 0%, 80%, 0.8);
+  --background-modal: hsla(0, 0%, 95%, 0.7);
   --modal-shadow: hsla(0, 0%, 95%, 0.7);
   --modal-gradient: hsla(0, 0%, 80%, 1);
   --modal-p: hsla(0, 0%, 0%, 0.5);
@@ -64,7 +64,7 @@
   --foreground: hsla(0, 0%, 9%, 1);
   --background-plot: white;
   --text-plot: hsl(0, 0%, 2%);
-  --background-modal: hsla(0, 0%, 80%, 0.8);
+  --background-modal: hsla(0, 0%, 95%, 0.7);
   --modal-shadow: hsla(0, 0%, 95%, 0.7);
   --modal-gradient: hsla(0, 0%, 80%, 1);
   --modal-p: hsla(0, 0%, 0%, 0.5);

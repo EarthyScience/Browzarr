@@ -61,7 +61,7 @@
     z-index: 1;
     padding: 6px;
     border-radius: 6px;
-    background-color: rgba(240, 248, 255, 0.438);
+    background-color: var(--background-modal);
     pointer-events: none;
     font-weight: 700;
     text-shadow: 0px 0px 3px white;
