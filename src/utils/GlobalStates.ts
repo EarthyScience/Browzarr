@@ -151,7 +151,6 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setDecompressing: (decompressing) => set({ decompressing }),
   setIs4D: (is4D) => set({ is4D }),
   setIdx4D: (idx4D) => set({ idx4D }),
-
   setTitleDescription: (titleDescription) => set({ titleDescription }),
 }));
 

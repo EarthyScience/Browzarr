@@ -54,7 +54,7 @@ const months = [
   
 export function parseLoc(input:number, units: string | undefined, verbose: boolean = false) {
     if (!units){
-        return input
+        return input.toFixed(2)
     }
     if (typeof(input) == 'bigint'){
       if (!units){
@@ -296,7 +296,7 @@ export async function GetDimInfo(variable:string){
     return {dimNames, dimArrays, dimUnits};
   }
   else{
-    const group = await GetStore(initStore);
+    const group = await useZarrStore.getState().currentStore
     if (!group) {
       throw new Error(`Failed to open Zarr store: ${initStore}`);
     }

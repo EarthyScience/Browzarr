@@ -38,7 +38,6 @@ export function LandingHome() {
       setYSlice([0,null])
       setXSlice([0,null])
     }
-
   useEffect(() => { // Update store if URL changes
     resetSlices();
     if (initStore.startsWith('local')){ // Don't fetch store if local 

@@ -5,7 +5,7 @@ import { SliderThumbs } from "@/components/ui/SliderThumbs"
 import { Button } from "@/components/ui/button"
 import { Input } from "../input"
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { parseLoc } from "@/utils/HelperFuncs"
+import { parseLoc, TwoDecimals } from "@/utils/HelperFuncs"
 import {
   Tooltip,
   TooltipContent,
@@ -36,19 +36,24 @@ function ChunkIDs(chunkDepth: number, slice:[number, number | null], range:numbe
   return ids
 }
 
+function HandleCustomSteps(e: string, chunkSize: number){
+    const newVal = parseInt(e);
+    const chunkStep = Math.floor(newVal/chunkSize) * chunkSize
+    return chunkStep
+  }
+
+
 const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>  }) => {
-  const {is4D, idx4D, variable, initStore, dimNames, dimArrays, dimUnits, setIs4D, setIdx4D, setVariable} = useGlobalStore(useShallow(state => ({
+  const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable} = useGlobalStore(useShallow(state => ({
     is4D: state.is4D,
     idx4D: state.idx4D,
     variable: state.variable,
     initStore: state.initStore,
-    dimNames: state.dimNames,
-    dimArrays: state.dimArrays,
-    dimUnits: state.dimUnits,
     setIs4D: state.setIs4D,
     setIdx4D: state.setIdx4D,
     setVariable: state.setVariable,
   })))
+  const {dimArrays, dimNames, dimUnits} = meta.dimInfo
   const {maxSize, setMaxSize} = useCacheStore.getState()
   const [cacheSize, setCacheSize] = useState(maxSize)
   const { zSlice, ySlice, xSlice, reFetch, compress, setZSlice, setYSlice, setXSlice, setReFetch, setCompress } = useZarrStore(useShallow(state => ({
@@ -65,7 +70,6 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
   })))
   const cache = useCacheStore(state => state.cache)
   const {maxTextureSize, max3DTextureSize} = usePlotStore(useShallow(state => ({maxTextureSize: state.maxTextureSize, max3DTextureSize: state.max3DTextureSize})))
-
   const [tooBig, setTooBig] = useState(false)
   const [cached, setCached] = useState(false)
   const [cachedChunks, setCachedChunks] = useState<string | null>(null)
@@ -74,7 +78,6 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
   const zLength = useMemo(() => meta.shape ? meta.shape.length == 4 ? meta.shape[1] : meta.shape[0] : 0, [meta])
   const yLength = useMemo(() => meta.shape ? meta.shape.length == 4 ? meta.shape[2] : meta.shape[1] : 0, [meta])
   const xLength = useMemo(() => meta.shape ? meta.shape.length == 4 ? meta.shape[3] : meta.shape[2] : 0, [meta])
-
   const is3D = useMemo(() => meta.shape ? meta.shape.length == 3 : false, [meta])
   const hasTimeChunks = is4D ? meta.shape[1]/meta.chunks[1] > 1 : meta.shape[0]/meta.chunks[0] > 1
   const hasYChunks = is4D ? meta.shape[2]/meta.chunks[2] > 1 : meta.shape[1]/meta.chunks[1] > 1
@@ -106,7 +109,11 @@ const currentSize = useMemo(() => {
     const xChunksNeeded = Math.ceil(xSteps / xChunkSize);
     const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
     const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
-    
+    if (xChunksNeeded*xChunkSize > maxTextureSize ||
+        yChunksNeeded*yChunkSize > maxTextureSize ||
+        zChunksNeeded*zChunkSize > maxTextureSize){
+          setTooBig(true)
+    } else{ setTooBig(false)}
     return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
   } else if (is4D) {
     const zFirst = zSlice[0] ?? 0;
@@ -128,7 +135,12 @@ const currentSize = useMemo(() => {
     const xChunksNeeded = Math.ceil(xSteps / xChunkSize);
     const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
     const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
-    
+
+    if (xChunksNeeded*xChunkSize > maxTextureSize ||
+        yChunksNeeded*yChunkSize > maxTextureSize ||
+        zChunksNeeded*zChunkSize > maxTextureSize){
+          setTooBig(true)
+    } else{ setTooBig(false)}
     return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
   } else {
     return 0;
@@ -156,6 +168,7 @@ const currentSize = useMemo(() => {
   },[meta])
 
   const isFlat = meta.shape.length == 2
+  const chunkShape = meta.chunks
   useEffect(()=>{
     setCompress(false)
     setIdx4D(null);
@@ -246,12 +259,23 @@ const currentSize = useMemo(() => {
                     min={0}
                     max={zLength}
                     value={[zSlice[0] ? zSlice[0] : 0, zSlice[1] ? zSlice[1] : zLength]}
-                    step={1}
+                    step={chunkShape[0]}
                     onValueChange={(values: number[]) => setZSlice([values[0], values[1]] as [number, number | null])}
+                    
                   />
                   <div className="grid grid-cols-2">
-                    <span >Min: <b>{parseLoc(dimArrays[0][zSlice[0]], dimUnits[0])}</b>  <br /> Index: <input className='w-[50px]' type="number" value={zSlice[0]} onChange={e=>setZSlice([parseInt(e.target.value), zSlice[1]])}/></span>
-                    <span >Max: <b>{parseLoc(dimArrays[0][zSlice[1] ? zSlice[1]-1 : zLength-1], dimUnits[0])}</b><br /> Index: <input className='w-[50px]' type="number" value={zSlice[1] ? zSlice[1] : zLength} onChange={e=>setZSlice([zSlice[0] , parseInt(e.target.value)])}/></span>
+                    <span >Min: <b>{parseLoc(dimArrays[0][zSlice[0]], dimUnits[0])}</b>  <br /> Index: 
+                      <input className='w-[50px]' type="number" value={zSlice[0]} 
+                        onChange={e=>setZSlice([parseInt(e.target.value), zSlice[1]])}
+                        onBlur={e=>setZSlice([HandleCustomSteps(e.target.value,chunkShape[0]), zSlice[1]])}
+                      />
+                    </span>
+                    <span >Max: <b>{parseLoc(dimArrays[0][zSlice[1] ? zSlice[1]-1 : zLength-1], dimUnits[0])}</b><br /> Index: 
+                      <input className='w-[50px]' type="number" value={zSlice[1] ? zSlice[1] : zLength} 
+                        onChange={e=>setZSlice([zSlice[0], parseInt(e.target.value)])}
+                        onBlur={e=>setZSlice([zSlice[0], HandleCustomSteps(e.target.value,chunkShape[0])])}
+                      />
+                    </span>
                   </div>
                 </div>  }
                 {hasYChunks && <div className="grid gap-1">
@@ -262,12 +286,22 @@ const currentSize = useMemo(() => {
                     min={0}
                     max={yLength}
                     value={[ySlice[0] ? ySlice[0] : 0, ySlice[1] ? ySlice[1] : yLength]}
-                    step={1}
+                    step={chunkShape[1]}
                     onValueChange={(values: number[]) => setYSlice([values[0], values[1]] as [number, number | null])}
                   />
                   <div className="grid grid-cols-2">
-                    <span >Min: <b>{parseLoc(dimArrays[1][ySlice[0]], dimUnits[1])}</b>  <br /> Index: <input className='w-[50px]' type="number" value={ySlice[0]} onChange={e=>setYSlice([parseInt(e.target.value), ySlice[1]])}/></span>
-                    <span >Max: <b>{parseLoc(dimArrays[1][ySlice[1] ? ySlice[1]-1 : yLength-1], dimUnits[1])}</b><br /> Index: <input className='w-[50px]' type="number" value={ySlice[1] ? ySlice[1] : yLength} onChange={e=>setYSlice([ySlice[0] , parseInt(e.target.value)])}/></span>
+                    <span >Min: <b>{parseLoc(dimArrays[1][ySlice[0]], dimUnits[1])}</b>  <br /> Index: 
+                      <input className='w-[50px]' type="number" value={ySlice[0]} 
+                        onChange={e=>setYSlice([parseInt(e.target.value), ySlice[1]])}
+                        onBlur={e=>setYSlice([HandleCustomSteps(e.target.value,chunkShape[1]), ySlice[1]])}
+                      />
+                    </span>
+                    <span >Max: <b>{parseLoc(dimArrays[1][ySlice[1] ? ySlice[1]-1 : yLength-1], dimUnits[1])}</b><br /> Index: 
+                      <input className='w-[50px]' type="number" value={ySlice[1] ? ySlice[1] : yLength} 
+                        onChange={e=>setYSlice([ySlice[0] , parseInt(e.target.value)])}
+                        onBlur={e=>setYSlice([ySlice[0], HandleCustomSteps(e.target.value,chunkShape[1])])}
+                      />
+                    </span>
                   </div>
                 </div>  }
                 {hasXChunks && <div className="grid gap-1">
@@ -278,12 +312,22 @@ const currentSize = useMemo(() => {
                     min={0}
                     max={xLength}
                     value={[xSlice[0] ? xSlice[0] : 0, xSlice[1] ? xSlice[1] : xLength]}
-                    step={1}
+                    step={chunkShape[2]}
                     onValueChange={(values: number[]) => setXSlice([values[0], values[1]] as [number, number | null])}
                   />
                   <div className="grid grid-cols-2">
-                    <span >Min: <b>{parseLoc(dimArrays[2][xSlice[0]], dimUnits[2])}</b>  <br /> Index: <input className='w-[50px]' type="number" value={xSlice[0]} onChange={e=>setXSlice([parseInt(e.target.value), xSlice[1]])}/></span>
-                    <span >Max: <b>{parseLoc(dimArrays[2][xSlice[1] ? xSlice[1]-1 : xLength-1], dimUnits[2])}</b><br /> Index: <input className='w-[50px]' type="number" value={xSlice[1] ? xSlice[1] : xLength} onChange={e=>setXSlice([xSlice[0] , parseInt(e.target.value)])}/></span>
+                    <span >Min: <b>{parseLoc(dimArrays[2][xSlice[0]], dimUnits[2])}</b>  <br /> Index: 
+                      <input className='w-[50px]' type="number" value={xSlice[0]} 
+                        onChange={e=>setXSlice([parseInt(e.target.value), xSlice[1]])}
+                        onBlur={e=>setXSlice([HandleCustomSteps(e.target.value,chunkShape[2]), xSlice[1]])}
+                      />
+                    </span>
+                    <span >Max: <b>{parseLoc(dimArrays[2][xSlice[1] ? xSlice[1]-1 : xLength-1], dimUnits[2])}</b><br /> Index: 
+                      <input className='w-[50px]' type="number" value={xSlice[1] ? xSlice[1] : xLength} 
+                        onChange={e=>setXSlice([xSlice[0] , parseInt(e.target.value)])}
+                        onBlur={e=>setXSlice([xSlice[0], HandleCustomSteps(e.target.value,chunkShape[2])])}
+                      />
+                    </span>
                   </div>
                 </div> }
               </div>
@@ -358,7 +402,14 @@ const currentSize = useMemo(() => {
         } 
       </div>
       }
-      <Button
+      {tooBig && 
+        <div className="bg-[#FFBEB388] rounded-md p-1">
+          <span className="text-xs font-medium text-red-800 dark:text-red-200">
+            One or more of the dimensions in your dataset exceed this browsers maximum texture size: <b>{isFlat ? maxTextureSize : max3DTextureSize}</b>
+          </span>
+        </div>
+      }
+      {!tooBig && <Button
         variant="pink"
         size="sm"
         
@@ -378,7 +429,7 @@ const currentSize = useMemo(() => {
         }}
       >
       Plot
-      </Button>
+      </Button>}
   </>
   )
 }

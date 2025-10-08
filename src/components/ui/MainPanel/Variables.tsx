@@ -33,15 +33,17 @@ const Variables = ({
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
   const [showMeta, setShowMeta] = useState(false);
-  const { variables, zMeta, setDimNames, setDimArrays, setDimUnits } = useGlobalStore(
+  const { variables, zMeta, initStore } = useGlobalStore(
     useShallow((state) => ({
       variables: state.variables,
       zMeta: state.zMeta,
-      setDimNames: state.setDimNames,
-      setDimArrays: state.setDimArrays,
-      setDimUnits: state.setDimUnits
+      initStore: state.initStore
     }))
   );
+  const [dimArrays, setDimArrays] = useState([[0],[0],[0]])
+  const [dimUnits, setDimUnits] = useState([null,null,null])
+  const [dimNames, setDimNames] = useState<string[]> (["Default"])
+
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedVar, setSelectedVar] = useState<string | null>(null);
   const [meta, setMeta] = useState<any>(null);
@@ -58,9 +60,17 @@ const Variables = ({
   useEffect(() => {
     if (variables && zMeta && selectedVar) {
       const relevant = zMeta.find((e: any) => e.name === selectedVar);
-      setMeta(relevant);
+      if (relevant){
+        setMeta({...relevant, dimInfo : {dimArrays, dimNames, dimUnits}});
+      }
     }
-  }, [selectedVar, variables, zMeta]);
+  }, [selectedVar, variables, zMeta, dimArrays, dimNames, dimUnits]);
+
+  useEffect(()=>{
+    setSelectedIndex(null)
+    setSelectedVar(null)
+    setMeta(null)
+  },[initStore])
 
   useEffect(() => {
     const handleResize = () => {
