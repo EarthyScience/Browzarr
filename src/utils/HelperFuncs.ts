@@ -270,9 +270,14 @@ export function GetCurrentArray(overrideStore?:string){
         }
       }
     }
+    console.log(chunkStride)
     setDecompressing(false)
     return typedArray
   }
+}
+
+export function TwoDecimals(val: number){
+    return Math.round(val * 100)/100
 }
 
 export async function GetDimInfo(variable:string){

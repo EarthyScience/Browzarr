@@ -7,11 +7,7 @@ import React, {useRef, useEffect, useMemo, useState} from 'react'
 import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import './css/Colorbar.css'
-import { linspace } from '@/utils/HelperFuncs';
-
-function TwoDecimals(val: number){
-    return Math.round(val * 100)/100
-}
+import { linspace, TwoDecimals } from '@/utils/HelperFuncs';
 
 const Colorbar = ({units, valueScales} : {units: string, valueScales: {maxVal: number, minVal:number}}) => {
     const {colormap, variable} = useGlobalStore(useShallow(state => ({
