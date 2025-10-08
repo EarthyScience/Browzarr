@@ -59,7 +59,11 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
             setAnalysisArray: state.setAnalysisArray, setAnalysisMode: state.setAnalysisMode, setOperation: state.setOperation
         })));
 
-    const zarrSlice = useZarrStore(state => state.zSlice);
+    const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
+        zSlice: state.zSlice,
+        ySlice: state.ySlice,
+        xSlice: state.xSlice
+    })));
 
     useEffect(() => {
         const dataArray = GetCurrentArray(analysisStore);
@@ -77,7 +81,7 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
             let var2Data: ArrayBufferView | null = null;
             if (useTwo) {
                 setDownloading(true);
-                const var2Array = await ZarrDS.GetArray(variable2, zarrSlice);
+                const var2Array = await ZarrDS.GetArray(variable2, {zSlice, ySlice, xSlice});
                 var2Data = var2Array?.data;
                 setDownloading(false);
                 if (!var2Data) {
@@ -89,9 +93,11 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
 
             // --- 2. Dispatch GPU computation based on the operation ---
             const inputArray = analysisMode ? analysisArray : dataArray;
-            const shapeInfo = { shape: dataShape, strides };
+            const shapeInfo = { shape: dataShape, strides};
             const kernelParams = { kernelDepth, kernelSize };
-
+            console.log(dataShape, strides)
+            console.log(inputArray)
+            // [1538316, 1481, 1]
             switch (currentOperation) {
                 // Reductions -> 2D Result
                 case 'Mean': case 'Min': case 'Max': case 'StDev': case 'LinearSlope':

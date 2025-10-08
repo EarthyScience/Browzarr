@@ -45,6 +45,47 @@ export class ZarrError extends Error {
     }
 }
 
+export function copyChunkToArray(
+    chunkData: Float16Array,
+    chunkShape: [number, number, number],
+    chunkStride: [number, number, number],
+    destArray: Float16Array,
+    destStride: [number, number, number],
+    chunkGridPos: [number, number, number],
+    chunkGridStart: [number, number, number],
+): void {
+    const [z, y, x] = chunkGridPos;
+    const [zStartIdx, yStartIdx, xStartIdx] = chunkGridStart;
+    const [chunkShapeZ, chunkShapeY, chunkShapeX] = chunkShape;
+
+    // 1. Calculate the local coordinates of the chunk within the destination grid
+    const localZ = z - zStartIdx;
+    const localY = y - yStartIdx;
+    const localX = x - xStartIdx;
+
+    // 2. Determine the starting element position for this chunk in the destination array
+    const zStart = localZ * chunkShapeZ;
+    const yStart = localY * chunkShapeY;
+    const xStart = localX * chunkShapeX;
+
+    // 3. Loop through the chunk and copy it slice by slice, row by row
+    for (let cz = 0; cz < chunkShapeZ; cz++) {
+        for (let cy = 0; cy < chunkShapeY; cy++) {
+            // Offset to the start of the row in the SOURCE chunk data
+            const sourceRowOffset = cz * chunkStride[0] + cy * chunkStride[1];
+            
+            // Offset to the start of the row in the DESTINATION typedArray
+            const destRowOffset = (zStart + cz) * destStride[0] + (yStart + cy) * destStride[1] + xStart;
+            
+            // Get the row of data from the source chunk
+            const rowData = chunkData.subarray(sourceRowOffset, sourceRowOffset + chunkShapeX);
+            
+            // Place the row in the correct position in the final array
+            destArray.set(rowData, destRowOffset);
+        }
+    }
+}
+
 const maxRetries = 10;
 const retryDelay = 500; // 0.5 seconds in milliseconds
 
@@ -199,23 +240,32 @@ export class ZarrDataset{
 				setArraySize(arraySize) // This is used for the getcurrentarray function
 
 				shape =  [zChunkCount*chunkShape[0], chunkShape[1]*yChunkCount, chunkShape[2]*xChunkCount] 
+				const destStride = [shape[1] * shape[2], shape[2], 1];
+				setStrides(destStride)
 				typedArray = new Float16Array(arraySize);
 				let accum = 0;
 				let iter = 1; // For progress bar
-				const chunkIDs: string[] = []
+				const chunkIDs = {x:[xStartIdx,xEndIdx], y:[yStartIdx,yEndIdx], z:[zStartIdx,zEndIdx]}
+				setCurrentChunks(chunkIDs) // These are used for Getcurrentarray 
 				const rescaleIDs = [] // These are the downloaded chunks that need to be rescaled
 				for (let z= zStartIdx ; z < zEndIdx ; z++){ // Iterate through chunks we need // (let z= zStartIdx ; z < zEndIdx ; z++)
 					for (let y= yStartIdx ; y < yEndIdx ; y++){
 						for (let x= xStartIdx ; x < xEndIdx ; x++){
-							const chunkID = `z${z}_y${y}_x${x}`
+							const chunkID = `z${z}_y${y}_x${x}` // Unique ID for each chunk
 							const cacheBase = is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`
 							const cacheName = `${cacheBase}_chunk_${chunkID}`
-							chunkIDs.push(chunkID) // identify which chunks to use when recombining cache for getcurrentarray function
 							if (this.cache.has(cacheName)){
 								chunk = cache.get(cacheName)
-								setStrides(chunk.stride)
 								const chunkData = chunk.compressed ? DecompressArray(chunk.data) : chunk.data // Decompress if needed
-								typedArray.set(chunkData,accum)
+								copyChunkToArray(
+									chunkData,
+									chunk.shape,
+									chunk.stride,
+									typedArray,
+									destStride as [number, number, number],
+									[z,y,x],
+									[zStartIdx,yStartIdx,xStartIdx],
+								)
 								setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
 								accum += chunk.data.length;
 								iter ++;
@@ -259,7 +309,15 @@ export class ZarrDataset{
 										}
 									}
 								}
-								typedArray.set(chunkF16,accum)
+								copyChunkToArray(
+									chunkF16,
+									chunk.shape,
+									chunk.stride,
+									typedArray,
+									destStride as [number, number, number],
+									[z,y,x],
+									[zStartIdx,yStartIdx,xStartIdx],
+								)
 								const cacheChunk = {
 									data: compress ? CompressArray(chunkF16, 7) : chunkF16,
 									shape: chunk.shape,
@@ -269,7 +327,6 @@ export class ZarrDataset{
 								}
 								cache.set(cacheName,cacheChunk)
 								accum += chunk.data.length;
-								setStrides(chunk.stride)
 								setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
 								iter ++;
 								
@@ -278,12 +335,9 @@ export class ZarrDataset{
 						}
 					}
 				}
-				setCurrentChunks(chunkIDs) // These are used for the Getcurrentarray 
 				setDownloading(false)
 				setProgress(0) // Reset progress for next load
 			}
-			console.log(shape)
-			console.log(typedArray)
 			return {
 				data: typedArray,
 				shape: shape,

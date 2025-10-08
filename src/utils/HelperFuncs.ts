@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { useGlobalStore, usePlotStore, useZarrStore, useCacheStore } from './GlobalStates';
 import { decompressSync } from 'fflate';
 import * as zarr from 'zarrita';
-import { GetStore } from '@/components/zarr/ZarrLoaderLRU';
+import { GetStore, copyChunkToArray } from '@/components/zarr/ZarrLoaderLRU';
 export function parseTimeUnit(units: string | undefined): [number, number] {
     if (units === "Default"){
         return [1, 0];
@@ -226,34 +226,52 @@ function DecompressArray(compressed : Uint8Array){
 }
 
 export function GetCurrentArray(overrideStore?:string){
-  const { variable, is4D, idx4D, initStore, setDecompressing }= useGlobalStore.getState()
-  const { arraySize, currentChunks }= useZarrStore.getState()
+  const { variable, is4D, idx4D, initStore, strides, setDecompressing }= useGlobalStore.getState()
+  const { arraySize, currentChunks } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
   
   if (cache.has(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)){
       const chunk = cache.get(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)
       const compressed = chunk.compressed
-      setDecompressing(true)
+      setDecompressing(compressed)
       const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
       setDecompressing(false)
 			return thisData
   }
   else{
     const typedArray = new Float16Array(arraySize)
-    let accum = 0;
-				for (const i of currentChunks){
-					const cacheName = is4D ? `${store}_${idx4D}_${variable}_chunk_${i}` : `${store}_${variable}_chunk_${i}`
-						//Add a check and throw error here if user set compress but the local files are not compressed
-						const chunk = cache.get(cacheName)
-            const compressed = chunk.compressed
-            setDecompressing(true)
-            const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
-						typedArray.set(thisData,accum)
-						accum += thisData.length;
+    const [xStartIdx, xEndIdx] = currentChunks.x
+    const [yStartIdx, yEndIdx] = currentChunks.y
+    const [zStartIdx, zEndIdx] = currentChunks.z
+    let chunkShape;
+    let chunkStride;
+    for (let z = zStartIdx; z < zEndIdx; z++) {
+      for (let y = yStartIdx; y < yEndIdx; y++) {
+        for (let x = xStartIdx; x < xEndIdx; x++) {
+          const chunkID = `z${z}_y${y}_x${x}`
+          const cacheName = is4D ? `${store}_${idx4D}_${variable}_chunk_${chunkID}` : `${store}_${variable}_chunk_${chunkID}`
+          const chunk = cache.get(cacheName)
+          const compressed = chunk.compressed
+          const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
+          if (!chunkShape) {
+            chunkShape = chunk.shape
+            chunkStride = chunk.stride
+          }
+          copyChunkToArray(
+            thisData,
+            chunkShape,
+            chunkStride,
+            typedArray,
+            strides as [number, number, number], 
+            [z, y, x], 
+            [zStartIdx, yStartIdx, xStartIdx]
+          )
         }
-      setDecompressing(false)
-      return typedArray
+      }
+    }
+    setDecompressing(false)
+    return typedArray
   }
 }
 

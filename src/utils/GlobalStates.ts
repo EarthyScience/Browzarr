@@ -416,7 +416,7 @@ type ZarrState = {
   compress: boolean,
   currentStore: any;
   reFetch: boolean;
-  currentChunks: string[];
+  currentChunks: {x:number[], y:number[], z:number[]};
   arraySize: number,
 
   setZSlice: (zSlice: [number , number | null]) => void;
@@ -425,7 +425,7 @@ type ZarrState = {
   setCompress: (compress: boolean) => void;
   setCurrentStore: (currentStore: any) => void;
   setReFetch: (reFetch: boolean) => void;
-  setCurrentChunks: (currentChunks: string[]) => void;
+  setCurrentChunks: (currentChunks: {x:number[], y:number[], z:number[]}) => void;
   setArraySize: (arraySize: number) => void;
 }
 
@@ -436,7 +436,7 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   compress: false,
   currentStore: GetStore(ESDC),
   reFetch: false,
-  currentChunks: [],
+  currentChunks: {x:[], y:[], z:[]},
   arraySize: 0,
 
   setZSlice: (zSlice) => set({ zSlice }),
