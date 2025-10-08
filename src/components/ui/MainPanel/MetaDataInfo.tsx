@@ -155,10 +155,6 @@ const currentSize = useMemo(() => {
     setIs4D(this4D);
   },[meta])
 
-  useEffect(()=>{
-    setZSlice([0, null])
-  },[initStore])
-
   const isFlat = meta.shape.length == 2
   useEffect(()=>{
     setCompress(false)
