@@ -10,6 +10,7 @@ import flatSphereFrag from './flatSphereFrag.glsl'
 import bordersFrag from './bordersFrag.glsl'
 import fragmentFlat from './fragmentFlat.glsl'
 import flatFrag3D from './flatFrag3D.glsl'
+import sphereBorderVert from './sphereBorders.glsl'
 export {
     pointFrag,
     pointVert,
@@ -18,6 +19,7 @@ export {
     sphereFrag,
     sphereVertex,
     sphereVertexFlat,
+    sphereBorderVert,
     fragOpt,
     flatSphereFrag,
     bordersFrag,

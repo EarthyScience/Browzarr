@@ -224,7 +224,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         frameloop="demand"
         gl={{ preserveDrawingBuffer: true }}
       >
-        <CountryBorders/>
+        <CountryBorders  texture={texture as THREE.DataTexture | THREE.Data3DTexture}/>
         <ExportCanvas show={show}/>
         {show && <AxisLines />}
         {plotType == "volume" && show && 
@@ -250,7 +250,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         orthographic frameloop="demand"
         >
           <ExportCanvas show={show}/>
-          <CountryBorders/>
+          <CountryBorders texture={texture as THREE.DataTexture | THREE.Data3DTexture}/>
           {show && <AxisLines />}
           <FlatMap texture={texture as THREE.DataTexture | THREE.Data3DTexture} infoSetters={infoSetters} />
           <Orbiter isFlat={true}/>

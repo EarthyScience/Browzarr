@@ -4,7 +4,7 @@ import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalSt
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow';
 import { useFrame } from '@react-three/fiber';
-import {vertexShader, bordersFrag} from '../textures/shaders'
+import {vertexShader, sphereBorderVert, sphereVertexFlat, bordersFrag} from '../textures/shaders'
 import { invalidate } from '@react-three/fiber';
 
 function Reproject([lon, lat] : [number, number], lonBounds: [number, number], latBounds: [number, number]){
@@ -27,8 +27,8 @@ function Spherize([lon, lat] : [number, number]){
     return [x * radius, y * radius, z * radius]
 }
 
-function Borders({features}:{features: any}){
-    const {xRange, yRange, plotType, borderColor, lonExtent, latExtent, lonResolution, latResolution} = usePlotStore(useShallow(state => ({
+function Borders({features, texture}:{features: any, texture: THREE.Data3DTexture | THREE.Texture}){
+    const {xRange, yRange, plotType, borderColor, lonExtent, latExtent, lonResolution, latResolution, animProg, sphereDisplacement} = usePlotStore(useShallow(state => ({
         xRange: state.xRange,
         yRange: state.yRange,
         plotType: state.plotType,
@@ -36,11 +36,15 @@ function Borders({features}:{features: any}){
         lonExtent: state.lonExtent,
         latExtent: state.latExtent,
         lonResolution: state.lonResolution,
-        latResolution: state.latResolution
+        latResolution: state.latResolution,
+        animProg: state.animProg,
+        sphereDisplacement: state.sphereDisplacement
     })))
-    const {flipY, shape } = useGlobalStore(useShallow(state => ({
+    const {flipY, shape, isFlat, valueScales } = useGlobalStore(useShallow(state => ({
         flipY: state.flipY,
-        shape: state.shape
+        shape: state.shape,
+        isFlat: state.isFlat,
+        valueScales: state.valueScales
     })))
 
     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
@@ -68,16 +72,20 @@ function Borders({features}:{features: any}){
     const lineShaderMat = useMemo(()=>new THREE.ShaderMaterial(
         {
             glslVersion: THREE.GLSL3,
-            vertexShader,
+            vertexShader: spherize ? (isFlat ? sphereVertexFlat : sphereBorderVert) : vertexShader,
             fragmentShader: bordersFrag,
             uniforms:{
+                map: {value: texture},
+                animProg: {value: animProg},
+                displaceZero: {value: -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)},
+                displacement: {value: sphereDisplacement},
                 xBounds: {value: new THREE.Vector2(xRange[0], xRange[1])},
                 yBounds: {value: new THREE.Vector2(yRange[0]/shape.x, yRange[1]/shape.x)},
                 borderColor: {value: new THREE.Color(borderColor)},
                 trim: {value: !spherize},
             }
         }
-    ),[])
+    ),[spherize])
 
     useEffect(()=>{
         if (lineShaderMat){
@@ -86,9 +94,13 @@ function Borders({features}:{features: any}){
             uniforms.yBounds.value = new THREE.Vector2(yRange[0]/shape.x, yRange[1]/shape.x)
             uniforms.borderColor.value = new THREE.Color(borderColor)
             uniforms.trim.value = !spherize
+            uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
+            uniforms.displacement.value = sphereDisplacement
+            uniforms.map.value =  texture 
+            uniforms.animProg.value = animProg
             invalidate()
         }
-    },[xRange, yRange, borderColor, spherize])
+    },[xRange, yRange, borderColor, spherize, sphereDisplacement, texture, valueScales, animProg])
 
     const lineGeometries = useMemo(() => {
     return features.flatMap((feature: any, i: number) => {
@@ -183,7 +195,7 @@ function Borders({features}:{features: any}){
     </>
   )
 }
-const CountryBorders = () => {
+const CountryBorders = ({texture} : {texture: THREE.Data3DTexture | THREE.DataTexture}) => {
     const [coastLines, setCoastLines] = useState<any>(null)
     const [borders, setBorders] = useState<any>(null)
     const [swapSides, setSwapSides] = useState<boolean>(false)
@@ -238,9 +250,9 @@ const CountryBorders = () => {
     const isPC = plotType == 'point-cloud'
     const depthScale = dataShape[0]/dataShape[2]*timeScale
     return(
-        <group visible={showBorders && !(analysisMode && axis != 0)} position={spherize ? [0,0,0] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale : 1) : zRange[1]*(isPC ? depthScale : 1)]}>
-        {coastLines && <Borders features={coastLines} />}
-        {borders && <Borders features={borders} />}
+        <group visible={showBorders && !(analysisMode && axis != 0)} position={spherize ? [0,0,0] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale : 1) : zRange[1]*(isPC ? depthScale : 1)]} frustumCulled={false}>
+        {coastLines && <Borders features={coastLines} texture={texture}/>}
+        {borders && <Borders features={borders} texture={texture}/>}
         </group>
     )
 }
