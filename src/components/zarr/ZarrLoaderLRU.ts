@@ -38,12 +38,6 @@ function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales b
 	}
 }
 
-function replaceChunkNumber(input: string, newNumber: number): string { // Used to update already cached chunks' scalingFactor
-  return input.replace(/chunk_\d+$/, `chunk_${newNumber}`);
-}
-
-
-
 export class ZarrError extends Error {
     constructor(message: string, public readonly cause?: unknown) {
         super(message);
@@ -107,7 +101,6 @@ export class ZarrDataset{
 	private dimNames: string[];
 	private chunkIDs: number[];
 	private chunkShape: number[];
-
 	constructor(store: Promise<zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore>>>){
 		this.groupStore = store;
 		this.variable = "Default";
@@ -116,9 +109,7 @@ export class ZarrDataset{
 		this.chunkIDs = [];
 		this.chunkShape = [1, 1, 1]
 	}
-
 	async GetArray(variable: string, slices: Slices){
-
 		const {is4D, idx4D, initStore, setProgress, setStrides, setDownloading} = useGlobalStore.getState();
 		const {compress, setCurrentChunks, setArraySize} = useZarrStore.getState()
 		const {cache} = useCacheStore.getState();
@@ -204,7 +195,6 @@ export class ZarrDataset{
 				const xEndIdx = xSlice[1] ? Math.ceil(xSlice[1]/chunkShape[2]) : is4D ? Math.ceil(outVar.shape[3]/chunkShape[2]) : Math.ceil(outVar.shape[2]/chunkShape[2])
 				const xChunkCount = xEndIdx - xStartIdx
 				const chunkCount = zChunkCount*yChunkCount*xChunkCount
-
 				const arraySize = chunkShape[0]*zChunkCount*chunkShape[1]*yChunkCount*chunkShape[2]*xChunkCount // Total size of the output array
 				setArraySize(arraySize) // This is used for the getcurrentarray function
 
@@ -214,12 +204,12 @@ export class ZarrDataset{
 				let iter = 1; // For progress bar
 				const chunkIDs: string[] = []
 				const rescaleIDs = [] // These are the downloaded chunks that need to be rescaled
-
-				for (let z= zStartIdx ; z < zEndIdx ; z++){ // Iterate through chunks we need
+				for (let z= zStartIdx ; z < zEndIdx ; z++){ // Iterate through chunks we need // (let z= zStartIdx ; z < zEndIdx ; z++)
 					for (let y= yStartIdx ; y < yEndIdx ; y++){
 						for (let x= xStartIdx ; x < xEndIdx ; x++){
 							const chunkID = `z${z}_y${y}_x${x}`
-							const cacheName = is4D ? `${initStore}_${idx4D}_${variable}_chunk_${chunkID}` : `${initStore}_${variable}_chunk_${chunkID}`
+							const cacheBase = is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`
+							const cacheName = `${cacheBase}_chunk_${chunkID}`
 							chunkIDs.push(chunkID) // identify which chunks to use when recombining cache for getcurrentarray function
 							if (this.cache.has(cacheName)){
 								chunk = cache.get(cacheName)
@@ -245,9 +235,8 @@ export class ZarrDataset{
 											useGlobalStore.getState().setShowLoading(false)
 											setDownloading(false)
 											setProgress(0)
-											throw new ZarrError(`Failed to fetch chunk ${i} for variable ${variable}`, error);
+											throw new ZarrError(`Failed to fetch chunk ${chunkID} for variable ${variable}`, error);
 										}
-										
 										// Wait before retrying (except on the last attempt which we've already handled above)
 										await new Promise(resolve => setTimeout(resolve, retryDelay));
 									}
@@ -262,7 +251,7 @@ export class ZarrDataset{
 										RescaleArray(typedArray, thisScaling)
 										scalingFactor = newScalingFactor
 										for (const id of rescaleIDs){ // Set new scalingFactor on the chunks
-											const tempName = replaceChunkNumber(cacheName, id)
+											const tempName = `${cacheBase}_chunk_${id}`
 											const tempChunk = cache.get(tempName)
 											tempChunk.scaling = scalingFactor
 											RescaleArray(tempChunk.data, thisScaling)
@@ -293,6 +282,8 @@ export class ZarrDataset{
 				setDownloading(false)
 				setProgress(0) // Reset progress for next load
 			}
+			console.log(shape)
+			console.log(typedArray)
 			return {
 				data: typedArray,
 				shape: shape,
@@ -329,7 +320,6 @@ export class ZarrDataset{
 				}
 				dims.push(dim)
 		}
-		
 		this.dimNames = dims;
 		return meta;
 	}

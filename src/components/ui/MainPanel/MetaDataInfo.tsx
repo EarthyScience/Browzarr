@@ -367,7 +367,7 @@ const currentSize = useMemo(() => {
         size="sm"
         
         className="cursor-pointer hover:scale-[1.05]"
-        disabled={((is4D && idx4D == null) || tooBig || smallCache)}
+        disabled={((is4D && idx4D == null) || smallCache)}
         onClick={() => {
           if (variable == meta.name){
             setReFetch(!reFetch)
