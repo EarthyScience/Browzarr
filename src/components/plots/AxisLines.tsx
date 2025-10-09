@@ -117,12 +117,12 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
             >{parseLoc(dimSlices[2][Math.floor((dimLengths[2]-1)*idx*xValDelta)],dimUnits[2])}</Text>
           </group>
         ))}
-        <group rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]} position={[(xRange[0]+xRange[1])/2*globalScale, 0, flipX ? -0.2*globalScale :.2*globalScale]}>
+        <group rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]} position={[(xRange[0]+xRange[1])/2*globalScale/2, 0, flipX ? -0.15*globalScale : 0.15*globalScale]}>
           <Text 
             key={'xTitle'}
             anchorX={'center'}
             anchorY={'top'} 
-            fontSize={0.1*globalScale} 
+            fontSize={0.08*globalScale} 
             color={colorHex}
             material-depthTest={false}
           >{dimNames[2]}</Text>
@@ -132,10 +132,10 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               key={'xAdd'}
               anchorX={'center'}
               anchorY={'middle'} 
-              fontSize={0.2*globalScale} 
+              fontSize={0.15*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[.2*globalScale, -0.2*globalScale, 0]}
+              position={[0.3*globalScale, -0.2*globalScale/4, 0]}
               onClick={e=>setXResolution(x=> Math.min(x+1,20))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -147,10 +147,10 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               key={'xSub'}
               anchorX={'center'}
               anchorY={'middle'} 
-              fontSize={0.2*globalScale} 
+              fontSize={0.15*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[-.2*globalScale, -0.2*globalScale, 0]}
+              position={[-0.3*globalScale, -0.2*globalScale/4, 0]}
               onClick={e=>setXResolution(x=> Math.max(x-1,1))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -181,25 +181,26 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
             >{parseLoc(dimSlices[0][(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]],dimUnits[0])}</Text>
           </group>
         ))}
-        <group rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]} position={[flipY ? 0.2*globalScale : -0.2*globalScale, 0, isPC ? (zRange[0]+zRange[1])/2*depthRatio*(globalScale) : (zRange[0]+zRange[1])/2]}>
+        <group rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]} position={[flipY ? 0.15*globalScale : -0.15*globalScale, 0, isPC ? (zRange[0]+zRange[1])/2*depthRatio*(globalScale) : (zRange[0]+zRange[1])/2]}>
           <Text 
             key={'zTitle'}
             anchorX={'center'}
             anchorY={'top'} 
-            fontSize={0.1*globalScale} 
+            fontSize={0.08*globalScale} 
             color={colorHex}
             material-depthTest={false}
           >{dimNames[0]}</Text>
+          
           <group visible={!hideAxisControls}>
             {zResolution < 20 &&
             <Text 
               key={'zAdd'}
               anchorX={'center'}
               anchorY={'middle'} 
-              fontSize={0.2*globalScale} 
+              fontSize={0.15*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[.2*globalScale, -.2*globalScale, 0]}
+              position={[0.2*globalScale, -0.2*globalScale/4, 0]}
               onClick={e=>setZResolution(x=> Math.min(x+1,20))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -211,10 +212,10 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               key={'zSub'}
               anchorX={'center'}
               anchorY={'middle'} 
-              fontSize={0.2*globalScale} 
+              fontSize={0.15*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[-.2*globalScale, -.2*globalScale, 0]}
+              position={[-0.2*globalScale, -0.2*globalScale/4, 0]}
               onClick={e=>setZResolution(x=> Math.max(x-1,1))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -246,49 +247,57 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
             >{parseLoc(dimSlices[1][Math.floor((dimLengths[1]-1)*idx*yValDelta)],dimUnits[1])}</Text>
           </group>
         ))}
-        <group rotation={[0, flipX ? Math.PI : 0 , 0]} position={[flipY ? -0.25*globalScale : 0.25*globalScale, (yRange[0]+yRange[1])/2*shapeRatio*globalScale, 0]}>
+        <group rotation={[0, flipX ? Math.PI : 0 , 0]} position={[flipY ? -0.32*globalScale : 0.32*globalScale, (yRange[0]+yRange[1])/2*shapeRatio*globalScale, 0]}>
           <Text 
             key={'yTitle'}
-            anchorX={flipY ? flipX ? 'left' : 'right' : flipX ? 'right' : 'left'}
+            anchorX={'center'}
             anchorY={'middle'} 
-            fontSize={0.1*globalScale} 
+            fontSize={0.08*globalScale} 
             color={colorHex}
             material-depthTest={false}
-          >{dimNames[1]}</Text>
+            rotation={[0, 0, Math.PI / 2]}
+          >
+            {dimNames[1]}
+          </Text>
+
           <group visible={!hideAxisControls}>
             {yResolution < 20 &&
             <Text 
               key={'zAdd'}
               anchorX={'center'}
               anchorY={'middle'} 
-              fontSize={0.2*globalScale} 
+              fontSize={0.15*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[ flipY == flipX ? 0.2*globalScale : -0.2*globalScale, 0.2*globalScale, 0]}
+              position={[ flipY == flipX ? 0.01*globalScale : -0.01*globalScale, 0.3*globalScale, 0]}
               onClick={e=>setYResolution(x=> Math.min(x+1,20))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               +
-            </Text>}
-            {yResolution > 1 &&
+            </Text>
+          }
+          {yResolution > 1 &&
             <Text 
               key={'zSub'}
               anchorX={'center'}
-              anchorY={'middle'} 
-              fontSize={0.2*globalScale} 
+              anchorY={'middle'}
+              rotation={[0, 0, Math.PI / 2]}
+              fontSize={0.15*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[flipY == flipX ? 0.2*globalScale : -0.2*globalScale, -0.2*globalScale, 0]}
+              position={[flipY == flipX ? 0.0*globalScale : -0.0*globalScale, -0.3*globalScale, 0]}
               onClick={e=>setYResolution(x=> Math.max(x-1,1))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
-            </Text>}
-          </group>
+            </Text>
+          }
         </group>
+      </group>
     </group>
+
   </group>
   )
 }
@@ -414,12 +423,12 @@ const FlatAxis = () =>{
             >{parseLoc(axisArrays[widthIdx][Math.floor((dimLengths[widthIdx]-1)*idx*xValDelta)],axisUnits[widthIdx])}</Text>
           </group>
         ))}
-        <group rotation={[-Math.PI/2, 0, 0]} position={[0, 0, 0.2]}>
+        <group rotation={[-Math.PI/2, 0, 0]} position={[0, 0, 0.15]}>
           <Text 
             key={'xTitle'}
             anchorX={'center'}
             anchorY={'top'} 
-            fontSize={0.1} 
+            fontSize={0.08} 
             color={colorHex}
             material-depthTest={false}
           >{axisNames[widthIdx]}</Text>
@@ -429,10 +438,10 @@ const FlatAxis = () =>{
               key={'xAdd'}
               anchorX={'center'}
               anchorY={'middle'} 
-              fontSize={0.15} 
+              fontSize={0.125} 
               color={colorHex}
               material-depthTest={false}
-              position={[.2, -0.15, 0]}
+              position={[0.35, -0.05, 0]}
               onClick={e=>setXResolution(x=> Math.min(x+1,20))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -444,10 +453,10 @@ const FlatAxis = () =>{
               key={'xSub'}
               anchorX={'center'}
               anchorY={'middle'} 
-              fontSize={0.15} 
+              fontSize={0.125} 
               color={colorHex}
               material-depthTest={false}
-              position={[-.2, -0.15, 0]}
+              position={[-0.35, -0.05, 0]}
               onClick={e=>setXResolution(x=> Math.max(x-1,1))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -476,12 +485,13 @@ const FlatAxis = () =>{
             >{parseLoc(axisArrays[heightIdx][Math.floor((dimLengths[heightIdx]-1)*idx*yValDelta)],axisUnits[heightIdx])}</Text>
           </group>
         ))}
-        <group rotation={[0, 0 , 0]} position={[-0.25, 0, 0]}>
+        <group rotation={[0, 0 , 0]} position={[-0.325, 0, 0]}>
           <Text 
             key={'yTitle'}
-            anchorX={'right'}
+            anchorX={'center'}
             anchorY={'middle'} 
-            fontSize={0.1} 
+            rotation={[0, 0, Math.PI/2]}
+            fontSize={0.08}
             color={colorHex}
             material-depthTest={false}
           >{axisNames[heightIdx]}</Text>
@@ -491,10 +501,10 @@ const FlatAxis = () =>{
               key={'zAdd'}
               anchorX={'center'}
               anchorY={'middle'} 
-              fontSize={0.15} 
+              fontSize={0.125} 
               color={colorHex}
               material-depthTest={false}
-              position={[ -.1, 0.2, 0]}
+              position={[ 0.0, 0.3, 0]}
               onClick={e=>setYResolution(x=> Math.min(x+1,20))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -506,10 +516,11 @@ const FlatAxis = () =>{
               key={'zSub'}
               anchorX={'center'}
               anchorY={'middle'} 
-              fontSize={0.15} 
+              fontSize={0.125} 
               color={colorHex}
               material-depthTest={false}
-              position={[-.1, -0.2, 0]}
+              position={[0.015, -0.3, 0]}
+              rotation={[0, 0, -Math.PI / 2]}
               onClick={e=>setYResolution(x=> Math.max(x-1,1))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
