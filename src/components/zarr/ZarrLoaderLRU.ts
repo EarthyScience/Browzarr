@@ -254,19 +254,22 @@ export class ZarrDataset{
 							const cacheName = `${cacheBase}_chunk_${chunkID}`
 							if (cache.has(cacheName)){
 								const cachedChunk = cache.get(cacheName)
-								const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed
-								console.log(chunkData)
+								const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : (cachedChunk.data.slice ? cachedChunk.data.slice() : new Float16Array(cachedChunk.data)); // Decompress if needed
+								// console.log(chunkData)
+								const chunkShapeFromCache = cachedChunk.shape as [number, number, number];
+								const chunkStrideFromCache = cachedChunk.stride as [number, number, number];
+
 								copyChunkToArray(
 									chunkData,
-									chunkData.shape,
-									chunkData.stride,
+									chunkShapeFromCache,
+									chunkStrideFromCache,
 									typedArray,
 									destStride as [number, number, number],
 									[z,y,x],
 									[zStartIdx,yStartIdx,xStartIdx],
-								)
+								);
 								setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
-								accum += chunkData.data.length;
+								accum += chunkData.length
 								iter ++;
 							}
 							else{
