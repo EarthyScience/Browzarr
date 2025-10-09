@@ -1,4 +1,4 @@
-"use cleint";
+"use client";
 
 import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
 import React, {useState, useMemo} from 'react'
