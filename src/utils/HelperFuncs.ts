@@ -2,7 +2,8 @@
 import * as THREE from 'three'
 import { useGlobalStore, usePlotStore, useZarrStore, useCacheStore } from './GlobalStates';
 import { decompressSync } from 'fflate';
-
+import * as zarr from 'zarrita';
+import { GetStore, copyChunkToArray } from '@/components/zarr/ZarrLoaderLRU';
 export function parseTimeUnit(units: string | undefined): [number, number] {
     if (units === "Default"){
         return [1, 0];
@@ -52,9 +53,8 @@ const months = [
 ];
   
 export function parseLoc(input:number, units: string | undefined, verbose: boolean = false) {
-    
     if (!units){
-        return input
+        return input?.toFixed(2)
     }
     if (typeof(input) == 'bigint'){
       if (!units){
@@ -87,7 +87,7 @@ export function parseLoc(input:number, units: string | undefined, verbose: boole
         
     }
     else {
-        return input.toFixed(2);
+        return input ? input.toFixed(2) : input;
     }
 }
 
@@ -186,44 +186,6 @@ export function ParseExtent(dimUnits: string[], dimArrays: number[][]){
   }
 }
 
-export async function testCORSConfiguration(storePath: string): Promise<{
-    isAccessible: boolean;
-    corsEnabled: boolean;
-    errorDetails: string | null;
-}> {
-    try {
-        // Test with CORS mode
-        const corsResponse = await fetch(storePath, {
-            method: 'HEAD',
-            mode: 'cors'
-        });
-        return {
-            isAccessible: true,
-            corsEnabled: true,
-            errorDetails: String(corsResponse.status)
-        };
-    } catch (corsError) {
-        try {
-            // Test with no-cors mode
-            await fetch(storePath, {
-                method: 'HEAD',
-                mode: 'no-cors'
-            });
-            
-            return {
-                isAccessible: true,
-                corsEnabled: false,
-                errorDetails: 'Server is accessible but CORS is not properly configured'
-            };
-        } catch (networkError) {
-            return {
-                isAccessible: false,
-                corsEnabled: false,
-                errorDetails: 'Server is not accessible or URL is incorrect'
-            };
-        }
-    }
-}
 
 interface TimeSeriesInfo{
   uv:THREE.Vector2,
@@ -264,33 +226,93 @@ function DecompressArray(compressed : Uint8Array){
 }
 
 export function GetCurrentArray(overrideStore?:string){
-  const { variable, is4D, idx4D, initStore, setDecompressing }= useGlobalStore.getState()
-  const { arraySize, currentChunks }= useZarrStore.getState()
+  const { variable, is4D, idx4D, initStore, strides, setDecompressing }= useGlobalStore.getState()
+  const { arraySize, currentChunks } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
   
   if (cache.has(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)){
       const chunk = cache.get(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)
       const compressed = chunk.compressed
-      setDecompressing(true)
+      setDecompressing(compressed)
       const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
       setDecompressing(false)
 			return thisData
   }
   else{
     const typedArray = new Float16Array(arraySize)
-    let accum = 0;
-				for (const i of currentChunks){
-					const cacheName = is4D ? `${store}_${idx4D}_${variable}_chunk_${i}` : `${store}_${variable}_chunk_${i}`
-						//Add a check and throw error here if user set compress but the local files are not compressed
-						const chunk = cache.get(cacheName)
-            const compressed = chunk.compressed
-            setDecompressing(true)
-            const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
-						typedArray.set(thisData,accum)
-						accum += thisData.length;
+    const [xStartIdx, xEndIdx] = currentChunks.x
+    const [yStartIdx, yEndIdx] = currentChunks.y
+    const [zStartIdx, zEndIdx] = currentChunks.z
+    let chunkShape;
+    let chunkStride;
+    for (let z = zStartIdx; z < zEndIdx; z++) {
+      for (let y = yStartIdx; y < yEndIdx; y++) {
+        for (let x = xStartIdx; x < xEndIdx; x++) {
+          const chunkID = `z${z}_y${y}_x${x}`
+          const cacheName = is4D ? `${store}_${idx4D}_${variable}_chunk_${chunkID}` : `${store}_${variable}_chunk_${chunkID}`
+          const chunk = cache.get(cacheName)
+          const compressed = chunk.compressed
+          const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
+          if (!chunkShape) {
+            chunkShape = chunk.shape
+            chunkStride = chunk.stride
+          }
+          copyChunkToArray(
+            thisData,
+            chunkShape,
+            chunkStride,
+            typedArray,
+            strides as [number, number, number], 
+            [z, y, x], 
+            [zStartIdx, yStartIdx, xStartIdx]
+          )
         }
-      setDecompressing(false)
-      return typedArray
+      }
+    }
+    setDecompressing(false)
+    return typedArray
+  }
+}
+
+export function TwoDecimals(val: number){
+    return Math.round(val * 100)/100
+}
+
+export async function GetDimInfo(variable:string){
+  const {cache} = useCacheStore.getState();
+  const {initStore} = useGlobalStore.getState();
+  const cacheName = `${initStore}_${variable}_meta`
+  const dimArrays = []
+  const dimUnits = []
+  if (cache.has(cacheName)){
+    const meta = cache.get(cacheName)
+    const dimNames = meta._ARRAY_DIMENSIONS as string[]
+    for (const dim of dimNames){
+      dimArrays.push(cache.get(`${initStore}_${dim}`))
+      dimUnits.push(cache.get(`${initStore}_${dim}_meta`).units)
+    }
+    return {dimNames, dimArrays, dimUnits};
+  }
+  else{
+    const group = await useZarrStore.getState().currentStore
+    if (!group) {
+      throw new Error(`Failed to open Zarr store: ${initStore}`);
+    }
+    const outVar = await zarr.open(group.resolve(variable), {kind:"array"});
+    const meta = outVar.attrs;
+    cache.set(cacheName, meta);
+    const dimNames = meta._ARRAY_DIMENSIONS as string[]
+    for (const dim of dimNames){
+      const dimArray = await zarr.open(group.resolve(dim), {kind:"array"})
+          .then((result) => zarr.get(result));
+      const dimMeta = await zarr.open(group.resolve(dim), {kind:"array"})
+        .then((result) => result.attrs)
+      cache.set(`${initStore}_${dim}`, dimArray.data);
+      cache.set(`${initStore}_${dim}_meta`, dimMeta)
+      dimArrays.push(dimArray.data)
+      dimUnits.push(dimMeta.units)
+    }
+    return {dimNames, dimArrays, dimUnits};
   }
 }

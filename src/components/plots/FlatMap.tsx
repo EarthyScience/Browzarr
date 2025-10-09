@@ -2,7 +2,7 @@
 
 import React, {useMemo, useEffect, useRef, useCallback} from 'react'
 import * as THREE from 'three'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useAnalysisStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
 import { vertShader } from '@/components/computation/shaders'
 import { flatFrag3D, fragmentFlat } from '../textures/shaders';
 import { useShallow } from 'zustand/shallow'
@@ -45,7 +45,16 @@ const FlatMap = ({texture, infoSetters} : {texture : THREE.DataTexture | THREE.D
       analysisMode: state.analysisMode,
       analysisArray: state.analysisArray
     })))
-    
+    const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
+        zSlice: state.zSlice,
+        ySlice: state.ySlice,
+        xSlice: state.xSlice
+      })))
+    const dimSlices = [
+      dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+      dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+      dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+    ]
     const dataSource = texture.source.data
     const shapeRatio = useMemo(()=> dataSource.height/dataSource.width, [dataSource])
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
@@ -53,7 +62,7 @@ const FlatMap = ({texture, infoSetters} : {texture : THREE.DataTexture | THREE.D
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
     const rotateMap = analysisMode && axis == 2;
     const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray])
-    const analysisDims = useMemo(()=>dimArrays.length > 2 ? dimArrays.filter((_e,idx)=> idx != axis) : dimArrays,[dimArrays,axis])
+    const analysisDims = useMemo(()=>dimArrays.length > 2 ? dimSlices.filter((_e,idx)=> idx != axis) : dimSlices,[dimSlices,axis])
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms:{
@@ -92,17 +101,17 @@ const FlatMap = ({texture, infoSetters} : {texture : THREE.DataTexture | THREE.D
         setLoc([e.clientX, e.clientY]);
         lastUV.current = e.uv;
         const { x, y } = e.uv;
-        const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimArrays[1].length) : dimArrays[2].length;
-        const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimArrays[0].length) : dimArrays[1].length;
+        const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[2].length;
+        const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[1].length;
         const xIdx = Math.round(x*xSize-.5)
         const yIdx = Math.round(y*ySize-.5)
         let dataIdx = xSize * yIdx + xIdx;
-        dataIdx += isFlat ? 0 : Math.floor((dimArrays[0].length-1) * animProg) * xSize*ySize
+        dataIdx += isFlat ? 0 : Math.floor((dimSlices[0].length-1) * animProg) * xSize*ySize
         const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
         val.current = isFlat && !analysisMode ? Rescale(dataVal, valueScales) : dataVal;
-        coords.current = isFlat ? analysisMode ? [analysisDims[0][yIdx], analysisDims[1][xIdx]] : [dimArrays[0][yIdx], dimArrays[1][xIdx]] : [dimArrays[1][yIdx], dimArrays[2][xIdx]]
+        coords.current = isFlat ? analysisMode ? [analysisDims[0][yIdx], analysisDims[1][xIdx]] : [dimSlices[0][yIdx], dimSlices[1][xIdx]] : [dimSlices[1][yIdx], dimSlices[2][xIdx]]
       }
-    }, [sampleArray, dimArrays, animProg]);
+    }, [sampleArray, dimSlices, animProg]);
   return (
     <>
     <mesh 

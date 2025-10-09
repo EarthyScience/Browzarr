@@ -26,14 +26,20 @@ export function LandingHome() {
     setTitleDescription: state.setTitleDescription,
   })))
 
-  
-
-  const { currentStore, setCurrentStore } = useZarrStore(useShallow(state => ({
+  const { currentStore, setCurrentStore, setZSlice, setYSlice, setXSlice } = useZarrStore(useShallow(state => ({
     currentStore: state.currentStore,
-    setCurrentStore: state.setCurrentStore
+    setCurrentStore: state.setCurrentStore,
+    setZSlice: state.setZSlice,
+    setYSlice: state.setYSlice,
+    setXSlice: state.setXSlice
   })))
-
+    function resetSlices(){
+      setZSlice([0,null])
+      setYSlice([0,null])
+      setXSlice([0,null])
+    }
   useEffect(() => { // Update store if URL changes
+    resetSlices();
     if (initStore.startsWith('local')){ // Don't fetch store if local 
       return
     }

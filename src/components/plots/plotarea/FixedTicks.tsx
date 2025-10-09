@@ -3,7 +3,7 @@ import { useThree, useFrame } from '@react-three/fiber'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { parseTimeUnit } from '@/utils/HelperFuncs'
 import { Fragment } from 'react'
-import { useGlobalStore } from '@/utils/GlobalStates'
+import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 
 
@@ -43,10 +43,19 @@ export function FixedTicks({
       dimArrays:state.dimArrays,
       plotDim:state.plotDim,
       valueScales:state.valueScales
-    }))
-  )
+    })))
+  const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
+                zSlice: state.zSlice,
+                ySlice: state.ySlice,
+                xSlice: state.xSlice
+      })))
+  const dimSlices = [
+    dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+    dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+    dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+  ]
   const coords = dimCoords
-  const xDimArray = dimArrays[plotDim]
+  const xDimArray = dimSlices[plotDim]
   const xTickCount = 10;
   const yTickCount = 8;
 

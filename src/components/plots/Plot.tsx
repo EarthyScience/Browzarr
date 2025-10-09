@@ -113,8 +113,10 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       plotType: state.plotType,
     })))
 
-    const {slice, reFetch} = useZarrStore(useShallow(state=> ({
-      slice: state.slice,
+    const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(useShallow(state=> ({
+      zSlice: state.zSlice,
+      ySlice: state.ySlice,
+      xSlice: state.xSlice,
       reFetch: state.reFetch
     })))
 
@@ -133,7 +135,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       setShowLoading(true);
       setShow(false)
       try{
-        ZarrDS.GetArray(variable, slice).then((result) => {
+        ZarrDS.GetArray(variable, {xSlice, ySlice, zSlice}).then((result) => {
         const [texture, scaling] = ArrayToTexture({
           data: result.data,
           shape: result.shape
@@ -201,6 +203,11 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     }
       else{
         setMetadata(null)
+      }
+      return () => { // GPU Data apparently isn't Garbage Collected
+        if (texture) {
+          texture.dispose();
+        }
       }
   }, [reFetch])
 

@@ -6,6 +6,7 @@ import { useGlobalStore } from "@/utils/GlobalStates";
 import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
 import MetaDataInfo from "./MetaDataInfo";
+import { GetDimInfo } from "@/utils/HelperFuncs";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "../input";
@@ -32,12 +33,17 @@ const Variables = ({
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
   const [showMeta, setShowMeta] = useState(false);
-  const { variables, zMeta } = useGlobalStore(
+  const { variables, zMeta, initStore } = useGlobalStore(
     useShallow((state) => ({
       variables: state.variables,
       zMeta: state.zMeta,
+      initStore: state.initStore
     }))
   );
+  const [dimArrays, setDimArrays] = useState([[0],[0],[0]])
+  const [dimUnits, setDimUnits] = useState([null,null,null])
+  const [dimNames, setDimNames] = useState<string[]> (["Default"])
+
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedVar, setSelectedVar] = useState<string | null>(null);
   const [meta, setMeta] = useState<any>(null);
@@ -54,9 +60,17 @@ const Variables = ({
   useEffect(() => {
     if (variables && zMeta && selectedVar) {
       const relevant = zMeta.find((e: any) => e.name === selectedVar);
-      setMeta(relevant);
+      if (relevant){
+        setMeta({...relevant, dimInfo : {dimArrays, dimNames, dimUnits}});
+      }
     }
-  }, [selectedVar, variables, zMeta]);
+  }, [selectedVar, variables, zMeta, dimArrays, dimNames, dimUnits]);
+
+  useEffect(()=>{
+    setSelectedIndex(null)
+    setSelectedVar(null)
+    setMeta(null)
+  },[initStore])
 
   useEffect(() => {
     const handleResize = () => {
@@ -81,6 +95,7 @@ const Variables = ({
               onClick={() => {
                 setSelectedIndex(idx);
                 setSelectedVar(val);
+                GetDimInfo(val).then(e=>{setDimNames(e.dimNames); setDimArrays(e.dimArrays); setDimUnits(e.dimUnits)})
                 setShowMeta(true);
               }}
             >

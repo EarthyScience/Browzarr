@@ -151,7 +151,6 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setDecompressing: (decompressing) => set({ decompressing }),
   setIs4D: (is4D) => set({ is4D }),
   setIdx4D: (idx4D) => set({ idx4D }),
-
   setTitleDescription: (titleDescription) => set({ titleDescription }),
 }));
 
@@ -410,30 +409,38 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
 }));
 
 type ZarrState = {
-  slice: [number  , number | null],
+  zSlice: [number  , number | null],
+  ySlice: [number  , number | null],
+  xSlice: [number  , number | null],
   compress: boolean,
   currentStore: any;
   reFetch: boolean;
-  currentChunks: number[];
+  currentChunks: {x:number[], y:number[], z:number[]};
   arraySize: number,
 
-  setSlice: (slice: [number , number | null]) => void;
+  setZSlice: (zSlice: [number , number | null]) => void;
+  setYSlice: (ySlice: [number , number | null]) => void;
+  setXSlice: (xSlice: [number , number | null]) => void;
   setCompress: (compress: boolean) => void;
   setCurrentStore: (currentStore: any) => void;
   setReFetch: (reFetch: boolean) => void;
-  setCurrentChunks: (currentChunks: number[]) => void;
+  setCurrentChunks: (currentChunks: {x:number[], y:number[], z:number[]}) => void;
   setArraySize: (arraySize: number) => void;
 }
 
 export const useZarrStore = create<ZarrState>((set, get) => ({
-  slice: [0, null],
+  zSlice: [0, null],
+  ySlice: [0, null],
+  xSlice: [0, null],
   compress: false,
   currentStore: GetStore(ESDC),
   reFetch: false,
-  currentChunks: [],
+  currentChunks: {x:[], y:[], z:[]},
   arraySize: 0,
 
-  setSlice: (slice) => set({ slice }),
+  setZSlice: (zSlice) => set({ zSlice }),
+  setYSlice: (ySlice) => set({ ySlice }),
+  setXSlice: (xSlice) => set({ xSlice }),
   setCompress: (compress) => set({ compress }),
   setCurrentStore: (currentStore) => set({ currentStore }),
   setReFetch: (reFetch) => set({ reFetch }),
@@ -448,9 +455,10 @@ type CacheState = {
   setMaxSize: (maxSize: number) => void;
 }
 
+const memoryModule = new MemoryLRU({ maxSize: 200 * 1024 * 1024 }) // 200 MB // Maybe moving it outside will allow Garbe Collector to correctly remove the cached data
 
 export const useCacheStore = create<CacheState>((set, get) => ({
-  cache: new MemoryLRU({ maxSize: 200 * 1024 * 1024 }), // 200 MB
+  cache: memoryModule as MemoryLRU<string, any>,  // 200 MB
   maxSize: 200 * 1024 * 1024,
   // Cache operations
   clearCache: () => {
