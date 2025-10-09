@@ -1,6 +1,6 @@
 "use cleint";
 
-import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore } from '@/utils/GlobalStates'
+import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
 import React, {useState, useMemo} from 'react'
 import { useShallow } from 'zustand/shallow'
 import { Text } from '@react-three/drei'
@@ -12,14 +12,19 @@ import { parseLoc } from '@/utils/HelperFuncs';
 import { useCSSVariable } from '../ui';
 import * as THREE from 'three'
 
-const HorizontalAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, flipDown: boolean}) =>{
-  const {dimArrays, dimNames, dimUnits, dataShape} = useGlobalStore(useShallow(state => ({
+const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, flipDown: boolean}) =>{
+  const {dimArrays, dimNames, dimUnits, dataShape, revY} = useGlobalStore(useShallow(state => ({
     dimArrays: state.dimArrays,
     dimNames: state.dimNames,
     dimUnits: state.dimUnits,
-    dataShape: state.dataShape
+    dataShape: state.dataShape,
+    revY: state.flipY
   })))
-
+  const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
+    zSlice: state.zSlice,
+    ySlice: state.ySlice,
+    xSlice: state.xSlice
+  })))
   const {xRange, yRange, zRange, plotType, timeScale, animProg} = usePlotStore(useShallow(state => ({
     xRange: state.xRange,
     yRange: state.yRange,
@@ -34,7 +39,16 @@ const HorizontalAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolea
     hideAxisControls: state.hideAxisControls
   })))
 
-  const dimLengths = [dimArrays[0].length, dimArrays[1].length, dimArrays[2].length]
+  const dimLengths = [
+    (zSlice[1] ? zSlice[1] : dimArrays[0].length) - zSlice[0],
+    (ySlice[1] ? ySlice[1] : dimArrays[1].length) - ySlice[0],
+    (xSlice[1] ? xSlice[1] : dimArrays[2].length) - xSlice[0],
+  ]
+  const dimSlices = [
+    dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+    revY ? dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+    dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+  ]
 
   const [xResolution, setXResolution] = useState<number>(7)
   const [yResolution, setYResolution] = useState<number>(7)
@@ -71,7 +85,7 @@ const HorizontalAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolea
   const tickLine = useMemo(()=> {
     const geom = new LineSegmentsGeometry().setPositions([0, 0, 0, 0, 0, tickLength]);
     return new LineSegments2(geom, lineMat)},[lineMat, globalScale])
-
+  
   const xDimScale = xResolution/(xResolution-1)
   const xValDelta = 1/(xResolution-1)
   const yDimScale = yResolution/(yResolution-1)
@@ -100,7 +114,7 @@ const HorizontalAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolea
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]}
               position={[0, 0, flipX ? -0.05*globalScale :.05*globalScale]}
-            >{parseLoc(dimArrays[2][Math.floor((dimLengths[2]-1)*idx*xValDelta)],dimUnits[2])}</Text>
+            >{parseLoc(dimSlices[2][Math.floor((dimLengths[2]-1)*idx*xValDelta)],dimUnits[2])}</Text>
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]} position={[(xRange[0]+xRange[1])/2*globalScale, 0, flipX ? -0.2*globalScale :.2*globalScale]}>
@@ -164,7 +178,7 @@ const HorizontalAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolea
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]}
               position={[flipY ? 0.05*globalScale :-0.05*globalScale, 0, 0]}
-            >{parseLoc(dimArrays[0][(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]],dimUnits[0])}</Text>
+            >{parseLoc(dimSlices[0][(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]],dimUnits[0])}</Text>
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]} position={[flipY ? 0.2*globalScale : -0.2*globalScale, 0, isPC ? (zRange[0]+zRange[1])/2*depthRatio*(globalScale) : (zRange[0]+zRange[1])/2]}>
@@ -229,7 +243,7 @@ const HorizontalAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolea
               material-depthTest={false}
               rotation={[0, flipX ? Math.PI : 0, 0]}
               position={[flipY ? -0.07*globalScale : 0.07*globalScale, 0, 0]}
-            >{parseLoc(dimArrays[1][Math.floor((dimLengths[1]-1)*idx*yValDelta)],dimUnits[1])}</Text>
+            >{parseLoc(dimSlices[1][Math.floor((dimLengths[1]-1)*idx*yValDelta)],dimUnits[1])}</Text>
           </group>
         ))}
         <group rotation={[0, flipX ? Math.PI : 0 , 0]} position={[flipY ? -0.25*globalScale : 0.25*globalScale, (yRange[0]+yRange[1])/2*shapeRatio*globalScale, 0]}>
@@ -281,16 +295,21 @@ const HorizontalAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolea
 
 
 const FlatAxis = () =>{
-  const {dimArrays, dimNames, dimUnits} = useGlobalStore(useShallow(state => ({
+  const {dimArrays, dimNames, dimUnits, flipY} = useGlobalStore(useShallow(state => ({
     dimArrays: state.dimArrays,
     dimNames: state.dimNames,
     dimUnits: state.dimUnits,
+    flipY: state.flipY
   })))
 
   const {plotType} = usePlotStore(useShallow(state=>({
     plotType: state.plotType
   })))
-
+  const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
+    zSlice: state.zSlice,
+    ySlice: state.ySlice,
+    xSlice: state.xSlice
+  })))
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow( state => ({
     hideAxis: state.hideAxis,
     hideAxisControls: state.hideAxisControls
@@ -301,15 +320,21 @@ const FlatAxis = () =>{
     axis: state.axis
   })))
   const originallyFlat = dimArrays.length == 2;
-
+  const slices = [zSlice, ySlice, xSlice]
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
-      return dimArrays.filter((_val, idx )=> idx != axis)
-      .map((val) => val.length )
+      return dimArrays.map((val, idx) => (slices[idx][1] ? slices[idx][1] : val.length) - slices[idx][0])
+        .filter((_val, idx )=> idx != axis)
     }else{
-      return dimArrays.map((val) => val.length )
+      return dimArrays.map((val, idx) => (slices[idx][1] ? slices[idx][1] : val.length) - slices[idx][0])
     }
   },[axis, dimArrays, analysisMode])
+
+  const dimSlices = [
+    dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+    flipY ? dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+    dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+  ]
   
   const swap = useMemo(() => (analysisMode && axis == 2 && !originallyFlat),[axis, analysisMode]) // This is for the horrible case when users plot along the horizontal dimension i.e; Longitude. Everything swaps
 
@@ -322,13 +347,13 @@ const FlatAxis = () =>{
   const { axisArrays, axisUnits, axisNames } = useMemo(() => {
     if (analysisMode && !originallyFlat) {
       return {
-        axisArrays: dimArrays.filter((_val, idx) => idx != axis),
+        axisArrays: dimSlices.filter((_val, idx) => idx != axis),
         axisUnits: dimUnits.filter((_val, idx) => idx != axis),
         axisNames: dimNames.filter((_val, idx) => idx != axis),
       };
     } else {
       return {
-        axisArrays: dimArrays,
+        axisArrays: dimSlices,
         axisUnits: dimUnits,
         axisNames: dimNames,
       };
@@ -364,13 +389,10 @@ const FlatAxis = () =>{
   const tickLine = useMemo(()=> {
     const geom = new LineSegmentsGeometry().setPositions([0, 0, 0, 0, 0, .05]);
     return new LineSegments2(geom, lineMat)},[lineMat, swap])
-
-
   const xDimScale = xResolution/(xResolution-1)
   const xValDelta = 1/(xResolution-1)
   const yDimScale = yResolution/(yResolution-1)
   const yValDelta = 1/(yResolution-1)
-
   return (
     <group visible={plotType == 'flat' && !hideAxis}>
       {/* X Group */}
@@ -538,7 +560,7 @@ export const AxisLines = () => {
 
   return (
     <>
-    {!isFlat && <HorizontalAxis flipX={flipX} flipY={flipY} flipDown={flipDown}/>}
+    {!isFlat && <CubeAxis flipX={flipX} flipY={flipY} flipDown={flipDown}/>}
     <FlatAxis />
     </>
   )

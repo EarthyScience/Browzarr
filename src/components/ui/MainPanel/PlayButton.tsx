@@ -28,11 +28,15 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
         dimNames: state.dimNames,
         dimUnits: state.dimUnits,
     })))
+    const {zSlice} = useZarrStore(useShallow(state => ({
+              zSlice: state.zSlice,
+    })))
+    const timeSlice = dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined)
 
     const {reFetch} = useZarrStore(useShallow(state =>({
       reFetch: state.reFetch
     })))
-    const timeLength = useMemo(()=>dimArrays[0].length,[dimArrays])
+    const timeLength = useMemo(()=>timeSlice.length,[timeSlice])
     
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const previousVal = useRef<number>(0)
@@ -67,9 +71,9 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
         
     }, [animate, fps]);
 
-    const currentLabel = parseLoc(dimArrays[0][Math.round(animProg * (timeLength))], dimUnits[0], true)
-    const firstLabel = parseLoc(dimArrays[0][0], dimUnits[0], true)
-    const lastLabel = parseLoc(dimArrays[0][timeLength-1], dimUnits[0], true)
+    const currentLabel = parseLoc(timeSlice[Math.round(animProg * (timeLength))], dimUnits[0], true)
+    const firstLabel = parseLoc(timeSlice[0], dimUnits[0], true)
+    const lastLabel = parseLoc(timeSlice[timeLength-1], dimUnits[0], true)
 
     useEffect(()=>{
       setAnimate(false)

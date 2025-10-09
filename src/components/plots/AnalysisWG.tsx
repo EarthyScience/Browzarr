@@ -95,8 +95,6 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
             const inputArray = analysisMode ? analysisArray : dataArray;
             const shapeInfo = { shape: dataShape, strides};
             const kernelParams = { kernelDepth, kernelSize };
-            console.log(dataShape, strides)
-            console.log(inputArray)
             // [1538316, 1481, 1]
             switch (currentOperation) {
                 // Reductions -> 2D Result

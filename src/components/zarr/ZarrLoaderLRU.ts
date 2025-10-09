@@ -138,14 +138,12 @@ interface TimeSeriesInfo{
 export class ZarrDataset{
 	private groupStore: Promise<zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore>>>;
 	private variable: string;
-	private cache: MemoryLRU<string,any>;
 	private dimNames: string[];
 	private chunkIDs: number[];
 	private chunkShape: number[];
 	constructor(store: Promise<zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore>>>){
 		this.groupStore = store;
 		this.variable = "Default";
-		this.cache = useCacheStore.getState().cache;
 		this.dimNames = ["","",""]
 		this.chunkIDs = [];
 		this.chunkShape = [1, 1, 1]
@@ -254,20 +252,20 @@ export class ZarrDataset{
 							const chunkID = `z${z}_y${y}_x${x}` // Unique ID for each chunk
 							const cacheBase = is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`
 							const cacheName = `${cacheBase}_chunk_${chunkID}`
-							if (this.cache.has(cacheName)){
-								chunk = cache.get(cacheName)
-								const chunkData = chunk.compressed ? DecompressArray(chunk.data) : chunk.data // Decompress if needed
+							if (cache.has(cacheName)){
+								const cachedChunk = cache.get(cacheName)
+								const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed
 								copyChunkToArray(
 									chunkData,
-									chunk.shape,
-									chunk.stride,
+									chunkData.shape,
+									chunkData.stride,
 									typedArray,
 									destStride as [number, number, number],
 									[z,y,x],
 									[zStartIdx,yStartIdx,xStartIdx],
 								)
 								setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
-								accum += chunk.data.length;
+								accum += chunkData.data.length;
 								iter ++;
 							}
 							else{
@@ -291,10 +289,13 @@ export class ZarrDataset{
 										await new Promise(resolve => setTimeout(resolve, retryDelay));
 									}
 								}	
-								if (chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
+								if (!chunk || chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
 									throw new Error("BigInt arrays are not supported for conversion to Float32Array.");
 								} 
-								const [chunkF16, newScalingFactor] = ToFloat16(chunk.data as Float32Array, scalingFactor)
+								const originalData = chunk.data as Float32Array;
+								const chunkStride = chunk.stride;
+								chunk = null; // Clear reference!
+								const [chunkF16, newScalingFactor] = ToFloat16(originalData, scalingFactor)
 								if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
 									if (scalingFactor == null || newScalingFactor > scalingFactor){ 
 										const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
@@ -311,8 +312,8 @@ export class ZarrDataset{
 								}
 								copyChunkToArray(
 									chunkF16,
-									chunk.shape,
-									chunk.stride,
+									chunkShape,
+									chunkStride as [number, number, number],
 									typedArray,
 									destStride as [number, number, number],
 									[z,y,x],
@@ -320,13 +321,13 @@ export class ZarrDataset{
 								)
 								const cacheChunk = {
 									data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-									shape: chunk.shape,
-									stride: chunk.stride,
+									shape: chunkShape,
+									stride: chunkStride,
 									scaling: scalingFactor,
 									compressed: compress
 								}
 								cache.set(cacheName,cacheChunk)
-								accum += chunk.data.length;
+								accum += originalData.length;
 								setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
 								iter ++;
 								
@@ -379,34 +380,28 @@ export class ZarrDataset{
 	}
 
 	GetDimArrays(){
-		const {initStore, is4D} = useGlobalStore.getState();
+		const {initStore} = useGlobalStore.getState();
 		const {cache} = useCacheStore.getState();
-		const {zSlice} = useZarrStore.getState();
 		const dimArr = [];
 		const dimMetas = []
 		for (const dim of this.dimNames){
 			dimArr.push(cache.get(`${initStore}_${dim}`));
 			dimMetas.push(cache.get(`${initStore}_${dim}_meta`))
 		}
-		if (zSlice[0] != 0 || zSlice[1] != null){ //Trim the time dimension based on slice
-			const chunkDepth = is4D ? this.chunkShape[1] : this.chunkShape[0]
-			const startVal = Math.max(zSlice[0] - (zSlice[0] % chunkDepth), 0)
-			const endVal = zSlice[1] ? zSlice[1] + (chunkDepth-(zSlice[1] % chunkDepth)) : null
-			dimArr[0] = dimArr[0].slice(startVal,endVal)
-        }
 		return [dimArr,dimMetas, this.dimNames];
 	}
 
 	GetTimeSeries(TimeSeriesInfo:TimeSeriesInfo){
 		const {uv,normal} = TimeSeriesInfo
-		if (!this.cache.has(this.variable) && this.chunkIDs.length == 0){
+		const {cache} = useCacheStore.getState();
+		if (!cache.has(this.variable) && this.chunkIDs.length == 0){
 			return [0]
 		}
 		let data, shape : number[], stride; 
 		if (this.chunkIDs.length > 0){
 			const arrays = []
 			for (const id of this.chunkIDs){
-				arrays.push(this.cache.get(`${this.variable}_chunk_${id}`))
+				arrays.push(cache.get(`${this.variable}_chunk_${id}`))
 			}
 			({shape, stride} = arrays[0])
 			const totalLength = arrays.reduce((sum, arr) => sum + arr.data.length, 0);
@@ -419,7 +414,7 @@ export class ZarrDataset{
 			}
 		}
 		else{
-			({data, shape, stride} = this.cache.get(this.variable))
+			({data, shape, stride} = cache.get(this.variable))
 		}
 		//This is a complicated logic check but it works bb
 		const sliceSize = parseUVCoords({normal,uv})
@@ -438,5 +433,4 @@ export class ZarrDataset{
 		}
 		return ts;
 	}
-
 }

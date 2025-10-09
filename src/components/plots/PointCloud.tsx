@@ -2,7 +2,7 @@
 import * as THREE from 'three'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { pointFrag, pointVert } from '@/components/textures/shaders'
-import { useAnalysisStore, useErrorStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useZarrStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
 import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
@@ -47,7 +47,16 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
     analysisMode: state.analysisMode,
     analysisArray: state.analysisArray
   })))
-
+  const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
+          zSlice: state.zSlice,
+          ySlice: state.ySlice,
+          xSlice: state.xSlice
+  })))
+  const dimSlices = [
+    dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+    dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+    dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+  ]
   const lastNormal = useRef<number | null> ( null )
   
   const {timeScale, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
@@ -84,7 +93,7 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
           return null;}).filter(idx => idx !== null);
         setPlotDim(2-plotDim[0]) //I think this 2 is only if there are 3-dims. Need to rework the logic
         const coordUV = parseUVCoords({normal:normal,uv:uv})
-        let dimCoords = coordUV.map((val,idx)=>val ? dimArrays[idx][Math.round(val*dimArrays[idx].length-.5)] : null)
+        let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length-.5)] : null)
         const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
         const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
         dimCoords = dimCoords.filter(val => val !== null)

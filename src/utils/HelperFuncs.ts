@@ -54,7 +54,7 @@ const months = [
   
 export function parseLoc(input:number, units: string | undefined, verbose: boolean = false) {
     if (!units){
-        return input.toFixed(2)
+        return input?.toFixed(2)
     }
     if (typeof(input) == 'bigint'){
       if (!units){
@@ -270,7 +270,6 @@ export function GetCurrentArray(overrideStore?:string){
         }
       }
     }
-    console.log(chunkStride)
     setDecompressing(false)
     return typedArray
   }

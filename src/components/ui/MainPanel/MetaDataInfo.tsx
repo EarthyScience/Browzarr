@@ -109,9 +109,9 @@ const currentSize = useMemo(() => {
     const xChunksNeeded = Math.ceil(xSteps / xChunkSize);
     const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
     const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
-    if (xChunksNeeded*xChunkSize > maxTextureSize ||
-        yChunksNeeded*yChunkSize > maxTextureSize ||
-        zChunksNeeded*zChunkSize > maxTextureSize){
+    if (xChunksNeeded*xChunkSize > max3DTextureSize ||
+        yChunksNeeded*yChunkSize > max3DTextureSize ||
+        zChunksNeeded*zChunkSize > max3DTextureSize){
           setTooBig(true)
     } else{ setTooBig(false)}
     return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
@@ -136,9 +136,9 @@ const currentSize = useMemo(() => {
     const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
     const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
 
-    if (xChunksNeeded*xChunkSize > maxTextureSize ||
-        yChunksNeeded*yChunkSize > maxTextureSize ||
-        zChunksNeeded*zChunkSize > maxTextureSize){
+    if (xChunksNeeded*xChunkSize > max3DTextureSize ||
+        yChunksNeeded*yChunkSize > max3DTextureSize ||
+        zChunksNeeded*zChunkSize > max3DTextureSize){
           setTooBig(true)
     } else{ setTooBig(false)}
     return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
@@ -194,24 +194,8 @@ const currentSize = useMemo(() => {
     } else {
       setCached(false)
     }
-    const width = meta.shape[meta.shape.length-1]
-    const height = meta.shape[meta.shape.length-2]
-
-    if (isFlat){
-      if (width > maxTextureSize || height > maxTextureSize){
-        setTooBig(true)
-      }else{
-        setTooBig(false)
-      }
-    } else{
-      if (width > max3DTextureSize || height > max3DTextureSize){
-        setTooBig(true)
-      }else{
-        setTooBig(false)
-      }
-    }
     
-  },[meta, maxTextureSize, chunkIDs])
+  },[meta, chunkIDs])
   return (
       // Don't put any more work in the landing page version. Since it won't be visible in the future
       // The logic here was to just get divs to be used later in a Card or Dialog component!
