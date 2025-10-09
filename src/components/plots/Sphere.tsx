@@ -62,7 +62,7 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
     const dimSlices = [
       dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
       dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-      dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+      dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
     ]
     const {animate, animProg, cOffset, cScale, selectTS, lonExtent, latExtent, 
       lonResolution, latResolution, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
