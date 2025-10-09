@@ -5,7 +5,7 @@ import { SliderThumbs } from "@/components/ui/SliderThumbs"
 import { Button } from "@/components/ui/button"
 import { Input } from "../input"
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { parseLoc, TwoDecimals } from "@/utils/HelperFuncs"
+import { parseLoc } from "@/utils/HelperFuncs"
 import {
   Tooltip,
   TooltipContent,
@@ -25,13 +25,28 @@ const formatBytes = (bytes: number): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
 }
+type Slice = [number, number | null]
+interface chunkIDs {
+  slices: {xSlice: Slice, ySlice: Slice, zSlice: Slice};
+  chunkShape: number[],
+}
 
-function ChunkIDs(chunkDepth: number, slice:[number, number | null], range:number){
-  const lowerChunk = Math.floor(slice[0]/chunkDepth)
-  const upperChunk = slice[1] ? Math.ceil(slice[1]/chunkDepth) : Math.ceil(range/chunkDepth)
+function ChunkIDs(slices:{xSlice: Slice, ySlice: Slice, zSlice: Slice}, chunkShape: number[], dataShape:number[], is4D:boolean ){
+  const {xSlice, ySlice, zSlice} = slices
+  const zStartIdx = Math.floor(zSlice[0]/chunkShape[0])
+  const zEndIdx = zSlice[1] ? Math.ceil(zSlice[1]/chunkShape[0]) : is4D ? Math.ceil(dataShape[1]/chunkShape[0]) : Math.ceil(dataShape[0]/chunkShape[0]) //If Slice[1] is null, use the end of the array
+  const yStartIdx = Math.floor(ySlice[0]/chunkShape[1])
+  const yEndIdx = ySlice[1] ? Math.ceil(ySlice[1]/chunkShape[1]) : is4D ? Math.ceil(dataShape[2]/chunkShape[1]) : Math.ceil(dataShape[1]/chunkShape[1])
+  const xStartIdx = Math.floor(xSlice[0]/chunkShape[2])
+  const xEndIdx = xSlice[1] ? Math.ceil(xSlice[1]/chunkShape[2]) : is4D ? Math.ceil(dataShape[3]/chunkShape[2]) : Math.ceil(dataShape[2]/chunkShape[2])
   const ids = []
-  for (let i = lowerChunk; i < upperChunk; i++){
-    ids.push(i)
+  for (let z = zStartIdx; z < zEndIdx; z++) {
+    for (let y = yStartIdx; y < yEndIdx; y++) {
+      for (let x = xStartIdx; x < xEndIdx; x++) {
+        const chunkID = `z${z}_y${y}_x${x}`
+        ids.push(chunkID)
+      }
+    }
   }
   return ids
 }
@@ -82,12 +97,7 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
   const hasTimeChunks = is4D ? meta.shape[1]/meta.chunks[1] > 1 : meta.shape[0]/meta.chunks[0] > 1
   const hasYChunks = is4D ? meta.shape[2]/meta.chunks[2] > 1 : meta.shape[1]/meta.chunks[1] > 1
   const hasXChunks = is4D ? meta.shape[3]/meta.chunks[3] > 1 : meta.shape[2]/meta.chunks[2] > 1
-  const chunkIDs = useMemo(()=>{
-    if (hasTimeChunks){
-      const ids = ChunkIDs(meta.chunks[0], zSlice, is4D ? meta.shape[1] : meta.shape[0])
-      return ids;
-    } else { return ;}
-  },[zSlice, meta])
+  const chunkIDs = useMemo(()=>ChunkIDs({xSlice, ySlice, zSlice}, meta.chunks, meta.shape, meta.shape.length == 4),[zSlice, xSlice, ySlice, meta])
 const currentSize = useMemo(() => {
   if (is3D) {
     const zFirst = zSlice[0] ?? 0;
@@ -231,7 +241,7 @@ const currentSize = useMemo(() => {
         }
         {((is3D || idx4D != null) && !(cached && !cachedChunks)) &&
           <>
-            {(hasTimeChunks || hasXChunks || hasYChunks )&& (
+            {(hasTimeChunks || hasXChunks || hasYChunks ) && totalSize > 50e6 && (
               <>
               <span className="block text-center text-xl font-bold">Trim Data</span>
               <div className="grid gap-4 ">    

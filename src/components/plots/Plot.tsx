@@ -204,6 +204,11 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       else{
         setMetadata(null)
       }
+      return () => { // GPU Data apparently isn't Garbage Collected
+        if (texture) {
+          texture.dispose();
+        }
+      }
   }, [reFetch])
 
   const infoSetters = useMemo(()=>({

@@ -181,7 +181,7 @@ export class ZarrDataset{
 			let typedArray;
 			let shape;
 			let scalingFactor = null;
-			if (totalSize < 1e8 || !hasTimeChunks){ // Check if total is less than 100MB or no chunks along time
+			if (totalSize < 50e6 || !hasTimeChunks){ // Check if total is less than 50MB or no chunks along time
 				setDownloading(true)
 				for (let attempt = 0; attempt <= maxRetries; attempt++) {
 					try {
@@ -255,6 +255,7 @@ export class ZarrDataset{
 							if (cache.has(cacheName)){
 								const cachedChunk = cache.get(cacheName)
 								const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed
+								console.log(chunkData)
 								copyChunkToArray(
 									chunkData,
 									chunkData.shape,
