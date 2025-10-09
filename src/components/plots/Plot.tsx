@@ -109,8 +109,9 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       setIsFlat: state.setIsFlat, 
     })))
 
-    const {plotType} = usePlotStore(useShallow(state => ({
+    const {plotType, setPlotType} = usePlotStore(useShallow(state => ({
       plotType: state.plotType,
+      setPlotType: state.setPlotType
     })))
 
     const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(useShallow(state=> ({
@@ -154,6 +155,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         }
         if (result.shape.length == 2){
           setIsFlat(true)
+          setPlotType("sphere")
         }
         else{
           setIsFlat(false)
