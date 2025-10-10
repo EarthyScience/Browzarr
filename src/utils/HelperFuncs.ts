@@ -54,7 +54,10 @@ const months = [
   
 export function parseLoc(input:number, units: string | undefined, verbose: boolean = false) {
     if (!units){
-        return input?.toFixed(2)
+      if (typeof(input) == 'bigint'){
+        return input;
+      }
+        return input?.toFixed(2);
     }
     if (typeof(input) == 'bigint'){
       if (!units){
