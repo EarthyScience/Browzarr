@@ -45,6 +45,7 @@ type StoreState = {
   is4D: boolean;
   idx4D: number | null;
   titleDescription: { title: string | null; description: string | null };
+  textureArrayDepths: number[];
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -75,6 +76,7 @@ type StoreState = {
   setIs4D: (is4D: boolean) => void;
   setIdx4D: (idx4D: number | null) => void;
   setTitleDescription: (titleDescription: { title: string | null; description: string | null }) => void;
+  setTextureArrayDepths: (textureArrayResolution: number[] ) => void;
 };
 
 export const useGlobalStore = create<StoreState>((set, get) => ({
@@ -100,10 +102,11 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   isFlat:false,
   progress: 0,
   downloading: false,
+  decompressing: false,
   is4D: false,
   idx4D: null,
   titleDescription: {title:null, description: null},
-  decompressing: false,
+  textureArrayDepths: [1,1,1], 
 
   setDataShape: (dataShape) => set({ dataShape }),
   setShape: (shape) => set({ shape }),
@@ -152,6 +155,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setIs4D: (is4D) => set({ is4D }),
   setIdx4D: (idx4D) => set({ idx4D }),
   setTitleDescription: (titleDescription) => set({ titleDescription }),
+  setTextureArrayDepths: (textureArrayDepths) => set({ textureArrayDepths })
 }));
 
 type PlotState ={
@@ -471,7 +475,6 @@ export const useCacheStore = create<CacheState>((set, get) => ({
     set({ maxSize })
   }
 }))
-
 
 type ErrorState = {
   error : string | null;

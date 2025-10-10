@@ -9,7 +9,7 @@ import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/ut
 import { evaluate_cmap } from 'js-colormaps-es';
 
 interface PCProps {
-  texture: THREE.Data3DTexture | THREE.DataTexture | null,
+  texture: THREE.Data3DTexture[] | THREE.DataTexture | null,
   colormap: THREE.DataTexture
 }
 

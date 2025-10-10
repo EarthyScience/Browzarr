@@ -273,7 +273,6 @@ export class ZarrDataset{
 									[z,y,x],
 									[zStartIdx,yStartIdx,xStartIdx],
 								)
-								console.log(chunkData.length)
 								setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
 								iter ++;
 							}

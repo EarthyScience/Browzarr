@@ -76,16 +76,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 
 const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     const {
-      setShape,
-      setDataShape, 
-      setFlipY, 
-      setValueScales, 
-      setMetadata, 
-      setDimArrays, 
-      setDimNames, 
-      setDimUnits,
-      setPlotOn,
-      setShowLoading} = useGlobalStore(
+      setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
+      setDimNames, setDimUnits, setPlotOn, setShowLoading} = useGlobalStore(
         useShallow(state => ({  //UseShallow for object returns
           setShape:state.setShape,
           setDataShape: state.setDataShape,
@@ -127,7 +119,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     const [showInfo, setShowInfo] = useState<boolean>(false)
     const [loc, setLoc] = useState<number[]>([0,0])
 
-    const [texture, setTexture] = useState<THREE.DataTexture | THREE.Data3DTexture | null>(null)
+    const [texture, setTexture] = useState<THREE.DataTexture | THREE.Data3DTexture[] | null>(null)
     const [show, setShow] = useState<boolean>(true) //Prevents rendering of 3D objects until data is fully loaded in
 
   //DATA LOADING
@@ -137,16 +129,11 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       setShow(false)
       try{
         ZarrDS.GetArray(variable, {xSlice, ySlice, zSlice}).then((result) => {
-        const [texture, scaling] = ArrayToTexture({
+        const [tempTexture, scaling] = ArrayToTexture({
           data: result.data,
           shape: result.shape
         })
-        if (texture instanceof THREE.DataTexture || texture instanceof THREE.Data3DTexture) {
-          setTexture(texture)
-        } else {
-          console.error("Invalid texture type returned from ArrayToTexture");
-          setTexture(null);
-        }
+        setTexture(tempTexture)
         if (result.scalingFactor){
           const {maxVal, minVal} = scaling
           setValueScales({ maxVal: maxVal*(Math.pow(10,result.scalingFactor)), minVal: minVal*(Math.pow(10,result.scalingFactor)) });
@@ -201,16 +188,10 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         setDimUnits(tempDimUnits)
         ParseExtent(tempDimUnits, dimArrs)
       })
-
+    }else{
+      setMetadata(null)
     }
-      else{
-        setMetadata(null)
-      }
-      return () => { // GPU Data apparently isn't Garbage Collected
-        if (texture) {
-          texture.dispose();
-        }
-      }
+      
   }, [reFetch])
 
   const infoSetters = useMemo(()=>({
