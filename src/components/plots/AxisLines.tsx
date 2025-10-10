@@ -304,11 +304,12 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
 
 const FlatAxis = () =>{
-  const {dimArrays, dimNames, dimUnits, flipY} = useGlobalStore(useShallow(state => ({
+  const {dimArrays, dimNames, dimUnits, flipY, isFlat} = useGlobalStore(useShallow(state => ({
     dimArrays: state.dimArrays,
     dimNames: state.dimNames,
     dimUnits: state.dimUnits,
-    flipY: state.flipY
+    flipY: state.flipY,
+    isFlat: state.isFlat
   })))
 
   const {plotType} = usePlotStore(useShallow(state=>({
@@ -339,14 +340,20 @@ const FlatAxis = () =>{
     }
   },[axis, dimArrays, analysisMode])
 
-  const dimSlices = [
-    dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-    flipY ? dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-    dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
-  ]
-  
-  const swap = useMemo(() => (analysisMode && axis == 2 && !originallyFlat),[axis, analysisMode]) // This is for the horrible case when users plot along the horizontal dimension i.e; Longitude. Everything swaps
+  const dimSlices = useMemo(()=>isFlat ? 
+    [
+      flipY ? dimArrays[0].slice().reverse() : dimArrays[0], // Need the slice because inside useMemo it doesn't mutate the original properly
+      dimArrays[1]
+    ] 
+    :
+    [
+      dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+      flipY ? dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+      dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+    ],[isFlat, dimArrays, flipY])
 
+  const swap = useMemo(() => (analysisMode && axis == 2 && !originallyFlat),[axis, analysisMode]) // This is for the horrible case when users plot along the horizontal dimension i.e; Longitude. Everything swaps
+  console.log(dimSlices[0])
   const widthIdx = swap ? dimLengths.length-2 : dimLengths.length-1
   const heightIdx = swap ? dimLengths.length-1 : dimLengths.length-2
 
@@ -354,6 +361,7 @@ const FlatAxis = () =>{
   const [yResolution, setYResolution] = useState<number>(7)
 
   const { axisArrays, axisUnits, axisNames } = useMemo(() => {
+
     if (analysisMode && !originallyFlat) {
       return {
         axisArrays: dimSlices.filter((_val, idx) => idx != axis),
@@ -367,7 +375,7 @@ const FlatAxis = () =>{
         axisNames: dimNames,
       };
     }
-  }, [analysisMode, dimArrays, dimUnits, dimNames]);
+  }, [analysisMode, dimArrays, dimUnits, dimNames, dimSlices]);
 
 
   const shapeRatio = useMemo(()=>{
@@ -402,6 +410,7 @@ const FlatAxis = () =>{
   const xValDelta = 1/(xResolution-1)
   const yDimScale = yResolution/(yResolution-1)
   const yValDelta = 1/(yResolution-1)
+
   return (
     <group visible={plotType == 'flat' && !hideAxis}>
       {/* X Group */}

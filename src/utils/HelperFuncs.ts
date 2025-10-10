@@ -229,7 +229,7 @@ function DecompressArray(compressed : Uint8Array){
 }
 
 export function GetCurrentArray(overrideStore?:string){
-  const { variable, is4D, idx4D, initStore, strides, setDecompressing }= useGlobalStore.getState()
+  const { variable, is4D, idx4D, initStore, strides, dataShape, setDecompressing }= useGlobalStore.getState()
   const { arraySize, currentChunks } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
@@ -266,6 +266,7 @@ export function GetCurrentArray(overrideStore?:string){
             chunkShape,
             chunkStride,
             typedArray,
+            dataShape,
             strides as [number, number, number], 
             [z, y, x], 
             [zStartIdx, yStartIdx, xStartIdx]
