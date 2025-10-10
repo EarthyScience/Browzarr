@@ -155,7 +155,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               fontSize={0.15*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[xTitleOffset, -0.2*globalScale/2, 0]}
+              position={[xTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
               onClick={e=>setXResolution(x=> Math.min(x+1,AXIS_CONSTANTS.MAX_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -170,7 +170,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               fontSize={0.15*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[-xTitleOffset, -0.2*globalScale/2, 0]}
+              position={[-xTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
               onClick={e=>setXResolution(x=> Math.max(x-1,AXIS_CONSTANTS.MIN_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -220,7 +220,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               fontSize={0.15*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[zTitleOffset, -0.2*globalScale/2, 0]}
+              position={[zTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
               onClick={e=>setZResolution(x=> Math.min(x+1,AXIS_CONSTANTS.MAX_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -235,7 +235,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               fontSize={0.15*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[-zTitleOffset, -0.2*globalScale/2, 0]}
+              position={[-zTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
               onClick={e=>setZResolution(x=> Math.max(x-1,AXIS_CONSTANTS.MIN_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -289,7 +289,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               fontSize={AXIS_CONSTANTS.CONTROL_FONT_SIZE_FACTOR*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[ flipY == flipX ? 0.01*globalScale : -0.01*globalScale, yTitleOffset, 0]}
+              position={[0, yTitleOffset, 0]}
               onClick={e=>setYResolution(x=> Math.min(x+1,AXIS_CONSTANTS.MAX_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -306,7 +306,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               fontSize={AXIS_CONSTANTS.CONTROL_FONT_SIZE_FACTOR*globalScale} 
               color={colorHex}
               material-depthTest={false}
-              position={[flipY == flipX ? 0.0*globalScale : -0.0*globalScale, -yTitleOffset, 0]}
+              position={[0, -yTitleOffset, 0]}
               onClick={e=>setYResolution(x=> Math.max(x-1,AXIS_CONSTANTS.MIN_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
@@ -572,14 +572,8 @@ const FlatAxis = () =>{
           </group>
         </group>
     </group>
-
-
     </group>
-
   )
-
-
-
 }
 
 
