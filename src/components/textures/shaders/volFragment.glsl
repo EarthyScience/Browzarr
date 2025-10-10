@@ -7,7 +7,7 @@ in vec3 vDirection;
 
 out vec4 color;
 
-uniform sampler3D map[14];
+uniform sampler3D map[14]; // We are limited to 16 textures. Cmap counts as one. 15 is weird so we use 14. 
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
 
