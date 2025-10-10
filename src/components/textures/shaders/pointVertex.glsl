@@ -34,29 +34,10 @@ bool isValidPoint(){
     return false;
 }
 
-vec3 computePosition(int vertexID) {
-    int depth = int(shape.x);
-    int height = int(shape.y);
-    int width = int(shape.z);
-
-    int sliceSize = width * height;
-
-    int z = vertexID / sliceSize;
-    int y = (vertexID % sliceSize) / width;
-    int x = vertexID % width;
-
-    float px = (float(x) - (float(width)/2.)) / 500.;
-    float py = (float(y) - (float(height)/2.)) / 500.;
-    float pz = (float(z) - (float(depth )/2.)) /500.;
-
-    return vec3(px * 2.0, py * 2.0, pz * 2.0);
-}
-
 void main() {
     vValue = float(value)/255.;
-    vec3 scaledPos = computePosition(gl_VertexID);
-    float depthSize = float(shape.x)/500.;
-    float globalScale = float(shape.z)/600.;
+    vec3 scaledPos = position;
+    float depthSize = float(shape.x)/250.;
 
     scaledPos.z += depthSize;
     scaledPos.z = mod(scaledPos.z + animateProg*depthSize*2., depthSize*2.);
@@ -96,7 +77,7 @@ void main() {
     }
     
     if (showTransect){
-        gl_PointSize = isValid ? pointScale*5.*globalScale : pointScale;
+        gl_PointSize = isValid ? max(pointScale*5., pointScale+10./gl_Position.w) : pointScale;
     }
     else{
         gl_PointSize =  pointScale;

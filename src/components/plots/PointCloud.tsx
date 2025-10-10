@@ -201,12 +201,25 @@ export const PointCloud = ({textures, ZarrDS} : {textures:PCProps, ZarrDS: ZarrD
 
     // Create buffer geometry
     const geometry = useMemo(() => {
+      const numPoints = depth * height * width;
+      const positions = new Float32Array(numPoints * 3);
+      const scale = 2 / 500;
+
+      for (let i = 0; i < numPoints; i++) {
+        const z = Math.floor(i / (width * height));
+        const y = Math.floor((i % (width * height)) / width);
+        const x = i % width;
+
+        positions[i * 3] = (x - width / 2) * scale;
+        positions[i * 3 + 1] = (y - height / 2) * scale;
+        positions[i * 3 + 2] = (z - depth / 2) * scale;
+      }
+
       const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geom.setAttribute('value', new THREE.Uint8BufferAttribute(data as number[], 1));
-      const arrayLength = depth * height * width ;
-      geom.setDrawRange(0, arrayLength); // This is used to tell it how many data points are needed since we aren't giving it positions.
       return geom;
-    }, [data]);
+    }, [data, width, height, depth]);
 
     const shaderMaterial = useMemo(()=> (new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
