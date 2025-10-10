@@ -47,16 +47,18 @@ export class ZarrError extends Error {
 
 export function copyChunkToArray(
     chunkData: Float16Array,
-    chunkShape: [number, number, number],
-    chunkStride: [number, number, number],
+    chunkShape: number[],
+    chunkStride: number[],
     destArray: Float16Array,
-    destStride: [number, number, number],
-    chunkGridPos: [number, number, number],
-    chunkGridStart: [number, number, number],
+    destShape: number[], 
+    destStride: number[],
+    chunkGridPos: number[],
+    chunkGridStart: number[],
 ): void {
     const [z, y, x] = chunkGridPos;
     const [zStartIdx, yStartIdx, xStartIdx] = chunkGridStart;
     const [chunkShapeZ, chunkShapeY, chunkShapeX] = chunkShape;
+    const [destShapeZ, destShapeY, destShapeX] = destShape;
 
     // 1. Calculate the local coordinates of the chunk within the destination grid
     const localZ = z - zStartIdx;
@@ -68,17 +70,23 @@ export function copyChunkToArray(
     const yStart = localY * chunkShapeY;
     const xStart = localX * chunkShapeX;
 
-    // 3. Loop through the chunk and copy it slice by slice, row by row
-    for (let cz = 0; cz < chunkShapeZ; cz++) {
-        for (let cy = 0; cy < chunkShapeY; cy++) {
+    // 3. Calculate the actual number of elements to copy for this chunk
+    // This prevents writing past the end of the destination array for partial chunks.
+    const zLimit = Math.min(chunkShapeZ, destShapeZ - zStart);
+    const yLimit = Math.min(chunkShapeY, destShapeY - yStart);
+    const xLimit = Math.min(chunkShapeX, destShapeX - xStart);
+
+    // 4. Loop using the calculated limits and copy row by row
+    for (let cz = 0; cz < zLimit; cz++) {
+        for (let cy = 0; cy < yLimit; cy++) {
             // Offset to the start of the row in the SOURCE chunk data
             const sourceRowOffset = cz * chunkStride[0] + cy * chunkStride[1];
             
             // Offset to the start of the row in the DESTINATION typedArray
             const destRowOffset = (zStart + cz) * destStride[0] + (yStart + cy) * destStride[1] + xStart;
             
-            // Get the row of data from the source chunk
-            const rowData = chunkData.subarray(sourceRowOffset, sourceRowOffset + chunkShapeX);
+            // Get the row of data from the source chunk, using the new xLimit
+            const rowData = chunkData.subarray(sourceRowOffset, sourceRowOffset + xLimit);
             
             // Place the row in the correct position in the final array
             destArray.set(rowData, destRowOffset);
@@ -140,13 +148,11 @@ export class ZarrDataset{
 	private variable: string;
 	private dimNames: string[];
 	private chunkIDs: number[];
-	private chunkShape: number[];
 	constructor(store: Promise<zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore>>>){
 		this.groupStore = store;
 		this.variable = "Default";
 		this.dimNames = ["","",""]
 		this.chunkIDs = [];
-		this.chunkShape = [1, 1, 1]
 	}
 	async GetArray(variable: string, slices: Slices){
 		const {is4D, idx4D, initStore, setProgress, setStrides, setDownloading} = useGlobalStore.getState();
@@ -167,7 +173,6 @@ export class ZarrDataset{
 		const group = await this.groupStore;
 		const outVar = await zarr.open(group.resolve(variable), {kind:"array"})
 		let [totalSize, _chunkSize, chunkShape] = GetSize(outVar);
-		this.chunkShape = chunkShape
 		if (is4D){
 			totalSize /= outVar.shape[0];
 			chunkShape = chunkShape.slice(1);
@@ -223,30 +228,33 @@ export class ZarrDataset{
 			else { 
 				setDownloading(true)
 				setProgress(0)
+				const totalZChunks = Math.ceil(outVar.shape[0+(is4D ? 1 : 0)]/chunkShape[1])
+				const totalYChunks = Math.ceil(outVar.shape[1+(is4D ? 1 : 0)]/chunkShape[1])
+				const totalXChunks = Math.ceil(outVar.shape[2+(is4D ? 1 : 0)]/chunkShape[2])
 
 				const zStartIdx = Math.floor(zSlice[0]/chunkShape[0])
-				const zEndIdx = zSlice[1] ? Math.ceil(zSlice[1]/chunkShape[0]) : is4D ? Math.ceil(outVar.shape[1]/chunkShape[0]) : Math.ceil(outVar.shape[0]/chunkShape[0]) //If Slice[1] is null, use the end of the array
-				const zChunkCount = zEndIdx-zStartIdx
+				const zEndIdx = zSlice[1] ? Math.ceil(zSlice[1]/chunkShape[0]) : totalZChunks //If Slice[1] is null, use the end of the array
 				const yStartIdx = Math.floor(ySlice[0]/chunkShape[1])
-				const yEndIdx = ySlice[1] ? Math.ceil(ySlice[1]/chunkShape[1]) : is4D ? Math.ceil(outVar.shape[2]/chunkShape[1]) : Math.ceil(outVar.shape[1]/chunkShape[1])
-				const yChunkCount = yEndIdx - yStartIdx
+				const yEndIdx = ySlice[1] ? Math.ceil(ySlice[1]/chunkShape[1]) : totalYChunks
 				const xStartIdx = Math.floor(xSlice[0]/chunkShape[2])
-				const xEndIdx = xSlice[1] ? Math.ceil(xSlice[1]/chunkShape[2]) : is4D ? Math.ceil(outVar.shape[3]/chunkShape[2]) : Math.ceil(outVar.shape[2]/chunkShape[2])
-				const xChunkCount = xEndIdx - xStartIdx
-				const chunkCount = zChunkCount*yChunkCount*xChunkCount
-				const arraySize = chunkShape[0]*zChunkCount*chunkShape[1]*yChunkCount*chunkShape[2]*xChunkCount // Total size of the output array
+				const xEndIdx = xSlice[1] ? Math.ceil(xSlice[1]/chunkShape[2]) : totalXChunks
+				const chunkCount = (zEndIdx - zStartIdx) * (yEndIdx - yStartIdx) * (xEndIdx - xStartIdx) // Used for Progress Bar
+		
+				const zShape = (zSlice[1] ? zSlice[1] : outVar.shape[0+(is4D ? 1 : 0)]) - zSlice[0]
+				const yShape = (ySlice[1] ? ySlice[1] : outVar.shape[1+(is4D ? 1 : 0)]) - ySlice[0]
+				const xShape = (xSlice[1] ? xSlice[1] : outVar.shape[2+(is4D ? 1 : 0)]) - xSlice[0]
+				const arraySize = zShape*yShape*xShape
 				setArraySize(arraySize) // This is used for the getcurrentarray function
-
-				shape =  [zChunkCount*chunkShape[0], chunkShape[1]*yChunkCount, chunkShape[2]*xChunkCount] 
+				const chunkIDs = {x:[xStartIdx,xEndIdx], y:[yStartIdx,yEndIdx], z:[zStartIdx,zEndIdx]}
+				setCurrentChunks(chunkIDs) // These are used for Getcurrentarray 
+				shape =  [zShape, yShape, xShape] 
 				const destStride = [shape[1] * shape[2], shape[2], 1];
 				setStrides(destStride)
 				typedArray = new Float16Array(arraySize);
-				let accum = 0;
 				let iter = 1; // For progress bar
-				const chunkIDs = {x:[xStartIdx,xEndIdx], y:[yStartIdx,yEndIdx], z:[zStartIdx,zEndIdx]}
-				setCurrentChunks(chunkIDs) // These are used for Getcurrentarray 
 				const rescaleIDs = [] // These are the downloaded chunks that need to be rescaled
-				for (let z= zStartIdx ; z < zEndIdx ; z++){ // Iterate through chunks we need // (let z= zStartIdx ; z < zEndIdx ; z++)
+
+				for (let z= zStartIdx ; z < zEndIdx ; z++){ // Iterate through chunks we need 
 					for (let y= yStartIdx ; y < yEndIdx ; y++){
 						for (let x= xStartIdx ; x < xEndIdx ; x++){
 							const chunkID = `z${z}_y${y}_x${x}` // Unique ID for each chunk
@@ -254,19 +262,19 @@ export class ZarrDataset{
 							const cacheName = `${cacheBase}_chunk_${chunkID}`
 							if (cache.has(cacheName)){
 								const cachedChunk = cache.get(cacheName)
-								const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed
-								console.log(chunkData)
+								const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed. Gemini thinks the .slice() helps with garbage collector as it doesn't maintain a reference to the original array
 								copyChunkToArray(
 									chunkData,
-									chunkData.shape,
-									chunkData.stride,
+									cachedChunk.shape,
+									cachedChunk.stride,
 									typedArray,
+									shape,
 									destStride as [number, number, number],
 									[z,y,x],
 									[zStartIdx,yStartIdx,xStartIdx],
 								)
+								console.log(chunkData.length)
 								setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
-								accum += chunkData.data.length;
 								iter ++;
 							}
 							else{
@@ -316,6 +324,7 @@ export class ZarrDataset{
 									chunkShape,
 									chunkStride as [number, number, number],
 									typedArray,
+									shape,
 									destStride as [number, number, number],
 									[z,y,x],
 									[zStartIdx,yStartIdx,xStartIdx],
@@ -328,10 +337,8 @@ export class ZarrDataset{
 									compressed: compress
 								}
 								cache.set(cacheName,cacheChunk)
-								accum += originalData.length;
 								setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
 								iter ++;
-								
 								rescaleIDs.push(chunkID)
 							}
 						}

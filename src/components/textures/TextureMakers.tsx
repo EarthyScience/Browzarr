@@ -36,7 +36,7 @@ export function ArrayTo3D(array: Array) : [ THREE.Data3DTexture, {minVal: number
     const shape = array.shape;
     const data = array.data;
     const [lz,ly,lx] = shape
-
+    console.log(shape)
     const [minVal,maxVal] = ArrayMinMax(data)
     
     const normed = data.map((i)=>(i-minVal)/(maxVal-minVal))
