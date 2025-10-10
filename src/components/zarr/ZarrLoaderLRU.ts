@@ -70,7 +70,7 @@ export function copyChunkToArray(
     const yStart = localY * chunkShapeY;
     const xStart = localX * chunkShapeX;
 
-    // 3. ✨ Calculate the actual number of elements to copy for this chunk
+    // 3. Calculate the actual number of elements to copy for this chunk
     // This prevents writing past the end of the destination array for partial chunks.
     const zLimit = Math.min(chunkShapeZ, destShapeZ - zStart);
     const yLimit = Math.min(chunkShapeY, destShapeY - yStart);
