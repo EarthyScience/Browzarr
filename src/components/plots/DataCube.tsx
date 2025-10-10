@@ -74,7 +74,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
     }),[useFragOpt]);
         
   // Use geometry once, avoid recreating -- Using a sphere to avoid the weird angles you get with cube
-    const geometry = useMemo(() => new THREE.IcosahedronGeometry(2, 4), []);
+    const geometry = useMemo(() => new THREE.IcosahedronGeometry(12, 4), []);
     useEffect(() => {
       if (shaderMaterial) {
         const uniforms = shaderMaterial.uniforms

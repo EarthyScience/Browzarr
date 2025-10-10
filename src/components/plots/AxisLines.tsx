@@ -353,7 +353,6 @@ const FlatAxis = () =>{
     ],[isFlat, dimArrays, flipY])
 
   const swap = useMemo(() => (analysisMode && axis == 2 && !originallyFlat),[axis, analysisMode]) // This is for the horrible case when users plot along the horizontal dimension i.e; Longitude. Everything swaps
-  console.log(dimSlices[0])
   const widthIdx = swap ? dimLengths.length-2 : dimLengths.length-1
   const heightIdx = swap ? dimLengths.length-1 : dimLengths.length-2
 
