@@ -280,8 +280,8 @@ export const PointCloud = ({textures, ZarrDS} : {textures:PCProps, ZarrDS: ZarrD
     return (
       <>
       <mesh scale={[1,flipY ? -1:1, 1]} >
-
-        <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
+        {/* Frustum culling is enabled by default and helps performance by not rendering points outside the camera's view. */}
+        <points geometry={geometry} material={shaderMaterial} />
       </mesh>
       <MappingCube dimensions={{width,height,depth}} ZarrDS={ZarrDS} setters={{setPoints:setPointsObj, setStride, setDimWidth}}/>
       </>
