@@ -272,7 +272,7 @@ const AnalysisOptions = () => {
                             cursor: analysisMode ? 'pointer' : '',
                           }}
                           disabled={!analysisMode}
-                          onClick={e=>{setReFetch(!reFetch);setAnalysisMode(false);setAnalysisDim(null)}}
+                          onClick={e=>{setReFetch(!reFetch);setAnalysisMode(false);setAnalysisDim(null); setAxis(1)}}
                         >
                           {analysisMode && <CiUndo 
                             size={20}

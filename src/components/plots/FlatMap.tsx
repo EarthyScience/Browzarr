@@ -57,7 +57,16 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
       dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
       dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
     ]
-    const shapeRatio = useMemo(()=> dataShape.length > 2 ? dataShape[1]/dataShape[2] : dataShape[0]/dataShape[1], [dataShape])
+    const shapeRatio = useMemo(()=> {
+      if (dataShape.length == 2){
+        return dataShape[0]/dataShape[1]
+      } else if (analysisMode){
+        const thisShape = dataShape.filter((_val, idx) => idx != axis)
+        return thisShape[0]/thisShape[1]
+      } else {
+        return dataShape[1]/dataShape[2]
+      }
+    }, [axis])
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
     const infoRef = useRef<boolean>(false)
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))

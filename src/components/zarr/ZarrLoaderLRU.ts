@@ -187,6 +187,7 @@ export class ZarrDataset{
 			let shape;
 			let scalingFactor = null;
 			if (totalSize < 50e6 || !hasTimeChunks){ // Check if total is less than 50MB or no chunks along time
+				console.log("here bb")
 				setDownloading(true)
 				for (let attempt = 0; attempt <= maxRetries; attempt++) {
 					try {
@@ -224,6 +225,17 @@ export class ZarrDataset{
 					cache.set(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`, cacheChunk)
 				}
 				setDownloading(false)
+			} else if (outVar.shape.length == 2){
+				const totalYChunks = Math.ceil(outVar.shape[0]/chunkShape[0])
+				const totalXChunks = Math.ceil(outVar.shape[1]/chunkShape[1])
+
+				const yStartIdx = Math.floor(ySlice[0]/chunkShape[1])
+				const yEndIdx = ySlice[1] ? Math.ceil(ySlice[1]/chunkShape[1]) : totalYChunks
+				const xStartIdx = Math.floor(xSlice[0]/chunkShape[2])
+				const xEndIdx = xSlice[1] ? Math.ceil(xSlice[1]/chunkShape[2]) : totalXChunks
+				const chunkCount = (yEndIdx - yStartIdx) * (xEndIdx - xStartIdx)
+
+				
 			}
 			else { 
 				setDownloading(true)

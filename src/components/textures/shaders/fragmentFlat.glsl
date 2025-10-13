@@ -16,7 +16,7 @@ uniform float cScale;
 
 #define epsilon 0.0001
 
-float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
+float sample1(vec2 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
     if (index == 0) return texture(map[0], p).r;
     else if (index == 1) return texture(map[1], p).r;
     else if (index == 2) return texture(map[2], p).r;
@@ -36,17 +36,14 @@ float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so
 
 
 void main(){
-    int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
-    vec3 texCoord = vec3(vUv, animateProg);
-    ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
-    int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
-    vec3 localCoord = texCoord * (textureDepths - epsilon); // Scale up
+    vec2 texCoord = vUv;
+    ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
+    int textureIdx = idx.y * yStepSize + idx.x;
+    vec2 localCoord = texCoord * (textureDepths.xy); // Scale up
     localCoord = fract(localCoord);
 
     float strength = sample1(localCoord, textureIdx);
-
-    float strength = texture2D(data, vUv).r;
     bool isNaN = strength == 1.;
     float sampLoc = isNaN ? strength: (strength - 0.5)*cScale + 0.5;
     sampLoc = isNaN ? strength : min(sampLoc+cOffset,0.995);

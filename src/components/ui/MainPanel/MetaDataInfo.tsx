@@ -26,10 +26,6 @@ const formatBytes = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
 }
 type Slice = [number, number | null]
-interface chunkIDs {
-  slices: {xSlice: Slice, ySlice: Slice, zSlice: Slice};
-  chunkShape: number[],
-}
 
 function ChunkIDs(slices:{xSlice: Slice, ySlice: Slice, zSlice: Slice}, chunkShape: number[], dataShape:number[], is4D:boolean ){
   const {xSlice, ySlice, zSlice} = slices
@@ -178,8 +174,8 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
     } else {
       return 0;
     }
-}, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D]);
-
+  }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D]);
+  
   const cachedSize = useMemo(()=>{
     const thisDtype = meta.dtype as string
     if (thisDtype.includes("32")){

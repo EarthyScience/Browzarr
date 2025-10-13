@@ -1,11 +1,12 @@
 "use client";
 import { ArrayMinMax, GetCurrentArray } from '@/utils/HelperFuncs';
 import * as THREE from 'three';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { DataReduction, Convolve, Multivariate2D, Multivariate3D, CUMSUM3D, Convolve2D } from '../computation/webGPU';
 import { useGlobalStore, useAnalysisStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
+import { ArrayToTexture } from '../textures';
 
 // The new centralized map for all operations
 const ShaderMap = {
@@ -39,7 +40,7 @@ const ShaderMap = {
 // Define a type for our operations based on the ShaderMap keys
 type Operation = keyof typeof ShaderMap;
 
-const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture[] | THREE.DataTexture | null>>, ZarrDS: ZarrDataset }) => {
+const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture[] | THREE.DataTexture[] | null>>, ZarrDS: ZarrDataset }) => {
 
     // Global state hooks remain the same
     const { strides, dataShape, valueScales, isFlat, setIsFlat, setDownloading, setShowLoading, setValueScales } = useGlobalStore(useShallow(state => ({
@@ -162,23 +163,14 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
                 ({ minVal, maxVal } = valueScales);
             }
             setValueScales({ minVal, maxVal });
-            // --- Texture creation logic ---
-            const range = maxVal - minVal;
-            const normed = newArray.map(e => (e - minVal) / (range === 0 ? 1 : range));
-            const textureData = new Uint8Array(normed.map(i => isNaN(i) ? 255 : i * 254));
-
             let newTexture;
+            let _scales;
             if (is3DResult) {
-                newTexture = new THREE.Data3DTexture(textureData, dataShape[2], dataShape[1], dataShape[0]);
-                newTexture.format = THREE.RedFormat;
-                newTexture.minFilter = THREE.NearestFilter;
-                newTexture.magFilter = THREE.NearestFilter;
+                [newTexture, _scales]  = ArrayToTexture({data: newArray, shape: dataShape}, {minVal, maxVal})
             } else {
                 const thisShape = dataShape.length > 2 ? dataShape.filter((_, idx) => idx !== axis) : dataShape;
-                newTexture = new THREE.DataTexture(textureData, thisShape[1], thisShape[0], THREE.RedFormat, THREE.UnsignedByteType);
+                [newTexture, _scales] = ArrayToTexture({data: newArray, shape: thisShape}, {minVal, maxVal})
             }
-            newTexture.needsUpdate = true;
-
             // --- Final state updates ---
             setAnalysisArray(newArray);
             setTexture(newTexture);

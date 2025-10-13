@@ -4,18 +4,18 @@ import { ArrayMinMax} from '@/utils/HelperFuncs';
 import { useGlobalStore } from '@/utils/GlobalStates';
 
 interface Array {
-    data: Float32Array | Float64Array | Int32Array | Uint32Array | Float32Array;
+    data: Float32Array | Float64Array | Int32Array | Uint32Array | Float32Array | Float16Array;
     shape: number[];
 }
 
 // ? Please, try when possible to define the types of your variables. Otherwise building will fail.
-function ArrayTo2D(array: Array): [ THREE.DataTexture[], {minVal: number, maxVal: number}]{
+function ArrayTo2D(array: Array, valueScales?: {maxVal: number, minVal: number}): [ THREE.DataTexture[], {minVal: number, maxVal: number}]{
     const {textureArrayDepths} = useGlobalStore.getState()
     const shape = array.shape;
     const data = array.data;
     const width = shape[1];
     const height = shape[0];
-    const [minVal,maxVal] = ArrayMinMax(data)
+    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
     const chunkSize = {
         y: Math.floor(height / textureArrayDepths[1]),
         x: Math.floor(width / textureArrayDepths[2])
@@ -39,12 +39,12 @@ function ArrayTo2D(array: Array): [ THREE.DataTexture[], {minVal: number, maxVal
     return [chunks, {maxVal,minVal}]
 }
 
-export function ArrayTo3D(array: Array) : [ THREE.Data3DTexture[], {minVal: number, maxVal: number}]{
+export function ArrayTo3D(array: Array, valueScales?: {maxVal: number, minVal: number}) : [ THREE.Data3DTexture[], {minVal: number, maxVal: number}]{
     const {textureArrayDepths} = useGlobalStore.getState()
     const shape = array.shape;
     const data = array.data;
     const [lz,ly,lx] = shape
-    const [minVal,maxVal] = ArrayMinMax(data)
+    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
     
     // Calculate chunk dimensions
     const chunkSize = {
@@ -68,9 +68,9 @@ export function ArrayTo3D(array: Array) : [ THREE.Data3DTexture[], {minVal: numb
     return [chunks, {maxVal,minVal}]
 }
 
-export function ArrayToTexture(array: Array): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
+export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
     const shape = array.shape;
-    const [textures,scales] = shape.length == 3 ? ArrayTo3D(array) : ArrayTo2D(array);
+    const [textures,scales] = shape.length == 3 ? ArrayTo3D(array, valueScales) : ArrayTo2D(array, valueScales);
     return [textures, scales];
 }
 
