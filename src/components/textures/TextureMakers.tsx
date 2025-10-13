@@ -9,27 +9,34 @@ interface Array {
 }
 
 // ? Please, try when possible to define the types of your variables. Otherwise building will fail.
-function ArrayTo2D(array: Array): [ THREE.DataTexture, {minVal: number, maxVal: number}]{
-    //We assume there is no slicing here. That will occur in the ZarrLoader stage. This is just pure data transfer
+function ArrayTo2D(array: Array): [ THREE.DataTexture[], {minVal: number, maxVal: number}]{
+    const {textureArrayDepths} = useGlobalStore.getState()
     const shape = array.shape;
     const data = array.data;
     const width = shape[1];
     const height = shape[0];
     const [minVal,maxVal] = ArrayMinMax(data)
-    const normed = data.map((i)=>(i-minVal)/(maxVal-minVal))
-
-    const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254))
-    const texture = new THREE.DataTexture(
-        textureData,
-        width,
-        height,
-        THREE.RedFormat,
-        THREE.UnsignedByteType
-    );
-
-    // Update texture
-    texture.needsUpdate = true;
-    return [texture, {maxVal,minVal}]
+    const chunkSize = {
+        y: Math.floor(height / textureArrayDepths[1]),
+        x: Math.floor(width / textureArrayDepths[2])
+    };
+    //@ts-ignore It is float16 stop crying
+    const chunkData = chunkArray2D(data as Float16Array, {y:height, x:width}, chunkSize)
+    const chunks = []
+    for (const chunk of chunkData){
+        const normed = chunk.data.map((i)=>(i-minVal)/(maxVal-minVal))
+        const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254));   
+        const texture = new THREE.DataTexture(
+            textureData,
+            width,
+            height,
+            THREE.RedFormat,
+            THREE.UnsignedByteType
+        );
+        texture.needsUpdate = true;
+        chunks.push(texture)
+    }
+    return [chunks, {maxVal,minVal}]
 }
 
 export function ArrayTo3D(array: Array) : [ THREE.Data3DTexture[], {minVal: number, maxVal: number}]{
@@ -41,48 +48,30 @@ export function ArrayTo3D(array: Array) : [ THREE.Data3DTexture[], {minVal: numb
     
     // Calculate chunk dimensions
     const chunkSize = {
-        z: Math.ceil(lz / textureArrayDepths[0]),
-        y: Math.ceil(ly / textureArrayDepths[1]),
-        x: Math.ceil(lx / textureArrayDepths[2])
+        z: Math.floor(lz / textureArrayDepths[0]),
+        y: Math.floor(ly / textureArrayDepths[1]),
+        x: Math.floor(lx / textureArrayDepths[2])
     };
     //@ts-ignore It is float16 stop crying
     const chunkData = chunkArray(data as Float16Array, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths)
     const chunks = []
-    for (const chunkArray of chunkData){
-        const normed = chunkArray.map((i)=>(i-minVal)/(maxVal-minVal))
+    for (const chunk of chunkData){
+        const normed = chunk.data.map((i)=>(i-minVal)/(maxVal-minVal))
         const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254));   
-        const volTexture = new THREE.Data3DTexture(textureData, chunkSize.x, chunkSize.y, chunkSize.z);
+        const volTexture = new THREE.Data3DTexture(textureData, chunk.dims.x, chunk.dims.y, chunk.dims.z);
         volTexture.format = THREE.RedFormat;
         volTexture.minFilter = THREE.NearestFilter;
         volTexture.magFilter = THREE.NearestFilter;
         volTexture.needsUpdate = true;
         chunks.push(volTexture)
     }
-    console.log(chunks)
     return [chunks, {maxVal,minVal}]
 }
 
-export function ArrayToTexture(array: Array): [ THREE.Data3DTexture[] | THREE.DataTexture, {minVal: number, maxVal: number}]{
+export function ArrayToTexture(array: Array): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
     const shape = array.shape;
-    const [texture,scales] = shape.length == 3 ? ArrayTo3D(array) : ArrayTo2D(array);
-    return [texture, scales];
-}
-
-export function DefaultCubeTexture() {
-    // Create a Float32Array instead of regular array
-    const data = new Float32Array(1000);
-    // Fill with random values
-    for (let i = 0; i < data.length; i++) {
-        data[i] = Math.random() < 0.2 ? NaN : Math.random();
-    }
-    
-    const shape = [10, 10, 10];
-    const array: Array = {
-        data,
-        shape,
-    }
-    const [texture, _scaling] = ArrayTo3D(array)
-    return texture
+    const [textures,scales] = shape.length == 3 ? ArrayTo3D(array) : ArrayTo2D(array);
+    return [textures, scales];
 }
 
 function chunkArray(
@@ -90,8 +79,8 @@ function chunkArray(
   dims: { z: number; y: number; x: number },
   chunkSize: { z: number; y: number; x: number },
   resolution: number[]
-): Float16Array[] {
-  const chunks: Float16Array[] = [];
+): { data: Float16Array; dims: { x: number; y: number; z: number } }[] {
+  const chunks: { data: Float16Array; dims: { x: number; y: number; z: number } }[] = [];
  
   // Strides for navigating the source array
   const sourceStride = {
@@ -119,7 +108,6 @@ function chunkArray(
         
         // Pre-allocate the typed array for this chunk
         const chunk = new Float16Array(chunkDepth * chunkHeight * rowLength);
-        
         let chunkOffset = 0;
         
         // Extract row by row
@@ -133,10 +121,65 @@ function chunkArray(
             chunkOffset += rowLength;
           }
         }
-        chunks.push(chunk);
+        chunks.push({ data: chunk, dims: { x: rowLength, y: chunkHeight, z: chunkDepth } });
       }
     }
   }
   
+  return chunks;
+}
+
+function chunkArray2D(
+  arr: Float16Array,
+  dims: { y: number; x: number },
+  chunkSize: { y: number; x: number }
+): { data: Float16Array; dims: { x: number; y: number } }[] {
+  const chunks: { data: Float16Array; dims: { x: number; y: number } }[] = [];
+
+  // Calculate how many chunks there will be along each axis
+  const numChunksY = Math.ceil(dims.y / chunkSize.y);
+  const numChunksX = Math.ceil(dims.x / chunkSize.x);
+
+  // Iterate through each chunk position
+  for (let cy = 0; cy < numChunksY; cy++) {
+    for (let cx = 0; cx < numChunksX; cx++) {
+      // Calculate the starting indices for this chunk
+      const startY = cy * chunkSize.y;
+      const startX = cx * chunkSize.x;
+
+      // Calculate the ending indices, ensuring they don't exceed array bounds
+      const endY = Math.min(startY + chunkSize.y, dims.y);
+      const endX = Math.min(startX + chunkSize.x, dims.x);
+
+      // Determine the actual dimensions of this chunk
+      const chunkHeight = endY - startY;
+      const rowLength = endX - startX;
+
+      // Skip creating a chunk if it has no size
+      if (chunkHeight <= 0 || rowLength <= 0) {
+        continue;
+      }
+
+      // Pre-allocate the typed array for this chunk's data
+      const chunk = new Float16Array(chunkHeight * rowLength);
+      let chunkOffset = 0;
+
+      // Extract data row by row for this chunk
+      for (let y = startY; y < endY; y++) {
+        // Calculate the offset to the start of this row in the source array
+        const sourceRowOffset = y * dims.x + startX;
+
+        // Efficiently copy the entire row segment into the chunk
+        chunk.set(
+          arr.subarray(sourceRowOffset, sourceRowOffset + rowLength),
+          chunkOffset
+        );
+        chunkOffset += rowLength;
+      }
+      
+      chunks.push({ data: chunk, dims: { x: rowLength, y: chunkHeight } });
+    }
+  }
+
   return chunks;
 }

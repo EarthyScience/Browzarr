@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/shallow';
 import { invalidate } from '@react-three/fiber';
 
 interface DataCubeProps {
-  volTexture: THREE.Data3DTexture[] | THREE.DataTexture | null,
+  volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
 }
 
 export const DataCube = ({ volTexture }: DataCubeProps ) => {

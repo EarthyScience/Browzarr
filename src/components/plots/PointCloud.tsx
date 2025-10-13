@@ -9,7 +9,7 @@ import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/ut
 import { evaluate_cmap } from 'js-colormaps-es';
 
 interface PCProps {
-  texture: THREE.Data3DTexture[] | THREE.DataTexture | null,
+  texture: THREE.Data3DTexture[] | null,
   colormap: THREE.DataTexture
 }
 
@@ -24,7 +24,6 @@ interface pointSetters{
   setStride: React.Dispatch<React.SetStateAction<number>>;
   setDimWidth: React.Dispatch<React.SetStateAction<number>>;
 }
-
 
 const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProps, ZarrDS: ZarrDataset, setters:pointSetters}) =>{
   const {width, height, depth} = dimensions;
@@ -148,9 +147,10 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
 
 export const PointCloud = ({textures, ZarrDS} : {textures:PCProps, ZarrDS: ZarrDataset} )=>{
     const {texture, colormap } = textures;
-    const {timeSeries, flipY} = useGlobalStore(useShallow(state=>({
+    const {timeSeries, flipY, dataShape} = useGlobalStore(useShallow(state=>({
       timeSeries: state.timeSeries,
-      flipY: state.flipY
+      flipY: state.flipY,
+      dataShape: state.dataShape
     })))
     const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, selectTS, timeScale, xRange, yRange, zRange,} = usePlotStore(useShallow(state => ({
       scalePoints: state.scalePoints,
@@ -187,22 +187,83 @@ export const PointCloud = ({textures, ZarrDS} : {textures:PCProps, ZarrDS: ZarrD
 
     //Extract data and shape from Data3DTexture
     const { data, width, height, depth } = useMemo(() => {
-      if (!(texture instanceof THREE.Data3DTexture)) {
-        console.warn('Provided texture is not a Data3DTexture');
-        return { data: [], width: 0, height: 0, depth: 0 };
+      if (!texture) {
+        return { data: new Uint8Array(), width: 0, height: 0, depth: 0 };
       }
-      return {
-        data: texture.image.data,
-        width: texture.image.width,
-        height: texture.image.height,
-        depth: texture.image.depth,
-      };
-    }, [texture]);
+      if (Array.isArray(texture)) {
+        if (texture.length === 0) {
+          return { data: new Uint8Array(), width: 0, height: 0, depth: 0 };
+        }
+        else if (texture.length === 1){
+          const thisText = texture[0];
+          return {
+            data: thisText.image.data,
+            width: thisText.image.width,
+            height: thisText.image.height,
+            depth: thisText.image.depth,
+          };
+        }
+        // Assuming all chunks have the same dimensions, except for the edges
+        const chunkWidth = texture[0].image.width;
+        const chunkHeight = texture[0].image.height;
+        const chunkDepth = texture[0].image.depth;
+    
+        const { textureArrayDepths } = useGlobalStore.getState();
+        const [resZ, resY, resX] = textureArrayDepths;
+    
+        // Calculate total dimensions from dataShape
+        const [totalDepth, totalHeight, totalWidth] = dataShape;
+    
+        const totalSize = totalWidth * totalHeight * totalDepth;
+        const stitchedData = new Uint8Array(totalSize);
+    
+        const sourceStrideZ = totalHeight * totalWidth;
+        const sourceStrideY = totalWidth;
+    
+        let chunkIndex = 0;
+        for (let cz = 0; cz < resZ; cz++) {
+          for (let cy = 0; cy < resY; cy++) {
+            for (let cx = 0; cx < resX; cx++) {
+              if (chunkIndex >= texture.length) continue;
+    
+              const chunk = texture[chunkIndex++];
+              const chunkData = chunk.image.data as Uint8Array;
+              const currentChunkWidth = chunk.image.width;
+              const currentChunkHeight = chunk.image.height;
+              const currentChunkDepth = chunk.image.depth;
+    
+              const startZ = cz * chunkDepth;
+              const startY = cy * chunkHeight;
+              const startX = cx * chunkWidth;
+    
+              let chunkDataIndex = 0;
+              for (let z = 0; z < currentChunkDepth; z++) {
+                for (let y = 0; y < currentChunkHeight; y++) {
+                  const destIndex = (startZ + z) * sourceStrideZ + (startY + y) * sourceStrideY + startX;
+                  const rowData = chunkData.subarray(chunkDataIndex, chunkDataIndex + currentChunkWidth);
+                  stitchedData.set(rowData, destIndex);
+                  chunkDataIndex += currentChunkWidth;
+                }
+              }
+            }
+          }
+        }
+        return {
+          data: stitchedData,
+          width: totalWidth,
+          height: totalHeight,
+          depth: totalDepth,
+        };
+      }
+      // Fallback for other texture types or null
+      console.warn('Provided texture is not a Data3DTexture or an array of Data3DTextures');
+      return { data: new Uint8Array(), width: 0, height: 0, depth: 0 };
+    }, [texture, dataShape]);
 
     // Create buffer geometry
     const geometry = useMemo(() => {
       const geom = new THREE.BufferGeometry();
-      geom.setAttribute('value', new THREE.Uint8BufferAttribute(data as number[], 1));
+      geom.setAttribute('value', new THREE.Uint8BufferAttribute(data as Uint8Array, 1));
       const arrayLength = depth * height * width ;
       geom.setDrawRange(0, arrayLength); // This is used to tell it how many data points are needed since we aren't giving it positions.
       return geom;
@@ -267,7 +328,6 @@ export const PointCloud = ({textures, ZarrDS} : {textures:PCProps, ZarrDS: ZarrD
     return (
       <>
       <mesh scale={[1,flipY ? -1:1, 1]} >
-
         <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
       </mesh>
       <MappingCube dimensions={{width,height,depth}} ZarrDS={ZarrDS} setters={{setPoints:setPointsObj, setStride, setDimWidth}}/>

@@ -39,7 +39,7 @@ const ShaderMap = {
 // Define a type for our operations based on the ShaderMap keys
 type Operation = keyof typeof ShaderMap;
 
-const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture | THREE.DataTexture | null>>, ZarrDS: ZarrDataset }) => {
+const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture[] | THREE.DataTexture | null>>, ZarrDS: ZarrDataset }) => {
 
     // Global state hooks remain the same
     const { strides, dataShape, valueScales, isFlat, setIsFlat, setDownloading, setShowLoading, setValueScales } = useGlobalStore(useShallow(state => ({

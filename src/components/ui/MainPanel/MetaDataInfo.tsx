@@ -99,84 +99,85 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
   const hasYChunks = is4D ? meta.shape[2]/meta.chunks[2] > 1 : meta.shape[1]/meta.chunks[1] > 1
   const hasXChunks = is4D ? meta.shape[3]/meta.chunks[3] > 1 : meta.shape[2]/meta.chunks[2] > 1
   const chunkIDs = useMemo(()=>ChunkIDs({xSlice, ySlice, zSlice}, meta.chunks, meta.shape, meta.shape.length == 4),[zSlice, xSlice, ySlice, meta])
-const currentSize = useMemo(() => {
-  if (is3D) {
-    const zFirst = zSlice[0] ?? 0;
-    const zLast = zSlice[1] ?? zLength;
-    const zSteps = zLast - zFirst;
-    
-    const xFirst = xSlice[0] ?? 0;
-    const xLast = xSlice[1] ?? meta.shape[2];
-    const xSteps = xLast - xFirst;
-    
-    const yFirst = ySlice[0] ?? 0;
-    const yLast = ySlice[1] ?? meta.shape[1];
-    const ySteps = yLast - yFirst;
-    
-    const xChunkSize = meta.chunks[2];
-    const yChunkSize = meta.chunks[1];
-    const zChunkSize = meta.chunks[0];
-    
-    const xChunksNeeded = Math.ceil(xSteps / xChunkSize);
-    const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
-    const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
+  const isFlat = meta.shape.length == 2
+  const currentSize = useMemo(() => {
+    if (is3D) {
+      const zFirst = zSlice[0] ?? 0;
+      const zLast = zSlice[1] ?? zLength;
+      const zSteps = zLast - zFirst;
+      
+      const xFirst = xSlice[0] ?? 0;
+      const xLast = xSlice[1] ?? meta.shape[2];
+      const xSteps = xLast - xFirst;
+      
+      const yFirst = ySlice[0] ?? 0;
+      const yLast = ySlice[1] ?? meta.shape[1];
+      const ySteps = yLast - yFirst;
+      
+      const xChunkSize = meta.chunks[2];
+      const yChunkSize = meta.chunks[1];
+      const zChunkSize = meta.chunks[0];
+      
+      const xChunksNeeded = Math.ceil(xSteps / xChunkSize);
+      const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
+      const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
 
-    const zSize = zLast - zFirst;
-    const ySize = yLast - yFirst;
-    const xSize = xLast - xFirst;
+      const zSize = zLast - zFirst;
+      const ySize = yLast - yFirst;
+      const xSize = xLast - xFirst;
 
-    const zTexCount = zSize/max3DTextureSize
-    const yTexCount = ySize/max3DTextureSize
-    const xTexCount = xSize/max3DTextureSize
-    if (zTexCount > 1 ||
-        yTexCount > 1 ||
-        xTexCount > 1){
-          const arrayDepths = [zTexCount, yTexCount, xTexCount].map((val)=>Math.ceil(val))
-          setTextureArrayDepths(arrayDepths)
-    } else{ 
-      setTextureArrayDepths([1,1,1])
+      const zTexCount = zSize/(isFlat ? maxTextureSize : max3DTextureSize)
+      const yTexCount = ySize/(isFlat ? maxTextureSize : max3DTextureSize)
+      const xTexCount = xSize/(isFlat ? maxTextureSize : max3DTextureSize)
+      if (zTexCount > 1 ||
+          yTexCount > 1 ||
+          xTexCount > 1){
+            const arrayDepths = [zTexCount, yTexCount, xTexCount].map((val)=>Math.ceil(val))
+            setTextureArrayDepths(arrayDepths)
+      } else{ 
+        setTextureArrayDepths([1,1,1])
+      }
+      return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
+    } else if (is4D) {
+      const zFirst = zSlice[0] ?? 0;
+      const zLast = zSlice[1] ?? zLength;
+      const zSteps = zLast - zFirst;
+      
+      const xFirst = xSlice[0] ?? 0;
+      const xLast = xSlice[1] ?? meta.shape[3];
+      const xSteps = xLast - xFirst;
+      
+      const yFirst = ySlice[0] ?? 0;
+      const yLast = ySlice[1] ?? meta.shape[2];
+      const ySteps = yLast - yFirst;
+      
+      const xChunkSize = meta.chunks[3];
+      const yChunkSize = meta.chunks[2];
+      const zChunkSize = meta.chunks[1];
+      
+      const xChunksNeeded = Math.ceil(xSteps / xChunkSize);
+      const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
+      const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
+
+      const zSize = zLast - zFirst;
+      const ySize = yLast - yFirst;
+      const xSize = xLast - xFirst;
+
+      const zTexCount = zSize/maxTextureSize
+      const yTexCount = ySize/maxTextureSize
+      const xTexCount = xSize/maxTextureSize
+      if (zTexCount > 1 ||
+          yTexCount > 1 ||
+          xTexCount > 1){
+            const arrayDepths = [zTexCount, yTexCount, xTexCount].map((val)=>Math.ceil(val))
+            setTextureArrayDepths(arrayDepths)
+      } else{ 
+        setTextureArrayDepths([1,1,1])
+      }
+      return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
+    } else {
+      return 0;
     }
-    return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
-  } else if (is4D) {
-    const zFirst = zSlice[0] ?? 0;
-    const zLast = zSlice[1] ?? zLength;
-    const zSteps = zLast - zFirst;
-    
-    const xFirst = xSlice[0] ?? 0;
-    const xLast = xSlice[1] ?? meta.shape[3];
-    const xSteps = xLast - xFirst;
-    
-    const yFirst = ySlice[0] ?? 0;
-    const yLast = ySlice[1] ?? meta.shape[2];
-    const ySteps = yLast - yFirst;
-    
-    const xChunkSize = meta.chunks[3];
-    const yChunkSize = meta.chunks[2];
-    const zChunkSize = meta.chunks[1];
-    
-    const xChunksNeeded = Math.ceil(xSteps / xChunkSize);
-    const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
-    const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
-
-    const zSize = zLast - zFirst;
-    const ySize = yLast - yFirst;
-    const xSize = xLast - xFirst;
-
-    const zTexCount = zSize/max3DTextureSize
-    const yTexCount = ySize/max3DTextureSize
-    const xTexCount = xSize/max3DTextureSize
-    if (zTexCount > 1 ||
-        yTexCount > 1 ||
-        xTexCount > 1){
-          const arrayDepths = [zTexCount, yTexCount, xTexCount].map((val)=>Math.ceil(val))
-          setTextureArrayDepths(arrayDepths)
-    } else{ 
-      setTextureArrayDepths([1,1,1])
-    }
-    return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
-  } else {
-    return 0;
-  }
 }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D]);
 
   const cachedSize = useMemo(()=>{
@@ -199,7 +200,7 @@ const currentSize = useMemo(() => {
     setIs4D(this4D);
   },[meta])
 
-  const isFlat = meta.shape.length == 2
+  
   const chunkShape = meta.chunks
   useEffect(()=>{
     setCompress(false)

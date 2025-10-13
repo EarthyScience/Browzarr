@@ -119,7 +119,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     const [showInfo, setShowInfo] = useState<boolean>(false)
     const [loc, setLoc] = useState<number[]>([0,0])
 
-    const [texture, setTexture] = useState<THREE.DataTexture | THREE.Data3DTexture[] | null>(null)
+    const [texture, setTexture] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null)
     const [show, setShow] = useState<boolean>(true) //Prevents rendering of 3D objects until data is fully loaded in
 
   //DATA LOADING
@@ -225,11 +225,11 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         }
         {plotType == "point-cloud" && show &&
           <>
-            <PointCloud textures={{texture,colormap}} ZarrDS={ZarrDS}/>
+            <PointCloud textures={{texture: texture as THREE.Data3DTexture[],colormap}} ZarrDS={ZarrDS}/>
           </> 
         }
         {plotType == "sphere" && show && 
-          <Sphere texture={texture} ZarrDS={ZarrDS} /> 
+          <Sphere textures={texture} ZarrDS={ZarrDS} /> 
         }
         <Orbiter isFlat={false} />
       </Canvas>
@@ -242,7 +242,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
           <ExportCanvas show={show}/>
           <CountryBorders/>
           {show && <AxisLines />}
-          <FlatMap texture={texture as THREE.DataTexture | THREE.Data3DTexture} infoSetters={infoSetters} />
+          <FlatMap textures={texture as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} />
           <Orbiter isFlat={true}/>
         </Canvas>
         </>}
