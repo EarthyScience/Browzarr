@@ -193,10 +193,20 @@ const PlayButton = () => {
     const [showOptions, setShowOptions] = useState<boolean>(false)
     const cond = useMemo(()=>!isFlat && plotOn, [isFlat,plotOn])
     const enableCond = (!isFlat && plotOn)
+    const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
     useEffect(()=>{
       setShowOptions(false)
     },[reFetch])
+
+    useEffect(() => {
+        const handleResize = () => {
+          setPopoverSide(window.innerWidth < 768 ? "top" : "left");
+        };
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+      }, []);
     
   return (
     <>
@@ -216,9 +226,14 @@ const PlayButton = () => {
             </Button>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="left" align="start" className="flex flex-col">
+        <TooltipContent
+          side={popoverSide === "left" ? "left" : "top"}
+          align={popoverSide === "left" ? "start" : "center"}
+          className="flex flex-col"
+        >
           <span>Animation controls</span>
         </TooltipContent>
+
       </Tooltip>
       <PlayInterFace visible={(showOptions && enableCond)}/>
     </>
