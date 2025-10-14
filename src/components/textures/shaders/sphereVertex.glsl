@@ -51,7 +51,8 @@ void main() {
     localCoord = fract(localCoord);
 
     float dispStrength = sample1(localCoord, textureIdx);
-    vec3 newPos = position + (normal * (dispStrength-displaceZero) * displacement);
+    float noNan = float(dispStrength != 1.0);
+    vec3 newPos = position + (normal * (dispStrength-displaceZero) * noNan * displacement);
     aPosition = position; //Pass out position for sphere frag
     vec4 worldPos = modelViewMatrix * vec4( newPos, 1.0 );
     gl_Position = projectionMatrix * worldPos;

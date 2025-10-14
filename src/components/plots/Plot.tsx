@@ -3,9 +3,9 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines } from '@/components/plots';
 import { Canvas, invalidate } from '@react-three/fiber';
-import { ArrayToTexture } from '@/components/textures';
+import { ArrayToTexture, GetCurrentTexture } from '@/components/textures';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
-import { useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
@@ -13,6 +13,7 @@ import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import AnalysisWG from './AnalysisWG';
 import { ParseExtent } from '@/utils/HelperFuncs';
 import ExportCanvas from '@/utils/ExportCanvas';
+
 
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   const {resetCamera} = usePlotStore(useShallow(state => ({
@@ -112,7 +113,9 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       xSlice: state.xSlice,
       reFetch: state.reFetch
     })))
-
+    const {analysisMode} = useAnalysisStore(useShallow(state => ({
+      analysisMode: state.analysisMode
+    })))
     const coords = useRef<number[]>([0,0])
     const val = useRef<number>(0)
 
@@ -193,6 +196,16 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     }
       
   }, [reFetch])
+
+  useEffect(()=>{ // Reset after analysis mode
+    if(!analysisMode){
+      const {dataShape} = useGlobalStore.getState();
+      console.log(dataShape)
+      setIsFlat(dataShape.length == 2)
+      const newText = GetCurrentTexture(dataShape)
+      setTexture(newText)
+    }
+  },[analysisMode])
 
   const infoSetters = useMemo(()=>({
     setLoc,
