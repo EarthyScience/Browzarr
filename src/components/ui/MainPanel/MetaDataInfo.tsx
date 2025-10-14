@@ -85,117 +85,56 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
   const [tooBig, setTooBig] = useState(false)
   const [cached, setCached] = useState(false)
   const [cachedChunks, setCachedChunks] = useState<string | null>(null)
-
+  const [texCount, setTexCount] = useState(0)
   const totalSize = useMemo(() => meta.totalSize ? meta.totalSize : 0, [meta])
   const shapeLength = meta.shape.length;
   const zLength = useMemo(() => meta.shape ? meta.shape[shapeLength-3] : 0, [meta])
   const yLength = useMemo(() => meta.shape ? meta.shape[shapeLength-2] : 0, [meta])
   const xLength = useMemo(() => meta.shape ? meta.shape[shapeLength-1] : 0, [meta])
   const is3D = useMemo(() => meta.shape ? meta.shape.length == 3 : false, [meta])
-  const hasTimeChunks = is4D ? meta.shape[1]/meta.chunks[1] > 1 : meta.shape[0]/meta.chunks[0] > 1
-  const hasYChunks = is4D ? meta.shape[2]/meta.chunks[2] > 1 : meta.shape[1]/meta.chunks[1] > 1
-  const hasXChunks = is4D ? meta.shape[3]/meta.chunks[3] > 1 : meta.shape[2]/meta.chunks[2] > 1
+  const hasTimeChunks = shapeLength > 2 ? meta.shape[shapeLength-3]/meta.chunks[shapeLength-3] > 1 : false
+  const hasYChunks = meta.shape[shapeLength-2]/meta.chunks[shapeLength-2] > 1 
+  const hasXChunks = meta.shape[shapeLength-1]/meta.chunks[shapeLength-1] > 1 
   const chunkIDs = useMemo(()=>ChunkIDs({xSlice, ySlice, zSlice}, meta.chunks, meta.shape, meta.shape.length == 4),[zSlice, xSlice, ySlice, meta])
   const isFlat = meta.shape.length == 2
   const currentSize = useMemo(() => {
-    if (is3D) {
-      const zFirst = zSlice[0] ?? 0;
-      const zLast = zSlice[1] ?? zLength;
-      const zSteps = zLast - zFirst;
-      
-      const xFirst = xSlice[0] ?? 0;
-      const xLast = xSlice[1] ?? meta.shape[2];
-      const xSteps = xLast - xFirst;
-      
-      const yFirst = ySlice[0] ?? 0;
-      const yLast = ySlice[1] ?? meta.shape[1];
-      const ySteps = yLast - yFirst;
-      
-      const xChunkSize = meta.chunks[2];
-      const yChunkSize = meta.chunks[1];
-      const zChunkSize = meta.chunks[0];
-      
-      const xChunksNeeded = Math.ceil(xSteps / xChunkSize);
-      const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
-      const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
+    const is2D = isFlat
+    
+    const getSliceDims = (slice: [number, number | null], defaultLast: number, first = 0) => {
+      const sliceFirst = slice[0]?? first;
+      const sliceLast = slice[1]?? defaultLast;
+      return { first: sliceFirst, last: sliceLast, steps: sliceLast - sliceFirst };
+    };
 
-      const zSize = zLast - zFirst;
-      const ySize = yLast - yFirst;
-      const xSize = xLast - xFirst;
+    const z = is2D ? { first: 0, last: 1, steps: 1 } : getSliceDims(zSlice, zLength);
+    const x = getSliceDims(xSlice, meta.shape[is4D ? 3 : is3D ? 2 : 1]);
+    const y = getSliceDims(ySlice, meta.shape[is4D ? 2 : is3D ? 1 : 0]);
 
-      const zTexCount = zSize/(max3DTextureSize)
-      const yTexCount = ySize/(max3DTextureSize)
-      const xTexCount = xSize/(max3DTextureSize)
-      if (zTexCount > 1 ||
-          yTexCount > 1 ||
-          xTexCount > 1){
-            const arrayDepths = [zTexCount, yTexCount, xTexCount].map((val)=>Math.ceil(val))
-            setTextureArrayDepths(arrayDepths)
-      } else{ 
-        setTextureArrayDepths([1,1,1])
-      }
-      return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
-    } else if (is4D) {
-      const zFirst = zSlice[0] ?? 0;
-      const zLast = zSlice[1] ?? zLength;
-      const zSteps = zLast - zFirst;
-      
-      const xFirst = xSlice[0] ?? 0;
-      const xLast = xSlice[1] ?? meta.shape[3];
-      const xSteps = xLast - xFirst;
-      
-      const yFirst = ySlice[0] ?? 0;
-      const yLast = ySlice[1] ?? meta.shape[2];
-      const ySteps = yLast - yFirst;
-      
-      const xChunkSize = meta.chunks[3];
-      const yChunkSize = meta.chunks[2];
-      const zChunkSize = meta.chunks[1];
-      
-      const xChunksNeeded = Math.ceil(xSteps / xChunkSize);
-      const yChunksNeeded = Math.ceil(ySteps / yChunkSize);
-      const zChunksNeeded = Math.ceil(zSteps / zChunkSize);
-
-      const zSize = zLast - zFirst;
-      const ySize = yLast - yFirst;
-      const xSize = xLast - xFirst;
-
-      const zTexCount = zSize/max3DTextureSize
-      const yTexCount = ySize/max3DTextureSize
-      const xTexCount = xSize/max3DTextureSize
-      if (zTexCount > 1 ||
-          yTexCount > 1 ||
-          xTexCount > 1){
-            const arrayDepths = [zTexCount, yTexCount, xTexCount].map((val)=>Math.ceil(val))
-            setTextureArrayDepths(arrayDepths)
-      } else{ 
-        setTextureArrayDepths([1,1,1])
-      }
-      return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
+    const maxSize = is2D ? maxTextureSize : max3DTextureSize;
+    const texCounts = [z.steps / maxSize, y.steps / maxSize, x.steps / maxSize];
+    
+    setTextureArrayDepths(
+      texCounts.some(count => count > 1)
+        ? texCounts.map(val => Math.ceil(val))
+        : [1, 1, 1]
+    );
+    setTexCount(texCounts.reduce((prod, val) => prod * Math.ceil(val), 1))
+    if (texCount > 14){ // We can only have 14 textures. 
+      setTooBig(true)
+    } else{
+      setTooBig(false)
+    }
+    // Calculate size
+    if (is2D) {
+      const totalSteps = x.steps * y.steps;
+      const sizeRatio = totalSteps / (meta.shape[0] * meta.shape[1]);
+      return totalSize * sizeRatio;
     } else {
-      const xFirst = xSlice[0] ?? 0;
-      const xLast = xSlice[1] ?? meta.shape[1];
-      const xSteps = xLast - xFirst;
-      
-      const yFirst = ySlice[0] ?? 0;
-      const yLast = ySlice[1] ?? meta.shape[0];
-      const ySteps = yLast - yFirst;
-      const totalSteps = xSteps*ySteps;
-      const sizeRatio = totalSteps/(meta.shape[0]*meta.shape[1])
-      
-      const ySize = yLast - yFirst;
-      const xSize = xLast - xFirst;
-
-      const yTexCount = ySize/max3DTextureSize
-      const xTexCount = xSize/max3DTextureSize
-      if (yTexCount > 1 ||
-          xTexCount > 1){
-            const arrayDepths = [1, yTexCount, xTexCount].map((val)=>Math.ceil(val))
-            setTextureArrayDepths(arrayDepths)
-      } else{ 
-        setTextureArrayDepths([1,1,1])
-      }
-      return totalSize*sizeRatio;
+      const chunkIndices = is4D ? [3, 2, 1] : [2, 1, 0];
+      const xChunksNeeded = Math.ceil(x.steps / meta.chunks[chunkIndices[0]]);
+      const yChunksNeeded = Math.ceil(y.steps / meta.chunks[chunkIndices[1]]);
+      const zChunksNeeded = Math.ceil(z.steps / meta.chunks[chunkIndices[2]]);
+      return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
     }
   }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D]);
 
@@ -284,7 +223,7 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
         }
         {((is3D || isFlat || idx4D != null) && !(cached && !cachedChunks)) &&
           <>
-            {(hasTimeChunks || hasXChunks || hasYChunks || isFlat )  && (
+            {(hasTimeChunks || hasXChunks || hasYChunks )  && (
               <>
               <span className="block text-center text-xl font-bold">Trim Data</span>
               <div className="grid gap-4 ">    
@@ -315,7 +254,7 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
                     </span>
                   </div>
                 </div>  }
-                {(hasYChunks || isFlat) && <div className="grid gap-1">
+                {(hasYChunks ) && <div className="grid gap-1">
                   <div className="flex justify-center">
                     <b>{dimNames[1] == "Default" ? 'Axis 1': dimNames[isFlat ? 0 : 1] }</b>
                   </div>
@@ -323,7 +262,7 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
                     min={0}
                     max={yLength}
                     value={[ySlice[0] ? ySlice[0] : 0, ySlice[1] ? ySlice[1] : yLength]}
-                    step={isFlat ? 1 : chunkShape[1]}
+                    step={isFlat ? chunkShape[0] : chunkShape[1]}
                     onValueChange={(values: number[]) => setYSlice([values[0], values[1]] as [number, number | null])}
                   />
                   <div className="grid grid-cols-2">
@@ -341,7 +280,7 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
                     </span>
                   </div>
                 </div>  }
-                {(hasXChunks || isFlat) && <div className="grid gap-1">
+                {(hasXChunks ) && <div className="grid gap-1">
                   <div className="flex justify-center">
                     <b>{dimNames[2] == "Default" ? 'Axis 2': dimNames[isFlat ? 1 : 2] }</b>
                   </div>
@@ -349,7 +288,7 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
                     min={0}
                     max={xLength}
                     value={[xSlice[0] ? xSlice[0] : 0, xSlice[1] ? xSlice[1] : xLength]}
-                    step={isFlat ? 1 : chunkShape[2]}
+                    step={isFlat ? chunkShape[1] : chunkShape[2]}
                     onValueChange={(values: number[]) => setXSlice([values[0], values[1]] as [number, number | null])}
                   />
                   <div className="grid grid-cols-2">
@@ -438,10 +377,10 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
         } 
       </div>
       }
-      {false && 
+      {tooBig && 
         <div className="bg-[#FFBEB388] rounded-md p-1">
           <span className="text-xs font-medium text-red-800 dark:text-red-200">
-            One or more of the dimensions in your dataset exceed this browsers maximum texture size: <b>{isFlat ? maxTextureSize : max3DTextureSize}</b>
+            Not only will this certainly not fit in memory, but it also won't fit in a single shader call. You are wild for this one. Textures:  <b>{texCount}/14</b>
           </span>
         </div>
       }

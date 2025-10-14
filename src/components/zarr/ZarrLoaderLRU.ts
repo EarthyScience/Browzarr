@@ -94,6 +94,53 @@ export function copyChunkToArray(
     }
 }
 
+export function copyChunkToArray2D(
+    chunkData: Float16Array,
+    chunkShape: number[],
+    chunkStride: number[],
+    destArray: Float16Array,
+    destShape: number[],
+    destStride: number[],
+    chunkGridPos: number[],
+    chunkGridStart: number[],
+): void {
+    // Destructure the 2D properties
+    const [y, x] = chunkGridPos;
+    const [yStartIdx, xStartIdx] = chunkGridStart;
+    const [chunkShapeY, chunkShapeX] = chunkShape;
+    const [destShapeY, destShapeX] = destShape;
+
+    // 1. Calculate the local coordinates of the chunk within the destination grid
+    const localY = y - yStartIdx;
+    const localX = x - xStartIdx;
+
+    // 2. Determine the starting element position for this chunk in the destination array
+    const yStart = localY * chunkShapeY;
+    const xStart = localX * chunkShapeX;
+
+    // 3. Calculate the actual number of elements to copy for this chunk.
+    // This prevents writing past the end of the destination array for partial chunks.
+    const yLimit = Math.min(chunkShapeY, destShapeY - yStart);
+    const xLimit = Math.min(chunkShapeX, destShapeX - xStart);
+
+    // 4. Loop through the rows (Y-axis) and copy each one
+    for (let cy = 0; cy < yLimit; cy++) {
+        // Offset to the start of the row in the SOURCE chunk data
+        // chunkStride[0] is the stride for the Y-dimension
+        const sourceRowOffset = cy * chunkStride[0];
+        
+        // Offset to the start of the row in the DESTINATION typedArray
+        // destStride[0] is the stride for the Y-dimension
+        const destRowOffset = (yStart + cy) * destStride[0] + xStart;
+        
+        // Get the row of data from the source chunk, using the calculated xLimit
+        const rowData = chunkData.subarray(sourceRowOffset, sourceRowOffset + xLimit);
+        
+        // Place the row in the correct position in the final destination array
+        destArray.set(rowData, destRowOffset);
+    }
+}
+
 const maxRetries = 10;
 const retryDelay = 500; // 0.5 seconds in milliseconds
 
@@ -172,6 +219,7 @@ export class ZarrDataset{
 
 		const group = await this.groupStore;
 		const outVar = await zarr.open(group.resolve(variable), {kind:"array"})
+		const shape = is4D ? outVar.shape.slice(1) : outVar.shape;
 		let [totalSize, _chunkSize, chunkShape] = GetSize(outVar);
 		if (is4D){
 			totalSize /= outVar.shape[0];
@@ -234,9 +282,102 @@ export class ZarrDataset{
 				const xEndIdx = xSlice[1] ? Math.ceil(xSlice[1]/chunkShape[2]) : totalXChunks
 				const chunkCount = (yEndIdx - yStartIdx) * (xEndIdx - xStartIdx)
 
-				
-			}
-			else { 
+				const yShape = (ySlice[1] ? ySlice[1] : outVar.shape[1+(is4D ? 1 : 0)]) - ySlice[0]
+				const xShape = (xSlice[1] ? xSlice[1] : outVar.shape[2+(is4D ? 1 : 0)]) - xSlice[0]
+				const arraySize = yShape*xShape
+				shape =  [yShape, xShape] 
+
+				const destStride = [shape[1], 1];
+				setStrides(destStride)
+				typedArray = new Float16Array(arraySize);
+				let iter = 1;
+				const rescaleIDs : string[] = []
+				for (let y= yStartIdx ; y < yEndIdx ; y++){
+					for (let x= xStartIdx ; x < xEndIdx ; x++){
+						const chunkID = `y${y}_x${x}` // Unique ID for each chunk
+						const cacheBase = `${initStore}_${variable}`
+						const cacheName = `${cacheBase}_chunk_${chunkID}`
+						if (cache.has(cacheName)){
+							const cachedChunk = cache.get(cacheName)
+							const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed. Gemini thinks the .slice() helps with garbage collector as it doesn't maintain a reference to the original array
+							copyChunkToArray2D(
+								chunkData,
+								cachedChunk.shape,
+								cachedChunk.stride,
+								typedArray,
+								shape,
+								destStride as [number, number],
+								[y,x],
+								[yStartIdx,xStartIdx],
+							)
+							setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
+							iter ++;
+						} else {
+							for (let attempt = 0; attempt <= maxRetries; attempt++) {
+								try {
+									chunk = await zarr.get(outVar, [zarr.slice(y*chunkShape[1], (y+1)*chunkShape[1]), zarr.slice(x*chunkShape[2], (x+1)*chunkShape[2])])
+									break; // If successful, exit the loop
+								} catch (error) {
+									// If this is the final attempt, handle the error
+									if (attempt === maxRetries) {
+										useErrorStore.getState().setError('zarrFetch')
+										useGlobalStore.getState().setShowLoading(false)
+										setDownloading(false)
+										setProgress(0)
+										throw new ZarrError(`Failed to fetch chunk ${chunkID} for variable ${variable}`, error);
+									}
+									// Wait before retrying (except on the last attempt which we've already handled above)
+									await new Promise(resolve => setTimeout(resolve, retryDelay));
+								}
+							}	
+							if (!chunk || chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
+								throw new Error("BigInt arrays are not supported for conversion to Float32Array.");
+							} 
+							const originalData = chunk.data as Float32Array;
+							const chunkStride = chunk.stride;
+							chunk = null; // Clear reference!
+							const [chunkF16, newScalingFactor] = ToFloat16(originalData, scalingFactor)
+							if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
+								if (scalingFactor == null || newScalingFactor > scalingFactor){ 
+									const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
+									RescaleArray(typedArray, thisScaling)
+									scalingFactor = newScalingFactor
+									for (const id of rescaleIDs){ // Set new scalingFactor on the chunks
+										const tempName = `${cacheBase}_chunk_${id}`
+										const tempChunk = cache.get(tempName)
+										tempChunk.scaling = scalingFactor
+										RescaleArray(tempChunk.data, thisScaling)
+										cache.set(tempName, tempChunk)
+									}
+								}
+							}
+							copyChunkToArray2D(
+								chunkF16,
+								chunkShape,
+								chunkStride,
+								typedArray,
+								shape,
+								destStride as [number, number],
+								[y,x],
+								[yStartIdx,xStartIdx],
+							)
+							const cacheChunk = {
+								data: compress ? CompressArray(chunkF16, 7) : chunkF16,
+								shape: chunkShape,
+								stride: chunkStride,
+								scaling: scalingFactor,
+								compressed: compress
+							}
+							cache.set(cacheName,cacheChunk)
+							setProgress(Math.round(iter/chunkCount*100)) // Progress Bar
+							iter ++;
+							rescaleIDs.push(chunkID)
+						}
+					}
+				}
+				setDownloading(false)
+				setProgress(0) 
+			} else { 
 				setDownloading(true)
 				setProgress(0)
 				const totalZChunks = Math.ceil(outVar.shape[0+(is4D ? 1 : 0)]/chunkShape[1])

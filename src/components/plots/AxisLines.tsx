@@ -330,7 +330,7 @@ const FlatAxis = () =>{
     axis: state.axis
   })))
   const originallyFlat = dimArrays.length == 2;
-  const slices = [zSlice, ySlice, xSlice]
+  const slices = isFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
       return dimArrays.map((val, idx) => (slices[idx][1] ? slices[idx][1] : val.length) - slices[idx][0])
@@ -375,8 +375,6 @@ const FlatAxis = () =>{
       };
     }
   }, [analysisMode, dimArrays, dimUnits, dimNames, dimSlices]);
-
-
   const shapeRatio = useMemo(()=>{
     if(analysisMode && axis == 2){
       return dimLengths[heightIdx]/dimLengths[widthIdx]

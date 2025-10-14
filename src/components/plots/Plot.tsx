@@ -143,14 +143,15 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         }else{
           setValueScales(scaling as { maxVal: number; minVal: number });
         }
-        if (result.shape.length == 2){
+        const shapeLength = result.shape.length
+        if (shapeLength == 2){
           setIsFlat(true)
           setPlotType("sphere")
         }
         else{
           setIsFlat(false)
         }
-        const shapeRatio = result.shape[1] / result.shape[2] * 2;
+        const shapeRatio = result.shape[shapeLength-2] / result.shape[shapeLength-1] * 2;
         setShape(new THREE.Vector3(2, shapeRatio, 2));
         setDataShape(result.shape)
         setShow(true)
@@ -200,7 +201,6 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
   useEffect(()=>{ // Reset after analysis mode
     if(!analysisMode){
       const {dataShape} = useGlobalStore.getState();
-      console.log(dataShape)
       setIsFlat(dataShape.length == 2)
       const newText = GetCurrentTexture(dataShape)
       setTexture(newText)
