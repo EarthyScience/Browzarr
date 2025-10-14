@@ -324,8 +324,8 @@ const SphereOptions = () =>{
     <b>Displacement Resolution</b>
     <UISlider
       min={4}
-      max={20}
-      step={1}
+      max={100}
+      step={4}
       value={[sphereResolution]}
       className='w-full mb-2'
       onValueChange={(vals:number[]) => (setSphereResolution(vals[0]))}

@@ -66,7 +66,8 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
       } else {
         return dataShape[1]/dataShape[2]
       }
-    }, [axis])
+    }, [axis, analysisMode] )
+
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
     const infoRef = useRef<boolean>(false)
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))

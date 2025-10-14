@@ -187,7 +187,6 @@ export class ZarrDataset{
 			let shape;
 			let scalingFactor = null;
 			if (totalSize < 50e6 || !hasTimeChunks){ // Check if total is less than 50MB or no chunks along time
-				console.log("here bb")
 				setDownloading(true)
 				for (let attempt = 0; attempt <= maxRetries; attempt++) {
 					try {

@@ -41,7 +41,6 @@ export const Sphere = ({textures, ZarrDS} : {textures: THREE.Data3DTexture[] | T
       analysisMode: state.analysisMode,
       analysisArray: state.analysisArray
     })))
-    console.log(textures)
     const {colormap, isFlat, dimArrays, dimNames, dimUnits, valueScales, 
           timeSeries, dataShape, strides, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,
