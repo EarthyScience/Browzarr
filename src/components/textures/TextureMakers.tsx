@@ -15,18 +15,18 @@ function ArrayTo2D(array: Array, valueScales?: {maxVal: number, minVal: number})
     const width = shape[1];
     const height = shape[0];
     const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
+    const normed = data.map((i)=>(i-minVal)/(maxVal-minVal))
+    const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254));   
     const chunkSize = {
         y: Math.floor(height / textureArrayDepths[1]),
         x: Math.floor(width / textureArrayDepths[2])
     };
-    //@ts-ignore It is float16 stop crying
-    const chunkData = chunkArray2D(data as Float16Array, {y:height, x:width}, chunkSize)
+
+    const chunkData = chunkArray2D(textureData as Uint8Array, {y:height, x:width}, chunkSize)
     const chunks = []
     for (const chunk of chunkData){
-        const normed = chunk.data.map((i)=>(i-minVal)/(maxVal-minVal))
-        const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254));   
         const texture = new THREE.DataTexture(
-            textureData,
+            chunk.data,
             chunk.dims.x,
             chunk.dims.y,
             THREE.RedFormat,
@@ -56,7 +56,7 @@ export function ArrayTo3D(array: Array, valueScales?: {maxVal: number, minVal: n
     const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths)
     const chunks = []
     for (const chunk of chunkData){   
-        //@ts-ignore stop whining
+        //@ts-expect-error stop whining
         const volTexture = new THREE.Data3DTexture(chunk.data, chunk.dims.x, chunk.dims.y, chunk.dims.z);
         volTexture.format = THREE.RedFormat;
         volTexture.minFilter = THREE.NearestFilter;
@@ -86,8 +86,7 @@ export function GetCurrentTexture(shape: number[]) : THREE.DataTexture[] | THREE
         y: Math.floor(height / textureArrayDepths[1]),
         x: Math.floor(width / textureArrayDepths[2])
     };
-    //@ts-ignore It is float16 stop crying
-    const chunkData = chunkArray2D(textureData as Float16Array, {y:height, x:width}, chunkSize)
+    const chunkData = chunkArray2D(textureData as Uint8Array, {y:height, x:width}, chunkSize)
     const chunks = []
     for (const chunk of chunkData){
         const texture = new THREE.DataTexture(
@@ -111,7 +110,7 @@ export function GetCurrentTexture(shape: number[]) : THREE.DataTexture[] | THREE
     const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths)
     const chunks = []
     for (const chunk of chunkData){   
-        //@ts-ignore stop whining
+        //@ts-expect-error stop whining
         const volTexture = new THREE.Data3DTexture(chunk.data, chunk.dims.x, chunk.dims.y, chunk.dims.z);
         volTexture.format = THREE.RedFormat;
         volTexture.minFilter = THREE.NearestFilter;
@@ -180,11 +179,11 @@ function chunkArray(
 }
 
 function chunkArray2D(
-  arr: Float16Array,
+  arr: Uint8Array,
   dims: { y: number; x: number },
   chunkSize: { y: number; x: number }
-): { data: Float16Array; dims: { x: number; y: number } }[] {
-  const chunks: { data: Float16Array; dims: { x: number; y: number } }[] = [];
+): { data: Uint8Array; dims: { x: number; y: number } }[] {
+  const chunks: { data: Uint8Array; dims: { x: number; y: number } }[] = [];
 
   // Calculate how many chunks there will be along each axis
   const numChunksY = Math.ceil(dims.y / chunkSize.y);
@@ -211,7 +210,7 @@ function chunkArray2D(
       }
 
       // Pre-allocate the typed array for this chunk's data
-      const chunk = new Float16Array(chunkHeight * rowLength);
+      const chunk = new Uint8Array(chunkHeight * rowLength);
       let chunkOffset = 0;
 
       // Extract data row by row for this chunk

@@ -380,7 +380,7 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
       {tooBig && 
         <div className="bg-[#FFBEB388] rounded-md p-1">
           <span className="text-xs font-medium text-red-800 dark:text-red-200">
-            Not only will this certainly not fit in memory, but it also won't fit in a single shader call. You are wild for this one. Textures:  <b>{texCount}/14</b>
+            Not only will this certainly not fit in memory, but it also won&apos;t fit in a single shader call. You are wild for this one. Textures:  <b>{texCount}/14</b>
           </span>
         </div>
       }
