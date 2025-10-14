@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GetColorMapTexture } from "@/components/textures";
 import { GetStore } from "@/components/zarr/ZarrLoaderLRU";
 import MemoryLRU from "./MemoryLRU";
+import { U } from "vitest/dist/chunks/environment.d.cL3nLXbE.js";
 
 
 const ESDC = 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr'
@@ -45,6 +46,8 @@ type StoreState = {
   is4D: boolean;
   idx4D: number | null;
   titleDescription: { title: string | null; description: string | null };
+  textureArrayDepths: number[];
+  textureData: Uint8Array;
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -75,6 +78,8 @@ type StoreState = {
   setIs4D: (is4D: boolean) => void;
   setIdx4D: (idx4D: number | null) => void;
   setTitleDescription: (titleDescription: { title: string | null; description: string | null }) => void;
+  setTextureArrayDepths: (textureArrayResolution: number[] ) => void;
+  setTextureData: (textureData: Uint8Array ) => void;
 };
 
 export const useGlobalStore = create<StoreState>((set, get) => ({
@@ -100,10 +105,12 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   isFlat:false,
   progress: 0,
   downloading: false,
+  decompressing: false,
   is4D: false,
   idx4D: null,
   titleDescription: {title:null, description: null},
-  decompressing: false,
+  textureArrayDepths: [1,1,1], 
+  textureData: new Uint8Array(1),
 
   setDataShape: (dataShape) => set({ dataShape }),
   setShape: (shape) => set({ shape }),
@@ -152,6 +159,8 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setIs4D: (is4D) => set({ is4D }),
   setIdx4D: (idx4D) => set({ idx4D }),
   setTitleDescription: (titleDescription) => set({ titleDescription }),
+  setTextureArrayDepths: (textureArrayDepths) => set({ textureArrayDepths }),
+  setTextureData: (textureData) => set({ textureData })
 }));
 
 type PlotState ={
@@ -471,7 +480,6 @@ export const useCacheStore = create<CacheState>((set, get) => ({
     set({ maxSize })
   }
 }))
-
 
 type ErrorState = {
   error : string | null;

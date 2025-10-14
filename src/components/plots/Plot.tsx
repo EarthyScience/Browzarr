@@ -3,9 +3,9 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines } from '@/components/plots';
 import { Canvas, invalidate } from '@react-three/fiber';
-import { ArrayToTexture } from '@/components/textures';
+import { ArrayToTexture, GetCurrentTexture } from '@/components/textures';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
-import { useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
@@ -13,6 +13,7 @@ import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import AnalysisWG from './AnalysisWG';
 import { ParseExtent } from '@/utils/HelperFuncs';
 import ExportCanvas from '@/utils/ExportCanvas';
+
 
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   const {resetCamera} = usePlotStore(useShallow(state => ({
@@ -76,16 +77,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 
 const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     const {
-      setShape,
-      setDataShape, 
-      setFlipY, 
-      setValueScales, 
-      setMetadata, 
-      setDimArrays, 
-      setDimNames, 
-      setDimUnits,
-      setPlotOn,
-      setShowLoading} = useGlobalStore(
+      setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
+      setDimNames, setDimUnits, setPlotOn, setShowLoading} = useGlobalStore(
         useShallow(state => ({  //UseShallow for object returns
           setShape:state.setShape,
           setDataShape: state.setDataShape,
@@ -120,14 +113,16 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       xSlice: state.xSlice,
       reFetch: state.reFetch
     })))
-
+    const {analysisMode} = useAnalysisStore(useShallow(state => ({
+      analysisMode: state.analysisMode
+    })))
     const coords = useRef<number[]>([0,0])
     const val = useRef<number>(0)
 
     const [showInfo, setShowInfo] = useState<boolean>(false)
     const [loc, setLoc] = useState<number[]>([0,0])
 
-    const [texture, setTexture] = useState<THREE.DataTexture | THREE.Data3DTexture | null>(null)
+    const [texture, setTexture] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null)
     const [show, setShow] = useState<boolean>(true) //Prevents rendering of 3D objects until data is fully loaded in
 
   //DATA LOADING
@@ -137,30 +132,26 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       setShow(false)
       try{
         ZarrDS.GetArray(variable, {xSlice, ySlice, zSlice}).then((result) => {
-        const [texture, scaling] = ArrayToTexture({
+        const [tempTexture, scaling] = ArrayToTexture({
           data: result.data,
           shape: result.shape
         })
-        if (texture instanceof THREE.DataTexture || texture instanceof THREE.Data3DTexture) {
-          setTexture(texture)
-        } else {
-          console.error("Invalid texture type returned from ArrayToTexture");
-          setTexture(null);
-        }
+        setTexture(tempTexture)
         if (result.scalingFactor){
           const {maxVal, minVal} = scaling
           setValueScales({ maxVal: maxVal*(Math.pow(10,result.scalingFactor)), minVal: minVal*(Math.pow(10,result.scalingFactor)) });
         }else{
           setValueScales(scaling as { maxVal: number; minVal: number });
         }
-        if (result.shape.length == 2){
+        const shapeLength = result.shape.length
+        if (shapeLength == 2){
           setIsFlat(true)
           setPlotType("sphere")
         }
         else{
           setIsFlat(false)
         }
-        const shapeRatio = result.shape[1] / result.shape[2] * 2;
+        const shapeRatio = result.shape[shapeLength-2] / result.shape[shapeLength-1] * 2;
         setShape(new THREE.Vector3(2, shapeRatio, 2));
         setDataShape(result.shape)
         setShow(true)
@@ -201,17 +192,20 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         setDimUnits(tempDimUnits)
         ParseExtent(tempDimUnits, dimArrs)
       })
-
+    }else{
+      setMetadata(null)
     }
-      else{
-        setMetadata(null)
-      }
-      return () => { // GPU Data apparently isn't Garbage Collected
-        if (texture) {
-          texture.dispose();
-        }
-      }
+      
   }, [reFetch])
+
+  useEffect(()=>{ // Reset after analysis mode
+    if(!analysisMode){
+      const {dataShape} = useGlobalStore.getState();
+      setIsFlat(dataShape.length == 2)
+      const newText = GetCurrentTexture(dataShape)
+      setTexture(newText)
+    }
+  },[analysisMode])
 
   const infoSetters = useMemo(()=>({
     setLoc,
@@ -244,11 +238,11 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         }
         {plotType == "point-cloud" && show &&
           <>
-            <PointCloud textures={{texture,colormap}} ZarrDS={ZarrDS}/>
+            <PointCloud textures={{texture: texture as THREE.Data3DTexture[],colormap}} ZarrDS={ZarrDS}/>
           </> 
         }
         {plotType == "sphere" && show && 
-          <Sphere texture={texture} ZarrDS={ZarrDS} /> 
+          <Sphere textures={texture} ZarrDS={ZarrDS} /> 
         }
         <Orbiter isFlat={false} />
       </Canvas>
@@ -261,7 +255,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
           <ExportCanvas show={show}/>
           <CountryBorders/>
           {show && <AxisLines />}
-          <FlatMap texture={texture as THREE.DataTexture | THREE.Data3DTexture} infoSetters={infoSetters} />
+          <FlatMap textures={texture as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} />
           <Orbiter isFlat={true}/>
         </Canvas>
         </>}

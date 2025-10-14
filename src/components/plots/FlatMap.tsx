@@ -22,14 +22,16 @@ function Rescale(value: number, scales: {minVal: number, maxVal: number}){
 }
 
 
-const FlatMap = ({texture, infoSetters} : {texture : THREE.DataTexture | THREE.Data3DTexture, infoSetters : InfoSettersProps}) => {
+const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
     const {setLoc, setShowInfo, val, coords} = infoSetters;
-    const {flipY, colormap, valueScales, dimArrays, isFlat} = useGlobalStore(useShallow(state => ({
+    const {flipY, colormap, valueScales, dimArrays, isFlat, dataShape, textureArrayDepths} = useGlobalStore(useShallow(state => ({
       flipY: state.flipY, 
       colormap: state.colormap, 
       valueScales: state.valueScales,
       dimArrays: state.dimArrays,
-      isFlat: state.isFlat
+      isFlat: state.isFlat,
+      dataShape: state.dataShape,
+      textureArrayDepths: state.textureArrayDepths
     })))
     const {cScale, cOffset, animProg, nanTransparency, nanColor} = usePlotStore(useShallow(state => ({
       cOffset: state.cOffset,
@@ -55,8 +57,17 @@ const FlatMap = ({texture, infoSetters} : {texture : THREE.DataTexture | THREE.D
       dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
       dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
     ]
-    const dataSource = texture.source.data
-    const shapeRatio = useMemo(()=> dataSource.height/dataSource.width, [dataSource])
+    const shapeRatio = useMemo(()=> {
+      if (dataShape.length == 2){
+        return dataShape[0]/dataShape[1]
+      } else if (analysisMode){
+        const thisShape = dataShape.filter((_val, idx) => idx != axis)
+        return thisShape[0]/thisShape[1]
+      } else {
+        return dataShape[1]/dataShape[2]
+      }
+    }, [axis, analysisMode] )
+
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
     const infoRef = useRef<boolean>(false)
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
@@ -68,29 +79,30 @@ const FlatMap = ({texture, infoSetters} : {texture : THREE.DataTexture | THREE.D
             uniforms:{
               cScale: {value: cScale},
               cOffset: {value: cOffset},
-              data : {value: texture},
+              map : {value: textures},
+              textureDepths: {value:  new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
               cmap : { value : colormap},
               animateProg: {value:animProg},
               nanColor: {value : new THREE.Color(nanColor)},
-              nanAlpha: {value: 1- nanTransparency}
+              nanAlpha: {value: 1 - nanTransparency}
             },
             vertexShader: vertShader,
             fragmentShader: isFlat ? fragmentFlat : flatFrag3D,
             side: THREE.DoubleSide,
-        }),[isFlat])
-
+        }),[isFlat, textures])
+    
     useEffect(()=>{
       if(shaderMaterial){
         const uniforms = shaderMaterial.uniforms
         uniforms.cOffset.value = cOffset;
-        uniforms.data.value = texture;
+        uniforms.map.value = textures;
         uniforms.cmap. value = colormap;
         uniforms.animateProg.value =animProg;
         uniforms.nanColor.value = new THREE.Color(nanColor);
         uniforms.nanAlpha.value = 1 - nanTransparency;
         uniforms.cScale.value = cScale;
       }
-    },[cScale, cOffset, texture, colormap, animProg, nanColor, nanTransparency])
+    },[cScale, cOffset, textures, colormap, animProg, nanColor, nanTransparency])
     useEffect(()=>{
         geometry.dispose()
     },[geometry])

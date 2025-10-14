@@ -6,29 +6,20 @@ import { useShallow } from 'zustand/shallow';
 import { invalidate } from '@react-three/fiber';
 
 interface DataCubeProps {
-  volTexture: THREE.Data3DTexture | THREE.DataTexture | null,
+  volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
 }
 
 export const DataCube = ({ volTexture }: DataCubeProps ) => {
-
-
-    const {shape, colormap, flipY} = useGlobalStore(useShallow(state=>({shape:state.shape, colormap:state.colormap, flipY:state.flipY}))) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
-
+    const {shape, colormap, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
+      shape:state.shape, 
+      colormap:state.colormap, 
+      flipY:state.flipY,
+      textureArrayDepths: state.textureArrayDepths
+    }))) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const {
-      valueRange, 
-      xRange, 
-      yRange, 
-      zRange, 
-      quality, 
-      animProg, 
-      cScale, 
-      cOffset, 
-      useFragOpt, 
-      transparency, 
-      nanTransparency, 
-      nanColor,
-      vTransferRange,
-      vTransferScale} = usePlotStore(useShallow(state => ({
+      valueRange, xRange, yRange, zRange, quality, 
+      animProg, cScale, cOffset, useFragOpt, transparency, 
+      nanTransparency, nanColor, vTransferRange, vTransferScale} = usePlotStore(useShallow(state => ({
       valueRange: state.valueRange,
       xRange: state.xRange,
       yRange: state.yRange,
@@ -42,14 +33,14 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       nanTransparency: state.nanTransparency,
       nanColor: state.nanColor,
       vTransferRange: state.vTransferRange,
-      vTransferScale: state.vTransferScale
+      vTransferScale: state.vTransferScale,
     })))
     const aspectRatio = shape.y/shape.x
-
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
           map: { value: volTexture },
+          textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
           cmap:{value: colormap},
           cOffset:{value: cOffset},
           cScale: {value: cScale},
@@ -72,7 +63,6 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       depthWrite: false,
       side: THREE.BackSide,
     }),[useFragOpt]);
-        
   // Use geometry once, avoid recreating -- Using a sphere to avoid the weird angles you get with cube
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(12, 4), []);
     useEffect(() => {

@@ -31,7 +31,7 @@ function deg2rad(deg: number){
   return deg*Math.PI/180;
 }
 
-export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE.DataTexture | null, ZarrDS: ZarrDataset}) => {
+export const Sphere = ({textures, ZarrDS} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null, ZarrDS: ZarrDataset}) => {
     const {setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(state=>({
       setPlotDim:state.setPlotDim, 
       updateDimCoords:state.updateDimCoords,
@@ -41,8 +41,8 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
       analysisMode: state.analysisMode,
       analysisArray: state.analysisArray
     })))
-
-    const {colormap, isFlat, dimArrays, dimNames, dimUnits, valueScales, timeSeries, dataShape, strides, flipY} = useGlobalStore(useShallow(state=>({
+    const {colormap, isFlat, dimArrays, dimNames, dimUnits, valueScales, 
+          timeSeries, dataShape, strides, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,
         isFlat: state.isFlat,  
         dimArrays:state.dimArrays,
@@ -52,7 +52,8 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
         timeSeries: state.timeSeries,
         dataShape: state.dataShape,
         strides: state.strides,
-        flipY: state.flipY
+        flipY: state.flipY,
+        textureArrayDepths: state.textureArrayDepths
     })))
     const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
               zSlice: state.zSlice,
@@ -86,7 +87,7 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
 
     const [boundsObj, setBoundsObj] = useState<Record<string, THREE.Vector4>>({})
     const [bounds, setBounds] = useState<THREE.Vector4[]>(new Array(10).fill(new THREE.Vector4(-1 , -1, -1, -1)))
-    const {height, width} = useMemo(()=>texture?.source.data, [texture])
+    const [height, width] = useMemo(()=>isFlat ? dataShape : [dataShape[1], dataShape[2]], [dataShape])
 
     useEffect(()=>{ //This goes through the list of highlighted squares and removes those that aren't included in the timeseries object.
       let boundIDs = Object.keys(boundsObj)
@@ -126,7 +127,8 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
-                map: { value: texture },
+                map: { value: textures },
+                textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
                 selectTS: {value: selectTS},
                 selectBounds: {value: bounds},
                 cmap:{value: colormap},
@@ -146,18 +148,16 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
             side:THREE.FrontSide,
             transparent: true,
             depthWrite:true,
-
         })
         return shader
-    },[isFlat])
+    },[isFlat, textures])
 
     const backMaterial = shaderMaterial.clone()
     backMaterial.side = THREE.BackSide;
-
     useEffect(()=>{
       if (shaderMaterial){
         const uniforms = shaderMaterial.uniforms;
-        uniforms.map. value =  texture 
+        uniforms.map.value =  textures 
         uniforms.selectTS.value =  selectTS
         uniforms.selectBounds.value =  bounds
         uniforms.cmap.value =  colormap
@@ -173,7 +173,7 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
       }
       if (backMaterial){
         const uniforms = backMaterial.uniforms;
-        uniforms.map. value =  texture 
+        uniforms.map. value =  textures 
         uniforms.selectTS.value =  selectTS
         uniforms.selectBounds.value =  bounds
         uniforms.cmap.value =  colormap
@@ -187,7 +187,7 @@ export const Sphere = ({texture, ZarrDS} : {texture: THREE.Data3DTexture | THREE
         uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
         uniforms.displacement.value = sphereDisplacement
       }
-    },[texture, animProg, colormap, cOffset, cScale, animate, bounds, selectTS, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, valueScales])
+    },[textures, animProg, colormap, cOffset, cScale, animate, bounds, selectTS, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, valueScales])
     
     
     function HandleTimeSeries(event: THREE.Intersection){
