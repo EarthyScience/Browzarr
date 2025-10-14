@@ -21,8 +21,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Card } from "@/components/ui/card"
-
 const Variables = ({
   openVariables,
   setOpenVariables,
@@ -31,6 +29,7 @@ const Variables = ({
   setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
+  const [openMetaPopover, setOpenMetaPopover] = useState(false);
 
   const [showMeta, setShowMeta] = useState(false);
   const { variables, zMeta, initStore } = useGlobalStore(
@@ -96,7 +95,11 @@ const Variables = ({
                 setSelectedIndex(idx);
                 setSelectedVar(val);
                 GetDimInfo(val).then(e=>{setDimNames(e.dimNames); setDimArrays(e.dimArrays); setDimUnits(e.dimUnits)})
-                setShowMeta(true);
+                if (popoverSide === "left") {
+                  setOpenMetaPopover(true);
+                } else {
+                  setShowMeta(true);
+                }
               }}
             >
               {val}
@@ -115,63 +118,87 @@ const Variables = ({
   );
 
   return (
-    <Popover open={openVariables} onOpenChange={setOpenVariables}>
-      <PopoverTrigger asChild>
-        <div>
-          <Tooltip delayDuration={500}>
-            <TooltipTrigger asChild>
-              <div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
-                  tabIndex={0}
-                  aria-label="Select variable"
-                >
-                  <TbVariable className="size-8" />
-                </Button>
-              </div>
-            </TooltipTrigger>
-            {popoverSide === "left" ? (
-              <TooltipContent side="left" align="start">
+    <>
+      <Popover open={openVariables} onOpenChange={setOpenVariables}>
+        <PopoverTrigger asChild>
+          <div>
+            <Tooltip delayDuration={500}>
+              <TooltipTrigger asChild>
+                <div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
+                    tabIndex={0}
+                    aria-label="Select variable"
+                  >
+                    <TbVariable className="size-8" />
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent
+                side={popoverSide === "left" ? "left" : "top"}
+                align={popoverSide === "left" ? "start" : "center"}
+              >
                 <span>Select Variable</span>
               </TooltipContent>
-            ) : (
-              <TooltipContent side="top" align="center">
-                <span>Select Variable</span>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </div>
-      </PopoverTrigger>
-
-      <PopoverContent
-        side={popoverSide}
-        className="max-h-[50vh] overflow-hidden flex flex-col"
-      >
-        <div className="flex items-center gap-2 mb-4 justify-center max-w-[240px] md:max-w-sm mx-auto flex-shrink-0">
-          <Input
-            placeholder="Search variable..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="flex-1"
-          />
-          <Button variant="secondary" onClick={() => setQuery("")}>
-            Clear
-          </Button>
-        </div>
-
-        {VariableList}
-
-        {popoverSide === "left" && showMeta && meta && (
-          <div className="meta-options w-[300px]">
-            <Card className="meta-container max-w-sm md:max-w-md p-4 mb-4 border border-muted select-none"> 
-            <MetaDataInfo meta={meta} setShowMeta={setShowMeta} setOpenVariables={setOpenVariables}/>
-            </Card>
+            </Tooltip>
           </div>
-        )}
-      </PopoverContent>
+        </PopoverTrigger>
 
+        <PopoverContent
+          side={popoverSide}
+          className="max-h-[50vh] overflow-hidden flex flex-col"
+          onInteractOutside={(e) => {
+            const target = e.target as HTMLElement;
+            // If the click is inside the MetaData popover, do not close
+            if (target.closest('[data-meta-popover]')) {
+              e.preventDefault();
+            }
+          }}
+        >
+          <div className="flex items-center gap-2 mb-4 justify-center max-w-[240px] md:max-w-sm mx-auto flex-shrink-0">
+            <Input
+              placeholder="Search variable..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="flex-1"
+            />
+            <Button variant="secondary" onClick={() => setQuery("")}>
+              Clear
+            </Button>
+          </div>
+
+          {VariableList}
+        </PopoverContent>
+      </Popover>
+
+      {popoverSide === "left" && (
+        <Popover open={openMetaPopover} onOpenChange={setOpenMetaPopover}>
+          <PopoverTrigger asChild>
+            <div
+          className="absolute -top-8" // adjust top position as needed
+          style={{
+            left: `-${280}px`, // move left
+            }}
+        />
+          </PopoverTrigger>
+          <PopoverContent
+            data-meta-popover
+            side="left"
+            align="start"
+            className="max-h-[80vh] overflow-y-auto w-[300px]"
+          >
+            {meta && (
+                <MetaDataInfo 
+                  meta={meta} 
+                  setShowMeta={setOpenMetaPopover} 
+                  setOpenVariables={setOpenVariables}
+                />
+            )}
+          </PopoverContent>
+        </Popover>
+      )}
       {popoverSide === "top" && (
         <Dialog open={showMeta} onOpenChange={setShowMeta}>
           <DialogContent className="max-w-[85%] md:max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -186,7 +213,7 @@ const Variables = ({
           </DialogContent>
         </Dialog>
       )}
-    </Popover>
+    </>
   );
 };
 
