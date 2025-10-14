@@ -150,7 +150,7 @@ export const Sphere = ({textures, ZarrDS} : {textures: THREE.Data3DTexture[] | T
             depthWrite:true,
         })
         return shader
-    },[isFlat])
+    },[isFlat, textures])
 
     const backMaterial = shaderMaterial.clone()
     backMaterial.side = THREE.BackSide;

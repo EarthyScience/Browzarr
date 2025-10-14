@@ -1,7 +1,7 @@
 //This File will have functions converting the array information into 2D or 3D textures that we will pass to the corresponding 2D or 3D object
 import * as THREE from 'three'
 import { ArrayMinMax} from '@/utils/HelperFuncs';
-import { useGlobalStore } from '@/utils/GlobalStates';
+import { useCacheStore, useGlobalStore } from '@/utils/GlobalStates';
 
 interface Array {
     data: Float32Array | Float64Array | Int32Array | Uint32Array | Float32Array | Float16Array;
@@ -40,25 +40,25 @@ function ArrayTo2D(array: Array, valueScales?: {maxVal: number, minVal: number})
 }
 
 export function ArrayTo3D(array: Array, valueScales?: {maxVal: number, minVal: number}) : [ THREE.Data3DTexture[], {minVal: number, maxVal: number}]{
-    const {textureArrayDepths} = useGlobalStore.getState()
+    const {textureArrayDepths, setTextureData} = useGlobalStore.getState()
     const shape = array.shape;
     const data = array.data;
     const [lz,ly,lx] = shape
     const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
-    
+    const normed = array.data.map((i)=>(i-minVal)/(maxVal-minVal))
+    const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254));  
+    setTextureData(textureData)
     // Calculate chunk dimensions
     const chunkSize = {
         z: Math.floor(lz / textureArrayDepths[0]),
         y: Math.floor(ly / textureArrayDepths[1]),
         x: Math.floor(lx / textureArrayDepths[2])
     };
-    //@ts-ignore It is float16 stop crying
-    const chunkData = chunkArray(data as Float16Array, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths)
+    const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths)
     const chunks = []
-    for (const chunk of chunkData){
-        const normed = chunk.data.map((i)=>(i-minVal)/(maxVal-minVal))
-        const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254));   
-        const volTexture = new THREE.Data3DTexture(textureData, chunk.dims.x, chunk.dims.y, chunk.dims.z);
+    for (const chunk of chunkData){   
+        //@ts-ignore stop whining
+        const volTexture = new THREE.Data3DTexture(chunk.data, chunk.dims.x, chunk.dims.y, chunk.dims.z);
         volTexture.format = THREE.RedFormat;
         volTexture.minFilter = THREE.NearestFilter;
         volTexture.magFilter = THREE.NearestFilter;
@@ -75,12 +75,12 @@ export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minV
 }
 
 function chunkArray(
-  arr: Float16Array,
+  arr: Uint8Array,
   dims: { z: number; y: number; x: number },
   chunkSize: { z: number; y: number; x: number },
   resolution: number[]
-): { data: Float16Array; dims: { x: number; y: number; z: number } }[] {
-  const chunks: { data: Float16Array; dims: { x: number; y: number; z: number } }[] = [];
+): { data: Uint8Array; dims: { x: number; y: number; z: number } }[] {
+  const chunks: { data: Uint8Array; dims: { x: number; y: number; z: number } }[] = [];
  
   // Strides for navigating the source array
   const sourceStride = {
@@ -107,7 +107,7 @@ function chunkArray(
         const chunkHeight = endY - startY;
         
         // Pre-allocate the typed array for this chunk
-        const chunk = new Float16Array(chunkDepth * chunkHeight * rowLength);
+        const chunk = new Uint8Array(chunkDepth * chunkHeight * rowLength);
         let chunkOffset = 0;
         
         // Extract row by row
