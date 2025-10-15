@@ -3,7 +3,7 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines } from '@/components/plots';
 import { Canvas, invalidate } from '@react-three/fiber';
-import { ArrayToTexture, GetCurrentTexture } from '@/components/textures';
+import { ArrayToTexture, CreateTexture } from '@/components/textures';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
 import { useAnalysisStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
@@ -205,7 +205,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     if(!analysisMode && show){
       const {dataShape} = useGlobalStore.getState();
       setIsFlat(dataShape.length == 2)
-      const newText = GetCurrentTexture(dataShape)
+      const newText = CreateTexture(dataShape)
       if (newText){
         setTextures(newText)
       }
@@ -218,6 +218,18 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     coords,
     val
   }),[])
+
+  useEffect(() => {
+    // This cleanup function will run when the `textures` state is about to change,
+    // or when the component unmounts.
+    return () => {
+      if (textures) {
+        textures.forEach(tex => {
+          tex.dispose();
+        });
+      }
+    };
+  }, [textures]);
 
   const Nav = useMemo(()=>Navbar,[])
   return (

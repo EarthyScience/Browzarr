@@ -6,7 +6,7 @@ import { DataReduction, Convolve, Multivariate2D, Multivariate3D, CUMSUM3D, Conv
 import { useGlobalStore, useAnalysisStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
-import { ArrayToTexture } from '../textures';
+import { CreateTexture } from '../textures';
 
 // The new centralized map for all operations
 const ShaderMap = {
@@ -163,17 +163,20 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
                 ({ minVal, maxVal } = valueScales);
             }
             setValueScales({ minVal, maxVal });
-            let newTexture;
             let _scales;
-            if (is3DResult) {
-                [newTexture, _scales]  = ArrayToTexture({data: newArray, shape: dataShape}, {minVal, maxVal})
-            } else {
-                const thisShape = dataShape.length > 2 ? dataShape.filter((_, idx) => idx !== axis) : dataShape;
-                [newTexture, _scales] = ArrayToTexture({data: newArray, shape: thisShape}, {minVal, maxVal})
-            }
+            const thisShape = dataShape.length > 2 ? dataShape.filter((_, idx) => idx !== axis) : dataShape;
+            const textureData = new Uint8Array(
+                newArray.map((i) => {
+                    const normed = (i - minVal) / (maxVal - minVal);
+                    return isNaN(normed) ? 255 : normed * 254;
+                })
+            );
+            const newTexture = CreateTexture(is3DResult ? dataShape : thisShape, textureData)
             // --- Final state updates ---
             setAnalysisArray(newArray);
-            setTexture(newTexture);
+            if (newTexture){
+                setTexture(newTexture);
+            }
             setIsFlat(!is3DResult);
             setPlotType(is3DResult ? 'volume' : 'flat');
             setAnalysisMode(true);

@@ -272,7 +272,7 @@ const AnalysisOptions = () => {
                             cursor: analysisMode ? 'pointer' : '',
                           }}
                           disabled={!analysisMode}
-                          onClick={e=>{setAnalysisMode(false);setAnalysisDim(null)}}
+                          onClick={e=>{useAnalysisStore.setState({ analysisMode: false, analysisDim: null })}}
                         >
                           {analysisMode && <CiUndo 
                             size={20}

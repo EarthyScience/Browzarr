@@ -362,7 +362,7 @@ const FlatAxis = () =>{
     axis: state.axis
   })))
   const originallyFlat = dimArrays.length == 2;
-  const slices = isFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
+  const slices = originallyFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
       return dimArrays.map((val, idx) => (slices[idx][1] ? slices[idx][1] : val.length) - slices[idx][0])
@@ -583,7 +583,6 @@ export const AxisLines = () => {
   const {isFlat} = useGlobalStore(useShallow(state => ({
     isFlat: state.isFlat
   })))
-
   useFrame(({camera})=>{
       const shouldFlipX = Math.abs(camera.rotation.z) > Math.PI / 2
       if (flipX !== shouldFlipX) {
