@@ -118,11 +118,13 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
         ? texCounts.map(val => Math.ceil(val))
         : [1, 1, 1]
     );
-    setTexCount(texCounts.reduce((prod, val) => prod * Math.ceil(val), 1))
-    if (texCount > 14){ // We can only have 14 textures. 
-      setTooBig(true)
+    const thisCount = texCounts.reduce((prod, val) => prod * Math.ceil(val), 1)
+    setTexCount(thisCount)
+
+    if (thisCount > 14){ // We can only have 14 textures. 
+      setTooBig(x=>true)
     } else{
-      setTooBig(false)
+      setTooBig(x=>false)
     }
     // Calculate size
     if (is2D) {
@@ -158,7 +160,6 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
     setIs4D(this4D);
   },[meta])
 
-  
   const chunkShape = meta.chunks
   useEffect(()=>{
     setCompress(false)
@@ -187,7 +188,6 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
     }
     
   },[meta, chunkIDs])
-
   return (
       // Don't put any more work in the landing page version. Since it won't be visible in the future
       // The logic here was to just get divs to be used later in a Card or Dialog component!
@@ -240,13 +240,13 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
                     
                   />
                   <div className="grid grid-cols-2">
-                    <span >Min: <b>{parseLoc(dimArrays[0][zSlice[0]], dimUnits[0])}</b>  <br /> Index: 
+                    <span >Min: <b>{parseLoc(dimArrays[0]?.[zSlice[0]]?? null, dimUnits[0]?? null)}</b>  <br /> Index: 
                       <input className='w-[50px]' type="number" value={zSlice[0]} 
                         onChange={e=>setZSlice([parseInt(e.target.value), zSlice[1]])}
                         onBlur={e=>setZSlice([HandleCustomSteps(e.target.value,chunkShape[0]), zSlice[1]])}
                       />
                     </span>
-                    <span >Max: <b>{parseLoc(dimArrays[0][zSlice[1] ? zSlice[1]-1 : zLength-1], dimUnits[0])}</b><br /> Index: 
+                    <span >Max: <b>{parseLoc(dimArrays[0]?.[zSlice[1] ? zSlice[1]-1 : zLength-1]?? null, dimUnits[0]?? null)}</b><br /> Index: 
                       <input className='w-[50px]' type="number" value={zSlice[1] ? zSlice[1] : zLength} 
                         onChange={e=>setZSlice([zSlice[0], parseInt(e.target.value)])}
                         onBlur={e=>setZSlice([zSlice[0], HandleCustomSteps(e.target.value,chunkShape[0])])}
@@ -266,13 +266,13 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
                     onValueChange={(values: number[]) => setYSlice([values[0], values[1]] as [number, number | null])}
                   />
                   <div className="grid grid-cols-2">
-                    <span >Min: <b>{parseLoc(dimArrays[isFlat ? 0 : 1][ySlice[0]], dimUnits[1])}</b>  <br /> Index: 
+                    <span >Min: <b>{parseLoc(dimArrays[isFlat ? 0 : 1]?.[ySlice[0]]?? null, dimUnits[isFlat ? 0 : 1]?? null)}</b>  <br /> Index: 
                       <input className='w-[50px]' type="number" value={ySlice[0]} 
                         onChange={e=>setYSlice([parseInt(e.target.value), ySlice[1]])}
                         onBlur={e=>setYSlice([HandleCustomSteps(e.target.value,chunkShape[1]), ySlice[1]])}
                       />
                     </span>
-                    <span >Max: <b>{parseLoc(dimArrays[isFlat ? 0 : 1][ySlice[1] ? ySlice[1]-1 : yLength-1], dimUnits[1])}</b><br /> Index: 
+                    <span >Max: <b>{parseLoc(dimArrays[isFlat ? 0 : 1]?.[ySlice[1] ? ySlice[1]-1 : yLength-1]?? null, dimUnits[isFlat ? 0 : 1]?? null)}</b><br /> Index: 
                       <input className='w-[50px]' type="number" value={ySlice[1] ? ySlice[1] : yLength} 
                         onChange={e=>setYSlice([ySlice[0] , parseInt(e.target.value)])}
                         onBlur={e=>setYSlice([ySlice[0], HandleCustomSteps(e.target.value,chunkShape[1])])}
@@ -292,13 +292,13 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
                     onValueChange={(values: number[]) => setXSlice([values[0], values[1]] as [number, number | null])}
                   />
                   <div className="grid grid-cols-2">
-                    <span >Min: <b>{parseLoc(dimArrays[isFlat ? 1 : 2][xSlice[0]], dimUnits[2])}</b>  <br /> Index: 
+                    <span >Min: <b>{parseLoc(dimArrays[isFlat ? 1 : 2]?.[xSlice[0]]?? null, dimUnits[isFlat ? 1 : 2]?? null)}</b>  <br /> Index: 
                       <input className='w-[50px]' type="number" value={xSlice[0]} 
                         onChange={e=>setXSlice([parseInt(e.target.value), xSlice[1]])}
                         onBlur={e=>setXSlice([HandleCustomSteps(e.target.value,chunkShape[2]), xSlice[1]])}
                       />
                     </span>
-                    <span >Max: <b>{parseLoc(dimArrays[isFlat ? 1 : 2][xSlice[1] ? xSlice[1]-1 : xLength-1], dimUnits[2])}</b><br /> Index: 
+                    <span >Max: <b>{parseLoc(dimArrays[isFlat ? 1 : 2]?.[xSlice[1] ? xSlice[1]-1 : xLength-1]?? null, dimUnits[isFlat ? 1 : 2]?? null)}</b><br /> Index: 
                       <input className='w-[50px]' type="number" value={xSlice[1] ? xSlice[1] : xLength} 
                         onChange={e=>setXSlice([xSlice[0] , parseInt(e.target.value)])}
                         onBlur={e=>setXSlice([xSlice[0], HandleCustomSteps(e.target.value,chunkShape[2])])}
