@@ -77,14 +77,15 @@ const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center
   </div>
 
 const AnalysisOptions = () => {
-  const {plotOn, variable, variables, dimNames, initStore, isFlat, setTimeSeries} = useGlobalStore(useShallow(state => ({
+  const {plotOn, variable, variables, dimNames, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(state => ({
     plotOn: state.plotOn, 
     variable: state.variable,
     variables: state.variables,
     dimNames: state.dimNames,
     initStore: state.initStore,
     isFlat: state.isFlat,
-    setTimeSeries: state.setTimeSeries
+    setTimeSeries: state.setTimeSeries,
+    setValueScales: state.setValueScales
   })));
 
   const previousStore = useRef<string>(initStore)
@@ -93,7 +94,7 @@ const AnalysisOptions = () => {
   const {
     execute, operation, useTwo, kernelSize, kernelDepth,
     kernelOperation, axis, variable2, analysisMode,
-    reverseDirection,
+    reverseDirection, valueScalesOrig,
     setExecute, setAxis, setOperation, setUseTwo,
     setVariable2, setKernelSize, setKernelDepth,
     setKernelOperation, setAnalysisMode,
@@ -103,7 +104,7 @@ const AnalysisOptions = () => {
     execute: state.execute, operation: state.operation,
     useTwo: state.useTwo, kernelSize: state.kernelSize,
     kernelDepth: state.kernelDepth, kernelOperation: state.kernelOperation,
-    axis: state.axis, variable2: state.variable2,
+    axis: state.axis, variable2: state.variable2, valueScalesOrig: state.valueScalesOrig,
     analysisMode: state.analysisMode, reverseDirection: state.reverseDirection,
     setExecute: state.setExecute, setAxis: state.setAxis,
     setOperation: state.setOperation, setUseTwo: state.setUseTwo,
@@ -272,7 +273,7 @@ const AnalysisOptions = () => {
                             cursor: analysisMode ? 'pointer' : '',
                           }}
                           disabled={!analysisMode}
-                          onClick={e=>{useAnalysisStore.setState({ analysisMode: false, analysisDim: null })}}
+                          onClick={e=>{useAnalysisStore.setState({ analysisMode: false, analysisDim: null }); if(valueScalesOrig){setValueScales(valueScalesOrig)}}}
                         >
                           {analysisMode && <CiUndo 
                             size={20}
