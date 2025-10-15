@@ -18,7 +18,6 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  DialogPortal
 } from "@/components/ui/dialog";
 
 const ZARR_STORES = {
@@ -92,7 +91,8 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
   const [showLocalInput, setShowLocalInput] = useState(false);
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
   const [activeOption, setActiveOption] = useState<string>('ESDC')
-  const [openDescription, setOpenDescription] = useState<boolean>(false)
+  const [showDescriptionDialog, setShowDescriptionDialog] = useState<boolean>(false)
+  const [openDescriptionPopover, setOpenDescriptionPopover] = useState<boolean>(false)
   
   const { setInitStore } = useGlobalStore(
     useShallow((state) => ({
@@ -157,7 +157,11 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
               setShowLocalInput(false);
               setActiveOption('ESDC');
               setInitStore(ZARR_STORES.ESDC);
-              setOpenDescription(true);
+              if (popoverSide === 'top') {
+                setShowDescriptionDialog(true);
+              } else {
+                setOpenDescriptionPopover(true);
+              }
             }}
           >
             ESDC
@@ -169,7 +173,11 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
               setShowLocalInput(false);
               setActiveOption('seasfire');
               setInitStore(ZARR_STORES.SEASFIRE);
-              setOpenDescription(true);
+              if (popoverSide === 'top') {
+                setShowDescriptionDialog(true);
+              } else {
+                setOpenDescriptionPopover(true);
+              }
             }}
           >
             Seasfire
@@ -195,7 +203,11 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
                   const input = e.currentTarget.elements[0] as HTMLInputElement;
                   setInitStore(input.value);
                   if (input.value) {
-                    setOpenDescription(true);
+                    if (popoverSide === 'top') {
+                      setShowDescriptionDialog(true);
+                    } else {
+                      setOpenDescriptionPopover(true);
+                    }
                   }
                 }}
               >
@@ -219,24 +231,43 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
             </DatasetOption>
             {showLocalInput && (
               <div className="mt-2">
-                <LocalZarr setShowLocal={setShowLocalInput} setOpenVariables={setOpenDescription} setInitStore={setInitStore} />
+                <LocalZarr setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} setInitStore={setInitStore} />
               </div>
             )}
           </div>
         </div>
       </PopoverContent>
     </Popover>
-    <Dialog open={openDescription} onOpenChange={setOpenDescription}>
-        <DialogPortal>
-          <DialogTitle>{}</DialogTitle>
-            <DialogContent data-meta-popover className="max-w-[85%] md:max-w-md max-h-[80vh] overflow-y-auto">
-              <DescriptionContent
-                setOpenVariables={setOpenVariables}
-                onCloseDialog={() => setOpenDescription(false)}
-              />
+      {popoverSide === 'left' && (
+        <Popover open={openDescriptionPopover} onOpenChange={setOpenDescriptionPopover}>
+          <PopoverTrigger asChild>
+            {/* This is an invisible trigger, positioned relative to the main panel */}
+            <div
+              className="absolute -top-8"
+              style={{
+                left: ['local', 'remote'].includes(activeOption) ? -215 : -100,
+              }}
+            />
+          </PopoverTrigger>
+          <PopoverContent data-meta-popover side="left" align="start" className="max-h-[80vh] overflow-y-auto w-[300px]">
+            <DescriptionContent
+              setOpenVariables={setOpenVariables}
+              onCloseDialog={() => setOpenDescriptionPopover(false)}
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+      {popoverSide === 'top' && (
+        <Dialog open={showDescriptionDialog} onOpenChange={setShowDescriptionDialog}>
+          <DialogContent data-meta-popover className="max-w-[85%] md:max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogTitle className='sr-only'>Dataset Description</DialogTitle>
+            <DescriptionContent
+              setOpenVariables={setOpenVariables}
+              onCloseDialog={() => setShowDescriptionDialog(false)}
+            />
           </DialogContent>
-        </DialogPortal>
-      </Dialog>
+        </Dialog>
+      )}
     </>
   );
 };
