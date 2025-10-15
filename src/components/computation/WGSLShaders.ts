@@ -1,6 +1,8 @@
 export type Precision = 'f16' | 'f32';
 
+
 export const createShaders = (precision: Precision) => {
+    /// Install WGSL Literal extension in VS code for syntax highlighting
 
     const enableF16 = precision === 'f16' ? 'enable f16;' : '';
 
@@ -501,6 +503,11 @@ export const createShaders = (precision: Precision) => {
                 let cCoord = outX * xStride + outY * yStride;
                 for (var z: u32 = 0u; z < dimLength; z++) {
                     let inputIndex = cCoord + (z * zStride);
+                    let xi: f32 = f32(firstData[inputIndex]);
+                    let yi: f32 = f32(secondData[inputIndex]);
+                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                        continue;
+                    }
                     xSum += f32(firstData[inputIndex]);
                     ySum += f32(secondData[inputIndex]);
                 }
@@ -508,6 +515,11 @@ export const createShaders = (precision: Precision) => {
                 let cCoord = outX * xStride + outY * zStride;
                 for (var y: u32 = 0u; y < dimLength; y++) {
                     let inputIndex = cCoord + (y * yStride);
+                    let xi: f32 = f32(firstData[inputIndex]);
+                    let yi: f32 = f32(secondData[inputIndex]);
+                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                        continue;
+                    }
                     xSum += f32(firstData[inputIndex]);
                     ySum += f32(secondData[inputIndex]);
                 }
@@ -515,6 +527,11 @@ export const createShaders = (precision: Precision) => {
                 let cCoord = outX * yStride + outY * zStride;
                 for (var x: u32 = 0u; x < dimLength; x++) {
                     let inputIndex = cCoord + (x * xStride);
+                    let xi: f32 = f32(firstData[inputIndex]);
+                    let yi: f32 = f32(secondData[inputIndex]);
+                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                        continue;
+                    }
                     xSum += f32(firstData[inputIndex]);
                     ySum += f32(secondData[inputIndex]);
                 }
@@ -531,6 +548,9 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (z * zStride);
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
+                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                        continue;
+                    }
                     numSum += (xi - xMean)*(f32(yi) - yMean);
                     denomSum += (f32(yi) - yMean)*(f32(yi) - yMean);
                 }
@@ -540,6 +560,9 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (y * yStride);
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
+                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                        continue;
+                    }
                     numSum += (xi - xMean)*(f32(yi) - yMean);
                     denomSum += (f32(yi) - yMean)*(f32(yi) - yMean);
                 }
@@ -549,6 +572,9 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (x * xStride);
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
+                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                        continue;
+                    }
                     numSum += (xi - xMean)*(f32(yi) - yMean);
                     denomSum += (f32(yi) - yMean)*(f32(yi) - yMean);
                 }
@@ -615,6 +641,9 @@ export const createShaders = (precision: Precision) => {
                 let inputIndex = baseCoord + (i * iterStride);
                 let xi: f32 = f32(firstData[inputIndex]);
                 let yi: f32 = f32(secondData[inputIndex]);
+                if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                    continue;
+                }
                 xSum += xi;
                 ySum += yi;
             }
@@ -627,6 +656,9 @@ export const createShaders = (precision: Precision) => {
                 let inputIndex = baseCoord + (i * iterStride);
                 let xi: f32 = f32(firstData[inputIndex]);
                 let yi: f32 = f32(secondData[inputIndex]);
+                if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                    continue;
+                }
                 numSum += (xi - xMean) * (yi - yMean);
             }
 
@@ -680,6 +712,9 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (z * zStride);
                     let xI = f32(firstData[inputIndex]);
                     let yI = f32(secondData[inputIndex]);
+                    if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                        continue;
+                    }
                     xSum += xI;
                     xxSum += xI * xI;
                     ySum += yI;
@@ -692,6 +727,9 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (y * yStride);
                     let xI = f32(firstData[inputIndex]);
                     let yI = f32(secondData[inputIndex]);
+                    if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                        continue;
+                    }
                     xSum += xI;
                     xxSum += xI * xI;
                     ySum += yI;
@@ -704,6 +742,9 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (x * xStride);
                     let xI = f32(firstData[inputIndex]);
                     let yI = f32(secondData[inputIndex]);
+                    if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                        continue;
+                    }
                     xSum += xI;
                     xxSum += xI * xI;
                     ySum += yI;
@@ -953,6 +994,9 @@ export const createShaders = (precision: Precision) => {
 
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
+                            if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                                continue;
+                            }
                             xSum += xI;
                             xxSum += xI * xI;
                             ySum += yI;
@@ -1053,6 +1097,9 @@ export const createShaders = (precision: Precision) => {
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
+                            if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                                continue;
+                            }
                             xSum += xI;    
                             ySum += yI;
                             count ++;
@@ -1078,6 +1125,9 @@ export const createShaders = (precision: Precision) => {
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
+                            if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                                continue;
+                            }
                             numSum += (xI - meanX) * (yI - meanY);
                             count ++;
                         }
@@ -1160,6 +1210,9 @@ export const createShaders = (precision: Precision) => {
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
+                            if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                                continue;
+                            }
                             xSum += xI;    
                             ySum += yI;
                             count ++;
@@ -1188,6 +1241,9 @@ export const createShaders = (precision: Precision) => {
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
+                            if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                                continue;
+                            }
                             numSum += (xI - meanX)*(f32(yI) - meanY);
                             denomSum += (f32(yI) - meanY)*(f32(yI) - meanY);
                         }
