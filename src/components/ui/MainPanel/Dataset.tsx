@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/shallow';
 import { Input } from '../input';
 import { Button } from '../button';
 import { TbDatabasePlus } from "react-icons/tb";
+import { TbVariable } from "react-icons/tb";
 import LocalZarr from './LocalZarr';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
@@ -17,6 +18,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogPortal
 } from "@/components/ui/dialog";
 
 const ZARR_STORES = {
@@ -24,7 +26,13 @@ const ZARR_STORES = {
   SEASFIRE: 'https://s3.bgc-jena.mpg.de:9000/misc/seasfire_rechunked.zarr',
 };
 
-const DescriptionContent = ({setOpenVariables}:{setOpenVariables : React.Dispatch<SetStateAction<boolean>>}) => {
+const DescriptionContent = ({
+  setOpenVariables,
+  onCloseDialog,
+}: {
+  setOpenVariables: React.Dispatch<SetStateAction<boolean>>;
+  onCloseDialog: () => void;
+}) => {
   const {titleDescription} = useGlobalStore(useShallow(state => ({
     titleDescription: state.titleDescription
   })))
@@ -32,19 +40,27 @@ const DescriptionContent = ({setOpenVariables}:{setOpenVariables : React.Dispatc
   return (
     <div className='grid gap-1'>
       <div className='mb-2'>
-        <b>Title</b>
-        <h1>
-          {title ? title : "No Title"}
+        <h1 className='text-lg font-bold'>
+          {title ? title : "Store"}
         </h1>
-        <b>Description</b>
-        <p>{description ? description : "No Description"}</p>
+        <p className="whitespace-pre-wrap break-words"
+          style={{ overflowWrap: 'anywhere' }}
+          >
+            {description ? description : "No Description"}
+        </p>
       </div>
       <div className='flex justify-center my-2'>
         <Button
         variant={"default"}
         className='cursor-pointer mt-[-20px]'
-        onClick={e=>setOpenVariables(true)}
-        >Variables</Button>
+        onClick={() => {
+          setOpenVariables(true);
+          onCloseDialog();
+        }}
+        >
+          Open Variables 
+          <TbVariable className="size-8" />
+        </Button>
       </div>
     </div>
   )
@@ -95,6 +111,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
   }, []);
 
   return (
+    <>
     <Popover>
       <PopoverTrigger asChild>
         <div>
@@ -208,13 +225,19 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
           </div>
         </div>
       </PopoverContent>
-      <Dialog open={openDescription} onOpenChange={setOpenDescription}>
-        <DialogTitle>{}</DialogTitle>
-        <DialogContent data-meta-popover className="max-w-[85%] md:max-w-md max-h-[80vh] overflow-y-auto">
-          <DescriptionContent setOpenVariables={setOpenVariables} />
-        </DialogContent>
-      </Dialog>
     </Popover>
+    <Dialog open={openDescription} onOpenChange={setOpenDescription}>
+        <DialogPortal>
+          <DialogTitle>{}</DialogTitle>
+            <DialogContent data-meta-popover className="max-w-[85%] md:max-w-md max-h-[80vh] overflow-y-auto">
+              <DescriptionContent
+                setOpenVariables={setOpenVariables}
+                onCloseDialog={() => setOpenDescription(false)}
+              />
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
+    </>
   );
 };
 
