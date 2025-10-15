@@ -23,8 +23,9 @@ function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number})
     return {minVal, maxVal}
 }
 
-export function GetCurrentTexture(shape: number[]) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
-  const {textureData, textureArrayDepths} = useGlobalStore.getState()
+export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
+  const {textureArrayDepths} = useGlobalStore.getState()
+  const textureData = data ? data : useGlobalStore.getState().textureData
   if (!textureData){
     return
   }
@@ -71,9 +72,11 @@ export function GetCurrentTexture(shape: number[]) : THREE.DataTexture[] | THREE
   }
 }
 
+
+
 export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
     const scales = StoreData(array, valueScales);
-    const textures = GetCurrentTexture(array.shape)
+    const textures = CreateTexture(array.shape)
     return [textures as THREE.Data3DTexture[] | THREE.DataTexture[], scales];
 }
 
