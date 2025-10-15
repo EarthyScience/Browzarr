@@ -467,7 +467,6 @@ const GlobalOptions = () =>{
 
 
 const AdjustPlot = () => {
-    const [isMobile, setIsMobile] = useState(false);
     const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
     const {plotOn} = useGlobalStore(
@@ -520,9 +519,9 @@ const AdjustPlot = () => {
           </div>
         </PopoverTrigger>
         <PopoverContent
-          side={isMobile ? 'top' : 'left'}
+          side={popoverSide}
           className={`overflow-y-auto w-[240px] mt-2 mr-1 ${
-            isMobile 
+            popoverSide === 'top'
               ? 'max-h-[80vh] mb-1' 
               : 'max-h-[70vh]'
           }`}
