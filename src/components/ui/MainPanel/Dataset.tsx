@@ -1,26 +1,38 @@
 "use client";
 
-import React, { SetStateAction, useEffect, useState } from 'react';
+import React, { SetStateAction, useEffect, useState, ReactNode } from 'react';
 import { useGlobalStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { Input } from '../input';
 import { Button } from '../button';
-// import { CgDatabase } from "react-icons/cg";
 import { TbDatabasePlus } from "react-icons/tb";
+import { TbVariable } from "react-icons/tb";
 import LocalZarr from './LocalZarr';
-import { Popover, PopoverTrigger, PopoverContent, PopoverAnchor } from "@/components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogPortal
+} from "@/components/ui/dialog";
 
 const ZARR_STORES = {
   ESDC: 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr',
   SEASFIRE: 'https://s3.bgc-jena.mpg.de:9000/misc/seasfire_rechunked.zarr',
 };
 
-const DescriptionContent = ({setOpenVariables}:{setOpenVariables : React.Dispatch<SetStateAction<boolean>>}) => {
+const DescriptionContent = ({
+  setOpenVariables,
+  onCloseDialog,
+}: {
+  setOpenVariables: React.Dispatch<SetStateAction<boolean>>;
+  onCloseDialog: () => void;
+}) => {
   const {titleDescription} = useGlobalStore(useShallow(state => ({
     titleDescription: state.titleDescription
   })))
@@ -28,23 +40,52 @@ const DescriptionContent = ({setOpenVariables}:{setOpenVariables : React.Dispatc
   return (
     <div className='grid gap-1'>
       <div className='mb-2'>
-        <b>Title</b>
-        <h1>
-          {title ? title : "No Title"}
+        <h1 className='text-lg font-bold'>
+          {title ? title : "Store"}
         </h1>
-        <b>Description</b>
-        <p>{description ? description : "No Description"}</p>
+        <p className="whitespace-pre-wrap break-words"
+          style={{ overflowWrap: 'anywhere' }}
+          >
+            {description ? description : "No Description"}
+        </p>
       </div>
       <div className='flex justify-center my-2'>
         <Button
         variant={"default"}
         className='cursor-pointer mt-[-20px]'
-        onClick={e=>setOpenVariables(true)}
-        >Variables</Button>
+        onClick={() => {
+          setOpenVariables(true);
+          onCloseDialog();
+        }}
+        >
+          Open Variables 
+          <TbVariable className="size-8" />
+        </Button>
       </div>
     </div>
   )
 }
+
+const DatasetOption = ({
+  children,
+  active,
+  onClick,
+}: {
+  children: ReactNode;
+  active: boolean;
+  onClick: () => void;
+}) => {
+  return (
+    <Button
+      variant={active ? "default" : "ghost"}
+      className='cursor-pointer w-full justify-start'
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  );
+};
+
 
 const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>}) => {
   const [showStoreInput, setShowStoreInput] = useState(false);
@@ -53,7 +94,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
   const [activeOption, setActiveOption] = useState<string>('ESDC')
   const [openDescription, setOpenDescription] = useState<boolean>(false)
   
-  const { setInitStore, setVariable } = useGlobalStore(
+  const { setInitStore } = useGlobalStore(
     useShallow((state) => ({
       setInitStore: state.setInitStore,
       setVariable: state.setVariable,
@@ -70,7 +111,8 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
   }, []);
 
   return (
-    <Popover >
+    <>
+    <Popover>
       <PopoverTrigger asChild>
         <div>
           <Tooltip delayDuration={500} >
@@ -87,127 +129,115 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
                 </Button>
               </div>
             </TooltipTrigger>
-            {popoverSide === "left" ? (
-              <TooltipContent side="left" align="start">
-                <span>Select dataset</span>
-              </TooltipContent>
-            ) : (
-              <TooltipContent side="top" align="center">
-                <span>Select dataset</span>
-              </TooltipContent>
-            )}
+            <TooltipContent
+              side={popoverSide === "left" ? "left" : "top"}
+              align={popoverSide === "left" ? "start" : "center"}
+            >
+              <span>Select dataset</span>
+            </TooltipContent>
           </Tooltip>
         </div>
 
       </PopoverTrigger>
-      <PopoverContent
-        side={popoverSide}
-        className="flex flex-col items-start max-w-[220px] p-3 gap-3 w-auto mb-1"
-      >
-        <p >Curated</p>
-        <Popover >
-          <PopoverTrigger asChild 
+      <PopoverContent side={popoverSide} className="w-auto p-0"
+        onInteractOutside={(e) => {
+              const target = e.target as HTMLElement;
+              // If the click is inside the MetaData popover, do not close
+              if (target.closest('[data-meta-popover]')) {
+                e.preventDefault();
+              }
+            }}
+        >
+        <div className="flex flex-col items-start max-w-[220px] p-3 gap-1 w-auto">
+          <p className="px-2 text-sm text-muted-foreground">Curated</p>
+          <DatasetOption
+            active={activeOption === 'ESDC'}
             onClick={() => {
               setShowStoreInput(false);
               setShowLocalInput(false);
-              setActiveOption('ESDC')
+              setActiveOption('ESDC');
               setInitStore(ZARR_STORES.ESDC);
+              setOpenDescription(true);
             }}
           >
-            <Button
-              variant={activeOption === 'ESDC' ? "default" : "ghost"}
-              className='cursor-pointer mt-[-20px]'
-            >
-              ESDC
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent 
-            className="flex flex-col items-start max-w-[300px] p-3 gap-3 w-auto mb-1"
-            side={'left'}
-          >
-              <DescriptionContent setOpenVariables={setOpenVariables} />
-          </PopoverContent>
-        </Popover>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={activeOption === 'seasfire' ? "default" : "ghost"}
-              className='cursor-pointer'
-              onClick={() => {
-                setShowStoreInput(false);
-                setShowLocalInput(false);
-                setActiveOption('seasfire')
-                setInitStore(ZARR_STORES.SEASFIRE);
-              }}
-            >
-              Seasfire
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent side='left'>
-            <DescriptionContent setOpenVariables={setOpenVariables} />
-          </PopoverContent>
-        </Popover>
-        
-        <div className="w-full h-px bg-gray-300" />
-        <p >Personal</p>
-        <div>
-          <Button
-            variant={activeOption === 'remote' ? "default" : "ghost"}
-            className='cursor-pointer mt-[-20px]'
+            ESDC
+          </DatasetOption>
+          <DatasetOption
+            active={activeOption === 'seasfire'}
             onClick={() => {
+              setShowStoreInput(false);
               setShowLocalInput(false);
-              setActiveOption('remote')
-              setShowStoreInput((prev) => !prev);
+              setActiveOption('seasfire');
+              setInitStore(ZARR_STORES.SEASFIRE);
+              setOpenDescription(true);
             }}
           >
-            Remote
-          </Button>
-          {showStoreInput && (
-            <form
-              className="mt-2 flex items-center gap-2"
-              onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                e.preventDefault();
-                const input = e.currentTarget.elements[0] as HTMLInputElement;
-                setInitStore(input.value);
+            Seasfire
+          </DatasetOption>
+
+          <div className="w-full h-px bg-gray-300 my-2" />
+          <p className="px-2 text-sm text-muted-foreground">Personal</p>
+          <div className="w-full">
+            <DatasetOption
+              active={activeOption === 'remote'}
+              onClick={() => {
+                setShowStoreInput((prev) => !prev);
+                setActiveOption('remote');
               }}
             >
-              <Input className="w-[100px]" placeholder="Store URL" />
-              <Button type="submit" variant="outline" className='cursor-pointer'>
-                Fetch
-              </Button>
-            </form>
-          )}
-        </div>
-        <Popover open={openDescription} onOpenChange={setOpenDescription} >
-          <PopoverAnchor> 
-            <div>
-              <Button
-                variant={activeOption === 'local' ? "default" : "ghost"}
-                className='cursor-pointer'
-                onClick={() => {
-                  setShowLocalInput((prev) => !prev);
-                  setShowStoreInput(false);
-                  setActiveOption('local')
+              Remote
+            </DatasetOption>
+            {showStoreInput && (
+              <form
+                className="mt-2 flex items-center gap-2"
+                onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                  e.preventDefault();
+                  const input = e.currentTarget.elements[0] as HTMLInputElement;
+                  setInitStore(input.value);
+                  if (input.value) {
+                    setOpenDescription(true);
+                  }
                 }}
               >
-                Local
-              </Button>
-              {showLocalInput && (
-                <div className="mt-2">
-                  <LocalZarr setShowLocal={setShowLocalInput} setOpenVariables={setOpenDescription} setInitStore={setInitStore} />
-                </div>
-              )}
-            </div>
-          </PopoverAnchor>
-          <PopoverContent 
-            className="flex flex-col items-start max-w-[300px] p-3 gap-3 w-auto mb-1"
-            side={'left'}
-          >
-            <DescriptionContent setOpenVariables={setOpenVariables} />
-          </PopoverContent>
-        </Popover>
+                <Input className="w-full" placeholder="Store URL" />
+                <Button type="submit" variant="outline" className='cursor-pointer'>
+                  Fetch
+                </Button>
+              </form>
+            )}
+          </div>
+          <div className="w-full">
+            <DatasetOption
+              active={activeOption === 'local'}
+              onClick={() => {
+                setShowLocalInput((prev) => !prev);
+                setShowStoreInput(false);
+                setActiveOption('local');
+              }}
+            >
+              Local
+            </DatasetOption>
+            {showLocalInput && (
+              <div className="mt-2">
+                <LocalZarr setShowLocal={setShowLocalInput} setOpenVariables={setOpenDescription} setInitStore={setInitStore} />
+              </div>
+            )}
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
+    <Dialog open={openDescription} onOpenChange={setOpenDescription}>
+        <DialogPortal>
+          <DialogTitle>{}</DialogTitle>
+            <DialogContent data-meta-popover className="max-w-[85%] md:max-w-md max-h-[80vh] overflow-y-auto">
+              <DescriptionContent
+                setOpenVariables={setOpenVariables}
+                onCloseDialog={() => setOpenDescription(false)}
+              />
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
+    </>
   );
 };
 

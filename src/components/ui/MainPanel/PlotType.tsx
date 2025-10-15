@@ -79,15 +79,12 @@ const PlotType = () => {
               </Button>
             </div>
             </TooltipTrigger>
-            {popoverSide === "left" ? (
-              <TooltipContent side="left" align="start">
-                <span>Change plot type</span>
-              </TooltipContent>
-            ) : (
-              <TooltipContent side="top" align="center">
-                <span>Change plot type</span>
-              </TooltipContent>
-            )}
+            <TooltipContent
+              side={popoverSide === "left" ? "left" : "top"}
+              align={popoverSide === "left" ? "start" : "center"}
+            >
+              <span>Change plot type</span>
+            </TooltipContent>
           </Tooltip>
       </div>
       </PopoverTrigger>

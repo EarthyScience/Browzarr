@@ -468,6 +468,7 @@ const GlobalOptions = () =>{
 
 const AdjustPlot = () => {
     const [isMobile, setIsMobile] = useState(false);
+    const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
     const {plotOn} = useGlobalStore(
         useShallow(state=>({
@@ -480,15 +481,13 @@ const AdjustPlot = () => {
     
 
   useEffect(() => {
-    const checkWindowSize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    checkWindowSize(); // Initial check
-    window.addEventListener("resize", checkWindowSize);
-
-    return () => window.removeEventListener("resize", checkWindowSize);
-  }, []);
+      const handleResize = () => {
+        setPopoverSide(window.innerWidth < 768 ? "top" : "left");
+      };
+      handleResize();
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
   const enableCond = (plotOn)
   return (
@@ -511,7 +510,10 @@ const AdjustPlot = () => {
                   </Button>
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="left" align="start">
+              <TooltipContent
+                side={popoverSide === "left" ? "left" : "top"}
+                align={popoverSide === "left" ? "start" : "center"}
+              >
                 <span>Plot Settings</span>
               </TooltipContent>
             </Tooltip>
