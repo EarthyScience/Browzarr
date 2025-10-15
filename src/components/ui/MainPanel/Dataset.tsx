@@ -245,7 +245,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
             <div
               className="absolute -top-8"
               style={{
-                left: `-${210}px`, 
+                left: ['local', 'remote'].includes(activeOption) ? -215 : -100,
               }}
             />
           </PopoverTrigger>
