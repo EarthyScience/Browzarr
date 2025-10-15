@@ -273,7 +273,7 @@ const AnalysisOptions = () => {
                             cursor: analysisMode ? 'pointer' : '',
                           }}
                           disabled={!analysisMode}
-                          onClick={e=>{useAnalysisStore.setState({ analysisMode: false, analysisDim: null }); if(valueScalesOrig){setValueScales(valueScalesOrig)}}}
+                          onClick={e=>{useAnalysisStore.setState({ analysisMode: false, analysisDim: null, variable2: 'Default' }); if(valueScalesOrig){setValueScales(valueScalesOrig)}}}
                         >
                           {analysisMode && <CiUndo 
                             size={20}
