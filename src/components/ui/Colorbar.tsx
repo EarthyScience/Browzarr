@@ -161,9 +161,11 @@ const Colorbar = ({units, valueScales} : {units: string, valueScales: {maxVal: n
     }, [colors]);
 
     const analysisString = useMemo(()=>{
+        
         if (analysisMode){
             const twoVar = variable2 != "Default";
-            const theseUnits = operationMap[operation as keyof typeof operationMap] 
+            const thisOperation = (operation === "Convolution") ? kernelOperation : operation
+            const theseUnits = operationMap[thisOperation as keyof typeof operationMap] 
             const string = twoVar ? `+ ${variable2} (${theseUnits})` : `[${units}] (${theseUnits})`
             return string
         } else{
