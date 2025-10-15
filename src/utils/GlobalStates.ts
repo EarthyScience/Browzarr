@@ -3,7 +3,6 @@ import * as THREE from 'three';
 import { GetColorMapTexture } from "@/components/textures";
 import { GetStore } from "@/components/zarr/ZarrLoaderLRU";
 import MemoryLRU from "./MemoryLRU";
-import { U } from "vitest/dist/chunks/environment.d.cL3nLXbE.js";
 
 
 const ESDC = 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr'

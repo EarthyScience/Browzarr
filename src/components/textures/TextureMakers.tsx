@@ -8,77 +8,26 @@ interface Array {
     shape: number[];
 }
 
-function ArrayTo2D(array: Array, valueScales?: {maxVal: number, minVal: number}): [ THREE.DataTexture[], {minVal: number, maxVal: number}]{
-    const {textureArrayDepths} = useGlobalStore.getState()
-    const shape = array.shape;
-    const data = array.data;
-    const width = shape[1];
-    const height = shape[0];
-    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
-    const normed = data.map((i)=>(i-minVal)/(maxVal-minVal))
-    const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254));   
-    const chunkSize = {
-        y: Math.floor(height / textureArrayDepths[1]),
-        x: Math.floor(width / textureArrayDepths[2])
-    };
+function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number}): {minVal: number, maxVal: number}{
+    const { setTextureData} = useGlobalStore.getState()
 
-    const chunkData = chunkArray2D(textureData as Uint8Array, {y:height, x:width}, chunkSize)
-    const chunks = []
-    for (const chunk of chunkData){
-        const texture = new THREE.DataTexture(
-            chunk.data,
-            chunk.dims.x,
-            chunk.dims.y,
-            THREE.RedFormat,
-            THREE.UnsignedByteType
-        );
-        texture.needsUpdate = true;
-        chunks.push(texture)
-    }
-    return [chunks, {maxVal,minVal}]
-}
-
-export function ArrayTo3D(array: Array, valueScales?: {maxVal: number, minVal: number}) : [ THREE.Data3DTexture[], {minVal: number, maxVal: number}]{
-    const {textureArrayDepths, setTextureData} = useGlobalStore.getState()
-    const shape = array.shape;
     const data = array.data;
-    const [lz,ly,lx] = shape
     const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
-    const normed = array.data.map((i)=>(i-minVal)/(maxVal-minVal))
-    const textureData = new Uint8Array(normed.map((i)=>isNaN(i) ? 255 : i*254));  
+    const textureData = new Uint8Array(
+      array.data.map((i) => {
+        const normed = (i - minVal) / (maxVal - minVal);
+        return isNaN(normed) ? 255 : normed * 254;
+      })
+    );
     setTextureData(textureData)
-    // Calculate chunk dimensions
-    const chunkSize = {
-        z: Math.floor(lz / textureArrayDepths[0]),
-        y: Math.floor(ly / textureArrayDepths[1]),
-        x: Math.floor(lx / textureArrayDepths[2])
-    };
-    const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths)
-    const chunks = []
-    for (const chunk of chunkData){   
-        //@ts-expect-error stop whining
-        const volTexture = new THREE.Data3DTexture(chunk.data, chunk.dims.x, chunk.dims.y, chunk.dims.z);
-        volTexture.format = THREE.RedFormat;
-        volTexture.minFilter = THREE.NearestFilter;
-        volTexture.magFilter = THREE.NearestFilter;
-        volTexture.needsUpdate = true;
-        chunks.push(volTexture)
-    }
-    return [chunks, {maxVal,minVal}]
+    return {minVal, maxVal}
 }
 
-export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}, cached?: boolean): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
-    const shape = array.shape;
-    if (cached){
-      array.data = useGlobalStore.getState().textureData
-    }
-    const [textures,scales] = shape.length == 3 ? ArrayTo3D(array, valueScales) : ArrayTo2D(array, valueScales);
-    return [textures, scales];
-}
-
-export function GetCurrentTexture(shape: number[]) : THREE.DataTexture[] | THREE.Data3DTexture[] {
+export function GetCurrentTexture(shape: number[]) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
   const {textureData, textureArrayDepths} = useGlobalStore.getState()
-
+  if (!textureData){
+    return
+  }
   if (shape.length == 2){
     const width = shape[1];
     const height = shape[0];
@@ -122,6 +71,11 @@ export function GetCurrentTexture(shape: number[]) : THREE.DataTexture[] | THREE
   }
 }
 
+export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
+    const scales = StoreData(array, valueScales);
+    const textures = GetCurrentTexture(array.shape)
+    return [textures as THREE.Data3DTexture[] | THREE.DataTexture[], scales];
+}
 
 function chunkArray(
   arr: Uint8Array,

@@ -72,8 +72,6 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
     </>
   );
 }
-  
-
 
 const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     const {
@@ -122,7 +120,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     const [showInfo, setShowInfo] = useState<boolean>(false)
     const [loc, setLoc] = useState<number[]>([0,0])
 
-    const [texture, setTexture] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null)
+    const [textures, setTextures] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null)
     const [show, setShow] = useState<boolean>(true) //Prevents rendering of 3D objects until data is fully loaded in
 
   //DATA LOADING
@@ -131,12 +129,18 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       setShowLoading(true);
       setShow(false)
       try{
+        if (textures) {
+          textures.forEach(tex =>{
+            tex.dispose();
+            tex.source.data = null
+          });
+        }
         ZarrDS.GetArray(variable, {xSlice, ySlice, zSlice}).then((result) => {
         const [tempTexture, scaling] = ArrayToTexture({
           data: result.data,
           shape: result.shape
         })
-        setTexture(tempTexture)
+        setTextures(tempTexture)
         if (result.scalingFactor){
           const {maxVal, minVal} = scaling
           setValueScales({ maxVal: maxVal*(Math.pow(10,result.scalingFactor)), minVal: minVal*(Math.pow(10,result.scalingFactor)) });
@@ -195,15 +199,16 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     }else{
       setMetadata(null)
     }
-      
   }, [reFetch])
 
   useEffect(()=>{ // Reset after analysis mode
-    if(!analysisMode){
+    if(!analysisMode && show){
       const {dataShape} = useGlobalStore.getState();
       setIsFlat(dataShape.length == 2)
       const newText = GetCurrentTexture(dataShape)
-      setTexture(newText)
+      if (newText){
+        setTextures(newText)
+      }
     }
   },[analysisMode])
 
@@ -213,12 +218,13 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     coords,
     val
   }),[])
+
   const Nav = useMemo(()=>Navbar,[])
   return (
     <div className='main-canvas'
       style={{width:'100vw'}}
     >
-      <AnalysisWG setTexture={setTexture} ZarrDS={ZarrDS}/>
+      <AnalysisWG setTexture={setTextures} ZarrDS={ZarrDS}/>
       {show && <Colorbar units={metadata?.units} valueScales={valueScales}/>}
       <Nav />
       {(isFlat || plotType == "flat") && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }
@@ -232,17 +238,17 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         {show && <AxisLines />}
         {plotType == "volume" && show && 
           <>
-            <DataCube volTexture={texture}/>
+            <DataCube volTexture={textures}/>
             <UVCube ZarrDS={ZarrDS} />
           </>
         }
         {plotType == "point-cloud" && show &&
           <>
-            <PointCloud textures={{texture: texture as THREE.Data3DTexture[],colormap}} ZarrDS={ZarrDS}/>
+            <PointCloud textures={{texture: textures as THREE.Data3DTexture[],colormap}} ZarrDS={ZarrDS}/>
           </> 
         }
         {plotType == "sphere" && show && 
-          <Sphere textures={texture} ZarrDS={ZarrDS} /> 
+          <Sphere textures={textures} ZarrDS={ZarrDS} /> 
         }
         <Orbiter isFlat={false} />
       </Canvas>
@@ -255,7 +261,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
           <ExportCanvas show={show}/>
           <CountryBorders/>
           {show && <AxisLines />}
-          <FlatMap textures={texture as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} />
+          <FlatMap textures={textures as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} />
           <Orbiter isFlat={true}/>
         </Canvas>
         </>}
