@@ -4,22 +4,56 @@
 import { RxReset } from "react-icons/rx";
 import { FaPlus, FaMinus } from "react-icons/fa";
 import React, {useRef, useEffect, useMemo, useState} from 'react'
-import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useGlobalStore, usePlotStore, useAnalysisStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import './css/Colorbar.css'
 import { linspace, TwoDecimals } from '@/utils/HelperFuncs';
+
+const operationMap = {
+    // Reductions
+    Mean: "Mean",
+    Min: "Min",
+    Max: "Max",
+    StDev: "StDev",
+    LinearSlope: "Slope",
+    // 3D Convolutions
+    Mean3D: "Local Mean",
+    Min3D: "Local Min",
+    Max3D: "Local Max",
+    StDev3D: "Local StDev",
+    // 2D Convolutions
+    Mean2D: "Local Mean",
+    Min2D: "Local Min",
+    Max2D: "Local Max",
+    StDev2D: "Local StDev",
+    // Multivariate
+    Correlation2D: "R",
+    Correlation3D: "Local R",
+    TwoVarLinearSlope2D: "Slope",
+    TwoVarLinearSlope3D: "Local Slope",
+    Covariance2D: "Covariance",
+    Covariance3D: "Covariance",
+    // Special
+    CUMSUM3D: "Cumulative Sum"
+};
 
 const Colorbar = ({units, valueScales} : {units: string, valueScales: {maxVal: number, minVal:number}}) => {
     const {colormap, variable} = useGlobalStore(useShallow(state => ({
         colormap: state.colormap,
         variable: state.variable
     })))
-
     const {cScale, cOffset, setCScale, setCOffset} = usePlotStore(useShallow(state => ({ 
         cScale: state.cScale,
         cOffset: state.cOffset,
         setCScale: state.setCScale,
         setCOffset: state.setCOffset
+    })))
+    const {variable2, analysisMode, operation, kernelOperation, execute} = useAnalysisStore(useShallow(state => ({
+        variable2: state.variable2,
+        analysisMode: state.analysisMode,
+        operation: state.operation,
+        kernelOperation: state.kernelOperation,
+        execute: state.execute
     })))
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -126,6 +160,19 @@ const Colorbar = ({units, valueScales} : {units: string, valueScales: {maxVal: n
         }
     }, [colors]);
 
+    const analysisString = useMemo(()=>{
+        
+        if (analysisMode){
+            const twoVar = variable2 != "Default";
+            const thisOperation = (operation === "Convolution") ? kernelOperation : operation
+            const theseUnits = operationMap[thisOperation as keyof typeof operationMap] 
+            const string = twoVar ? `+ ${variable2} (${theseUnits})` : `[${units}] (${theseUnits})`
+            return string
+        } else{
+            return `[${units}]`
+        }
+    },[analysisMode, execute])
+
     return (
         <>
         <div className='colorbar' >
@@ -180,7 +227,7 @@ const Colorbar = ({units, valueScales} : {units: string, valueScales: {maxVal: n
                 left:'50%',
                 transform:'translateX(-50%)',
             }}>
-                {`${variable} [ ${units} ]`}
+                {`${variable} ${analysisString}`}
             </p>
         {(cScale != 1 || cOffset != 0) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} 
             onClick={()=>{setNewMin(origMin); setNewMax(origMax)}}
