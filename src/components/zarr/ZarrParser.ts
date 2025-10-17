@@ -16,7 +16,7 @@ async function ZarrParser(files: any, store: any){
     const metadata: { [key: string]: any } = {}
     for (let i=0; i < fileCount; i++){
         const file = files[i] 
-        if (file.name === '.zarray' || file.name ==='.zattrs'){
+        if (file.name === '.zarray' || file.name ==='.zattrs' || file.name === 'zarr.json'){
             let relativePath = file.webkitRelativePath
             const parts = relativePath.split('/')
             parts.shift();
