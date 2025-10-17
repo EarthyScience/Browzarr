@@ -169,10 +169,10 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       //Get Metadata
       ZarrDS.GetAttributes(variable).then((result)=>{
         setMetadata(result);
-        let [dimArrs, dimMetas, dimNames] = ZarrDS.GetDimArrays()
+        let [dimArrs, dimUnits, dimNames] = ZarrDS.GetDimArrays()
         if (is4D){
           dimArrs = dimArrs.slice(1);
-          dimMetas = dimMetas.slice(1);
+          dimUnits = dimUnits.slice(1);
           dimNames = dimNames.slice(1);
         }
         setDimArrays(dimArrs)
@@ -189,12 +189,8 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
           else
             {setFlipY(false)}
         }
-        const tempDimUnits = []
-        for (const meta of dimMetas){
-          tempDimUnits.push(meta.units)
-        }
-        setDimUnits(tempDimUnits)
-        ParseExtent(tempDimUnits, dimArrs)
+        setDimUnits(dimUnits)
+        ParseExtent(dimUnits, dimArrs)
       })
     }else{
       setMetadata(null)

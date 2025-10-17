@@ -292,11 +292,19 @@ export async function GetDimInfo(variable:string){
   if (cache.has(cacheName)){
     const meta = cache.get(cacheName)
     const dimNames = meta._ARRAY_DIMENSIONS as string[]
-    for (const dim of dimNames){
-      dimArrays.push(cache.get(`${initStore}_${dim}`))
-      dimUnits.push(cache.get(`${initStore}_${dim}_meta`).units)
+    console.log(dimNames)
+    if (dimNames){
+      for (const dim of dimNames){
+        dimArrays.push(cache.get(`${initStore}_${dim}`))
+        dimUnits.push(cache.get(`${initStore}_${dim}_meta`).units)
+      }
+    } else {
+      for (const dimLength of meta.shape){
+        dimArrays.push(Array(dimLength).fill(0))
+        dimUnits.push("Default")
+      }
     }
-    return {dimNames, dimArrays, dimUnits};
+    return {dimNames: dimNames??Array(meta.shape.length).fill("Default"), dimArrays, dimUnits};
   }
   else{
     const group = await useZarrStore.getState().currentStore
@@ -305,18 +313,26 @@ export async function GetDimInfo(variable:string){
     }
     const outVar = await zarr.open(group.resolve(variable), {kind:"array"});
     const meta = outVar.attrs;
+    meta.shape = outVar.shape;
     cache.set(cacheName, meta);
     const dimNames = meta._ARRAY_DIMENSIONS as string[]
-    for (const dim of dimNames){
-      const dimArray = await zarr.open(group.resolve(dim), {kind:"array"})
-          .then((result) => zarr.get(result));
-      const dimMeta = await zarr.open(group.resolve(dim), {kind:"array"})
-        .then((result) => result.attrs)
-      cache.set(`${initStore}_${dim}`, dimArray.data);
-      cache.set(`${initStore}_${dim}_meta`, dimMeta)
-      dimArrays.push(dimArray.data)
-      dimUnits.push(dimMeta.units)
+    if (dimNames){
+      for (const dim of dimNames){
+        const dimArray = await zarr.open(group.resolve(dim), {kind:"array"})
+            .then((result) => zarr.get(result));
+        const dimMeta = await zarr.open(group.resolve(dim), {kind:"array"})
+          .then((result) => result.attrs)
+        cache.set(`${initStore}_${dim}`, dimArray.data);
+        cache.set(`${initStore}_${dim}_meta`, dimMeta)
+        dimArrays.push(dimArray.data)
+        dimUnits.push(dimMeta.units)
+      } 
+    } else {
+      for (const dimLength of outVar.shape){
+        dimArrays.push(Array(dimLength).fill(0))
+        dimUnits.push("Default")
+      }
     }
-    return {dimNames, dimArrays, dimUnits};
+    return {dimNames: dimNames?? Array(outVar.shape.length).fill("Default"), dimArrays, dimUnits};
   }
 }

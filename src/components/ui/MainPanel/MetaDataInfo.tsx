@@ -159,7 +159,6 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
     const this4D = meta.shape.length == 4;
     setIs4D(this4D);
   },[meta])
-
   const chunkShape = meta.chunks
   useEffect(()=>{
     setCompress(false)

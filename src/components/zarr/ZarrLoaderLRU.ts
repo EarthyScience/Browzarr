@@ -539,15 +539,26 @@ export class ZarrDataset{
 	}
 
 	GetDimArrays(){
-		const {initStore} = useGlobalStore.getState();
+		const {initStore, variable} = useGlobalStore.getState();
 		const {cache} = useCacheStore.getState();
 		const dimArr = [];
-		const dimMetas = []
-		for (const dim of this.dimNames){
-			dimArr.push(cache.get(`${initStore}_${dim}`));
-			dimMetas.push(cache.get(`${initStore}_${dim}_meta`))
+		const dimUnits = []
+		const fallBackNames: string[] = [];
+		if (this.dimNames){
+			for (const dim of this.dimNames){
+				dimArr.push(cache.get(`${initStore}_${dim}`));
+				dimUnits.push(cache.get(`${initStore}_${dim}_meta`).units)
+			}
+		} else {
+			const shape = cache.get(`${initStore}_${variable}_meta`).shape
+			for (const dimLength of shape){
+				dimArr.push(Array(dimLength).fill(0))
+				dimUnits.push("Default")
+				fallBackNames.push("Default")
+			}
 		}
-		return [dimArr,dimMetas, this.dimNames];
+		
+		return [dimArr,dimUnits, this.dimNames??fallBackNames];
 	}
 
 	GetTimeSeries(TimeSeriesInfo:TimeSeriesInfo){
