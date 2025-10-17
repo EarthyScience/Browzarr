@@ -380,7 +380,7 @@ export class ZarrDataset{
 			} else { 
 				setDownloading(true)
 				setProgress(0)
-				const totalZChunks = Math.ceil(outVar.shape[0+(is4D ? 1 : 0)]/chunkShape[1])
+				const totalZChunks = Math.ceil(outVar.shape[0+(is4D ? 1 : 0)]/chunkShape[0])
 				const totalYChunks = Math.ceil(outVar.shape[1+(is4D ? 1 : 0)]/chunkShape[1])
 				const totalXChunks = Math.ceil(outVar.shape[2+(is4D ? 1 : 0)]/chunkShape[2])
 
@@ -391,7 +391,6 @@ export class ZarrDataset{
 				const xStartIdx = Math.floor(xSlice[0]/chunkShape[2])
 				const xEndIdx = xSlice[1] ? Math.ceil(xSlice[1]/chunkShape[2]) : totalXChunks
 				const chunkCount = (zEndIdx - zStartIdx) * (yEndIdx - yStartIdx) * (xEndIdx - xStartIdx) // Used for Progress Bar
-		
 				const zShape = (zSlice[1] ? zSlice[1] : outVar.shape[0+(is4D ? 1 : 0)]) - zSlice[0]
 				const yShape = (ySlice[1] ? ySlice[1] : outVar.shape[1+(is4D ? 1 : 0)]) - ySlice[0]
 				const xShape = (xSlice[1] ? xSlice[1] : outVar.shape[2+(is4D ? 1 : 0)]) - xSlice[0]

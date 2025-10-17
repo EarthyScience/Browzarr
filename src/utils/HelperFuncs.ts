@@ -292,7 +292,6 @@ export async function GetDimInfo(variable:string){
   if (cache.has(cacheName)){
     const meta = cache.get(cacheName)
     const dimNames = meta._ARRAY_DIMENSIONS as string[]
-    console.log(dimNames)
     if (dimNames){
       for (const dim of dimNames){
         dimArrays.push(cache.get(`${initStore}_${dim}`))
