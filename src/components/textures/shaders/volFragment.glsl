@@ -59,7 +59,7 @@ float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so
 
 
 
-#define epsilon 0.0001
+#define epsilon 0.000001
 
 void main() {
     vec3 rayDir = normalize(vDirection);
@@ -93,9 +93,11 @@ void main() {
 
         vec3 texCoord = p / scale + 0.5;
         texCoord.z = mod(texCoord.z + animateProg, 1.0001);
+        texCoord = clamp(texCoord, vec3(0.0), 1. - vec3(epsilon)); // This prevents the the very end of the dimensions having floating point errors
+
         ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
         int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
-        vec3 localCoord = texCoord * (textureDepths - epsilon); // Scale up. Epsilon is needed because at the very end of the dimensions it gets floating point errors
+        vec3 localCoord = texCoord * (textureDepths);  
         localCoord = fract(localCoord);
         float d = sample1(localCoord, textureIdx);
 
