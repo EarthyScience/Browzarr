@@ -543,7 +543,7 @@ export class ZarrDataset{
 		const {cache} = useCacheStore.getState();
 		const dimArr = [];
 		const dimUnits = []
-		let fallBackNames: string[] = [];
+		const fallBackNames: string[] = [];
 		if (this.dimNames){
 			for (const dim of this.dimNames){
 				dimArr.push(cache.get(`${initStore}_${dim}`));
