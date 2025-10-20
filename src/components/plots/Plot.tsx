@@ -126,7 +126,6 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
   //DATA LOADING
   useEffect(() => {
     if (variable != "Default") {
-      setStatus("Fetching...");
       setShow(false)
       try{
         if (textures) {
