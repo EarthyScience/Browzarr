@@ -145,19 +145,21 @@ const maxRetries = 10;
 const retryDelay = 500; // 0.5 seconds in milliseconds
 
 export async function GetStore(storePath: string): Promise<zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore>> | undefined>{
+		const {setStatus} = useGlobalStore.getState();
 		for (let attempt = 0; attempt <= maxRetries; attempt++) {
 			try {
 				const d_store = zarr.tryWithConsolidated(
 					new zarr.FetchStore(storePath)
 				);
 				const gs = await d_store.then(store => zarr.open(store, {kind: 'group'}));
+				setStatus(null)
 				return gs;
 			} catch (error) {
 				// If this is the final attempt, handle the error
 				if (attempt === maxRetries) {
 					if (storePath.slice(0,5) != 'local'){
 						useErrorStore.getState().setError('zarrFetch')
-						useGlobalStore.getState().setShowLoading(false)
+						setStatus(null)
 					}
 					throw new ZarrError(`Failed to initialize store at ${storePath}`, error);
 				}
@@ -202,7 +204,7 @@ export class ZarrDataset{
 		this.chunkIDs = [];
 	}
 	async GetArray(variable: string, slices: Slices){
-		const {is4D, idx4D, initStore, setProgress, setStrides, setDownloading} = useGlobalStore.getState();
+		const {is4D, idx4D, initStore, setProgress, setStrides, setStatus} = useGlobalStore.getState();
 		const {compress, setCurrentChunks, setArraySize} = useZarrStore.getState()
 		const {cache} = useCacheStore.getState();
 		const {xSlice, ySlice, zSlice} = slices
@@ -235,7 +237,7 @@ export class ZarrDataset{
 			let shape;
 			let scalingFactor = null;
 			if (totalSize < 50e6 || !hasTimeChunks){ // Check if total is less than 50MB or no chunks along time
-				setDownloading(true)
+				setStatus("Downloading...")
 				for (let attempt = 0; attempt <= maxRetries; attempt++) {
 					try {
 						chunk = is4D ? await zarr.get(outVar, [idx4D, null , null, null]) :  await zarr.get(outVar);
@@ -244,8 +246,7 @@ export class ZarrDataset{
 						// If this is the final attempt, handle the error
 						if (attempt === maxRetries) {
 							useErrorStore.getState().setError('zarrFetch')
-							useGlobalStore.getState().setShowLoading(false)
-							setDownloading(false)
+							setStatus(null)
 							throw new ZarrError(`Failed to fetch variable ${variable}`, error);
 						}
 						
@@ -271,8 +272,8 @@ export class ZarrDataset{
 					}
 					cache.set(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`, cacheChunk)
 				}
-				setDownloading(false)
-			} else if (outVar.shape.length == 2){
+				setStatus(null)
+			} else if (outVar.shape.length == 2){ // 2D downloading/Slicing
 				const totalYChunks = Math.ceil(outVar.shape[0]/chunkShape[0])
 				const totalXChunks = Math.ceil(outVar.shape[1]/chunkShape[1])
 
@@ -320,10 +321,9 @@ export class ZarrDataset{
 								} catch (error) {
 									// If this is the final attempt, handle the error
 									if (attempt === maxRetries) {
-										useErrorStore.getState().setError('zarrFetch')
-										useGlobalStore.getState().setShowLoading(false)
-										setDownloading(false)
-										setProgress(0)
+										useErrorStore.getState().setError('zarrFetch');
+										setStatus(null);
+										setProgress(0);
 										throw new ZarrError(`Failed to fetch chunk ${chunkID} for variable ${variable}`, error);
 									}
 									// Wait before retrying (except on the last attempt which we've already handled above)
@@ -375,10 +375,10 @@ export class ZarrDataset{
 						}
 					}
 				}
-				setDownloading(false)
+				setStatus(null);
 				setProgress(0) 
 			} else { 
-				setDownloading(true)
+				setStatus("Downloading...");
 				setProgress(0)
 				const totalZChunks = Math.ceil(outVar.shape[0+(is4D ? 1 : 0)]/chunkShape[0])
 				const totalYChunks = Math.ceil(outVar.shape[1+(is4D ? 1 : 0)]/chunkShape[1])
@@ -439,8 +439,7 @@ export class ZarrDataset{
 										// If this is the final attempt, handle the error
 										if (attempt === maxRetries) {
 											useErrorStore.getState().setError('zarrFetch')
-											useGlobalStore.getState().setShowLoading(false)
-											setDownloading(false)
+											setStatus(null);
 											setProgress(0)
 											throw new ZarrError(`Failed to fetch chunk ${chunkID} for variable ${variable}`, error);
 										}
@@ -494,7 +493,6 @@ export class ZarrDataset{
 						}
 					}
 				}
-				setDownloading(false)
 				setProgress(0) // Reset progress for next load
 			}
 			return {

@@ -43,10 +43,10 @@ type Operation = keyof typeof ShaderMap;
 const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture[] | THREE.DataTexture[] | null>>, ZarrDS: ZarrDataset }) => {
 
     // Global state hooks remain the same
-    const { strides, dataShape, valueScales, isFlat, setIsFlat, setDownloading, setShowLoading, setValueScales } = useGlobalStore(useShallow(state => ({
+    const { strides, dataShape, valueScales, isFlat, setIsFlat, setStatus, setValueScales } = useGlobalStore(useShallow(state => ({
         strides: state.strides, dataShape: state.dataShape, valueScales: state.valueScales,
-        isFlat: state.isFlat, setIsFlat: state.setIsFlat, setDownloading: state.setDownloading,
-        setShowLoading: state.setShowLoading, setValueScales: state.setValueScales,
+        isFlat: state.isFlat, setIsFlat: state.setIsFlat, setStatus: state.setStatus,
+         setValueScales: state.setValueScales,
     })));
 
     const setPlotType = usePlotStore(state => state.setPlotType);
@@ -73,7 +73,7 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
             return;
         }
         const executeAnalysis = async () => {
-            setShowLoading(true);
+            setStatus("Computing...");
             const currentOperation = operation == 'Convolution' ? kernelOperation as Operation : operation as Operation; // If it's convolution use the kernelOperation
             let newArray: Float16Array | Float32Array | undefined;
             let is3DResult = !isFlat; // Assume the result's dimensionality until determined
@@ -81,13 +81,13 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
             // --- 1. Fetch second variable if needed ---
             let var2Data: ArrayBufferView | null = null;
             if (useTwo) {
-                setDownloading(true);
+                setStatus("Fetching second variable...")
                 const var2Array = await ZarrDS.GetArray(variable2, {zSlice, ySlice, xSlice});
                 var2Data = var2Array?.data;
-                setDownloading(false);
+                setStatus("Computing...");
                 if (!var2Data) {
                     console.error("Failed to fetch data for the second variable.");
-                    setShowLoading(false);
+                    setStatus(null);
                     return;
                 }
             }
@@ -138,13 +138,13 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
 
                 default:
                     console.warn(`Unknown operation: ${currentOperation}`);
-                    setShowLoading(false);
+                    setStatus(null);
                     return;
             }
 
             // --- 3. Process and display the result ---
             if (!newArray) {
-                setShowLoading(false);
+                setStatus(null);
                 return;
             }
 
@@ -180,9 +180,8 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
             setIsFlat(!is3DResult);
             setPlotType(is3DResult ? 'volume' : 'flat');
             setAnalysisMode(true);
-            setShowLoading(false);
+            setStatus(null);
         };
-
         executeAnalysis();
 
     }, [execute]); 

@@ -1,7 +1,7 @@
 "use client";
 import React, {useState, useEffect, ChangeEvent} from 'react'
 import * as zarr from 'zarrita'
-import { useZarrStore, useErrorStore } from '@/utils/GlobalStates';
+import { useZarrStore, useErrorStore, useGlobalStore } from '@/utils/GlobalStates';
 import { Input } from '../input';
 import ZarrParser from '@/components/zarr/ZarrParser';
 
@@ -13,15 +13,12 @@ interface LocalZarrType {
 
 const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType) => {
   const setCurrentStore = useZarrStore(state => state.setCurrentStore)
-
+  const {setStatus} = useGlobalStore.getState()
   const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    
     if (!files || files.length === 0) {
+      setStatus(null)
       return;
-    }
-    if (files.length > 1000){
-      // useErrorStore.getState().setError('filecount')
     }
     // Create a Map to hold the Zarr store data
     const fileMap = new Map<string, File>();
@@ -53,12 +50,14 @@ const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType)
         // Metadata is missing. We will need to parse variables here. 
         store = await ZarrParser(files, customStore)
       }
-      const gs = zarr.open(store, {kind: 'group'});
-      gs.then(e=>{setCurrentStore(e)})
-      setShowLocal(false)
-      setOpenVariables(true)
+      const gs = await zarr.open(store, {kind: 'group'});
+      setCurrentStore(gs);
+      setShowLocal(false);
+      setOpenVariables(true);
       setInitStore(`local_${baseDir}`)
+      setStatus(null)
     } catch (error) {
+      setStatus(null)
       if (error instanceof Error) {
         console.log(`Error opening Zarr store: ${error.message}`);
       } else {
@@ -66,18 +65,16 @@ const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType)
       }
     }
   };
-
   return (
     <div>
         <Input type="file" id="filepicker"
-        className='hover:drop-shadow-md hover:scale-[110%]'
-        style={{width:'200px', cursor:'pointer'}}
-        // @ts-expect-error `webkitdirectory` is non-standard attribute. TS doesn't know about it. It's used for cross-browser compatibility.
-        directory=''
-        webkitdirectory='true'
-        onChange={handleFileSelect}
-        >
-        </Input>
+          className='hover:drop-shadow-md hover:scale-[110%]'
+          style={{width:'200px', cursor:'pointer'}}
+          // @ts-expect-error `webkitdirectory` is non-standard attribute. TS doesn't know about it. It's used for cross-browser compatibility.
+          directory=''
+          webkitdirectory='true'
+          onChange={handleFileSelect}
+        />
     </div>
   )
 }
