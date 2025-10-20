@@ -23,7 +23,7 @@ export default function LogoDrawer() {
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right" align="start">
-              <span>About BrowZarr</span>
+              <span>About Browzarr</span>
             </TooltipContent>
           </Tooltip>
         </div>

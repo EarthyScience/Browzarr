@@ -35,6 +35,6 @@ We are still in active development but plan to release a stable 1.0.0 when all o
 
 - This project has received funding from the European Union's Horizon Europe research and innovation programme under grant agreement no. 101137682 (AI4PEX – Artificial Intelligence and Machine Learning for Enhanced Representation of Processes and Extremes in Earth System Models).
 
-- This work has been funded by the European Space Agency (ESA) SeasFire project under the [ESA Future EO-1 Science for Society Call](https://eo4society.esa.int/projects/seasfire/), supported by ESA’s Network of Resources Initiative.
+- This work builds on developments from the European Space Agency (ESA) SeasFire project, funded under the [ESA Future EO-1 Science for Society Call](https://eo4society.esa.int/projects/seasfire/), and supported by ESA’s Network of Resources Initiative. **Browzarr is not currently funded under this programme.**
 
 _Funded by the European Union. The views expressed are those of the authors and do not necessarily reflect those of the European Union, the European Research Executive Agency or the European Space Agency. Neither granting authority can be held responsible for them._
