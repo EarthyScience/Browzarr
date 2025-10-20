@@ -21,7 +21,7 @@ export function BrowZarrPopover() {
 
     <PopoverContent className="w-full max-w-sm md:max-w-md max-h-[80vh] p-6 rounded-2xl shadow-lg overflow-y-auto">
         <div className="flex items-start justify-between gap-4">
-          <h2 className="text-xl font-semibold">BrowZarr</h2>
+          <h2 className="text-xl font-semibold">Browzarr</h2>
           <span className="text-xs text-muted-foreground shrink-0">
             Ⓒ Apache License, Version 2.0
           </span>
@@ -32,7 +32,7 @@ export function BrowZarrPopover() {
        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-3">
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              BrowZarr is a web-based application that supports 2D and 3D
+              Browzarr is a web-based application that supports 2D and 3D
               viewing and interactivity of the underlying data within Zarr
               files (NetCDF to come).
             </p>
@@ -65,7 +65,7 @@ export function BrowZarrPopover() {
             <div className="py-4">
               <h3 className="text-sm font-medium mb-1">Background</h3>
               <p className="text-sm text-muted-foreground">
-                BrowZarr builds on lessons learned from the earlier prototype{" "}
+                Browzarr builds on lessons learned from the earlier prototype{" "}
                 <Link
                   href="https://github.com/EarthyScience/FireSight"
                   target="_blank"

@@ -216,7 +216,7 @@ export const LandingShapes = () =>{
   return(
     <div className='w-[100vw] h-[100vh]'>
       {/* <div className='landing-title'>
-        BrowZarr
+        Browzarr
       </div> */}
       <Canvas
         camera={{position:[0, 0, 3]}}
