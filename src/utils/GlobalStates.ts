@@ -25,7 +25,6 @@ type StoreState = {
   colormap: THREE.DataTexture;
   timeSeries: Record<string, Record<string, any>>;
   strides: number[];
-  showLoading: boolean;
   metadata: Record<string, any> | null;
   zMeta: object[];
   dimArrays: number[][];
@@ -39,9 +38,9 @@ type StoreState = {
   variables: string[];
   plotOn: boolean;
   isFlat: boolean;
+  status: string | null;
   progress: number;
-  downloading: boolean;
-  decompressing: boolean;
+
   is4D: boolean;
   idx4D: number | null;
   titleDescription: { title: string | null; description: string | null };
@@ -56,7 +55,6 @@ type StoreState = {
   setTimeSeries: (timeSeries: Record<string, Record<string, any>>) => void;
   updateTimeSeries: (newEntries: Record<string, Record<string, any>>) => void;
   setStrides: (strides: number[]) => void;
-  setShowLoading: (showLoading: boolean) => void;
   setMetadata: (metadata: object | null) => void;
   setZMeta: (zMeta: object[]) => void;
   setDimArrays: (dimArrays: number[][]) => void;
@@ -72,8 +70,7 @@ type StoreState = {
   setPlotOn: (plotOn: boolean) => void;
   setIsFlat: (isFlat: boolean) => void;
   setProgress: (progress: number) => void;
-  setDownloading: (downloading: boolean) => void;
-  setDecompressing: (decompressing: boolean) => void;
+  setStatus: (status: string | null) => void;
   setIs4D: (is4D: boolean) => void;
   setIdx4D: (idx4D: number | null) => void;
   setTitleDescription: (titleDescription: { title: string | null; description: string | null }) => void;
@@ -88,7 +85,6 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   colormap: GetColorMapTexture(),
   timeSeries: {},
   strides: [10368,144,1],
-  showLoading: false,
   metadata: null,
   zMeta: [{}],
   dimArrays: [[0], [0], [0]],
@@ -103,8 +99,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   plotOn: false,
   isFlat:false,
   progress: 0,
-  downloading: false,
-  decompressing: false,
+  status: null,
   is4D: false,
   idx4D: null,
   titleDescription: {title:null, description: null},
@@ -127,7 +122,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
     set({ timeSeries: limitedTimeSeries });
   },
   setStrides: (strides) => set({ strides }),
-  setShowLoading: (showLoading) => set({ showLoading }),
+  setStatus: (status) => set({ status }),
   setMetadata: (metadata) => set({ metadata }),
   setZMeta: (zMeta) => set({ zMeta }),
   setDimArrays: (dimArrays) => set({ dimArrays }),
@@ -153,8 +148,6 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setPlotOn: (plotOn) => set({ plotOn }),
   setIsFlat: (isFlat) => set({ isFlat }),
   setProgress: (progress) => set({ progress }),
-  setDownloading: (downloading) => set({ downloading }),
-  setDecompressing: (decompressing) => set({ decompressing }),
   setIs4D: (is4D) => set({ is4D }),
   setIdx4D: (idx4D) => set({ idx4D }),
   setTitleDescription: (titleDescription) => set({ titleDescription }),

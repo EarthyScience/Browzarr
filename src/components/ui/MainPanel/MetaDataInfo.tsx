@@ -368,42 +368,42 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
           </>}
       </>}
       </div>
-      {cached &&
-      <div>
-        {cachedChunks ? 
-          <b>{cachedChunks} chunks already cached. </b> :
-          <b>This data is already cached. </b>
-        } 
-      </div>
-      }
-      {tooBig && 
-        <div className="bg-[#FFBEB388] rounded-md p-1">
-          <span className="text-xs font-medium text-red-800 dark:text-red-200">
-            Not only will this certainly not fit in memory, but it also won&apos;t fit in a single shader call. You are wild for this one. Textures:  <b>{texCount}/14</b>
-          </span>
+      <div className="grid gap-2 mt-2">
+        {cached &&
+        <div>
+          {cachedChunks ? 
+            <b>{cachedChunks} chunks already cached. </b> :
+            <b>This data is already cached. </b>
+          } 
         </div>
-      }
-      {true && <Button
-        variant="pink"
-        size="sm"
-        
-        className="cursor-pointer hover:scale-[1.05]"
-        disabled={((is4D && idx4D == null) || smallCache)}
-        onClick={() => {
-          if (variable == meta.name){
-            setReFetch(!reFetch)
-          }
-          else{
-            setMaxSize(cacheSize)
-            setVariable(meta.name)
-            setReFetch(!reFetch)
-          }
-          setShowMeta(false)
-          setOpenVariables(false)
-        }}
-      >
-      Plot
-      </Button>}
+        }
+        {tooBig && 
+          <div className="bg-[#FFBEB388] rounded-md p-1">
+            <span className="text-xs font-medium text-red-800 dark:text-red-200">
+              Not only will this certainly not fit in memory, but it also won&apos;t fit in a single shader call. You are wild for this one. Textures:  <b>{texCount}/14</b>
+            </span>
+          </div>
+        }
+        {true && <Button
+          variant="pink"        
+          className="cursor-pointer hover:scale-[1.05]"
+          disabled={((is4D && idx4D == null) || smallCache)}
+          onClick={() => {
+            if (variable == meta.name){
+              setReFetch(!reFetch)
+            }
+            else{
+              setMaxSize(cacheSize)
+              setVariable(meta.name)
+              setReFetch(!reFetch)
+            }
+            setShowMeta(false)
+            setOpenVariables(false)
+          }}
+        >
+        Plot
+        </Button>}
+      </div>
   </>
   )
 }

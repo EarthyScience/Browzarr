@@ -4,18 +4,16 @@ import { useShallow } from "zustand/shallow"
 
 
 export function Loading(){
-  const {progress, showLoading, downloading, decompressing} = useGlobalStore(useShallow(state => ({
+  const {progress, status} = useGlobalStore(useShallow(state => ({
     progress: state.progress,
-    showLoading: state.showLoading,
-    downloading: state.downloading,
-    decompressing: state.decompressing
+    status: state.status
   })))
 
     return (
-      showLoading && 
+      status && 
       <div className="loading-container">
       <div className='loading'>
-        {downloading ? 'Downloading' : decompressing ? 'Unpacking' : 'Building'}
+        {status}
         </div>
       <div className="progress-bar"
         style={{
@@ -23,6 +21,5 @@ export function Loading(){
         }}
       />
       </div>
-      
     )
   }
