@@ -212,7 +212,9 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
                 }}
               >
                 <Input className="w-full" placeholder="Store URL" />
-                <Button type="submit" variant="outline" className='cursor-pointer'>
+                <Button type="submit" variant="outline" className='cursor-pointer'
+                  onClick={()=>useGlobalStore.getState().setStatus("Fetching...")}
+                >
                   Fetch
                 </Button>
               </form>

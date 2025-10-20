@@ -76,7 +76,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     const {
       setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
-      setDimNames, setDimUnits, setPlotOn, setShowLoading} = useGlobalStore(
+      setDimNames, setDimUnits, setPlotOn, setStatus} = useGlobalStore(
         useShallow(state => ({  //UseShallow for object returns
           setShape:state.setShape,
           setDataShape: state.setDataShape,
@@ -87,7 +87,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
           setDimNames:state.setDimNames,
           setDimUnits:state.setDimUnits,
           setPlotOn: state.setPlotOn,
-          setShowLoading: state.setShowLoading  
+          setStatus: state.setStatus  
         }
         )))
     const {colormap, variable, isFlat, metadata, valueScales, is4D, setIsFlat} = useGlobalStore(useShallow(state=>({
@@ -126,7 +126,6 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
   //DATA LOADING
   useEffect(() => {
     if (variable != "Default") {
-      setShowLoading(true);
       setShow(false)
       try{
         if (textures) {
@@ -160,10 +159,10 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         setDataShape(result.shape)
         setShow(true)
         setPlotOn(true)
-        setShowLoading(false)
+        setStatus(null)
       })
       }catch{
-        setShowLoading(false);
+        setStatus(null);
         return;
       }
       //Get Metadata
