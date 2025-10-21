@@ -1,11 +1,11 @@
 'use client';
 
 import { HiInformationCircle } from "react-icons/hi";
+import React from "react";
 import './css/MetaData.css'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -27,6 +27,37 @@ const defaultAttributes = [
     "_ARRAY_DIMENSIONS"
 ]
 
+export function renderAttributes(
+  data: Record<string, any> = {},
+  defaultAttributes: string[] = []
+): React.ReactNode {
+  const keys = Object.keys(data);
+  if (keys.length === 0) return [];
+  // Order default attributes first
+  const orderedKeys = [
+    ...defaultAttributes.filter((key) => key in data),
+    ...Object.keys(data).filter((key) => !defaultAttributes.includes(key)),
+  ];
+
+  return orderedKeys.map((key) => {
+    const value = data[key];
+    const isDefault = defaultAttributes.includes(key);
+    return (
+      <React.Fragment key={key}>
+        <div
+          className={`font-mono ${
+            isDefault ? 'font-semibold' : 'text-[var(--muted-foreground)]'
+          }`}
+        >
+          {key}:
+        </div>
+        <div className="font-mono">
+          {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+        </div>
+      </React.Fragment>
+    );
+  });
+}
 const Metadata = ({ data }: { data: Record<string, any> }) => {
     return (
         <div className="metadata-container">
@@ -40,8 +71,6 @@ const Metadata = ({ data }: { data: Record<string, any> }) => {
                             size="icon"
                             className="size-6 cursor-pointer"
                             tabIndex={0}
-                            // aria-label="Metadata information"
-                            // title="Metadata information"
                             >
                             <HiInformationCircle className="size-6" />
                         </Button>
@@ -54,30 +83,13 @@ const Metadata = ({ data }: { data: Record<string, any> }) => {
                 </Tooltip>
                 <DialogContent aria-describedby="Metadata Information for variable" className="metadata-dialog">
                     <DialogHeader>
-                        <DialogTitle>Variable Metadata</DialogTitle>
-                        <DialogDescription>
-                            Detailed information about the selected variable
-                        </DialogDescription>
+                        <DialogTitle>Attributes</DialogTitle>
                     </DialogHeader>
-                    <div className="metadata-content">
-                        {/* Show default attributes first */}
-                        {defaultAttributes.map((value) => (
-                            data[value] && (
-                                <p key={value}>
-                                    <strong>{value}: </strong>{String(data[value])}
-                                </p>
-                            )
-                        ))}
-                        
-                        {/* Show all other attributes */}
-                        {Object.entries(data).map(([key, value]) => (
-                            !defaultAttributes.includes(key) && (
-                                <p key={key}>
-                                    <strong>{key}:</strong> {String(value)}
-                                </p>
-                            )
-                        ))}
-                    </div>
+                        <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words select-none p-0">
+                            <div className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-[6px]">
+                                {renderAttributes(data, defaultAttributes)}
+                            </div>
+                        </div>
                 </DialogContent>
             </Dialog>
         </div>
