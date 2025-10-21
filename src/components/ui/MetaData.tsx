@@ -51,7 +51,9 @@ export function renderAttributes(
         >
           {key}:
         </div>
-        <div className="font-mono">
+        <div className="font-mono whitespace-pre-wrap break-words"
+          style={{ overflowWrap: 'anywhere' }}
+        >
           {typeof value === 'object' ? JSON.stringify(value) : String(value)}
         </div>
       </React.Fragment>
@@ -78,14 +80,14 @@ const Metadata = ({ data }: { data: Record<string, any> }) => {
                         </DialogTrigger>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" align="start">
-                        <span>Show Variable Metadata</span>
+                        <span>Show Variable Attributes</span>
                     </TooltipContent>
                 </Tooltip>
                 <DialogContent aria-describedby="Metadata Information for variable" className="metadata-dialog">
                     <DialogHeader>
                         <DialogTitle>Attributes</DialogTitle>
                     </DialogHeader>
-                        <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words select-none p-0">
+                        <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words p-0">
                             <div className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-[6px]">
                                 {renderAttributes(data, defaultAttributes)}
                             </div>
