@@ -20,7 +20,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 
-const defaultAttributes = [
+export const defaultAttributes = [
     "long_name",
     "description",
     "units",
@@ -51,7 +51,7 @@ export function renderAttributes(
         >
           {key}:
         </div>
-        <div className="font-mono whitespace-pre-wrap break-words md:col-start-2 md:row-start-auto pl-4 md:pl-0"
+        <div className="font-mono whitespace-pre-wrap break-words md:col-start-2 md:row-start-auto pl-4 md:pl-2"
           style={{ overflowWrap: 'anywhere' }}
         >
           {typeof value === 'object' ? JSON.stringify(value) : String(value)}
@@ -88,7 +88,7 @@ const Metadata = ({ data }: { data: Record<string, any> }) => {
                         <DialogTitle>Attributes</DialogTitle>
                     </DialogHeader>
                         <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words p-0">
-                            <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] gap-x-3 gap-y-[6px]">
+                            <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] gap-x-1 gap-y-[6px]">
                                 {renderAttributes(data, defaultAttributes)}
                             </div>
                         </div>

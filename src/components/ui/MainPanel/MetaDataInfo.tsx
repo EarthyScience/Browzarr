@@ -3,6 +3,7 @@ import { useAnalysisStore, useCacheStore, useGlobalStore, usePlotStore, useZarrS
 import { useShallow } from 'zustand/shallow'
 import { SliderThumbs } from "@/components/ui/SliderThumbs"
 import { Button } from "@/components/ui/button"
+import { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"
 import { Input } from "../input"
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { parseLoc } from "@/utils/HelperFuncs"
@@ -11,7 +12,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
+import {Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover"
+import { Badge } from "@/components/ui/badge"
 
 const formatArray = (value: string | number[]): string => {
   if (typeof value === 'string') return value
@@ -54,7 +56,7 @@ function HandleCustomSteps(e: string, chunkSize: number){
   }
 
 
-const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>  }) => {
+const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables }: { meta: any, metadata: Record<string, any>, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>  }) => {
   const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(state => ({
     is4D: state.is4D,
     idx4D: state.idx4D,
@@ -192,8 +194,18 @@ const MetaDataInfo = ({ meta, setShowMeta, setOpenVariables }: { meta: any, setS
       // The logic here was to just get divs to be used later in a Card or Dialog component!
     <> 
       <div className="meta-info">
-        <b>Long Name</b> <br/>
-        {`${meta.long_name}`}<br/>
+        <b>{`${meta.long_name} `}</b>
+          <Popover>
+            <PopoverTrigger className="cursor-pointer">
+              <Badge variant="default">
+              Attributes
+              </Badge>
+            </PopoverTrigger>
+            <PopoverContent className="max-h-[50vh] overflow-y-auto" align="center">
+              {renderAttributes(metadata, defaultAttributes)}
+            </PopoverContent>
+          </Popover>
+        <br/>
         <br/>
         <div className="grid grid-cols-2">
           <div>
