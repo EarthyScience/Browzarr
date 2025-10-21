@@ -75,7 +75,7 @@
     "three-stdlib": "^2.36.0",
     "vaul": "^1.1.2",
     "webgpu-utils": "^1.11.0",
-    "zarrita": "^0.5.3",
+    "zarrita": "^0.5.4",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
