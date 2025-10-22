@@ -122,7 +122,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
 
     const [textures, setTextures] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null)
     const [show, setShow] = useState<boolean>(true) //Prevents rendering of 3D objects until data is fully loaded in
-
+    const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
   //DATA LOADING
   useEffect(() => {
     if (variable != "Default") {
@@ -168,6 +168,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       //Get Metadata
       ZarrDS.GetAttributes(variable).then((result)=>{
         setMetadata(result);
+        setStableMetadata(result);
         let [dimArrs, dimUnits, dimNames] = ZarrDS.GetDimArrays()
         if (is4D){
           dimArrs = dimArrs.slice(1);
@@ -232,7 +233,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       style={{width:'100vw'}}
     >
       <AnalysisWG setTexture={setTextures} ZarrDS={ZarrDS}/>
-      {show && <Colorbar units={metadata?.units} valueScales={valueScales}/>}
+      {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
       <Nav />
       {(isFlat || plotType == "flat") && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }
       {((!isFlat && plotType != "flat") || (isFlat && plotType === 'sphere')) && <>

@@ -6,19 +6,18 @@ import { ZarrDataset, GetStore } from '@/components/zarr/ZarrLoaderLRU';
 import { useEffect, useMemo } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
 import { MainPanel } from '@/components/ui';
-import { Metadata, Loading, Navbar, Error } from '@/components/ui';
+import { Loading, Navbar, Error } from '@/components/ui';
 import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 
 export function LandingHome() {
   const {
-    initStore, timeSeries, variable, metadata, plotOn,
+    initStore, timeSeries, variable, plotOn,
     setZMeta, setVariables, setPlotOn, setTitleDescription, 
   } = useGlobalStore(useShallow(state => ({
     initStore: state.initStore, 
     timeSeries: state.timeSeries,
     variable: state.variable,
-    metadata: state.metadata,
     plotOn: state.plotOn,
     setZMeta: state.setZMeta,
     setVariables: state.setVariables,
@@ -76,7 +75,6 @@ export function LandingHome() {
     
     {/* {variable === "Default" && <ScrollableLinksTable />} */}
     {variable != "Default" && <Plot ZarrDS={ZarrDS} />}
-    {metadata && <Metadata data={metadata} /> }
     {Object.keys(timeSeries).length >= 1 && <PlotArea />}
     </>
   );

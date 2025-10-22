@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { TbVariable } from "react-icons/tb";
-import { useGlobalStore } from "@/utils/GlobalStates";
+import { useGlobalStore, useZarrStore } from "@/utils/GlobalStates";
 import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
 import MetaDataInfo from "./MetaDataInfo";
@@ -20,6 +20,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ZarrDataset } from "@/components/zarr/ZarrLoaderLRU";
 
 const Variables = ({
   openVariables,
@@ -32,13 +33,20 @@ const Variables = ({
   const [openMetaPopover, setOpenMetaPopover] = useState(false);
 
   const [showMeta, setShowMeta] = useState(false);
-  const { variables, zMeta, initStore } = useGlobalStore(
+  const { variables, zMeta, metadata, setMetadata, initStore } = useGlobalStore(
     useShallow((state) => ({
       variables: state.variables,
       zMeta: state.zMeta,
+      metadata: state.metadata,
+      setMetadata: state.setMetadata,
       initStore: state.initStore
     }))
   );
+  const { currentStore } = useZarrStore(useShallow(state => ({
+    currentStore: state.currentStore,
+  })))
+  const ZarrDS = useMemo(() => new ZarrDataset(currentStore), [currentStore])
+
   const [dimArrays, setDimArrays] = useState([[0],[0],[0]])
   const [dimUnits, setDimUnits] = useState([null,null,null])
   const [dimNames, setDimNames] = useState<string[]> (["Default"])
@@ -61,6 +69,7 @@ const Variables = ({
       const relevant = zMeta.find((e: any) => e.name === selectedVar);
       if (relevant){
         setMeta({...relevant, dimInfo : {dimArrays, dimNames, dimUnits}});
+        ZarrDS.GetAttributes(selectedVar).then(e=>setMetadata(e))
       }
     }
   }, [selectedVar, variables, zMeta, dimArrays, dimNames, dimUnits]);
@@ -69,6 +78,7 @@ const Variables = ({
     setSelectedIndex(null)
     setSelectedVar(null)
     setMeta(null)
+    setMetadata(null)
   },[initStore])
 
   useEffect(() => {
@@ -191,9 +201,11 @@ const Variables = ({
           >
             {meta && (
                 <MetaDataInfo 
-                  meta={meta} 
+                  meta={meta}
+                  metadata={metadata??{}}
                   setShowMeta={setOpenMetaPopover} 
                   setOpenVariables={setOpenVariables}
+                  popoverSide={"left"}
                 />
             )}
           </PopoverContent>
@@ -202,12 +214,16 @@ const Variables = ({
       {popoverSide === "top" && (
         <Dialog open={showMeta} onOpenChange={setShowMeta}>
           <DialogContent className="max-w-[85%] md:max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogTitle className="text-center text-lg font-semibold">
-              {selectedVar}
-            </DialogTitle>
-            <div className="mt-4">
+            <DialogTitle>{}</DialogTitle>
+            <div className="-mt-4">
               {meta && (
-                <MetaDataInfo meta={meta} setShowMeta={setShowMeta} setOpenVariables={setOpenVariables}/>
+                <MetaDataInfo
+                  meta={meta}
+                  metadata={metadata??{}}
+                  setShowMeta={setShowMeta}
+                  setOpenVariables={setOpenVariables}
+                  popoverSide={"top"}
+                />
               )}
             </div>
           </DialogContent>
