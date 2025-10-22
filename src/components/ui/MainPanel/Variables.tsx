@@ -205,6 +205,7 @@ const Variables = ({
                   metadata={metadata??{}}
                   setShowMeta={setOpenMetaPopover} 
                   setOpenVariables={setOpenVariables}
+                  popoverSide={"left"}
                 />
             )}
           </PopoverContent>
@@ -216,7 +217,13 @@ const Variables = ({
             <DialogTitle>{}</DialogTitle>
             <div className="-mt-4">
               {meta && (
-                <MetaDataInfo meta={meta} metadata={metadata??{}} setShowMeta={setShowMeta} setOpenVariables={setOpenVariables}/>
+                <MetaDataInfo
+                  meta={meta}
+                  metadata={metadata??{}}
+                  setShowMeta={setShowMeta}
+                  setOpenVariables={setOpenVariables}
+                  popoverSide={"top"}
+                />
               )}
             </div>
           </DialogContent>

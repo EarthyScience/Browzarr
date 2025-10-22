@@ -3,7 +3,7 @@ import { useAnalysisStore, useCacheStore, useGlobalStore, usePlotStore, useZarrS
 import { useShallow } from 'zustand/shallow'
 import { SliderThumbs } from "@/components/ui/SliderThumbs"
 import { Button } from "@/components/ui/button"
-import { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"
+import Metadata, { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"
 import { Input } from "../input"
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { parseLoc } from "@/utils/HelperFuncs"
@@ -56,7 +56,7 @@ function HandleCustomSteps(e: string, chunkSize: number){
   }
 
 
-const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables }: { meta: any, metadata: Record<string, any>, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>  }) => {
+const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSide }: { meta: any, metadata: Record<string, any>, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>, popoverSide: string  }) => {
   const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(state => ({
     is4D: state.is4D,
     idx4D: state.idx4D,
@@ -193,18 +193,24 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables }: { meta:
       // Don't put any more work in the landing page version. Since it won't be visible in the future
       // The logic here was to just get divs to be used later in a Card or Dialog component!
     <> 
-      <div className="meta-info">
         <b>{`${meta.long_name} `}</b>
-          <Popover>
-            <PopoverTrigger className="cursor-pointer">
+          { popoverSide=="left" ? <Popover>
+            <PopoverTrigger className="cursor-pointer" asChild>
               <Badge variant="default">
               Attributes
               </Badge>
             </PopoverTrigger>
-            <PopoverContent className="max-h-[50vh] overflow-y-auto" align="center">
+            <PopoverContent
+              data-meta-popover
+              className="max-h-[50vh] overflow-y-auto max-w-200"
+              align="center"
+              >
               {renderAttributes(metadata, defaultAttributes)}
             </PopoverContent>
           </Popover>
+          :
+          <Metadata data={metadata} variable ={'Attributes'} />
+          }
         <br/>
         <br/>
         <div className="grid grid-cols-2">
@@ -379,7 +385,6 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables }: { meta:
             </div>
           </>}
       </>}
-      </div>
       <div className="grid gap-2 mt-2">
         {cached &&
         <div>

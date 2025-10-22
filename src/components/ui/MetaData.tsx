@@ -67,7 +67,7 @@ const Metadata = ({ data, variable }: { data: Record<string, any>, variable: str
                   <TooltipTrigger asChild>
                   <DialogTrigger asChild>
                       <Button
-                          variant="ghost"
+                          variant={variable == "Attributes" ? "default" : "ghost"}
                           size="icon"
                           className="size-6 w-auto cursor-pointer px-2"
                           tabIndex={0}
