@@ -8,6 +8,7 @@ import { useGlobalStore, usePlotStore, useAnalysisStore } from '@/utils/GlobalSt
 import { useShallow } from 'zustand/shallow'
 import './css/Colorbar.css'
 import { linspace, TwoDecimals } from '@/utils/HelperFuncs';
+import Metadata from "./MetaData";
 
 const operationMap = {
     // Reductions
@@ -37,7 +38,7 @@ const operationMap = {
     CUMSUM3D: "Cumulative Sum"
 };
 
-const Colorbar = ({units, valueScales} : {units: string, valueScales: {maxVal: number, minVal:number}}) => {
+const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Record<string, any>, valueScales: {maxVal: number, minVal:number}}) => {
     const {colormap, variable} = useGlobalStore(useShallow(state => ({
         colormap: state.colormap,
         variable: state.variable
@@ -227,7 +228,8 @@ const Colorbar = ({units, valueScales} : {units: string, valueScales: {maxVal: n
                 left:'50%',
                 transform:'translateX(-50%)',
             }}>
-                {`${variable} ${analysisString}`}
+                {<Metadata data={metadata} variable ={variable} />}
+                {`${analysisString}`}
             </p>
         {(cScale != 1 || cOffset != 0) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} 
             onClick={()=>{setNewMin(origMin); setNewMax(origMax)}}
