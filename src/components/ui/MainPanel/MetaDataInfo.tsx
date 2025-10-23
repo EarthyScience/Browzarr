@@ -401,7 +401,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
             </span>
           </div>
         }
-        {true && <Button
+        {!tooBig && <Button
           variant="pink"        
           className="cursor-pointer hover:scale-[1.05]"
           disabled={((is4D && idx4D == null) || smallCache)}
