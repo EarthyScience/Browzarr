@@ -94,10 +94,10 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
   const [showDescriptionDialog, setShowDescriptionDialog] = useState<boolean>(false)
   const [openDescriptionPopover, setOpenDescriptionPopover] = useState<boolean>(false)
   
-  const { setInitStore } = useGlobalStore(
+  const { initStore, setInitStore } = useGlobalStore(
     useShallow((state) => ({
       setInitStore: state.setInitStore,
-      setVariable: state.setVariable,
+      initStore: state.initStore,
     }))
   );
 
@@ -201,7 +201,12 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
                 onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
                   e.preventDefault();
                   const input = e.currentTarget.elements[0] as HTMLInputElement;
-                  setInitStore(input.value);
+                  if (initStore != input.value){
+                    setInitStore(input.value);
+                  } else {
+                    useGlobalStore.getState().setStatus(null)
+                  }
+                  
                   if (input.value) {
                     if (popoverSide === 'top') {
                       setShowDescriptionDialog(true);
