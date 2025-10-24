@@ -93,6 +93,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
   const [activeOption, setActiveOption] = useState<string>('ESDC')
   const [showDescriptionDialog, setShowDescriptionDialog] = useState<boolean>(false)
   const [openDescriptionPopover, setOpenDescriptionPopover] = useState<boolean>(false)
+  const [isSafari, setIsSafari] = useState<boolean>(false)
   
   const { initStore, setInitStore } = useGlobalStore(
     useShallow((state) => ({
@@ -108,6 +109,15 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      const ua = navigator.userAgent;
+      const vendor = (navigator as any).vendor || '';
+      const isSafariDetected = /safari/i.test(ua) && !/chrome|crios|android|fxios|edg/i.test(ua) && /apple/i.test(vendor);
+      setIsSafari(isSafariDetected);
+    }
   }, []);
 
   return (
@@ -238,7 +248,13 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
             </DatasetOption>
             {showLocalInput && (
               <div className="mt-2">
-                <LocalZarr setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} setInitStore={setInitStore} />
+                {isSafari ? (
+                  <div className="p-3 rounded-md border border-yellow-600 text-tiny max-w-[300px]">
+                    <strong>Local folder upload is not supported in Safari.</strong> Please use Chrome, Firefox, or Edge instead.
+                  </div>
+                ) : (
+                  <LocalZarr setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} setInitStore={setInitStore} />
+                )}
               </div>
             )}
           </div>
