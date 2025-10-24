@@ -20,6 +20,12 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { ZarrDataset } from "@/components/zarr/ZarrLoaderLRU";
 
 const Variables = ({
@@ -58,11 +64,32 @@ const Variables = ({
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
-    if (!q) return variables;
-    return variables.filter((variable) =>
-      variable.toLowerCase().includes(q)
-    );
-  }, [query, variables]);
+    let filteredVars = variables;
+    
+    if (q) {
+      filteredVars = variables.filter((variable) =>
+        variable.toLowerCase().includes(q)
+      );
+    }
+    
+    // Group variables by their groupPath
+    const grouped: { [key: string]: string[] } = {};
+    const rootVars: string[] = [];
+    
+    filteredVars.forEach((variable) => {
+      const metadata = zMeta?.find((meta: any) => meta.name === variable);
+      if (metadata && 'groupPath' in metadata && metadata.groupPath) {
+        if (!grouped[metadata.groupPath as string]) {
+          grouped[metadata.groupPath as string] = [];
+        }
+        grouped[metadata.groupPath as string].push(variable);
+      } else {
+        rootVars.push(variable);
+      }
+    });
+    
+    return { grouped, rootVars };
+  }, [query, variables, zMeta]);
 
   useEffect(() => {
     if (variables && zMeta && selectedVar) {
@@ -92,31 +119,74 @@ const Variables = ({
 
   const VariableList = (
     <div className="overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden">
-      {filtered.length > 0 ? (
-        filtered.map((val, idx) => (
-          <React.Fragment key={idx}>
-            <div
-              className="cursor-pointer pl-2 py-1 text-sm hover:bg-muted rounded"
-              style={{
-                background:
-                  idx === selectedIndex ? "var(--muted-foreground)" : "",
-              }}
-              onClick={() => {
-                setSelectedIndex(idx);
-                setSelectedVar(val);
-                GetDimInfo(val).then(e=>{setDimNames(e.dimNames); setDimArrays(e.dimArrays); setDimUnits(e.dimUnits)})
-                if (popoverSide === "left") {
-                  setOpenMetaPopover(true);
-                } else {
-                  setShowMeta(true);
-                }
-              }}
-            >
-              {val}
-            </div>
-            {idx !== filtered.length - 1 && <Separator className="my-1" />}
-          </React.Fragment>
-        ))
+      {filtered.rootVars.length > 0 || Object.keys(filtered.grouped).length > 0 ? (
+        <Accordion type="multiple" className="w-full">
+          {/* Root level variables */}
+          {filtered.rootVars.length > 0 && (
+            <AccordionItem value="root">
+              <AccordionTrigger>Root Variables</AccordionTrigger>
+              <AccordionContent className="flex flex-col">
+                {filtered.rootVars.map((val, idx) => (
+                  <React.Fragment key={`root-${idx}`}>
+                    <div
+                      className="cursor-pointer pl-2 py-1 text-sm hover:bg-muted rounded"
+                      style={{
+                        background:
+                          selectedVar === val ? "var(--muted-foreground)" : "",
+                      }}
+                      onClick={() => {
+                        setSelectedIndex(idx);
+                        setSelectedVar(val);
+                        GetDimInfo(val).then(e=>{setDimNames(e.dimNames); setDimArrays(e.dimArrays); setDimUnits(e.dimUnits)})
+                        if (popoverSide === "left") {
+                          setOpenMetaPopover(true);
+                        } else {
+                          setShowMeta(true);
+                        }
+                      }}
+                    >
+                      {val}
+                    </div>
+                    {idx !== filtered.rootVars.length - 1 && <Separator className="my-1" />}
+                  </React.Fragment>
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          )}
+          
+          {/* Grouped variables */}
+          {Object.entries(filtered.grouped).map(([groupPath, groupVars]) => (
+            <AccordionItem key={groupPath} value={groupPath}>
+              <AccordionTrigger>{groupPath}</AccordionTrigger>
+              <AccordionContent className="flex flex-col">
+                {groupVars.map((val, idx) => (
+                  <React.Fragment key={`${groupPath}-${idx}`}>
+                    <div
+                      className="cursor-pointer pl-2 py-1 text-sm hover:bg-muted rounded"
+                      style={{
+                        background:
+                          selectedVar === val ? "var(--muted-foreground)" : "",
+                      }}
+                      onClick={() => {
+                        setSelectedIndex(idx);
+                        setSelectedVar(val);
+                        GetDimInfo(val).then(e=>{setDimNames(e.dimNames); setDimArrays(e.dimArrays); setDimUnits(e.dimUnits)})
+                        if (popoverSide === "left") {
+                          setOpenMetaPopover(true);
+                        } else {
+                          setShowMeta(true);
+                        }
+                      }}
+                    >
+                      {val}
+                    </div>
+                    {idx !== groupVars.length - 1 && <Separator className="my-1" />}
+                  </React.Fragment>
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       ) : (
         <div className="text-center text-muted-foreground py-2">
           {query
