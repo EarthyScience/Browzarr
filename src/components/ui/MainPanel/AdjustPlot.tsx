@@ -315,8 +315,8 @@ const SphereOptions = () =>{
     <b>Displace Surface</b>
     <UISlider
       min={0}
-      max={2}
-      step={0.05}
+      max={15}
+      step={0.2}
       value={[sphereDisplacement]}
       className='w-full mb-2'
       onValueChange={(vals:number[]) => (setSphereDisplacement(vals[0]))}

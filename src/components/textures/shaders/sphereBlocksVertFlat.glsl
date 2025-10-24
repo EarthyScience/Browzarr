@@ -2,7 +2,7 @@
 
 attribute vec2 instanceUV;
 
-uniform sampler3D map[14];
+uniform sampler2D map[14];
 uniform vec3 textureDepths;
 
 uniform float displaceZero;
@@ -25,7 +25,7 @@ vec3 givePosition(vec2 uv) {
 }
 
 
-float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
+float sample1(vec2 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
     if (index == 0) return texture(map[0], p).r;
     else if (index == 1) return texture(map[1], p).r;
     else if (index == 2) return texture(map[2], p).r;
@@ -47,12 +47,10 @@ out float vStrength;
 
 void main() {
 
-    int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
-    vec3 texCoord = vec3(instanceUV, animateProg);
-    ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1); // Ivec3 is like running a "floor" operation on all three at once. The clamp is because the very last idx is OOR
-    int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
-    vec3 localCoord = texCoord * textureDepths; // Scale up
+    ivec2 idx = clamp(ivec2(uv * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
+    int textureIdx = idx.y * yStepSize + idx.x;
+    vec2 localCoord = uv * (textureDepths.xy); // Scale up
     localCoord = fract(localCoord);
 
     float dispStrength = sample1(localCoord, textureIdx);
@@ -70,10 +68,9 @@ void main() {
         scaledPosition.y *= heightFactor;
 
 
-
         vec3 normal = normalize(spherePosition);
         // Create orientation matrix to point cube outward
-        vec3 up = abs(normal.y) < 0.9999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        vec3 up = abs(normal.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
         vec3 tangent = normalize(cross(up, normal));
         vec3 bitangent = cross(normal, tangent);
         mat3 orientation = mat3(tangent, normal, bitangent);

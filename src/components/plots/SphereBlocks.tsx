@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { useGlobalStore, useAnalysisStore, useZarrStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
-import { sphereBlocksVert, sphereBlocksFrag } from '../textures/shaders'
+import { sphereBlocksVert, sphereBlocksVertFlat, sphereBlocksFrag } from '../textures/shaders'
+import { invalidate } from '@react-three/fiber'
 
 const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const {analysisMode, analysisArray} = useAnalysisStore(useShallow(state => ({
@@ -100,20 +101,48 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
                 displaceZero: {value: -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)},
                 displacement: {value: sphereDisplacement}
             },
-            vertexShader: sphereBlocksVert,
+            vertexShader: isFlat ? sphereBlocksVertFlat : sphereBlocksVert,
             fragmentShader: sphereBlocksFrag,
             blending: THREE.NormalBlending,
             side:THREE.DoubleSide,
             depthWrite:true,
         })
         return shader
-    },[count])
+    },[count, isFlat])
+
+    useEffect(()=>{
+        if (shaderMaterial){
+            const uniforms = shaderMaterial.uniforms;
+            uniforms.animateProg.value =  animProg
+            uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
+            uniforms.displacement.value = sphereDisplacement
+            uniforms.cmap.value =  colormap
+            uniforms.cOffset.value = cOffset
+            uniforms.cScale.value = cScale
+        }
+        invalidate();
+    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset])
+
+    const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor}),[])
+    nanMaterial.transparent = true;
+
+    const nanSphereGeometry = useMemo(()=> new THREE.IcosahedronGeometry(1, 9),[])
+    useEffect(()=>{
+        if (nanMaterial ){
+            nanMaterial.color.set(nanColor)
+            nanMaterial.opacity = (1-nanTransparency)
+            invalidate();
+        }
+    },[nanColor, nanTransparency])
+
+
   return (
     <group scale={[1, flipY ? -1 : 1, 1]}>
         <instancedMesh 
             args={[geometry, shaderMaterial, count]}
             frustumCulled={false}
         />
+        <mesh geometry={nanSphereGeometry} material={nanMaterial}/>
     </group>
   )
 }
