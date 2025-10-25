@@ -186,7 +186,7 @@ const Variables = ({
   // Prepare all groups including root
   const allGroups = useMemo(() => [
     ...(filtered.rootVars.length > 0 
-      ? [{ title: "Root Variables", value: "root", variables: filtered.rootVars }] 
+      ? [{ title: "/", value: "root", variables: filtered.rootVars }] 
       : []
     ),
     ...Object.entries(filtered.grouped).map(([groupPath, groupVars]) => ({
@@ -207,7 +207,7 @@ const Variables = ({
         >
           {allGroups.map(({ title, value, variables }) => (
             <AccordionItem key={value} value={value}>
-              <AccordionTrigger>{title}</AccordionTrigger>
+              <AccordionTrigger className="cursor-pointer">{title}</AccordionTrigger>
               <AccordionContent className="flex flex-col">
                 {variables.map((val, idx) => (
                   <VariableItem
