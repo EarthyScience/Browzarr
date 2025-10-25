@@ -543,8 +543,11 @@ export class ZarrDataset{
 		const fallBackNames: string[] = [];
 		if (this.dimNames){
 			for (const dim of this.dimNames){
-				dimArr.push(cache.get(`${initStore}_${dim}`));
-				dimUnits.push(cache.get(`${initStore}_${dim}_meta`).units)
+				const dimArray = cache.get(`${initStore}_${dim}`)
+				const dimMeta = cache.get(`${initStore}_${dim}_meta`)
+				
+				dimArr.push(dimArray ?? [0]) // this should not happend
+				dimUnits.push(dimMeta?.units ?? null) // Units may not be present
 			}
 		} else {
 			const shape = cache.get(`${initStore}_${variable}_meta`).shape

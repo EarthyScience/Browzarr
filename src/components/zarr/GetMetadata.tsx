@@ -57,6 +57,11 @@ export async function GetZarrMetadata(groupStore: Promise<zarr.Group<zarr.FetchS
             
             const totalSize = totalElements * dtypeSize;
             const chunkSize = chunkElements * dtypeSize;
+            // Extract group path from the item path
+            const fullPath = item.path.substring(1); // Remove leading '/'
+            const pathParts = fullPath.split('/');
+            const groupPath = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : undefined;
+            // ? should we query the node type instead or in addition?
 
             variables.push({
                 name: item.path.substring(1),
@@ -69,7 +74,8 @@ export async function GetZarrMetadata(groupStore: Promise<zarr.Group<zarr.FetchS
                 totalSizeFormatted: formatBytes(totalSize),
                 chunkCount: chunkCount,
                 chunkSize: chunkSize,
-                chunkSizeFormatted: formatBytes(chunkSize)
+                chunkSizeFormatted: formatBytes(chunkSize),
+                groupPath: groupPath
             });
         }
     }

@@ -294,8 +294,11 @@ export async function GetDimInfo(variable:string){
     const dimNames = meta._ARRAY_DIMENSIONS as string[]
     if (dimNames){
       for (const dim of dimNames){
-        dimArrays.push(cache.get(`${initStore}_${dim}`))
-        dimUnits.push(cache.get(`${initStore}_${dim}_meta`).units)
+        const dimArray = cache.get(`${initStore}_${dim}`)
+        const dimMeta = cache.get(`${initStore}_${dim}_meta`)
+
+        dimArrays.push(dimArray ?? [0]) // guard against missing cached arrays, though this should not happen
+        dimUnits.push(dimMeta?.units ?? null) // guards against missing cached metadata
       }
     } else {
       for (const dimLength of meta.shape){

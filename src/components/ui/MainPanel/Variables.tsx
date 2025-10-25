@@ -20,6 +20,12 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { ZarrDataset } from "@/components/zarr/ZarrLoaderLRU";
 
 const Variables = ({
@@ -55,14 +61,36 @@ const Variables = ({
   const [selectedVar, setSelectedVar] = useState<string | null>(null);
   const [meta, setMeta] = useState<any>(null);
   const [query, setQuery] = useState("");
+  const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
-    if (!q) return variables;
-    return variables.filter((variable) =>
-      variable.toLowerCase().includes(q)
-    );
-  }, [query, variables]);
+    let filteredVars = variables;
+    
+    if (q) {
+      filteredVars = variables.filter((variable) =>
+        variable.toLowerCase().includes(q)
+      );
+    }
+    
+    // Group variables by their groupPath
+    const grouped: { [key: string]: string[] } = {};
+    const rootVars: string[] = [];
+    
+    filteredVars.forEach((variable) => {
+      const metadata = zMeta?.find((meta: any) => meta.name === variable);
+      if (metadata && 'groupPath' in metadata && metadata.groupPath) {
+        if (!grouped[metadata.groupPath as string]) {
+          grouped[metadata.groupPath as string] = [];
+        }
+        grouped[metadata.groupPath as string].push(variable);
+      } else {
+        rootVars.push(variable);
+      }
+    });
+    
+    return { grouped, rootVars };
+  }, [query, variables, zMeta]);
 
   useEffect(() => {
     if (variables && zMeta && selectedVar) {
@@ -81,6 +109,35 @@ const Variables = ({
     setMetadata(null)
   },[initStore])
 
+  // Auto-open accordion items when searching
+  useEffect(() => {
+    if (query.trim()) {
+      const itemsToOpen: string[] = [];
+      
+      // Add root if it has matches
+      if (filtered.rootVars.length > 0) {
+        itemsToOpen.push("root");
+      }
+      
+      // Add groups that have matches
+      Object.keys(filtered.grouped).forEach(groupPath => {
+        if (filtered.grouped[groupPath].length > 0) {
+          itemsToOpen.push(groupPath);
+        }
+      });
+      
+      setOpenAccordionItems(itemsToOpen);
+    } else {
+      // When no search, close all accordion items and keep it open if it is root
+      const hasRootOnly = filtered.rootVars.length > 0 && Object.keys(filtered.grouped).length === 0;
+      if (hasRootOnly) {
+        setOpenAccordionItems(["root"]);
+      } else {
+        setOpenAccordionItems([]);
+      }
+    }
+  }, [query, filtered]);
+
   useEffect(() => {
     const handleResize = () => {
       setPopoverSide(window.innerWidth < 768 ? "top" : "left");
@@ -90,33 +147,80 @@ const Variables = ({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const handleVariableSelect = (val: string, idx: number) => {
+    setSelectedIndex(idx);
+    setSelectedVar(val);
+    GetDimInfo(val).then(e => {
+      setDimNames(e.dimNames);
+      setDimArrays(e.dimArrays);
+      setDimUnits(e.dimUnits);
+    });
+    
+    if (popoverSide === "left") {
+      setOpenMetaPopover(true);
+    } else {
+      setShowMeta(true);
+    }
+  };
+
+  const VariableItem = ({ val, idx, arrayLength }: { val: string; idx: number; arrayLength: number }) => {
+    const variableName = val.split('/').pop() || val;
+    const isLastItem = idx === arrayLength - 1;
+
+    return (
+      <React.Fragment key={idx}>
+        <div
+          className="cursor-pointer pl-2 py-1 text-sm hover:bg-muted rounded"
+          style={{
+            background: selectedVar === val ? "var(--muted-foreground)" : "",
+          }}
+          onClick={() => handleVariableSelect(val, idx)}
+        >
+          {variableName}
+        </div>
+        {!isLastItem && <Separator className="my-1" />}
+      </React.Fragment>
+    );
+  };
+
+  // Prepare all groups including root
+  const allGroups = useMemo(() => [
+    ...(filtered.rootVars.length > 0 
+      ? [{ title: "/", value: "root", variables: filtered.rootVars }] 
+      : []
+    ),
+    ...Object.entries(filtered.grouped).map(([groupPath, groupVars]) => ({
+      title: groupPath,
+      value: groupPath,
+      variables: groupVars
+    }))
+  ], [filtered]);
+
   const VariableList = (
     <div className="overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden">
-      {filtered.length > 0 ? (
-        filtered.map((val, idx) => (
-          <React.Fragment key={idx}>
-            <div
-              className="cursor-pointer pl-2 py-1 text-sm hover:bg-muted rounded"
-              style={{
-                background:
-                  idx === selectedIndex ? "var(--muted-foreground)" : "",
-              }}
-              onClick={() => {
-                setSelectedIndex(idx);
-                setSelectedVar(val);
-                GetDimInfo(val).then(e=>{setDimNames(e.dimNames); setDimArrays(e.dimArrays); setDimUnits(e.dimUnits)})
-                if (popoverSide === "left") {
-                  setOpenMetaPopover(true);
-                } else {
-                  setShowMeta(true);
-                }
-              }}
-            >
-              {val}
-            </div>
-            {idx !== filtered.length - 1 && <Separator className="my-1" />}
-          </React.Fragment>
-        ))
+      {allGroups.length > 0 ? (
+        <Accordion 
+          type="multiple" 
+          className="w-full"
+          value={openAccordionItems}
+          onValueChange={setOpenAccordionItems}
+        >
+          {allGroups.map(({ title, value, variables }) => (
+            <AccordionItem key={value} value={value}>
+              <AccordionTrigger className="cursor-pointer">{title}</AccordionTrigger>
+              <AccordionContent className="flex flex-col">
+                {variables.map((val, idx) => (
+                  <VariableItem
+                    key={idx}
+                    val={val}
+                    idx={idx}
+                    arrayLength={variables.length}
+                  />
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       ) : (
         <div className="text-center text-muted-foreground py-2">
           {query
