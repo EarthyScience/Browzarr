@@ -8,6 +8,7 @@ export interface ZarrMetadata {
     chunkCount: number;
     chunkSize: number;  // in bytes
     chunkSizeFormatted: string;  // human readable
+    groupPath?: string;  // path to the group containing this array
 }
 
 export interface ZarrTitleDescription {

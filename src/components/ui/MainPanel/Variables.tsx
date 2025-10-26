@@ -20,6 +20,12 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { ZarrDataset } from "@/components/zarr/ZarrLoaderLRU";
 
 const Variables = ({
@@ -44,42 +50,105 @@ const Variables = ({
   );
   const { currentStore } = useZarrStore(useShallow(state => ({
     currentStore: state.currentStore,
-  })))
-  const ZarrDS = useMemo(() => new ZarrDataset(currentStore), [currentStore])
+  })));
+  const ZarrDS = useMemo(() => new ZarrDataset(currentStore), [currentStore]);
 
-  const [dimArrays, setDimArrays] = useState([[0],[0],[0]])
-  const [dimUnits, setDimUnits] = useState([null,null,null])
-  const [dimNames, setDimNames] = useState<string[]> (["Default"])
+  const [dimArrays, setDimArrays] = useState([[0],[0],[0]]);
+  const [dimUnits, setDimUnits] = useState([null,null,null]);
+  const [dimNames, setDimNames] = useState<string[]>(["Default"]);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedVar, setSelectedVar] = useState<string | null>(null);
   const [meta, setMeta] = useState<any>(null);
   const [query, setQuery] = useState("");
+  // root *open by default* (collapsible but starts open)
+  const [openAccordionItems, setOpenAccordionItems] = useState<string[]>(["root"]);
 
-  const filtered = useMemo(() => {
+  // Build nested variable tree
+  const tree = useMemo(() => {
     const q = query.toLowerCase().trim();
-    if (!q) return variables;
-    return variables.filter((variable) =>
-      variable.toLowerCase().includes(q)
-    );
+    let filteredVars = variables ?? [];
+
+    if (q) {
+      filteredVars = filteredVars.filter((variable) =>
+        variable.toLowerCase().includes(q)
+      );
+    }
+
+    const buildTree = (vars: string[]) => {
+      const t: any = {};
+      vars.forEach((v) => {
+        const parts = v.split("/");
+        let current = t;
+        parts.forEach((p, i) => {
+          if (!current[p]) current[p] = i === parts.length - 1 ? null : {};
+          current = current[p];
+        });
+      });
+      return t;
+    };
+
+    return buildTree(filteredVars);
   }, [query, variables]);
+
+  // Get all group paths (for auto-open when searching)
+  const getGroupPaths = (subtree: any, basePath = ""): string[] => {
+    let paths: string[] = [];
+    Object.entries(subtree).forEach(([key, value]) => {
+      const currentPath = basePath ? `${basePath}/${key}` : key;
+      if (value && typeof value === "object") {
+        paths.push(currentPath);
+        paths = paths.concat(getGroupPaths(value, currentPath));
+      }
+    });
+    return paths;
+  };
+
+  // Auto-open accordions that contain matches
+  useEffect(() => {
+    if (query.trim()) {
+      const openPaths = getGroupPaths(tree);
+      setOpenAccordionItems(["root", ...openPaths]);
+    } else {
+      // when not searching keep root open by default
+      setOpenAccordionItems(["root"]);
+    }
+  }, [query, tree]);
+
+  // Handle variable selection
+  const handleVariableSelect = (val: string, idx: number) => {
+    setSelectedIndex(idx);
+    setSelectedVar(val);
+    GetDimInfo(val).then(e => {
+      setDimNames(e.dimNames);
+      setDimArrays(e.dimArrays);
+      setDimUnits(e.dimUnits);
+    });
+
+    if (popoverSide === "left") {
+      setOpenMetaPopover(true);
+    } else {
+      setShowMeta(true);
+    }
+  };
 
   useEffect(() => {
     if (variables && zMeta && selectedVar) {
       const relevant = zMeta.find((e: any) => e.name === selectedVar);
       if (relevant){
         setMeta({...relevant, dimInfo : {dimArrays, dimNames, dimUnits}});
-        ZarrDS.GetAttributes(selectedVar).then(e=>setMetadata(e))
+        ZarrDS.GetAttributes(selectedVar).then(e=>setMetadata(e));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVar, variables, zMeta, dimArrays, dimNames, dimUnits]);
 
   useEffect(()=>{
-    setSelectedIndex(null)
-    setSelectedVar(null)
-    setMeta(null)
-    setMetadata(null)
-  },[initStore])
+    setSelectedIndex(null);
+    setSelectedVar(null);
+    setMeta(null);
+    setMetadata(null);
+  },[initStore, setMetadata]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -90,38 +159,99 @@ const Variables = ({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Variable item renderer (keeps separator between variables in same group)
+  const VariableItem = ({ val, idx, arrayLength }: { val: string; idx: number; arrayLength: number }) => {
+    const variableName = val.split('/').pop() || val;
+    const isLastItem = idx === arrayLength - 1;
+
+    return (
+      <React.Fragment key={val}>
+        <div
+          className="cursor-pointer pl-2 py-1 text-sm hover:bg-muted rounded"
+          style={{
+            background: selectedVar === val ? "var(--muted-foreground)" : "",
+          }}
+          onClick={() => handleVariableSelect(val, idx)}
+        >
+          {variableName}
+        </div>
+        {!isLastItem && <Separator className="my-1" />}
+      </React.Fragment>
+    );
+  };
+
+  // render a subtree inside an Accordion (ensures AccordionItem children are direct children of an Accordion)
+  const renderSubtreeAccordion = (subtree: any, basePath = "") => {
+    // Determine entries (keep variables first then groups for clarity)
+    const entries = Object.entries(subtree);
+    const variableEntries = entries.filter(([_, v]) => v === null);
+    const groupEntries = entries.filter(([_, v]) => v && typeof v === "object");
+
+    return (
+      <Accordion
+        key={basePath || "__root_inner__"}
+        type="multiple"
+        value={openAccordionItems}
+        onValueChange={setOpenAccordionItems}
+        className="w-full"
+      >
+        {/* variables at this level */}
+        {variableEntries.length > 0 && (
+          <div className="px-1">
+            {variableEntries.map(([name], idx) => {
+              const varPath = basePath ? `${basePath}/${name}` : name;
+              return (
+                <VariableItem
+                  key={varPath}
+                  val={varPath}
+                  idx={idx}
+                  arrayLength={variableEntries.length}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* groups at this level */}
+        {groupEntries.map(([name, subtreeValue]) => {
+          const currentPath = basePath ? `${basePath}/${name}` : name;
+          return (
+            <AccordionItem key={currentPath} value={currentPath}>
+              <AccordionTrigger className="cursor-pointer pl-2">
+                {name}
+              </AccordionTrigger>
+              <AccordionContent className="flex flex-col pl-2">
+                {/* recursively render children inside their own Accordion */}
+                {renderSubtreeAccordion(subtreeValue, currentPath)}
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
+      </Accordion>
+    );
+  };
+
+  // render full Variable list under "root" accordion item
   const VariableList = (
     <div className="overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden">
-      {filtered.length > 0 ? (
-        filtered.map((val, idx) => (
-          <React.Fragment key={idx}>
-            <div
-              className="cursor-pointer pl-2 py-1 text-sm hover:bg-muted rounded"
-              style={{
-                background:
-                  idx === selectedIndex ? "var(--muted-foreground)" : "",
-              }}
-              onClick={() => {
-                setSelectedIndex(idx);
-                setSelectedVar(val);
-                GetDimInfo(val).then(e=>{setDimNames(e.dimNames); setDimArrays(e.dimArrays); setDimUnits(e.dimUnits)})
-                if (popoverSide === "left") {
-                  setOpenMetaPopover(true);
-                } else {
-                  setShowMeta(true);
-                }
-              }}
-            >
-              {val}
-            </div>
-            {idx !== filtered.length - 1 && <Separator className="my-1" />}
-          </React.Fragment>
-        ))
+      {Object.keys(tree).length > 0 ? (
+        <Accordion
+          type="multiple"
+          className="w-full"
+          value={openAccordionItems}
+          onValueChange={setOpenAccordionItems}
+        >
+          <AccordionItem key="root" value="root">
+            <AccordionTrigger className="cursor-pointer">/</AccordionTrigger>
+            <AccordionContent className="flex flex-col">
+              {/* render the top-level subtree inside its own Accordion so nested AccordionItems are legal */}
+              {renderSubtreeAccordion(tree, "")}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       ) : (
         <div className="text-center text-muted-foreground py-2">
-          {query
-            ? "No variables found matching your search."
-            : "No variables available."}
+          {query ? "No variables found matching your search." : "No variables available."}
         </div>
       )}
     </div>
@@ -187,11 +317,11 @@ const Variables = ({
         <Popover open={openMetaPopover} onOpenChange={setOpenMetaPopover}>
           <PopoverTrigger asChild>
             <div
-          className="absolute -top-8" // adjust top position as needed
-          style={{
-            left: `-${280}px`, // move left
-            }}
-        />
+              className="absolute -top-8" // adjust top position as needed
+              style={{
+                left: `-${280}px`, // move to left of variable popover
+              }}
+            />
           </PopoverTrigger>
           <PopoverContent
             data-meta-popover
@@ -200,13 +330,13 @@ const Variables = ({
             className="max-h-[80vh] overflow-y-auto w-[300px]"
           >
             {meta && (
-                <MetaDataInfo 
-                  meta={meta}
-                  metadata={metadata??{}}
-                  setShowMeta={setOpenMetaPopover} 
-                  setOpenVariables={setOpenVariables}
-                  popoverSide={"left"}
-                />
+              <MetaDataInfo
+                meta={meta}
+                metadata={metadata ?? {}}
+                setShowMeta={setOpenMetaPopover}
+                setOpenVariables={setOpenVariables}
+                popoverSide={"left"}
+              />
             )}
           </PopoverContent>
         </Popover>
@@ -219,7 +349,7 @@ const Variables = ({
               {meta && (
                 <MetaDataInfo
                   meta={meta}
-                  metadata={metadata??{}}
+                  metadata={metadata ?? {}}
                   setShowMeta={setShowMeta}
                   setOpenVariables={setOpenVariables}
                   popoverSide={"top"}

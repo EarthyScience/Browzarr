@@ -47,7 +47,7 @@ export default function MetadataText({
 
   const content = `
 name: ${metadata.name}
-shape: [${formatArray(metadata.shape)}]
+${metadata.groupPath ? `group: ${metadata.groupPath}\n` : ''}shape: [${formatArray(metadata.shape)}]
 chunks: [${formatArray(metadata.chunks)}]
 dtype: ${metadata.dtype}
 total size: ${metadata.totalSizeFormatted}

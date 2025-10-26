@@ -196,7 +196,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
         <b>{`${meta.long_name} `}</b>
           { popoverSide=="left" ? <Popover>
             <PopoverTrigger className="cursor-pointer" asChild>
-              <Badge variant="default">
+              <Badge variant="default" className="block">
               Attributes
               </Badge>
             </PopoverTrigger>
@@ -209,7 +209,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
             </PopoverContent>
           </Popover>
           :
-          <Metadata data={metadata} variable ={'Attributes'} />
+          <div> <Metadata data={metadata} variable ={'Attributes'} /> </div>
           }
         <br/>
         <br/>
