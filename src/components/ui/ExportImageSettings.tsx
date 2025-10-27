@@ -10,37 +10,28 @@ import {
 import { useImageExportStore, usePlotStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Switch } from './switch';
 
 import { Button } from './button';
 
 const ExportImageSettings = () => {
     const {
-        includeBackground,
-        includeColorbar,
-        doubleSize,
-        cbarLoc,
-        cbarNum,
-        useCustomRes,
-        customRes,
-        includeAxis,
-        ExportImg, 
-        EnableExport,
-        setIncludeBackground, 
-        setIncludeColorbar, 
-        setDoubleSize,
-        setCbarLoc,
-        setCbarNum,
-        setUseCustomRes,
-        setCustomRes,
-        setIncludeAxis,
-        setHideAxis,
-        setHideAxisControls
+        includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum,
+        useCustomRes, customRes, includeAxis,
+        ExportImg, EnableExport, setIncludeBackground, setIncludeColorbar, 
+        setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes,
+        setCustomRes, setIncludeAxis, setHideAxis, setHideAxisControls
 
     } = useImageExportStore(useShallow(state => ({
           includeBackground: state.includeBackground,
@@ -101,17 +92,18 @@ const ExportImageSettings = () => {
             side="right"
             className="w-[200px] select-none"
         >
-            <div className="grid grid-cols-[auto_60px] items-center gap-2">
+        <div className="grid grid-cols-[auto_60px] items-center gap-2">
+            
             <label htmlFor="includeBG">Include Background</label>
-            <Input id='includeBG' type="checkbox" checked={includeBackground} onChange={e => setIncludeBackground(e.target.checked)}/>
+            <Switch id='includeBG' checked={includeBackground} onCheckedChange={e => setIncludeBackground(e)}/>
             {plotType != 'sphere' &&
             <>
             <label htmlFor="includeBG">Include Axis</label>
-            <Input id='includeBG' type="checkbox" checked={includeAxis} onChange={e => setIncludeAxis(e.target.checked)}/>
+            <Switch id='includeBG'  checked={includeAxis} onCheckedChange={e => setIncludeAxis(e)}/>
             </>
             }
             <label htmlFor="includeCbar">Include Colorbar</label>
-            <Input id='includeCbar' type="checkbox" checked={includeColorbar} onChange={e => setIncludeColorbar(e.target.checked)}/>
+            <Switch id='includeCbar' checked={includeColorbar} onCheckedChange={e => setIncludeColorbar(e)}/>
             {includeColorbar &&
             <>
             <div  className='col-span-2 flex justify-between'>
@@ -134,7 +126,7 @@ const ExportImageSettings = () => {
             </>          
             }
             <label htmlFor="useCustomRes" >Set Resolution</label>
-            <Input id='useCustomRes' type="checkbox" checked={useCustomRes} onChange={e => setUseCustomRes(e.target.checked)}/>
+            <Switch id='useCustomRes' checked={useCustomRes} onCheckedChange={e => setUseCustomRes(e)}/>
             {useCustomRes &&
                 <div className='grid grid-cols-[50%_50%] col-span-2 '>
                 <div className='flex flex-col items-center'>
@@ -149,14 +141,25 @@ const ExportImageSettings = () => {
             {!useCustomRes &&
             <>
             <label htmlFor="includeCbar" >Double Resolution</label>
-            <Input id='includeCbar' type="checkbox" checked={doubleSize} onChange={e => setDoubleSize(e.target.checked)}/>
+            <Switch id='includeCbar' checked={doubleSize} onCheckedChange={e => setDoubleSize(e)}/>
             </>}
+            <Collapsible className='col-span-2'>
+                <CollapsibleTrigger className='w-[100%] flex flex-col items-center justify-center cursor-pointer'>
+                    <h1>Titles</h1>
+                    <div className="w-full h-px bg-gray-300 my-1" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className='grid grid-cols-[40%_auto] items-center'>
+                    <label htmlFor="includeCbar">Title</label>
+                    <Input id='includeCbar'  type='string' />
+                </CollapsibleContent>
+            </Collapsible>
             <Button
                 className="col-span-2"
                 variant='pink'
                 onClick={e=>{ExportImg(); setHideAxisControls(true); setHideAxis(!includeAxis)}}
             >Export</Button>
-            </div>
+        </div>
+        
         </PopoverContent>
     </Popover>
   )
