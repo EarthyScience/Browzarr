@@ -14,13 +14,15 @@ uniform float animateProg;
 #define PI 3.1415926535
 
 vec3 givePosition(vec2 uv) {
-    float phi   = (.5 - uv.x) * 2.0 * PI;   // longitude [0, 2π]
-    float theta = (uv.y) * PI - 0.5*PI; // latitude [-π/2, π/2]
-
-    float x = cos(theta) * cos(phi);
-    float y = sin(theta);
-    float z = cos(theta) * sin(phi);
-
+    // Reverse the normalization using the bounds
+    float longitude = (1.0 - uv.x) * (lonBounds.y - lonBounds.x) + lonBounds.x;
+    float latitude = uv.y * (latBounds.y - latBounds.x) + latBounds.x;
+    
+    // Convert to Cartesian coordinates
+    float x = cos(latitude) * cos(longitude);
+    float y = sin(latitude);
+    float z = cos(latitude) * sin(longitude);
+    
     return vec3(x, y, z);
 }
 

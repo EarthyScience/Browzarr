@@ -234,7 +234,7 @@ const VolumeOptions = ()=>{
             </Tooltip>
           </h1> 
         </label>
-        <Input className='h-5' type="checkbox" id="compress-data" checked={vTransferRange} onChange={e=>setVTransferRange(e.target.checked)}/>
+        <Switch className='h-5'  id="compress-data" checked={vTransferRange} onCheckedChange={e=>setVTransferRange(e)}/>
       </div>
       
     </div>

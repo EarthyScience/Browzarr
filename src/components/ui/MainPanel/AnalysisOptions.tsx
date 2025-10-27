@@ -12,7 +12,7 @@ import { CiUndo } from "react-icons/ci";
 import {KernelVisualizer} from "@/components/ui";
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-
+import { Switch } from '../switch';
 import {
   Select,
   SelectContent,
@@ -389,12 +389,12 @@ const AnalysisOptions = () => {
                           </Select>
                           {['CUMSUM3D'].includes(operation) && 
                           <Tooltip delayDuration={300}>
-                            <TooltipTrigger asChild>
-                              <div style={{width:'50%', display:'flex', alignItems:'center'}}>
-                                <label htmlFor="reverse-axis" style={{textAlign:'left', marginRight: '-20px',  marginLeft: '-10px' }}>Rev.</label>
-                                <Input id='reverse-axis' type='checkbox' checked={reverseDirection == 1} onChange={e=> {setReverseDirection(e.target.checked ? 1 : 0)}}/>
-                              </div>
-                            </TooltipTrigger>
+                            <div style={{width:'90%', display:'flex', justifyContent:'space-around', alignItems:'center', alignContent:'center'}}>
+                              <label htmlFor="reverse-axis" style={{textAlign:'left'}}>Rev.</label>
+                              <TooltipTrigger >  
+                                <Switch id='reverse-axis' checked={reverseDirection == 1} onCheckedChange={e=> {setReverseDirection(e ? 1 : 0)}}/>
+                              </TooltipTrigger>
+                            </div>
                             <TooltipContent side='bottom'>
                               Reverse the direction of the operation along the axis
                             </TooltipContent>

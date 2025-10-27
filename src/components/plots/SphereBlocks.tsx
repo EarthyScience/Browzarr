@@ -1,18 +1,18 @@
 import React, { useEffect, useMemo } from 'react'
-import { useGlobalStore, useAnalysisStore, useZarrStore, usePlotStore } from '@/utils/GlobalStates'
+import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksVert, sphereBlocksVertFlat, sphereBlocksFrag } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
 import { deg2rad } from '@/utils/HelperFuncs'
+
 const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const {colormap, isFlat, valueScales, 
-            dataShape, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
+            dataShape, textureArrayDepths} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,
         isFlat: state.isFlat,  
         valueScales: state.valueScales,
         dataShape: state.dataShape,
-        flipY: state.flipY,
         textureArrayDepths: state.textureArrayDepths
     })))
     const { animProg, cOffset, cScale, lonExtent, latExtent, lonResolution, latResolution, nanColor, nanTransparency, sphereDisplacement, offsetNegatives} = usePlotStore(useShallow(state=> ({
@@ -31,26 +31,28 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         offsetNegatives: state.offsetNegatives
     })))
 
-    const count = useMemo(()=>{
-        const width = dataShape[dataShape.length-1];
-        const height = dataShape[dataShape.length-1];
-        const count = width * height;
-        return count
+    const dataWidth = dataShape[dataShape.length - 1]; // Corresponds to 'width'
+    const dataHeight = dataShape[dataShape.length - 2]; // Corresponds to 'height'
+
+    // The number of instances to render.
+    // Based on the original geometry creation, it seems only half of the height dimension is used for blocks.
+    const numInstancesWidth = dataWidth;
+    const numInstancesHeight = dataHeight / 2;
+
+    const totalInstances = useMemo(() => {
+        return numInstancesWidth * numInstancesHeight;
     },[dataShape])
     
     const geometry = useMemo(()=>{
-        const width = dataShape[dataShape.length-1];
-        const height = dataShape[dataShape.length-1]/2;
-        const count = width * height;
         const sqWidth = 6.2;
-        const geo = new THREE.BoxGeometry(sqWidth/width, .05, sqWidth/height/2);
+        const geo = new THREE.BoxGeometry(sqWidth/numInstancesWidth, .05, sqWidth/numInstancesHeight/2);
 
-        const uvs = new Float32Array(count * 2);
+        const uvs = new Float32Array(totalInstances * 2);
         let idx = 0;
-        for (let i = 0; i < width; i++) {
-            for (let j = 0; j < height; j++) {
-                const u = (i + 0.5) / width;
-                const v = (j + 0.5) / height;
+        for (let i = 0; i < numInstancesWidth; i++) {
+            for (let j = 0; j < numInstancesHeight; j++) {
+                const u = (i + 0.5) / numInstancesWidth;
+                const v = (j + 0.5) / numInstancesHeight;
                 uvs[idx * 2] = u;
                 uvs[idx * 2 + 1] = v;
                 idx ++;
@@ -61,7 +63,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             new THREE.InstancedBufferAttribute(uvs, 2)
         );
         return geo
-    },[dataShape, count])
+    },[totalInstances, numInstancesWidth, numInstancesWidth])
 
     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
         const newLatStep = latResolution/2;
@@ -95,7 +97,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             depthWrite:true,
         })
         return shader
-    },[count, isFlat])
+    },[isFlat])
 
     useEffect(()=>{
         if (shaderMaterial){
@@ -124,11 +126,11 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             invalidate();
         }
     },[nanColor, nanTransparency])
-
+    
   return (
-    <group scale={[1, flipY ? -1 : 1, 1]}>
+    <group scale={[1, 1, 1]}>
         <instancedMesh 
-            args={[geometry, shaderMaterial, count]}
+            args={[geometry, shaderMaterial, totalInstances]}
             frustumCulled={false}
         />
         <mesh geometry={nanSphereGeometry} material={nanMaterial}/>
