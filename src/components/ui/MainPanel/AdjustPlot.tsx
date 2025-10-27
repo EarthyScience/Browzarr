@@ -338,7 +338,7 @@ const SphereOptions = () =>{
       />
     </div>
     
-    <b>Displace Surface</b>
+    <b>Displacement</b>
     <UISlider
       min={0}
       max={displaceSurface ? maxSurfaceDisp : maxFaceDisplacement}
