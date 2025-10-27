@@ -61,7 +61,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             new THREE.InstancedBufferAttribute(uvs, 2)
         );
         return geo
-    },[dataShape])
+    },[dataShape, count])
 
     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
         const newLatStep = latResolution/2;
