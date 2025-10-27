@@ -1,7 +1,7 @@
 import { OrbitControls } from '@react-three/drei';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
-import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines } from '@/components/plots';
+import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks } from '@/components/plots';
 import { Canvas, invalidate } from '@react-three/fiber';
 import { ArrayToTexture, CreateTexture } from '@/components/textures';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
@@ -100,8 +100,9 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       setIsFlat: state.setIsFlat, 
     })))
 
-    const {plotType, setPlotType} = usePlotStore(useShallow(state => ({
+    const {plotType, displaceSurface, setPlotType} = usePlotStore(useShallow(state => ({
       plotType: state.plotType,
+      displaceSurface: state.displaceSurface,
       setPlotType: state.setPlotType
     })))
 
@@ -256,7 +257,9 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
           </> 
         }
         {plotType == "sphere" && show && 
-          <Sphere textures={textures} ZarrDS={ZarrDS} /> 
+          <>
+            {displaceSurface ? <Sphere textures={textures} ZarrDS={ZarrDS} /> : <SphereBlocks textures={textures} />}
+          </>
         }
         <Orbiter isFlat={false} />
       </Canvas>

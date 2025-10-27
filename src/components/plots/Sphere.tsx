@@ -4,7 +4,7 @@ import { useAnalysisStore, useGlobalStore, usePlotStore, useZarrStore } from '@/
 import { ZarrDataset } from '@/components/zarr/ZarrLoaderLRU';
 import { useShallow } from 'zustand/shallow'
 import { sphereVertex, sphereVertexFlat, sphereFrag, flatSphereFrag } from '../textures/shaders'
-import { parseUVCoords, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
+import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 
 
@@ -25,10 +25,6 @@ function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number
     const u = (lon - deg2rad(lonBounds[0]))/(deg2rad(lonBounds[1])-deg2rad(lonBounds[0]))
     const v = (lat - deg2rad(latBounds[0]))/(deg2rad(latBounds[1])-deg2rad(latBounds[0]))
     return new THREE.Vector2(1-u,v)
-}
-
-function deg2rad(deg: number){
-  return deg*Math.PI/180;
 }
 
 export const Sphere = ({textures, ZarrDS} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null, ZarrDS: ZarrDataset}) => {

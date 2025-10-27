@@ -338,3 +338,7 @@ export async function GetDimInfo(variable:string){
     return {dimNames: dimNames?? Array(outVar.shape.length).fill("Default"), dimArrays, dimUnits};
   }
 }
+
+export function deg2rad(deg: number){
+  return deg*Math.PI/180;
+}

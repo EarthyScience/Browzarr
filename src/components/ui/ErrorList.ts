@@ -18,5 +18,9 @@ export const ErrorList = {
     dataType: {
         title: "Unsupported Data Type",    
         description: "The data type of the array is not supported. Please use arrays with Float[16|32|64] or (u)Int[8|16|32] data types."  
+    },
+    tsException: {
+        title: "1D Transect Unavailable",    
+        description: "1D transects are unavailable when using face displacement on the sphere plot."
     }
 }

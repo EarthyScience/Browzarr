@@ -10,6 +10,7 @@ import { LuSettings } from "react-icons/lu";
 import { RxReset } from "react-icons/rx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Input } from '../input';
+import { Switch } from '../switch';
 import {
   Tooltip,
   TooltipContent,
@@ -303,36 +304,68 @@ const PointOptions = () =>{
 }
 
 const SphereOptions = () =>{
-  const {sphereResolution, sphereDisplacement, setSphereResolution, setSphereDisplacement} = usePlotStore(useShallow(state => ({
+  const {sphereResolution, sphereDisplacement, displaceSurface, offsetNegatives,
+    setSphereResolution, setSphereDisplacement, setDisplaceSurface, setOffsetNegatives} = usePlotStore(useShallow(state => ({
     sphereResolution: state.sphereResolution,
     sphereDisplacement: state.sphereDisplacement,
+    displaceSurface: state.displaceSurface,
+    offsetNegatives: state.offsetNegatives,
     setSphereResolution: state.setSphereResolution,
-    setSphereDisplacement: state.setSphereDisplacement
+    setSphereDisplacement: state.setSphereDisplacement,
+    setDisplaceSurface: state.setDisplaceSurface,
+    setOffsetNegatives: state.setOffsetNegatives
   })))
+  const maxSurfaceDisp = 2;
+  const maxFaceDisplacement = 15*maxSurfaceDisp; 
 
   return(<>
-  <div className='grid gap-y-[5px] items-center w-50 text-center'>
-    <b>Displace Surface</b>
+  <div className='grid gap-y-[5px] items-center w-50 text-center mb-2'>
+    <b>Displacement Mode</b>
+    <div 
+      className='relative w-full h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
+      onClick={() => {setDisplaceSurface(!displaceSurface); setSphereDisplacement(sphereDisplacement * (displaceSurface ? maxFaceDisplacement/maxSurfaceDisp : maxSurfaceDisp/maxFaceDisplacement))}}  
+    >
+      <span className={`z-10 font-semibold transition-colors ${displaceSurface ? 'text-primary' : 'text-secondary'}`}>
+        Surface
+      </span>
+      <span className={`z-10 font-semibold transition-colors ${!displaceSurface ? 'text-primary' : 'text-secondary'}`}>
+        Faces
+      </span>
+      <div 
+        className={`absolute top-1 h-8 w-[calc(50%-8px)] bg-secondary shadow-xs hover:bg-secondary/80 rounded-full transition-all duration-300 ${
+          displaceSurface ? 'left-1' : 'left-[calc(50%+4px)]'
+        }`}
+      />
+    </div>
+    
+    <b>Displacement</b>
     <UISlider
       min={0}
-      max={2}
-      step={0.05}
+      max={displaceSurface ? maxSurfaceDisp : maxFaceDisplacement}
+      step={0.2}
       value={[sphereDisplacement]}
       className='w-full mb-2'
       onValueChange={(vals:number[]) => (setSphereDisplacement(vals[0]))}
     />
-    <b>Displacement Resolution</b>
-    <UISlider
-      min={4}
-      max={100}
-      step={4}
-      value={[sphereResolution]}
-      className='w-full mb-2'
-      onValueChange={(vals:number[]) => (setSphereResolution(vals[0]))}
-    />
+    {!displaceSurface && 
+    <div className='flex items-center content-center justify-around'>
+      <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
+      <label htmlFor="offset-switch">Offset Negatives</label>
+    </div>
+    }
+    {displaceSurface && <>
+      <b>Displacement Resolution</b>
+      <UISlider
+        min={4}
+        max={100}
+        step={4}
+        value={[sphereResolution]}
+        className='w-full mb-2'
+        onValueChange={(vals:number[]) => (setSphereResolution(vals[0]))}
+      />
+    </>}
   </div>
   </>)
-
 }
 
 const SpatialExtent = () =>{
