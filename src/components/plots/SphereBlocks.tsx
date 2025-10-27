@@ -61,7 +61,6 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
                 idx ++;
             }
         }
-        console.log(uvs, totalInstances)
         geo.setAttribute(
             'instanceUV',
             new THREE.InstancedBufferAttribute(uvs, 2)
@@ -131,7 +130,6 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         }
     },[nanColor, nanTransparency])
 
-    console.log(instRef.current)
   return (
     <group scale={[1, flipY ? -1 : 1, 1]}>
         <instancedMesh 
