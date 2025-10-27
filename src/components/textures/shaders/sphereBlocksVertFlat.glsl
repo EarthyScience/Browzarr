@@ -50,9 +50,9 @@ out float vStrength;
 void main() {
 
     int yStepSize = int(textureDepths.x); 
-    ivec2 idx = clamp(ivec2(uv * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
+    ivec2 idx = clamp(ivec2(instanceUV * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
     int textureIdx = idx.y * yStepSize + idx.x;
-    vec2 localCoord = uv * (textureDepths.xy); // Scale up
+    vec2 localCoord = instanceUV * (textureDepths.xy); // Scale up
     localCoord = fract(localCoord);
 
     float dispStrength = sample1(localCoord, textureIdx);
