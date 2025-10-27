@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo } from 'react'
-import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useGlobalStore, useAnalysisStore, useZarrStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksVert, sphereBlocksVertFlat, sphereBlocksFrag } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
 import { deg2rad } from '@/utils/HelperFuncs'
-
 const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const {colormap, isFlat, valueScales, 
             dataShape, textureArrayDepths} = useGlobalStore(useShallow(state=>({
@@ -31,28 +30,26 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         offsetNegatives: state.offsetNegatives
     })))
 
-    const dataWidth = dataShape[dataShape.length - 1]; // Corresponds to 'width'
-    const dataHeight = dataShape[dataShape.length - 2]; // Corresponds to 'height'
-
-    // The number of instances to render.
-    // Based on the original geometry creation, it seems only half of the height dimension is used for blocks.
-    const numInstancesWidth = dataWidth;
-    const numInstancesHeight = dataHeight / 2;
-
-    const totalInstances = useMemo(() => {
-        return numInstancesWidth * numInstancesHeight;
+    const count = useMemo(()=>{
+        const width = dataShape[dataShape.length-1];
+        const height = dataShape[dataShape.length-1]/2;
+        const count = width * height;
+        return count
     },[dataShape])
     
     const geometry = useMemo(()=>{
+        const width = dataShape[dataShape.length-1];
+        const height = dataShape[dataShape.length-1]/2;
+        const count = width * height;
         const sqWidth = 6.2;
-        const geo = new THREE.BoxGeometry(sqWidth/numInstancesWidth, .05, sqWidth/numInstancesHeight/2);
+        const geo = new THREE.BoxGeometry(sqWidth/width, .05, sqWidth/height/2);
 
-        const uvs = new Float32Array(totalInstances * 2);
+        const uvs = new Float32Array(count * 2);
         let idx = 0;
-        for (let i = 0; i < numInstancesWidth; i++) {
-            for (let j = 0; j < numInstancesHeight; j++) {
-                const u = (i + 0.5) / numInstancesWidth;
-                const v = (j + 0.5) / numInstancesHeight;
+        for (let i = 0; i < width; i++) {
+            for (let j = 0; j < height; j++) {
+                const u = (i + 0.5) / width;
+                const v = (j + 0.5) / height;
                 uvs[idx * 2] = u;
                 uvs[idx * 2 + 1] = v;
                 idx ++;
@@ -63,7 +60,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             new THREE.InstancedBufferAttribute(uvs, 2)
         );
         return geo
-    },[totalInstances, numInstancesWidth, numInstancesWidth])
+    },[dataShape])
 
     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
         const newLatStep = latResolution/2;
@@ -97,7 +94,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             depthWrite:true,
         })
         return shader
-    },[isFlat])
+    },[count, isFlat])
 
     useEffect(()=>{
         if (shaderMaterial){
@@ -113,7 +110,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             uniforms.displaceZero.value = offsetNegatives ? (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal)) : 0
         }
         invalidate();
-    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, offsetNegatives ])
+    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, offsetNegatives])
 
     const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor}),[])
     nanMaterial.transparent = true;
@@ -126,11 +123,11 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             invalidate();
         }
     },[nanColor, nanTransparency])
-    
+
   return (
     <group scale={[1, 1, 1]}>
         <instancedMesh 
-            args={[geometry, shaderMaterial, totalInstances]}
+            args={[geometry, shaderMaterial, count]}
             frustumCulled={false}
         />
         <mesh geometry={nanSphereGeometry} material={nanMaterial}/>
