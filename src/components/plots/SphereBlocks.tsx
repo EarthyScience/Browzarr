@@ -4,44 +4,22 @@ import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksVert, sphereBlocksVertFlat, sphereBlocksFrag } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
-
+import { deg2rad } from '@/utils/HelperFuncs'
 const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
-    const {analysisMode, analysisArray} = useAnalysisStore(useShallow(state => ({
-          analysisMode: state.analysisMode,
-          analysisArray: state.analysisArray
-        })))
-    const {colormap, isFlat, dimArrays, dimNames, dimUnits, valueScales, 
-            timeSeries, dataShape, strides, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
+    const {colormap, isFlat, valueScales, 
+            dataShape, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,
         isFlat: state.isFlat,  
-        dimArrays:state.dimArrays,
-        dimNames:state.dimNames,
-        dimUnits:state.dimUnits,
         valueScales: state.valueScales,
-        timeSeries: state.timeSeries,
         dataShape: state.dataShape,
-        strides: state.strides,
         flipY: state.flipY,
         textureArrayDepths: state.textureArrayDepths
     })))
-    const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
-                zSlice: state.zSlice,
-                ySlice: state.ySlice,
-                xSlice: state.xSlice
-    })))
-    const dimSlices = [
-        dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-        dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-        dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
-    ]
-    const {animate, animProg, cOffset, cScale, selectTS, lonExtent, latExtent, 
-        lonResolution, latResolution, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
-        getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
+    const { animProg, cOffset, cScale, lonExtent, latExtent, lonResolution, latResolution, nanColor, nanTransparency, sphereDisplacement, offsetNegatives} = usePlotStore(useShallow(state=> ({
         animate: state.animate,
         animProg: state.animProg,
         cOffset: state.cOffset,
         cScale: state.cScale,
-        selectTS: state.selectTS,
         lonExtent: state.lonExtent,
         latExtent: state.latExtent,
         lonResolution: state.lonResolution,
@@ -50,9 +28,9 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         nanTransparency: state.nanTransparency,
         sphereDisplacement: state.sphereDisplacement,
         sphereResolution: state.sphereResolution,
-        getColorIdx: state.getColorIdx,
-        incrementColorIdx: state.incrementColorIdx
+        offsetNegatives: state.offsetNegatives
     })))
+
     const count = useMemo(()=>{
         const width = dataShape[dataShape.length-1];
         const height = dataShape[dataShape.length-1];
@@ -85,20 +63,29 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         return geo
     },[dataShape])
 
+    const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
+        const newLatStep = latResolution/2;
+        const newLonStep = lonResolution/2;
+        const newLonBounds = [Math.max(lonExtent[0]-newLonStep, -180), Math.min(lonExtent[1]+newLonStep, 180)]
+        const newLatBounds = [Math.max(latExtent[0]-newLatStep, -90), Math.min(latExtent[1]+newLatStep, 90)]
+        return [newLonBounds, newLatBounds]
+    },[latExtent, lonExtent, lonResolution, latResolution])
+
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
                 map: { value: textures },
                 textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
-                selectTS: {value: selectTS},
+                latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
+                lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
                 cmap:{value: colormap},
                 cOffset:{value: cOffset},
                 cScale: {value: cScale},
                 animateProg: {value: animProg},
                 nanColor: {value: new THREE.Color(nanColor)},
                 nanAlpha: {value: 1 - nanTransparency},
-                displaceZero: {value: -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)},
+                displaceZero: {value: offsetNegatives ? (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal)) : 0},
                 displacement: {value: sphereDisplacement}
             },
             vertexShader: isFlat ? sphereBlocksVertFlat : sphereBlocksVert,
@@ -119,9 +106,12 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             uniforms.cmap.value =  colormap
             uniforms.cOffset.value = cOffset
             uniforms.cScale.value = cScale
+            uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
+            uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
+            uniforms.displaceZero.value = offsetNegatives ? (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal)) : 0
         }
         invalidate();
-    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset])
+    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, offsetNegatives ])
 
     const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor}),[])
     nanMaterial.transparent = true;

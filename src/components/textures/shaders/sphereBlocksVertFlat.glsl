@@ -70,7 +70,7 @@ void main() {
 
         vec3 normal = normalize(spherePosition);
         // Create orientation matrix to point cube outward
-        vec3 up = abs(normal.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        vec3 up = vec3(0.0, 1.0, 0.0);
         vec3 tangent = normalize(cross(up, normal));
         vec3 bitangent = cross(normal, tangent);
         mat3 orientation = mat3(tangent, normal, bitangent);
