@@ -303,36 +303,60 @@ const PointOptions = () =>{
 }
 
 const SphereOptions = () =>{
-  const {sphereResolution, sphereDisplacement, setSphereResolution, setSphereDisplacement} = usePlotStore(useShallow(state => ({
+  const {sphereResolution, sphereDisplacement, displaceSurface, 
+    setSphereResolution, setSphereDisplacement, setDisplaceSurface} = usePlotStore(useShallow(state => ({
     sphereResolution: state.sphereResolution,
     sphereDisplacement: state.sphereDisplacement,
+    displaceSurface: state.displaceSurface,
     setSphereResolution: state.setSphereResolution,
-    setSphereDisplacement: state.setSphereDisplacement
+    setSphereDisplacement: state.setSphereDisplacement,
+    setDisplaceSurface: state.setDisplaceSurface
   })))
+  const maxSurfaceDisp = 2;
+  const maxFaceDisplacement = 15*maxSurfaceDisp; 
 
   return(<>
   <div className='grid gap-y-[5px] items-center w-50 text-center'>
+    <b>Displacement Mode</b>
+    <div 
+      className='relative w-full h-10 bg-gray-200 rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
+      onClick={() => {setDisplaceSurface(!displaceSurface); setSphereDisplacement(sphereDisplacement * (displaceSurface ? maxFaceDisplacement/maxSurfaceDisp : maxSurfaceDisp/maxFaceDisplacement))}}  
+    >
+      <span className={`z-10 font-semibold transition-colors ${displaceSurface ? 'text-primary' : 'text-secondary'}`}>
+        Surface
+      </span>
+      <span className={`z-10 font-semibold transition-colors ${!displaceSurface ? 'text-primary' : 'text-secondary'}`}>
+        Faces
+      </span>
+      <div 
+        className={`absolute top-1 h-8 w-[calc(50%-8px)] bg-secondary shadow-xs hover:bg-secondary/80 rounded-full transition-all duration-300 ${
+          displaceSurface ? 'left-1' : 'left-[calc(50%+4px)]'
+        }`}
+      />
+    </div>
     <b>Displace Surface</b>
     <UISlider
       min={0}
-      max={15}
+      max={displaceSurface ? maxSurfaceDisp : maxFaceDisplacement}
       step={0.2}
       value={[sphereDisplacement]}
       className='w-full mb-2'
       onValueChange={(vals:number[]) => (setSphereDisplacement(vals[0]))}
     />
-    <b>Displacement Resolution</b>
-    <UISlider
-      min={4}
-      max={100}
-      step={4}
-      value={[sphereResolution]}
-      className='w-full mb-2'
-      onValueChange={(vals:number[]) => (setSphereResolution(vals[0]))}
-    />
+    
+    {displaceSurface && <>
+      <b>Displacement Resolution</b>
+      <UISlider
+        min={4}
+        max={100}
+        step={4}
+        value={[sphereResolution]}
+        className='w-full mb-2'
+        onValueChange={(vals:number[]) => (setSphereResolution(vals[0]))}
+      />
+    </>}
   </div>
   </>)
-
 }
 
 const SpatialExtent = () =>{

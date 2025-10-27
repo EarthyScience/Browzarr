@@ -62,17 +62,17 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
     
     const geometry = useMemo(()=>{
         const width = dataShape[dataShape.length-1];
-        const height = dataShape[dataShape.length-1];
+        const height = dataShape[dataShape.length-1]/2;
         const count = width * height;
-        
-        const geo = new THREE.BoxGeometry(6/width, .05, 6/height/2);
+        const sqWidth = 6.2;
+        const geo = new THREE.BoxGeometry(sqWidth/width, .05, sqWidth/height/2);
 
         const uvs = new Float32Array(count * 2);
         let idx = 0;
         for (let i = 0; i < width; i++) {
             for (let j = 0; j < height; j++) {
-                const u = i / width;
-                const v = j / height;
+                const u = (i + 0.5) / width;
+                const v = (j + 0.5) / height;
                 uvs[idx * 2] = u;
                 uvs[idx * 2 + 1] = v;
                 idx ++;
@@ -134,7 +134,6 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             invalidate();
         }
     },[nanColor, nanTransparency])
-
 
   return (
     <group scale={[1, flipY ? -1 : 1, 1]}>

@@ -100,8 +100,9 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       setIsFlat: state.setIsFlat, 
     })))
 
-    const {plotType, setPlotType} = usePlotStore(useShallow(state => ({
+    const {plotType, displaceSurface, setPlotType} = usePlotStore(useShallow(state => ({
       plotType: state.plotType,
+      displaceSurface: state.displaceSurface,
       setPlotType: state.setPlotType
     })))
 
@@ -256,8 +257,9 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
           </> 
         }
         {plotType == "sphere" && show && 
-          <SphereBlocks textures={textures} />
-          // <Sphere textures={textures} ZarrDS={ZarrDS} /> 
+          <>
+            {displaceSurface ? <Sphere textures={textures} ZarrDS={ZarrDS} /> : <SphereBlocks textures={textures} />}
+          </>
         }
         <Orbiter isFlat={false} />
       </Canvas>
