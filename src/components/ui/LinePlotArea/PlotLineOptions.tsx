@@ -131,7 +131,7 @@ const LineOptions = React.memo(function LineOptions(){
   )
 })
 
-const PlotLineOptions = React.memo(function PlotLineOptions(){
+const PlotLineOptions = React.memo(function PlotLineOptions({menuRef} : {menuRef: React.RefObject<boolean>}){
   const { showPoints, setShowPoints } = usePlotStore(useShallow(state => ({
     showPoints: state.showPoints,
     setShowPoints: state.setShowPoints,
@@ -139,7 +139,7 @@ const PlotLineOptions = React.memo(function PlotLineOptions(){
 
   return (
     <div className='plotline-options'>
-      <DropdownMenu>
+      <DropdownMenu onOpenChange={e=>menuRef.current = e}>
         <DropdownMenuTrigger asChild>
           <Button className="cursor-pointer" variant="outline">Line Options</Button>
         </DropdownMenuTrigger>
