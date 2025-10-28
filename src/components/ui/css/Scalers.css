@@ -1,5 +1,5 @@
 .yScaler{
-    z-index: 5;
+    z-index: 2;
     position: absolute;
     right: 0%;
     height: 100%;
@@ -9,7 +9,7 @@
 }
 
 .xScaler{
-    z-index:5;
+    z-index:2;
     position: absolute;
     top: 10px;
     width: 100%;

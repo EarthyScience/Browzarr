@@ -2,7 +2,7 @@
     position: fixed;
     width: 100vw;
     height: 8px;
-    z-index: 5;
+    z-index: 4;
     cursor: n-resize;
     background-color: transparent;
     touch-action: none;

@@ -1,15 +1,14 @@
 import { Canvas } from '@react-three/fiber'
 import { parseLoc } from '@/utils/HelperFuncs'
 import { FixedTicks, ThickLine } from '@/components/plots'
-import {  useEffect, useRef, useState } from 'react'
+import {  RefObject, useEffect, useRef, useState } from 'react'
 import { ResizeBar, YScaler, XScaler, ShowLinePlot } from '@/components/ui'
 import './LinePlot.css'
 import { useGlobalStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import PlotLineOptions from '@/components/ui/LinePlotArea/PlotLineOptions'
 import { IoCloseCircleSharp } from "react-icons/io5";
-import { DimCoords } from '@/utils/GlobalStates'
-
+import { FaThumbtack } from "react-icons/fa";
 
 interface pointInfo{
   pointID:[string, number],
@@ -67,7 +66,7 @@ function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
   )
 }
 
-function PointCoords(){
+function PointCoords({open, height} : {open:boolean, height:number}){
   const {coords, timeSeries, setDimCoords, setTimeSeries} = useGlobalStore(useShallow(state=>({
     coords: state.dimCoords, 
     timeSeries: state.timeSeries, 
@@ -116,7 +115,7 @@ function PointCoords(){
     };
   }, [moving]);
 
-
+  const moveLeft = xy[0] < window.innerWidth / 2;
   return(
     <>
     <div className='coord-container'
@@ -125,7 +124,9 @@ function PointCoords(){
         onPointerUp={()=>setMoving(false)}  
       style={{
           left:`${xy[0]}px`,
-          bottom:`${xy[1]}px`
+          bottom:`${xy[1]}px`,
+          transform: open ? '' : `translateX(${(moveLeft ? -1 : 1) * window.innerWidth}px) translateY(${-height}px)`  ,
+          transition:'transform 0.5s ease',
         }}
     >
     { //Only show coords when coords exist
@@ -164,8 +165,15 @@ export function PlotArea() {
   const [pointLoc, setPointLoc] = useState<number[]>([0,0])
   const [showPointInfo,setShowPointInfo] = useState<boolean>(false)
   const [height, setHeight] = useState<number>(Math.round(window.innerHeight-(window.innerHeight*0.25)))
-  const metadata = useGlobalStore(state=>state.metadata)
+  const {metadata, timeSeries} = useGlobalStore(useShallow(state=>({
+    metadata: state.metadata,
+    timeSeries: state.timeSeries
+  })))
   const plotUnits = metadata ? (metadata as any).units : "Default"
+  const [open, setOpen] = useState(true);
+  const [pinned, setPinned] = useState<boolean>(false);
+  const divRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<boolean>(false);
 
   const [yScale,setYScale] = useState<number>(1)
   const [xScale,setXScale] = useState<number>(1)
@@ -175,6 +183,7 @@ export function PlotArea() {
     setPointLoc,
     setShowPointInfo,
   }
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Handle orientation changes
   useEffect(() => {
@@ -196,31 +205,87 @@ export function PlotArea() {
     };
   }, []);
 
+  // Close on outside click (delayed and cancellable)
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (divRef.current && !divRef.current.contains(e.target as Node) && 
+          !menuRef.current &&
+          !pinned) {
+        if (closeTimeoutRef.current) {
+          clearTimeout(closeTimeoutRef.current)
+        }
+        closeTimeoutRef.current = setTimeout(() => {
+          setOpen(false)
+          closeTimeoutRef.current = null
+        }, 100)
+      }
+    }
+
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current)
+        closeTimeoutRef.current = null
+      }
+    }
+  }, [open, pinned])
+
+  // Re-open on new transects AND cancel any pending close
+  useEffect(() => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current)
+      closeTimeoutRef.current = null
+    }
+    if (!open) {
+      setOpen(true)
+    }
+  }, [timeSeries])
+
+
   useEffect(() => {
     document.documentElement.style.setProperty('--plot-height', `${height}px`);
   }, [height]);
-  const state = window.innerHeight-height >= MIN_HEIGHT;
+
   return (
     <>
-    {!state && <ShowLinePlot onClick={()=>{setHeight(window.innerHeight-(MIN_HEIGHT+50))}}/>}
-      {state && (
-        <div className='plot-canvas'>
-          <PlotLineOptions/>
-          {showPointInfo && <PointInfo pointID={pointID} pointLoc={pointLoc} showPointInfo={showPointInfo} plotUnits={plotUnits}/>}
-          <ResizeBar height={height} setHeight={setHeight}/> 
-          <YScaler scale={yScale} setScale={setYScale} />
-          <XScaler scale={xScale} setScale={setXScale} />
-          <Canvas
-            orthographic
-            camera={{ position: [0, 0, 100] }}
-            frameloop="demand"
-          >
-            <ThickLine height={height} yScale={yScale} pointSetters={pointSetters} xScale={xScale}/>
-            <FixedTicks height={height} yScale={yScale} xScale={xScale}/>
-          </Canvas>
-          <PointCoords/>
-        </div>
-      )}
+    {<ShowLinePlot onClick={()=>{setOpen(true)}}/>}
+      <div ref={divRef} 
+        className='plot-canvas'
+        style={{
+          transform: open ? '' : `translateY(${height}px)`,
+        }}
+      >
+        <FaThumbtack 
+          style={{
+            position:'absolute',
+            top:5,
+            left:5,
+            color: pinned ? '' : 'gray',
+            zIndex:5,
+            cursor:'pointer',
+          }}
+          onClick={()=>{setPinned(x=>!x)}}
+          size={20}
+        />
+        <PlotLineOptions menuRef={menuRef}/>
+        {showPointInfo && <PointInfo pointID={pointID} pointLoc={pointLoc} showPointInfo={showPointInfo} plotUnits={plotUnits}/>}
+        <ResizeBar height={height} setHeight={setHeight}/> 
+        <YScaler scale={yScale} setScale={setYScale} />
+        <XScaler scale={xScale} setScale={setXScale} />
+        <Canvas
+          orthographic
+          camera={{ position: [0, 0, 100] }}
+          frameloop="demand"
+        >
+          <ThickLine height={height} yScale={yScale} pointSetters={pointSetters} xScale={xScale}/>
+          <FixedTicks height={height} yScale={yScale} xScale={xScale}/>
+        </Canvas>
+        <PointCoords open={open} height={height}/>
+      </div>
+      
     </>
   )
 }
