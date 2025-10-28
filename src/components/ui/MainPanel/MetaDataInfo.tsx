@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react"
-import { useAnalysisStore, useCacheStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
+import { useCacheStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import { SliderThumbs } from "@/components/ui/SliderThumbs"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import {Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "../switch"
 
 const formatArray = (value: string | number[]): string => {
   if (typeof value === 'string') return value
@@ -345,8 +346,20 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
                     </div>
                     <div className="">
                       Decrease selection or Increase cache size <br/>
-                      <div className="flex justify-center">
-                        <p>Expand Cache: <b>{cacheSize/(1024*1024)}MB</b>
+                      <div className="flex justify-center items-center">
+                        Expand Cache: 
+                          <div className="flex items-center gap-1">
+                            <Input
+                              className="w-[65px] h-[20px] no-spinner"
+                              type="number"
+                              min={200}
+                              step={20}
+                              value={cacheSize / (1024 * 1024)}
+                              onChange={(e) => setCacheSize(parseInt(e.target.value)*(1024*1024))}
+                            />
+                            <span className="text-sm font-semibold">MB</span>
+                          </div>
+
                           <Tooltip>
                             <TooltipTrigger>
                             <BsFillQuestionCircleFill/>
@@ -355,12 +368,12 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
                               Increasing this too far can cause crashes. Mobile users beware 
                             </TooltipContent>
                           </Tooltip>
-                        </p>
                       </div>
                       <SliderThumbs 
                         id="newCache-size"
                         min={0}
                         max={1000}
+                        value={[cacheSize / (1024 * 1024)]}
                         step={10}
                         onValueChange={e=>setCacheSize(maxSize+e[0]*(1024*1024))}
                     />
@@ -368,7 +381,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
               </>
             )
             }
-            <div className="grid grid-cols-[auto_40%] items-center gap-2 mt-2">
+            <div className="grid grid-cols-[auto_50%] gap-2 mt-2">
               <div>
               <label htmlFor="compress-data">Compress Data </label>
               <Tooltip>
@@ -381,7 +394,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
               </Tooltip>
               </div>
               
-              <Input className="w-[50px]" type="checkbox" id="compress-data" checked={compress} onChange={e=>setCompress(e.target.checked)}/>
+              <Switch id="compress-data" checked={compress} onCheckedChange={e=>setCompress(e)}/>
             </div>
           </>}
       </>}
