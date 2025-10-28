@@ -139,6 +139,18 @@
   --glass-shadow: rgba(0, 0, 0, 0.3);
 }
 
+@layer utilities {
+  .no-spinner::-webkit-inner-spin-button,
+  .no-spinner::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .no-spinner {
+    -moz-appearance: textfield; /* Firefox */
+  }
+}
+
 /* Height fix for mobile browser UI */
 html, body {
   min-height: 100vh;   /* fallback */
