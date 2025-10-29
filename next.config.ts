@@ -33,7 +33,7 @@ const nextConfig = {
   webpack: (config: Configuration) => {
     if (!config.module) config.module = { rules: [] };
     if (!config.module.rules) config.module.rules = [];
-    
+    config.experiments = { asyncWebAssembly: true };
     config.module.rules.push({
       test: /\.(glsl|vs|fs|vert|frag)$/,
       type: 'asset/source',
@@ -41,7 +41,9 @@ const nextConfig = {
     // Add path alias resolution
     if (!config.resolve) config.resolve = { alias: {} };
     if (!config.resolve.alias) config.resolve.alias = {};
-    
+    (config.resolve.alias as any)['./ROOT/node_modules/netcdf4-wasm/dist/netcdf4.js'] =
+    require.resolve('netcdf4-wasm/dist/netcdf4.js');
+
     // Explicitly set path aliases to match tsconfig.json
     (config.resolve.alias as { [key: string]: string })['@'] = path.resolve(__dirname, 'src');
     (config.resolve.alias as { [key: string]: string })['@/components'] = path.resolve(__dirname, 'src/components');

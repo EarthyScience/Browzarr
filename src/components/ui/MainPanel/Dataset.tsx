@@ -8,6 +8,7 @@ import { Button } from '../button';
 import { TbDatabasePlus } from "react-icons/tb";
 import { TbVariable } from "react-icons/tb";
 import LocalZarr from './LocalZarr';
+import LocalNetCDF from './LocalNetCDF';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   Tooltip,
@@ -94,6 +95,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
   const [showDescriptionDialog, setShowDescriptionDialog] = useState<boolean>(false)
   const [openDescriptionPopover, setOpenDescriptionPopover] = useState<boolean>(false)
   const [isSafari, setIsSafari] = useState<boolean>(false)
+  const [useNC, setUseNC] = useState<boolean>(false)
   
   const { initStore, setInitStore } = useGlobalStore(
     useShallow((state) => ({
@@ -235,7 +237,8 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
               </form>
             )}
           </div>
-          <div className="w-full">
+          <div className="w-full grid gap-2">
+            
             <DatasetOption
               active={activeOption === 'local'}
               onClick={() => {
@@ -247,16 +250,37 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
               Local
             </DatasetOption>
             {showLocalInput && (
+            <>
+            
+              <div 
+                className='relative w-full h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
+                onClick={() => {setUseNC(x=>!x)}}  
+              >
+                <span className={`z-10 font-semibold transition-colors ${!useNC ? 'text-primary' : 'text-secondary'}`}>
+                  Zarr
+                </span>
+                <span className={`z-10 font-semibold transition-colors ${useNC ? 'text-primary' : 'text-secondary'}`}>
+                  NetCDF
+                </span>
+                <div 
+                  className={`absolute top-1 h-8 w-[calc(50%-8px)] bg-secondary shadow-xs hover:bg-secondary/80 rounded-full transition-all duration-300 ${
+                    !useNC ? 'left-1' : 'left-[calc(50%+4px)]'
+                  }`}
+                />
+              </div>
               <div className="mt-2">
                 {isSafari ? (
                   <div className="p-3 rounded-md border border-yellow-600 text-tiny max-w-[300px]">
                     <strong>Local folder upload is not supported in Safari.</strong> Please use Chrome, Firefox, or Edge instead.
                   </div>
                 ) : (
+                  useNC ?
+                  <LocalNetCDF /> :
                   <LocalZarr setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} setInitStore={setInitStore} />
                 )}
               </div>
-            )}
+            </>
+          )}
           </div>
         </div>
       </PopoverContent>
