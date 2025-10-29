@@ -1,5 +1,5 @@
 "use client";
-import { useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
+import { useCacheStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
 import React, {useEffect, useMemo, useState, useRef} from 'react'
 import { useShallow } from 'zustand/shallow'
 import '../css/MainPanel.css'
@@ -14,6 +14,53 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 const frameRates = [1, 2, 4, 6, 8, 12, 16, 24, 36, 48, 54, 60, 80, 120]
 
+const ChunkVisualizer = () =>{
+  const {dataShape, variable, zMeta} = useGlobalStore(useShallow(state =>({
+    dataShape: state.dataShape,
+    variable: state.variable,
+    zMeta: state.zMeta
+  })))
+  const {cache} = useCacheStore(useShallow(state=>({
+    cache: state.cache
+  })))
+  const timeChunkCount = useMemo(()=>{
+    const meta = (zMeta as {name: string, chunks: number[]}[]).find(e => e.name === variable);
+    const chunks = meta?.chunks
+    if (chunks){
+      return chunks[chunks.length-1]
+    } else{
+      return 1
+    }
+  },[variable, cache, zMeta])
+
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        width: "100%",
+        height: "20px", // or whatever height you want
+      }}
+    >
+      {Array(timeChunkCount).fill(null).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            flex: 1,
+            border: "1px solid white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center", 
+            background:"gray"
+          }}
+        />
+
+      ))}
+    </div>
+
+  )
+}
+
 const PlayInterFace = ({visible}:{visible : boolean}) =>{
     
     const {animate, animProg, setAnimate, setAnimProg} = usePlotStore(useShallow(state => ({
@@ -23,9 +70,8 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
         setAnimProg: state.setAnimProg
     })))
 
-    const {dimArrays, dimNames, dimUnits} = useGlobalStore(useShallow(state => ({
+    const {dimArrays, dimUnits} = useGlobalStore(useShallow(state => ({
         dimArrays: state.dimArrays,
-        dimNames: state.dimNames,
         dimUnits: state.dimUnits,
     })))
     const {zSlice} = useZarrStore(useShallow(state => ({
@@ -86,6 +132,7 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
               <div className='text-xs sm:text-sm text-center'>
                 {currentLabel}
               </div>
+              <ChunkVisualizer />
               <div className='flex items-center gap-1 w-full'>
                 <span className='text-xs'>{firstLabel}</span>
                 <Slider
