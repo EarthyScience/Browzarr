@@ -1,6 +1,6 @@
 import React, {useRef, useMemo, useState, useEffect} from 'react'
 import * as THREE from 'three'
-import { useAnalysisStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
+import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
 import { ZarrDataset } from '@/components/zarr/ZarrLoaderLRU';
 import { useShallow } from 'zustand/shallow'
 import { sphereVertex, sphereVertexFlat, sphereFrag, flatSphereFrag } from '../textures/shaders'
@@ -51,18 +51,10 @@ export const Sphere = ({textures, ZarrDS} : {textures: THREE.Data3DTexture[] | T
         flipY: state.flipY,
         textureArrayDepths: state.textureArrayDepths
     })))
-    const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
-              zSlice: state.zSlice,
-              ySlice: state.ySlice,
-              xSlice: state.xSlice
-    })))
-    const dimSlices = [
-      dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-      dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-      dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
-    ]
+    
     const {animate, animProg, cOffset, cScale, selectTS, lonExtent, latExtent, 
       lonResolution, latResolution, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
+      zSlice, ySlice, xSlice,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
         animate: state.animate,
         animProg: state.animProg,
@@ -77,10 +69,17 @@ export const Sphere = ({textures, ZarrDS} : {textures: THREE.Data3DTexture[] | T
         nanTransparency: state.nanTransparency,
         sphereDisplacement: state.sphereDisplacement,
         sphereResolution: state.sphereResolution,
+        zSlice: state.zSlice,
+        ySlice: state.ySlice,
+        xSlice: state.xSlice,
         getColorIdx: state.getColorIdx,
         incrementColorIdx: state.incrementColorIdx
     })))
-
+    const dimSlices = [
+      dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+      dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+      dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
+    ]
     const [boundsObj, setBoundsObj] = useState<Record<string, THREE.Vector4>>({})
     const [bounds, setBounds] = useState<THREE.Vector4[]>(new Array(10).fill(new THREE.Vector4(-1 , -1, -1, -1)))
     const [height, width] = useMemo(()=>isFlat ? dataShape : [dataShape[1], dataShape[2]], [dataShape])

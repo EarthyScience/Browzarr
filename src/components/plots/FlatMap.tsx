@@ -2,7 +2,7 @@
 
 import React, {useMemo, useEffect, useRef, useCallback} from 'react'
 import * as THREE from 'three'
-import { useAnalysisStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
+import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
 import { vertShader } from '@/components/computation/shaders'
 import { flatFrag3D, fragmentFlat } from '../textures/shaders';
 import { useShallow } from 'zustand/shallow'
@@ -33,25 +33,24 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
       dataShape: state.dataShape,
       textureArrayDepths: state.textureArrayDepths
     })))
-    const {cScale, cOffset, animProg, nanTransparency, nanColor} = usePlotStore(useShallow(state => ({
+    const {cScale, cOffset, animProg, nanTransparency, nanColor, zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
       cOffset: state.cOffset,
       cScale: state.cScale,
       resetAnim: state.resetAnim,
       animate: state.animate,
       animProg: state.animProg,
       nanTransparency: state.nanTransparency,
-      nanColor: state.nanColor
+      nanColor: state.nanColor,
+      zSlice: state.zSlice,
+      ySlice: state.ySlice,
+      xSlice: state.xSlice
     })))
     const {axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(state=> ({
       axis: state.axis,
       analysisMode: state.analysisMode,
       analysisArray: state.analysisArray
     })))
-    const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
-        zSlice: state.zSlice,
-        ySlice: state.ySlice,
-        xSlice: state.xSlice
-      })))
+
     const dimSlices = [
       dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
       dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),

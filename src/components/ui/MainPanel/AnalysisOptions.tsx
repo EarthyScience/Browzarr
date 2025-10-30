@@ -114,9 +114,8 @@ const AnalysisOptions = () => {
     setAnalysisStore: state.setAnalysisStore, setAnalysisDim: state.setAnalysisDim
     })));
 
-  const {reFetch, setReFetch} = useZarrStore(useShallow(state => ({
+  const {reFetch} = useZarrStore(useShallow(state => ({
     reFetch: state.reFetch,
-    setReFetch: state.setReFetch
   })))
 
   const [showError, setShowError] = useState<boolean>(false);

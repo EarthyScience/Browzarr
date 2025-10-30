@@ -2,7 +2,7 @@
 import * as THREE from 'three'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { pointFrag, pointVert } from '@/components/textures/shaders'
-import { useAnalysisStore, useZarrStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
 import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
@@ -46,24 +46,22 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
     analysisMode: state.analysisMode,
     analysisArray: state.analysisArray
   })))
-  const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
-          zSlice: state.zSlice,
-          ySlice: state.ySlice,
-          xSlice: state.xSlice
+
+  const {timeScale, zSlice, ySlice, xSlice, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
+    timeScale: state.timeScale,
+    zSlice: state.zSlice,
+    ySlice: state.ySlice,
+    xSlice: state.xSlice,
+    getColorIdx: state.getColorIdx,
+    incrementColorIdx: state.incrementColorIdx
   })))
+
   const dimSlices = [
     dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
     dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
     dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
   ]
   const lastNormal = useRef<number | null> ( null )
-  
-  const {timeScale, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
-    timeScale: state.timeScale,
-    getColorIdx: state.getColorIdx,
-    incrementColorIdx: state.incrementColorIdx
-  })))
-
   const globalScale = dataShape[2]/500
   const offset = 1/500; //I don't really understand that. But the cube is off by one pixel in each dimension
   

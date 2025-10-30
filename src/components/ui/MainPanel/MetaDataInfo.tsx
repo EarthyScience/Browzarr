@@ -71,8 +71,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const {dimArrays, dimNames, dimUnits} = meta.dimInfo
   const {maxSize, setMaxSize} = useCacheStore.getState()
   const [cacheSize, setCacheSize] = useState(maxSize)
-  const { zSlice, ySlice, xSlice, reFetch, compress, setZSlice, setYSlice, setXSlice, setReFetch, setCompress } = useZarrStore(useShallow(state => ({
-    reFetch: state.reFetch,
+  const { zSlice, ySlice, xSlice, compress, setZSlice, setYSlice, setXSlice, ReFetch, setCompress } = useZarrStore(useShallow(state => ({
     zSlice: state.zSlice,
     ySlice: state.ySlice,
     xSlice: state.xSlice,
@@ -80,7 +79,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     setZSlice: state.setZSlice,
     setYSlice: state.setYSlice,
     setXSlice: state.setXSlice,
-    setReFetch: state.setReFetch,
+    ReFetch: state.ReFetch,
     setCompress: state.setCompress
   })))
   const cache = useCacheStore(state => state.cache)
@@ -420,12 +419,12 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
           disabled={((is4D && idx4D == null) || smallCache)}
           onClick={() => {
             if (variable == meta.name){
-              setReFetch(!reFetch)
+              ReFetch();
             }
             else{
               setMaxSize(cacheSize)
               setVariable(meta.name)
-              setReFetch(!reFetch)
+              ReFetch();
             }
             setShowMeta(false)
             setOpenVariables(false)

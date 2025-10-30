@@ -1,6 +1,6 @@
 "use client";
 
-import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
+import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore } from '@/utils/GlobalStates'
 import React, {useState, useMemo} from 'react'
 import { useShallow } from 'zustand/shallow'
 import { Text } from '@react-three/drei'
@@ -35,18 +35,17 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     dataShape: state.dataShape,
     revY: state.flipY
   })))
-  const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
-    zSlice: state.zSlice,
-    ySlice: state.ySlice,
-    xSlice: state.xSlice
-  })))
-  const {xRange, yRange, zRange, plotType, timeScale, animProg} = usePlotStore(useShallow(state => ({
+
+  const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
     xRange: state.xRange,
     yRange: state.yRange,
     zRange: state.zRange,
     plotType: state.plotType,
     timeScale: state.timeScale,
-    animProg: state.animProg
+    animProg: state.animProg,
+    zSlice: state.zSlice,
+    ySlice: state.ySlice,
+    xSlice: state.xSlice
   })))
 
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow( state => ({
@@ -344,14 +343,13 @@ const FlatAxis = () =>{
     isFlat: state.isFlat
   })))
 
-  const {plotType} = usePlotStore(useShallow(state=>({
-    plotType: state.plotType
-  })))
-  const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
+  const {plotType,  zSlice, ySlice, xSlice} = usePlotStore(useShallow(state=>({
+    plotType: state.plotType,
     zSlice: state.zSlice,
     ySlice: state.ySlice,
     xSlice: state.xSlice
   })))
+
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow( state => ({
     hideAxis: state.hideAxis,
     hideAxisControls: state.hideAxisControls
