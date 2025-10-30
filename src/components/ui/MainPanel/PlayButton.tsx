@@ -1,6 +1,6 @@
 "use client";
-import { useCacheStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
-import React, {useEffect, useMemo, useState, useRef} from 'react'
+import { useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
+import {useEffect, useMemo, useState, useRef} from 'react'
 import { useShallow } from 'zustand/shallow'
 import '../css/MainPanel.css'
 import { PiPlayPauseFill } from "react-icons/pi";
@@ -14,81 +14,127 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 const frameRates = [1, 2, 4, 6, 8, 12, 16, 24, 36, 48, 54, 60, 80, 120]
 
-const ChunkVisualizer = () =>{
-  const {dataShape, variable, zMeta} = useGlobalStore(useShallow(state =>({
-    dataShape: state.dataShape,
-    variable: state.variable,
-    zMeta: state.zMeta
-  })))
-  const {cache} = useCacheStore(useShallow(state=>({
-    cache: state.cache
-  })))
-  const timeChunkCount = useMemo(()=>{
-    const meta = (zMeta as {name: string, chunks: number[]}[]).find(e => e.name === variable);
-    const chunks = meta?.chunks
-    if (chunks){
-      return chunks[chunks.length-1]
-    } else{
-      return 1
-    }
-  },[variable, cache, zMeta])
+interface ChunkViz {
+  zSlice: [number, number| null];
+  timeLength: number;
+  chunkWidth:number;
+  showNext:boolean;
+  showPrev: boolean;
+  animProg: number;
+}
 
+const ChunkVisualizer = ({zSlice, timeLength, chunkWidth, showNext, showPrev, animProg} : ChunkViz) =>{
+
+  const rightPercentage = (1 - (zSlice[1] ? zSlice[1]/timeLength : 1)) * 100
+  const leftPercentage = (zSlice[0]/timeLength) * 100
+  const playHeadPos = leftPercentage + animProg * ((100 - rightPercentage) - leftPercentage);
 
   return (
     <div
       style={{
+        position: "relative",
         display: "flex",
         width: "100%",
         height: "20px", // or whatever height you want
+        border: "1px var(--text-paragraph) solid",
+        background: "none"
       }}
     >
-      {Array(timeChunkCount).fill(null).map((_, i) => (
+      {/* Available DATA */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${leftPercentage}%`,
+          right: `${(1 - (zSlice[1] ? zSlice[1]/timeLength : 1)) * 100}%`,
+          background: "var(--play-background)",
+          top:0,
+          bottom:0,
+        }}
+      />
+      {/* EXTRA CHUNKS */}
         <div
-          key={i}
           style={{
-            flex: 1,
-            border: "1px solid white",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center", 
-            background:"gray"
+            position: "absolute",
+            left: `${100 - rightPercentage}%`,
+            right: `${rightPercentage - chunkWidth}%`,
+            background: "var(--accent-1)",
+            visibility: showNext ? "visible" : "hidden",
+            top:0,
+            bottom:0,
           }}
         />
-
-      ))}
+        <div
+          style={{
+            position: "absolute",
+            left: `${leftPercentage - chunkWidth}%`,
+            right: `${100 - leftPercentage}%`,
+            background: "var(--accent-1)",
+            visibility: showPrev ? "visible" : "hidden",
+            top:0,
+            bottom:0,
+          }}
+        />
+      {/* PlayHead */}
+      <div 
+        style={{
+          position:'absolute',
+          left:`${playHeadPos}%`,
+          width: 0,
+          borderLeft: "1px red solid",
+          borderRight: "1px red solid",
+          top: 0,
+          bottom:0
+        }}
+      />
     </div>
 
   )
 }
 
-const PlayInterFace = ({visible}:{visible : boolean}) =>{
+const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: React.Dispatch<React.SetStateAction<boolean>>}) =>{
     
-    const {animate, animProg, setAnimate, setAnimProg} = usePlotStore(useShallow(state => ({
+    const {animate, animProg, zSlice, setAnimate, setAnimProg} = usePlotStore(useShallow(state => ({
         animate: state.animate,
         animProg: state.animProg,
+        zSlice: state.zSlice,
         setAnimate: state.setAnimate,
         setAnimProg: state.setAnimProg
     })))
 
-    const {dimArrays, dimUnits} = useGlobalStore(useShallow(state => ({
+    const {dimArrays, dimUnits, zMeta, variable} = useGlobalStore(useShallow(state => ({
         dimArrays: state.dimArrays,
         dimUnits: state.dimUnits,
-    })))
-    const {zSlice} = useZarrStore(useShallow(state => ({
-              zSlice: state.zSlice,
+        zMeta: state.zMeta,
+        variable: state.variable,
     })))
     const timeSlice = dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined)
-
-    const {reFetch} = useZarrStore(useShallow(state =>({
-      reFetch: state.reFetch
+  
+    const {reFetch, setZSlice, ReFetch} = useZarrStore(useShallow(state =>({
+      reFetch: state.reFetch,
+      setZSlice: state.setZSlice,
+      ReFetch: state.ReFetch
     })))
-    const timeLength = useMemo(()=>timeSlice.length,[timeSlice])
+    const timeLength = dimArrays[dimArrays.length-3].length
+    const sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0];
+    const [chunkTimeLength, chunkDivWidth] = useMemo(()=>{
+      const meta = (zMeta as {name : string, chunks:number[]}[])?.find((e: any) => e.name === variable);
+        if (meta) {
+          const {chunks} = meta
+          const chunkTimeSize = chunks[chunks.length - 3]
+          const tempWidth = (chunkTimeSize/timeLength) * 100
+          return [chunkTimeSize, tempWidth]
+        }
+        else{
+          return  [0, 0]
+        }
+      },[zMeta, variable, timeLength])
     
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const previousVal = useRef<number>(0)
     const [fps, setFPS] = useState<number>(5)
     const previousFPS = useRef<number>(5)
-
+    const [showNextChunk, setShowNextChunk] = useState(false)
+    const [showPrevChunk, setShowPrevChunk] = useState(false)
 
     useEffect(() => {
         if (animate) {
@@ -98,10 +144,10 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
             }
         previousFPS.current = fps
         const dt = 1000/frameRates[fps];
-        previousVal.current = Math.round(animProg*timeLength)
+        previousVal.current = Math.round(animProg*sliceDist)
         intervalRef.current = setInterval(() => {
             previousVal.current += 1;
-            setAnimProg(((previousVal.current + 1) % timeLength)/timeLength);
+            setAnimProg(((previousVal.current + 1) % sliceDist)/sliceDist);
         }, dt);
         } else {
         if (intervalRef.current) {
@@ -113,13 +159,13 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
              if (intervalRef.current){
                 clearInterval(intervalRef.current);
              }
-        }
+        } 
         
     }, [animate, fps]);
 
-    const currentLabel = parseLoc(timeSlice[Math.round(animProg * (timeLength))], dimUnits[0], true)
+    const currentLabel = parseLoc(timeSlice[Math.round(animProg * (sliceDist))], dimUnits[0], true)
     const firstLabel = parseLoc(timeSlice[0], dimUnits[0], true)
-    const lastLabel = parseLoc(timeSlice[timeLength-1], dimUnits[0], true)
+    const lastLabel = parseLoc(timeSlice[sliceDist-1], dimUnits[0], true)
 
     useEffect(()=>{
       setAnimate(false)
@@ -129,10 +175,46 @@ const PlayInterFace = ({visible}:{visible : boolean}) =>{
     return (
           <Card className='play-interface py-1' style={{ display: visible ? '' : 'none' }}>
             <CardContent className='flex flex-col gap-1 w-full h-full px-1 py-1'>
-              <div className='text-xs sm:text-sm text-center'>
-                {currentLabel}
+              <div className='flex justify-between'>
+                <Button 
+                  variant='secondary'
+                  size='sm'
+                  className='cursor-pointer'
+                  disabled={zSlice[0] == 0}
+                  onClick={()=>{
+                    setZSlice([zSlice[0] - chunkTimeLength, zSlice[1]]);
+                    setKeepOpen(true);
+                    ReFetch();
+                  }}
+                  onPointerOver={()=>setShowPrevChunk(true)}
+                  onPointerLeave={()=>setShowPrevChunk(false)}
+                >
+                  Grab Prev Chunk
+                </Button>
+                <div className='text-xs sm:text-sm text-center'>
+                  {currentLabel}
+                </div>
+                <Button 
+                  variant='secondary'
+                  size='sm'
+                  className='cursor-pointer'
+                  disabled={!zSlice[1] || zSlice[1] == timeLength}
+                  onClick={()=>{
+                    // @ts-ignore button is disable when zSlice[1] is null so not possible to be null during op
+                    setZSlice([zSlice[0], zSlice[1]+chunkTimeLength]);
+                    setKeepOpen(true);
+                    ReFetch();
+                  }}
+                  onPointerOver={()=>setShowNextChunk(true)}
+                  onPointerLeave={()=>setShowNextChunk(false)}
+                >
+                  Grab Next Chunk
+                </Button>
               </div>
-              <ChunkVisualizer />
+              
+              <ChunkVisualizer 
+                zSlice={zSlice} timeLength={timeLength} chunkWidth={chunkDivWidth} 
+                showPrev={showPrevChunk} showNext={showNextChunk} animProg={animProg}/>
               <div className='flex items-center gap-1 w-full'>
                 <span className='text-xs'>{firstLabel}</span>
                 <Slider
@@ -241,9 +323,14 @@ const PlayButton = () => {
     const cond = useMemo(()=>!isFlat && plotOn, [isFlat,plotOn])
     const enableCond = (!isFlat && plotOn)
     const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
+    const [keepOpen, setKeepOpen] = useState(false)
 
     useEffect(()=>{
-      setShowOptions(false)
+      if (keepOpen){
+        setKeepOpen(false)
+      } else {
+        setShowOptions(false)
+      }
     },[reFetch])
 
     useEffect(() => {
@@ -282,7 +369,7 @@ const PlayButton = () => {
         </TooltipContent>
 
       </Tooltip>
-      <PlayInterFace visible={(showOptions && enableCond)}/>
+      <PlayInterFace visible={(showOptions && enableCond)} setKeepOpen={setKeepOpen}/>
     </>
   )
 }
