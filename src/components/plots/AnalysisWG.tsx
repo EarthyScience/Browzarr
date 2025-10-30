@@ -3,7 +3,7 @@ import { ArrayMinMax, GetCurrentArray } from '@/utils/HelperFuncs';
 import * as THREE from 'three';
 import React, { useEffect } from 'react';
 import { DataReduction, Convolve, Multivariate2D, Multivariate3D, CUMSUM3D, Convolve2D } from '../computation/webGPU';
-import { useGlobalStore, useAnalysisStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
+import { useGlobalStore, useAnalysisStore, usePlotStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
 import { CreateTexture } from '../textures';
@@ -60,7 +60,7 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
             setAnalysisArray: state.setAnalysisArray, setAnalysisMode: state.setAnalysisMode, setOperation: state.setOperation
         })));
 
-    const {zSlice, ySlice, xSlice} = useZarrStore(useShallow(state => ({
+    const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
         zSlice: state.zSlice,
         ySlice: state.ySlice,
         xSlice: state.xSlice

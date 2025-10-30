@@ -202,6 +202,9 @@ type PlotState ={
   sphereDisplacement: number;
   displaceSurface: boolean;
   offsetNegatives: boolean;
+  zSlice: [number  , number | null],
+  ySlice: [number  , number | null],
+  xSlice: [number  , number | null],
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -250,6 +253,9 @@ type PlotState ={
   setSphereDisplacement: (sphereDisplacement: number) => void;
   setDisplaceSurface: (displaceSurface: boolean) => void;
   setOffsetNegatives: (offsetNegatives: boolean) => void;
+  setZSlice: (zSlice: [number , number | null]) => void;
+  setYSlice: (ySlice: [number , number | null]) => void;
+  setXSlice: (xSlice: [number , number | null]) => void;
 }
 
 export const usePlotStore = create<PlotState>((set, get) => ({
@@ -299,6 +305,9 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   sphereDisplacement: 0,
   displaceSurface: true,
   offsetNegatives: true,
+  zSlice: [0, null], // Need these so changing the slices for zarr fetch doesn't update plot
+  ySlice: [0, null],
+  xSlice: [0, null],
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
@@ -348,7 +357,10 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setSphereResolution: (sphereResolution) => set({ sphereResolution }),
   setSphereDisplacement: (sphereDisplacement) => set({ sphereDisplacement }),
   setDisplaceSurface: (displaceSurface) => set({ displaceSurface }),
-  setOffsetNegatives: (offsetNegatives) => set({ offsetNegatives  })
+  setOffsetNegatives: (offsetNegatives) => set({ offsetNegatives  }),
+  setZSlice: (zSlice) => set({ zSlice }),
+  setYSlice: (ySlice) => set({ ySlice }),
+  setXSlice: (xSlice) => set({ xSlice }),
 }))
 
 
@@ -432,6 +444,7 @@ type ZarrState = {
   setCompress: (compress: boolean) => void;
   setCurrentStore: (currentStore: any) => void;
   setReFetch: (reFetch: boolean) => void;
+  ReFetch: () => void;
   setCurrentChunks: (currentChunks: {x:number[], y:number[], z:number[]}) => void;
   setArraySize: (arraySize: number) => void;
 }
@@ -452,6 +465,7 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   setCompress: (compress) => set({ compress }),
   setCurrentStore: (currentStore) => set({ currentStore }),
   setReFetch: (reFetch) => set({ reFetch }),
+  ReFetch: () => set({ reFetch: !get().reFetch }),
   setCurrentChunks: (currentChunks) => set({ currentChunks }),
   setArraySize: (arraySize) => set({ arraySize })
 }))

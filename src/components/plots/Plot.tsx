@@ -135,6 +135,10 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
             tex.source.data = null
           });
         }
+        const {setZSlice, setYSlice, setXSlice} = usePlotStore.getState() // Set the plot slices with zarr slices
+        setZSlice(zSlice);
+        setYSlice(ySlice);
+        setXSlice(xSlice);
         ZarrDS.GetArray(variable, {xSlice, ySlice, zSlice}).then((result) => {
         const [tempTexture, scaling] = ArrayToTexture({
           data: result.data,

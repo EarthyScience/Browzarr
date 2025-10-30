@@ -236,7 +236,7 @@ export class ZarrDataset{
 			let typedArray;
 			let shape;
 			let scalingFactor = null;
-			if (totalSize < 50e6 || !hasTimeChunks){ // Check if total is less than 50MB or no chunks along time
+			if (!hasTimeChunks){ // No chunking along time axis, can download whole array at once
 				setStatus("Downloading...")
 				for (let attempt = 0; attempt <= maxRetries; attempt++) {
 					try {
