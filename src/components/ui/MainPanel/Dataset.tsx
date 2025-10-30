@@ -8,7 +8,6 @@ import { Button } from '../button';
 import { TbDatabasePlus } from "react-icons/tb";
 import { TbVariable } from "react-icons/tb";
 import LocalZarr from './LocalZarr';
-import LocalNetCDF from './LocalNetCDF';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   Tooltip,
@@ -20,6 +19,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import dynamic from 'next/dynamic';
 
 const ZARR_STORES = {
   ESDC: 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr',
@@ -96,6 +96,14 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
   const [openDescriptionPopover, setOpenDescriptionPopover] = useState<boolean>(false)
   const [isSafari, setIsSafari] = useState<boolean>(false)
   const [useNC, setUseNC] = useState<boolean>(false)
+
+  const NetCDFReader = dynamic(
+    ()=>import('./LocalNetCDF'),
+    {
+      ssr: false,
+      loading: () =><p>Loading NetCDF library...</p>
+    }
+  );
   
   const { initStore, setInitStore } = useGlobalStore(
     useShallow((state) => ({
@@ -275,7 +283,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
                   </div>
                 ) : (
                   useNC ?
-                  <LocalNetCDF /> :
+                  <NetCDFReader /> :
                   <LocalZarr setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} setInitStore={setInitStore} />
                 )}
               </div>

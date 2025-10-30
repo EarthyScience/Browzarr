@@ -6,6 +6,9 @@ const basePath = isProd ? (process.env.BASE_PATH || '') : '';
 const targetFolder = process.env.TARGET_FOLDER || '';
 const assetPrefix = isProd && targetFolder !== '' ? './' : '';
 
+
+
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export' as const,
@@ -30,19 +33,35 @@ const nextConfig = {
     },
   },
   // Webpack config for build mode
-  webpack: (config: Configuration) => {
+  webpack: (config: Configuration, { isServer }: { isServer: boolean }) => {
     if (!config.module) config.module = { rules: [] };
     if (!config.module.rules) config.module.rules = [];
-    config.experiments = { asyncWebAssembly: true };
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+    };
     config.module.rules.push({
       test: /\.(glsl|vs|fs|vert|frag)$/,
       type: 'asset/source',
     });
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'webassembly/async',
+    });
     // Add path alias resolution
     if (!config.resolve) config.resolve = { alias: {} };
     if (!config.resolve.alias) config.resolve.alias = {};
-    (config.resolve.alias as any)['./ROOT/node_modules/netcdf4-wasm/dist/netcdf4.js'] =
-    require.resolve('netcdf4-wasm/dist/netcdf4.js');
+    // Ensure plugins array exists before pushing
+    if (!config.plugins) config.plugins = [];
+
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
 
     // Explicitly set path aliases to match tsconfig.json
     (config.resolve.alias as { [key: string]: string })['@'] = path.resolve(__dirname, 'src');
