@@ -200,7 +200,7 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
                   className='cursor-pointer'
                   disabled={!zSlice[1] || zSlice[1] == timeLength}
                   onClick={()=>{
-                    // @ts-ignore button is disable when zSlice[1] is null so not possible to be null during op
+                    // @ts-expect-error button is disable when zSlice[1] is null so not possible to be null during op
                     setZSlice([zSlice[0], zSlice[1]+chunkTimeLength]);
                     setKeepOpen(true);
                     ReFetch();
