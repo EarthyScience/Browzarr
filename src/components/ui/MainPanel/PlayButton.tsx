@@ -120,12 +120,12 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
   const [showNextChunk, setShowNextChunk] = useState(false)
   const [showPrevChunk, setShowPrevChunk] = useState(false)
 
-  // ===== TIME SLICE INFO =====
+  // TIME SLICE INFO
   const timeSlice = dimArrays[0]?.slice(zSlice[0], zSlice[1] ?? undefined)
   const timeLength = dimArrays[dimArrays.length-3]?.length || 1
   const sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0]
 
-  // ===== CHUNK INFO =====
+  // CHUNK INFO
   const [chunkTimeLength, chunkDivWidth] = useMemo(()=>{
     const meta = (zMeta as {name : string, chunks:number[]}[])?.find(e => e.name === variable)
     if(meta) {
@@ -136,7 +136,7 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
     return [0,0]
   }, [zMeta, variable, timeLength])
 
-  // ===== ANIMATION LOOP (WORKING LOGIC) =====
+  // ANIMATION LOOP
   useEffect(() => {
     if (!timeSlice?.length) return
     if (animate) {
@@ -160,16 +160,18 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
     }
 
     return () => {
-      if(intervalRef.current) clearInterval(intervalRef.current)
+      if(intervalRef.current){
+        clearInterval(intervalRef.current)
+      }
     }
   }, [animate, fps])
 
-  // ===== LABELS =====
+  // LABELS
   const currentLabel = parseLoc(timeSlice?.[Math.round(animProg * sliceDist)], dimUnits[0], true)
   const firstLabel = parseLoc(timeSlice?.[0], dimUnits[0], true)
   const lastLabel = parseLoc(timeSlice?.[sliceDist-1], dimUnits[0], true)
 
-  // ===== RESET ON FETCH =====
+  // RESET ON FETCH
   useEffect(()=>{
     setAnimate(false)
     setAnimProg(0)
@@ -186,6 +188,7 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
           <Button
             variant='secondary'
             size='sm'
+            className='cursor-pointer'
             disabled={zSlice[0] === 0}
             onClick={() => {
               setZSlice([zSlice[0] - chunkTimeLength, zSlice[1]])
@@ -203,9 +206,10 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
           <Button
             variant='secondary'
             size='sm'
+            className='cursor-pointer'
             disabled={!zSlice[1] || zSlice[1] === timeLength}
             onClick={() => {
-              if (zSlice[1] == null) return
+              if (zSlice[1] === null) return
               setZSlice([zSlice[0], zSlice[1] + chunkTimeLength])
               setKeepOpen(true)
               ReFetch()
@@ -239,7 +243,7 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
             className='flex-1'
             onValueChange={(vals: number[]) => {
               const v = Array.isArray(vals) ? vals[0] : 0
-              setAnimProg(v / sliceDist)
+              setAnimProg(v / timeLength)
               previousVal.current = v
             }}
           />
@@ -253,8 +257,11 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
             <Button
               variant='secondary'
               size='sm'
+              className='cursor-pointer'
               disabled={fps <= 0}
               onClick={() => setFPS(x => Math.max(0, x - 1))}
+              aria-label='Slower'
+              title='Slower'
             >
               Slower
             </Button>
@@ -267,11 +274,16 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
                 disabled={animate}
                 variant='default'
                 size='sm'
+                className='cursor-pointer'
                 onClick={() => {
                   previousVal.current = Math.round(animProg * sliceDist) - 1
-                  if(previousVal.current === -1) previousVal.current = sliceDist - 1
+                  if(previousVal.current === -1){
+                    previousVal.current = sliceDist - 1
+                  }
                   setAnimProg(previousVal.current / sliceDist)
                 }}
+                aria-label={animate ? '' : 'Backward'}
+                title={animate ? '' : 'Backward'}
               >
                 <FaBackwardStep />
               </Button>
@@ -280,8 +292,10 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
               <Button
                 variant='default'
                 size='sm'
-                className='mx-2'
+                className='cursor-pointer mx-2'
                 onClick={() => setAnimate(!animate)}
+                aria-label={animate ? 'Pause' : 'Play'}
+                title={animate ? 'Pause' : 'Play'}
               >
                 {animate ? <FaPause /> : <FaPlay />}
               </Button>
@@ -291,10 +305,13 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
                 disabled={animate}
                 variant='default'
                 size='sm'
+                className='cursor-pointer'
                 onClick={() => {
                   previousVal.current = Math.round(animProg * sliceDist) + 1
                   setAnimProg(previousVal.current / sliceDist)
                 }}
+                aria-label={animate ? '' : 'Forward'}
+                title={animate ? '' : 'Forward'}
               >
                 <FaForwardStep />
               </Button>
@@ -309,8 +326,11 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
             <Button
               variant='secondary'
               size='sm'
+              className='cursor-pointer'
               disabled={fps >= frameRates.length - 1}
               onClick={() => setFPS(x => Math.min(frameRates.length - 1, x + 1))}
+              aria-label='Faster'
+              title='Faster'
             >
               Faster
             </Button>
