@@ -360,12 +360,15 @@ const PlayButton = () => {
     const [keepOpen, setKeepOpen] = useState(false)
 
     useEffect(() => {
-      if (keepOpen) {
-        setKeepOpen(false);
-      } else {
-        setShowOptions(false);
+      if (reFetch) {
+        // Only close UI if keepOpen wasn't set
+        if (!keepOpen) {
+          setShowOptions(false);
+        }
+        // Always reset keepOpen flag
+        setKeepOpen(true);
       }
-    }, [reFetch, keepOpen])
+    }, [reFetch, keepOpen, setShowOptions, setKeepOpen])
 
     useEffect(() => {
         const handleResize = () => {
