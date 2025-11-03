@@ -55,8 +55,8 @@ const ChunkVisualizer = ({zSlice, timeLength, chunkWidth, showNext, showPrev, an
         <div
           style={{
             position: "absolute",
-            left: `${100 - rightPercentage}%`,
-            right: `${rightPercentage - chunkWidth}%`,
+            left: `${Math.min(100 - rightPercentage, 100)}%`,
+            right: `${Math.max(rightPercentage - chunkWidth, 0)}%`,
             background: "var(--accent-1)",
             visibility: showNext ? "visible" : "hidden",
             top:0,
@@ -66,8 +66,8 @@ const ChunkVisualizer = ({zSlice, timeLength, chunkWidth, showNext, showPrev, an
         <div
           style={{
             position: "absolute",
-            left: `${leftPercentage - chunkWidth}%`,
-            right: `${100 - leftPercentage}%`,
+            left: `${Math.max(leftPercentage - chunkWidth, 0)}%`,
+            right: `${Math.min(100 - leftPercentage, 100)}%`,
             background: "var(--accent-1)",
             visibility: showPrev ? "visible" : "hidden",
             top:0,
@@ -121,8 +121,9 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
   const [showPrevChunk, setShowPrevChunk] = useState(false)
 
   // TIME SLICE INFO
-  const timeSlice = dimArrays[0]?.slice(zSlice[0], zSlice[1] ?? undefined)
-  const timeLength = dimArrays[dimArrays.length-3]?.length || 1
+  const timeArray = dimArrays[dimArrays.length-3]
+  const timeSlice = timeArray?.slice(zSlice[0], zSlice[1] ?? undefined)
+  const timeLength = timeArray?.length || 1
   const sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0]
 
   // CHUNK INFO
@@ -191,7 +192,7 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
             className='cursor-pointer'
             disabled={zSlice[0] === 0}
             onClick={() => {
-              setZSlice([zSlice[0] - chunkTimeLength, zSlice[1]])
+              setZSlice([Math.max(zSlice[0] - chunkTimeLength, 0), zSlice[1]])
               setKeepOpen(true)
               ReFetch()
             }}
@@ -210,7 +211,7 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
             disabled={!zSlice[1] || zSlice[1] === timeLength}
             onClick={() => {
               if (zSlice[1] === null) return
-              setZSlice([zSlice[0], zSlice[1] + chunkTimeLength])
+              setZSlice([zSlice[0], Math.min(zSlice[1] + chunkTimeLength, timeLength)])
               setKeepOpen(true)
               ReFetch()
             }}
