@@ -81,7 +81,7 @@
   --glass-bg: rgba(255, 255, 255, 0.15);
   --glass-border: rgba(255, 255, 255, 0.25);
   --glass-shadow: rgba(0, 0, 0, 0.15);
-  --play-background: rgb(175, 175, 175);
+  --play-background: rgba(200, 200, 200, 0.8);
 }
 
 /* Dark Theme */
@@ -138,7 +138,7 @@
   --glass-bg: rgba(0, 0, 0, 0.2);
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-shadow: rgba(0, 0, 0, 0.3);
-  --play-background: hsla(0, 0%, 51%, 1);
+  --play-background: rgba(200, 200, 200, 0.8);
 }
 
 @layer utilities {
