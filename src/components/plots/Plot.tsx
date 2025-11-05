@@ -100,9 +100,10 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       setIsFlat: state.setIsFlat, 
     })))
 
-    const {plotType, displaceSurface, setPlotType} = usePlotStore(useShallow(state => ({
+    const {plotType, displaceSurface, interpPixels, setPlotType} = usePlotStore(useShallow(state => ({
       plotType: state.plotType,
       displaceSurface: state.displaceSurface,
+      interpPixels: state.interpPixels,
       setPlotType: state.setPlotType
     })))
 
@@ -231,6 +232,23 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       }
     };
   }, [textures]);
+
+  useEffect(()=> {
+    if (!textures) return;
+    const updated = textures.map(tex => {
+      const clone = tex.clone(); 
+      if (interpPixels) {
+        clone.minFilter = THREE.LinearFilter;
+        clone.magFilter = THREE.LinearFilter;
+      } else {
+        clone.minFilter = THREE.NearestFilter;
+        clone.magFilter = THREE.NearestFilter;
+      }
+      clone.needsUpdate = true; 
+      return clone ;
+    });
+    setTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
+  },[interpPixels])
 
   const Nav = useMemo(()=>Navbar,[])
   return (

@@ -205,6 +205,7 @@ type PlotState ={
   zSlice: [number  , number | null],
   ySlice: [number  , number | null],
   xSlice: [number  , number | null],
+  interpPixels: boolean;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -256,6 +257,7 @@ type PlotState ={
   setZSlice: (zSlice: [number , number | null]) => void;
   setYSlice: (ySlice: [number , number | null]) => void;
   setXSlice: (xSlice: [number , number | null]) => void;
+  setInterpPixels: (interpPixels: boolean) => void;
 }
 
 export const usePlotStore = create<PlotState>((set, get) => ({
@@ -308,6 +310,8 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   zSlice: [0, null], // Need these so changing the slices for zarr fetch doesn't update plot
   ySlice: [0, null],
   xSlice: [0, null],
+  interpPixels: false,
+
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
@@ -361,6 +365,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setZSlice: (zSlice) => set({ zSlice }),
   setYSlice: (ySlice) => set({ ySlice }),
   setXSlice: (xSlice) => set({ xSlice }),
+  setInterpPixels: (interpPixels) => set({ interpPixels })
 }))
 
 
