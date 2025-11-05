@@ -206,6 +206,7 @@ type PlotState ={
   ySlice: [number  , number | null],
   xSlice: [number  , number | null],
   interpPixels: boolean;
+  useOrtho: boolean;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -258,6 +259,7 @@ type PlotState ={
   setYSlice: (ySlice: [number , number | null]) => void;
   setXSlice: (xSlice: [number , number | null]) => void;
   setInterpPixels: (interpPixels: boolean) => void;
+  setUseOrtho: (useOrtho: boolean) => void;
 }
 
 export const usePlotStore = create<PlotState>((set, get) => ({
@@ -311,6 +313,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   ySlice: [0, null],
   xSlice: [0, null],
   interpPixels: false,
+  useOrtho: false,
 
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
@@ -365,7 +368,8 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setZSlice: (zSlice) => set({ zSlice }),
   setYSlice: (ySlice) => set({ ySlice }),
   setXSlice: (xSlice) => set({ xSlice }),
-  setInterpPixels: (interpPixels) => set({ interpPixels })
+  setInterpPixels: (interpPixels) => set({ interpPixels }),
+  setUseOrtho: (useOrtho) => set({ useOrtho })
 }))
 
 

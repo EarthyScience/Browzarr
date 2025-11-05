@@ -2,7 +2,7 @@ import { OrbitControls } from '@react-three/drei';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks } from '@/components/plots';
-import { Canvas, invalidate } from '@react-three/fiber';
+import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, CreateTexture } from '@/components/textures';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
 import { useAnalysisStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
@@ -16,11 +16,13 @@ import ExportCanvas from '@/utils/ExportCanvas';
 
 
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
-  const {resetCamera} = usePlotStore(useShallow(state => ({
-      resetCamera: state.resetCamera
+  const {resetCamera, useOrtho} = usePlotStore(useShallow(state => ({
+      resetCamera: state.resetCamera,
+      useOrtho: state.useOrtho
     })))
   const orbitRef = useRef<OrbitControlsImpl | null>(null)
   const hasMounted = useRef(false);
+  const {set, camera, size} = useThree()
 
   // Reset Camera Position and Target
   useEffect(()=>{
@@ -28,6 +30,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       hasMounted.current = true;
       return; // skip reset when changing between flat or not flat cameras
     }
+    console.log("Did this fire?")
     if (orbitRef.current){
       const controls = orbitRef.current
       let frameId: number;
@@ -65,11 +68,51 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
     }
   },[resetCamera])
 
+  useEffect(()=>{
+    if (hasMounted.current){
+      const newCamera = useOrtho ? new THREE.OrthographicCamera() : new THREE.PerspectiveCamera()
+      if (useOrtho){
+      const aspect = size.width / size.height
+      const frustumSize = 10 // Adjust based on your scene scale
+      newCamera.left = -frustumSize * aspect / 2
+      newCamera.right = frustumSize * aspect / 2
+      newCamera.top = frustumSize / 2
+      newCamera.bottom = -frustumSize / 2
+      newCamera.zoom = 10;
+      
+      // For orthographic, use the target direction but normalize the position
+      const target = orbitRef.current?.target || new THREE.Vector3(0, 0, 0)
+      const direction = camera.position.clone().sub(target).normalize()
+      newCamera.position.copy(target).add(direction.multiplyScalar(10)) // Fixed distance
+      newCamera.lookAt(target)
+      
+      newCamera.updateProjectionMatrix()
+    } else {
+      // Perspective camera can just copy position/rotation
+      newCamera.position.copy(camera.position)
+      newCamera.rotation.copy(camera.rotation)
+    }
+    
+    set({ camera: newCamera})
+    console.log('Active camera after set:', newCamera.type)
+    if (orbitRef.current) {
+      orbitRef.current.object = newCamera
+      orbitRef.current.update()
+    }
+    console.log(orbitRef)
+  }
+
+  },[useOrtho])
+
   return (
-    <>
-      {isFlat && <OrbitControls ref={orbitRef} enableRotate={false} enablePan={true} maxDistance={50} minZoom={50} maxZoom={3000}/>}
-      {!isFlat && <OrbitControls ref={orbitRef}  enableRotate={true}  enablePan={true} maxDistance={50}/>}
-    </>
+    <OrbitControls 
+      ref={orbitRef} 
+      enableRotate={!isFlat} 
+      enablePan={true} 
+      maxDistance={50}
+      minZoom={1} 
+      maxZoom={3000}
+    />
   );
 }
 
@@ -262,6 +305,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       {((!isFlat && plotType != "flat") || (isFlat && plotType === 'sphere')) && <>
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
         frameloop="demand"
+        orthographic
         gl={{ preserveDrawingBuffer: true }}
       >
         <CountryBorders/>

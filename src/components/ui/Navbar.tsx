@@ -44,9 +44,11 @@ const Navbar = React.memo(function Navbar(){
       plotOn: state.plotOn,
     })))
 
-    const {resetCamera,setResetCamera} = usePlotStore(useShallow(state=> ({
+    const {resetCamera, useOrtho, setResetCamera, setUseOrtho} = usePlotStore(useShallow(state=> ({
     resetCamera: state.resetCamera,
-    setResetCamera: state.setResetCamera
+    useOrtho: state.useOrtho,
+    setResetCamera: state.setResetCamera,
+    setUseOrtho: state.setUseOrtho
   })))
 
   const [isOpen, setIsOpen] = useState<boolean>(true)
@@ -98,6 +100,9 @@ const Navbar = React.memo(function Navbar(){
           {plotOn && 
           <ExportImageSettings />
           }
+          <Button onClick={()=>setUseOrtho(!useOrtho)}>
+            Change Camera
+          </Button>
           <ThemeSwitch />
         </div>
       </div>
