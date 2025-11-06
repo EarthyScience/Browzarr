@@ -82,10 +82,11 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   useEffect(()=>{
     if (hasMounted.current){
       let newCamera;
+      const aspect = size.width / size.height
       if (useOrtho){
         newCamera = new THREE.OrthographicCamera()
-        const aspect = size.width / size.height
-        const frustumSize = 50 // Adjust based on your scene scale
+        
+        const frustumSize = 50 
         newCamera.left = -frustumSize * aspect / 2
         newCamera.right = frustumSize * aspect / 2
         newCamera.top = frustumSize / 2
@@ -100,9 +101,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
         
         newCamera.updateProjectionMatrix()
       } else {
-        newCamera = new THREE.PerspectiveCamera(50)
-        // Perspective camera can just copy position/rotation
-        newCamera.position.copy(camera.position)
+        newCamera = new THREE.PerspectiveCamera(50, aspect)
+        newCamera.position.copy(camera.position.normalize().multiply(new THREE.Vector3(4, 4, 4))) // 4 seems like good distance
         newCamera.rotation.copy(camera.rotation)
       }
     set({ camera: newCamera})
@@ -120,8 +120,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       enableRotate={!isFlat} 
       enablePan={true} 
       maxDistance={50}
-      minZoom={1} 
-      maxZoom={3000}
+      // minZoom={1} 
+      // maxZoom={3000}
     />
   );
 }
