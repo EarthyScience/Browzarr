@@ -15,6 +15,18 @@ import { ParseExtent } from '@/utils/HelperFuncs';
 import ExportCanvas from '@/utils/ExportCanvas';
 
 
+const TransectNotice = () =>{
+  const {selectTS} = usePlotStore(useShallow(state => ({selectTS: state.selectTS})))
+
+  return (
+    <>
+    {selectTS && <div className="transect-notice">
+      Transect Select Mode
+    </div>}
+    </>
+  )
+}
+
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   const {resetCamera, useOrtho} = usePlotStore(useShallow(state => ({
       resetCamera: state.resetCamera,
@@ -30,7 +42,6 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       hasMounted.current = true;
       return; // skip reset when changing between flat or not flat cameras
     }
-    console.log("Did this fire?")
     if (orbitRef.current){
       const controls = orbitRef.current
       let frameId: number;
@@ -70,36 +81,35 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 
   useEffect(()=>{
     if (hasMounted.current){
-      const newCamera = useOrtho ? new THREE.OrthographicCamera() : new THREE.PerspectiveCamera()
+      let newCamera;
       if (useOrtho){
-      const aspect = size.width / size.height
-      const frustumSize = 10 // Adjust based on your scene scale
-      newCamera.left = -frustumSize * aspect / 2
-      newCamera.right = frustumSize * aspect / 2
-      newCamera.top = frustumSize / 2
-      newCamera.bottom = -frustumSize / 2
-      newCamera.zoom = 10;
-      
-      // For orthographic, use the target direction but normalize the position
-      const target = orbitRef.current?.target || new THREE.Vector3(0, 0, 0)
-      const direction = camera.position.clone().sub(target).normalize()
-      newCamera.position.copy(target).add(direction.multiplyScalar(10)) // Fixed distance
-      newCamera.lookAt(target)
-      
-      newCamera.updateProjectionMatrix()
-    } else {
-      // Perspective camera can just copy position/rotation
-      newCamera.position.copy(camera.position)
-      newCamera.rotation.copy(camera.rotation)
-    }
-    
+        newCamera = new THREE.OrthographicCamera()
+        const aspect = size.width / size.height
+        const frustumSize = 50 // Adjust based on your scene scale
+        newCamera.left = -frustumSize * aspect / 2
+        newCamera.right = frustumSize * aspect / 2
+        newCamera.top = frustumSize / 2
+        newCamera.bottom = -frustumSize / 2
+        newCamera.zoom = 10;
+        
+        // For orthographic, use the target direction but normalize the position
+        const target = orbitRef.current?.target || new THREE.Vector3(0, 0, 0)
+        const direction = camera.position.clone().sub(target).normalize()
+        newCamera.position.copy(target).add(direction.multiplyScalar(10)) // Fixed distance
+        newCamera.lookAt(target)
+        
+        newCamera.updateProjectionMatrix()
+      } else {
+        newCamera = new THREE.PerspectiveCamera(50)
+        // Perspective camera can just copy position/rotation
+        newCamera.position.copy(camera.position)
+        newCamera.rotation.copy(camera.rotation)
+      }
     set({ camera: newCamera})
-    console.log('Active camera after set:', newCamera.type)
     if (orbitRef.current) {
       orbitRef.current.object = newCamera
       orbitRef.current.update()
     }
-    console.log(orbitRef)
   }
 
   },[useOrtho])
@@ -295,9 +305,10 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
 
   const Nav = useMemo(()=>Navbar,[])
   return (
-    <div className='main-canvas'
+    <div id='main-canvas-div' className='main-canvas'
       style={{width:'100vw'}}
     >
+      <TransectNotice />
       <AnalysisWG setTexture={setTextures} ZarrDS={ZarrDS}/>
       {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
       <Nav />
