@@ -229,7 +229,6 @@ export class ZarrDataset{
 			_chunkSize /=  outVar.shape[0] //Don't need to use this but Lint is being a whiner
 		}
 		const hasTimeChunks = is4D ? outVar.shape[1]/chunkShape[0] > 1 : outVar.shape[0]/chunkShape[0] > 1
-
 		// Type check using zarr.Array.is
 		if (outVar.is("number") || outVar.is("bigint")) {
 			let chunk;
@@ -404,7 +403,6 @@ export class ZarrDataset{
 				typedArray = new Float16Array(arraySize);
 				let iter = 1; // For progress bar
 				const rescaleIDs = [] // These are the downloaded chunks that need to be rescaled
-
 				for (let z= zStartIdx ; z < zEndIdx ; z++){ // Iterate through chunks we need 
 					for (let y= yStartIdx ; y < yEndIdx ; y++){
 						for (let x= xStartIdx ; x < xEndIdx ; x++){

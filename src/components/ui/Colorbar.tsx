@@ -65,7 +65,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         origMax: TwoDecimals(valueScales.maxVal)
     }),[valueScales])
     const range = origMax - origMin
-
+    const zeroPoint = (0 - origMin) / range; // Used to account for shifting values
     const [tickCount, setTickCount] = useState<number>(5)
     const [newMin, setNewMin] = useState(origMin)
     const [newMax, setNewMax] = useState(origMax)
@@ -135,12 +135,14 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     }, []);
 
     useEffect(()=>{
-        const newRange = (newMax - newMin)
+        const newRange = (newMax - newMin);
         const scale = range/newRange;
-        const offset = -(newMin - origMin)/(newMax - newMin)
+        let offset = -(newMin - origMin)/(newMax - newMin)
+        const newZeroPoint = (0 - newMin)/newRange;
+        const zeroOffset = newZeroPoint - zeroPoint;
+        offset += zeroOffset;
         setCOffset(offset)
         setCScale(scale)
-
     },[newMin, newMax])
 
     useEffect(()=>{ // Update internal vals when global vals change

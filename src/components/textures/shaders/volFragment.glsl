@@ -109,7 +109,7 @@ void main() {
                 alphaAcc += pow(nanAlpha, 5.);
             }
             else{
-                float sampLoc = (d - 0.5)*cScale + 0.5;
+                float sampLoc = d*cScale;
                 sampLoc = min(sampLoc+cOffset,0.99);
                 vec4 col = texture(cmap, vec2(sampLoc, 0.5));
                 float alpha;

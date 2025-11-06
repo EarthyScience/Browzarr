@@ -1,5 +1,5 @@
 "use client";
-import { useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
+import { useCacheStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
 import {useEffect, useMemo, useState, useRef} from 'react'
 import { useShallow } from 'zustand/shallow'
 import '../css/MainPanel.css'
@@ -127,15 +127,25 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
   const sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0]
 
   // CHUNK INFO
-  const [chunkTimeLength, chunkDivWidth] = useMemo(()=>{
-    const meta = (zMeta as {name : string, chunks:number[]}[])?.find(e => e.name === variable)
+  const [chunkTimeLength, chunkDivWidth, chunkSize] = useMemo(()=>{
+    const meta = (zMeta as {name : string, chunks:number[], chunkSize:number}[])?.find(e => e.name === variable)
     if(meta) {
+      console.log(meta)
       const chunkTimeSize = meta.chunks[meta.chunks.length - 3]
       const tempWidth = (chunkTimeSize / timeLength) * 100
-      return [chunkTimeSize, tempWidth]
+      const chunkSize = meta.chunkSize
+      return [chunkTimeSize, tempWidth, chunkSize]
     }
-    return [0,0]
+    return [0,0, 1]
   }, [zMeta, variable, timeLength])
+  
+  function AdjustCacheSize(){
+    const {maxSize, setMaxSize, cache} = useCacheStore.getState()
+    const currentSize = cache.totalSize
+    if ((currentSize+chunkSize) > maxSize ){
+      setMaxSize(maxSize + chunkSize)
+    }
+  }
 
   // ANIMATION LOOP
   useEffect(() => {
@@ -194,6 +204,7 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
             onClick={() => {
               setZSlice([Math.max(zSlice[0] - chunkTimeLength, 0), zSlice[1]])
               setKeepOpen(true)
+              AdjustCacheSize()
               ReFetch()
             }}
             onPointerOver={() => setShowPrevChunk(true)}
@@ -213,6 +224,7 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
               if (zSlice[1] === null) return
               setZSlice([zSlice[0], Math.min(zSlice[1] + chunkTimeLength, timeLength)])
               setKeepOpen(true)
+              AdjustCacheSize()
               ReFetch()
             }}
             onPointerOver={() => setShowNextChunk(true)}

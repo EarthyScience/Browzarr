@@ -19,7 +19,6 @@ import {
 import { parseLoc } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -195,7 +194,6 @@ const VolumeOptions = ()=>{
       })))
   return(
     <>
-    
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
       <b>Quality</b>
       <div className='w-full flex justify-between text-xs items-center gap-2'>
