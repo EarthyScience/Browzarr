@@ -130,7 +130,6 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
   const [chunkTimeLength, chunkDivWidth, chunkSize] = useMemo(()=>{
     const meta = (zMeta as {name : string, chunks:number[], chunkSize:number}[])?.find(e => e.name === variable)
     if(meta) {
-      console.log(meta)
       const chunkTimeSize = meta.chunks[meta.chunks.length - 3]
       const tempWidth = (chunkTimeSize / timeLength) * 100
       const chunkSize = meta.chunkSize
