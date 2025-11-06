@@ -31,7 +31,7 @@ interface MemoryLRUOptions<T> {
 export class MemoryLRU<K, V> {
     private cache = new Map<K, V>();
     private order: K[] = [];
-    private totalSize = 0;
+    public totalSize = 0;
     private maxSize: number;
     private readonly sizeCalculator: SizeCalculator<V>;
     private sizes = new Map<K, number>();
