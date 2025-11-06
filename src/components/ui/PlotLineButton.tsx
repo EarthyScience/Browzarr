@@ -20,7 +20,6 @@ const PlotLineButton = () => {
     })))
     const exception = plotType === 'sphere' && !displaceSurface
     const {setError} = useErrorStore.getState()
-
   return (
     <div className='selectTS' 
       style={{display: animate ? 'none' : ''}}
@@ -38,7 +37,7 @@ const PlotLineButton = () => {
             <VscGraphLine
               className="size-6"
               style={{
-              color: selectTS ? "gold" : "grey",
+              color: selectTS ? "gold" : "var(--text-plot)",
               filter: selectTS ? "drop-shadow(0px 0px 10px gold)" : "",
             }}/>
           </Button>

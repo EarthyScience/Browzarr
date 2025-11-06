@@ -25,9 +25,10 @@ const plotIcons = {
 }
 
 const PlotType = () => {
-  const { plotType, setPlotType } = usePlotStore(useShallow(state => ({
+  const { plotType, setPlotType, setUseOrtho } = usePlotStore(useShallow(state => ({
     plotType: state.plotType,
-    setPlotType: state.setPlotType
+    setPlotType: state.setPlotType,
+    setUseOrtho: state.setUseOrtho
   })))
   const {isFlat, variable} = useGlobalStore(useShallow(state => ({
     isFlat: state.isFlat,
@@ -104,6 +105,9 @@ const PlotType = () => {
             className={`mb-2 w-12 h-12 flex items-center ${isLargePointCloud ? 'bg-amber-400 hover:bg-amber-200' : null} cursor-pointer justify-center transform transition-transform duration-100 ease-out hover:scale-90`}
             onClick={() => {
               setPlotType(val);
+              if(val == "flat"){
+                setUseOrtho(true)
+              }
             }}
             aria-label={`Select ${val}`}
             >

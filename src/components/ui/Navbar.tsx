@@ -1,15 +1,15 @@
 "use client";
 import React from "react";
-import { PlotLineButton, ExportImageSettings  } from "@/components/ui";
+import { PlotLineButton, ExportImageSettings, useCSSVariable  } from "@/components/ui";
 import ThemeSwitch  from "@/components/ui/ThemeSwitch";
 import './css/Navbar.css'
 import { useShallow } from "zustand/shallow";
-import { useGlobalStore, useImageExportStore, usePlotStore } from "@/utils/GlobalStates";
-import { useEffect, useState, useRef } from "react";
+import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
+import {  useState, useRef } from "react";
+import { Orthographic, Perspective } from "./Icons";
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { MdFlipCameraIos } from "react-icons/md";
-// import { LogoDrawer } from "@/components/ui";
 
 import {
   Tooltip,
@@ -44,14 +44,16 @@ const Navbar = React.memo(function Navbar(){
       plotOn: state.plotOn,
     })))
 
-    const {resetCamera,setResetCamera} = usePlotStore(useShallow(state=> ({
+    const {resetCamera, useOrtho, setResetCamera, setUseOrtho} = usePlotStore(useShallow(state=> ({
     resetCamera: state.resetCamera,
-    setResetCamera: state.setResetCamera
+    useOrtho: state.useOrtho,
+    setResetCamera: state.setResetCamera,
+    setUseOrtho: state.setUseOrtho
   })))
 
   const [isOpen, setIsOpen] = useState<boolean>(true)
   const navRef = useRef<HTMLElement | null>(null)
-
+  const iconCol =  useCSSVariable("--text-plot")
   
   return (
     <nav className="navbar" ref={navRef}>
@@ -75,7 +77,8 @@ const Navbar = React.memo(function Navbar(){
       <div className={cn("navbar-content", isOpen ? "open" : "closed")}>        
         {/* <LogoDrawer /> */}
         <div className="navbar-left">
-          {plotOn && (
+          {plotOn && <>
+          
             <Tooltip delayDuration={500} >
               <TooltipTrigger asChild>
                 <Button
@@ -92,8 +95,17 @@ const Navbar = React.memo(function Navbar(){
                 <span>Reset camera view</span>
               </TooltipContent>
             </Tooltip>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="cursor-pointer"
+              onClick={()=>setUseOrtho(!useOrtho)}
+            >
+            { useOrtho ? <Orthographic color={iconCol} className="size-8"/> : <Perspective color={iconCol} className="size-8"/>}
+            </Button>
 
-          )}
+          </>}
+
           {plotOn && !isFlat && <PlotLineButton />}
           {plotOn && 
           <ExportImageSettings />

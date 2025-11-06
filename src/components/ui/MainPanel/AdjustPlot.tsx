@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/tooltip"
 import { parseLoc } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-
+import { ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -99,6 +100,8 @@ const DimSlicer = () =>{
 
       const theseDims = is4D ? dimNames.slice(1) : dimNames
       const theseUnits = is4D ? dimUnits.slice(1) : dimUnits
+
+      const [isSpatialOpen, setIsSpatialOpen] = useState(false);
   return (
     <>
     
@@ -113,38 +116,57 @@ const DimSlicer = () =>{
         />
       </div>
 
-      <div className="flex flex-col items-center w-[200px] gap-2 -mt-4">
-        <b>Spatial Cropping</b>
-        <div className='grid w-[100%]'>
-          <div className='grid w-[100%] place-items-center'>
-            <h2>{theseDims[2]}</h2>
-            <MinMaxSlider 
-              range={xRange} 
-              setRange={setXRange} 
-              valueScales={defaultScales} 
-              array={dimArrays[2]} 
-              units={theseUnits[2]}
-            />
-          </div>
-          <div className='grid w-[100%] place-items-center'>
-            <h2>{theseDims[1]}</h2>
-            <MinMaxSlider 
-            range={yRange} 
-            setRange={setYRange} 
-            valueScales={defaultScales} 
-            array={dimArrays[1]} 
-            units={theseUnits[1]}
-            />
-          </div>
-          <div className='grid w-[100%] place-items-center'>
-            <h2>{theseDims[0]}</h2>
-            <MinMaxSlider 
-              range={zRange} 
-              setRange={setZRange} 
-              valueScales={defaultScales} 
-              array={dimArrays[0]} 
-              units={theseUnits[0]}
-            />
+      <div className="flex flex-col w-[200px] -mt-4">
+        <button 
+          onClick={() => setIsSpatialOpen(!isSpatialOpen)}
+          className="flex items-center gap-2 w-full mb-2"
+        >
+          <b>Spatial Cropping</b>
+          <ChevronDown 
+            className={`h-4 w-4 transition-transform duration-200 ${
+              isSpatialOpen ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+        <div 
+          className="grid transition-all duration-300 ease-in-out"
+          style={{
+            gridTemplateRows: isSpatialOpen ? '1fr' : '0fr',
+          }}
+        >
+          <div className="overflow-hidden">
+            <div className="flex flex-col items-center gap-2">
+              <div className='grid w-[100%] place-items-center'>
+                <h2>{theseDims[2]}</h2>
+                <MinMaxSlider 
+                  range={xRange} 
+                  setRange={setXRange} 
+                  valueScales={defaultScales} 
+                  array={dimArrays[2]} 
+                  units={theseUnits[2]}
+                />
+              </div>
+              <div className='grid w-[100%] place-items-center'>
+                <h2>{theseDims[1]}</h2>
+                <MinMaxSlider 
+                range={yRange} 
+                setRange={setYRange} 
+                valueScales={defaultScales} 
+                array={dimArrays[1]} 
+                units={theseUnits[1]}
+                />
+              </div>
+              <div className='grid w-[100%] place-items-center'>
+                <h2>{theseDims[0]}</h2>
+                <MinMaxSlider 
+                  range={zRange} 
+                  setRange={setZRange} 
+                  valueScales={defaultScales} 
+                  array={dimArrays[0]} 
+                  units={theseUnits[0]}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -433,16 +455,14 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {showBorders, borderColor, nanColor, nanTransparency, plotType, setShowBorders, setBorderColor, setNanColor, setNanTransparency} = usePlotStore(useShallow(state => ({
-    showBorders: state.showBorders,
-    borderColor: state.borderColor,
-    nanColor: state.nanColor,
-    nanTransparency: state.nanTransparency,
-    plotType: state.plotType,
-    setShowBorders: state.setShowBorders,
-    setBorderColor: state.setBorderColor,
-    setNanColor: state.setNanColor,
-    setNanTransparency: state.setNanTransparency
+  const {showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, 
+    setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels} = usePlotStore(useShallow(state => ({
+    showBorders: state.showBorders, borderColor: state.borderColor,
+    nanColor: state.nanColor, nanTransparency: state.nanTransparency,
+    plotType: state.plotType, interpPixels: state.interpPixels,
+    setShowBorders: state.setShowBorders, setBorderColor: state.setBorderColor,
+    setNanColor: state.setNanColor, setNanTransparency: state.setNanTransparency,
+    setInterpPixels: state.setInterpPixels
   })))
   const {analysisMode, axis} = useAnalysisStore(useShallow(state =>({
     analysisMode: state.analysisMode,
@@ -469,6 +489,10 @@ const GlobalOptions = () =>{
               value={nanColor}
           onChange={e => setNanColor(e.target.value)}
           />
+      <div className='grid grid-cols-[auto_20%] items-center gap-2 mt-2 text-left'>
+        <label>Interpolate Pixels</label>
+        <Switch className='h-5'  id="interpoalte-pixels" checked={interpPixels} onCheckedChange={e=>setInterpPixels(e)}/>
+      </div>
       </>}
       {!(analysisMode && axis != 0) && // Hide if Analysismode and Axis != 0
       <>

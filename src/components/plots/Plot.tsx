@@ -2,7 +2,7 @@ import { OrbitControls } from '@react-three/drei';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks } from '@/components/plots';
-import { Canvas, invalidate } from '@react-three/fiber';
+import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, CreateTexture } from '@/components/textures';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
 import { useAnalysisStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
@@ -15,12 +15,26 @@ import { ParseExtent } from '@/utils/HelperFuncs';
 import ExportCanvas from '@/utils/ExportCanvas';
 
 
+const TransectNotice = () =>{
+  const {selectTS} = usePlotStore(useShallow(state => ({selectTS: state.selectTS})))
+
+  return (
+    <>
+    {selectTS && <div className="transect-notice">
+      Transect Select Mode
+    </div>}
+    </>
+  )
+}
+
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
-  const {resetCamera} = usePlotStore(useShallow(state => ({
-      resetCamera: state.resetCamera
+  const {resetCamera, useOrtho} = usePlotStore(useShallow(state => ({
+      resetCamera: state.resetCamera,
+      useOrtho: state.useOrtho
     })))
   const orbitRef = useRef<OrbitControlsImpl | null>(null)
   const hasMounted = useRef(false);
+  const {set, camera, size} = useThree()
 
   // Reset Camera Position and Target
   useEffect(()=>{
@@ -65,11 +79,50 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
     }
   },[resetCamera])
 
+  useEffect(()=>{
+    if (hasMounted.current){
+      let newCamera;
+      const aspect = size.width / size.height
+      if (useOrtho){
+        newCamera = new THREE.OrthographicCamera()
+        
+        const frustumSize = 50 
+        newCamera.left = -frustumSize * aspect / 2
+        newCamera.right = frustumSize * aspect / 2
+        newCamera.top = frustumSize / 2
+        newCamera.bottom = -frustumSize / 2
+        newCamera.zoom = 10;
+        
+        // For orthographic, use the target direction but normalize the position
+        const target = orbitRef.current?.target || new THREE.Vector3(0, 0, 0)
+        const direction = camera.position.clone().sub(target).normalize()
+        newCamera.position.copy(target).add(direction.multiplyScalar(10)) // Fixed distance
+        newCamera.lookAt(target)
+        
+        newCamera.updateProjectionMatrix()
+      } else {
+        newCamera = new THREE.PerspectiveCamera(50, aspect)
+        newCamera.position.copy(camera.position.normalize().multiply(new THREE.Vector3(4, 4, 4))) // 4 seems like good distance
+        newCamera.rotation.copy(camera.rotation)
+      }
+    set({ camera: newCamera})
+    if (orbitRef.current) {
+      orbitRef.current.object = newCamera
+      orbitRef.current.update()
+    }
+  }
+
+  },[useOrtho])
+
   return (
-    <>
-      {isFlat && <OrbitControls ref={orbitRef} enableRotate={false} enablePan={true} maxDistance={50} minZoom={50} maxZoom={3000}/>}
-      {!isFlat && <OrbitControls ref={orbitRef}  enableRotate={true}  enablePan={true} maxDistance={50}/>}
-    </>
+    <OrbitControls 
+      ref={orbitRef} 
+      enableRotate={!isFlat} 
+      enablePan={true} 
+      maxDistance={50}
+      // minZoom={1} 
+      // maxZoom={3000}
+    />
   );
 }
 
@@ -100,9 +153,10 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       setIsFlat: state.setIsFlat, 
     })))
 
-    const {plotType, displaceSurface, setPlotType} = usePlotStore(useShallow(state => ({
+    const {plotType, displaceSurface, interpPixels, setPlotType} = usePlotStore(useShallow(state => ({
       plotType: state.plotType,
       displaceSurface: state.displaceSurface,
+      interpPixels: state.interpPixels,
       setPlotType: state.setPlotType
     })))
 
@@ -232,11 +286,29 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     };
   }, [textures]);
 
+  useEffect(()=> {
+    if (!textures) return;
+    const updated = textures.map(tex => {
+      const clone = tex.clone(); 
+      if (interpPixels) {
+        clone.minFilter = THREE.LinearFilter;
+        clone.magFilter = THREE.LinearFilter;
+      } else {
+        clone.minFilter = THREE.NearestFilter;
+        clone.magFilter = THREE.NearestFilter;
+      }
+      clone.needsUpdate = true; 
+      return clone ;
+    });
+    setTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
+  },[interpPixels])
+
   const Nav = useMemo(()=>Navbar,[])
   return (
-    <div className='main-canvas'
+    <div id='main-canvas-div' className='main-canvas'
       style={{width:'100vw'}}
     >
+      <TransectNotice />
       <AnalysisWG setTexture={setTextures} ZarrDS={ZarrDS}/>
       {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
       <Nav />
@@ -244,6 +316,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       {((!isFlat && plotType != "flat") || (isFlat && plotType === 'sphere')) && <>
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
         frameloop="demand"
+        orthographic
         gl={{ preserveDrawingBuffer: true }}
       >
         <CountryBorders/>

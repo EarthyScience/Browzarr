@@ -4,3 +4,15 @@
     position: relative;
 }
 
+.transect-notice{
+    position: absolute;
+    left: 50%;
+    top:15%;
+    border-radius: 10px;
+    font-size: 32px;
+    background: var(--background-plot);
+    transform: translateX(-50%);
+    filter: drop-shadow(0px 0px 5px var(--accent-foreground));
+    z-index: 4;
+    padding-inline: 1rem;
+}

@@ -13,7 +13,7 @@ import flatFrag3D from './flatFrag3D.glsl'
 import sphereBlocksVert from './sphereBlocksVert.glsl';
 import sphereBlocksVertFlat from './sphereBlocksVertFlat.glsl';
 import sphereBlocksFrag from './sphereBlocksFrag.glsl';
-
+import orthoVertex from './orthoVertex.glsl';
 export {
     pointFrag,
     pointVert,
@@ -29,5 +29,6 @@ export {
     flatFrag3D,
     sphereBlocksVert,
     sphereBlocksVertFlat,
-    sphereBlocksFrag
+    sphereBlocksFrag,
+    orthoVertex
 }
