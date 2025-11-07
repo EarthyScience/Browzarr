@@ -40,16 +40,13 @@ const FlatMap = ({textures, infoSetters, ZarrDS} : {textures : THREE.DataTexture
     })))
 
     const {cScale, cOffset, animProg, nanTransparency, nanColor, 
-      zSlice, ySlice, xSlice, lonExtent, latExtent, 
-      lonResolution, latResolution, selectTS,
+      zSlice, ySlice, xSlice, selectTS,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
       cOffset: state.cOffset, cScale: state.cScale,
       resetAnim: state.resetAnim, animate: state.animate,
       animProg: state.animProg, nanTransparency: state.nanTransparency,
       nanColor: state.nanColor, zSlice: state.zSlice,
       ySlice: state.ySlice, xSlice: state.xSlice,
-      lonExtent: state.lonExtent, latExtent: state.latExtent,
-      lonResolution: state.lonResolution, latResolution: state.latResolution,
       selectTS: state.selectTS,
       getColorIdx: state.getColorIdx,
       incrementColorIdx: state.incrementColorIdx
@@ -59,7 +56,6 @@ const FlatMap = ({textures, infoSetters, ZarrDS} : {textures : THREE.DataTexture
       analysisMode: state.analysisMode,
       analysisArray: state.analysisArray
     })))
-    const {reFetch} = useZarrStore(useShallow(state => ({reFetch: state.reFetch})))
 
     const dimSlices = [
       dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
@@ -81,7 +77,7 @@ const FlatMap = ({textures, infoSetters, ZarrDS} : {textures : THREE.DataTexture
     const infoRef = useRef<boolean>(false)
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
     const rotateMap = analysisMode && axis == 2;
-    const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, reFetch])
+    const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
     const analysisDims = useMemo(()=>dimArrays.length > 2 ? dimSlices.filter((_e,idx)=> idx != axis) : dimSlices,[dimSlices,axis])
     useEffect(()=>{
         geometry.dispose()

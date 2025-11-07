@@ -48,7 +48,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       const duration = 1000; 
       const startTime = performance.now();
       const startPos = controls.object.position.clone();
-      const endPos = controls.position0.clone()
+      const endPos = isFlat ? new THREE.Vector3(0, 0, 5) : controls.position0.clone()
 
       const startTarget = controls.target.clone();
       const endTarget = controls.target0.clone()
@@ -62,8 +62,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
         controls.object.position.lerpVectors(startPos, endPos, t);
         controls.target.lerpVectors(startTarget,endTarget,t)
 
-        if (isFlat) {
-          controls.object.zoom = THREE.MathUtils.lerp(startZoom, 1000, t);
+        if (isFlat && useOrtho) {
+          controls.object.zoom = THREE.MathUtils.lerp(startZoom, 50, t);
           controls.object.updateProjectionMatrix();
           controls.update()
         } 
@@ -117,11 +117,11 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   return (
     <OrbitControls 
       ref={orbitRef} 
-      enableRotate={!isFlat} 
+      enableRotate={!isFlat || !useOrtho} 
       enablePan={true} 
       maxDistance={50}
-      // minZoom={1} 
-      // maxZoom={3000}
+      minZoom={1} 
+      maxZoom={3000}
     />
   );
 }
@@ -208,7 +208,6 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         const shapeLength = result.shape.length
         if (shapeLength == 2){
           setIsFlat(true)
-          setPlotType("sphere")
         }
         else{
           setIsFlat(false)
