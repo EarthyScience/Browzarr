@@ -236,11 +236,12 @@ const CountryBorders = () => {
     },[])
 
     const isPC = plotType == 'point-cloud'
+    const isFlatMap = plotType == "flat"
     const depthScale = dataShape[0]/dataShape[2]*timeScale
     return(
-        <group visible={showBorders && !(analysisMode && axis != 0)} position={spherize ? [0,0,0] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale : 1) : zRange[1]*(isPC ? depthScale : 1)]}>
-        {coastLines && <Borders features={coastLines} />}
-        {borders && <Borders features={borders} />}
+        <group visible={showBorders && !(analysisMode && axis != 0)} position={(spherize || isFlatMap) ? [0,0,0] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale : 1) : zRange[1]*(isPC ? depthScale : 1)]}>
+            {coastLines && <Borders features={coastLines} />}
+            {borders && <Borders features={borders} />}
         </group>
     )
 }

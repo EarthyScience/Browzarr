@@ -19,7 +19,7 @@ import {
 import { parseLoc } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
-
+import Hider from '../Hider';
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
     return val*range+min;
@@ -294,16 +294,17 @@ const PointOptions = () =>{
           onValueChange={(vals:number[]) => setPointSize(vals[0])}
           />
       <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => setScalePoints(!scalePoints)}>{scalePoints ? "Remove Scaling" : "Scale By Value" }</Button>
-      {scalePoints && 
-      <><b>Scale Intensity</b>
-      <UISlider
-          className='w-full mb-2 mt-2'
-          min={1}
-          max={100}
-          step={1}
-          value={[scaleIntensity]}
-      onValueChange={(vals:number[]) => setScaleIntensity(vals[0])}
-      /></>}
+      <Hider show={scalePoints}>
+        <><b>Scale Intensity</b>
+        <UISlider
+            className='w-full mb-2 mt-2'
+            min={1}
+            max={100}
+            step={1}
+            value={[scaleIntensity]}
+        onValueChange={(vals:number[]) => setScaleIntensity(vals[0])}
+        /></>
+      </Hider>
       <div className='relative'>
         {timeScale != 1 && <RxReset className='text-lg cursor-pointer absolute top-0 left-0 hover:scale-90 transition-transform duration-100 ease-out' onClick={e=> setTimeScale(1)}/>}
         <b>Resize Time Dimension</b>
@@ -323,15 +324,63 @@ const PointOptions = () =>{
   )
 }
 
+const FlatOptions = () =>{
+  const {displacement, displaceSurface, offsetNegatives,
+    setDisplacement, setDisplaceSurface, setOffsetNegatives} = usePlotStore(useShallow(state=> ({
+      displacement: state.displacement, displaceSurface: state.displaceSurface,
+      offsetNegatives: state.offsetNegatives, setDisplacement: state.setDisplacement,
+      setDisplaceSurface: state.setDisplaceSurface, setOffsetNegatives: state.setOffsetNegatives
+  })))
+   return(
+   <>
+   <div className='grid gap-2 mb-2'>
+    <div 
+      className='relative w-full text-center h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
+      onClick={() => {setDisplaceSurface(!displaceSurface);}}  
+    >
+      <span className={`z-10 font-semibold transition-colors ${displaceSurface ? 'text-primary' : 'text-secondary'}`}>
+        Flat
+      </span>
+      <span className={`z-10 font-semibold transition-colors ${!displaceSurface ? 'text-primary' : 'text-secondary'}`}>
+        Displace
+      </span>
+      <div 
+        className={`absolute top-1 h-8 w-[calc(50%-8px)] bg-secondary shadow-xs hover:bg-secondary/80 rounded-full transition-all duration-300 ${
+          displaceSurface ? 'left-1' : 'left-[calc(50%+4px)]'
+        }`}
+      />
+    </div>
+    <Hider show={!displaceSurface}>
+      <div className='grid gap-2'>
+        <b>Displacement</b>
+        <UISlider
+          min={0}
+          max={100}
+          step={2}
+          value={[displacement]}
+          className='w-full mb-2'
+          onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
+        />
+        <div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
+          <label htmlFor="offset-switch">Offset Negatives</label>
+          <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
+        </div>
+      </div>
+    </Hider>
+    </div>
+   </>
+   )
+}
+
 const SphereOptions = () =>{
-  const {sphereResolution, sphereDisplacement, displaceSurface, offsetNegatives,
-    setSphereResolution, setSphereDisplacement, setDisplaceSurface, setOffsetNegatives} = usePlotStore(useShallow(state => ({
+  const {sphereResolution, displacement, displaceSurface, offsetNegatives,
+    setSphereResolution, setDisplacement, setDisplaceSurface, setOffsetNegatives} = usePlotStore(useShallow(state => ({
     sphereResolution: state.sphereResolution,
-    sphereDisplacement: state.sphereDisplacement,
+    displacement: state.displacement,
     displaceSurface: state.displaceSurface,
     offsetNegatives: state.offsetNegatives,
     setSphereResolution: state.setSphereResolution,
-    setSphereDisplacement: state.setSphereDisplacement,
+    setDisplacement: state.setDisplacement,
     setDisplaceSurface: state.setDisplaceSurface,
     setOffsetNegatives: state.setOffsetNegatives
   })))
@@ -343,7 +392,7 @@ const SphereOptions = () =>{
     <b>Displacement Mode</b>
     <div 
       className='relative w-full h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
-      onClick={() => {setDisplaceSurface(!displaceSurface); setSphereDisplacement(sphereDisplacement * (displaceSurface ? maxFaceDisplacement/maxSurfaceDisp : maxSurfaceDisp/maxFaceDisplacement))}}  
+      onClick={() => {setDisplaceSurface(!displaceSurface); setDisplacement(displacement * (displaceSurface ? maxFaceDisplacement/maxSurfaceDisp : maxSurfaceDisp/maxFaceDisplacement))}}  
     >
       <span className={`z-10 font-semibold transition-colors ${displaceSurface ? 'text-primary' : 'text-secondary'}`}>
         Surface
@@ -363,14 +412,14 @@ const SphereOptions = () =>{
       min={0}
       max={displaceSurface ? maxSurfaceDisp : maxFaceDisplacement}
       step={0.2}
-      value={[sphereDisplacement]}
+      value={[displacement]}
       className='w-full mb-2'
-      onValueChange={(vals:number[]) => (setSphereDisplacement(vals[0]))}
+      onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
     />
     {!displaceSurface && 
-    <div className='flex items-center content-center justify-around'>
-      <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
+    <div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
       <label htmlFor="offset-switch">Offset Negatives</label>
+      <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
     </div>
     }
     {displaceSurface && <>
@@ -581,10 +630,12 @@ const AdjustPlot = () => {
               : 'max-h-[70vh]'
           }`}
         >
+
           {plotType === 'volume' && <VolumeOptions />}
           {plotType === 'point-cloud' && <PointOptions />}
           {plotType === 'sphere' && <SphereOptions/>}
           {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
+          {plotType === 'flat' && <FlatOptions />}
           <GlobalOptions />
         </PopoverContent>
       </Popover>
