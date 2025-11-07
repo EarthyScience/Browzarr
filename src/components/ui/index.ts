@@ -26,7 +26,7 @@ import ExportImageSettings from "./ExportImageSettings";
 import LogoDrawer from "./AboutDrawer";
 import DatasetToast from "./DatasetToast";
 import VersionSelector from "./VersionSelector";
-
+import Hider from "./Hider";
 export {
   Navbar,
   Footer,
@@ -56,4 +56,5 @@ export {
   KernelVisualizer,
   ExportImageSettings,
   VersionSelector,
+  Hider
 };

@@ -199,7 +199,7 @@ type PlotState ={
   vTransferRange: boolean;
   vTransferScale: number;
   sphereResolution: number;
-  sphereDisplacement: number;
+  displacement: number;
   displaceSurface: boolean;
   offsetNegatives: boolean;
   zSlice: [number  , number | null],
@@ -252,7 +252,7 @@ type PlotState ={
   setVTransferRange: (vTransferRange: boolean) => void;
   setVTransferScale: (vTransferScale: number) => void;
   setSphereResolution: (sphereResolution: number) => void;
-  setSphereDisplacement: (sphereDisplacement: number) => void;
+  setDisplacement: (displacement: number) => void;
   setDisplaceSurface: (displaceSurface: boolean) => void;
   setOffsetNegatives: (offsetNegatives: boolean) => void;
   setZSlice: (zSlice: [number , number | null]) => void;
@@ -306,7 +306,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   vTransferRange: false,
   vTransferScale: 1,
   sphereResolution: 10,
-  sphereDisplacement: 0,
+  displacement: 0,
   displaceSurface: true,
   offsetNegatives: true,
   zSlice: [0, null], // Need these so changing the slices for zarr fetch doesn't update plot
@@ -362,7 +362,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setMaxTextureSize: (maxTextureSize) => set({ maxTextureSize }),
   setMax3DTextureSize: (max3DTextureSize) => set({ max3DTextureSize }),
   setSphereResolution: (sphereResolution) => set({ sphereResolution }),
-  setSphereDisplacement: (sphereDisplacement) => set({ sphereDisplacement }),
+  setDisplacement: (displacement) => set({ displacement }),
   setDisplaceSurface: (displaceSurface) => set({ displaceSurface }),
   setOffsetNegatives: (offsetNegatives) => set({ offsetNegatives  }),
   setZSlice: (zSlice) => set({ zSlice }),

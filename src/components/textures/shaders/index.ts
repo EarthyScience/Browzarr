@@ -14,6 +14,8 @@ import sphereBlocksVert from './sphereBlocksVert.glsl';
 import sphereBlocksVertFlat from './sphereBlocksVertFlat.glsl';
 import sphereBlocksFrag from './sphereBlocksFrag.glsl';
 import orthoVertex from './orthoVertex.glsl';
+import flatBlocksVert from './flatBlocksVert.glsl';
+import flatBlocksVert3D from './flatBlocksVert3D.glsl';
 export {
     pointFrag,
     pointVert,
@@ -30,5 +32,7 @@ export {
     sphereBlocksVert,
     sphereBlocksVertFlat,
     sphereBlocksFrag,
-    orthoVertex
+    orthoVertex,
+    flatBlocksVert,
+    flatBlocksVert3D
 }

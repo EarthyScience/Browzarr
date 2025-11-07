@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react'
-import { useGlobalStore, useAnalysisStore, useZarrStore, usePlotStore } from '@/utils/GlobalStates'
+import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksVert, sphereBlocksVertFlat, sphereBlocksFrag } from '../textures/shaders'
@@ -25,7 +25,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         latResolution: state.latResolution,
         nanColor: state.nanColor,
         nanTransparency: state.nanTransparency,
-        sphereDisplacement: state.sphereDisplacement,
+        sphereDisplacement: state.displacement,
         sphereResolution: state.sphereResolution,
         offsetNegatives: state.offsetNegatives
     })))
@@ -41,7 +41,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         const width = dataShape[dataShape.length-1];
         const height = dataShape[dataShape.length-1]/2;
         const count = width * height;
-        const sqWidth = 6.2;
+        const sqWidth = Math.PI*2;
         const geo = new THREE.BoxGeometry(sqWidth/width, .05, sqWidth/height/2);
 
         const uvs = new Float32Array(count * 2);
@@ -84,7 +84,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
                 animateProg: {value: animProg},
                 nanColor: {value: new THREE.Color(nanColor)},
                 nanAlpha: {value: 1 - nanTransparency},
-                displaceZero: {value: offsetNegatives ? (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal)) : 0},
+                displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))},
                 displacement: {value: sphereDisplacement}
             },
             vertexShader: isFlat ? sphereBlocksVertFlat : sphereBlocksVert,
@@ -99,6 +99,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
     useEffect(()=>{
         if (shaderMaterial){
             const uniforms = shaderMaterial.uniforms;
+            uniforms.map.value = textures;
             uniforms.animateProg.value =  animProg
             uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
             uniforms.displacement.value = sphereDisplacement
@@ -107,10 +108,10 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             uniforms.cScale.value = cScale
             uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
             uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
-            uniforms.displaceZero.value = offsetNegatives ? (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal)) : 0
+            uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
         }
         invalidate();
-    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, offsetNegatives])
+    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, offsetNegatives, textures])
 
     const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor}),[])
     nanMaterial.transparent = true;

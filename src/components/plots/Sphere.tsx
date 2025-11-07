@@ -67,7 +67,7 @@ export const Sphere = ({textures, ZarrDS} : {textures: THREE.Data3DTexture[] | T
         latResolution: state.latResolution,
         nanColor: state.nanColor,
         nanTransparency: state.nanTransparency,
-        sphereDisplacement: state.sphereDisplacement,
+        sphereDisplacement: state.displacement,
         sphereResolution: state.sphereResolution,
         zSlice: state.zSlice,
         ySlice: state.ySlice,

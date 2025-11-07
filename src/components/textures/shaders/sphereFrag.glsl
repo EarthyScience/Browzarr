@@ -88,7 +88,7 @@ void main(){
             color.a = 1.;
         }
         if (selectTS){
-            bool cond = isValid(vUv);
+            bool cond = isValid(sampleCoord);
             color.rgb *= cond ? 1. : 0.65;
         }
     } else {
