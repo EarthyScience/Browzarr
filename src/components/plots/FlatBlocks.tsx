@@ -78,6 +78,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
     useEffect(()=>{
         if (shaderMaterial){
             const uniforms = shaderMaterial.uniforms;
+            uniforms.map.value = textures;
             uniforms.animateProg.value =  animProg
             uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
             uniforms.displacement.value = displacement
@@ -87,7 +88,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
         }
         invalidate();
-    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives])
+    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, textures])
 
   return (
 
