@@ -63,8 +63,8 @@ void main() {
     float sampLoc = isNaN ? strength: (strength)*cScale;
     sampLoc = isNaN ? strength : min(sampLoc+cOffset,0.995);
     Color = isNaN ? vec4(nanColor, nanAlpha) : vec4(texture2D(cmap, vec2(sampLoc, 0.5)).rgb, 1.);
-    bool cond = isValid(vUv);
-    if (!cond && selectTS){
-        Color.rgb *= 0.65;
+    if (selectTS){
+        bool cond = isValid(vUv);
+        Color.rgb *= cond ? 1. : 0.65;
     }
 }
