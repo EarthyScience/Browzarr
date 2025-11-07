@@ -87,9 +87,9 @@ void main(){
         if (!isNaN){
             color.a = 1.;
         }
-        bool cond = isValid(sampleCoord);
-        if (!cond && selectTS){
-            color.rgb *= 0.65;
+        if (selectTS){
+            bool cond = isValid(vUv);
+            color.rgb *= cond ? 1. : 0.65;
         }
     } else {
         color = vec4(nanColor, 1.); // Black
