@@ -348,7 +348,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
           <ExportCanvas show={show}/>
           <CountryBorders/>
           {show && <AxisLines />}
-          <FlatMap textures={textures as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} />
+          <FlatMap textures={textures as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} ZarrDS={ZarrDS}/>
           <Orbiter isFlat={true}/>
         </Canvas>
         </>}

@@ -4,11 +4,13 @@ uniform sampler3D map[14];
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
 
+uniform bool selectTS;
 uniform float cOffset;
 uniform float cScale;
 uniform float animateProg;
 uniform float nanAlpha;
 uniform vec3 nanColor;
+uniform vec4[10] selectBounds; 
 
 varying vec2 vUv;
 out vec4 Color;
@@ -32,6 +34,20 @@ float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so
     else return 0.0;
 }
 
+bool isValid(vec2 sampleCoord){
+    for (int i = 0; i < 10; i++){
+        vec4 thisBound = selectBounds[i];
+        if (thisBound.x == -1.){
+            return false;
+        }
+        bool cond = (sampleCoord.x < thisBound.r || sampleCoord.x > thisBound.g || sampleCoord.y < thisBound.b ||  sampleCoord.y > thisBound.a);
+        if (!cond){
+            return true;
+        }
+    }
+    return false;
+}
+
 void main() {
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
@@ -47,5 +63,8 @@ void main() {
     float sampLoc = isNaN ? strength: (strength)*cScale;
     sampLoc = isNaN ? strength : min(sampLoc+cOffset,0.995);
     Color = isNaN ? vec4(nanColor, nanAlpha) : vec4(texture2D(cmap, vec2(sampLoc, 0.5)).rgb, 1.);
-
+    bool cond = isValid(vUv);
+    if (!cond && selectTS){
+        Color.rgb *= 0.65;
+    }
 }
