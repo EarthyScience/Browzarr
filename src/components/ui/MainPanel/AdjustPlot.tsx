@@ -326,17 +326,19 @@ const PointOptions = () =>{
 
 const FlatOptions = () =>{
   const {displacement, displaceSurface, offsetNegatives,
-    setDisplacement, setDisplaceSurface, setOffsetNegatives} = usePlotStore(useShallow(state=> ({
+    setDisplacement, setDisplaceSurface, setOffsetNegatives,
+    setResetCamera} = usePlotStore(useShallow(state=> ({
       displacement: state.displacement, displaceSurface: state.displaceSurface,
       offsetNegatives: state.offsetNegatives, setDisplacement: state.setDisplacement,
-      setDisplaceSurface: state.setDisplaceSurface, setOffsetNegatives: state.setOffsetNegatives
+      setDisplaceSurface: state.setDisplaceSurface, setOffsetNegatives: state.setOffsetNegatives,
+      setResetCamera: state.setResetCamera
   })))
    return(
    <>
    <div className='grid gap-2 mb-2'>
     <div 
       className='relative w-full text-center h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
-      onClick={() => {setDisplaceSurface(!displaceSurface);}}  
+      onClick={() => {if (!displaceSurface){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceSurface(!displaceSurface); }}  
     >
       <span className={`z-10 font-semibold transition-colors ${displaceSurface ? 'text-primary' : 'text-secondary'}`}>
         Flat

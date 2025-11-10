@@ -28,9 +28,10 @@ const TransectNotice = () =>{
 }
 
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
-  const {resetCamera, useOrtho} = usePlotStore(useShallow(state => ({
+  const {resetCamera, useOrtho, displaceSurface} = usePlotStore(useShallow(state => ({
       resetCamera: state.resetCamera,
-      useOrtho: state.useOrtho
+      useOrtho: state.useOrtho,
+      displaceSurface: state.displaceSurface
     })))
   const orbitRef = useRef<OrbitControlsImpl | null>(null)
   const hasMounted = useRef(false);
@@ -117,7 +118,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   return (
     <OrbitControls 
       ref={orbitRef} 
-      enableRotate={!isFlat || !useOrtho} 
+      enableRotate={!isFlat || !useOrtho || !displaceSurface} 
       enablePan={true} 
       maxDistance={50}
       minZoom={1} 
