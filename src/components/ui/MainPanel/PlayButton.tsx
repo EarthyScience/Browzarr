@@ -198,8 +198,7 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
           <Button
             variant='secondary'
             size='sm'
-            className='cursor-pointer'
-            disabled={zSlice[0] === 0}
+            className={`cursor-pointer ${zSlice[0] === 0 ? "invisible" : null}`}
             onClick={() => {
               setZSlice([Math.max(zSlice[0] - chunkTimeLength, 0), zSlice[1]])
               setKeepOpen(true)
@@ -214,11 +213,10 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
 
           <div className='text-xs sm:text-sm text-center'>{currentLabel}</div>
 
-          <Button
+           <Button
             variant='secondary'
             size='sm'
-            className='cursor-pointer'
-            disabled={!zSlice[1] || zSlice[1] === timeLength}
+            className={`cursor-pointer ${!zSlice[1] || zSlice[1] === timeLength? "invisible" : null}`}
             onClick={() => {
               if (zSlice[1] === null) return
               setZSlice([zSlice[0], Math.min(zSlice[1] + chunkTimeLength, timeLength)])
@@ -234,14 +232,14 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
         </div>
 
         {/* VISUALIZER */}
-        <ChunkVisualizer
+        {(sliceDist < timeLength) && <ChunkVisualizer
           zSlice={zSlice}
           timeLength={timeLength}
           chunkWidth={chunkDivWidth}
           showPrev={showPrevChunk}
           showNext={showNextChunk}
           animProg={animProg}
-        />
+        />}
 
         {/* SLIDER */}
         <div className='flex items-center gap-1 w-full'>
