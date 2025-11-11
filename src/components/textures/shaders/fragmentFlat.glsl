@@ -38,6 +38,7 @@ float sample1(vec2 p, int index) { // Shader doesn't support dynamic indexing so
 void main(){
     int yStepSize = int(textureDepths.x); 
     vec2 texCoord = vUv;
+    texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
     ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
     int textureIdx = idx.y * yStepSize + idx.x;
     vec2 localCoord = texCoord * (textureDepths.xy); // Scale up

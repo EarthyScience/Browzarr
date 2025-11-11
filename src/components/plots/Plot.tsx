@@ -209,6 +209,9 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         const shapeLength = result.shape.length
         if (shapeLength == 2){
           setIsFlat(true)
+          if (!["flat", "sphere"].includes(plotType)){// If the plottype isn't already sphere or flat, change it to sphere
+            setPlotType("sphere")
+          }
         }
         else{
           setIsFlat(false)
