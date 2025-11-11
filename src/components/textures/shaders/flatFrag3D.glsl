@@ -52,6 +52,7 @@ void main() {
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     vec3 texCoord = vec3(vUv, animateProg);
+    texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
     ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
     int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
     vec3 localCoord = texCoord * (textureDepths); // Scale up
