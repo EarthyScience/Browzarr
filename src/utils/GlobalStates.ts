@@ -528,6 +528,8 @@ type ImageExportState = {
   customRes: [number, number];
   hideAxisControls: boolean;
   hideAxis: boolean;
+  mainTitle: string | undefined;
+  cbarLabel: string | undefined;
 
   ExportImg: () => void;
   EnableExport: () => void;
@@ -546,6 +548,8 @@ type ImageExportState = {
   setHideAxisControls: (hideAxisControls: boolean) => void;
   getHideAxisControls: () => boolean;
   setHideAxis: (hideAxis: boolean) => void;
+  setMainTitle: (mainTitle: string | undefined) => void;
+  setCbarLabel: (cbarLabel: string | undefined) => void;
 }
 
 export const useImageExportStore = create<ImageExportState>((set, get) => ({
@@ -561,6 +565,8 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   includeAxis: true,
   hideAxisControls: false,
   hideAxis: false,
+  mainTitle: undefined,
+  cbarLabel: undefined,
 
   ExportImg: () => set({ exportImg: !get().exportImg }),
   EnableExport: () => set({ enableExport: true }),
@@ -579,5 +585,6 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   setHideAxisControls: (hideAxisControls) => set({ hideAxisControls }),
   getHideAxisControls: () => get().hideAxisControls,
   setHideAxis: (hideAxis) => set({ hideAxis }),
-
+  setMainTitle: (mainTitle) => set({ mainTitle }),
+  setCbarLabel: (cbarLabel) => set({ cbarLabel })
 }));

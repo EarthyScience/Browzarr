@@ -8,37 +8,14 @@ import { useCSSVariable } from '@/components/ui';
 import * as THREE from 'three'
 
 const ExportCanvas = ({show}:{show: boolean}) => {
-    const {valueScales, variable, metadata } = useGlobalStore(useShallow(state => ({
-        valueScales: state.valueScales,
-        variable: state.variable,
-        metadata: state.metadata
-    })))
+    const {valueScales, variable, metadata } = useGlobalStore.getState()
 
-    const {exportImg, 
-        enableExport,
-        includeBackground, 
-        includeColorbar, 
-        doubleSize, 
-        useCustomRes, 
-        getCbarLoc, 
-        getCbarNum, 
+    const {exportImg, enableExport, includeBackground, 
+        includeColorbar, doubleSize, useCustomRes, 
+        mainTitle, cbarLabel, cbarLoc, cbarNum,
         getCustomRes,
-        setHideAxisControls,
-        setHideAxis
-    
-    } = useImageExportStore(useShallow(state => ({
-        exportImg: state.exportImg,
-        enableExport: state.enableExport,
-        includeBackground: state.includeBackground,
-        includeColorbar: state.includeColorbar,
-        doubleSize: state.doubleSize,
-        useCustomRes: state.useCustomRes,
-        getCbarLoc: state.getCbarLoc,
-        getCbarNum: state.getCbarNum,
-        getCustomRes: state.getCustomRes,
-        setHideAxisControls: state.setHideAxisControls,
-        setHideAxis: state.setHideAxis
-    })))
+        setHideAxisControls, setHideAxis
+    } = useImageExportStore.getState()
     
     const {gl, scene, camera} = useThree()
     const textColor = useCSSVariable('--text-plot')
@@ -139,14 +116,13 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         const variableSize = doubleSize ? 72 : 36
         ctx.fillStyle = textColor
         ctx.font = `${variableSize}px "Segoe UI"`
-        ctx.fillText(variable, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // Variable in top Left
+        ctx.fillText(mainTitle?? variable, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // Variable in top Left
 
         const cbarTickSize = doubleSize ? 36 : 18
         const unitSize = doubleSize ? 52 : 26
         
         if (includeColorbar){
             const secondCanvas = document.getElementById('colorbar-canvas')
-            const cbarLoc = getCbarLoc();
             
 
             let cbarWidth = doubleSize ? Math.min(1024, domWidth*0.8)  : Math.min(512, domWidth*0.8)
@@ -194,7 +170,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     ctx.drawImage(secondCanvas, cbarStartPos, cbarTop, cbarWidth, cbarHeight)
                 }
             }
-            const labelNum = getCbarNum(); // Number of cbar "ticks"
+            const labelNum = cbarNum; // Number of cbar "ticks"
             const valRange = valueScales.maxVal-valueScales.minVal;
             const valScale = 1/(labelNum-1)
             const posDelta = transpose ? 1/(labelNum-1)*cbarHeight : 1/(labelNum-1)*cbarWidth
@@ -223,7 +199,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
             ctx.fillStyle = textColor
             ctx.font = `${unitSize}px "Segoe UI" bold`
             ctx.textAlign = 'center'
-            ctx.fillText(metadata?.units, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4) // Cbar Units above middle of cbar
+            ctx.fillText(cbarLabel?? metadata?.units, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4) // Cbar Units above middle of cbar
         }
         
         const waterMarkSize = doubleSize ? 40 : 20
