@@ -530,6 +530,9 @@ type ImageExportState = {
   hideAxis: boolean;
   mainTitle: string | undefined;
   cbarLabel: string | undefined;
+  animate: boolean;
+  frames: number;
+  frameRate: number;
 
   ExportImg: () => void;
   EnableExport: () => void;
@@ -550,6 +553,9 @@ type ImageExportState = {
   setHideAxis: (hideAxis: boolean) => void;
   setMainTitle: (mainTitle: string | undefined) => void;
   setCbarLabel: (cbarLabel: string | undefined) => void;
+  setAnimate: (animate: boolean) => void;
+  setFrames: (frames: number) => void;
+  setFrameRate: (frameRate: number) => void;
 }
 
 export const useImageExportStore = create<ImageExportState>((set, get) => ({
@@ -567,6 +573,10 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   hideAxis: false,
   mainTitle: undefined,
   cbarLabel: undefined,
+  animate: false,
+  frames: 60,
+  frameRate: 12,
+
 
   ExportImg: () => set({ exportImg: !get().exportImg }),
   EnableExport: () => set({ enableExport: true }),
@@ -586,5 +596,8 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   getHideAxisControls: () => get().hideAxisControls,
   setHideAxis: (hideAxis) => set({ hideAxis }),
   setMainTitle: (mainTitle) => set({ mainTitle }),
-  setCbarLabel: (cbarLabel) => set({ cbarLabel })
+  setCbarLabel: (cbarLabel) => set({ cbarLabel }),
+  setAnimate: (animate) => set({ animate }),
+  setFrames: (frames) => set({ frames }),
+  setFrameRate: (frameRate) => set({ frameRate }),
 }));
