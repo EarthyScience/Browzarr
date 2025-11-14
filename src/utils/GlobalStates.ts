@@ -533,6 +533,13 @@ type ImageExportState = {
   animate: boolean;
   frames: number;
   frameRate: number;
+  orbit: boolean;
+  useTime: boolean;
+  timeRate: number;
+  loopTime: boolean;
+  animViz: boolean;
+  initialState: Record<string, any> | undefined;
+  finalState: Record<string, any> | undefined;
 
   ExportImg: () => void;
   EnableExport: () => void;
@@ -556,6 +563,13 @@ type ImageExportState = {
   setAnimate: (animate: boolean) => void;
   setFrames: (frames: number) => void;
   setFrameRate: (frameRate: number) => void;
+  setOrbit: (orbit: boolean) => void;
+  setUseTime: (useTime: boolean) => void;
+  setTimeRate: (timeRate: number) => void;
+  setLoopTime: (loopTime: boolean) => void;
+  setAnimViz: (animViz: boolean) => void;
+  setInitialState: (initialState: Record<string, any> | undefined) => void;
+  setFinalState: (finalState: Record<string, any> | undefined) => void;
 }
 
 export const useImageExportStore = create<ImageExportState>((set, get) => ({
@@ -576,7 +590,13 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   animate: false,
   frames: 60,
   frameRate: 12,
-
+  orbit: false,
+  useTime: false,
+  timeRate: 12,
+  loopTime: false,
+  animViz: false,
+  initialState: undefined,
+  finalState: undefined,
 
   ExportImg: () => set({ exportImg: !get().exportImg }),
   EnableExport: () => set({ enableExport: true }),
@@ -600,4 +620,11 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   setAnimate: (animate) => set({ animate }),
   setFrames: (frames) => set({ frames }),
   setFrameRate: (frameRate) => set({ frameRate }),
+  setOrbit: (orbit) => set({ orbit }),
+  setUseTime: (useTime) => set({ useTime }),
+  setTimeRate: (timeRate) => set({ timeRate }),
+  setLoopTime: (loopTime) => set({ loopTime }),
+  setAnimViz: (animViz) => set({ animViz }),
+  setInitialState: (initialState) => set({ initialState }),
+  setFinalState: (finalState) => set({ finalState }),
 }));

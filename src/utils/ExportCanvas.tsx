@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef } from 'react'
 import { useGlobalStore, useImageExportStore } from './GlobalStates'
-import { useShallow } from 'zustand/shallow'
 import { useThree } from '@react-three/fiber'
 import { useCSSVariable } from '@/components/ui';
 import * as THREE from 'three'
