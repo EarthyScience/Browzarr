@@ -306,9 +306,6 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     '-pix_fmt', 'yuv420p',
                     '-preset', `${preview ? 'ultrafast' : 'medium'}`, 
                     '-crf',`${preview ? 28 : 16}`, 
-                    '-tune', 'stillimage',
-                    '-profile:v', 'high',
-                    '-level', '4.2', 
                     'output.mp4'
                 ]);
                 setStatus("Fetching Animation")

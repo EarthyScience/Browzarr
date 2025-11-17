@@ -49,7 +49,6 @@ function SetVisualState(isInitial:boolean){
     }
     const currentState = usePlotStore.getState()
     const thisState = pick(currentState, states as (keyof typeof currentState)[])
-    console.log(thisState)
     if (isInitial){
         useImageExportStore.setState({initialState:thisState})
     } else {
