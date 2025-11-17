@@ -147,14 +147,14 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         customRes:state.customRes, doubleSize:state.doubleSize, setHideAxis:state.setHideAxis, setHideAxisControls:state.setHideAxisControls
     })))
     const {setAnimProg, setQuality} = usePlotStore.getState()
-    const {setStatus} = useGlobalStore.getState()
+    const {setStatus, setProgress} = useGlobalStore.getState()
     const {dataShape} = useGlobalStore(useShallow(state=>({dataShape:state.dataShape})));
     const timeFrames = dataShape[dataShape.length-3]
     const { gl, scene, camera, invalidate } = useThree();
     const textColor = useCSSVariable('--text-plot')
     const bgColor = useCSSVariable('--background')
     const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null);
-    const ffmpegRef = useRef<FFmpeg | null>(null);
+    const ffmpegRef = useRef(new FFmpeg());
 
     useEffect(()=>{   
         if (!show || !enableExport) return;
@@ -217,13 +217,15 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         if (animate){
             async function Animate(){
                 setStatus("Loading Module")
-                if (!ffmpegRef.current) {
-                    ffmpegRef.current = new FFmpeg();
-                }
                 const ffmpeg = ffmpegRef.current;
                 if (!ffmpeg.loaded) {
                     await ffmpeg.load();
                 }
+                ffmpeg.on('progress', ({ progress, time }) => {
+                    // progress is a value between 0 and 1
+                    setProgress(Math.round(progress * 100));
+                });
+
                 setStatus("Rendering Frames")
 
                 const timeRatio = timeRate/frameRate;
@@ -311,6 +313,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                 setStatus("Fetching Animation")
                 const videoData = await ffmpeg.readFile('output.mp4');
                 setStatus(null)
+                setProgress(0)
                 const videoBlob = new Blob([videoData as any], { type: 'video/mp4' });
                 const videoUrl = URL.createObjectURL(videoBlob);
                 const link = document.createElement('a')
