@@ -1,9 +1,9 @@
 import React from 'react'
 
-const Hider = ({children, show}:{children: React.ReactNode, show: boolean}) => {
+const Hider = ({children, className, show}:{children: React.ReactNode, className?:string, show: boolean}) => {
   return (
     <div 
-        className="grid transition-all duration-300 ease-in-out"
+        className={`${className} grid transition-all duration-300 ease-in-out`}
         style={{
         gridTemplateRows: show ? '1fr' : '0fr',
         }}

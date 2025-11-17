@@ -528,6 +528,19 @@ type ImageExportState = {
   customRes: [number, number];
   hideAxisControls: boolean;
   hideAxis: boolean;
+  mainTitle: string | undefined;
+  cbarLabel: string | undefined;
+  animate: boolean;
+  frames: number;
+  frameRate: number;
+  orbit: boolean;
+  useTime: boolean;
+  timeRate: number;
+  loopTime: boolean;
+  animViz: boolean;
+  initialState: Record<string, any> | undefined;
+  finalState: Record<string, any> | undefined;
+  preview: boolean;
 
   ExportImg: () => void;
   EnableExport: () => void;
@@ -546,6 +559,19 @@ type ImageExportState = {
   setHideAxisControls: (hideAxisControls: boolean) => void;
   getHideAxisControls: () => boolean;
   setHideAxis: (hideAxis: boolean) => void;
+  setMainTitle: (mainTitle: string | undefined) => void;
+  setCbarLabel: (cbarLabel: string | undefined) => void;
+  setAnimate: (animate: boolean) => void;
+  setFrames: (frames: number) => void;
+  setFrameRate: (frameRate: number) => void;
+  setOrbit: (orbit: boolean) => void;
+  setUseTime: (useTime: boolean) => void;
+  setTimeRate: (timeRate: number) => void;
+  setLoopTime: (loopTime: boolean) => void;
+  setAnimViz: (animViz: boolean) => void;
+  setInitialState: (initialState: Record<string, any> | undefined) => void;
+  setFinalState: (finalState: Record<string, any> | undefined) => void;
+  setPreview: (preview: boolean) => void;
 }
 
 export const useImageExportStore = create<ImageExportState>((set, get) => ({
@@ -561,6 +587,19 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   includeAxis: true,
   hideAxisControls: false,
   hideAxis: false,
+  mainTitle: undefined,
+  cbarLabel: undefined,
+  animate: false,
+  frames: 60,
+  frameRate: 12,
+  orbit: false,
+  useTime: false,
+  timeRate: 12,
+  loopTime: false,
+  animViz: false,
+  initialState: undefined,
+  finalState: undefined,
+  preview: true,
 
   ExportImg: () => set({ exportImg: !get().exportImg }),
   EnableExport: () => set({ enableExport: true }),
@@ -579,5 +618,17 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   setHideAxisControls: (hideAxisControls) => set({ hideAxisControls }),
   getHideAxisControls: () => get().hideAxisControls,
   setHideAxis: (hideAxis) => set({ hideAxis }),
-
+  setMainTitle: (mainTitle) => set({ mainTitle }),
+  setCbarLabel: (cbarLabel) => set({ cbarLabel }),
+  setAnimate: (animate) => set({ animate }),
+  setFrames: (frames) => set({ frames }),
+  setFrameRate: (frameRate) => set({ frameRate }),
+  setOrbit: (orbit) => set({ orbit }),
+  setUseTime: (useTime) => set({ useTime }),
+  setTimeRate: (timeRate) => set({ timeRate }),
+  setLoopTime: (loopTime) => set({ loopTime }),
+  setAnimViz: (animViz) => set({ animViz }),
+  setInitialState: (initialState) => set({ initialState }),
+  setFinalState: (finalState) => set({ finalState }),
+  setPreview: (preview) => set({ preview })
 }));
