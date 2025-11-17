@@ -321,25 +321,11 @@ const ExportImageSettings = () => {
                                 </div>
                             </Hider>
                         </div>
-                        <div className='flex items-center justify-center'>
-                            <b>Output Quality</b>
+                        <div className="grid grid-cols-[auto_60px] items-center gap-2 my-2">
+                            <label htmlFor="usePreview">Export Preview</label>
+                            <Switch id="usePreview" checked={preview} onCheckedChange={e=> setPreview(e)} />
                         </div>
-                        <div 
-                            className='relative w-full text-center h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
-                            onClick={() => {setPreview(!preview)}} 
-                        >
-                            <span className={`z-10 font-semibold transition-colors ${preview ? 'text-primary' : 'text-secondary'}`}>
-                            Preview
-                            </span>
-                            <span className={`z-10 font-semibold transition-colors ${!preview ? 'text-primary' : 'text-secondary'}`}>
-                            Final
-                            </span>
-                            <div 
-                                className={`absolute top-1 h-8 w-[calc(50%-8px)] bg-secondary shadow-xs hover:bg-secondary/80 rounded-full transition-all duration-300 ${
-                                    preview ? 'left-1' : 'left-[calc(50%+4px)]'
-                                }`}
-                            />
-                        </div>
+                        
                     </Hider>
                 </div>
             </Hider>
