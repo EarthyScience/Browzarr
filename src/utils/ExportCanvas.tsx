@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useGlobalStore, useImageExportStore, usePlotStore } from './GlobalStates'
 import { useThree } from '@react-three/fiber'
 import { useCSSVariable } from '@/components/ui';
