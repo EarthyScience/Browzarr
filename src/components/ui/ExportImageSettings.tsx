@@ -49,6 +49,7 @@ function SetVisualState(isInitial:boolean){
     }
     const currentState = usePlotStore.getState()
     const thisState = pick(currentState, states as (keyof typeof currentState)[])
+    console.log(thisState)
     if (isInitial){
         useImageExportStore.setState({initialState:thisState})
     } else {
@@ -65,33 +66,33 @@ function ViewVisualState(isInitial:boolean){
     }
 }
 
-
 const ExportImageSettings = () => {
     const {
         includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum,
-        useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, animate,
-        frames, frameRate, orbit, useTime, loopTime, animViz, initialState, finalState  
+        useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, animate, timeRate,
+        frames, frameRate, orbit, useTime, loopTime, animViz, initialState, finalState, preview  
     } = useImageExportStore(useShallow(state => ({
           includeBackground: state.includeBackground, includeColorbar: state.includeColorbar,
           doubleSize: state.doubleSize, cbarLoc: state.cbarLoc, cbarNum: state.cbarNum, useCustomRes: state.useCustomRes,
           customRes: state.customRes, includeAxis: state.includeAxis, mainTitle: state.mainTitle, cbarLabel: state.cbarLabel,
-          animate: state.animate, frames: state.frames, frameRate: state.frameRate, orbit: state.orbit, useTime:state.useTime,
-          loopTime: state.loopTime, animViz:state.animViz, initialState:state.initialState, finalState:state.finalState
+          animate: state.animate, timeRate:state.timeRate, frames: state.frames, frameRate: state.frameRate, 
+          orbit: state.orbit, useTime:state.useTime,
+          loopTime: state.loopTime, animViz:state.animViz, initialState:state.initialState, finalState:state.finalState,
+          preview:state.preview
       })))
 
     const {ExportImg, EnableExport, setIncludeBackground, setIncludeColorbar, 
-        setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes,
-        setCustomRes, setIncludeAxis, setHideAxis, setHideAxisControls,
-        setMainTitle, setCbarLabel, setAnimate, setFrames, setFrameRate,
-        setOrbit, setUseTime, setLoopTime, setAnimViz, setInitialState, setFinalState} = useImageExportStore.getState()
+        setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis, 
+        setHideAxis, setHideAxisControls, setMainTitle, setCbarLabel, setAnimate, 
+        setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setAnimViz, 
+        setInitialState, setFinalState, setPreview} = useImageExportStore.getState()
 
     interface CapitalizeFn {
         (str: string): string;
     }
 
     const {plotType, zSlice} = usePlotStore(useShallow(state=>({
-        plotType: state.plotType, zSlice:state.zSlice
-
+        plotType: state.plotType, zSlice:state.zSlice,
     })))
     const {variable, metadata, dimArrays} = useGlobalStore(useShallow(state=>({
         variable: state.variable, metadata: state.metadata, dimArrays:state.dimArrays,
@@ -269,7 +270,7 @@ const ExportImageSettings = () => {
                             <Hider show={useTime} className='col-span-2'>
                                 <div className="grid grid-cols-[auto_80px] items-center gap-2 mb-2">
                                     <label htmlFor="timeRate">Time FPS</label>
-                                    <Input id="timeRate" type='number' step={1} value={frameRate} onChange={e => setFrameRate(parseInt(e.target.value))} />
+                                    <Input id="timeRate" type='number' step={1} value={timeRate} onChange={e => setTimeRate(parseInt(e.target.value))} />
                                 </div> 
                                 <div className="grid grid-cols-[auto_60px] items-center gap-2">
                                     <label htmlFor="loopTime">Loop Time</label>
@@ -319,6 +320,25 @@ const ExportImageSettings = () => {
                                     >{((firstState && initialState) || (!firstState && finalState)) ? "Overwrite State" : "Set State"}</Button>
                                 </div>
                             </Hider>
+                        </div>
+                        <div className='flex items-center justify-center'>
+                            <b>Output Quality</b>
+                        </div>
+                        <div 
+                            className='relative w-full text-center h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
+                            onClick={() => {setPreview(!preview)}} 
+                        >
+                            <span className={`z-10 font-semibold transition-colors ${preview ? 'text-primary' : 'text-secondary'}`}>
+                            Preview
+                            </span>
+                            <span className={`z-10 font-semibold transition-colors ${!preview ? 'text-primary' : 'text-secondary'}`}>
+                            Final
+                            </span>
+                            <div 
+                                className={`absolute top-1 h-8 w-[calc(50%-8px)] bg-secondary shadow-xs hover:bg-secondary/80 rounded-full transition-all duration-300 ${
+                                    preview ? 'left-1' : 'left-[calc(50%+4px)]'
+                                }`}
+                            />
                         </div>
                     </Hider>
                 </div>

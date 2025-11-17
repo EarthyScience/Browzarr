@@ -540,6 +540,7 @@ type ImageExportState = {
   animViz: boolean;
   initialState: Record<string, any> | undefined;
   finalState: Record<string, any> | undefined;
+  preview: boolean;
 
   ExportImg: () => void;
   EnableExport: () => void;
@@ -570,6 +571,7 @@ type ImageExportState = {
   setAnimViz: (animViz: boolean) => void;
   setInitialState: (initialState: Record<string, any> | undefined) => void;
   setFinalState: (finalState: Record<string, any> | undefined) => void;
+  setPreview: (preview: boolean) => void;
 }
 
 export const useImageExportStore = create<ImageExportState>((set, get) => ({
@@ -597,6 +599,7 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   animViz: false,
   initialState: undefined,
   finalState: undefined,
+  preview: true,
 
   ExportImg: () => set({ exportImg: !get().exportImg }),
   EnableExport: () => set({ enableExport: true }),
@@ -627,4 +630,5 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   setAnimViz: (animViz) => set({ animViz }),
   setInitialState: (initialState) => set({ initialState }),
   setFinalState: (finalState) => set({ finalState }),
+  setPreview: (preview) => set({ preview })
 }));
