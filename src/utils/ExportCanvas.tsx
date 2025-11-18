@@ -435,6 +435,21 @@ const ExportCanvas = ({show}:{show: boolean}) => {
             Animate().then(()=>{
                 setHideAxis(false)
                 setHideAxisControls(false)
+                // Reset Camera Settings
+                if (useCustomRes || doubleSize) {
+                    if (camera instanceof THREE.PerspectiveCamera) {
+                        camera.aspect = originalCameraSettings.aspect;
+                    } else if (camera instanceof THREE.OrthographicCamera) {
+                        camera.left = originalCameraSettings.left;
+                        camera.right = originalCameraSettings.right;
+                        camera.top = originalCameraSettings.top;
+                        camera.bottom = originalCameraSettings.bottom;
+                    }           
+                    gl.setSize(originalSize.x, originalSize.y);
+                    camera.updateProjectionMatrix();
+                    invalidate();
+                }
+                setQuality(origQuality);
             });
         } else {
             gl.render(scene, camera);
@@ -452,22 +467,24 @@ const ExportCanvas = ({show}:{show: boolean}) => {
             }, 'image/png')
             setHideAxis(false)
             setHideAxisControls(false)
+            // Reset Camera Settings
+            if (useCustomRes || doubleSize) {
+                if (camera instanceof THREE.PerspectiveCamera) {
+                    camera.aspect = originalCameraSettings.aspect;
+                } else if (camera instanceof THREE.OrthographicCamera) {
+                    camera.left = originalCameraSettings.left;
+                    camera.right = originalCameraSettings.right;
+                    camera.top = originalCameraSettings.top;
+                    camera.bottom = originalCameraSettings.bottom;
+                }           
+                gl.setSize(originalSize.x, originalSize.y);
+                camera.updateProjectionMatrix();
+                invalidate();
+            }
+            setQuality(origQuality);
         }
 
-        // Reset Camera Settings
-        if (useCustomRes || doubleSize) {
-            if (camera instanceof THREE.PerspectiveCamera) {
-                camera.aspect = originalCameraSettings.aspect;
-            } else if (camera instanceof THREE.OrthographicCamera) {
-                camera.left = originalCameraSettings.left;
-                camera.right = originalCameraSettings.right;
-                camera.top = originalCameraSettings.top;
-                camera.bottom = originalCameraSettings.bottom;
-            }           
-            gl.setSize(originalSize.x, originalSize.y);
-            camera.updateProjectionMatrix();
-        }
-        setQuality(origQuality);
+        
         
     },[exportImg])
 
