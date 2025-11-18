@@ -16,7 +16,6 @@ const DrawComposite = (
     height: number,
     colors: {bgColor: string, textColor: string},
     animate=false,
-    preview=true,
 ): HTMLCanvasElement | undefined => {
 
     const {bgColor, textColor} = colors;
