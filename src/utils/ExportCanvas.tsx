@@ -14,16 +14,18 @@ const DrawComposite = (
     gl: THREE.WebGLRenderer,
     width: number,
     height: number,
-    colors: {bgColor: string, textColor: string}
+    colors: {bgColor: string, textColor: string},
+    animate=false,
+    preview=true,
 ): HTMLCanvasElement | undefined => {
 
     const {bgColor, textColor} = colors;
     const { doubleSize, includeBackground, mainTitle,
     cbarLabel, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
     const {valueScales, variable, metadata } = useGlobalStore.getState()
-
     const ctx = compositeCanvas.getContext('2d')
     if (!ctx){return}
+
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     if (includeBackground) {
@@ -35,38 +37,26 @@ const DrawComposite = (
 
     ctx.drawImage(gl.domElement, 0, 0, width, height) 
 
-    // ---- TITLE ---- //
-    const variableSize = doubleSize ? 72 : 36
-    ctx.fillStyle = textColor
-    ctx.font = `${variableSize}px "Segoe UI"`
-    ctx.textBaseline = 'middle'
-    ctx.fillText(mainTitle?? variable, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // Variable in top Left
-
     const cbarTickSize = doubleSize ? 36 : 18
     const unitSize = doubleSize ? 52 : 26
-    
+
+    let cbarWidth = doubleSize ? Math.min(1024, width*0.8)  : Math.min(512, width*0.8)
+    let cbarHeight = doubleSize ? 48: 24;
+
+    let cbarStartPos = Math.round(width/2 - cbarWidth/2)
+    let cbarTop = cbarLoc === 'top' ? (doubleSize ? 140 : 70) : (doubleSize ? height - 140 : height-70)
+    const transpose = cbarLoc === 'right' || cbarLoc === 'left'
+
     // ---- COLORBAR ---- //
     if (includeColorbar){
         const secondCanvas = document.getElementById('colorbar-canvas')
-
-        let cbarWidth = doubleSize ? Math.min(1024, width*0.8)  : Math.min(512, width*0.8)
-        let cbarHeight = doubleSize ? 48: 24;
-
-        let cbarStartPos = Math.round(width/2 - cbarWidth/2)
-        let cbarTop = cbarLoc === 'top' ? (doubleSize ? 140 : 70) : (doubleSize ? height - 140 : height-70)
-
-        const transpose = cbarLoc === 'right' || cbarLoc === 'left'
-
-        if (transpose){
-            const tempWidth = cbarWidth
-            cbarWidth = cbarHeight
-            cbarHeight = tempWidth
-            cbarTop = Math.round(height/2 - cbarHeight/2)
-            cbarStartPos = cbarLoc === 'right' ? (doubleSize ? width - 140 : width - 70) : (doubleSize ? 140 : 70)
-        }
-
         if (secondCanvas instanceof HTMLCanvasElement) {
             if (transpose) {
+                const tempWidth = cbarWidth
+                cbarWidth = cbarHeight
+                cbarHeight = tempWidth
+                cbarTop = Math.round(height/2 - cbarHeight/2)
+                cbarStartPos = cbarLoc === 'right' ? (doubleSize ? width - 140 : width - 70) : (doubleSize ? 140 : 70)
                 // Save the current canvas state
                 ctx.save()
                 
@@ -88,21 +78,129 @@ const DrawComposite = (
                 
                 // Restore the canvas state
                 ctx.restore()
-            } else if(cbarLoc === 'top'){
+            }else if(cbarLoc === 'top'){
                 ctx.drawImage(secondCanvas, cbarStartPos, cbarTop, cbarWidth, cbarHeight)
-            }else {
+            }else{
                 ctx.drawImage(secondCanvas, cbarStartPos, cbarTop, cbarWidth, cbarHeight)
             }
         }
+    }
+
+    // ---- TEXT ---- //
+    if (!animate){ // If still image write text onto image
+         // ---- TITLE ---- //
+        const variableSize = doubleSize ? 72 : 36
+        ctx.fillStyle = textColor
+        ctx.font = `${variableSize}px "Segoe UI"`
+        ctx.textBaseline = 'middle'
+        ctx.fillText(mainTitle?? variable, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // Variable in top Left
+
+        // ---- WATERMARK ---- //
+        const waterMarkSize = doubleSize ? 40 : 20
+        ctx.fillStyle = "#888888"
+        ctx.font = `${waterMarkSize}px "Segoe UI", serif `
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'bottom'
+        ctx.fillText("browzarr.io", doubleSize ? 20 : 10, doubleSize ? height - 20 : height - 10) // Watermark
+
+        if (includeColorbar){
+            // ---- TickLabels ---- //
+            ctx.font = `${cbarTickSize}px "Segoe UI"`
+            const labelNum = cbarNum; // Number of cbar "ticks"
+            const valRange = valueScales.maxVal-valueScales.minVal;
+            const valScale = 1/(labelNum-1)
+            const posDelta = transpose ? 1/(labelNum-1)*cbarHeight : 1/(labelNum-1)*cbarWidth
+            if (transpose){
+                const tempWidth = cbarWidth
+                cbarWidth = cbarHeight
+                cbarHeight = tempWidth
+                cbarTop = Math.round(height/2 - cbarHeight/2)
+                cbarStartPos = cbarLoc === 'right' ? (doubleSize ? width - 140 : width - 70) : (doubleSize ? 140 : 70)
+                ctx.textBaseline = 'middle'
+                ctx.textAlign = cbarLoc == 'left' ? 'left' : 'right'
+                for (let i =0; i < labelNum; i++){
+                    if (cbarLoc == 'left'){
+                        ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos+cbarWidth+6, cbarTop+cbarHeight-i*posDelta) 
+                    } else{
+                        ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos-6, cbarTop+cbarHeight-i*posDelta) 
+                    }
+                }
+            }else{
+                ctx.textBaseline = 'top'
+                ctx.textAlign = 'center'
+                for (let i =0; i < labelNum; i++){
+                    ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos+i*posDelta, cbarTop+cbarHeight+6) 
+                }
+            }
+
+            // ---- Cbar Label/Units ---- //
+            ctx.fillStyle = textColor
+            ctx.font = `${unitSize}px "Segoe UI" bold`
+            ctx.textAlign = 'center'
+            ctx.fillText(cbarLabel?? metadata?.units, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4)
+        }
+    }
+    
+}
+
+async function DrawTextOverlay(
+    width: number,
+    height: number,
+    textColor:string,
+    ffmpeg: FFmpeg
+){
+    const scaling = 4;
+    const { doubleSize, mainTitle,
+    cbarLabel, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
+    const {valueScales, variable, metadata } = useGlobalStore.getState()
+    const textCanvas = document.createElement("canvas");
+    textCanvas.width = width * scaling;
+    textCanvas.height = height * scaling;
+    const ctx = textCanvas.getContext("2d");
+    if (!ctx)return;
+
+    ctx.scale(scaling, scaling)
+    const cbarTickSize = doubleSize ? 36 : 18
+    const unitSize = doubleSize ? 52 : 26
+
+    let cbarWidth = doubleSize ? Math.min(1024, width*0.8)  : Math.min(512, width*0.8)
+    let cbarHeight = doubleSize ? 48: 24;
+
+    let cbarStartPos = Math.round(width/2 - cbarWidth/2)
+    let cbarTop = cbarLoc === 'top' ? (doubleSize ? 140 : 70) : (doubleSize ? height - 140 : height-70)
+    const transpose = cbarLoc === 'right' || cbarLoc === 'left'
+
+    // ---- TEXT ---- //
+    
+     // ---- TITLE ---- //
+    const variableSize = doubleSize ? 72 : 36
+    ctx.fillStyle = textColor
+    ctx.font = `${variableSize}px "Segoe UI"`
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'left'
+    ctx.fillText(mainTitle?? variable, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // Variable in top Left
+
+    // ---- WATERMARK ---- //
+    const waterMarkSize = doubleSize ? 40 : 20
+    ctx.fillStyle = "#888888"
+    ctx.font = `${waterMarkSize}px "Segoe UI", serif `
+    ctx.textBaseline = 'bottom'
+    ctx.fillText("browzarr.io", doubleSize ? 20 : 10, doubleSize ? height - 20 : height - 10) // Watermark
+
+    if (includeColorbar){
+        // ---- TickLabels ---- //
+        ctx.font = `${cbarTickSize}px "Segoe UI"`;
+        ctx.fillStyle = textColor;
         const labelNum = cbarNum; // Number of cbar "ticks"
         const valRange = valueScales.maxVal-valueScales.minVal;
         const valScale = 1/(labelNum-1)
         const posDelta = transpose ? 1/(labelNum-1)*cbarHeight : 1/(labelNum-1)*cbarWidth
-
-        // ---- TickLabels ---- //
-        ctx.font = `${cbarTickSize}px "Segoe UI"`
-
         if (transpose){
+            const tempWidth = cbarWidth
+            cbarWidth = cbarHeight
+            cbarHeight = tempWidth
+            cbarTop = Math.round(height/2 - cbarHeight/2)
+            cbarStartPos = cbarLoc === 'right' ? (doubleSize ? width - 140 : width - 70) : (doubleSize ? 140 : 70)
             ctx.textBaseline = 'middle'
             ctx.textAlign = cbarLoc == 'left' ? 'left' : 'right'
             for (let i =0; i < labelNum; i++){
@@ -112,7 +210,7 @@ const DrawComposite = (
                     ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos-6, cbarTop+cbarHeight-i*posDelta) 
                 }
             }
-        } else{
+        }else{
             ctx.textBaseline = 'top'
             ctx.textAlign = 'center'
             for (let i =0; i < labelNum; i++){
@@ -120,20 +218,22 @@ const DrawComposite = (
             }
         }
 
+        // ---- Cbar Label/Units ---- //
         ctx.fillStyle = textColor
         ctx.font = `${unitSize}px "Segoe UI" bold`
         ctx.textAlign = 'center'
-        ctx.fillText(cbarLabel?? metadata?.units, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4) // Cbar Units above middle of cbar
+        ctx.fillText(cbarLabel?? metadata?.units, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4)
     }
     
-    const waterMarkSize = doubleSize ? 40 : 20
-    ctx.fillStyle = "#888888"
-    ctx.font = `${waterMarkSize}px "Segoe UI", serif `
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'bottom'
-    ctx.fillText("browzarr.io", doubleSize ? 20 : 10, doubleSize ? height - 20 : height - 10) // Watermark
+    const blob = await new Promise(resolve => {
+        textCanvas.toBlob(resolve, 'image/png');
+    });
+    if (blob) {
+        const buf = await (blob as Blob).arrayBuffer();
+        // Write frames to internal ffMpeg filesystem
+        await ffmpeg.writeFile(`textOverlay.png`, new Uint8Array(buf));
+    }
 }
-
 
 
 const ExportCanvas = ({show}:{show: boolean}) => {
@@ -161,7 +261,6 @@ const ExportCanvas = ({show}:{show: boolean}) => {
 
         const origQuality = usePlotStore.getState().quality;
         setQuality(preview ? 50 : 1000);
-
         const domWidth = gl.domElement.width;
         const domHeight = gl.domElement.height;
         let docWidth = useCustomRes ? customRes[0] : (doubleSize ? domWidth * 2 : domWidth);
@@ -180,11 +279,10 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         const originalSize = gl.getSize(new THREE.Vector2())
         let originalCameraSettings: any = {};
 
-        if (useCustomRes || doubleSize){
+        function SetCamera(){
             if (camera instanceof THREE.PerspectiveCamera) {
                 originalCameraSettings = { aspect: camera.aspect }
                 camera.aspect = docWidth / docHeight
-                camera.updateProjectionMatrix()
             } else if (camera instanceof THREE.OrthographicCamera) {
                 originalCameraSettings = {
                     left: camera.left,
@@ -192,10 +290,8 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     top: camera.top,
                     bottom: camera.bottom
                 }
-
                 const newAspect = docWidth / docHeight
                 const currentAspect = (camera.right - camera.left) / (camera.top - camera.bottom)
-            
                 if (newAspect > currentAspect) {
                     // Wider - expand left/right
                     const width = (camera.top - camera.bottom) * newAspect
@@ -209,9 +305,11 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     camera.top = center + height / 2
                     camera.bottom = center - height / 2
                 }
-                camera.updateProjectionMatrix()
             }
+            
             gl.setSize(docWidth, docHeight)
+            camera.updateProjectionMatrix()
+            invalidate();
         }
 
         if (animate){
@@ -221,6 +319,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                 if (!ffmpeg.loaded) {
                     await ffmpeg.load();
                 }
+
                 ffmpeg.on('progress', ({ progress, time }) => {
                     // progress is a value between 0 and 1
                     setProgress(Math.round(progress * 100));
@@ -247,7 +346,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                         camera.position.z = radius * Math.cos(newAngle);
                         camera.lookAt(0, 0, 0);
                         camera.updateProjectionMatrix();
-                        invalidate();
+                        !(useCustomRes || doubleSize) && invalidate(); // We will invalidate later if needed. Otherwise do it now
                     }
                     if (useTime){
                         let newProg = dt * Math.floor(frame*timeRatio);
@@ -283,11 +382,13 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                         });
                         usePlotStore.setState(lerpedState)
                     }
-
+                    if (useCustomRes || doubleSize){
+                        SetCamera()
+                    }
                     // ----- RENDER TO CANVAS---- //
                     gl.render(scene, camera);
                     DrawComposite(compositeCanvasRef.current as HTMLCanvasElement, gl, docWidth, docHeight,
-                        {bgColor, textColor}
+                        {bgColor, textColor}, true
                     )
 
                     const blob = await new Promise(resolve => {
@@ -300,16 +401,21 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     }
                 }
                 setStatus("Building Animation")
-                // Generate Animation
+                await DrawTextOverlay(docWidth, docHeight, textColor, ffmpeg)
                 const execResult = await ffmpeg.exec([
                     '-framerate', `${frameRate}`,
                     '-i', 'frame%04d.png',
+                    '-i', 'textOverlay.png',
+                    '-filter_complex', `[1:v]scale=${docWidth}:${docHeight}[overlay];[0:v][overlay]overlay=0:0`,
                     '-c:v', 'libx264',
-                    '-pix_fmt', 'yuv420p',
-                    '-preset', `${preview ? 'ultrafast' : 'medium'}`, 
-                    '-crf',`${preview ? 28 : 16}`, 
+                    '-pix_fmt', 'yuv444p',
+                    '-preset', `${preview ? 'ultrafast' : 'slow'}`, 
+                    '-crf', `${preview ? 28 : 16}`, 
+                    '-tune', 'stillimage',
+                    '-profile:v', 'high444',
                     'output.mp4'
                 ]);
+                if (execResult === 1){setStatus(null)}
                 setStatus("Fetching Animation")
                 const videoData = await ffmpeg.readFile('output.mp4');
                 setStatus(null)
@@ -358,9 +464,9 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                 camera.right = originalCameraSettings.right;
                 camera.top = originalCameraSettings.top;
                 camera.bottom = originalCameraSettings.bottom;
-            }
-            camera.updateProjectionMatrix();
+            }           
             gl.setSize(originalSize.x, originalSize.y);
+            camera.updateProjectionMatrix();
         }
         setQuality(origQuality);
         
