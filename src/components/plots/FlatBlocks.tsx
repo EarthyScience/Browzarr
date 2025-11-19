@@ -14,16 +14,11 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
         dataShape: state.dataShape,
         textureArrayDepths: state.textureArrayDepths
     })))
-    const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, offsetNegatives} = usePlotStore(useShallow(state=> ({
-        animate: state.animate,
-        animProg: state.animProg,
-        cOffset: state.cOffset,
-        cScale: state.cScale,
-        nanColor: state.nanColor,
-        nanTransparency: state.nanTransparency,
-        displacement: state.displacement,
-        sphereResolution: state.sphereResolution,
-        offsetNegatives: state.offsetNegatives
+    const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, offsetNegatives, rotateFlat} = usePlotStore(useShallow(state=> ({
+        animate: state.animate, animProg: state.animProg, cOffset: state.cOffset,
+        cScale: state.cScale, nanColor: state.nanColor, nanTransparency: state.nanTransparency,
+        displacement: state.displacement, sphereResolution: state.sphereResolution,
+        offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat
     })))
 
     const width = dataShape[dataShape.length-1]
@@ -94,6 +89,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
 
     <instancedMesh 
         scale={[1, flipY ? -1 : 1, 1]}
+        rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
         args={[geometry, shaderMaterial, (width * height)]}
         frustumCulled={false}
     />

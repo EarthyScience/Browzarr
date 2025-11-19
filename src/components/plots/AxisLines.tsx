@@ -343,11 +343,10 @@ const FlatAxis = () =>{
     isFlat: state.isFlat
   })))
 
-  const {plotType,  zSlice, ySlice, xSlice} = usePlotStore(useShallow(state=>({
-    plotType: state.plotType,
-    zSlice: state.zSlice,
-    ySlice: state.ySlice,
-    xSlice: state.xSlice
+  const {plotType,  zSlice, ySlice, xSlice, rotateFlat} = usePlotStore(useShallow(state=>({
+    plotType: state.plotType, zSlice: state.zSlice,
+    ySlice: state.ySlice, xSlice: state.xSlice,
+    rotateFlat:state.rotateFlat
   })))
 
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow( state => ({
@@ -442,7 +441,10 @@ const FlatAxis = () =>{
   const yTitleOffset = useMemo(() => (axisNames[heightIdx].length * FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE / 2 + 0.1), [axisNames, heightIdx]);
 
   return (
-    <group visible={plotType == 'flat' && !hideAxis}>
+    <group 
+      visible={plotType == 'flat' && !hideAxis} 
+      rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
+    >
       {/* X Group */}
       <group position={[0, -(swap ? 1 :  shapeRatio)-tickLength/2, 0]} rotation={[ Math.PI/2, 0, 0]}> 
         <primitive key={'xLine'} object={xLine} />
