@@ -28,12 +28,12 @@ const AXIS_CONSTANTS = {
 };
 
 const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, flipDown: boolean}) =>{
-  const {dimArrays, dimNames, dimUnits, dataShape, revY, isFlat} = useGlobalStore(useShallow(state => ({
+  const {dimArrays, dimNames, dimUnits, dataShape, revY} = useGlobalStore(useShallow(state => ({
     dimArrays: state.dimArrays,
     dimNames: state.dimNames,
     dimUnits: state.dimUnits,
     dataShape: state.dataShape,
-    revY: state.flipY, isFlat:state.isFlat
+    revY: state.flipY,
   })))
 
   const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
@@ -59,7 +59,6 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     revY ? dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
     dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
   ]
-  const cursor = isFlat || plotType === "flat" ? "default" : "pointer"
 
   const [xResolution, setXResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [yResolution, setYResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
@@ -153,7 +152,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               position={[xTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
               onClick={e=>setXResolution(x=> Math.min(x+1,AXIS_CONSTANTS.MAX_RESOLUTION))}
-              onPointerEnter={e=>document.body.style.cursor = cursor}
+              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               +
@@ -304,7 +303,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               position={[0, -yTitleOffset, 0]}
               onClick={e=>setYResolution(x=> Math.max(x-1,AXIS_CONSTANTS.MIN_RESOLUTION))}
-              onPointerEnter={e=>document.body.style.cursor = cursor}
+              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
@@ -384,8 +383,6 @@ const FlatAxis = () =>{
 
   const [xResolution, setXResolution] = useState<number>(FLAT_AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [yResolution, setYResolution] = useState<number>(FLAT_AXIS_CONSTANTS.INITIAL_RESOLUTION)
-  
-  const cursor = isFlat || plotType === "flat" ? "default" : "pointer"
 
   const { axisArrays, axisUnits, axisNames } = useMemo(() => {
 
@@ -498,7 +495,7 @@ const FlatAxis = () =>{
               material-depthTest={false}
               position={[-xTitleOffset, -0.05, 0]}
               onClick={e=>setXResolution(x=> Math.max(x-1,FLAT_AXIS_CONSTANTS.MIN_RESOLUTION))}
-              onPointerEnter={e=>document.body.style.cursor = cursor}
+              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
@@ -546,7 +543,7 @@ const FlatAxis = () =>{
               material-depthTest={false}
               position={[ 0.0, yTitleOffset, 0]}
               onClick={e=>setYResolution(x=> Math.min(x+1,FLAT_AXIS_CONSTANTS.MAX_RESOLUTION))}
-              onPointerEnter={e=>document.body.style.cursor = cursor}
+              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               +
@@ -561,7 +558,7 @@ const FlatAxis = () =>{
               material-depthTest={false}
               position={[0.0, -yTitleOffset, 0]}
               onClick={e=>setYResolution(x=> Math.max(x-1,FLAT_AXIS_CONSTANTS.MIN_RESOLUTION))}
-              onPointerEnter={e=>document.body.style.cursor = cursor}
+              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
