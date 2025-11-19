@@ -78,7 +78,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 
       return () => cancelAnimationFrame(frameId);
     }
-  },[resetCamera])
+  },[resetCamera, isFlat])
 
   useEffect(()=>{
     if (hasMounted.current){
@@ -112,7 +112,6 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       orbitRef.current.update()
     }
   }
-
   },[useOrtho])
 
   return (
@@ -316,7 +315,6 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
       <Nav />
       {(isFlat || plotType == "flat") && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }
-      {((!isFlat && plotType != "flat") || (isFlat && plotType === 'sphere')) && <>
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
         frameloop="demand"
         gl={{ preserveDrawingBuffer: true }}
@@ -340,22 +338,15 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
             {displaceSurface ? <Sphere textures={textures} ZarrDS={ZarrDS} /> : <SphereBlocks textures={textures} />}
           </>
         }
-        <Orbiter isFlat={false} />
-      </Canvas>
-      </>}
-
+        <Orbiter isFlat={(isFlat || (!isFlat && plotType == "flat"))} />
         {(isFlat || (!isFlat && plotType == "flat")) && <>
-        <Canvas id='main-canvas' camera={{ position: [0,0,5], zoom: 1000 }}
-        orthographic frameloop="demand"
-        >
-          <ExportCanvas show={show}/>
-          <CountryBorders/>
-          {show && <AxisLines />}
           {displaceSurface && <FlatMap textures={textures as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} ZarrDS={ZarrDS}/> }
           {!displaceSurface && <FlatBlocks textures={textures} />}
-          <Orbiter isFlat={true}/>
-        </Canvas>
-        </>}
+        </>
+        }
+
+      </Canvas>
+ 
 
     </div>
   )

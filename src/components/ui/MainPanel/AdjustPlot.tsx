@@ -325,11 +325,11 @@ const PointOptions = () =>{
 }
 
 const FlatOptions = () =>{
-  const {displacement, displaceSurface, offsetNegatives,
+  const {displacement, displaceSurface, offsetNegatives, rotateFlat,
     setDisplacement, setDisplaceSurface, setOffsetNegatives,
     setResetCamera} = usePlotStore(useShallow(state=> ({
       displacement: state.displacement, displaceSurface: state.displaceSurface,
-      offsetNegatives: state.offsetNegatives, setDisplacement: state.setDisplacement,
+      offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat, setDisplacement: state.setDisplacement,
       setDisplaceSurface: state.setDisplaceSurface, setOffsetNegatives: state.setOffsetNegatives,
       setResetCamera: state.setResetCamera
   })))
@@ -338,7 +338,7 @@ const FlatOptions = () =>{
    <div className='grid gap-2 mb-2'>
     <div 
       className='relative w-full text-center h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
-      onClick={() => {if (!displaceSurface){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceSurface(!displaceSurface); }}  
+      onClick={() => {if (!displaceSurface){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceSurface(!displaceSurface); usePlotStore.setState({rotateFlat: false}) }}  
     >
       <span className={`z-10 font-semibold transition-colors ${displaceSurface ? 'text-primary' : 'text-secondary'}`}>
         Flat
@@ -354,6 +354,7 @@ const FlatOptions = () =>{
     </div>
     <Hider show={!displaceSurface}>
       <div className='grid gap-2'>
+
         <b>Displacement</b>
         <UISlider
           min={0}
@@ -364,8 +365,11 @@ const FlatOptions = () =>{
           onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
         />
         <div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
-          <label htmlFor="offset-switch">Offset Negatives</label>
+          <label htmlFor="offset-switch"><b>Offset Negatives</b></label>
           <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
+
+          <label htmlFor="rotate-switch"><b>Rotate</b></label>
+          <Switch id='rotate-switch' checked={rotateFlat} onCheckedChange={e=>usePlotStore.setState({rotateFlat: e})} />
         </div>
       </div>
     </Hider>

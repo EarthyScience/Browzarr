@@ -207,6 +207,7 @@ type PlotState ={
   xSlice: [number  , number | null],
   interpPixels: boolean;
   useOrtho: boolean;
+  rotateFlat: boolean;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -314,7 +315,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   xSlice: [0, null],
   interpPixels: false,
   useOrtho: false,
-
+  rotateFlat: false,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
