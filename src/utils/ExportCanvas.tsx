@@ -277,18 +277,21 @@ const ExportCanvas = ({show}:{show: boolean}) => {
 
         const originalSize = gl.getSize(new THREE.Vector2())
         let originalCameraSettings: any = {};
+        
 
-        function SetCamera(){
+
+        function SetCamera(set=false){
             if (camera instanceof THREE.PerspectiveCamera) {
-                originalCameraSettings = { aspect: camera.aspect }
+                if (set){originalCameraSettings = { aspect: camera.aspect }}
+
                 camera.aspect = docWidth / docHeight
             } else if (camera instanceof THREE.OrthographicCamera) {
-                originalCameraSettings = {
+                if (set){originalCameraSettings = {
                     left: camera.left,
                     right: camera.right,
                     top: camera.top,
                     bottom: camera.bottom
-                }
+                }}
                 const newAspect = docWidth / docHeight
                 const currentAspect = (camera.right - camera.left) / (camera.top - camera.bottom)
                 if (newAspect > currentAspect) {
@@ -310,7 +313,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
             camera.updateProjectionMatrix()
             invalidate();
         }
-
+        SetCamera(true);
         if (animate){
             async function Animate(){
                 setStatus("Loading Module")
@@ -444,7 +447,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                         camera.right = originalCameraSettings.right;
                         camera.top = originalCameraSettings.top;
                         camera.bottom = originalCameraSettings.bottom;
-                    }           
+                    }         
                     gl.setSize(originalSize.x, originalSize.y);
                     camera.updateProjectionMatrix();
                     invalidate();
