@@ -143,11 +143,11 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
           setStatus: state.setStatus  
         }
         )))
-    const {colormap, variable, isFlat, metadata, valueScales, is4D, setIsFlat} = useGlobalStore(useShallow(state=>({
+    const {colormap, variable, isFlat, DPR, valueScales, is4D, setIsFlat} = useGlobalStore(useShallow(state=>({
       colormap: state.colormap, 
       variable: state.variable, 
       isFlat: state.isFlat, 
-      metadata: state.metadata, 
+      DPR: state.DPR, 
       valueScales: state.valueScales,
       is4D: state.is4D,
       setIsFlat: state.setIsFlat, 
@@ -318,6 +318,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
         frameloop="demand"
         gl={{ preserveDrawingBuffer: true }}
+        dpr={[DPR,DPR]}
       >
         <CountryBorders/>
         <ExportCanvas show={show}/>

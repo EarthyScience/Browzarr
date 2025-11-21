@@ -40,6 +40,7 @@ type StoreState = {
   isFlat: boolean;
   status: string | null;
   progress: number;
+  DPR: number,
 
   is4D: boolean;
   idx4D: number | null;
@@ -76,6 +77,7 @@ type StoreState = {
   setTitleDescription: (titleDescription: { title: string | null; description: string | null }) => void;
   setTextureArrayDepths: (textureArrayResolution: number[] ) => void;
   setTextureData: (textureData: Uint8Array ) => void;
+  setDPR: (DPR: number) => void;
 };
 
 export const useGlobalStore = create<StoreState>((set, get) => ({
@@ -105,6 +107,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   titleDescription: {title:null, description: null},
   textureArrayDepths: [1,1,1], 
   textureData: new Uint8Array(1),
+  DPR: 1,
 
   setDataShape: (dataShape) => set({ dataShape }),
   setShape: (shape) => set({ shape }),
@@ -152,7 +155,8 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setIdx4D: (idx4D) => set({ idx4D }),
   setTitleDescription: (titleDescription) => set({ titleDescription }),
   setTextureArrayDepths: (textureArrayDepths) => set({ textureArrayDepths }),
-  setTextureData: (textureData) => set({ textureData })
+  setTextureData: (textureData) => set({ textureData }),
+  setDPR: (DPR) => set({ DPR }),
 }));
 
 type PlotState ={
