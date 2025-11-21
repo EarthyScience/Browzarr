@@ -72,7 +72,6 @@ const FlatMap = ({textures, infoSetters, ZarrDS} : {textures : THREE.DataTexture
         return dataShape[1]/dataShape[2]
       }
     }, [axis, analysisMode] )
-
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
     const infoRef = useRef<boolean>(false)
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
@@ -205,7 +204,6 @@ const FlatMap = ({textures, infoSetters, ZarrDS} : {textures : THREE.DataTexture
         uniforms.selectTS.value = selectTS
       }
     },[cScale, cOffset, textures, colormap, animProg, nanColor, nanTransparency, bounds, selectTS])
-
 
   return (
     <>
