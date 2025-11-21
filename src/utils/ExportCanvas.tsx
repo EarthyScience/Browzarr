@@ -261,7 +261,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         const origQuality = usePlotStore.getState().quality;
         const dpr = useGlobalStore.getState().DPR;
         setQuality(preview ? 50 : 1000);
-        !preview && useGlobalStore.setState({DPR: 1})
+        (!preview || !animate) && useGlobalStore.setState({DPR: window.devicePixelRatio || 1}) // Use default pixel ratio unless its an animation preview
 
         const domWidth = gl.domElement.width;
         const domHeight = gl.domElement.height;
