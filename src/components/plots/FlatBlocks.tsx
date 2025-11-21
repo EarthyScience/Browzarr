@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react'
-import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksFrag, flatBlocksVert, flatBlocksVert3D } from '../textures/shaders'
@@ -20,14 +20,25 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
         displacement: state.displacement, sphereResolution: state.sphereResolution,
         offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat
     })))
-
-    const width = dataShape[dataShape.length-1]
-    const height = dataShape[dataShape.length-2]
+    const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
+        analysisMode: state.analysisMode, axis:state.axis
+    })))
+    const {width, height} = useMemo(()=>{
+        if (dataShape.length == 2){
+            return {width: dataShape[1], height: dataShape[0]}
+        } else if (analysisMode){
+            const thisShape = dataShape.filter((_val, idx) => idx != axis)
+            return {width: thisShape[1], height: thisShape[0]}
+        } else {
+            return {width: dataShape[2], height: dataShape[1]}
+        }
+    },[analysisMode, axis, dataShape]) 
+    const rotateMap = analysisMode && axis == 2;
     const geometry = useMemo(()=>{
             const count = width * height;
-            const sqWidth = 1;
+            const sqWidth = 2;
             const aspect = width/height
-            const geo = new THREE.BoxGeometry(sqWidth/width*aspect, sqWidth/height, .01);
+            const geo = new THREE.BoxGeometry(sqWidth/width, sqWidth/height/aspect, .01);
             const uvs = new Float32Array(count * 2);
             let idx = 0;
             for (let i = 0; i < width; i++) {
@@ -45,6 +56,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             );
             return geo
         },[width, height])
+
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
@@ -81,15 +93,16 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             uniforms.cOffset.value = cOffset
             uniforms.cScale.value = cScale
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
+            uniforms.aspect.value = width/height;
         }
         invalidate();
-    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, textures])
+    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, textures, analysisMode, axis, width, height])
 
   return (
 
     <instancedMesh 
-        scale={[1, flipY ? -1 : 1, 1]}
-        rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
+        scale={[((analysisMode && axis == 2) && flipY) ? -1:  1, flipY ? -1 : ((analysisMode && axis == 2) ? -1 : 1) , 1]}
+        rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]}
         args={[geometry, shaderMaterial, (width * height)]}
         frustumCulled={false}
     />

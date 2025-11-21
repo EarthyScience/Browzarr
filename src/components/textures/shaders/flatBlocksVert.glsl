@@ -10,7 +10,7 @@ uniform float animateProg;
 #define PI 3.1415926535
 
 vec3 givePosition(vec2 uv) {
-    return vec3(uv.x*aspect, uv.y, 0.);
+    return vec3(uv.x*2., uv.y/aspect*2., 0.);
 }
 
 
