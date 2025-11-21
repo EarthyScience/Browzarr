@@ -259,12 +259,17 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         if (!show || !enableExport) return;
 
         const origQuality = usePlotStore.getState().quality;
+        const dpr = useGlobalStore.getState().DPR;
         setQuality(preview ? 50 : 1000);
+        !preview && useGlobalStore.setState({DPR: 1})
+
         const domWidth = gl.domElement.width;
         const domHeight = gl.domElement.height;
         let docWidth = useCustomRes ? customRes[0] : (doubleSize ? domWidth * 2 : domWidth);
         let docHeight = useCustomRes ? customRes[1] : (doubleSize ? domHeight * 2 : domHeight);
         // Ensure even dimensions for encoding
+        docWidth /= dpr;
+        docHeight /= dpr;
         docWidth -= docWidth % 2;
         docHeight -= docHeight % 2;
 
@@ -278,7 +283,6 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         const originalSize = gl.getSize(new THREE.Vector2())
         let originalCameraSettings: any = {};
         
-
 
         function SetCamera(set=false){
             if (camera instanceof THREE.PerspectiveCamera) {
@@ -448,11 +452,12 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                         camera.top = originalCameraSettings.top;
                         camera.bottom = originalCameraSettings.bottom;
                     }         
-                    gl.setSize(originalSize.x, originalSize.y);
+                    gl.setSize(originalSize.x, originalSize.y);                  
                     camera.updateProjectionMatrix();
                     invalidate();
                 }
                 setQuality(origQuality);
+                useGlobalStore.setState({DPR: dpr})
             });
         } else {
             gl.render(scene, camera);
@@ -485,6 +490,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                 invalidate();
             }
             setQuality(origQuality);
+            useGlobalStore.setState({DPR: dpr})
         }
 
         

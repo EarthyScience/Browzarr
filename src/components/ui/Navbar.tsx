@@ -10,7 +10,7 @@ import { Orthographic, Perspective } from "./Icons";
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { MdFlipCameraIos } from "react-icons/md";
-
+import PerformanceMode from "./PerformanceMode";
 import {
   Tooltip,
   TooltipContent,
@@ -108,8 +108,12 @@ const Navbar = React.memo(function Navbar(){
 
           {plotOn && !isFlat && <PlotLineButton />}
           {plotOn && 
-          <ExportImageSettings />
+            <>
+              <ExportImageSettings />
+              <PerformanceMode/>
+            </>
           }
+          
           <ThemeSwitch />
         </div>
       </div>
