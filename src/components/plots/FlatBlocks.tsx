@@ -4,6 +4,34 @@ import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksFrag, flatBlocksVert, flatBlocksVert3D } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
+import { useThree, useFrame } from '@react-three/fiber'
+
+function useDepthTarget() {
+  const { size } = useThree();
+
+  return useMemo(() => {
+    const target = new THREE.WebGLRenderTarget(size.width, size.height);
+    target.depthTexture = new THREE.DepthTexture(size.width, size.height);
+    target.depthTexture.format = THREE.DepthFormat;
+    target.depthTexture.type = THREE.UnsignedShortType;
+    return target;
+  }, [size]);
+}
+
+
+function DepthPass({ target }: { target: THREE.WebGLRenderTarget }) {
+  const { gl, scene, camera } = useThree();
+
+  useFrame(() => {
+    gl.setRenderTarget(target);
+    gl.render(scene, camera);
+    gl.setRenderTarget(null); // reset back to default framebuffer
+  });
+
+  return null;
+}
+
+
 const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const {colormap, isFlat, valueScales, flipY,
             dataShape, textureArrayDepths} = useGlobalStore(useShallow(state=>({
@@ -34,6 +62,8 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
         }
     },[analysisMode, axis, dataShape]) 
     const rotateMap = analysisMode && axis == 2;
+    const {camera, size} = useThree()
+    
     const geometry = useMemo(()=>{
             const count = width * height;
             const sqWidth = 2;
@@ -56,12 +86,17 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             );
             return geo
         },[width, height])
+    const depthTarget = useDepthTarget();
 
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
                 map: { value: textures },
+                depthMap: {value: depthTarget.depthTexture},
+                cameraNear: {value: camera.near},
+                cameraFar: {value: camera.far},
+                resolution: {value: new THREE.Vector2(size.width, size.height)},
                 aspect: {value: width/height},
                 textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
                 cmap:{value: colormap},
@@ -78,6 +113,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             blending: THREE.NormalBlending,
             side:THREE.DoubleSide,
             depthWrite:true,
+            depthTest: true,
         })
         return shader
     },[width, height, isFlat])
@@ -86,6 +122,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
         if (shaderMaterial){
             const uniforms = shaderMaterial.uniforms;
             uniforms.map.value = textures;
+            uniforms.depthMap.value = depthTarget.depthTexture;
             uniforms.animateProg.value =  animProg
             uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
             uniforms.displacement.value = displacement
@@ -96,16 +133,18 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             uniforms.aspect.value = width/height;
         }
         invalidate();
-    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, textures, analysisMode, axis, width, height])
+    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, textures, analysisMode, axis, width, height, depthTarget])
 
   return (
-
-    <instancedMesh 
-        scale={[((analysisMode && axis == 2) && flipY) ? -1:  1, flipY ? -1 : ((analysisMode && axis == 2) ? -1 : 1) , 1]}
-        rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]}
-        args={[geometry, shaderMaterial, (width * height)]}
-        frustumCulled={false}
-    />
+    <>
+        <DepthPass target={depthTarget} />
+        <instancedMesh 
+            scale={[((analysisMode && axis == 2) && flipY) ? -1:  1, flipY ? -1 : ((analysisMode && axis == 2) ? -1 : 1) , 1]}
+            rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]}
+            args={[geometry, shaderMaterial, (width * height)]}
+            frustumCulled={false}
+        />
+    </>
   )
 }
 

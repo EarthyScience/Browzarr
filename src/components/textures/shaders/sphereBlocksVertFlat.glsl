@@ -2,6 +2,8 @@
 
 attribute vec2 instanceUV;
 
+out float vDepth;
+
 uniform sampler2D map[14];
 uniform vec3 textureDepths;
 
@@ -83,7 +85,9 @@ void main() {
         // worldPosition = scaledPosition + spherePosition;
         vStrength = dispStrength;
         
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
+        vec4 position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
+        vDepth = position.z;
+        gl_Position = position;
 
     }
 }

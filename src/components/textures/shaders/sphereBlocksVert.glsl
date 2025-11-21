@@ -2,6 +2,8 @@
 
 attribute vec2 instanceUV;
 
+out float vDepth;
+
 uniform sampler3D map[14];
 uniform vec3 textureDepths;
 
@@ -85,8 +87,11 @@ void main() {
         vec3 worldPosition = spherePosition + oriented;
         // worldPosition = scaledPosition + spherePosition;
         vStrength = dispStrength;
-        
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
+        vec4 viewPosition = modelViewMatrix * vec4(worldPosition, 1.0);
+
+        // Now get the actual distance from camera
+        vDepth = -viewPosition.z;
+        gl_Position = projectionMatrix * viewPosition;
 
     }
 }
