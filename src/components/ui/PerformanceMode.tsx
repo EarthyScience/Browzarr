@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { MdOutlineRocketLaunch } from "react-icons/md";
 import { Potato } from './Icons';
 import { FaCarSide } from "react-icons/fa6";
@@ -16,7 +16,13 @@ const icons = {
 const PerformanceMode = () => {
     const {setDPR} = useGlobalStore.getState()
     const [currentIcon, setCurrentIcon] = useState<string>("fast")
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = useRef(1)
+
+    useEffect(()=>{ // Moved this logic to useeffect cause useless Next doesn't recognize window
+        dpr.current = window.devicePixelRatio || 1;
+    },[])
+
+
   return (
     <Popover
     >
@@ -40,7 +46,7 @@ const PerformanceMode = () => {
                 variant="ghost"
                 size="icon"
                 className="size-10 cursor-pointer"
-                onClick={()=>{setCurrentIcon(val); setDPR(dpr/2**idx)}}
+                onClick={()=>{setCurrentIcon(val); setDPR(dpr.current/2**idx)}}
                 key={`performance_${idx}`}
             >
                 {icons[val as keyof typeof icons]}

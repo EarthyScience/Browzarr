@@ -107,7 +107,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   titleDescription: {title:null, description: null},
   textureArrayDepths: [1,1,1], 
   textureData: new Uint8Array(1),
-  DPR: window.devicePixelRatio || 1,
+  DPR: 1,
 
   setDataShape: (dataShape) => set({ dataShape }),
   setShape: (shape) => set({ shape }),
