@@ -36,13 +36,13 @@ const ThemeSwitch = () => {
     <Button
       variant="ghost"
       size="icon"
-      className="size-10 cursor-pointer"
+      className="cursor-pointer"
       onClick={toggleTheme} 
       >
         {!mounted ? <BsSunFill className="size-6" /> : current === 'dark' ? <BsMoonStarsFill className="size-6"/> : <BsSunFill className="size-6"/>}
     </Button>
     </TooltipTrigger>
-      <TooltipContent side="right" align="start">
+      <TooltipContent side="bottom" align="start">
         {current === 'dark' ? 
           <span>Switch to Light Mode</span> : 
           <span>Switch to Dark Mode</span>

@@ -113,8 +113,6 @@ const Navbar = React.memo(function Navbar(){
               <PerformanceMode/>
             </>
           }
-          
-          <ThemeSwitch />
         </div>
       </div>
     </nav>
