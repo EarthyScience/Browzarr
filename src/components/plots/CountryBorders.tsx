@@ -187,10 +187,10 @@ const CountryBorders = () => {
         dataShape: state.dataShape,
         is4D: state.is4D
     })))
-    const {zRange, plotType, showBorders, timeScale, rotateFlat} = usePlotStore(useShallow(state => ({
+    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize} = usePlotStore(useShallow(state => ({
         zRange: state.zRange, plotType: state.plotType,
         showBorders: state.showBorders, timeScale: state.timeScale,
-        rotateFlat: state.rotateFlat
+        rotateFlat: state.rotateFlat, pointSize:state.pointSize
     })))
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
         analysisMode: state.analysisMode,
@@ -232,13 +232,16 @@ const CountryBorders = () => {
     const isPC = plotType == 'point-cloud'
     const isFlatMap = plotType == "flat"
     const depthScale = dataShape[0]/dataShape[2]*timeScale
+    const globalScale = isPC ? dataShape[2]/500 : 1
+
     return(
         <group
             rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
+            scale={[globalScale, globalScale, globalScale]}
         >
             <group 
                 visible={showBorders && !(analysisMode && axis != 0)} 
-                position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale : 1) : zRange[1]*(isPC ? depthScale : 1)]}
+                position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale + pointSize/10000 : 1) : zRange[1]*(isPC ? depthScale + pointSize/10000 : 1)]} // I don't know what value to use here. THis seems okay but not perfect
             >
                 {coastLines && <Borders features={coastLines} />}
                 {borders && <Borders features={borders} />}
