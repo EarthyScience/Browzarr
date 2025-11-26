@@ -29,14 +29,10 @@ function Spherize([lon, lat] : [number, number]){
 
 function Borders({features}:{features: any}){
     const {xRange, yRange, plotType, borderColor, lonExtent, latExtent, lonResolution, latResolution} = usePlotStore(useShallow(state => ({
-        xRange: state.xRange,
-        yRange: state.yRange,
-        plotType: state.plotType,
-        borderColor: state.borderColor,
-        lonExtent: state.lonExtent,
-        latExtent: state.latExtent,
-        lonResolution: state.lonResolution,
-        latResolution: state.latResolution
+        xRange: state.xRange, yRange: state.yRange,
+        plotType: state.plotType, borderColor: state.borderColor,
+        lonExtent: state.lonExtent, latExtent: state.latExtent,
+        lonResolution: state.lonResolution, latResolution: state.latResolution,
     })))
     const {flipY, shape } = useGlobalStore(useShallow(state => ({
         flipY: state.flipY,
@@ -52,7 +48,6 @@ function Borders({features}:{features: any}){
           return [newLonBounds as [number, number], newLatBounds as [number, number]]
         },[latExtent, lonExtent, lonResolution, latResolution])
 
-    
     const [spherize, setSpherize] = useState<boolean>(false)
 
     useEffect(()=>{
@@ -192,11 +187,10 @@ const CountryBorders = () => {
         dataShape: state.dataShape,
         is4D: state.is4D
     })))
-    const {zRange, plotType, showBorders, timeScale} = usePlotStore(useShallow(state => ({
-        zRange: state.zRange,
-        plotType: state.plotType,
-        showBorders: state.showBorders,
-        timeScale: state.timeScale
+    const {zRange, plotType, showBorders, timeScale, rotateFlat} = usePlotStore(useShallow(state => ({
+        zRange: state.zRange, plotType: state.plotType,
+        showBorders: state.showBorders, timeScale: state.timeScale,
+        rotateFlat: state.rotateFlat
     })))
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
         analysisMode: state.analysisMode,
@@ -239,9 +233,16 @@ const CountryBorders = () => {
     const isFlatMap = plotType == "flat"
     const depthScale = dataShape[0]/dataShape[2]*timeScale
     return(
-        <group visible={showBorders && !(analysisMode && axis != 0)} position={(spherize || isFlatMap) ? [0,0,0] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale : 1) : zRange[1]*(isPC ? depthScale : 1)]}>
-            {coastLines && <Borders features={coastLines} />}
-            {borders && <Borders features={borders} />}
+        <group
+            rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
+        >
+            <group 
+                visible={showBorders && !(analysisMode && axis != 0)} 
+                position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale : 1) : zRange[1]*(isPC ? depthScale : 1)]}
+            >
+                {coastLines && <Borders features={coastLines} />}
+                {borders && <Borders features={borders} />}
+            </group>
         </group>
     )
 }
