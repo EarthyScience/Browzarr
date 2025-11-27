@@ -26,7 +26,7 @@ jobs:
 
       - name: Build site
         env:
-          BASE_PATH: ""
+          BASE_PATH: ${{ github.ref_name }}
           TARGET_FOLDER: ${{ github.ref_name }}
         run: pnpm buildRepo
 
