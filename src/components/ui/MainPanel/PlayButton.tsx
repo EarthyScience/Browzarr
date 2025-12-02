@@ -318,7 +318,8 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
                 className='cursor-pointer'
                 onClick={() => {
                   previousVal.current = Math.round(animProg * sliceDist) + 1
-                  setAnimProg(previousVal.current / sliceDist)
+                  const prog = previousVal.current / sliceDist
+                  setAnimProg(prog-Math.floor(prog))
                 }}
                 aria-label={animate ? '' : 'Forward'}
                 title={animate ? '' : 'Forward'}
