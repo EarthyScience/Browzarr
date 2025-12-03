@@ -306,6 +306,10 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     setTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
   },[interpPixels])
 
+  useEffect(()=>{ // Rotates flat back when changing away
+    usePlotStore.setState({rotateFlat: false})
+  },[plotType])
+  
   const Nav = useMemo(()=>Navbar,[])
   return (
     <div id='main-canvas-div' className='main-canvas'

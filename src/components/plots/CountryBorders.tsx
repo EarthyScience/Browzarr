@@ -231,7 +231,9 @@ const CountryBorders = () => {
 
     const isPC = plotType == 'point-cloud'
     const isFlatMap = plotType == "flat"
-    const depthScale = dataShape[0]/dataShape[2]*timeScale
+    const timeRatio = Math.max(dataShape[0]/dataShape[2],2)
+    const depthScale = timeRatio*timeScale
+    
     const globalScale = isPC ? dataShape[2]/500 : 1
 
     return(
@@ -241,7 +243,7 @@ const CountryBorders = () => {
         >
             <group 
                 visible={showBorders && !(analysisMode && axis != 0)} 
-                position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale + pointSize/10000 : 1) : zRange[1]*(isPC ? depthScale + pointSize/10000 : 1)]} // I don't know what value to use here. THis seems okay but not perfect
+                position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale + pointSize/10000 : timeRatio/2) : zRange[1]*(isPC ? depthScale + pointSize/10000 : timeRatio/2)]} // I don't know what value to use here. THis seems okay but not perfect
             >
                 {coastLines && <Borders features={coastLines} />}
                 {borders && <Borders features={borders} />}
