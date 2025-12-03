@@ -38,6 +38,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
     })))
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
+    const timeRatio = shape.z/shape.x;
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
@@ -49,7 +50,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           cScale: {value: cScale},
           threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
           scale: {value: shape},
-          flatBounds:{value: new THREE.Vector4(-xRange[1],-xRange[0],zRange[0],zRange[1])},
+          flatBounds:{value: new THREE.Vector4(-xRange[1],-xRange[0],zRange[0] * timeRatio, zRange[1] * timeRatio)},
           vertBounds:{value: new THREE.Vector2(yRange[0]*aspectRatio,yRange[1]*aspectRatio)},
           steps: { value: quality },
           animateProg: {value: animProg},
@@ -77,7 +78,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
         uniforms.cScale.value = cScale;
         uniforms.threshold.value.set(valueRange[0], valueRange[1]);
         uniforms.scale.value = shape;
-        uniforms.flatBounds.value.set(-xRange[1], -xRange[0], zRange[0], zRange[1]);
+        uniforms.flatBounds.value.set(-xRange[1], -xRange[0], zRange[0] * timeRatio, zRange[1] * timeRatio);
         uniforms.vertBounds.value.set(yRange[0] * aspectRatio, yRange[1] * aspectRatio);
         uniforms.steps.value = quality;
         uniforms.animateProg.value = animProg;
