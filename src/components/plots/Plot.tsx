@@ -215,8 +215,9 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         else{
           setIsFlat(false)
         }
-        const shapeRatio = result.shape[shapeLength-2] / result.shape[shapeLength-1] * 2;
-        setShape(new THREE.Vector3(2, shapeRatio, 2));
+        const aspectRatio = result.shape[shapeLength-2] / result.shape[shapeLength-1];
+        const timeRatio = result.shape[shapeLength-3] / result.shape[shapeLength-1];
+        setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio, 2)));
         setDataShape(result.shape)
         setShow(true)
         setPlotOn(true)

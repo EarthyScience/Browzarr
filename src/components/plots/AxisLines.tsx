@@ -69,6 +69,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
   const depthRatio = useMemo(()=>dataShape[0]/dataShape[2]*timeScale,[dataShape, timeScale]);
   const shapeRatio = useMemo(()=>dataShape[1]/dataShape[2], [dataShape])
+  const timeRatio = Math.max(dataShape[0]/dataShape[2], 2);
 
   const secondaryColor = useCSSVariable('--text-plot') //replace with needed variable
   const colorHex = useMemo(()=>{
@@ -89,7 +90,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     return new LineSegments2(geom, lineMat)},[yRange, shapeRatio, lineMat, globalScale])
 
   const zLine = useMemo(()=> {
-    const geom = new LineSegmentsGeometry().setPositions([0, 0, isPC ? zRange[0]*globalScale*depthRatio-tickLength/2 : zRange[0]-tickLength/2, 0, 0, isPC ? zRange[1]*globalScale*depthRatio+tickLength/2 : zRange[1]+tickLength/2]);
+    const geom = new LineSegmentsGeometry().setPositions([0, 0, isPC ? zRange[0]*globalScale*depthRatio-tickLength/2 : (zRange[0]*timeRatio-tickLength)/2, 0, 0, isPC ? zRange[1]*globalScale*depthRatio+tickLength/2 : (zRange[1]*timeRatio+tickLength)/2]);
     return new LineSegments2(geom, lineMat)},[zRange, depthRatio, isPC, lineMat, globalScale])
 
   const tickLine = useMemo(()=> {
@@ -112,7 +113,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     {/* Horizontal Group */}
     <group position={[0, isPC ? shapeRatio*globalScale*yRange[0] : shapeRatio*yRange[0], 0]}  >
       {/* X Group */}
-      <group position={[0, 0, flipX ? isPC ? zRange[0]*depthRatio*(globalScale)-tickLength/2 : zRange[0]-tickLength/2 : isPC ? zRange[1] * (globalScale) * depthRatio +tickLength/2 : zRange[1]+tickLength/2]} rotation={[flipDown ? flipX ? -Math.PI/2 : Math.PI/2 : 0, 0, 0]}> 
+      <group position={[0, 0, flipX ? isPC ? zRange[0]*depthRatio*(globalScale)-tickLength/2 : (zRange[0]*timeRatio-tickLength)/2 : isPC ? zRange[1] * (globalScale) * depthRatio +tickLength/2 : (zRange[1]*timeRatio+tickLength)/2]} rotation={[flipDown ? flipX ? -Math.PI/2 : Math.PI/2 : 0, 0, 0]}> 
         <primitive key={'xLine'} object={xLine} />
         {Array(xResolution).fill(null).map((_val,idx)=>(
           (((xRange[0] + 1)/2) <= (idx*xDimScale)/xResolution &&
@@ -182,7 +183,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
           (((zRange[0] + 1)/2) <= (idx*zDimScale)/zResolution  &&
           ((zRange[1] + 1)/2) >= (idx*zDimScale)/zResolution )
           && 
-          <group key={`zGroup_${idx}`} position={[0, 0, isPC ? -depthRatio*globalScale + idx*zDimScale/(zResolution/2)*depthRatio*(globalScale) : -1 + idx*zDimScale/(zResolution/2)]}>
+          <group key={`zGroup_${idx}`} position={[0, 0, isPC ? -depthRatio*globalScale + idx*zDimScale/(zResolution/2)*depthRatio*(globalScale) : -0.5*timeRatio + idx*zDimScale/(zResolution/2)*timeRatio/2]}>
             <primitive key={idx} object={tickLine.clone()}  rotation={[0, flipY ? Math.PI/2 : -Math.PI/2 , 0]} />
             <Text 
               key={`textY_${idx}`}
@@ -242,7 +243,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
       </group>
     </group>
     {/* Vertical Group */}
-    <group position={[flipY ? xRange[0]*globalScale - tickLength/2 : xRange[1]*globalScale + tickLength/2, 0, flipX ? isPC ? zRange[0]*depthRatio*(globalScale) - tickLength/2 : zRange[0] - tickLength/2 : isPC ? zRange[1]*depthRatio*(globalScale) + tickLength/2 : zRange[1] +tickLength/2]}> 
+    <group position={[flipY ? xRange[0]*globalScale - tickLength/2 : xRange[1]*globalScale + tickLength/2, 0, flipX ? isPC ? zRange[0]*depthRatio*(globalScale) - tickLength/2 : (zRange[0]*timeRatio - tickLength)/2 : isPC ? zRange[1]*depthRatio*(globalScale) + tickLength/2 : (zRange[1]*timeRatio +tickLength)/2]}> 
       <primitive key={'yLine'} object={yLine} />
       {Array(yResolution).fill(null).map((_val,idx)=>(
            (((yRange[0] + 1)/2) <= (idx*yDimScale)/yResolution &&
