@@ -11,22 +11,23 @@ const VersionSelector = () => {
   const [versions, setVersions] = useState<string[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const { hostname, pathname, origin } = window.location;
     const pathSegments = pathname.split("/").filter(Boolean);
 
     const isGitHubPages = hostname.endsWith("github.io");
-    const isLocalhost =
-      hostname === "localhost" || hostname.startsWith("10.");
+    const isLocalhost = hostname === "localhost" || hostname.startsWith("10.");
 
-    const repoBase =
-      isGitHubPages && pathSegments.length ? `/${pathSegments[0]}` : "";
+    const repoBase = isGitHubPages && pathSegments.length ? `/${pathSegments[0]}` : "";
 
     // dev mode: no versions.json
     if (isLocalhost) {
-      setVersions(["latest"]);
-      setSelectedVersion("latest");
+      setTimeout(() => {
+        setVersions(["latest"]);
+        setSelectedVersion("latest");
+      }, 0);
       return;
     }
 
@@ -73,16 +74,16 @@ const VersionSelector = () => {
     const pathSegments = pathname.split("/").filter(Boolean);
 
     const isGitHubPages = hostname.endsWith("github.io");
-    const repoBase =
-      isGitHubPages && pathSegments.length ? `/${pathSegments[0]}` : "";
+    const repoBase = isGitHubPages && pathSegments.length ? `/${pathSegments[0]}` : "";
 
-    // Always use /latest/ for latest, regardless of domain
-    if (version === "latest") {
-      window.location.href = `${repoBase}/latest/`;
-    } else {
-      window.location.href = `${repoBase}/${version}/`;
-    }
+    const targetUrl = version === "latest" ? `${repoBase}/latest/` : `${repoBase}/${version}/`;
+    setRedirectUrl(targetUrl);
   };
+  useEffect(() => {
+    if (redirectUrl) {
+      window.location.href = redirectUrl;
+    }
+  }, [redirectUrl]);
 
   if (!versions.length || !selectedVersion) return null;
 

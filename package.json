@@ -34,7 +34,8 @@
   "private": true,
   "packageManager": "pnpm@10.11.1",
   "scripts": {
-    "prChecks": "pnpm lint && pnpm buildRepo",
+    "prBuild": "pnpm buildRepo",
+    "prLint": "pnpm lint",
     "dev": "next dev",
     "buildRepo": "pnpm rmBuild && pnpm build",
     "rmBuild": "pnpm -r exec rm -rf out",
