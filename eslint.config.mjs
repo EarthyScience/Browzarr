@@ -1,24 +1,28 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+export default defineConfig([
+  // Next.js recommended rules + React + React Hooks + Core Web Vitals
+  ...nextVitals,
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+  // TypeScript rules from eslint-config-next
+  ...nextTs,
 
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  // Overrides
   {
     rules: {
       "@typescript-eslint/no-unused-vars": "off",
-      "no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "off",
-      'react-hooks/exhaustive-deps': 'off',
-    }
-  }
-];
+      "react-hooks/exhaustive-deps": "off",
+    },
+  },
 
-export default eslintConfig;
+  // Override default ignores
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);

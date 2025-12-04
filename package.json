@@ -42,7 +42,7 @@
     "start": "next start",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "next lint --max-warnings 100"
+    "lint": "eslint . --max-warnings=100"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
@@ -95,7 +95,8 @@
     "@vitejs/plugin-react": "^4.4.1",
     "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9",
-    "eslint-config-next": "15.4.3",
+    "eslint-config-next": "^16.0.7",
+    "eslint-plugin-next": "^0.0.0",
     "jsdom": "^26.1.0",
     "raw-loader": "^4.0.2",
     "tailwindcss": "^4",
