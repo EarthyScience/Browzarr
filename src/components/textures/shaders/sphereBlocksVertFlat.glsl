@@ -15,7 +15,7 @@ uniform float animateProg;
 
 vec3 givePosition(vec2 uv) {
     // Reverse the normalization using the bounds
-    float longitude = (1.0 - uv.x) * (lonBounds.y - lonBounds.x) + lonBounds.x;
+    float longitude = -((1.0 - uv.x) * (lonBounds.y - lonBounds.x) + lonBounds.x);
     float latitude = uv.y * (latBounds.y - latBounds.x) + latBounds.x;
     
     // Convert to Cartesian coordinates

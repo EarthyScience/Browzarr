@@ -535,6 +535,7 @@ type ImageExportState = {
   hideAxis: boolean;
   mainTitle: string | undefined;
   cbarLabel: string | undefined;
+  cbarUnits: string | undefined;
   animate: boolean;
   frames: number;
   frameRate: number;
@@ -543,6 +544,7 @@ type ImageExportState = {
   timeRate: number;
   loopTime: boolean;
   animViz: boolean;
+  keyFrames: Record<string, any>[] | undefined;
   initialState: Record<string, any> | undefined;
   finalState: Record<string, any> | undefined;
   preview: boolean;
@@ -566,6 +568,7 @@ type ImageExportState = {
   setHideAxis: (hideAxis: boolean) => void;
   setMainTitle: (mainTitle: string | undefined) => void;
   setCbarLabel: (cbarLabel: string | undefined) => void;
+  setCbarUnits: (cbarUnits: string | undefined) => void;
   setAnimate: (animate: boolean) => void;
   setFrames: (frames: number) => void;
   setFrameRate: (frameRate: number) => void;
@@ -574,6 +577,7 @@ type ImageExportState = {
   setTimeRate: (timeRate: number) => void;
   setLoopTime: (loopTime: boolean) => void;
   setAnimViz: (animViz: boolean) => void;
+  addKeyFrame: (keyFrame: Record<string, any>) => void;
   setInitialState: (initialState: Record<string, any> | undefined) => void;
   setFinalState: (finalState: Record<string, any> | undefined) => void;
   setPreview: (preview: boolean) => void;
@@ -594,6 +598,7 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   hideAxis: false,
   mainTitle: undefined,
   cbarLabel: undefined,
+  cbarUnits: undefined,
   animate: false,
   frames: 60,
   frameRate: 12,
@@ -602,6 +607,7 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   timeRate: 12,
   loopTime: false,
   animViz: false,
+  keyFrames: undefined,
   initialState: undefined,
   finalState: undefined,
   preview: true,
@@ -625,6 +631,7 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   setHideAxis: (hideAxis) => set({ hideAxis }),
   setMainTitle: (mainTitle) => set({ mainTitle }),
   setCbarLabel: (cbarLabel) => set({ cbarLabel }),
+  setCbarUnits: (cbarUnits) => set({ cbarUnits }),
   setAnimate: (animate) => set({ animate }),
   setFrames: (frames) => set({ frames }),
   setFrameRate: (frameRate) => set({ frameRate }),
@@ -633,6 +640,10 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   setTimeRate: (timeRate) => set({ timeRate }),
   setLoopTime: (loopTime) => set({ loopTime }),
   setAnimViz: (animViz) => set({ animViz }),
+  addKeyFrame: (keyFrame) => {
+    const currentKeyFrames = get().keyFrames || [];
+    set({ keyFrames: [...currentKeyFrames, keyFrame] });
+  },
   setInitialState: (initialState) => set({ initialState }),
   setFinalState: (finalState) => set({ finalState }),
   setPreview: (preview) => set({ preview })

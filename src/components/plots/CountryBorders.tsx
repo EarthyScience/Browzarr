@@ -233,13 +233,14 @@ const CountryBorders = () => {
     const isFlatMap = plotType == "flat"
     const timeRatio = Math.max(dataShape[0]/dataShape[2],2)
     const depthScale = timeRatio*timeScale
+    const aspectRatio = dataShape[2]/dataShape[1]
     
     const globalScale = isPC ? dataShape[2]/500 : 1
 
     return(
         <group
             rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
-            scale={[globalScale, globalScale, globalScale]}
+            scale={[globalScale, globalScale , globalScale]}
         >
             <group 
                 visible={showBorders && !(analysisMode && axis != 0)} 

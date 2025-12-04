@@ -68,13 +68,13 @@ function ViewVisualState(isInitial:boolean){
 const ExportImageSettings = () => {
     const {
         includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum,
-        useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, animate, timeRate,
+        useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, cbarUnits, animate, timeRate,
         frames, frameRate, orbit, useTime, loopTime, animViz, initialState, finalState, preview  
     } = useImageExportStore(useShallow(state => ({
           includeBackground: state.includeBackground, includeColorbar: state.includeColorbar,
           doubleSize: state.doubleSize, cbarLoc: state.cbarLoc, cbarNum: state.cbarNum, useCustomRes: state.useCustomRes,
           customRes: state.customRes, includeAxis: state.includeAxis, mainTitle: state.mainTitle, cbarLabel: state.cbarLabel,
-          animate: state.animate, timeRate:state.timeRate, frames: state.frames, frameRate: state.frameRate, 
+          cbarUnits:state.cbarUnits, animate: state.animate, timeRate:state.timeRate, frames: state.frames, frameRate: state.frameRate, 
           orbit: state.orbit, useTime:state.useTime,
           loopTime: state.loopTime, animViz:state.animViz, initialState:state.initialState, finalState:state.finalState,
           preview:state.preview
@@ -84,7 +84,7 @@ const ExportImageSettings = () => {
         setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis, 
         setHideAxis, setHideAxisControls, setMainTitle, setCbarLabel, setAnimate, 
         setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setAnimViz, 
-        setInitialState, setFinalState, setPreview} = useImageExportStore.getState()
+        setInitialState, setFinalState, setPreview, setCbarUnits} = useImageExportStore.getState()
 
     interface CapitalizeFn {
         (str: string): string;
@@ -157,10 +157,13 @@ const ExportImageSettings = () => {
             <Hider show={showTitles} className='col-span-2'>
                 <div className='grid'>
                     <label htmlFor="main-title">Main Title</label>
-                    <Input id='main-title' type='string' placeholder={variable} value={mainTitle} onChange={e=> setMainTitle(e.target.value)}/>
+                    <Input id='main-title' type='string' value={mainTitle} onChange={e=> setMainTitle(e.target.value)}/>
 
                     <label htmlFor="cbar-title">Colorbar Label</label>
-                    <Input id='cbar-title' type='string' placeholder={metadata?.units} value={cbarLabel} onChange={e=> setCbarLabel(e.target.value)}/>
+                    <Input id='cbar-title' type='string' placeholder={variable} value={cbarLabel} onChange={e=> setCbarLabel(e.target.value)}/>
+                
+                    <label htmlFor="cbar-title">Colorbar Units</label>
+                    <Input id='cbar-title' type='string' placeholder={metadata?.units?? "undefined"} value={cbarUnits} onChange={e=> setCbarUnits(e.target.value)}/>
                 </div>
             </Hider>
             {/* Settings */}

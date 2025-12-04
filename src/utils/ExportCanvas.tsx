@@ -20,7 +20,7 @@ const DrawComposite = (
 
     const {bgColor, textColor} = colors;
     const { doubleSize, includeBackground, mainTitle,
-    cbarLabel, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
+    cbarLabel, cbarUnits, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
     const {valueScales, variable, metadata } = useGlobalStore.getState()
     const ctx = compositeCanvas.getContext('2d')
     if (!ctx){return}
@@ -88,12 +88,14 @@ const DrawComposite = (
     // ---- TEXT ---- //
     if (!animate){ // If still image write text onto image
          // ---- TITLE ---- //
-        const variableSize = doubleSize ? 72 : 36
-        ctx.fillStyle = textColor
-        ctx.font = `${variableSize}px "Segoe UI"`
-        ctx.textBaseline = 'middle'
-        ctx.fillText(mainTitle?? variable, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // Variable in top Left
-
+         if (mainTitle){
+            const variableSize = doubleSize ? 72 : 36
+            ctx.fillStyle = textColor
+            ctx.font = `${variableSize}px "Segoe UI"`
+            ctx.textBaseline = 'middle'
+            ctx.fillText(mainTitle, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // MainTitle in top Left
+         }
+        
         // ---- WATERMARK ---- //
         const waterMarkSize = doubleSize ? 40 : 20
         ctx.fillStyle = "#888888"
@@ -136,7 +138,8 @@ const DrawComposite = (
             ctx.fillStyle = textColor
             ctx.font = `${unitSize}px "Segoe UI" bold`
             ctx.textAlign = 'center'
-            ctx.fillText(cbarLabel?? metadata?.units, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4)
+            const cbarString = `${cbarLabel?? variable} [${cbarUnits?? "undefined"}]`
+            ctx.fillText(cbarString, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4)
         }
     }
     
@@ -257,7 +260,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
 
     useEffect(()=>{   
         if (!show || !enableExport) return;
-
+        const {animProg} = usePlotStore.getState()
         const origQuality = usePlotStore.getState().quality;
         const dpr = useGlobalStore.getState().DPR;
         setQuality(preview ? 50 : 1000);
@@ -355,7 +358,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                         !(useCustomRes || doubleSize) && invalidate(); // We will invalidate later if needed. Otherwise do it now
                     }
                     if (useTime){
-                        let newProg = dt * Math.floor(frame*timeRatio);
+                        let newProg = dt * Math.floor(frame*timeRatio) + animProg;
                         newProg = loopTime ? newProg - Math.floor(newProg) : Math.min(newProg, 1);
                         setAnimProg(newProg)
                     }
@@ -415,7 +418,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     '-filter_complex', `[1:v]scale=${docWidth}:${docHeight}[overlay];[0:v][overlay]overlay=0:0`,
                     '-c:v', 'libx264',
                     '-pix_fmt', 'yuv444p',
-                    '-preset', `${preview ? 'ultrafast' : 'slow'}`, 
+                    '-preset', `${preview ? 'ultrafast' : 'fast'}`, 
                     '-crf', `${preview ? 28 : 16}`, 
                     '-tune', 'stillimage',
                     '-profile:v', 'high444',

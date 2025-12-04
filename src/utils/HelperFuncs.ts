@@ -157,6 +157,7 @@ export function linspace(start: number, stop: number, num: number): number[] {
 export function ParseExtent(dimUnits: string[], dimArrays: number[][]){
 
   const {setLonExtent, setLatExtent, setLonResolution, setLatResolution, setOriginalExtent } = usePlotStore.getState();
+  const {xSlice, ySlice} = usePlotStore.getState();
   const tempUnits = dimUnits.length > 2 ? dimUnits.slice(1) : dimUnits;
   let tryParse = false;
   for (const unit of tempUnits){
@@ -168,10 +169,10 @@ export function ParseExtent(dimUnits: string[], dimArrays: number[][]){
   }
   if (tryParse){
     const tempArrs = dimArrays.length > 2 ? dimArrays.slice(1) : dimArrays
-    const minLat = tempArrs[0][0]
-    const maxLat = tempArrs[0][tempArrs[0].length-1]
-    let minLon = tempArrs[1][0]
-    let maxLon = tempArrs[1][tempArrs[1].length-1]
+    const minLat = tempArrs[0][ySlice[0]]
+    const maxLat = tempArrs[0][ySlice[1]??tempArrs[0].length-1]
+    let minLon = tempArrs[1][xSlice[0]]
+    let maxLon = tempArrs[1][xSlice[1]?? tempArrs[1].length-1]
     minLon = minLon > 180 ? minLon - 360 : minLon
     maxLon = maxLon > 180 ? maxLon - 360 : maxLon
     setLonExtent([minLon, maxLon])
