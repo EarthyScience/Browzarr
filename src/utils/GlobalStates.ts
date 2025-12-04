@@ -540,11 +540,12 @@ type ImageExportState = {
   frames: number;
   frameRate: number;
   orbit: boolean;
+  pingpong: boolean;
   useTime: boolean;
   timeRate: number;
   loopTime: boolean;
   animViz: boolean;
-  keyFrames: Record<string, any>[] | undefined;
+  keyFrames: Map<number, any> | undefined;
   initialState: Record<string, any> | undefined;
   finalState: Record<string, any> | undefined;
   preview: boolean;
@@ -573,11 +574,12 @@ type ImageExportState = {
   setFrames: (frames: number) => void;
   setFrameRate: (frameRate: number) => void;
   setOrbit: (orbit: boolean) => void;
+  setPingpong: (pingpong: boolean) => void;
   setUseTime: (useTime: boolean) => void;
   setTimeRate: (timeRate: number) => void;
   setLoopTime: (loopTime: boolean) => void;
   setAnimViz: (animViz: boolean) => void;
-  addKeyFrame: (keyFrame: Record<string, any>) => void;
+  addKeyFrame: (frame:number, keyFrame: Map<number, any>) => void;
   setInitialState: (initialState: Record<string, any> | undefined) => void;
   setFinalState: (finalState: Record<string, any> | undefined) => void;
   setPreview: (preview: boolean) => void;
@@ -603,6 +605,7 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   frames: 60,
   frameRate: 12,
   orbit: false,
+  pingpong: false,
   useTime: false,
   timeRate: 12,
   loopTime: false,
@@ -636,13 +639,16 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   setFrames: (frames) => set({ frames }),
   setFrameRate: (frameRate) => set({ frameRate }),
   setOrbit: (orbit) => set({ orbit }),
+  setPingpong: (pingpong) => set({ pingpong }),
   setUseTime: (useTime) => set({ useTime }),
   setTimeRate: (timeRate) => set({ timeRate }),
   setLoopTime: (loopTime) => set({ loopTime }),
   setAnimViz: (animViz) => set({ animViz }),
-  addKeyFrame: (keyFrame) => {
-    const currentKeyFrames = get().keyFrames || [];
-    set({ keyFrames: [...currentKeyFrames, keyFrame] });
+  addKeyFrame: (frame: number, value: Record<string, any>) => {
+    const currentKeyFrames = get().keyFrames || new Map();
+    const newKeyFrames = new Map(currentKeyFrames);
+    newKeyFrames.set(frame, value);
+    set({ keyFrames: newKeyFrames });
   },
   setInitialState: (initialState) => set({ initialState }),
   setFinalState: (finalState) => set({ finalState }),

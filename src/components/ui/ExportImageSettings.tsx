@@ -69,22 +69,21 @@ const ExportImageSettings = () => {
     const {
         includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum,
         useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, cbarUnits, animate, timeRate,
-        frames, frameRate, orbit, useTime, loopTime, animViz, initialState, finalState, preview  
+        frames, frameRate, orbit, useTime, loopTime, animViz, initialState, finalState, preview, pingpong  
     } = useImageExportStore(useShallow(state => ({
           includeBackground: state.includeBackground, includeColorbar: state.includeColorbar,
           doubleSize: state.doubleSize, cbarLoc: state.cbarLoc, cbarNum: state.cbarNum, useCustomRes: state.useCustomRes,
           customRes: state.customRes, includeAxis: state.includeAxis, mainTitle: state.mainTitle, cbarLabel: state.cbarLabel,
           cbarUnits:state.cbarUnits, animate: state.animate, timeRate:state.timeRate, frames: state.frames, frameRate: state.frameRate, 
-          orbit: state.orbit, useTime:state.useTime,
-          loopTime: state.loopTime, animViz:state.animViz, initialState:state.initialState, finalState:state.finalState,
-          preview:state.preview
+          orbit: state.orbit, useTime:state.useTime, loopTime: state.loopTime, animViz:state.animViz, initialState:state.initialState, finalState:state.finalState,
+          preview:state.preview, pingpong:state.pingpong
       })))
 
     const {ExportImg, EnableExport, setIncludeBackground, setIncludeColorbar, 
         setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis, 
         setHideAxis, setHideAxisControls, setMainTitle, setCbarLabel, setAnimate, 
         setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setAnimViz, 
-        setInitialState, setFinalState, setPreview, setCbarUnits} = useImageExportStore.getState()
+        setInitialState, setFinalState, setPreview, setCbarUnits, setPingpong} = useImageExportStore.getState()
 
     interface CapitalizeFn {
         (str: string): string;
@@ -264,9 +263,12 @@ const ExportImageSettings = () => {
                             <Input id="fps" type='number' step={1} value={frameRate} onChange={e => setFrameRate(parseInt(e.target.value))} />
                         </div>
                         <div className="grid grid-cols-[auto_60px] items-center gap-2">
+                            <label htmlFor="useOrbit">Ping-Pong</label>
+                            <Switch id="useOrbit" checked={pingpong} onCheckedChange={e=> setPingpong(e)} />
+
                             <label htmlFor="useOrbit">Orbit</label>
                             <Switch id="useOrbit" checked={orbit} onCheckedChange={e=> setOrbit(e)} />
-
+                            
                             <label htmlFor="useTime">Animate Time</label>
                             <Switch id="useTime" checked={useTime} onCheckedChange={e=> setUseTime(e)} />
                             <Hider show={useTime} className='col-span-2'>
