@@ -34,7 +34,8 @@
   "private": true,
   "packageManager": "pnpm@10.11.1",
   "scripts": {
-    "prChecks": "pnpm lint && pnpm buildRepo",
+    "prBuild": "pnpm buildRepo",
+    "prLint": "pnpm lint",
     "dev": "next dev",
     "buildRepo": "pnpm rmBuild && pnpm build",
     "rmBuild": "pnpm -r exec rm -rf out",
@@ -42,7 +43,7 @@
     "start": "next start",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "next lint --max-warnings 100"
+    "lint": "eslint . --max-warnings=100"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
@@ -69,7 +70,7 @@
     "gsap": "^3.13.0",
     "js-colormaps-es": "^0.0.5",
     "lucide-react": "^0.543.0",
-    "next": "15.5.2",
+    "next": ">=15.5.7",
     "next-themes": "^0.4.6",
     "radix-ui": "latest",
     "react": "^19.0.0",
@@ -95,7 +96,8 @@
     "@vitejs/plugin-react": "^4.4.1",
     "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9",
-    "eslint-config-next": "15.4.3",
+    "eslint-config-next": "^16.0.7",
+    "eslint-plugin-next": "^0.0.0",
     "jsdom": "^26.1.0",
     "raw-loader": "^4.0.2",
     "tailwindcss": "^4",

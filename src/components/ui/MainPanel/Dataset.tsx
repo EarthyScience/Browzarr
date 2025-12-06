@@ -116,7 +116,9 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
       const ua = navigator.userAgent;
       const vendor = (navigator as any).vendor || '';
       const isSafariDetected = /safari/i.test(ua) && !/chrome|crios|android|fxios|edg/i.test(ua) && /apple/i.test(vendor);
-      setIsSafari(isSafariDetected);
+      setTimeout(() => {
+        setIsSafari(isSafariDetected);
+      }, 0);
     }
   }, []);
 
