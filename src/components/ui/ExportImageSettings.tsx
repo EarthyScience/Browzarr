@@ -21,6 +21,7 @@ import {
 import { Switch } from './switch';
 import Hider from './Hider';
 import { Button } from './button';
+import KeyFrames from './KeyFrames';
 
 function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
   return keys.reduce((acc, key) => {
@@ -286,7 +287,7 @@ const ExportImageSettings = () => {
                             <label htmlFor="changeViz">Animate Visuals</label>
                             <Switch id="changeViz" checked={animViz} onCheckedChange={e=> setAnimViz(e)} />
                             <Hider show={animViz} className='col-span-2'>
-                                <div className='flex items-center justify-center'>
+                                {/* <div className='flex items-center justify-center'>
                                     <b>Visual States</b>
                                 </div>
                                 <div 
@@ -322,7 +323,8 @@ const ExportImageSettings = () => {
                                         variant='secondary'
                                         onClick={e=>{SetVisualState(firstState)}}
                                     >{((firstState && initialState) || (!firstState && finalState)) ? "Overwrite State" : "Set State"}</Button>
-                                </div>
+                                </div> */}
+                                <KeyFrames />
                             </Hider>
                         </div>
                         <div className="grid grid-cols-[auto_60px] items-center gap-2 my-2">

@@ -322,6 +322,10 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         }
         SetCamera(true);
         if (animate){
+            const {keyFrames} = useImageExportStore.getState()
+            const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
+            console.log(keyFrames)
+
             async function Animate(){
                 setStatus("Loading Module")
                 const ffmpeg = ffmpegRef.current;
@@ -345,6 +349,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                 };
                 const radius = Math.sqrt(originalPos.x ** 2 + originalPos.z ** 2);
                 const originalAngle = Math.atan2(originalPos.x, originalPos.z);
+                let keyFrameIdx = 0;
                 
                 for (let frame=0; frame<frames; frame++){
                     // ----- UPDATE VISUALS ---- //
@@ -362,34 +367,66 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                         newProg = loopTime ? newProg - Math.floor(newProg) : Math.min(newProg, 1);
                         setAnimProg(newProg)
                     }
-                    if (animViz && initialState && finalState){
-                        const lerpedState: Record<string, any> = {};
-                        const alpha = frame/frames;
+                    if (animViz && keyFrameList){
+                        const lerpedVizState: Record<string, any> = {};
+                        const lerpedCamState: Record<string, any> = {};
+                        const startFrame = keyFrameList[keyFrameIdx]
 
-                        Object.keys(initialState).forEach(key => {
-                            const sourceValue = initialState[key];
-                            const targetValue = finalState[key];
+                        if (keyFrameIdx+1 > keyFrameList.length)return; // End after reaching last key frame
+
+                        const endFrame = keyFrameList[keyFrameIdx+1]
+                        const thisFrames = endFrame-startFrame;
+                        const alpha = Math.max(frame-startFrame, 0)/thisFrames;
+
+                        const startState = keyFrames?.get(startFrame)
+                        const startVizState = startState["visual"]
+                        const startCamState = startState["camera"]
+                        const endState = keyFrames?.get(endFrame)
+                        const endVizState = endState["visual"]
+                        const endCamState = endState["camera"]
+                        Object.keys(startVizState).forEach(key => {
+                            const sourceValue = startVizState[key];
+                            const targetValue = endVizState[key];
                             
                             // Check if both values are numbers
                             if (typeof sourceValue === 'number' && typeof targetValue === 'number') {
-                                lerpedState[key] = lerp(sourceValue, targetValue, alpha);
+                                lerpedVizState[key] = lerp(sourceValue, targetValue, alpha);
                             }
                             else if (sourceValue.length){ // If Array
-                                lerpedState[key] = []
+                                lerpedVizState[key] = []
                                 for (let i = 0; i < sourceValue.length; i++){
-                                    lerpedState[key][i] = lerp(sourceValue[i], targetValue[i], alpha);
+                                    lerpedVizState[key][i] = lerp(sourceValue[i], targetValue[i], alpha);
                                 }
                             }
                             // Handle Vector3, arrays, or other lerpable objects
                             else if (sourceValue?.lerp && typeof sourceValue.lerp === 'function') {
-                                lerpedState[key] = sourceValue.clone().lerp(targetValue, alpha);
+                                lerpedVizState[key] = sourceValue.clone().lerp(targetValue, alpha);
                             }
                             // For non-numeric values, just copy from target
                             else {
-                                lerpedState[key] = targetValue;
+                                lerpedVizState[key] = targetValue;
                             }
                         });
-                        usePlotStore.setState(lerpedState)
+                        usePlotStore.setState(lerpedVizState)
+
+                        Object.keys(startCamState).forEach(key => {
+                            const sourceValue = startCamState[key];
+                            const targetValue = endCamState[key];
+                            if (sourceValue.isEuler){
+                                const startQuat = new THREE.Quaternion().setFromEuler(sourceValue);
+                                const endQuat   = new THREE.Quaternion().setFromEuler(targetValue);
+
+                                const resultQuat = new THREE.Quaternion().copy(startQuat).slerp(endQuat, 0.5);
+                                lerpedCamState[key]= new THREE.Euler().setFromQuaternion(resultQuat);
+
+                            } else{
+                                lerpedCamState[key] = sourceValue.clone().lerp(targetValue, alpha);
+                            }
+                        });
+                        camera.position.copy(lerpedCamState.position)
+                        camera.rotation.copy(lerpedCamState.rotation)
+                        camera.updateProjectionMatrix();
+                        !(useCustomRes || doubleSize) && invalidate();
                     }
                     if (useCustomRes || doubleSize){
                         SetCamera()

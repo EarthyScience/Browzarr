@@ -549,6 +549,7 @@ type ImageExportState = {
   initialState: Record<string, any> | undefined;
   finalState: Record<string, any> | undefined;
   preview: boolean;
+  cameraRef: React.RefObject<THREE.Camera | null> | null
 
   ExportImg: () => void;
   EnableExport: () => void;
@@ -579,10 +580,11 @@ type ImageExportState = {
   setTimeRate: (timeRate: number) => void;
   setLoopTime: (loopTime: boolean) => void;
   setAnimViz: (animViz: boolean) => void;
-  addKeyFrame: (frame:number, keyFrame: Map<number, any>) => void;
+  addKeyFrame: (frame:number, keyFrame: Record<number, any>) => void;
   setInitialState: (initialState: Record<string, any> | undefined) => void;
   setFinalState: (finalState: Record<string, any> | undefined) => void;
   setPreview: (preview: boolean) => void;
+  setCameraRef: (ref: React.RefObject<THREE.Camera | null>) => void
 }
 
 export const useImageExportStore = create<ImageExportState>((set, get) => ({
@@ -614,6 +616,9 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   initialState: undefined,
   finalState: undefined,
   preview: true,
+
+  cameraRef: null,
+  setCameraRef: (ref) => set({ cameraRef: ref }),
 
   ExportImg: () => set({ exportImg: !get().exportImg }),
   EnableExport: () => set({ enableExport: true }),
