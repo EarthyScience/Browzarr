@@ -1,11 +1,13 @@
 <div align="center">
 
-<div style="display: flex; justify-content: center; align-items: center;">
+<div style="display: flex; justify-content: center; align-items: center; gap: 15px;">
   <a href="https://browzarr.io">
     <img src="./public/logo-light.svg" alt="Launch browzarr" height="100">
   </a>
-  <a href="https://browzarr.io">
-    <img src="./public/browzarr-light.svg" alt="Launch browzarr" height="100">
+  <a href="https://browzarr.io" style="text-decoration: none; color: inherit;">
+    <h1 style="margin: 0; font-size: 2.5rem; font-family: 'Segoe UI', Arial, sans-serif;">
+      browzarr.io
+    </h1>
   </a>
 </div>
 
