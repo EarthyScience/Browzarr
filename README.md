@@ -1,6 +1,7 @@
 <div align="center">
 
-[![Launch browzarr](./public/launch-browzarr.svg)](https://browzarr.io)
+[![Launch browzarr](./public/logo-light.svg)](https://browzarr.io)<br>
+[![Launch browzarr](./public/browzarr-light.svg)](https://browzarr.io)
 
 **Interactive Browser-Based Visualization Framework for Exploring Zarr Data Stores**
 

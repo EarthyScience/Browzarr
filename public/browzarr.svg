@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 35" width="150" height="35">
+  <defs>
+    <!-- Enhanced gradient with smoother transitions -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1E88E5"/>
+      <stop offset="22%" stop-color="#5E35B1"/>
+      <stop offset="52%" stop-color="#E91E63"/>
+      <stop offset="68%" stop-color="#FF6F00"/>
+      <stop offset="78%" stop-color="#8E24AA"/>
+      <stop offset="100%" stop-color="#1E88E5"/>
+    </linearGradient>
+    
+    <!-- Subtle shadow -->
+    <filter id="textShadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Shine effect -->
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Main text with gradient and effects -->
+  <text x="75" y="26" 
+        font-family="'Segoe UI', Arial, Helvetica, sans-serif" 
+        font-size="24" 
+        font-weight="700" 
+        fill="url(#textGradient)"
+        filter="url(#textShadow)"
+        letter-spacing="0.5"
+        text-anchor="middle">browzarr.io</text>
+  
+  <!-- Shine overlay for depth -->
+  <text x="75" y="26" 
+        font-family="'Segoe UI', Arial, Helvetica, sans-serif" 
+        font-size="24" 
+        font-weight="700" 
+        fill="url(#shine)"
+        letter-spacing="0.5"
+        opacity="0.4"
+        text-anchor="middle">browzarr.io</text>
+</svg>
