@@ -550,6 +550,7 @@ type ImageExportState = {
   finalState: Record<string, any> | undefined;
   preview: boolean;
   cameraRef: React.RefObject<THREE.Camera | null> | null
+  currentFrame: number;
 
   ExportImg: () => void;
   EnableExport: () => void;
@@ -585,6 +586,7 @@ type ImageExportState = {
   setFinalState: (finalState: Record<string, any> | undefined) => void;
   setPreview: (preview: boolean) => void;
   setCameraRef: (ref: React.RefObject<THREE.Camera | null>) => void
+  setCurrentFrame: (currentFrame: number) => void;
 }
 
 export const useImageExportStore = create<ImageExportState>((set, get) => ({
@@ -616,7 +618,7 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   initialState: undefined,
   finalState: undefined,
   preview: true,
-
+  currentFrame: 0,
   cameraRef: null,
   setCameraRef: (ref) => set({ cameraRef: ref }),
 
@@ -657,5 +659,6 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   },
   setInitialState: (initialState) => set({ initialState }),
   setFinalState: (finalState) => set({ finalState }),
-  setPreview: (preview) => set({ preview })
+  setPreview: (preview) => set({ preview }),
+  setCurrentFrame: (currentFrame) => set({ currentFrame})
 }));

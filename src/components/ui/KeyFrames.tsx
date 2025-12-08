@@ -39,8 +39,6 @@ const SetKeyFrame = (frame: number) =>{
     if (plotType != "pointCloud") {
         vizStates.push("nanColor", "nanTransparency")
     }
-
-    const cameraStates = ["rotation", "position"]
     const currentVizState = usePlotStore.getState()
     const keyState = pick(currentVizState, vizStates as (keyof typeof currentVizState)[])
     const currentCamState = useImageExportStore.getState().cameraRef?.current?.clone()
@@ -61,12 +59,11 @@ const KeyFrames = () => {
         animProg:state.animProg, setAnimProg:state.setAnimProg
     })))
 
-    const {keyFrames, frames, useTime, frameRate, timeRate, addKeyFrame} = useImageExportStore(useShallow(state=>({
-        keyFrames:state.keyFrames, frames:state.frames, 
-        useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, addKeyFrame:state.addKeyFrame
+    const {keyFrames, frames, useTime, frameRate, timeRate, currentFrame, setCurrentFrame} = useImageExportStore(useShallow(state=>({
+        keyFrames:state.keyFrames, frames:state.frames, currentFrame:state.currentFrame,
+        useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, setCurrentFrame:state.setCurrentFrame
     })))
     const timeRatio = timeRate/frameRate
-    const [currentFrame, setCurrentFrame] = useState<number>(0)
 
     const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
   
