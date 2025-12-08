@@ -1,8 +1,8 @@
 1:"$Sreact.fragment"
-2:I[53503,["/latest/_next/static/chunks/89bc7afe2c734bd3.js","/latest/_next/static/chunks/4176a5ca7b7d50da.js"],"ViewportBoundary"]
-4:I[53503,["/latest/_next/static/chunks/89bc7afe2c734bd3.js","/latest/_next/static/chunks/4176a5ca7b7d50da.js"],"MetadataBoundary"]
+2:I[38718,["/latest/_next/static/chunks/80444e234f3a5325.js","/latest/_next/static/chunks/782803d7cf6db9c7.js"],"ViewportBoundary"]
+4:I[38718,["/latest/_next/static/chunks/80444e234f3a5325.js","/latest/_next/static/chunks/782803d7cf6db9c7.js"],"MetadataBoundary"]
 5:"$Sreact.suspense"
-7:I[17260,["/latest/_next/static/chunks/89bc7afe2c734bd3.js","/latest/_next/static/chunks/4176a5ca7b7d50da.js"],"IconMark"]
-0:{"buildId":"DsmtYms6aIiSUoaJymE8M","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],null]}],"loading":null,"isPartial":false}
+7:I[30847,["/latest/_next/static/chunks/80444e234f3a5325.js","/latest/_next/static/chunks/782803d7cf6db9c7.js"],"IconMark"]
+0:{"buildId":"q3TmUAUE_JPJfRW4o38WM","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],null]}],"loading":null,"isPartial":false}
 3:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, viewport-fit=cover"}]]
 6:[["$","title","0",{"children":"browzarr.io/docs"}],["$","meta","1",{"name":"description","content":"Tutorial and documentation for Browzarr"}],["$","link","2",{"rel":"icon","href":"/latest/favicon.ico?favicon.635732ff.ico","sizes":"500x500","type":"image/x-icon"}],["$","$L7","3",{}]]
