@@ -43,6 +43,7 @@ void main() {
     vec2 uv = giveUV(position); // We can't just pass this as a varying because the fragment will try to interpoalte between the seems which looks bad 
     bool inBounds = all(greaterThanEqual(uv, vec2(0.0))) && 
                 all(lessThanEqual(uv, vec2(1.0)));
+    aPosition = position;
     if (inBounds){
         vec3 normal = normalize(position);
         int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
@@ -52,11 +53,10 @@ void main() {
         int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
         vec3 localCoord = texCoord * textureDepths; // Scale up
         localCoord = fract(localCoord);
-
         float dispStrength = sample1(localCoord, textureIdx);
         float noNan = float(dispStrength != 1.0);
         vec3 newPos = position + (normal * (dispStrength-displaceZero) * noNan * displacement);
-        aPosition = position; //Pass out position for sphere frag
+        //Pass out position for sphere frag
         vec4 worldPos = modelViewMatrix * vec4( newPos, 1.0 );
         gl_Position = projectionMatrix * worldPos;
     } else {
