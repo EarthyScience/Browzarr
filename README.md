@@ -4,13 +4,26 @@
 
 **Interactive Browser-Based Visualization Framework for Exploring Zarr Data Stores**
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![][docs-dev-img]][docs-dev-url]
 [![Zarr](https://img.shields.io/badge/Zarr-Compatible-e34b75)](https://zarr.dev/)
+[![Zarrita.js](https://img.shields.io/badge/Zarrita.js-0.5.x-0A7EA4)](https://github.com/manzt/zarrita.js)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/EarthyScience/Browzarr/blob/1c8d05d1c9ec0f96e599db26808b119839ece749/LICENSE)<br>
 [![Next.js](https://img.shields.io/badge/Next.js->=15.5.7-black)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.x-61dafb)](https://react.dev/)
-
+[![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-000000)](https://ui.shadcn.com/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-38bdf8)](https://tailwindcss.com/)<br>
+[![Three.js](https://img.shields.io/badge/Three.js-0.176-black)](https://threejs.org/)
+[![React Three Fiber](https://img.shields.io/badge/React%20Three%20Fiber-9.x-000000)](https://docs.pmnd.rs/react-three-fiber)
+[![GSAP](https://img.shields.io/badge/GSAP-3.x-88ce02)](https://gsap.com/)
+[![GLSL](https://img.shields.io/badge/GLSL-5586A4)](https://wikis.khronos.org/opengl/Core_Language_(GLSL))
+[![WebGPU](https://img.shields.io/badge/WebGPU-Enabled-purple)](https://github.com/greggman/webgpu-utils)<br>
+[![Zustand](https://img.shields.io/badge/Zustand-5.x-orange)](https://zustand-demo.pmnd.rs/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6)](https://www.typescriptlang.org/)
 
 </div>
+
+[docs-dev-img]: https://img.shields.io/badge/docs-%20tutorial-orange?style=round-square
+[docs-dev-url]: https://browzarr.io/latest/docs/
 
 Browzarr is a powerful, browser-native framework for visualizing, exploring, and analyzing **Zarr data stores**.  
 Load multi-dimensional datasets directly in the browser, interactively slice and inspect chunks, and gain insights without any backend or server setup.
