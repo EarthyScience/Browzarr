@@ -1,13 +1,29 @@
-# Browzarr
-A browser-based visualization toolkit for exploring and analyzing Zarr data stores.
+<div align="center">
 
-> [!IMPORTANT]
-> Visit at [browzarr.io](https://browzarr.io)
+[![Launch browzarr](./public/launch-browzarr.svg)](https://browzarr.io)
 
-Stay tuned for updates! 🚀
+**Interactive Browser-Based Visualization Framework for Exploring Zarr Data Stores**
 
-> [!TIP]
-> _Have a suggestion or a feature request? Don't hesitate to open an issue or PR!_
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Zarr](https://img.shields.io/badge/Zarr-Compatible-e34b75)](https://zarr.dev/)
+[![Next.js](https://img.shields.io/badge/Next.js->=15.5.7-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.x-61dafb)](https://react.dev/)
+
+
+</div>
+
+Browzarr is a powerful, browser-native framework for visualizing, exploring, and analyzing **Zarr data stores**.  
+Load multi-dimensional datasets directly in the browser, interactively slice and inspect chunks, and gain insights without any backend or server setup.
+
+---
+
+> [!IMPORTANT]  
+> 🌐 **Try it now at [browzarr.io](https://browzarr.io)**
+
+Stay tuned - major updates and new visualization features are on the way! 🚀
+
+> [!TIP]  
+> 💡 _Have suggestions or feature requests? Feel free to open an issue or submit a PR!_
 
 # Version 1.0.0 - Progress/Features
 We are still in active development but plan to release a stable 1.0.0 when all of the desired features are in place and a final stability and bug pass has been completed
