@@ -5,7 +5,7 @@
     <img src="./public/logo-light.svg" alt="Launch browzarr" height="100">
   </a>
   <a href="https://browzarr.io">
-    <img src="./public/browzarr-light.svg" style="user-select: none;" alt="Launch browzarr" height="100">
+    <img src="./public/browzarr-light.svg" alt="Launch browzarr" height="100">
   </a>
 </div>
 
