@@ -1,6 +1,10 @@
 <div align="center">
 
-[![Launch browzarr](./public/launch-browzarr.svg)](https://browzarr.io)
+<div style="justify-content: center;">
+  <a href="https://browzarr.io">
+    <img src="./public/logo.png" alt="Launch browzarr" height="100">
+  </a>
+</div>
 
 **Interactive Browser-Based Visualization Framework for Exploring Zarr Data Stores**
 
