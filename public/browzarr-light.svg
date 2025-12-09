@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 35">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 35" width="500" height="150">
   <defs>
     <!-- Gray gradient for neutral dark/light visibility -->
     <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
