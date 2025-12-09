@@ -244,8 +244,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
     } = useImageExportStore(useShallow(state => ({
         exportImg: state.exportImg, enableExport:state.enableExport, animate:state.animate,
         frames:state.frames, frameRate:state.frameRate, useTime:state.useTime, timeRate:state.timeRate,
-        orbit:state.orbit, loopTime:state.loopTime, animViz:state.animViz, initialState:state.initialState,
-        finalState:state.finalState, preview:state.preview, useCustomRes:state.useCustomRes,
+        orbit:state.orbit, loopTime:state.loopTime, animViz:state.animViz, preview:state.preview, useCustomRes:state.useCustomRes,
         customRes:state.customRes, doubleSize:state.doubleSize, setHideAxis:state.setHideAxis, setHideAxisControls:state.setHideAxisControls
     })))
     const {setAnimProg, setQuality} = usePlotStore.getState()
@@ -456,7 +455,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     '-i', 'textOverlay.png',
                     '-filter_complex', `[1:v]scale=${docWidth}:${docHeight}[overlay];[0:v][overlay]overlay=0:0`,
                     '-c:v', 'libx264',
-                    '-pix_fmt', 'yuv444p',
+                    '-pix_fmt', 'yuv420p',
                     '-preset', `${preview ? 'ultrafast' : 'fast'}`, 
                     '-crf', `${preview ? 28 : 16}`, 
                     '-tune', 'stillimage',

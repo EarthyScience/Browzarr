@@ -59,9 +59,10 @@ const KeyFrames = () => {
         animProg:state.animProg, setAnimProg:state.setAnimProg
     })))
 
-    const {keyFrames, frames, useTime, frameRate, timeRate, currentFrame, setCurrentFrame} = useImageExportStore(useShallow(state=>({
+    const {keyFrames, frames, useTime, frameRate, timeRate, currentFrame, setCurrentFrame, setPreviewFrame} = useImageExportStore(useShallow(state=>({
         keyFrames:state.keyFrames, frames:state.frames, currentFrame:state.currentFrame,
-        useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, setCurrentFrame:state.setCurrentFrame
+        useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, setCurrentFrame:state.setCurrentFrame,
+        setPreviewFrame:state.setPreviewFrame
     })))
     const timeRatio = timeRate/frameRate
 
@@ -85,7 +86,9 @@ const KeyFrames = () => {
         </div>
         <Select
             onValueChange={(val)=>{
-                setCurrentFrame(parseInt(val))
+                const frame = parseInt(val);
+                setCurrentFrame(frame);
+                setPreviewFrame(frame)
             }}
         >
             <SelectTrigger>

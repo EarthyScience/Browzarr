@@ -23,60 +23,17 @@ import Hider from './Hider';
 import { Button } from './button';
 import KeyFrames from './KeyFrames';
 
-function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
-  return keys.reduce((acc, key) => {
-    if (key in obj) {
-      acc[key] = obj[key];
-    }
-    return acc;
-  }, {} as Pick<T, K>);
-}
-
-function SetVisualState(isInitial:boolean){
-    const {plotType} = usePlotStore.getState()
-    let states = []
-    if (plotType === "volume"){
-        states=["transparency", "vTransferRange", "vTransferScale"];
-    } else if (plotType === "point-cloud"){
-        states=["scaleIntensity", "pointSize", "timeScale"];
-    } else {
-        states=["displacement"]
-    }
-    if (["point-cloud", "volume"].includes(plotType)){
-        states.push("valueRange", "xRange", "yRange", "zRange")
-    }
-    if (plotType != "pointCloud") {
-        states.push("nanColor", "nanTransparency")
-    }
-    const currentState = usePlotStore.getState()
-    const thisState = pick(currentState, states as (keyof typeof currentState)[])
-    if (isInitial){
-        useImageExportStore.setState({initialState:thisState})
-    } else {
-        useImageExportStore.setState({finalState:thisState})
-    }
-}
-
-function ViewVisualState(isInitial:boolean){
-    const thisState = isInitial ? 
-        useImageExportStore.getState().initialState :
-        useImageExportStore.getState().finalState
-    if (thisState) {
-            usePlotStore.setState(thisState)
-    }
-}
-
 const ExportImageSettings = () => {
     const {
         includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum,
         useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, cbarUnits, animate, timeRate,
-        frames, frameRate, orbit, useTime, loopTime, animViz, initialState, finalState, preview, pingpong  
+        frames, frameRate, orbit, useTime, loopTime, animViz, preview, pingpong  
     } = useImageExportStore(useShallow(state => ({
           includeBackground: state.includeBackground, includeColorbar: state.includeColorbar,
           doubleSize: state.doubleSize, cbarLoc: state.cbarLoc, cbarNum: state.cbarNum, useCustomRes: state.useCustomRes,
           customRes: state.customRes, includeAxis: state.includeAxis, mainTitle: state.mainTitle, cbarLabel: state.cbarLabel,
           cbarUnits:state.cbarUnits, animate: state.animate, timeRate:state.timeRate, frames: state.frames, frameRate: state.frameRate, 
-          orbit: state.orbit, useTime:state.useTime, loopTime: state.loopTime, animViz:state.animViz, initialState:state.initialState, finalState:state.finalState,
+          orbit: state.orbit, useTime:state.useTime, loopTime: state.loopTime, animViz:state.animViz, 
           preview:state.preview, pingpong:state.pingpong
       })))
 
@@ -84,7 +41,7 @@ const ExportImageSettings = () => {
         setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis, 
         setHideAxis, setHideAxisControls, setMainTitle, setCbarLabel, setAnimate, 
         setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setAnimViz, 
-        setInitialState, setFinalState, setPreview, setCbarUnits, setPingpong} = useImageExportStore.getState()
+        setCbarUnits, setPingpong, setPreview, PreviewKeyFrames} = useImageExportStore.getState()
 
     interface CapitalizeFn {
         (str: string): string;
@@ -111,10 +68,6 @@ const ExportImageSettings = () => {
         setFrames(sliceDist)
     },[zSlice])
 
-    useEffect(()=>{ //Reset states if plotType changes
-        setInitialState(undefined);
-        setFinalState(undefined);
-    },[plotType])
 
   return (
     <Popover>
@@ -287,43 +240,6 @@ const ExportImageSettings = () => {
                             <label htmlFor="changeViz">Animate Visuals</label>
                             <Switch id="changeViz" checked={animViz} onCheckedChange={e=> setAnimViz(e)} />
                             <Hider show={animViz} className='col-span-2'>
-                                {/* <div className='flex items-center justify-center'>
-                                    <b>Visual States</b>
-                                </div>
-                                <div 
-                                    className='relative w-full text-center h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
-                                    onClick={() => {setFirstState(x=>!x) }} 
-                                >
-                                    <span className={`z-10 font-semibold transition-colors ${firstState ? 'text-primary' : 'text-secondary'}`}>
-                                    Initial
-                                    </span>
-                                    <span className={`z-10 font-semibold transition-colors ${!firstState ? 'text-primary' : 'text-secondary'}`}>
-                                    Final
-                                    </span>
-                                    <div 
-                                        className={`absolute top-1 h-8 w-[calc(50%-8px)] bg-secondary shadow-xs hover:bg-secondary/80 rounded-full transition-all duration-300 ${
-                                            firstState ? 'left-1' : 'left-[calc(50%+4px)]'
-                                        }`}
-                                    />
-                                </div>
-                                <div className='grid items-center gap-1 justify-center'>
-                                    {((firstState && initialState) || (!firstState && finalState)) ?
-                                        <Button
-                                            className='cursor-pointer'
-                                            variant="outline"
-                                            onClick={()=>ViewVisualState(firstState)}
-                                        >
-                                            View State
-                                        </Button>
-                                        :
-                                        <p>State not set</p>
-                                    }
-                                    <Button
-                                        className='cursor-pointer'
-                                        variant='secondary'
-                                        onClick={e=>{SetVisualState(firstState)}}
-                                    >{((firstState && initialState) || (!firstState && finalState)) ? "Overwrite State" : "Set State"}</Button>
-                                </div> */}
                                 <KeyFrames />
                             </Hider>
                         </div>

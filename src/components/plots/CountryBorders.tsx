@@ -240,7 +240,7 @@ const CountryBorders = () => {
     return(
         <group
             rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
-            scale={[globalScale, globalScale , globalScale]}
+            scale={[globalScale, globalScale * (spherize ? 1 : aspectRatio), globalScale]}
         >
             <group 
                 visible={showBorders && !(analysisMode && axis != 0)} 

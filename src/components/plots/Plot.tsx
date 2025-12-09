@@ -1,7 +1,7 @@
 import { OrbitControls } from '@react-three/drei';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
-import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks } from '@/components/plots';
+import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, CreateTexture } from '@/components/textures';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
@@ -328,6 +328,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         gl={{ preserveDrawingBuffer: true }}
         dpr={[DPR,DPR]}
       >
+        <KeyFramePreviewer/>
         <CountryBorders/>
         <ExportCanvas show={show}/>
         {show && <AxisLines />}
@@ -347,8 +348,8 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
             {displaceSurface ? <Sphere textures={textures} ZarrDS={ZarrDS} /> : <SphereBlocks textures={textures} />}
           </>
         }
-        <Orbiter isFlat={(isFlat || (!isFlat && plotType == "flat"))} />
-        {(isFlat || (!isFlat && plotType == "flat")) && <>
+        <Orbiter isFlat={plotType == "flat"} />
+        {plotType == "flat" && show && <>
           {displaceSurface && <FlatMap textures={textures as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} ZarrDS={ZarrDS}/> }
           {!displaceSurface && <FlatBlocks textures={textures} />}
         </>

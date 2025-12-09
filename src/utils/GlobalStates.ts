@@ -546,9 +546,9 @@ type ImageExportState = {
   loopTime: boolean;
   animViz: boolean;
   keyFrames: Map<number, any> | undefined;
-  initialState: Record<string, any> | undefined;
-  finalState: Record<string, any> | undefined;
-  preview: boolean;
+  viewFrame: number | undefined;
+  previewKeyFrames: boolean; // This previews the keyframes in the main view
+  preview: boolean; // This exports the animation as a preview/low quality
   cameraRef: React.RefObject<THREE.Camera | null> | null
   currentFrame: number;
 
@@ -582,9 +582,9 @@ type ImageExportState = {
   setLoopTime: (loopTime: boolean) => void;
   setAnimViz: (animViz: boolean) => void;
   addKeyFrame: (frame:number, keyFrame: Record<number, any>) => void;
-  setInitialState: (initialState: Record<string, any> | undefined) => void;
-  setFinalState: (finalState: Record<string, any> | undefined) => void;
-  setPreview: (preview: boolean) => void;
+  setPreview: (preview : boolean) => void;
+  PreviewKeyFrames: () => void;
+  setPreviewFrame: (viewFrame: number) => void;
   setCameraRef: (ref: React.RefObject<THREE.Camera | null>) => void
   setCurrentFrame: (currentFrame: number) => void;
 }
@@ -615,9 +615,10 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   loopTime: false,
   animViz: false,
   keyFrames: undefined,
-  initialState: undefined,
-  finalState: undefined,
+  viewFrame: undefined,
+  previewKeyFrames: false,
   preview: true,
+
   currentFrame: 0,
   cameraRef: null,
   setCameraRef: (ref) => set({ cameraRef: ref }),
@@ -657,8 +658,8 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
     newKeyFrames.set(frame, value);
     set({ keyFrames: newKeyFrames });
   },
-  setInitialState: (initialState) => set({ initialState }),
-  setFinalState: (finalState) => set({ finalState }),
-  setPreview: (preview) => set({ preview }),
+  setPreviewFrame: ( viewFrame ) => set({ viewFrame }),
+  setPreview: (preview) => set({ preview }), // Setter for export preview
+  PreviewKeyFrames: () => set({ previewKeyFrames: !get().previewKeyFrames }), // Changes state to preview keyframes in main view
   setCurrentFrame: (currentFrame) => set({ currentFrame})
 }));
