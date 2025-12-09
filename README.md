@@ -2,7 +2,7 @@
 
 <div style="justify-content: center;">
   <a href="https://browzarr.io">
-    <img src="./public/logo.png" alt="Launch browzarr" height="100">
+    <img src="./public/logo_banner.png" alt="Launch browzarr" height="100">
   </a>
 </div>
 
