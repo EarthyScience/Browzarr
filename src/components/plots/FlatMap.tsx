@@ -1,23 +1,23 @@
 "use client";
 
-import React, { useMemo, useEffect, useRef, useState } from "react";
+import { ThreeEvent } from "@react-three/fiber";
+import { evaluate_cmap } from "js-colormaps-es";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { useShallow } from "zustand/shallow";
+import { vertShader } from "@/components/computation/shaders";
 import {
 	useAnalysisStore,
 	useGlobalStore,
 	usePlotStore,
 } from "@/utils/GlobalStates";
-import { vertShader } from "@/components/computation/shaders";
-import { flatFrag3D, fragmentFlat } from "../textures/shaders";
-import { useShallow } from "zustand/shallow";
-import { ThreeEvent } from "@react-three/fiber";
 import {
 	GetCurrentArray,
 	GetTimeSeries,
 	parseUVCoords,
 } from "@/utils/HelperFuncs";
+import { flatFrag3D, fragmentFlat } from "../textures/shaders";
 import { ZarrDataset } from "../zarr/ZarrLoaderLRU";
-import { evaluate_cmap } from "js-colormaps-es";
 
 interface InfoSettersProps {
 	setLoc: React.Dispatch<React.SetStateAction<number[]>>;

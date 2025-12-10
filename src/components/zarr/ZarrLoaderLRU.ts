@@ -1,15 +1,15 @@
-import * as zarr from "zarrita";
+import { decompressSync, gzipSync } from "fflate";
 import * as THREE from "three";
-import MemoryLRU from "@/utils/MemoryLRU";
-import { parseUVCoords, ArrayMinMax } from "@/utils/HelperFuncs";
-import { GetSize } from "./GetMetadata";
+import * as zarr from "zarrita";
 import {
+	useCacheStore,
+	useErrorStore,
 	useGlobalStore,
 	useZarrStore,
-	useErrorStore,
-	useCacheStore,
 } from "@/utils/GlobalStates";
-import { gzipSync, decompressSync } from "fflate";
+import { ArrayMinMax, parseUVCoords } from "@/utils/HelperFuncs";
+import MemoryLRU from "@/utils/MemoryLRU";
+import { GetSize } from "./GetMetadata";
 
 export const ZARR_STORES = {
 	ESDC: "https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr",

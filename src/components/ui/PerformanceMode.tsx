@@ -1,15 +1,15 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { MdOutlineRocketLaunch } from "react-icons/md";
-import { Potato } from "./Icons";
 import { FaCarSide } from "react-icons/fa6";
+import { MdOutlineRocketLaunch } from "react-icons/md";
+import { Button } from "@/components/ui/button";
 import {
 	Popover,
-	PopoverTrigger,
 	PopoverContent,
+	PopoverTrigger,
 } from "@/components/ui/popover";
 import { useGlobalStore } from "@/utils/GlobalStates";
-import { Button } from "@/components/ui/button";
+import { Potato } from "./Icons";
 
 const icons = {
 	fast: <MdOutlineRocketLaunch className="size-8" />,

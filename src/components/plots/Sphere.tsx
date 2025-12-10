@@ -1,25 +1,25 @@
-import React, { useRef, useMemo, useState, useEffect } from "react";
+import { evaluate_cmap } from "js-colormaps-es";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { useShallow } from "zustand/shallow";
+import { ZarrDataset } from "@/components/zarr/ZarrLoaderLRU";
 import {
 	useAnalysisStore,
 	useGlobalStore,
 	usePlotStore,
 } from "@/utils/GlobalStates";
-import { ZarrDataset } from "@/components/zarr/ZarrLoaderLRU";
-import { useShallow } from "zustand/shallow";
 import {
+	deg2rad,
+	GetCurrentArray,
+	GetTimeSeries,
+	parseUVCoords,
+} from "@/utils/HelperFuncs";
+import {
+	flatSphereFrag,
+	sphereFrag,
 	sphereVertex,
 	sphereVertexFlat,
-	sphereFrag,
-	flatSphereFrag,
 } from "../textures/shaders";
-import {
-	parseUVCoords,
-	GetTimeSeries,
-	GetCurrentArray,
-	deg2rad,
-} from "@/utils/HelperFuncs";
-import { evaluate_cmap } from "js-colormaps-es";
 
 function XYZtoUV(xyz: THREE.Vector3, width: number, height: number) {
 	const lon = Math.atan2(xyz.z, xyz.x);

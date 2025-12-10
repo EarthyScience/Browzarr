@@ -1,14 +1,13 @@
 "use client";
 
-import { ThemeProvider } from "next-themes";
-import MobileUIHider from "@/components/ui/MobileUIHider";
-import { Footer } from "@/components/ui";
-import { BrowZarrPopover } from "./BrowZarrPopover";
-import { VersionSelector } from "@/components/ui";
 import Link from "next/link";
-import ThemeSwitch from "@/components/ui/ThemeSwitch";
-import HomeButton from "@/components/ui/HomeButton";
+import { ThemeProvider } from "next-themes";
+import { Footer, VersionSelector } from "@/components/ui";
 import GithubButton from "@/components/ui/GithubButton";
+import HomeButton from "@/components/ui/HomeButton";
+import MobileUIHider from "@/components/ui/MobileUIHider";
+import ThemeSwitch from "@/components/ui/ThemeSwitch";
+import { BrowZarrPopover } from "./BrowZarrPopover";
 
 export default function ClientRoot({
 	children,

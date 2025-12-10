@@ -1,23 +1,23 @@
 "use client";
-import { ArrayMinMax, GetCurrentArray } from "@/utils/HelperFuncs";
-import * as THREE from "three";
 import React, { useEffect } from "react";
+import * as THREE from "three";
+import { useShallow } from "zustand/shallow";
 import {
-	DataReduction,
-	Convolve,
-	Multivariate2D,
-	Multivariate3D,
-	CUMSUM3D,
-	Convolve2D,
-} from "../computation/webGPU";
-import {
-	useGlobalStore,
 	useAnalysisStore,
+	useGlobalStore,
 	usePlotStore,
 } from "@/utils/GlobalStates";
-import { useShallow } from "zustand/shallow";
-import { ZarrDataset } from "../zarr/ZarrLoaderLRU";
+import { ArrayMinMax, GetCurrentArray } from "@/utils/HelperFuncs";
+import {
+	Convolve,
+	Convolve2D,
+	CUMSUM3D,
+	DataReduction,
+	Multivariate2D,
+	Multivariate3D,
+} from "../computation/webGPU";
 import { CreateTexture } from "../textures";
+import { ZarrDataset } from "../zarr/ZarrLoaderLRU";
 
 // The new centralized map for all operations
 const ShaderMap = {

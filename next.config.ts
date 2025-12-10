@@ -1,5 +1,5 @@
-import type { Configuration } from "webpack";
 import path from "path";
+import type { Configuration } from "webpack";
 
 const isProd = process.env.NODE_ENV === "production";
 const basePath = isProd ? process.env.BASE_PATH || "" : "";

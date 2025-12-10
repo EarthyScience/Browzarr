@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { logoBGC_MPI, logoBGC, logoMPI } from "@/assets/index";
+import { logoBGC, logoBGC_MPI, logoMPI } from "@/assets/index";
 
 import "./css/Footer.css";
 

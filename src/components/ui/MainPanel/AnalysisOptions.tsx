@@ -1,30 +1,22 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useShallow } from "zustand/shallow";
 import {
 	useAnalysisStore,
 	useGlobalStore,
 	useZarrStore,
 } from "@/utils/GlobalStates";
-import { useShallow } from "zustand/shallow";
 import "../css/MainPanel.css";
-import { PiMathOperationsBold } from "react-icons/pi";
-import {
-	Popover,
-	PopoverTrigger,
-	PopoverContent,
-} from "@/components/ui/popover";
-import { Input } from "../input";
-import { Button } from "../button";
+import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { CiUndo } from "react-icons/ci";
+import { PiMathOperationsBold } from "react-icons/pi";
 import { KernelVisualizer } from "@/components/ui";
 import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { Switch } from "../switch";
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import {
 	Select,
 	SelectContent,
@@ -34,6 +26,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Button } from "../button";
+import { Input } from "../input";
+import { Switch } from "../switch";
 
 const singleVarReductionOps = [
 	{ value: "Mean", label: "Mean" },

@@ -1,17 +1,17 @@
 "use client";
 
+import { FFmpeg } from "@ffmpeg/ffmpeg";
+import { useThree } from "@react-three/fiber";
 import React, { useEffect, useRef } from "react";
+import * as THREE from "three";
+import { lerp } from "three/src/math/MathUtils.js";
+import { useShallow } from "zustand/shallow";
+import { useCSSVariable } from "@/components/ui";
 import {
 	useGlobalStore,
 	useImageExportStore,
 	usePlotStore,
 } from "./GlobalStates";
-import { useThree } from "@react-three/fiber";
-import { useCSSVariable } from "@/components/ui";
-import * as THREE from "three";
-import { useShallow } from "zustand/shallow";
-import { lerp } from "three/src/math/MathUtils.js";
-import { FFmpeg } from "@ffmpeg/ffmpeg";
 
 const DrawComposite = (
 	compositeCanvas: HTMLCanvasElement,

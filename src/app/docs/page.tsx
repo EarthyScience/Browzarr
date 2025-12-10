@@ -5,43 +5,42 @@ export const metadata = {
 	description: "Tutorial and documentation for Browzarr",
 };
 
-import { FaStar, FaThumbtack, FaGithub } from "react-icons/fa";
-import { IoCloseCircleSharp, IoImage } from "react-icons/io5";
-import { RxReset } from "react-icons/rx";
-import { FaPlus, FaMinus } from "react-icons/fa";
-import { HiHomeModern } from "react-icons/hi2";
+import {
+	BsFillQuestionCircleFill,
+	BsMoonStarsFill,
+	BsSunFill,
+	BsTags,
+} from "react-icons/bs";
+import { CgMenuGridO } from "react-icons/cg";
+import { CiUndo } from "react-icons/ci";
+import { FaGithub, FaMinus, FaPlus, FaStar, FaThumbtack } from "react-icons/fa";
+import {
+	FaBackwardStep,
+	FaCarSide,
+	FaCheck,
+	FaForwardStep,
+	FaPause,
+	FaPlay,
+} from "react-icons/fa6";
 import { HiInformationCircle } from "react-icons/hi";
+import { HiHomeModern } from "react-icons/hi2";
+import { IoCloseCircleSharp, IoImage } from "react-icons/io5";
+import { LuChevronDown, LuSettings } from "react-icons/lu";
 import {
 	MdFlipCameraIos,
 	MdOutlineRocketLaunch,
-	MdOutlineSwapVert,
 	MdOutlineSquare,
+	MdOutlineSwapVert,
 } from "react-icons/md";
-import { FaCarSide } from "react-icons/fa6";
-import { VscGraphLine } from "react-icons/vsc";
 import {
-	BsMoonStarsFill,
-	BsSunFill,
-	BsFillQuestionCircleFill,
-	BsTags,
-} from "react-icons/bs";
-import {
-	FaCheck,
-	FaPlay,
-	FaPause,
-	FaForwardStep,
-	FaBackwardStep,
-} from "react-icons/fa6";
-import { LuChevronDown, LuSettings } from "react-icons/lu";
-import {
+	PiCubeLight,
 	PiMathOperationsBold,
 	PiPlayPauseFill,
 	PiSphereThin,
-	PiCubeLight,
 } from "react-icons/pi";
-import { CiUndo } from "react-icons/ci";
-import { CgMenuGridO } from "react-icons/cg";
+import { RxReset } from "react-icons/rx";
 import { TbDatabasePlus, TbVariable } from "react-icons/tb";
+import { VscGraphLine } from "react-icons/vsc";
 
 export default function DocsPage() {
 	return (

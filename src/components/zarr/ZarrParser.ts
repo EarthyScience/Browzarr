@@ -1,8 +1,8 @@
-import * as zarr from "zarrita";
 import {
 	json_decode_object,
 	json_encode_object,
 } from "node_modules/zarrita/dist/src/util";
+import * as zarr from "zarrita";
 
 function is_meta_key(key: string) {
 	return (

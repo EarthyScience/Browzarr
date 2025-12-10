@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { useGlobalStore } from "@/utils/GlobalStates";
 import { useShallow } from "zustand/shallow";
+import { useGlobalStore } from "@/utils/GlobalStates";
 
 export function DatasetToast() {
 	const { titleDescription } = useGlobalStore(

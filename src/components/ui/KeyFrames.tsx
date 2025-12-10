@@ -1,9 +1,6 @@
 "use client";
 import React, { useEffect, useRef } from "react";
-import { Button } from "./button";
-import { useImageExportStore, usePlotStore } from "@/utils/GlobalStates";
 import { useShallow } from "zustand/shallow";
-import { Slider } from "./slider";
 import {
 	Select,
 	SelectContent,
@@ -11,6 +8,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useImageExportStore, usePlotStore } from "@/utils/GlobalStates";
+import { Button } from "./button";
+import { Slider } from "./slider";
 
 function pick<T extends object, K extends keyof T>(
 	obj: T,

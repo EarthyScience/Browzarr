@@ -1,14 +1,14 @@
 "use client";
 
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FaMinus, FaPlus } from "react-icons/fa";
 import { RxReset } from "react-icons/rx";
-import { FaPlus, FaMinus } from "react-icons/fa";
-import React, { useRef, useEffect, useMemo, useState } from "react";
+import { useShallow } from "zustand/shallow";
 import {
+	useAnalysisStore,
 	useGlobalStore,
 	usePlotStore,
-	useAnalysisStore,
 } from "@/utils/GlobalStates";
-import { useShallow } from "zustand/shallow";
 import "./css/Colorbar.css";
 import { linspace, TwoDecimals } from "@/utils/HelperFuncs";
 import Metadata from "./MetaData";

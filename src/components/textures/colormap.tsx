@@ -1,6 +1,6 @@
-import * as THREE from "three";
 // https://github.com/vasturiano/three-globe/blob/master/src/utils/color-utils.js
 import { evaluate_cmap } from "js-colormaps-es";
+import * as THREE from "three";
 // import { rgbToHex } from './updateColorbar';
 
 export const colormaps = [

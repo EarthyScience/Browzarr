@@ -1,10 +1,9 @@
-import { Text, OrbitControls } from "@react-three/drei";
-import { useThree, useFrame } from "@react-three/fiber";
-import { useState, useMemo, useEffect, useRef } from "react";
-import { parseTimeUnit } from "@/utils/HelperFuncs";
-import { Fragment } from "react";
-import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
+import { OrbitControls, Text } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/shallow";
+import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
+import { parseTimeUnit } from "@/utils/HelperFuncs";
 
 interface ViewportBounds {
 	left: number;

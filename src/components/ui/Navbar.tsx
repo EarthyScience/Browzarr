@@ -1,25 +1,25 @@
 "use client";
 import React from "react";
 import {
-	PlotLineButton,
 	ExportImageSettings,
+	PlotLineButton,
 	useCSSVariable,
 } from "@/components/ui";
 import ThemeSwitch from "@/components/ui/ThemeSwitch";
 import "./css/Navbar.css";
-import { useShallow } from "zustand/shallow";
-import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
-import { useState, useRef } from "react";
-import { Orthographic, Perspective } from "./Icons";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { useRef, useState } from "react";
 import { MdFlipCameraIos } from "react-icons/md";
-import PerformanceMode from "./PerformanceMode";
+import { useShallow } from "zustand/shallow";
+import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
+import { Orthographic, Perspective } from "./Icons";
+import PerformanceMode from "./PerformanceMode";
 
 // Custom rotating five-dots icon
 const FiveDotsIcon: React.FC<{ className?: string }> = ({ className }) => {

@@ -1,11 +1,11 @@
-import { describe, expect, test, beforeAll } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
 import {
-	DataReduction,
 	Convolve,
+	Convolve2D,
+	CUMSUM3D,
+	DataReduction,
 	Multivariate2D,
 	Multivariate3D,
-	CUMSUM3D,
-	Convolve2D,
 } from "../components/computation/webGPU";
 import { setMockGPUResult } from "./setup";
 

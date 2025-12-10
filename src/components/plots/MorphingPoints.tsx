@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useMemo, useRef, useEffect } from "react";
-import * as THREE from "three";
 import { Canvas, extend, useFrame, useThree } from "@react-three/fiber";
 import gsap from "gsap";
-import vertexShader from "@/components/textures/shaders/LandingVertex.glsl";
+import React, { useEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
 import fragmentShader from "@/components/textures/shaders/LandingFrag.glsl";
+import vertexShader from "@/components/textures/shaders/LandingVertex.glsl";
 import "./Plots.css";
-import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
 import { useShallow } from "zustand/shallow";
+import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
 
 // Define the type for our custom shader material's uniforms
 type MorphMaterialType = THREE.ShaderMaterial & {

@@ -1,10 +1,10 @@
+import correlateFrag from "./Correlation.glsl";
+import fragShader from "./frag.glsl";
 import MaxFrag from "./Max.glsl";
-import MinFrag from "./Min.glsl";
 import MeanFrag from "./Mean.glsl";
+import MinFrag from "./Min.glsl";
 import StDevFrag from "./StDev.glsl";
 import vertShader from "./vert.glsl";
-import fragShader from "./frag.glsl";
-import correlateFrag from "./Correlation.glsl";
 export {
 	MaxFrag,
 	MinFrag,

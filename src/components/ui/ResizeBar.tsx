@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./css/ResizeBar.css";
 
 const MIN_HEIGHT = 50; // Minimum height in pixels

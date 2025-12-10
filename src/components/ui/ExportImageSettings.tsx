@@ -1,12 +1,20 @@
 "use client";
+import { ChevronDown } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { IoImage } from "react-icons/io5";
+import { useShallow } from "zustand/shallow";
 import {
 	Popover,
-	PopoverTrigger,
 	PopoverContent,
+	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Input } from "./input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
 	Tooltip,
 	TooltipContent,
@@ -17,19 +25,11 @@ import {
 	useImageExportStore,
 	usePlotStore,
 } from "@/utils/GlobalStates";
-import { useShallow } from "zustand/shallow";
-import { ChevronDown } from "lucide-react";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "./switch";
-import Hider from "./Hider";
 import { Button } from "./button";
+import Hider from "./Hider";
+import { Input } from "./input";
 import KeyFrames from "./KeyFrames";
+import { Switch } from "./switch";
 
 const ExportImageSettings = () => {
 	const {

@@ -2,16 +2,16 @@
 
 import React, { useState } from "react";
 import "../css/MainPanel.css";
+import { Card } from "@/components/ui/card";
 import {
-	PlotType,
-	Variables,
-	Colormaps,
 	AdjustPlot,
+	AnalysisOptions,
+	Colormaps,
 	Dataset,
 	PlayButton,
-	AnalysisOptions,
+	PlotType,
+	Variables,
 } from "../index";
-import { Card } from "@/components/ui/card";
 
 const MainPanel = () => {
 	const [openVariables, setOpenVariables] = useState<boolean>(false);

@@ -1,21 +1,21 @@
 "use client";
 
+import { Text } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import React, { useMemo, useState } from "react";
+import * as THREE from "three";
+import { LineSegments2 } from "three/addons/lines/LineSegments2.js";
+import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
+import { LineMaterial } from "three-stdlib";
+import { useShallow } from "zustand/shallow";
 import {
 	useAnalysisStore,
 	useGlobalStore,
 	useImageExportStore,
 	usePlotStore,
 } from "@/utils/GlobalStates";
-import React, { useState, useMemo } from "react";
-import { useShallow } from "zustand/shallow";
-import { Text } from "@react-three/drei";
-import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
-import { LineSegments2 } from "three/addons/lines/LineSegments2.js";
-import { LineMaterial } from "three-stdlib";
-import { useFrame } from "@react-three/fiber";
 import { parseLoc } from "@/utils/HelperFuncs";
 import { useCSSVariable } from "../ui";
-import * as THREE from "three";
 
 const AXIS_CONSTANTS = {
 	INITIAL_RESOLUTION: 7,

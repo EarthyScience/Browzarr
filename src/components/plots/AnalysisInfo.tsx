@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import "./Plots.css";
-import { useAnalysisStore, useGlobalStore } from "@/utils/GlobalStates";
 import { useShallow } from "zustand/shallow";
+import { useAnalysisStore, useGlobalStore } from "@/utils/GlobalStates";
 import { parseLoc } from "@/utils/HelperFuncs";
 
 const AnalysisInfo = ({

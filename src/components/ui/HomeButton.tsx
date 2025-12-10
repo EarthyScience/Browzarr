@@ -1,14 +1,14 @@
 "use client";
 
-import { HiHomeModern } from "react-icons/hi2";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { HiHomeModern } from "react-icons/hi2";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { usePathname } from "next/navigation";
 
 export default function HomeButton() {
 	const pathname = usePathname();

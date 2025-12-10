@@ -1,32 +1,32 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { TbVariable } from "react-icons/tb";
-import { useGlobalStore, useZarrStore } from "@/utils/GlobalStates";
 import { useShallow } from "zustand/shallow";
-import { Separator } from "@/components/ui/separator";
-import MetaDataInfo from "./MetaDataInfo";
-import { GetDimInfo } from "@/utils/HelperFuncs";
-import {
-	Popover,
-	PopoverTrigger,
-	PopoverContent,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Input } from "../input";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ZarrDataset } from "@/components/zarr/ZarrLoaderLRU";
+import { useGlobalStore, useZarrStore } from "@/utils/GlobalStates";
+import { GetDimInfo } from "@/utils/HelperFuncs";
+import { Input } from "../input";
+import MetaDataInfo from "./MetaDataInfo";
 
 const Variables = ({
 	openVariables,

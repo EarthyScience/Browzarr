@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useCursor, RoundedBox, Text, Edges } from "@react-three/drei";
+import { Edges, RoundedBox, Text, useCursor } from "@react-three/drei";
+import { useRef, useState } from "react";
 import { Group } from "three";
 import { ZarrMetadata } from "@/components/zarr/Interfaces";
 import { useGlobalStore } from "@/utils/GlobalStates"; // Import global store

@@ -1,9 +1,6 @@
 import React from "react";
 import "./css/Error.css";
-import { useErrorStore } from "@/utils/GlobalStates";
-import { ErrorList } from "./ErrorList";
 import { useShallow } from "zustand/shallow";
-import { Button } from "./button";
 import {
 	Dialog,
 	DialogContent,
@@ -11,6 +8,9 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { useErrorStore } from "@/utils/GlobalStates";
+import { Button } from "./button";
+import { ErrorList } from "./ErrorList";
 
 const Error = () => {
 	const { error, setError } = useErrorStore(

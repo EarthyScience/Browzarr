@@ -1,8 +1,10 @@
 "use client";
 
-import { HiInformationCircle } from "react-icons/hi";
 import React from "react";
+import { HiInformationCircle } from "react-icons/hi";
 import "./css/MetaData.css";
+
+import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -10,14 +12,11 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-import { Button } from "@/components/ui/button";
 
 export const defaultAttributes = [
 	"long_name",

@@ -1,13 +1,13 @@
 "use client";
-import React, { useState, useEffect, ChangeEvent } from "react";
+import React, { ChangeEvent, useEffect, useState } from "react";
 import * as zarr from "zarrita";
+import ZarrParser from "@/components/zarr/ZarrParser";
 import {
-	useZarrStore,
 	useErrorStore,
 	useGlobalStore,
+	useZarrStore,
 } from "@/utils/GlobalStates";
 import { Input } from "../input";
-import ZarrParser from "@/components/zarr/ZarrParser";
 
 interface LocalZarrType {
 	setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;

@@ -1,24 +1,23 @@
 "use client";
 
-import React, { SetStateAction, useEffect, useState, ReactNode } from "react";
-import { useGlobalStore } from "@/utils/GlobalStates";
+import React, { ReactNode, SetStateAction, useEffect, useState } from "react";
+import { TbDatabasePlus, TbVariable } from "react-icons/tb";
 import { useShallow } from "zustand/shallow";
-import { Input } from "../input";
-import { Button } from "../button";
-import { TbDatabasePlus } from "react-icons/tb";
-import { TbVariable } from "react-icons/tb";
-import LocalZarr from "./LocalZarr";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
 	Popover,
-	PopoverTrigger,
 	PopoverContent,
+	PopoverTrigger,
 } from "@/components/ui/popover";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useGlobalStore } from "@/utils/GlobalStates";
+import { Button } from "../button";
+import { Input } from "../input";
+import LocalZarr from "./LocalZarr";
 
 const ZARR_STORES = {
 	ESDC: "https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr",

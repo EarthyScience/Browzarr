@@ -1,7 +1,7 @@
 //This File will have functions converting the array information into 2D or 3D textures that we will pass to the corresponding 2D or 3D object
 import * as THREE from "three";
-import { ArrayMinMax } from "@/utils/HelperFuncs";
 import { useGlobalStore } from "@/utils/GlobalStates";
+import { ArrayMinMax } from "@/utils/HelperFuncs";
 
 interface Array {
 	data:

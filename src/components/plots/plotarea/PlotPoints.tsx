@@ -1,8 +1,8 @@
-import React, { useRef, useMemo, useEffect, useState } from "react";
-import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
 import { useShallow } from "zustand/shallow";
+import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
 
 interface pointSetters {
 	setPointID: React.Dispatch<React.SetStateAction<[string, number]>>;

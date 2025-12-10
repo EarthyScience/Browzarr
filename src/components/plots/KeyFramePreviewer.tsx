@@ -1,14 +1,14 @@
 "use client";
+import { invalidate, useThree } from "@react-three/fiber";
+import React, { useEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
+import { lerp } from "three/src/math/MathUtils.js";
+import { useShallow } from "zustand/shallow";
 import {
 	useGlobalStore,
 	useImageExportStore,
 	usePlotStore,
 } from "@/utils/GlobalStates";
-import { invalidate, useThree } from "@react-three/fiber";
-import React, { useEffect, useMemo, useRef } from "react";
-import { useShallow } from "zustand/shallow";
-import * as THREE from "three";
-import { lerp } from "three/src/math/MathUtils.js";
 
 export const KeyFramePreviewer = () => {
 	const {

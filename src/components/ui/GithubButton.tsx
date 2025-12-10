@@ -1,7 +1,7 @@
 "use client";
 
-import { FaGithub } from "react-icons/fa";
 import Link from "next/link";
+import { FaGithub } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,

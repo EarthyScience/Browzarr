@@ -1,17 +1,18 @@
+import { invalidate } from "@react-three/fiber";
 import React, { useEffect, useMemo } from "react";
+import * as THREE from "three";
+import { useShallow } from "zustand/shallow";
 import {
 	useAnalysisStore,
 	useGlobalStore,
 	usePlotStore,
 } from "@/utils/GlobalStates";
-import { useShallow } from "zustand/shallow";
-import * as THREE from "three";
 import {
-	sphereBlocksFrag,
 	flatBlocksVert,
 	flatBlocksVert3D,
+	sphereBlocksFrag,
 } from "../textures/shaders";
-import { invalidate } from "@react-three/fiber";
+
 const FlatBlocks = ({
 	textures,
 }: {

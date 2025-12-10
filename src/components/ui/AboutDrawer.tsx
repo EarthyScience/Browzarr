@@ -1,3 +1,7 @@
+import Image from "next/image";
+import logo from "@/app/logo.png";
+import AboutInfo from "@/components/ui/AboutInfo";
+import { Button } from "@/components/ui/button";
 import {
 	Drawer,
 	DrawerContent,
@@ -5,10 +9,6 @@ import {
 	DrawerTitle,
 	DrawerTrigger,
 } from "@/components/ui/drawer";
-import AboutInfo from "@/components/ui/AboutInfo";
-import logo from "@/app/logo.png";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
 	TooltipContent,

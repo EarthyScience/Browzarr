@@ -1,14 +1,14 @@
 import { Canvas } from "@react-three/fiber";
-import { parseLoc } from "@/utils/HelperFuncs";
-import { FixedTicks, ThickLine } from "@/components/plots";
 import { RefObject, useEffect, useRef, useState } from "react";
-import { ResizeBar, YScaler, XScaler, ShowLinePlot } from "@/components/ui";
+import { FixedTicks, ThickLine } from "@/components/plots";
+import { ResizeBar, ShowLinePlot, XScaler, YScaler } from "@/components/ui";
+import { parseLoc } from "@/utils/HelperFuncs";
 import "./LinePlot.css";
-import { useGlobalStore } from "@/utils/GlobalStates";
+import { FaThumbtack } from "react-icons/fa";
+import { IoCloseCircleSharp } from "react-icons/io5";
 import { useShallow } from "zustand/shallow";
 import PlotLineOptions from "@/components/ui/LinePlotArea/PlotLineOptions";
-import { IoCloseCircleSharp } from "react-icons/io5";
-import { FaThumbtack } from "react-icons/fa";
+import { useGlobalStore } from "@/utils/GlobalStates";
 
 interface pointInfo {
 	pointID: [string, number];

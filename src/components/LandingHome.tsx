@@ -1,18 +1,19 @@
 "use client";
 import * as THREE from "three";
+
 THREE.Cache.enabled = true;
-import {
-	GetZarrMetadata,
-	GetVariableNames,
-	GetTitleDescription,
-} from "@/components/zarr/GetMetadata";
-import { ZarrDataset, GetStore } from "@/components/zarr/ZarrLoaderLRU";
+
 import { useEffect, useMemo } from "react";
-import { PlotArea, Plot, LandingShapes } from "@/components/plots";
-import { MainPanel } from "@/components/ui";
-import { Loading, Navbar, Error } from "@/components/ui";
-import { useGlobalStore, useZarrStore } from "@/utils/GlobalStates";
 import { useShallow } from "zustand/shallow";
+import { LandingShapes, Plot, PlotArea } from "@/components/plots";
+import { Error, Loading, MainPanel, Navbar } from "@/components/ui";
+import {
+	GetTitleDescription,
+	GetVariableNames,
+	GetZarrMetadata,
+} from "@/components/zarr/GetMetadata";
+import { GetStore, ZarrDataset } from "@/components/zarr/ZarrLoaderLRU";
+import { useGlobalStore, useZarrStore } from "@/utils/GlobalStates";
 
 export function LandingHome() {
 	const {

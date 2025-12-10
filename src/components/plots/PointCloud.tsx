@@ -1,20 +1,20 @@
+import { evaluate_cmap } from "js-colormaps-es";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useShallow } from "zustand/shallow";
 import { pointFrag, pointVert } from "@/components/textures/shaders";
 import {
 	useAnalysisStore,
 	useGlobalStore,
 	usePlotStore,
 } from "@/utils/GlobalStates";
-import { useShallow } from "zustand/shallow";
-import { ZarrDataset } from "../zarr/ZarrLoaderLRU";
 import {
-	parseUVCoords,
-	getUnitAxis,
-	GetTimeSeries,
 	GetCurrentArray,
+	GetTimeSeries,
+	getUnitAxis,
+	parseUVCoords,
 } from "@/utils/HelperFuncs";
-import { evaluate_cmap } from "js-colormaps-es";
+import { ZarrDataset } from "../zarr/ZarrLoaderLRU";
 
 interface PCProps {
 	texture: THREE.Data3DTexture[] | null;

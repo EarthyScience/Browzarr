@@ -2,11 +2,11 @@
 import * as THREE from "three";
 import { GPUComputationRenderer } from "three/examples/jsm/Addons.js";
 import {
-	MeanFrag,
+	correlateFrag,
 	MaxFrag,
+	MeanFrag,
 	MinFrag,
 	StDevFrag,
-	correlateFrag,
 } from "./shaders";
 
 interface Array {

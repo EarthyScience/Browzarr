@@ -1,14 +1,14 @@
+import Image from "next/image";
+import Link from "next/link";
+import { FaGithub, FaStar } from "react-icons/fa";
+import { logoBGC_MPI } from "@/assets/index";
+import { Button } from "@/components/ui/button";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import Link from "next/link";
-import Image from "next/image";
-import { logoBGC_MPI } from "@/assets/index";
-import { FaStar, FaGithub } from "react-icons/fa";
 
 export function BrowZarrPopover() {
 	return (

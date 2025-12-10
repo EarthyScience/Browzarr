@@ -1,21 +1,23 @@
 import { OrbitControls } from "@react-three/drei";
-import React, { useMemo, useRef, useState, useEffect } from "react";
-import * as THREE from "three";
-import {
-	PointCloud,
-	UVCube,
-	DataCube,
-	FlatMap,
-	Sphere,
-	CountryBorders,
-	AxisLines,
-	SphereBlocks,
-	FlatBlocks,
-	KeyFramePreviewer,
-} from "@/components/plots";
 import { Canvas, invalidate, useThree } from "@react-three/fiber";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+import { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import { useShallow } from "zustand/shallow";
+import {
+	AxisLines,
+	CountryBorders,
+	DataCube,
+	FlatBlocks,
+	FlatMap,
+	KeyFramePreviewer,
+	PointCloud,
+	Sphere,
+	SphereBlocks,
+	UVCube,
+} from "@/components/plots";
 import { ArrayToTexture, CreateTexture } from "@/components/textures";
-import { ZarrDataset } from "../zarr/ZarrLoaderLRU";
+import ExportCanvas from "@/utils/ExportCanvas";
 import {
 	useAnalysisStore,
 	useGlobalStore,
@@ -23,13 +25,11 @@ import {
 	usePlotStore,
 	useZarrStore,
 } from "@/utils/GlobalStates";
-import { useShallow } from "zustand/shallow";
-import { Navbar, Colorbar } from "../ui";
-import AnalysisInfo from "./AnalysisInfo";
-import { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import AnalysisWG from "./AnalysisWG";
 import { ParseExtent } from "@/utils/HelperFuncs";
-import ExportCanvas from "@/utils/ExportCanvas";
+import { Colorbar, Navbar } from "../ui";
+import { ZarrDataset } from "../zarr/ZarrLoaderLRU";
+import AnalysisInfo from "./AnalysisInfo";
+import AnalysisWG from "./AnalysisWG";
 
 const TransectNotice = () => {
 	const { selectTS } = usePlotStore(

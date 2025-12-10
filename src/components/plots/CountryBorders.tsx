@@ -1,15 +1,14 @@
 "use client";
-import React, { useEffect, useState, useMemo } from "react";
+import { invalidate, useFrame } from "@react-three/fiber";
+import React, { useEffect, useMemo, useState } from "react";
+import * as THREE from "three";
+import { useShallow } from "zustand/shallow";
 import {
 	useAnalysisStore,
 	useGlobalStore,
 	usePlotStore,
 } from "@/utils/GlobalStates";
-import * as THREE from "three";
-import { useShallow } from "zustand/shallow";
-import { useFrame } from "@react-three/fiber";
-import { vertexShader, bordersFrag } from "../textures/shaders";
-import { invalidate } from "@react-three/fiber";
+import { bordersFrag, vertexShader } from "../textures/shaders";
 
 function Reproject(
 	[lon, lat]: [number, number],

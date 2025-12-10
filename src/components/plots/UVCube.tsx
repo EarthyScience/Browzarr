@@ -1,19 +1,19 @@
+import { evaluate_cmap } from "js-colormaps-es";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useShallow } from "zustand/shallow";
 import { ZarrDataset } from "@/components/zarr/ZarrLoaderLRU";
-import {
-	parseUVCoords,
-	getUnitAxis,
-	GetTimeSeries,
-	GetCurrentArray,
-} from "@/utils/HelperFuncs";
 import {
 	useAnalysisStore,
 	useGlobalStore,
 	usePlotStore,
 } from "@/utils/GlobalStates";
-import { useShallow } from "zustand/shallow";
-import { evaluate_cmap } from "js-colormaps-es";
+import {
+	GetCurrentArray,
+	GetTimeSeries,
+	getUnitAxis,
+	parseUVCoords,
+} from "@/utils/HelperFuncs";
 
 export const UVCube = ({ ZarrDS }: { ZarrDS: ZarrDataset }) => {
 	const {

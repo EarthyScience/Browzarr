@@ -1,33 +1,34 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	useAnalysisStore,
 	useGlobalStore,
 	usePlotStore,
 } from "@/utils/GlobalStates";
 import "../css/MainPanel.css";
-import { useShallow } from "zustand/shallow";
-import { Slider as UISlider } from "@/components/ui/slider";
-import { SliderThumbs } from "@/components/ui/SliderThumbs";
-import { Button } from "../button";
+import { ChevronDown } from "lucide-react";
+import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { LuSettings } from "react-icons/lu";
 import { RxReset } from "react-icons/rx";
+import { useShallow } from "zustand/shallow";
 import {
 	Popover,
-	PopoverTrigger,
 	PopoverContent,
+	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Input } from "../input";
-import { Switch } from "../switch";
+import { SliderThumbs } from "@/components/ui/SliderThumbs";
+import { Slider as UISlider } from "@/components/ui/slider";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { parseLoc } from "@/utils/HelperFuncs";
-import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { ChevronDown } from "lucide-react";
+import { Button } from "../button";
 import Hider from "../Hider";
+import { Input } from "../input";
+import { Switch } from "../switch";
+
 function DeNorm(val: number, min: number, max: number) {
 	const range = max - min;
 	return val * range + min;

@@ -1,23 +1,22 @@
 "use client";
 
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
-import { GetColorMapTexture } from "@/components/textures";
-import { useGlobalStore } from "@/utils/GlobalStates";
-import { colormaps } from "@/components/textures";
-import { useShallow } from "zustand/shallow";
 import { MdOutlineSwapVert } from "react-icons/md";
+import { useShallow } from "zustand/shallow";
+import { colormaps, GetColorMapTexture } from "@/components/textures";
+import { Button } from "@/components/ui/button";
 import {
 	Popover,
-	PopoverTrigger,
 	PopoverContent,
+	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useGlobalStore } from "@/utils/GlobalStates";
 
 const Colormaps = () => {
 	const [cmap, setCmap] = useState<string>("Spectral");

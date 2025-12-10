@@ -1,13 +1,12 @@
 "use client";
 
+import { invalidate, useThree } from "@react-three/fiber";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { usePlotStore, useGlobalStore } from "@/utils/GlobalStates";
 import { useShallow } from "zustand/shallow";
 import vertexShader from "@/components/textures/shaders/thickLineVert.glsl";
+import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
 import { PlotPoints } from "./PlotPoints";
-import { useThree } from "@react-three/fiber";
-import { invalidate } from "@react-three/fiber";
 
 function linspace(start: number, stop: number, num: number): number[] {
 	const step = (stop - start) / (num - 1);

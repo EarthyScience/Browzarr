@@ -1,21 +1,20 @@
 "use client";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useShallow } from "zustand/shallow";
 import {
 	useCacheStore,
 	useGlobalStore,
 	usePlotStore,
 	useZarrStore,
 } from "@/utils/GlobalStates";
-import { useEffect, useMemo, useState, useRef } from "react";
-import { useShallow } from "zustand/shallow";
 import "../css/MainPanel.css";
-import { PiPlayPauseFill } from "react-icons/pi";
 import {
-	FaPlay,
-	FaPause,
-	FaForwardStep,
 	FaBackwardStep,
+	FaForwardStep,
+	FaPause,
+	FaPlay,
 } from "react-icons/fa6";
-import { parseLoc } from "@/utils/HelperFuncs";
+import { PiPlayPauseFill } from "react-icons/pi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
@@ -24,6 +23,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { parseLoc } from "@/utils/HelperFuncs";
 
 const frameRates = [1, 2, 4, 6, 8, 12, 16, 24, 36, 48, 54, 60, 80, 120];
 

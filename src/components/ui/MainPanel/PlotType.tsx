@@ -2,23 +2,22 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import "../css/MainPanel.css";
-import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
-import { useShallow } from "zustand/shallow";
-import { PiSphereThin } from "react-icons/pi";
 import { CgMenuGridO } from "react-icons/cg";
-import { PiCubeLight } from "react-icons/pi";
 import { MdOutlineSquare } from "react-icons/md";
+import { PiCubeLight, PiSphereThin } from "react-icons/pi";
+import { useShallow } from "zustand/shallow";
+import { Button } from "@/components/ui/button";
 import {
 	Popover,
-	PopoverTrigger,
 	PopoverContent,
+	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
 
 const plotTypes = ["volume", "point-cloud", "sphere", "flat"];
 const plotIcons = {

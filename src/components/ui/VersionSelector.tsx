@@ -1,5 +1,9 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { BsTags } from "react-icons/bs";
+import { FaCheck } from "react-icons/fa6";
+import { LuChevronDown } from "react-icons/lu";
+import { Button } from "@/components/ui/button";
 import {
 	Popover,
 	PopoverContent,
@@ -10,10 +14,6 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
-import { FaCheck } from "react-icons/fa6";
-import { LuChevronDown } from "react-icons/lu";
-import { BsTags } from "react-icons/bs";
 
 const VersionSelector = () => {
 	const [versions, setVersions] = useState<string[]>([]);

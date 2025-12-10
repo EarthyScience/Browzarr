@@ -1,14 +1,15 @@
+import { invalidate } from "@react-three/fiber";
 import React, { useEffect, useMemo } from "react";
-import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
-import { useShallow } from "zustand/shallow";
 import * as THREE from "three";
+import { useShallow } from "zustand/shallow";
+import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
+import { deg2rad } from "@/utils/HelperFuncs";
 import {
+	sphereBlocksFrag,
 	sphereBlocksVert,
 	sphereBlocksVertFlat,
-	sphereBlocksFrag,
 } from "../textures/shaders";
-import { invalidate } from "@react-three/fiber";
-import { deg2rad } from "@/utils/HelperFuncs";
+
 const SphereBlocks = ({
 	textures,
 }: {

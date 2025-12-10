@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
-import { BsMoonStarsFill } from "react-icons/bs";
-import { BsSunFill } from "react-icons/bs";
+import { useEffect, useState } from "react";
+import { BsMoonStarsFill, BsSunFill } from "react-icons/bs";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,

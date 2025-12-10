@@ -1,31 +1,31 @@
-import React, { useState, useMemo, useEffect } from "react";
-import {
-	useCacheStore,
-	useGlobalStore,
-	usePlotStore,
-	useZarrStore,
-} from "@/utils/GlobalStates";
+import React, { useEffect, useMemo, useState } from "react";
+import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { useShallow } from "zustand/shallow";
-import { SliderThumbs } from "@/components/ui/SliderThumbs";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Metadata, {
 	defaultAttributes,
 	renderAttributes,
 } from "@/components/ui/MetaData";
-import { Input } from "../input";
-import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { parseLoc } from "@/utils/HelperFuncs";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { SliderThumbs } from "@/components/ui/SliderThumbs";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-	Popover,
-	PopoverTrigger,
-	PopoverContent,
-} from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
+	useCacheStore,
+	useGlobalStore,
+	usePlotStore,
+	useZarrStore,
+} from "@/utils/GlobalStates";
+import { parseLoc } from "@/utils/HelperFuncs";
+import { Input } from "../input";
 import { Switch } from "../switch";
 
 const formatArray = (value: string | number[]): string => {
