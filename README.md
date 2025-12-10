@@ -45,7 +45,7 @@ Stay tuned - major updates and new visualization features are on the way! 🚀
 # Version 1.0.0 - Progress/Features
 We are still in active development but plan to release a stable 1.0.0 when all of the desired features are in place and a final stability and bug pass has been completed
 - [x] Temporal and spatial slicing
-- [ ] Larger texture support
+- [x] Larger texture support
 - [ ] NetCDF Support
 - [ ] Customizable export
 - [ ] Animation export
