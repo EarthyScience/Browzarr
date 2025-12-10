@@ -1,21 +1,21 @@
-.error-container{
-    position: fixed;
-    bottom: 50%;
-    left:50%;
-    transform: translateX(-50%);
-    border-radius: 8px;
-    z-index: 4;
-    background: var(--background);
-    padding: 10px;
-    filter: drop-shadow(0px 0px 4px black);
-    font-size: medium;
+.error-container {
+	position: fixed;
+	bottom: 50%;
+	left: 50%;
+	transform: translateX(-50%);
+	border-radius: 8px;
+	z-index: 4;
+	background: var(--background);
+	padding: 10px;
+	filter: drop-shadow(0px 0px 4px black);
+	font-size: medium;
 }
 
-.error-background{
-    position: fixed;
-    width: 100vw;
-    height: 100vh;
-    z-index: 2;
-    background-color: var(--modal-shadow);
-    backdrop-filter: blur(4px) saturate(10%);
+.error-background {
+	position: fixed;
+	width: 100vw;
+	height: 100vh;
+	z-index: 2;
+	background-color: var(--modal-shadow);
+	backdrop-filter: blur(4px) saturate(10%);
 }

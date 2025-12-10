@@ -1,115 +1,119 @@
 .navbar {
-  display: flex;
-  position: fixed;
-  flex-direction: column;
-  align-items: center;
-  align-content: center;
-  left: 8px;
-  right: auto;
-  top: 42px;
-  z-index: 10;
-  user-select: none;
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px) saturate(180%);
-  /* border: 1px solid var(--glass-border); */
-  border-radius: 12px;
-  width: fit-content;
-  height: auto;
-  padding: 4px;
-  gap: 16px;
-  /* box-shadow: 0 4px 6px var(--glass-shadow); */
+	display: flex;
+	position: fixed;
+	flex-direction: column;
+	align-items: center;
+	align-content: center;
+	left: 8px;
+	right: auto;
+	top: 42px;
+	z-index: 10;
+	user-select: none;
+	background: var(--glass-bg);
+	backdrop-filter: blur(10px) saturate(180%);
+	/* border: 1px solid var(--glass-border); */
+	border-radius: 12px;
+	width: fit-content;
+	height: auto;
+	padding: 4px;
+	gap: 16px;
+	/* box-shadow: 0 4px 6px var(--glass-shadow); */
 }
 
 .navbar img {
-  max-width: 36px;
-  max-height: 36px;
-  border-radius: 0.5rem;
+	max-width: 36px;
+	max-height: 36px;
+	border-radius: 0.5rem;
 }
 
 .navbar ul {
-    list-style: none;
-    display:flex;
-    gap: 1rem;
+	list-style: none;
+	display: flex;
+	gap: 1rem;
 }
 
 .navbar a {
-    position: relative;
-  }
-  
+	position: relative;
+}
+
 .navbar a::after {
-  content: '';
-  position: absolute;
-  width: 0;
-  height: 2px;
-  bottom: 0;
-  left: 0;
-  background-color: var(--accent-1);
-  transition: width .3s;
+	content: "";
+	position: absolute;
+	width: 0;
+	height: 2px;
+	bottom: 0;
+	left: 0;
+	background-color: var(--accent-1);
+	transition: width 0.3s;
 }
 
 .navbar a:hover::after {
-  width: 100%;
+	width: 100%;
 }
 
 .navbar-left {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  align-content: center;
-  gap: 12px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	align-content: center;
+	gap: 12px;
 }
 
 .nav-dropdown {
-  margin-left: 8px;
+	margin-left: 8px;
 }
 
 /* Trigger button (5 dots) */
 .navbar-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  margin-bottom: -12px;
-  cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border: none;
+	margin-bottom: -12px;
+	cursor: pointer;
 }
 
 .navbar-trigger-icon {
-  width: 32px;
-  height: 32px;
+	width: 32px;
+	height: 32px;
 }
 
 .rotating {
-  animation: navbar-rotate 5s linear infinite;
+	animation: navbar-rotate 5s linear infinite;
 }
 
 @keyframes navbar-rotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
 }
 
 /* Collapsible content container */
 .navbar-content {
-  overflow: hidden;
-  transform-origin: top; /* unfold from the top */
-  transition:
-    max-height 400ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 300ms ease,
-    transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: max-height, opacity, transform;
+	overflow: hidden;
+	transform-origin: top; /* unfold from the top */
+	transition:
+		max-height 400ms cubic-bezier(0.4, 0, 0.2, 1),
+		opacity 300ms ease,
+		transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
+	will-change: max-height, opacity, transform;
 }
 
 .navbar-content.closed {
-  max-height: 0;
-  opacity: 0;
-  transform: scaleY(0.8) translateY(-8px); /* folded look */
-  pointer-events: none;
+	max-height: 0;
+	opacity: 0;
+	transform: scaleY(0.8) translateY(-8px); /* folded look */
+	pointer-events: none;
 }
 
 .navbar-content.open {
-  max-height: 600px;
-  opacity: 1;
-  transform: scaleY(1) translateY(0);
-  pointer-events: auto;
+	max-height: 600px;
+	opacity: 1;
+	transform: scaleY(1) translateY(0);
+	pointer-events: auto;
 }

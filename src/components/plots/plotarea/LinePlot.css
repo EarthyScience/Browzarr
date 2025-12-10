@@ -1,70 +1,70 @@
 .plot-canvas {
-    position: fixed;
-    bottom: 0px;
-    left: 0;
-    width: 100%;
-    top: var(--plot-height, 50px);
-    background: var(--background-plot);
-    border-top: 1px solid var(--plot-border);
-    box-shadow: 0 -2px 8px var(--modal-shadow);
-    transition: transform 0.5s ease;
-    z-index: 10;
-    min-height: 100px;
-    border-radius: 20px;
+	position: fixed;
+	bottom: 0px;
+	left: 0;
+	width: 100%;
+	top: var(--plot-height, 50px);
+	background: var(--background-plot);
+	border-top: 1px solid var(--plot-border);
+	box-shadow: 0 -2px 8px var(--modal-shadow);
+	transition: transform 0.5s ease;
+	z-index: 10;
+	min-height: 100px;
+	border-radius: 20px;
 }
 
 .plot-canvas::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 40px;
-    height: 4px;
-    background-color: var(--foreground);
-    border-radius: 2px;
-    opacity: 0.5;
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 40px;
+	height: 4px;
+	background-color: var(--foreground);
+	border-radius: 2px;
+	opacity: 0.5;
 }
 
-.plot-coords{
-    padding: 0px 8px;
-    background-color:var(--background-plot);
-    border-radius: 8px;
-    box-shadow: 0px 0px 4px var(--modal-shadow);
-    cursor: move;
-    user-select: none;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    margin-top: 2px;
-    color: var(--text-plot);
+.plot-coords {
+	padding: 0px 8px;
+	background-color: var(--background-plot);
+	border-radius: 8px;
+	box-shadow: 0px 0px 4px var(--modal-shadow);
+	cursor: move;
+	user-select: none;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 8px;
+	margin-top: 2px;
+	color: var(--text-plot);
 }
 
-.coord-container{
-    position: absolute;
-    max-width:355px;
-    bottom:50%;
-    left:2%;
-    z-index: 3;
+.coord-container {
+	position: absolute;
+	max-width: 355px;
+	bottom: 50%;
+	left: 2%;
+	z-index: 3;
 }
 
 @media screen and (max-width: 480px) {
-    .plot-coords {
-        flex-direction: column;
-        align-items: flex-start;
-        max-width: 200px;
-        gap: 1px;
-    }
+	.plot-coords {
+		flex-direction: column;
+		align-items: flex-start;
+		max-width: 200px;
+		gap: 1px;
+	}
 }
 
-.point-info{
-    position: fixed;
-    z-index: 9;
-    background: var(--background-plot);
-    pointer-events: none;
-    transform: translate(10px,20px);
-    padding: 5px;
-    border-radius: 5px;
-    box-shadow: 1px 2px 5px var(--modal-shadow);
+.point-info {
+	position: fixed;
+	z-index: 9;
+	background: var(--background-plot);
+	pointer-events: none;
+	transform: translate(10px, 20px);
+	padding: 5px;
+	border-radius: 5px;
+	box-shadow: 1px 2px 5px var(--modal-shadow);
 }

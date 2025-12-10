@@ -1,40 +1,40 @@
-.analysis-tab{
-    width: 24px;
-    background: var(--background-plot);
-    height: 100px;
-    position: fixed;
-    z-index: 3;
-    bottom: calc(50% - 50px);
-    cursor: pointer;
-    border-radius: 4px;
-    left: -8px;
-    display: flex;
-    justify-content: end;
-    align-items: center;
-    box-shadow: 0px 0px 2px var(--foreground);
+.analysis-tab {
+	width: 24px;
+	background: var(--background-plot);
+	height: 100px;
+	position: fixed;
+	z-index: 3;
+	bottom: calc(50% - 50px);
+	cursor: pointer;
+	border-radius: 4px;
+	left: -8px;
+	display: flex;
+	justify-content: end;
+	align-items: center;
+	box-shadow: 0px 0px 2px var(--foreground);
 }
 
-.tab-line{
-    position: relative;
-    height: 85%;
-    width: 1px;
-    background: var(--foreground);
-    margin-right: 4px;
-    box-shadow: inset 0px 0px 2px var(--background);
+.tab-line {
+	position: relative;
+	height: 85%;
+	width: 1px;
+	background: var(--foreground);
+	margin-right: 4px;
+	box-shadow: inset 0px 0px 2px var(--background);
 }
 
-.plot-tab{
-    width: 24px;
-    background: var(--background-plot);
-    height: 100px;
-    position: fixed;
-    z-index: 3;
-    bottom: calc(50% - 50px);
-    cursor: pointer;
-    border-radius: 4px;
-    right: -8px;
-    display: flex;
-    justify-content: start;
-    align-items: center;
-    box-shadow: 0px 0px 2px var(--foreground);
+.plot-tab {
+	width: 24px;
+	background: var(--background-plot);
+	height: 100px;
+	position: fixed;
+	z-index: 3;
+	bottom: calc(50% - 50px);
+	cursor: pointer;
+	border-radius: 4px;
+	right: -8px;
+	display: flex;
+	justify-content: start;
+	align-items: center;
+	box-shadow: 0px 0px 2px var(--foreground);
 }

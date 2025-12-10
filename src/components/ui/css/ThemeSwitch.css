@@ -1,12 +1,12 @@
 .toggle {
-    position: static;
-    cursor: pointer;
-    padding: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-.toggle:hover {   
-    color: var(--toggle-hover);
+	position: static;
+	cursor: pointer;
+	padding: 0.5rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.toggle:hover {
+	color: var(--toggle-hover);
 }

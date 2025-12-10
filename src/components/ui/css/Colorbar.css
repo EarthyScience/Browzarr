@@ -1,57 +1,55 @@
-.colorbar{
-    z-index: 10;
-    position: absolute;
-    left: 50%;
-    top: 32px;
-    width: 40%;
-    max-width: 450px;
-    transform: translateX(-50%);
-    user-select: none;
+.colorbar {
+	z-index: 10;
+	position: absolute;
+	left: 50%;
+	top: 32px;
+	width: 40%;
+	max-width: 450px;
+	transform: translateX(-50%);
+	user-select: none;
 }
 
-.colorbar canvas{
-    border-radius: 4px;
-    width: 100%;
-    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.158); 
-    cursor: ew-resize;
+.colorbar canvas {
+	border-radius: 4px;
+	width: 100%;
+	box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.158);
+	cursor: ew-resize;
 }
 
-.colorbar p{
-    font-weight: 500;
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px) saturate(180%);
-    border-radius: 4px;
-    padding: 0 4px;
+.colorbar p {
+	font-weight: 500;
+	background: var(--glass-bg);
+	backdrop-filter: blur(10px) saturate(180%);
+	border-radius: 4px;
+	padding: 0 4px;
 }
 
 .colorbar-title {
-    white-space: nowrap;
-    max-width: 90%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+	white-space: nowrap;
+	max-width: 90%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
 
 .colorbar input::-webkit-outer-spin-button,
 .colorbar input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    
+	-webkit-appearance: none;
 }
 
 /* Firefox */
-.colorbar input[type=number] {
-  -moz-appearance: textfield;
-  font-weight: 500;
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px) saturate(180%);
-    border-radius: 4px;
-    padding: 0 4px;
-    margin: 0;
+.colorbar input[type="number"] {
+	-moz-appearance: textfield;
+	font-weight: 500;
+	background: var(--glass-bg);
+	backdrop-filter: blur(10px) saturate(180%);
+	border-radius: 4px;
+	padding: 0 4px;
+	margin: 0;
 }
-  
 
 @media (max-width: 768px) {
-    .colorbar {
-        width: 70%;
-        top: 64px;
-    }
+	.colorbar {
+		width: 70%;
+		top: 64px;
+	}
 }

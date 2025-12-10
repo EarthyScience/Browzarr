@@ -1,8 +1,7 @@
-.analysis-options{
-    position: absolute;
-    z-index: 2;
-    right: calc(50% - 40px);
-    transition: 1s cubic-bezier(0.075, 0.82, 0.165, 1);
-    width: 80px;
+.analysis-options {
+	position: absolute;
+	z-index: 2;
+	right: calc(50% - 40px);
+	transition: 1s cubic-bezier(0.075, 0.82, 0.165, 1);
+	width: 80px;
 }
-

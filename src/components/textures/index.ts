@@ -1,9 +1,4 @@
-import { GetColorMapTexture, colormaps } from './colormap';
-import {ArrayToTexture, CreateTexture} from './TextureMakers'
+import { GetColorMapTexture, colormaps } from "./colormap";
+import { ArrayToTexture, CreateTexture } from "./TextureMakers";
 
-export {
-    GetColorMapTexture,
-    colormaps,
-    ArrayToTexture,
-    CreateTexture
-}
+export { GetColorMapTexture, colormaps, ArrayToTexture, CreateTexture };

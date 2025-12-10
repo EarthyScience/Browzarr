@@ -1,17 +1,17 @@
-.resize-bar{
-    position: fixed;
-    width: 100vw;
-    height: 8px;
-    z-index: 4;
-    cursor: n-resize;
-    background-color: transparent;
-    touch-action: none;
-    -webkit-tap-highlight-color: transparent;
+.resize-bar {
+	position: fixed;
+	width: 100vw;
+	height: 8px;
+	z-index: 4;
+	cursor: n-resize;
+	background-color: transparent;
+	touch-action: none;
+	-webkit-tap-highlight-color: transparent;
 }
 
 @media (hover: hover) {
-    .resize-bar:hover {
-        background-color: var(--foreground);
-        opacity: 0.1;
-    }
+	.resize-bar:hover {
+		background-color: var(--foreground);
+		opacity: 0.1;
+	}
 }

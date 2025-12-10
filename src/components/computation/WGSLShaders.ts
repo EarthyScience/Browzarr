@@ -1,14 +1,13 @@
-export type Precision = 'f16' | 'f32';
-
+export type Precision = "f16" | "f32";
 
 export const createShaders = (precision: Precision) => {
-    /// Install WGSL Literal extension in VS code for syntax highlighting
+	/// Install WGSL Literal extension in VS code for syntax highlighting
 
-    const enableF16 = precision === 'f16' ? 'enable f16;' : '';
+	const enableF16 = precision === "f16" ? "enable f16;" : "";
 
-    // #region BOILERPLATES
+	// #region BOILERPLATES
 
-    const ReductionBoilerPlate = /* WGSL */`
+	const ReductionBoilerPlate = /* WGSL */ `
         ${enableF16}
         struct Params {
             zStride: u32,
@@ -39,8 +38,8 @@ export const createShaders = (precision: Precision) => {
             if (outX >= xSize || outY >= ySize) {
                 return;
             }
-    `
-    const ConvolutionBoilerPlate = /* WGSL */`
+    `;
+	const ConvolutionBoilerPlate = /* WGSL */ `
         ${enableF16}
         struct Params {
             xStride: u32,
@@ -89,8 +88,8 @@ export const createShaders = (precision: Precision) => {
             let xy_end: i32 = select(xy_radius + 1, 1, kernelSize == 1u);
             let z_start: i32 = select(-z_radius, 0, kernelDepth == 1u);
             let z_end: i32 = select(z_radius + 1, 1, kernelDepth == 1u);
-    `
-    const ConvolutionBoilerPlate2D = /* WGSL */`
+    `;
+	const ConvolutionBoilerPlate2D = /* WGSL */ `
         ${enableF16}
         struct Params {
             xStride: u32,
@@ -129,12 +128,12 @@ export const createShaders = (precision: Precision) => {
 
             let xy_radius: i32 = i32(kernelSize/2u);
 
-    `
-    // #endregion
+    `;
+	// #endregion
 
-    const allShaders = {
-    // #region REDUCTION SHADERS
-    MeanReduction: /* wgsl */`
+	const allShaders = {
+		// #region REDUCTION SHADERS
+		MeanReduction: /* wgsl */ `
         ${ReductionBoilerPlate}
             var sum: f32 = 0.0;
             
@@ -176,7 +175,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    MinReduction: /* wgsl */`
+		MinReduction: /* wgsl */ `
         ${ReductionBoilerPlate}
             var min: f32 = 1e12;
             
@@ -215,7 +214,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    MaxReduction: /* wgsl */`
+		MaxReduction: /* wgsl */ `
         ${ReductionBoilerPlate}
             
             var max: f32 = -1e12;
@@ -255,7 +254,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    StDevReduction: /* wgsl */`
+		StDevReduction: /* wgsl */ `
         ${ReductionBoilerPlate}
             var sum: f32 = 0.0;
             // Iterate along the dimension we're averaging
@@ -337,7 +336,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    CUMSUMReduction: /* wgsl */`
+		CUMSUMReduction: /* wgsl */ `
         ${enableF16}
         struct Params {
             zStride: u32,
@@ -397,7 +396,7 @@ export const createShaders = (precision: Precision) => {
             outputData[outputIndex] = accum;
         }
     `,
-    LinearSlopeReduction: /* wgsl */`
+		LinearSlopeReduction: /* wgsl */ `
         ${ReductionBoilerPlate}
             let meanY: f32 = f32(dimLength)/2;
             var sum: f32 = 0.0;
@@ -459,10 +458,10 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    // #endregion
+		// #endregion
 
-    // #region TWO VARIABLE REDUCTION SHADERS
-    TwoVarLinearSlopeReduction: /* wgsl */`
+		// #region TWO VARIABLE REDUCTION SHADERS
+		TwoVarLinearSlopeReduction: /* wgsl */ `
         ${enableF16}
         struct Params {
         zStride: u32,
@@ -585,7 +584,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    CovarianceReduction: /* wgsl */`
+		CovarianceReduction: /* wgsl */ `
         ${enableF16}
         struct Params {
         zStride: u32,
@@ -667,7 +666,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    CorrelationReduction: /* wgsl */`
+		CorrelationReduction: /* wgsl */ `
         ${enableF16}
         struct Params {
             zStride: u32,
@@ -769,10 +768,10 @@ export const createShaders = (precision: Precision) => {
             outputData[outputIndex] = ${precision}(correlation);
         }
     `,
-    // #endregion
+		// #endregion
 
-    // #region CONVOLUTION SHADERS
-    MeanConvolution: /* wgsl */`
+		// #region CONVOLUTION SHADERS
+		MeanConvolution: /* wgsl */ `
             ${ConvolutionBoilerPlate}    
             var sum: f32 = 0.0;
             var count: u32 = 0u;
@@ -798,7 +797,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    MinConvolution: /* wgsl */`
+		MinConvolution: /* wgsl */ `
         ${ConvolutionBoilerPlate}  
             var minVal: f32 = 1e12;
             var count: u32 = 0u;
@@ -827,7 +826,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    MaxConvolution: /* wgsl */`
+		MaxConvolution: /* wgsl */ `
         ${ConvolutionBoilerPlate}  
 
             var maxVal: f32 = -1e12;
@@ -856,7 +855,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    StDevConvolution: /* wgsl */`
+		StDevConvolution: /* wgsl */ `
         ${ConvolutionBoilerPlate}  
             var sum: f32 = 0.0;
             var count: u32 = 0u;
@@ -915,10 +914,10 @@ export const createShaders = (precision: Precision) => {
             outputData[globalIdx] = ${precision}(stDev);
         }
     `,
-    // #endregion
+		// #endregion
 
-    // #region TWO VARIABLE CONVOLUTION SHADERS
-    CorrelationConvolution: /* WGSL */`
+		// #region TWO VARIABLE CONVOLUTION SHADERS
+		CorrelationConvolution: /* WGSL */ `
         ${enableF16}
         struct Params {
             xStride: u32,
@@ -1024,7 +1023,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    CovarianceConvolution: /* WGSL */`
+		CovarianceConvolution: /* WGSL */ `
         ${enableF16}
         struct Params {
             xStride: u32,
@@ -1138,7 +1137,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    TwoVarLinearSlopeConvolution: /* WGSL */`
+		TwoVarLinearSlopeConvolution: /* WGSL */ `
         ${enableF16}
         struct Params {
             xStride: u32,
@@ -1253,10 +1252,10 @@ export const createShaders = (precision: Precision) => {
             outputData[globalIdx] = ${precision}(numSum/denomSum);
         }
     `,
-    // #endregion
+		// #endregion
 
-    // #region 2D CONVOLUTION SHADERS
-    MeanConvolution2D: /* wgsl */`
+		// #region 2D CONVOLUTION SHADERS
+		MeanConvolution2D: /* wgsl */ `
             ${ConvolutionBoilerPlate2D}    
             var sum: f32 = 0;
             var count: u32 = 0u;
@@ -1281,7 +1280,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    MinConvolution2D: /* wgsl */`
+		MinConvolution2D: /* wgsl */ `
         ${ConvolutionBoilerPlate2D}   
             var minVal: f32 = 1e12;
             for (var kx: i32 = -xy_radius; kx <= xy_radius; kx++) {
@@ -1306,7 +1305,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    MaxConvolution2D: /* wgsl */`
+		MaxConvolution2D: /* wgsl */ `
         ${ConvolutionBoilerPlate2D}  
             var maxVal: f32 = -1e12;
             for (var kx: i32 = -xy_radius; kx <= xy_radius; kx++) {
@@ -1331,7 +1330,7 @@ export const createShaders = (precision: Precision) => {
         }
     `,
 
-    StDevConvolution2D: /* wgsl */`
+		StDevConvolution2D: /* wgsl */ `
         ${ConvolutionBoilerPlate2D}  
             var sum: f32 = 0.;
             var count: u32 = 0u;
@@ -1379,9 +1378,9 @@ export const createShaders = (precision: Precision) => {
             outputData[globalIdx] = ${precision}(stDev);
         }
     `,
-    // #endregion
+		// #endregion
 
-    CUMSUM3D: /* wgsl */`
+		CUMSUM3D: /* wgsl */ `
         ${enableF16}
         struct Params {
             xStride: u32,
@@ -1462,7 +1461,7 @@ export const createShaders = (precision: Precision) => {
             }
                 outputData[baseIdx] = accum;
         }
-    `
-    }
-    return allShaders;
-}
+    `,
+	};
+	return allShaders;
+};

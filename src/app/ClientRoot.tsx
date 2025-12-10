@@ -10,15 +10,29 @@ import ThemeSwitch from "@/components/ui/ThemeSwitch";
 import HomeButton from "@/components/ui/HomeButton";
 import GithubButton from "@/components/ui/GithubButton";
 
-export default function ClientRoot({ children }: { children: React.ReactNode }) {
+export default function ClientRoot({
+	children,
+}: {
+	children: React.ReactNode;
+}) {
 	return (
-		<ThemeProvider attribute="data-theme" enableSystem defaultTheme="system" disableTransitionOnChange>
+		<ThemeProvider
+			attribute="data-theme"
+			enableSystem
+			defaultTheme="system"
+			disableTransitionOnChange
+		>
 			<MobileUIHider />
 			{/* left menu */}
 			<div className="fixed top-2 left-2 z-50 flex items-center gap-2">
 				<HomeButton />
 				<BrowZarrPopover />
-				<Link href="/docs" className="text-sm underline sm:inline-block" target="_blank" rel="noopener noreferrer">
+				<Link
+					href="/docs"
+					className="text-sm underline sm:inline-block"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
 					docs
 				</Link>
 			</div>
@@ -28,9 +42,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
 				<GithubButton />
 				<ThemeSwitch />
 			</div>
-			<main className="min-h-screen">
-				{children}
-			</main>
+			<main className="min-h-screen">{children}</main>
 			<Footer />
 		</ThemeProvider>
 	);

@@ -1,7 +1,7 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
 	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-	"files": { 
+	"files": {
 		"ignoreUnknown": false,
 		"includes": [
 			"**",
@@ -9,7 +9,8 @@
 			"!**/ne_110m_coastline.json",
 			"!**/ne_110m_admin_0_countries.json",
 			"!**/package.json"
-		] },
+		]
+	},
 	"formatter": { "enabled": true, "indentStyle": "tab" },
 	"linter": {
 		"enabled": true,

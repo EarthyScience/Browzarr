@@ -1,19 +1,19 @@
-.yScaler{
-    z-index: 2;
-    position: absolute;
-    right: 0%;
-    height: 100%;
-    background-color: transparent;
-    width: 40px;
-    cursor: n-resize;
+.yScaler {
+	z-index: 2;
+	position: absolute;
+	right: 0%;
+	height: 100%;
+	background-color: transparent;
+	width: 40px;
+	cursor: n-resize;
 }
 
-.xScaler{
-    z-index:2;
-    position: absolute;
-    top: 10px;
-    width: 100%;
-    height: 20px;
-    background-color: transparent;
-    cursor: ew-resize;
+.xScaler {
+	z-index: 2;
+	position: absolute;
+	top: 10px;
+	width: 100%;
+	height: 20px;
+	background-color: transparent;
+	cursor: ew-resize;
 }

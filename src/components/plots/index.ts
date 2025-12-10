@@ -1,16 +1,16 @@
-export {DataCube} from './DataCube';
-export {UVCube} from './UVCube';
-export {PointCloud} from './PointCloud'
-export {PlotArea} from './plotarea/LinePlot'
-export {FixedTicks} from './plotarea/FixedTicks'
-export {Plot} from './Plot'
-export {ThickLine} from './plotarea/ThickLine'
-export {PlotPoints} from './plotarea/PlotPoints'
-export {FlatMap} from './FlatMap'
-export {Sphere} from './Sphere'
-export {CountryBorders} from './CountryBorders'
-export {AxisLines} from './AxisLines'
-export {LandingShapes} from './MorphingPoints'
-export {SphereBlocks} from './SphereBlocks'
-export {FlatBlocks} from './FlatBlocks'
-export {KeyFramePreviewer} from './KeyFramePreviewer'
+export { DataCube } from "./DataCube";
+export { UVCube } from "./UVCube";
+export { PointCloud } from "./PointCloud";
+export { PlotArea } from "./plotarea/LinePlot";
+export { FixedTicks } from "./plotarea/FixedTicks";
+export { Plot } from "./Plot";
+export { ThickLine } from "./plotarea/ThickLine";
+export { PlotPoints } from "./plotarea/PlotPoints";
+export { FlatMap } from "./FlatMap";
+export { Sphere } from "./Sphere";
+export { CountryBorders } from "./CountryBorders";
+export { AxisLines } from "./AxisLines";
+export { LandingShapes } from "./MorphingPoints";
+export { SphereBlocks } from "./SphereBlocks";
+export { FlatBlocks } from "./FlatBlocks";
+export { KeyFramePreviewer } from "./KeyFramePreviewer";

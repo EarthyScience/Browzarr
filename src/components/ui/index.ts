@@ -1,7 +1,7 @@
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import AboutInfo from "./AboutInfo";
-import  Metadata from "./MetaData";
+import Metadata from "./MetaData";
 import ResizeBar from "./ResizeBar";
 import YScaler from "./LinePlotArea/YScaler";
 import XScaler from "./LinePlotArea/XScaler";
@@ -28,33 +28,33 @@ import DatasetToast from "./DatasetToast";
 import VersionSelector from "./VersionSelector";
 import Hider from "./Hider";
 export {
-  Navbar,
-  Footer,
-  AboutInfo,
-  LogoDrawer,
-  Metadata,
-  ResizeBar,
-  YScaler,
-  XScaler,
-  ThemeSwitch,
-  Loading,
-  useCSSVariable,
-  ShowLinePlot,
-  PlotLineButton,
-  Colorbar,
-  LocalZarr,
-  MainPanel,
-  PlotType,
-  Variables,
-  Colormaps,
-  AdjustPlot,
-  Dataset,
-  DatasetToast,
-  PlayButton,
-  Error,
-  AnalysisOptions,
-  KernelVisualizer,
-  ExportImageSettings,
-  VersionSelector,
-  Hider
+	Navbar,
+	Footer,
+	AboutInfo,
+	LogoDrawer,
+	Metadata,
+	ResizeBar,
+	YScaler,
+	XScaler,
+	ThemeSwitch,
+	Loading,
+	useCSSVariable,
+	ShowLinePlot,
+	PlotLineButton,
+	Colorbar,
+	LocalZarr,
+	MainPanel,
+	PlotType,
+	Variables,
+	Colormaps,
+	AdjustPlot,
+	Dataset,
+	DatasetToast,
+	PlayButton,
+	Error,
+	AnalysisOptions,
+	KernelVisualizer,
+	ExportImageSettings,
+	VersionSelector,
+	Hider,
 };
