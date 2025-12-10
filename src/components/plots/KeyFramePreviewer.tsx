@@ -1,7 +1,7 @@
 "use client";
 import { useGlobalStore, useImageExportStore, usePlotStore } from '@/utils/GlobalStates'
 import { invalidate, useThree } from '@react-three/fiber';
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { lerp } from 'three/src/math/MathUtils.js';
@@ -17,7 +17,27 @@ export const KeyFramePreviewer = () => {
 
     const {camera} = useThree();
     const isAnimating = useRef(false)
+    const intervalRef = useRef<NodeJS.Timeout | null>(null)
     const originalAnimProg = useRef<number>(0)
+    const {originalPos, originalAngle, radius } = useMemo(()=>{
+        if (!keyFrames){
+            isAnimating.current = false; // End animation if Keyframes change
+            clearTimeout(intervalRef.current as NodeJS.Timeout)
+            return {originalPos:new THREE.Vector3(), radius:0, originalAngle:0}
+        };
+        const keyFrameList = Array.from(keyFrames.keys()).sort((a, b) => a - b)
+        const origCamera = keyFrames.get(keyFrameList[0]).camera
+        const originalPos = {
+                    x: origCamera.position.x,
+                    y: origCamera.position.y,
+                    z: origCamera.position.z
+                };
+        const radius = Math.sqrt(originalPos.x ** 2 + originalPos.z ** 2);
+        const originalAngle = Math.atan2(originalPos.x, originalPos.z);
+        isAnimating.current = false; // End animation if Keyframes change
+        clearTimeout(intervalRef.current as NodeJS.Timeout)
+        return {originalPos, radius, originalAngle}
+    },[keyFrames])
 
     const KeyFrameLerper = (startState: Record<string,any>, endState:Record<string,any>, alpha:number, useCamera=true) => {
         const startVizState = startState["visual"]
@@ -82,14 +102,6 @@ export const KeyFramePreviewer = () => {
         const keyFrameList = Array.from(keyFrames.keys()).sort((a, b) => a - b)
         const keyFrameIdx = keyFrameList.findLastIndex(n => n <= currentFrame)
         const startFrame = keyFrameList[keyFrameIdx]
-        const origCamera = keyFrames.get(keyFrameList[0]).camera
-        const originalPos = {
-                    x: origCamera.position.x,
-                    y: origCamera.position.y,
-                    z: origCamera.position.z
-                };
-        const radius = Math.sqrt(originalPos.x ** 2 + originalPos.z ** 2);
-        const originalAngle = Math.atan2(originalPos.x, originalPos.z);
         if (keyFrameIdx+1 < keyFrameList.length){
             const endFrame = keyFrameList[keyFrameIdx+1]
             const thisFrames = endFrame-startFrame;
@@ -131,19 +143,9 @@ export const KeyFramePreviewer = () => {
 
         let keyFrameIdx = 0;
         let frame = 0;
-
-        const origCamera = keyFrames.get(keyFrameList[0]).camera
-        const originalPos = {
-                    x: origCamera.position.x,
-                    y: origCamera.position.y,
-                    z: origCamera.position.z
-                };
-        const radius = Math.sqrt(originalPos.x ** 2 + originalPos.z ** 2);
-        const originalAngle = Math.atan2(originalPos.x, originalPos.z);
-
-        const intervalId = setInterval(()=>{
+        intervalRef.current = setInterval(()=>{
             if (frame >= frames) {
-                clearInterval(intervalId);
+                clearInterval(intervalRef.current as NodeJS.Timeout);
                 isAnimating.current = false;
                 setAnimProg(originalAnimProg.current)
                 return;
@@ -187,7 +189,7 @@ export const KeyFramePreviewer = () => {
 
         isAnimating.current= true;
 
-        return () => clearInterval(intervalId);
+        return () => clearInterval( intervalRef.current as NodeJS.Timeout);;
 
     },[previewKeyFrames])
   return null
