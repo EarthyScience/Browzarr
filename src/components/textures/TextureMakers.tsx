@@ -84,8 +84,8 @@ export function CreateTexture(
 		);
 		const chunks = [];
 		for (const chunk of chunkData) {
-			//@ts-expect-error stop whining
 			const volTexture = new THREE.Data3DTexture(
+				//@ts-expect-error stop whining
 				chunk.data,
 				chunk.dims.x,
 				chunk.dims.y,
