@@ -1,7 +1,7 @@
 "use client";
-import React, {useEffect, useRef, useState} from 'react'
+import React, {useEffect, useRef } from 'react'
 import { Button } from './button'
-import { useGlobalStore, useImageExportStore, usePlotStore } from '@/utils/GlobalStates'
+import { useImageExportStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import { Slider } from './slider'
 import {
@@ -59,10 +59,9 @@ const KeyFrames = () => {
         animProg:state.animProg, setAnimProg:state.setAnimProg
     })))
 
-    const {keyFrames, frames, useTime, frameRate, timeRate, currentFrame, setCurrentFrame, setPreviewFrame} = useImageExportStore(useShallow(state=>({
+    const {keyFrames, frames, useTime, frameRate, timeRate, currentFrame, setCurrentFrame} = useImageExportStore(useShallow(state=>({
         keyFrames:state.keyFrames, frames:state.frames, currentFrame:state.currentFrame,
-        useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, setCurrentFrame:state.setCurrentFrame,
-        setPreviewFrame:state.setPreviewFrame
+        useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, setCurrentFrame:state.setCurrentFrame
     })))
     const timeRatio = timeRate/frameRate
 
@@ -88,7 +87,6 @@ const KeyFrames = () => {
             onValueChange={(val)=>{
                 const frame = parseInt(val);
                 setCurrentFrame(frame);
-                setPreviewFrame(frame)
             }}
         >
             <SelectTrigger>
@@ -104,21 +102,42 @@ const KeyFrames = () => {
             <b >Frame:</b>
             <div>{currentFrame}</div>
         </div>
-        <Slider
-            value={[currentFrame]}
-            min={0}
-            max={frames}
-            step={1}
-            className='flex-1 my-2'
-            onValueChange={(vals: number[]) => {
-              const v = Array.isArray(vals) ? vals[0] : 0
-              setCurrentFrame(v)
-              if (useTime && originalAnimProg.current){
-                setAnimProg(originalAnimProg.current + (v / frames)*timeRatio)
-              }
-              
-            }}
-          />
+        <div className="relative w-full">
+            {keyFrameList?.map((frame) => {
+                const thumbRadius = 4; // I should theoretically use this. But 4.5 matches better. Also the whole thing doesn't make sense
+                const percent = ((frame - 1 )/(frames - 1)) * 90 + 4.5; // I dunno why this works. I will have to adjust this so it works everywhere
+                return (
+                <div
+                    key={frame}
+                    style={{
+                    position: "absolute",
+                    left: `${percent}%`,
+                    top: 0,
+                    bottom: 0,
+                    width: "0px",
+                    borderLeft:"1px solid red",
+                    borderRight:"1px solid red",
+                    zIndex: 0, 
+                    pointerEvents: "none",
+                    }}
+                />
+                );
+            })}
+            <Slider
+                value={[currentFrame]}
+                min={1}
+                max={frames}
+                step={1}
+                className='flex-1 my-2'
+                onValueChange={(vals: number[]) => {
+                const v = Array.isArray(vals) ? vals[0] : 0
+                setCurrentFrame(v)
+                if (useTime && originalAnimProg.current){
+                    setAnimProg(originalAnimProg.current + (v / frames)*timeRatio)
+                }
+                }}
+            />
+          </div>
             <Button 
                 className='cursor-pointer'
                 onClick={()=>{SetKeyFrame(currentFrame)}}
@@ -129,6 +148,12 @@ const KeyFrames = () => {
                 className='cursor-pointer'
                 onClick={()=>{useImageExportStore.setState({keyFrames: undefined})}}
             >Clear Keyframes
+            </Button>
+            <Button 
+                disabled={!keyFrameList}
+                className='cursor-pointer'
+                onClick={()=>{useImageExportStore.getState().PreviewKeyFrames()}}
+            >Preview Full Animation
             </Button>
     </div>
   )

@@ -546,7 +546,6 @@ type ImageExportState = {
   loopTime: boolean;
   animViz: boolean;
   keyFrames: Map<number, any> | undefined;
-  viewFrame: number | undefined;
   previewKeyFrames: boolean; // This previews the keyframes in the main view
   preview: boolean; // This exports the animation as a preview/low quality
   cameraRef: React.RefObject<THREE.Camera | null> | null
@@ -584,7 +583,6 @@ type ImageExportState = {
   addKeyFrame: (frame:number, keyFrame: Record<number, any>) => void;
   setPreview: (preview : boolean) => void;
   PreviewKeyFrames: () => void;
-  setPreviewFrame: (viewFrame: number) => void;
   setCameraRef: (ref: React.RefObject<THREE.Camera | null>) => void
   setCurrentFrame: (currentFrame: number) => void;
 }
@@ -615,11 +613,9 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   loopTime: false,
   animViz: false,
   keyFrames: undefined,
-  viewFrame: undefined,
   previewKeyFrames: false,
   preview: true,
-
-  currentFrame: 0,
+  currentFrame: 1,
   cameraRef: null,
   setCameraRef: (ref) => set({ cameraRef: ref }),
 
@@ -658,7 +654,6 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
     newKeyFrames.set(frame, value);
     set({ keyFrames: newKeyFrames });
   },
-  setPreviewFrame: ( viewFrame ) => set({ viewFrame }),
   setPreview: (preview) => set({ preview }), // Setter for export preview
   PreviewKeyFrames: () => set({ previewKeyFrames: !get().previewKeyFrames }), // Changes state to preview keyframes in main view
   setCurrentFrame: (currentFrame) => set({ currentFrame})

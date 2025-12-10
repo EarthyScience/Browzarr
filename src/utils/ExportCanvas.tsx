@@ -322,7 +322,6 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         SetCamera(true);
         if (animate){
             const {keyFrames} = useImageExportStore.getState()
-            console.log(keyFrames)
             const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
             async function Animate(){
                 setStatus("Loading Module")

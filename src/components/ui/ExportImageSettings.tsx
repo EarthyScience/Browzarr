@@ -41,7 +41,7 @@ const ExportImageSettings = () => {
         setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis, 
         setHideAxis, setHideAxisControls, setMainTitle, setCbarLabel, setAnimate, 
         setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setAnimViz, 
-        setCbarUnits, setPingpong, setPreview, PreviewKeyFrames} = useImageExportStore.getState()
+        setCbarUnits, setPingpong, setPreview} = useImageExportStore.getState()
 
     interface CapitalizeFn {
         (str: string): string;
@@ -58,11 +58,9 @@ const ExportImageSettings = () => {
     const [showTitles, setShowTitles] = useState(false)
     const [showAnimation, setShowAnimation] = useState(false)
     const [showSettings, setShowSettings] = useState(true)
-    const [firstState, setFirstState] = useState(true);
 
     useEffect(()=>{
         const timeArray = dimArrays[dimArrays.length-3]
-        const timeSlice = timeArray?.slice(zSlice[0], zSlice[1] ?? undefined)
         const timeLength = timeArray?.length || 1
         const sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0]
         setFrames(sliceDist)
