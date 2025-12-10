@@ -26,7 +26,8 @@ uniform float nanAlpha;
 vec2 giveUV(vec3 position){
     vec3 n = normalize(position);
     float latitude = asin(n.y);
-    float longitude = atan(n.z, n.x);
+    float longitude = -atan(n.z, n.x);
+
     latitude = (latitude - latBounds.x)/(latBounds.y - latBounds.x);
     longitude = (longitude - lonBounds.x)/(lonBounds.y - lonBounds.x);
 
@@ -92,7 +93,7 @@ void main(){
             color.rgb *= cond ? 1. : 0.65;
         }
     } else {
-        color = vec4(nanColor, 1.); // Black
+        color = vec4(nanColor, 1.);
         color.a = nanAlpha;
     }
 

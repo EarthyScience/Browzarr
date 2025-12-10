@@ -535,17 +535,21 @@ type ImageExportState = {
   hideAxis: boolean;
   mainTitle: string | undefined;
   cbarLabel: string | undefined;
+  cbarUnits: string | undefined;
   animate: boolean;
   frames: number;
   frameRate: number;
   orbit: boolean;
+  pingpong: boolean;
   useTime: boolean;
   timeRate: number;
   loopTime: boolean;
   animViz: boolean;
-  initialState: Record<string, any> | undefined;
-  finalState: Record<string, any> | undefined;
-  preview: boolean;
+  keyFrames: Map<number, any> | undefined;
+  previewKeyFrames: boolean; // This previews the keyframes in the main view
+  preview: boolean; // This exports the animation as a preview/low quality
+  cameraRef: React.RefObject<THREE.Camera | null> | null
+  currentFrame: number;
 
   ExportImg: () => void;
   EnableExport: () => void;
@@ -566,17 +570,21 @@ type ImageExportState = {
   setHideAxis: (hideAxis: boolean) => void;
   setMainTitle: (mainTitle: string | undefined) => void;
   setCbarLabel: (cbarLabel: string | undefined) => void;
+  setCbarUnits: (cbarUnits: string | undefined) => void;
   setAnimate: (animate: boolean) => void;
   setFrames: (frames: number) => void;
   setFrameRate: (frameRate: number) => void;
   setOrbit: (orbit: boolean) => void;
+  setPingpong: (pingpong: boolean) => void;
   setUseTime: (useTime: boolean) => void;
   setTimeRate: (timeRate: number) => void;
   setLoopTime: (loopTime: boolean) => void;
   setAnimViz: (animViz: boolean) => void;
-  setInitialState: (initialState: Record<string, any> | undefined) => void;
-  setFinalState: (finalState: Record<string, any> | undefined) => void;
-  setPreview: (preview: boolean) => void;
+  addKeyFrame: (frame:number, keyFrame: Record<number, any>) => void;
+  setPreview: (preview : boolean) => void;
+  PreviewKeyFrames: () => void;
+  setCameraRef: (ref: React.RefObject<THREE.Camera | null>) => void
+  setCurrentFrame: (currentFrame: number) => void;
 }
 
 export const useImageExportStore = create<ImageExportState>((set, get) => ({
@@ -594,17 +602,22 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   hideAxis: false,
   mainTitle: undefined,
   cbarLabel: undefined,
+  cbarUnits: undefined,
   animate: false,
   frames: 60,
   frameRate: 12,
   orbit: false,
+  pingpong: false,
   useTime: false,
   timeRate: 12,
   loopTime: false,
   animViz: false,
-  initialState: undefined,
-  finalState: undefined,
+  keyFrames: undefined,
+  previewKeyFrames: false,
   preview: true,
+  currentFrame: 1,
+  cameraRef: null,
+  setCameraRef: (ref) => set({ cameraRef: ref }),
 
   ExportImg: () => set({ exportImg: !get().exportImg }),
   EnableExport: () => set({ enableExport: true }),
@@ -625,15 +638,23 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   setHideAxis: (hideAxis) => set({ hideAxis }),
   setMainTitle: (mainTitle) => set({ mainTitle }),
   setCbarLabel: (cbarLabel) => set({ cbarLabel }),
+  setCbarUnits: (cbarUnits) => set({ cbarUnits }),
   setAnimate: (animate) => set({ animate }),
   setFrames: (frames) => set({ frames }),
   setFrameRate: (frameRate) => set({ frameRate }),
   setOrbit: (orbit) => set({ orbit }),
+  setPingpong: (pingpong) => set({ pingpong }),
   setUseTime: (useTime) => set({ useTime }),
   setTimeRate: (timeRate) => set({ timeRate }),
   setLoopTime: (loopTime) => set({ loopTime }),
   setAnimViz: (animViz) => set({ animViz }),
-  setInitialState: (initialState) => set({ initialState }),
-  setFinalState: (finalState) => set({ finalState }),
-  setPreview: (preview) => set({ preview })
+  addKeyFrame: (frame: number, value: Record<string, any>) => {
+    const currentKeyFrames = get().keyFrames || new Map();
+    const newKeyFrames = new Map(currentKeyFrames);
+    newKeyFrames.set(frame, value);
+    set({ keyFrames: newKeyFrames });
+  },
+  setPreview: (preview) => set({ preview }), // Setter for export preview
+  PreviewKeyFrames: () => set({ previewKeyFrames: !get().previewKeyFrames }), // Changes state to preview keyframes in main view
+  setCurrentFrame: (currentFrame) => set({ currentFrame})
 }));

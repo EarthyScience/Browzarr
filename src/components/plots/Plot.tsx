@@ -1,11 +1,11 @@
 import { OrbitControls } from '@react-three/drei';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
-import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks } from '@/components/plots';
+import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, CreateTexture } from '@/components/textures';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
-import { useAnalysisStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
@@ -33,10 +33,11 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       useOrtho: state.useOrtho,
       displaceSurface: state.displaceSurface
     })))
+  const {setCameraRef} = useImageExportStore(useShallow(state=>({setCameraRef:state.setCameraRef})))
   const orbitRef = useRef<OrbitControlsImpl | null>(null)
   const hasMounted = useRef(false);
+  const cameraRef = useRef<THREE.Camera | null>(null)
   const {set, camera, size} = useThree()
-
   // Reset Camera Position and Target
   useEffect(()=>{
     if (!hasMounted.current) {
@@ -106,6 +107,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
         newCamera.position.copy(camera.position.normalize().multiply(new THREE.Vector3(4, 4, 4))) // 4 seems like good distance
         newCamera.rotation.copy(camera.rotation)
       }
+    cameraRef.current = newCamera
+    setCameraRef(cameraRef)
     set({ camera: newCamera})
     if (orbitRef.current) {
       orbitRef.current.object = newCamera
@@ -325,6 +328,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         gl={{ preserveDrawingBuffer: true }}
         dpr={[DPR,DPR]}
       >
+        <KeyFramePreviewer/>
         <CountryBorders/>
         <ExportCanvas show={show}/>
         {show && <AxisLines />}
@@ -344,8 +348,8 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
             {displaceSurface ? <Sphere textures={textures} ZarrDS={ZarrDS} /> : <SphereBlocks textures={textures} />}
           </>
         }
-        <Orbiter isFlat={(isFlat || (!isFlat && plotType == "flat"))} />
-        {(isFlat || (!isFlat && plotType == "flat")) && <>
+        <Orbiter isFlat={plotType == "flat"} />
+        {plotType == "flat" && show && <>
           {displaceSurface && <FlatMap textures={textures as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} ZarrDS={ZarrDS}/> }
           {!displaceSurface && <FlatBlocks textures={textures} />}
         </>

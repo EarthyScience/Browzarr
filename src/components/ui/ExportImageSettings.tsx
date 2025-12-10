@@ -21,70 +21,27 @@ import {
 import { Switch } from './switch';
 import Hider from './Hider';
 import { Button } from './button';
-
-function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
-  return keys.reduce((acc, key) => {
-    if (key in obj) {
-      acc[key] = obj[key];
-    }
-    return acc;
-  }, {} as Pick<T, K>);
-}
-
-function SetVisualState(isInitial:boolean){
-    const {plotType} = usePlotStore.getState()
-    let states = []
-    if (plotType === "volume"){
-        states=["transparency", "vTransferRange", "vTransferScale"];
-    } else if (plotType === "point-cloud"){
-        states=["scaleIntensity", "pointSize", "timeScale"];
-    } else {
-        states=["displacement"]
-    }
-    if (["point-cloud", "volume"].includes(plotType)){
-        states.push("valueRange", "xRange", "yRange", "zRange")
-    }
-    if (plotType != "pointCloud") {
-        states.push("nanColor", "nanTransparency")
-    }
-    const currentState = usePlotStore.getState()
-    const thisState = pick(currentState, states as (keyof typeof currentState)[])
-    if (isInitial){
-        useImageExportStore.setState({initialState:thisState})
-    } else {
-        useImageExportStore.setState({finalState:thisState})
-    }
-}
-
-function ViewVisualState(isInitial:boolean){
-    const thisState = isInitial ? 
-        useImageExportStore.getState().initialState :
-        useImageExportStore.getState().finalState
-    if (thisState) {
-            usePlotStore.setState(thisState)
-    }
-}
+import KeyFrames from './KeyFrames';
 
 const ExportImageSettings = () => {
     const {
         includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum,
-        useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, animate, timeRate,
-        frames, frameRate, orbit, useTime, loopTime, animViz, initialState, finalState, preview  
+        useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, cbarUnits, animate, timeRate,
+        frames, frameRate, orbit, useTime, loopTime, animViz, preview, pingpong  
     } = useImageExportStore(useShallow(state => ({
           includeBackground: state.includeBackground, includeColorbar: state.includeColorbar,
           doubleSize: state.doubleSize, cbarLoc: state.cbarLoc, cbarNum: state.cbarNum, useCustomRes: state.useCustomRes,
           customRes: state.customRes, includeAxis: state.includeAxis, mainTitle: state.mainTitle, cbarLabel: state.cbarLabel,
-          animate: state.animate, timeRate:state.timeRate, frames: state.frames, frameRate: state.frameRate, 
-          orbit: state.orbit, useTime:state.useTime,
-          loopTime: state.loopTime, animViz:state.animViz, initialState:state.initialState, finalState:state.finalState,
-          preview:state.preview
+          cbarUnits:state.cbarUnits, animate: state.animate, timeRate:state.timeRate, frames: state.frames, frameRate: state.frameRate, 
+          orbit: state.orbit, useTime:state.useTime, loopTime: state.loopTime, animViz:state.animViz, 
+          preview:state.preview, pingpong:state.pingpong
       })))
 
     const {ExportImg, EnableExport, setIncludeBackground, setIncludeColorbar, 
         setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis, 
         setHideAxis, setHideAxisControls, setMainTitle, setCbarLabel, setAnimate, 
         setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setAnimViz, 
-        setInitialState, setFinalState, setPreview} = useImageExportStore.getState()
+        setCbarUnits, setPingpong, setPreview} = useImageExportStore.getState()
 
     interface CapitalizeFn {
         (str: string): string;
@@ -101,20 +58,14 @@ const ExportImageSettings = () => {
     const [showTitles, setShowTitles] = useState(false)
     const [showAnimation, setShowAnimation] = useState(false)
     const [showSettings, setShowSettings] = useState(true)
-    const [firstState, setFirstState] = useState(true);
 
     useEffect(()=>{
         const timeArray = dimArrays[dimArrays.length-3]
-        const timeSlice = timeArray?.slice(zSlice[0], zSlice[1] ?? undefined)
         const timeLength = timeArray?.length || 1
         const sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0]
         setFrames(sliceDist)
     },[zSlice])
 
-    useEffect(()=>{ //Reset states if plotType changes
-        setInitialState(undefined);
-        setFinalState(undefined);
-    },[plotType])
 
   return (
     <Popover>
@@ -157,10 +108,13 @@ const ExportImageSettings = () => {
             <Hider show={showTitles} className='col-span-2'>
                 <div className='grid'>
                     <label htmlFor="main-title">Main Title</label>
-                    <Input id='main-title' type='string' placeholder={variable} value={mainTitle} onChange={e=> setMainTitle(e.target.value)}/>
+                    <Input id='main-title' type='string' value={mainTitle} onChange={e=> setMainTitle(e.target.value)}/>
 
                     <label htmlFor="cbar-title">Colorbar Label</label>
-                    <Input id='cbar-title' type='string' placeholder={metadata?.units} value={cbarLabel} onChange={e=> setCbarLabel(e.target.value)}/>
+                    <Input id='cbar-title' type='string' placeholder={variable} value={cbarLabel} onChange={e=> setCbarLabel(e.target.value)}/>
+                
+                    <label htmlFor="cbar-title">Colorbar Units</label>
+                    <Input id='cbar-title' type='string' placeholder={metadata?.units?? "undefined"} value={cbarUnits} onChange={e=> setCbarUnits(e.target.value)}/>
                 </div>
             </Hider>
             {/* Settings */}
@@ -261,9 +215,12 @@ const ExportImageSettings = () => {
                             <Input id="fps" type='number' step={1} value={frameRate} onChange={e => setFrameRate(parseInt(e.target.value))} />
                         </div>
                         <div className="grid grid-cols-[auto_60px] items-center gap-2">
+                            <label htmlFor="useOrbit">Ping-Pong</label>
+                            <Switch id="useOrbit" checked={pingpong} onCheckedChange={e=> setPingpong(e)} />
+
                             <label htmlFor="useOrbit">Orbit</label>
                             <Switch id="useOrbit" checked={orbit} onCheckedChange={e=> setOrbit(e)} />
-
+                            
                             <label htmlFor="useTime">Animate Time</label>
                             <Switch id="useTime" checked={useTime} onCheckedChange={e=> setUseTime(e)} />
                             <Hider show={useTime} className='col-span-2'>
@@ -281,43 +238,7 @@ const ExportImageSettings = () => {
                             <label htmlFor="changeViz">Animate Visuals</label>
                             <Switch id="changeViz" checked={animViz} onCheckedChange={e=> setAnimViz(e)} />
                             <Hider show={animViz} className='col-span-2'>
-                                <div className='flex items-center justify-center'>
-                                    <b>Visual States</b>
-                                </div>
-                                <div 
-                                    className='relative w-full text-center h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
-                                    onClick={() => {setFirstState(x=>!x) }} 
-                                >
-                                    <span className={`z-10 font-semibold transition-colors ${firstState ? 'text-primary' : 'text-secondary'}`}>
-                                    Initial
-                                    </span>
-                                    <span className={`z-10 font-semibold transition-colors ${!firstState ? 'text-primary' : 'text-secondary'}`}>
-                                    Final
-                                    </span>
-                                    <div 
-                                        className={`absolute top-1 h-8 w-[calc(50%-8px)] bg-secondary shadow-xs hover:bg-secondary/80 rounded-full transition-all duration-300 ${
-                                            firstState ? 'left-1' : 'left-[calc(50%+4px)]'
-                                        }`}
-                                    />
-                                </div>
-                                <div className='grid items-center gap-1 justify-center'>
-                                    {((firstState && initialState) || (!firstState && finalState)) ?
-                                        <Button
-                                            className='cursor-pointer'
-                                            variant="outline"
-                                            onClick={()=>ViewVisualState(firstState)}
-                                        >
-                                            View State
-                                        </Button>
-                                        :
-                                        <p>State not set</p>
-                                    }
-                                    <Button
-                                        className='cursor-pointer'
-                                        variant='secondary'
-                                        onClick={e=>{SetVisualState(firstState)}}
-                                    >{((firstState && initialState) || (!firstState && finalState)) ? "Overwrite State" : "Set State"}</Button>
-                                </div>
+                                <KeyFrames />
                             </Hider>
                         </div>
                         <div className="grid grid-cols-[auto_60px] items-center gap-2 my-2">

@@ -108,12 +108,11 @@ export const Sphere = ({textures, ZarrDS} : {textures: THREE.Data3DTexture[] | T
       setBoundsObj(prev=>{ return {...newBoundObj, ...prev}})
     }
 
-
     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
       const newLatStep = latResolution/2;
       const newLonStep = lonResolution/2;
-      const newLonBounds = [Math.max(lonExtent[0]-newLonStep, -180), Math.min(lonExtent[1]+newLonStep, 180)]
-      const newLatBounds = [Math.max(latExtent[0]-newLatStep, -90), Math.min(latExtent[1]+newLatStep, 90)]
+      const newLonBounds = [lonExtent[0]-newLonStep, lonExtent[1]+newLonStep]
+      const newLatBounds = [latExtent[0]-newLatStep, latExtent[1]+newLatStep]
       return [newLonBounds, newLatBounds]
     },[latExtent, lonExtent, lonResolution, latResolution])
 

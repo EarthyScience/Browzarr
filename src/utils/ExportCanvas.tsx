@@ -20,7 +20,7 @@ const DrawComposite = (
 
     const {bgColor, textColor} = colors;
     const { doubleSize, includeBackground, mainTitle,
-    cbarLabel, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
+    cbarLabel, cbarUnits, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
     const {valueScales, variable, metadata } = useGlobalStore.getState()
     const ctx = compositeCanvas.getContext('2d')
     if (!ctx){return}
@@ -88,12 +88,14 @@ const DrawComposite = (
     // ---- TEXT ---- //
     if (!animate){ // If still image write text onto image
          // ---- TITLE ---- //
-        const variableSize = doubleSize ? 72 : 36
-        ctx.fillStyle = textColor
-        ctx.font = `${variableSize}px "Segoe UI"`
-        ctx.textBaseline = 'middle'
-        ctx.fillText(mainTitle?? variable, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // Variable in top Left
-
+         if (mainTitle){
+            const variableSize = doubleSize ? 72 : 36
+            ctx.fillStyle = textColor
+            ctx.font = `${variableSize}px "Segoe UI"`
+            ctx.textBaseline = 'middle'
+            ctx.fillText(mainTitle, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // MainTitle in top Left
+         }
+        
         // ---- WATERMARK ---- //
         const waterMarkSize = doubleSize ? 40 : 20
         ctx.fillStyle = "#888888"
@@ -136,7 +138,8 @@ const DrawComposite = (
             ctx.fillStyle = textColor
             ctx.font = `${unitSize}px "Segoe UI" bold`
             ctx.textAlign = 'center'
-            ctx.fillText(cbarLabel?? metadata?.units, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4)
+            const cbarString = `${cbarLabel?? variable} [${cbarUnits?? "undefined"}]`
+            ctx.fillText(cbarString, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4)
         }
     }
     
@@ -237,12 +240,11 @@ async function DrawTextOverlay(
 
 const ExportCanvas = ({show}:{show: boolean}) => {
     const {exportImg, enableExport, animate, frames, frameRate, useTime, timeRate, orbit, loopTime,
-        animViz, initialState, finalState, preview, useCustomRes, customRes, doubleSize, setHideAxis, setHideAxisControls
+        animViz, preview, useCustomRes, customRes, doubleSize, setHideAxis, setHideAxisControls
     } = useImageExportStore(useShallow(state => ({
         exportImg: state.exportImg, enableExport:state.enableExport, animate:state.animate,
         frames:state.frames, frameRate:state.frameRate, useTime:state.useTime, timeRate:state.timeRate,
-        orbit:state.orbit, loopTime:state.loopTime, animViz:state.animViz, initialState:state.initialState,
-        finalState:state.finalState, preview:state.preview, useCustomRes:state.useCustomRes,
+        orbit:state.orbit, loopTime:state.loopTime, animViz:state.animViz, preview:state.preview, useCustomRes:state.useCustomRes,
         customRes:state.customRes, doubleSize:state.doubleSize, setHideAxis:state.setHideAxis, setHideAxisControls:state.setHideAxisControls
     })))
     const {setAnimProg, setQuality} = usePlotStore.getState()
@@ -257,7 +259,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
 
     useEffect(()=>{   
         if (!show || !enableExport) return;
-
+        const {animProg} = usePlotStore.getState()
         const origQuality = usePlotStore.getState().quality;
         const dpr = useGlobalStore.getState().DPR;
         setQuality(preview ? 50 : 1000);
@@ -319,6 +321,8 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         }
         SetCamera(true);
         if (animate){
+            const {keyFrames} = useImageExportStore.getState()
+            const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
             async function Animate(){
                 setStatus("Loading Module")
                 const ffmpeg = ffmpegRef.current;
@@ -342,7 +346,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                 };
                 const radius = Math.sqrt(originalPos.x ** 2 + originalPos.z ** 2);
                 const originalAngle = Math.atan2(originalPos.x, originalPos.z);
-                
+                let keyFrameIdx = 0;
                 for (let frame=0; frame<frames; frame++){
                     // ----- UPDATE VISUALS ---- //
                     if (orbit){
@@ -355,38 +359,74 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                         !(useCustomRes || doubleSize) && invalidate(); // We will invalidate later if needed. Otherwise do it now
                     }
                     if (useTime){
-                        let newProg = dt * Math.floor(frame*timeRatio);
+                        let newProg = dt * Math.floor(frame*timeRatio) + animProg;
                         newProg = loopTime ? newProg - Math.floor(newProg) : Math.min(newProg, 1);
                         setAnimProg(newProg)
                     }
-                    if (animViz && initialState && finalState){
-                        const lerpedState: Record<string, any> = {};
-                        const alpha = frame/frames;
+                    if (animViz && keyFrameList){
+                        const lerpedVizState: Record<string, any> = {};
+                        const lerpedCamState: Record<string, any> = {};
+                        const startFrame = keyFrameList[keyFrameIdx]
 
-                        Object.keys(initialState).forEach(key => {
-                            const sourceValue = initialState[key];
-                            const targetValue = finalState[key];
-                            
-                            // Check if both values are numbers
-                            if (typeof sourceValue === 'number' && typeof targetValue === 'number') {
-                                lerpedState[key] = lerp(sourceValue, targetValue, alpha);
+                        if (keyFrameIdx+1 < keyFrameList.length){
+                            const endFrame = keyFrameList[keyFrameIdx+1]
+                            const thisFrames = endFrame-startFrame;
+                            const alpha = Math.max(frame-startFrame, 0)/thisFrames;
+                            if (frame == keyFrameList[keyFrameIdx+1]){
+                                keyFrameIdx++;
                             }
-                            else if (sourceValue.length){ // If Array
-                                lerpedState[key] = []
-                                for (let i = 0; i < sourceValue.length; i++){
-                                    lerpedState[key][i] = lerp(sourceValue[i], targetValue[i], alpha);
+                            const startState = keyFrames?.get(startFrame)
+                            const startVizState = startState["visual"]
+                            const startCamState = startState["camera"]
+                            const endState = keyFrames?.get(endFrame)
+                            const endVizState = endState["visual"]
+                            const endCamState = endState["camera"]
+                            Object.keys(startVizState).forEach(key => {
+                                const sourceValue = startVizState[key];
+                                const targetValue = endVizState[key];
+                                
+                                // Check if both values are numbers
+                                if (typeof sourceValue === 'number' && typeof targetValue === 'number') {
+                                    lerpedVizState[key] = lerp(sourceValue, targetValue, alpha);
                                 }
-                            }
-                            // Handle Vector3, arrays, or other lerpable objects
-                            else if (sourceValue?.lerp && typeof sourceValue.lerp === 'function') {
-                                lerpedState[key] = sourceValue.clone().lerp(targetValue, alpha);
-                            }
-                            // For non-numeric values, just copy from target
-                            else {
-                                lerpedState[key] = targetValue;
-                            }
+                                else if (sourceValue.length){ // If Array
+                                    lerpedVizState[key] = []
+                                    for (let i = 0; i < sourceValue.length; i++){
+                                        lerpedVizState[key][i] = lerp(sourceValue[i], targetValue[i], alpha);
+                                    }
+                                }
+                                // Handle Vector3, arrays, or other lerpable objects
+                                else if (sourceValue?.lerp && typeof sourceValue.lerp === 'function') {
+                                    lerpedVizState[key] = sourceValue.clone().lerp(targetValue, alpha);
+                                }
+                                // For non-numeric values, just copy from target
+                                else {
+                                    lerpedVizState[key] = targetValue;
+                                }
+                            });
+                            usePlotStore.setState(lerpedVizState)
+
+                            Object.keys(startCamState).forEach(key => {
+                                const sourceValue = startCamState[key];
+                                const targetValue = endCamState[key];
+                                if (sourceValue.isEuler){
+                                    const startQuat = new THREE.Quaternion().setFromEuler(sourceValue);
+                                    const endQuat   = new THREE.Quaternion().setFromEuler(targetValue);
+
+                                    const resultQuat = new THREE.Quaternion().copy(startQuat).slerp(endQuat, alpha);
+                                    lerpedCamState[key]= new THREE.Euler().setFromQuaternion(resultQuat);
+
+                                } else{
+                                    lerpedCamState[key] = sourceValue.clone().lerp(targetValue,alpha)
+                                }
                         });
-                        usePlotStore.setState(lerpedState)
+                        camera.position.copy(lerpedCamState.position)
+                        camera.rotation.copy(lerpedCamState.rotation)
+                        camera.updateProjectionMatrix();
+                        !(useCustomRes || doubleSize) && invalidate();
+                    }
+                        
+                        
                     }
                     if (useCustomRes || doubleSize){
                         SetCamera()
@@ -414,8 +454,8 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     '-i', 'textOverlay.png',
                     '-filter_complex', `[1:v]scale=${docWidth}:${docHeight}[overlay];[0:v][overlay]overlay=0:0`,
                     '-c:v', 'libx264',
-                    '-pix_fmt', 'yuv444p',
-                    '-preset', `${preview ? 'ultrafast' : 'slow'}`, 
+                    '-pix_fmt', 'yuv420p',
+                    '-preset', `${preview ? 'ultrafast' : 'fast'}`, 
                     '-crf', `${preview ? 28 : 16}`, 
                     '-tune', 'stillimage',
                     '-profile:v', 'high444',
