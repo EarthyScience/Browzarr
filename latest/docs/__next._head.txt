@@ -3,6 +3,6 @@
 4:I[38718,["/latest/_next/static/chunks/80444e234f3a5325.js","/latest/_next/static/chunks/782803d7cf6db9c7.js"],"MetadataBoundary"]
 5:"$Sreact.suspense"
 7:I[30847,["/latest/_next/static/chunks/80444e234f3a5325.js","/latest/_next/static/chunks/782803d7cf6db9c7.js"],"IconMark"]
-0:{"buildId":"RX6-9iVQRFR1YnWAs3T0i","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],null]}],"loading":null,"isPartial":false}
+0:{"buildId":"oZaaGJpwaZ_1MLkR6cINM","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],null]}],"loading":null,"isPartial":false}
 3:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, viewport-fit=cover"}]]
 6:[["$","title","0",{"children":"browzarr.io/docs"}],["$","meta","1",{"name":"description","content":"Tutorial and documentation for Browzarr"}],["$","link","2",{"rel":"icon","href":"/latest/favicon.ico?favicon.346a909e.ico","sizes":"150x150","type":"image/x-icon"}],["$","$L7","3",{}]]
