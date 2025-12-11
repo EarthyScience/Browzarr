@@ -1,17 +1,13 @@
 "use client";
-import React, {useEffect, useRef } from 'react'
+import React, {useEffect, useRef, useState } from 'react'
 import { Button } from './button'
 import { useImageExportStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import { Slider } from './slider'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-
+import './css/KeyFrames.css'
+import { TbDiamondsFilled } from "react-icons/tb";
+import { Input } from './input';
+import { IoCloseCircleSharp } from "react-icons/io5";
 
 function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
   return keys.reduce((acc, key) => {
@@ -64,10 +60,14 @@ const KeyFrames = () => {
         useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, setCurrentFrame:state.setCurrentFrame
     })))
     const timeRatio = timeRate/frameRate
-
     const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
-  
     const originalAnimProg = useRef<number | null>(null)
+
+	useEffect(()=>{ // Clear KeyFrames if it is empty. 
+		if (keyFrameList && keyFrameList.length == 0){
+			useImageExportStore.setState({keyFrames: undefined})
+		}
+	},[keyFrameList])
 
     useEffect(()=>{
         originalAnimProg.current = animProg;
@@ -79,47 +79,58 @@ const KeyFrames = () => {
     },[])
 
   return (
-    <div className='grid gap-1'>
-        <div className='flex items-center justify-around'>
-            <b>Key Frames: </b> {keyFrameList ? keyFrameList.length : 0}
-        </div>
-        <Select
-            onValueChange={(val)=>{
-                const frame = parseInt(val);
-                setCurrentFrame(frame);
-            }}
-        >
-            <SelectTrigger>
-                <SelectValue placeholder="Preview Keyframe" />
-            </SelectTrigger>
-            <SelectContent>
-                {keyFrameList?.map((value)=>(
-                    <SelectItem key={value} value={String(value)}>{value}</SelectItem>
-                ))}
-            </SelectContent>
-        </Select>
-        <div className='grid grid-cols-[60px_auto] items-center gap-1 justify-center'>
-            <b >Frame:</b>
-            <div>{currentFrame}</div>
-        </div>
-        <div className="relative w-full">
+    <div className='keyframes-container'>
+		<IoCloseCircleSharp 
+			style={{
+				position:'absolute',
+				top:'10px',
+				left:'10px',
+				cursor:'pointer'
+			}}
+			size={20}
+			color='var(--play-background)'
+			onClick={()=>useImageExportStore.getState().setKeyFrameEditor(false)}
+		/>
+        <div className='flex justify-center items-center'>
+			<Button 
+                className='cursor-pointer'
+                onClick={()=>{SetKeyFrame(currentFrame)}}
+            >Add Keyframe
+            </Button>
+            <Button 
+                disabled={!keyFrameList}
+                className='cursor-pointer'
+                onClick={()=>{useImageExportStore.setState({keyFrames: undefined})}}
+            >Clear Keyframes
+            </Button>
+            <Button 
+                disabled={!keyFrameList}
+                className='cursor-pointer'
+                onClick={()=>{useImageExportStore.getState().PreviewKeyFrames()}}
+            >Preview Full Animation
+            </Button>
+		</div>
+        <div className="relative w-full my-2 px-2 bg-[var(--background)] drop-shadow-[0_0_4px_var(--notice-shadow)] rounded-lg">
             {keyFrameList?.map((frame) => {
-                const thumbRadius = 4; // I should theoretically use this. But 4.5 matches better. Also the whole thing doesn't make sense
-                const percent = ((frame - 1 )/(frames - 1)) * 90 + 4.5; // I dunno why this works. I will have to adjust this so it works everywhere
+                const thumbRadius = 8 + 8; //Thumbradius plus padding
+                const percent = ((frame - 1 )/(frames - 1)) * 100; 
                 return (
-                <div
+                <TbDiamondsFilled
                     key={frame}
                     style={{
                     position: "absolute",
-                    left: `${percent}%`,
-                    top: 0,
-                    bottom: 0,
-                    width: "0px",
-                    borderLeft:"1px solid red",
-                    borderRight:"1px solid red",
+                    left: `calc(${percent}% + ${thumbRadius}px - ${thumbRadius * 2 * percent / 100}px)`,
+					top:0,
+                    transform:"translate(-50%, -50%)",
                     zIndex: 0, 
-                    pointerEvents: "none",
+                    cursor:"pointer"
                     }}
+					color='red'
+					size={18}
+					onClick={()=>setCurrentFrame(frame)}
+					onDoubleClick={()=>{
+						useImageExportStore.getState().removeKeyFrame(frame)
+					}}
                 />
                 );
             })}
@@ -137,24 +148,16 @@ const KeyFrames = () => {
                 }
                 }}
             />
-          </div>
-            <Button 
-                className='cursor-pointer'
-                onClick={()=>{SetKeyFrame(currentFrame)}}
-            >Add Keyframe
-            </Button>
-            <Button 
-                disabled={!keyFrameList}
-                className='cursor-pointer'
-                onClick={()=>{useImageExportStore.setState({keyFrames: undefined})}}
-            >Clear Keyframes
-            </Button>
-            <Button 
-                disabled={!keyFrameList}
-                className='cursor-pointer'
-                onClick={()=>{useImageExportStore.getState().PreviewKeyFrames()}}
-            >Preview Full Animation
-            </Button>
+		</div>
+		<div className='flex justify-end items-center absolute top-[8px] right-[8px]'>
+            <b >Frame:</b>
+			<Input value={currentFrame} type='number' 
+				className='w-[80px] ml-2'
+				min={1} 
+				step={1} 
+				onChange={e =>parseInt(e.target.value) ? setCurrentFrame(Math.max(parseInt(e.target.value), 1)) : 1}
+			/>
+        </div>
     </div>
   )
 }

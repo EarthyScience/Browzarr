@@ -19,13 +19,16 @@ export const KeyFramePreviewer = () => {
     const isAnimating = useRef(false)
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
     const originalAnimProg = useRef<number>(0)
-    const {originalPos, originalAngle, radius } = useMemo(()=>{
+    const { originalAngle, radius } = useMemo(()=>{
+        isAnimating.current = false; // End animation if Keyframes change
+        clearTimeout(intervalRef.current as NodeJS.Timeout)
         if (!keyFrames){
-            isAnimating.current = false; // End animation if Keyframes change
-            clearTimeout(intervalRef.current as NodeJS.Timeout)
-            return {originalPos:new THREE.Vector3(), radius:0, originalAngle:0}
+            return { radius:0, originalAngle:0}
         };
         const keyFrameList = Array.from(keyFrames.keys()).sort((a, b) => a - b)
+        if(keyFrameList.length === 0){
+            return { radius:0, originalAngle:0}
+        }
         const origCamera = keyFrames.get(keyFrameList[0]).camera
         const originalPos = {
                     x: origCamera.position.x,
@@ -34,9 +37,7 @@ export const KeyFramePreviewer = () => {
                 };
         const radius = Math.sqrt(originalPos.x ** 2 + originalPos.z ** 2);
         const originalAngle = Math.atan2(originalPos.x, originalPos.z);
-        isAnimating.current = false; // End animation if Keyframes change
-        clearTimeout(intervalRef.current as NodeJS.Timeout)
-        return {originalPos, radius, originalAngle}
+        return { radius, originalAngle}
     },[keyFrames])
 
     const KeyFrameLerper = (startState: Record<string,any>, endState:Record<string,any>, alpha:number, useCamera=true) => {
@@ -93,14 +94,14 @@ export const KeyFramePreviewer = () => {
         }
     }
 
-
     // ----- PREVIEW FUNCTIONS ---- //
 
     // PREVIEW KEYFRAME
     useEffect(()=>{
         if (!keyFrames || isAnimating.current) return;
         const keyFrameList = Array.from(keyFrames.keys()).sort((a, b) => a - b)
-        const keyFrameIdx = keyFrameList.findLastIndex(n => n <= currentFrame)
+        if (keyFrameList.length == 0) return;
+        const keyFrameIdx = Math.max(keyFrameList.findLastIndex(n => n <= currentFrame), 0)
         const startFrame = keyFrameList[keyFrameIdx]
         if (keyFrameIdx+1 < keyFrameList.length){
             const endFrame = keyFrameList[keyFrameIdx+1]
@@ -144,7 +145,7 @@ export const KeyFramePreviewer = () => {
         let keyFrameIdx = 0;
         let frame = 0;
         intervalRef.current = setInterval(()=>{
-            if (frame >= frames) {
+            if (frame > frames) {
                 clearInterval(intervalRef.current as NodeJS.Timeout);
                 isAnimating.current = false;
                 setAnimProg(originalAnimProg.current)
