@@ -55,9 +55,9 @@ const KeyFrames = () => {
         animProg:state.animProg, setAnimProg:state.setAnimProg
     })))
 
-    const {keyFrames, frames, useTime, frameRate, timeRate, currentFrame, setCurrentFrame} = useImageExportStore(useShallow(state=>({
-        keyFrames:state.keyFrames, frames:state.frames, currentFrame:state.currentFrame,
-        useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, setCurrentFrame:state.setCurrentFrame
+    const {keyFrames, frames, useTime, frameRate, timeRate, orbit, currentFrame, setCurrentFrame, setFrames} = useImageExportStore(useShallow(state=>({
+        keyFrames:state.keyFrames, frames:state.frames, orbit:state.orbit, currentFrame:state.currentFrame,
+        useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, setCurrentFrame:state.setCurrentFrame, setFrames:state.setFrames
     })))
     const timeRatio = timeRate/frameRate
     const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
@@ -91,24 +91,51 @@ const KeyFrames = () => {
 			color='var(--play-background)'
 			onClick={()=>useImageExportStore.getState().setKeyFrameEditor(false)}
 		/>
-        <div className='flex justify-center items-center'>
-			<Button 
-                className='cursor-pointer'
-                onClick={()=>{SetKeyFrame(currentFrame)}}
-            >Add Keyframe
-            </Button>
-            <Button 
-                disabled={!keyFrameList}
-                className='cursor-pointer'
-                onClick={()=>{useImageExportStore.setState({keyFrames: undefined})}}
-            >Clear Keyframes
-            </Button>
-            <Button 
-                disabled={!keyFrameList}
-                className='cursor-pointer'
-                onClick={()=>{useImageExportStore.getState().PreviewKeyFrames()}}
-            >Preview Full Animation
-            </Button>
+        <div className='flex justify-between items-center'>
+			{/* Information */}
+			<div className='ml-4'>
+				<div style={{visibility: orbit? "visible" : "hidden"}}>
+					<b>Camera Motion overwriten by orbit</b>
+				</div>
+			</div>
+
+			{/* Buttons */}
+			<div className='flex justify-center items-center'>
+				<Button 
+					className='cursor-pointer'
+					onClick={()=>{SetKeyFrame(currentFrame)}}
+				>Add Keyframe
+				</Button>
+				<Button 
+					disabled={!keyFrameList}
+					className='cursor-pointer'
+					onClick={()=>{useImageExportStore.setState({keyFrames: undefined})}}
+				>Clear Keyframes
+				</Button>
+				<Button 
+					disabled={!keyFrameList}
+					className='cursor-pointer'
+					onClick={()=>{useImageExportStore.getState().PreviewKeyFrames()}}
+				>Preview Full Animation
+				</Button>
+			</div>
+			
+			{/* Frame Information */}
+			<div className='flex justify-center'>
+				<div className='flex justify-end items-center mr-2'>
+					<label htmlFor="frames"><b>Frames:</b></label>
+					<Input className='w-[80px] ml-2' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(Math.max(parseInt(e.target.value),2))} />
+				</div>
+				<div className='flex justify-end items-center'>
+					<b >Frame:</b>
+					<Input value={currentFrame} type='number' 
+						className='w-[80px] ml-2'
+						min={1} 
+						step={1} 
+						onChange={e =>parseInt(e.target.value) ? setCurrentFrame(Math.max(parseInt(e.target.value), 1)) : 1}
+					/>
+				</div>
+			</div>
 		</div>
         <div className="relative w-full my-2 px-2 bg-[var(--background)] drop-shadow-[0_0_4px_var(--notice-shadow)] rounded-lg">
             {keyFrameList?.map((frame) => {
@@ -123,7 +150,8 @@ const KeyFrames = () => {
 					top:0,
                     transform:"translate(-50%, -50%)",
                     zIndex: 0, 
-                    cursor:"pointer"
+                    cursor:"pointer",
+					visibility:percent <= 100 ? "visible" : "hidden"
                     }}
 					color='red'
 					size={18}
@@ -149,15 +177,7 @@ const KeyFrames = () => {
                 }}
             />
 		</div>
-		<div className='flex justify-end items-center absolute top-[8px] right-[8px]'>
-            <b >Frame:</b>
-			<Input value={currentFrame} type='number' 
-				className='w-[80px] ml-2'
-				min={1} 
-				step={1} 
-				onChange={e =>parseInt(e.target.value) ? setCurrentFrame(Math.max(parseInt(e.target.value), 1)) : 1}
-			/>
-        </div>
+		
     </div>
   )
 }
