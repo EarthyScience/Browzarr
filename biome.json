@@ -10,7 +10,11 @@
 			"!**/ne_110m_admin_0_countries.json",
 			"!**/package.json"
 		] },
-	"formatter": { "enabled": true, "indentStyle": "tab" },
+	"formatter": { 
+		"enabled": true, 
+		"indentStyle": "tab",
+		"indentWidth": 4 
+	},
 	"linter": {
 		"enabled": true,
 		"rules": {
@@ -60,7 +64,12 @@
 			"!next-env.d.ts"
 		]
 	},
-	"javascript": { "formatter": { "quoteStyle": "double" }, "globals": [] },
+	"javascript": { 
+		"formatter": { 
+			"quoteStyle": "double",
+			"bracketSameLine": false 
+		}, 
+		"globals": [] },
 	"overrides": [
 		{
 			"includes": ["**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
