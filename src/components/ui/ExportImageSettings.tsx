@@ -21,27 +21,27 @@ import {
 import { Switch } from './switch';
 import Hider from './Hider';
 import { Button } from './button';
-import KeyFrames from './KeyFrames';
+import { BsBoxArrowRight } from "react-icons/bs";
 
 const ExportImageSettings = () => {
     const {
         includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum,
         useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, cbarUnits, animate, timeRate,
-        frames, frameRate, orbit, useTime, loopTime, animViz, preview, pingpong  
+        frames, frameRate, orbit, useTime, loopTime, keyFrameEditor, preview, pingpong  
     } = useImageExportStore(useShallow(state => ({
           includeBackground: state.includeBackground, includeColorbar: state.includeColorbar,
           doubleSize: state.doubleSize, cbarLoc: state.cbarLoc, cbarNum: state.cbarNum, useCustomRes: state.useCustomRes,
           customRes: state.customRes, includeAxis: state.includeAxis, mainTitle: state.mainTitle, cbarLabel: state.cbarLabel,
           cbarUnits:state.cbarUnits, animate: state.animate, timeRate:state.timeRate, frames: state.frames, frameRate: state.frameRate, 
-          orbit: state.orbit, useTime:state.useTime, loopTime: state.loopTime, animViz:state.animViz, 
+          orbit: state.orbit, useTime:state.useTime, loopTime: state.loopTime, keyFrameEditor:state.keyFrameEditor, 
           preview:state.preview, pingpong:state.pingpong
       })))
 
     const {ExportImg, EnableExport, setIncludeBackground, setIncludeColorbar, 
         setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis, 
         setHideAxis, setHideAxisControls, setMainTitle, setCbarLabel, setAnimate, 
-        setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setAnimViz, 
-        setCbarUnits, setPingpong, setPreview} = useImageExportStore.getState()
+        setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setKeyFrameEditor, 
+        setCbarUnits, setPingpong, setPreview, setPreviewExtent} = useImageExportStore.getState()
 
     interface CapitalizeFn {
         (str: string): string;
@@ -58,6 +58,7 @@ const ExportImageSettings = () => {
     const [showTitles, setShowTitles] = useState(false)
     const [showAnimation, setShowAnimation] = useState(false)
     const [showSettings, setShowSettings] = useState(true)
+	const [previewState, setPreviewState] = useState(false)
 
     useEffect(()=>{
         const timeArray = dimArrays[dimArrays.length-3]
@@ -178,6 +179,14 @@ const ExportImageSettings = () => {
                                 <h1>Height</h1>
                                 <Input id='cbarNum' type="number"  value={customRes[1]} onChange={e => setCustomRes([customRes[0], parseInt(e.target.value)])}/>
                             </div>
+							<Button className={`col-span-2 ${previewState ? 'bg-red-600' : ''}`}
+								variant='outline'
+								disableRipple
+								onPointerEnter={()=>setPreviewExtent(true)}
+								onPointerLeave={()=>setPreviewExtent(false)}
+							>
+								Preview Extent
+							</Button>
                         </div>
                     </Hider>
 
@@ -215,11 +224,17 @@ const ExportImageSettings = () => {
                             <Input id="fps" type='number' step={1} value={frameRate} onChange={e => setFrameRate(parseInt(e.target.value))} />
                         </div>
                         <div className="grid grid-cols-[auto_60px] items-center gap-2">
-                            <label htmlFor="useOrbit">Ping-Pong</label>
-                            <Switch id="useOrbit" checked={pingpong} onCheckedChange={e=> setPingpong(e)} />
+                            
 
                             <label htmlFor="useOrbit">Orbit</label>
                             <Switch id="useOrbit" checked={orbit} onCheckedChange={e=> setOrbit(e)} />
+							
+							<Hider show={orbit} className='col-span-2'>
+								<div className="grid grid-cols-[auto_60px] items-center gap-2 mb-2">
+									<label htmlFor="useOrbit">Ping-Pong</label>
+									<Switch id="useOrbit" checked={pingpong} onCheckedChange={e=> setPingpong(e)} />
+								</div>
+							</Hider>
                             
                             <label htmlFor="useTime">Animate Time</label>
                             <Switch id="useTime" checked={useTime} onCheckedChange={e=> setUseTime(e)} />
@@ -235,11 +250,13 @@ const ExportImageSettings = () => {
                                 <div className='border-b my-2' />
                             </Hider>
 
-                            <label htmlFor="changeViz">Animate Visuals</label>
-                            <Switch id="changeViz" checked={animViz} onCheckedChange={e=> setAnimViz(e)} />
-                            <Hider show={animViz} className='col-span-2'>
-                                <KeyFrames />
-                            </Hider>
+                            <Button
+								className='col-span-2 cursor-pointer'
+								onClick={()=>setKeyFrameEditor(true)}
+							>
+								Keyframe Editor <BsBoxArrowRight/>
+							</Button>
+
                         </div>
                         <div className="grid grid-cols-[auto_60px] items-center gap-2 my-2">
                             <label htmlFor="usePreview">Export Preview</label>

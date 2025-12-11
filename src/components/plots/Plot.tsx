@@ -7,12 +7,13 @@ import { ArrayToTexture, CreateTexture } from '@/components/textures';
 import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
 import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
-import { Navbar, Colorbar } from '../ui';
+import { Navbar, Colorbar, ExportExtent } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import AnalysisWG from './AnalysisWG';
 import { ParseExtent } from '@/utils/HelperFuncs';
 import ExportCanvas from '@/utils/ExportCanvas';
+import KeyFrames from '../ui/KeyFrames';
 
 
 const TransectNotice = () =>{
@@ -155,7 +156,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       is4D: state.is4D,
       setIsFlat: state.setIsFlat, 
     })))
-
+    const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
     const {plotType, displaceSurface, interpPixels, setPlotType} = usePlotStore(useShallow(state => ({
       plotType: state.plotType,
       displaceSurface: state.displaceSurface,
@@ -318,6 +319,8 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
     <div id='main-canvas-div' className='main-canvas'
       style={{width:'100vw'}}
     >
+      <ExportExtent /> 
+      {keyFrameEditor && <KeyFrames />}
       <TransectNotice />
       <AnalysisWG setTexture={setTextures} ZarrDS={ZarrDS}/>
       {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}

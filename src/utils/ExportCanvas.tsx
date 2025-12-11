@@ -33,7 +33,7 @@ const DrawComposite = (
     } else {
         ctx.clearRect(0, 0, width, height);
     }
-
+    console.log(gl.domElement)
     ctx.drawImage(gl.domElement, 0, 0, width, height) 
 
     const cbarTickSize = doubleSize ? 36 : 18
@@ -240,11 +240,11 @@ async function DrawTextOverlay(
 
 const ExportCanvas = ({show}:{show: boolean}) => {
     const {exportImg, enableExport, animate, frames, frameRate, useTime, timeRate, orbit, loopTime,
-        animViz, preview, useCustomRes, customRes, doubleSize, setHideAxis, setHideAxisControls
+        preview, useCustomRes, customRes, doubleSize, setHideAxis, setHideAxisControls
     } = useImageExportStore(useShallow(state => ({
         exportImg: state.exportImg, enableExport:state.enableExport, animate:state.animate,
         frames:state.frames, frameRate:state.frameRate, useTime:state.useTime, timeRate:state.timeRate,
-        orbit:state.orbit, loopTime:state.loopTime, animViz:state.animViz, preview:state.preview, useCustomRes:state.useCustomRes,
+        orbit:state.orbit, loopTime:state.loopTime, preview:state.preview, useCustomRes:state.useCustomRes,
         customRes:state.customRes, doubleSize:state.doubleSize, setHideAxis:state.setHideAxis, setHideAxisControls:state.setHideAxisControls
     })))
     const {setAnimProg, setQuality} = usePlotStore.getState()
@@ -274,7 +274,6 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         docHeight /= dpr;
         docWidth -= docWidth % 2;
         docHeight -= docHeight % 2;
-
         // Initialize Reusable Canvas
         if (!compositeCanvasRef.current) {
             compositeCanvasRef.current = document.createElement('canvas');
@@ -363,7 +362,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                         newProg = loopTime ? newProg - Math.floor(newProg) : Math.min(newProg, 1);
                         setAnimProg(newProg)
                     }
-                    if (animViz && keyFrameList){
+                    if (keyFrameList){
                         const lerpedVizState: Record<string, any> = {};
                         const lerpedCamState: Record<string, any> = {};
                         const startFrame = keyFrameList[keyFrameIdx]
@@ -532,9 +531,6 @@ const ExportCanvas = ({show}:{show: boolean}) => {
             setQuality(origQuality);
             useGlobalStore.setState({DPR: dpr})
         }
-
-        
-        
     },[exportImg])
 
   return (

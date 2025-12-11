@@ -1,0 +1,16 @@
+.keyframes-container{
+    position: fixed;
+    width: 80%;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 10%;
+    z-index: 3;
+    filter: drop-shadow(0px 0px 4px hsla(0, 0%, 50%, 0.2));
+    padding: 1rem;
+    border: 2px solid hsla(0, 0%, 50%, 0.2);
+    border-radius: 1rem;
+    background: var(--background);
+    display: grid;
+    gap:8px;
+    user-select: none;
+}

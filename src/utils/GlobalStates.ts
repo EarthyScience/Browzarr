@@ -544,12 +544,13 @@ type ImageExportState = {
   useTime: boolean;
   timeRate: number;
   loopTime: boolean;
-  animViz: boolean;
+  keyFrameEditor: boolean;
   keyFrames: Map<number, any> | undefined;
   previewKeyFrames: boolean; // This previews the keyframes in the main view
   preview: boolean; // This exports the animation as a preview/low quality
   cameraRef: React.RefObject<THREE.Camera | null> | null
   currentFrame: number;
+  previewExtent: boolean;
 
   ExportImg: () => void;
   EnableExport: () => void;
@@ -579,12 +580,14 @@ type ImageExportState = {
   setUseTime: (useTime: boolean) => void;
   setTimeRate: (timeRate: number) => void;
   setLoopTime: (loopTime: boolean) => void;
-  setAnimViz: (animViz: boolean) => void;
+  setKeyFrameEditor: (keyFrameEditor: boolean) => void;
   addKeyFrame: (frame:number, keyFrame: Record<number, any>) => void;
+  removeKeyFrame: (frame:number) => void;
   setPreview: (preview : boolean) => void;
   PreviewKeyFrames: () => void;
   setCameraRef: (ref: React.RefObject<THREE.Camera | null>) => void
   setCurrentFrame: (currentFrame: number) => void;
+  setPreviewExtent: (previewExtent: boolean) => void;
 }
 
 export const useImageExportStore = create<ImageExportState>((set, get) => ({
@@ -611,12 +614,14 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   useTime: false,
   timeRate: 12,
   loopTime: false,
-  animViz: false,
+  keyFrameEditor: false,
   keyFrames: undefined,
   previewKeyFrames: false,
   preview: true,
   currentFrame: 1,
   cameraRef: null,
+  previewExtent: false,
+  
   setCameraRef: (ref) => set({ cameraRef: ref }),
 
   ExportImg: () => set({ exportImg: !get().exportImg }),
@@ -647,14 +652,21 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   setUseTime: (useTime) => set({ useTime }),
   setTimeRate: (timeRate) => set({ timeRate }),
   setLoopTime: (loopTime) => set({ loopTime }),
-  setAnimViz: (animViz) => set({ animViz }),
+  setKeyFrameEditor: (keyFrameEditor) => set({ keyFrameEditor }),
   addKeyFrame: (frame: number, value: Record<string, any>) => {
     const currentKeyFrames = get().keyFrames || new Map();
     const newKeyFrames = new Map(currentKeyFrames);
     newKeyFrames.set(frame, value);
     set({ keyFrames: newKeyFrames });
   },
+  removeKeyFrame: (frame: number) => {
+    const currentKeyFrames = get().keyFrames || new Map();
+    const newKeyFrames = new Map(currentKeyFrames);
+    newKeyFrames.delete(frame);
+    set({ keyFrames: newKeyFrames });
+  },
   setPreview: (preview) => set({ preview }), // Setter for export preview
   PreviewKeyFrames: () => set({ previewKeyFrames: !get().previewKeyFrames }), // Changes state to preview keyframes in main view
-  setCurrentFrame: (currentFrame) => set({ currentFrame})
+  setCurrentFrame: (currentFrame) => set({ currentFrame}),
+  setPreviewExtent: (previewExtent) => set({ previewExtent })
 }));
