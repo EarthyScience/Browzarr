@@ -33,7 +33,6 @@ const DrawComposite = (
     } else {
         ctx.clearRect(0, 0, width, height);
     }
-    console.log(gl.domElement)
     ctx.drawImage(gl.domElement, 0, 0, width, height) 
 
     const cbarTickSize = doubleSize ? 36 : 18
@@ -424,8 +423,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                         camera.updateProjectionMatrix();
                         !(useCustomRes || doubleSize) && invalidate();
                     }
-                        
-                        
+
                     }
                     if (useCustomRes || doubleSize){
                         SetCamera()
