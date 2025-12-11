@@ -100,6 +100,7 @@ export const KeyFramePreviewer = () => {
     useEffect(()=>{
         if (!keyFrames || isAnimating.current) return;
         const keyFrameList = Array.from(keyFrames.keys()).sort((a, b) => a - b)
+        if (keyFrameList.length == 0) return;
         const keyFrameIdx = Math.max(keyFrameList.findLastIndex(n => n <= currentFrame), 0)
         const startFrame = keyFrameList[keyFrameIdx]
         if (keyFrameIdx+1 < keyFrameList.length){

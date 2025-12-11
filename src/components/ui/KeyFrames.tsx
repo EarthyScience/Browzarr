@@ -63,6 +63,12 @@ const KeyFrames = () => {
     const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
     const originalAnimProg = useRef<number | null>(null)
 
+	useEffect(()=>{ // Clear KeyFrames if it is empty. 
+		if (keyFrameList && keyFrameList.length == 0){
+			useImageExportStore.setState({keyFrames: undefined})
+		}
+	},[keyFrameList])
+
     useEffect(()=>{
         originalAnimProg.current = animProg;
         return ()=>{
