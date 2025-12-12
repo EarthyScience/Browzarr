@@ -6,9 +6,25 @@ import { ZarrDataset, GetStore } from '@/components/zarr/ZarrLoaderLRU';
 import { useEffect, useMemo } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
 import { MainPanel } from '@/components/ui';
-import { Loading, Navbar, Error } from '@/components/ui';
+import { Loading, Navbar, Error as ErrorComponent } from '@/components/ui';
 import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
+
+async function sendPing() {
+  const url = "https://www.bgc-jena.mpg.de/~jpoehls/browzarr/visitor_logger.php";
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Request failed:", error);
+  }
+}
 
 export function LandingHome() {
   const {
@@ -64,12 +80,15 @@ export function LandingHome() {
     return () => { isMounted = false; };
   }, [currentStore, setZMeta, setVariables, setTitleDescription])
 
+  useEffect(()=>{
+    sendPing()
+  },[])
 
   return (
     <>
     <MainPanel/> 
     {variable == 'Default' && <LandingShapes />}
-    <Error />
+    <ErrorComponent />
     {!plotOn && <Navbar />}
     <Loading />
     
