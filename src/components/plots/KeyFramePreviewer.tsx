@@ -5,14 +5,14 @@ import React, { useEffect, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { lerp } from 'three/src/math/MathUtils.js';
-
+import { deg2rad } from '@/utils/HelperFuncs';
 
 export const KeyFramePreviewer = () => {
     const {keyFrames, currentFrame, previewKeyFrames, frames, 
-        frameRate, useTime, timeRate, orbit, loopTime,} = useImageExportStore(useShallow(state => ({
+        frameRate, useTime, timeRate, orbit, orbitDeg, orbitDir, loopTime,} = useImageExportStore(useShallow(state => ({
         keyFrames:state.keyFrames, currentFrame:state.currentFrame, previewKeyFrames:state.previewKeyFrames,
         frames:state.frames, frameRate:state.frameRate, useTime:state.useTime, timeRate:state.timeRate, 
-        orbit:state.orbit, loopTime:state.loopTime
+        orbit:state.orbit, orbitDeg:state.orbitDeg, orbitDir:state.orbitDir, loopTime:state.loopTime
     })))
 
     const {camera} = useThree();
@@ -121,8 +121,8 @@ export const KeyFramePreviewer = () => {
             }
         }   
         if (orbit){
-            const angle = (currentFrame / (frames+1)) * Math.PI * 2;
-            const newAngle = originalAngle + angle;
+            const angle = (currentFrame / (frames+1)) * deg2rad(orbitDeg);
+            const newAngle = originalAngle + (orbitDir ? -angle : angle);
             camera.position.x = radius * Math.sin(newAngle);
             camera.position.z = radius * Math.cos(newAngle);
             camera.lookAt(0, 0, 0);
@@ -177,8 +177,8 @@ export const KeyFramePreviewer = () => {
                 }
             }
             if (orbit){
-                const angle = (frame / (frames+1)) * Math.PI * 2;
-                const newAngle = originalAngle + angle;
+                const angle = (frame / (frames+1)) * deg2rad(orbitDeg);
+                const newAngle = originalAngle + (orbitDir ? -angle : angle);
                 camera.position.x = radius * Math.sin(newAngle);
                 camera.position.z = radius * Math.cos(newAngle);
                 camera.lookAt(0, 0, 0);

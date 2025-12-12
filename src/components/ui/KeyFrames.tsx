@@ -8,6 +8,7 @@ import './css/KeyFrames.css'
 import { TbDiamondsFilled } from "react-icons/tb";
 import { Input } from './input';
 import { IoCloseCircleSharp } from "react-icons/io5";
+import { CiWarning } from "react-icons/ci";
 
 function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
   return keys.reduce((acc, key) => {
@@ -93,10 +94,18 @@ const KeyFrames = () => {
 		/>
         <div className='flex justify-between items-center'>
 			{/* Information */}
-			<div className='ml-4'>
-				<div style={{visibility: orbit? "visible" : "hidden"}}>
-					<b>Camera Motion overwriten by orbit</b>
+			<div className={`ml-4 bg-[var(--warning-area)] min-w-[20%] px-4 py-2 rounded-md`}
+                style={{
+                    visibility:(orbit || useTime) ? "visible" : "hidden"
+                }}
+            >
+				<div style={{display: orbit? "flex" : "none", alignItems:"center", width:"100%", justifyContent:"space-between"}}>
+					<CiWarning /><b> Camera Motion overwriten by orbit</b><CiWarning />
 				</div>
+                <div style={{display: (orbit && !keyFrames)? "flex" : "none", alignItems:"center", width:"100%", justifyContent:"space-between"}}>
+					<CiWarning /><b>Keyframe required to preview orbit</b><CiWarning />
+				</div>
+
 			</div>
 
 			{/* Buttons */}

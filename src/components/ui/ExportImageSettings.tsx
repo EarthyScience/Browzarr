@@ -22,18 +22,21 @@ import { Switch } from './switch';
 import Hider from './Hider';
 import { Button } from './button';
 import { BsBoxArrowRight } from "react-icons/bs";
+import { Switcher } from './Switcher';
+import { FaLongArrowAltRight } from "react-icons/fa";
+
 
 const ExportImageSettings = () => {
     const {
         includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum,
         useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, cbarUnits, animate, timeRate,
-        frames, frameRate, orbit, useTime, loopTime, keyFrameEditor, preview, pingpong  
+        frames, frameRate, orbit, useTime, loopTime, orbitDeg, orbitDir, preview, pingpong  
     } = useImageExportStore(useShallow(state => ({
           includeBackground: state.includeBackground, includeColorbar: state.includeColorbar,
           doubleSize: state.doubleSize, cbarLoc: state.cbarLoc, cbarNum: state.cbarNum, useCustomRes: state.useCustomRes,
           customRes: state.customRes, includeAxis: state.includeAxis, mainTitle: state.mainTitle, cbarLabel: state.cbarLabel,
           cbarUnits:state.cbarUnits, animate: state.animate, timeRate:state.timeRate, frames: state.frames, frameRate: state.frameRate, 
-          orbit: state.orbit, useTime:state.useTime, loopTime: state.loopTime, keyFrameEditor:state.keyFrameEditor, 
+          orbit: state.orbit, useTime:state.useTime, loopTime: state.loopTime, orbitDeg:state.orbitDeg, orbitDir:state.orbitDir,
           preview:state.preview, pingpong:state.pingpong
       })))
 
@@ -41,7 +44,7 @@ const ExportImageSettings = () => {
         setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis, 
         setHideAxis, setHideAxisControls, setMainTitle, setCbarLabel, setAnimate, 
         setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setKeyFrameEditor, 
-        setCbarUnits, setPingpong, setPreview, setPreviewExtent} = useImageExportStore.getState()
+        setCbarUnits, setPingpong, setPreview, setPreviewExtent, setOrbitDeg} = useImageExportStore.getState()
 
     interface CapitalizeFn {
         (str: string): string;
@@ -131,7 +134,7 @@ const ExportImageSettings = () => {
                 />
             </button>
             <Hider show={showSettings} className='col-span-2'>
-                <div className="grid grid-cols-[auto_60px] items-center gap-2">
+                <div className="grid grid-cols-[auto_60px] items-center gap-1">
                     <label htmlFor="includeBG">Include Background</label>
                     <Switch id='includeBG' checked={includeBackground} onCheckedChange={e => setIncludeBackground(e)}/>
                     {plotType != 'sphere' &&
@@ -147,8 +150,8 @@ const ExportImageSettings = () => {
                         <div  className='col-span-2 flex justify-between'>
                             <label htmlFor="colorbar-loc ">Colorbar <br/> Location</label>
                             <div id='colorbar-loc'>
-                                <Select value={cbarLoc} onValueChange={e=>setCbarLoc(e)}>
-                                    <SelectTrigger >
+                                <Select  value={cbarLoc} onValueChange={e=>setCbarLoc(e)}>
+                                    <SelectTrigger  >
                                         <SelectValue placeholder={cbarLoc}/>
                                     </SelectTrigger>
                                     <SelectContent>
@@ -161,7 +164,7 @@ const ExportImageSettings = () => {
                         </div>  
                         <div className="grid grid-cols-[auto_60px] items-center gap-2">
                             <label htmlFor="cbarNum" >Number of Ticks</label>
-                            <Input id='cbarNum' type="number" min={0} max={20} step={1} value={cbarNum} onChange={e => setCbarNum(parseInt(e.target.value))}/>    
+                            <Input className='h-[26px]' id='cbarNum' type="number" min={0} max={20} step={1} value={cbarNum} onChange={e => setCbarNum(parseInt(e.target.value))}/>    
                         </div>    
                         <div className='border-b my-2' />
                     </Hider>
@@ -173,11 +176,11 @@ const ExportImageSettings = () => {
                         <div className='grid grid-cols-[50%_50%] col-span-2 '>
                             <div className='flex flex-col items-center'>
                                 <h1>Width</h1>
-                                <Input id='cbarNum' type="number"  value={customRes[0]} onChange={e => setCustomRes([parseInt(e.target.value), customRes[1]])}/>
+                                <Input className='h-[26px]' id='cbarNum' type="number"  value={customRes[0]} onChange={e => setCustomRes([parseInt(e.target.value), customRes[1]])}/>
                             </div>
                             <div className='flex flex-col items-center'>
                                 <h1>Height</h1>
-                                <Input id='cbarNum' type="number"  value={customRes[1]} onChange={e => setCustomRes([customRes[0], parseInt(e.target.value)])}/>
+                                <Input className='h-[26px]' id='cbarNum' type="number"  value={customRes[1]} onChange={e => setCustomRes([customRes[0], parseInt(e.target.value)])}/>
                             </div>
 							<Button className={`col-span-2 ${previewState ? 'bg-red-600' : ''}`}
 								variant='outline'
@@ -216,24 +219,37 @@ const ExportImageSettings = () => {
                     <Switch id='useAnimate' checked={animate} onCheckedChange={e => setAnimate(e)}/>
                     {/* Animation Settings */}
                     <Hider show={animate} className='col-span-2 '>
-                        <div className="grid grid-cols-[auto_80px] items-center gap-2 mb-2">
+                        <div className="grid grid-cols-[auto_80px] items-center gap-1 mb-2">
                             <label htmlFor="frames">Frames</label>
-                            <Input id="frames" type='number' step={1} value={frames} onChange={e => setFrames(parseInt(e.target.value))} />
-
+                            <Input className='h-[26px]' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(parseInt(e.target.value))} />
                             <label htmlFor="fps">FPS</label>
-                            <Input id="fps" type='number' step={1} value={frameRate} onChange={e => setFrameRate(parseInt(e.target.value))} />
+                            <Input className='h-[26px]' id="fps" type='number' step={1} value={frameRate} onChange={e => setFrameRate(parseInt(e.target.value))} />
                         </div>
                         <div className="grid grid-cols-[auto_60px] items-center gap-2">
                             
-
                             <label htmlFor="useOrbit">Orbit</label>
                             <Switch id="useOrbit" checked={orbit} onCheckedChange={e=> setOrbit(e)} />
 							
 							<Hider show={orbit} className='col-span-2'>
-								<div className="grid grid-cols-[auto_60px] items-center gap-2 mb-2">
+                                <div className="grid grid-cols-[auto_80px] items-center gap-2 mb-2">
+                                    <label htmlFor="orbitDeg">Orbit Degrees</label>
+                                    <Input id="orbitDeg" type='number' step={1} value={orbitDeg} onChange={e => setOrbitDeg(parseInt(e.target.value))} />
+                                </div>
+                                <div className="grid grid-cols-[auto_60px] items-center gap-2 mb-2">
+                                    <label htmlFor="orbitDir">Direction</label>
+                                    <FaLongArrowAltRight id='orbitDir' onClick={()=>useImageExportStore.getState().flipOrbitDir()}
+                                        style={{
+                                            transform: `${orbitDir ? "rotate(180deg)" : ""}`,
+                                            transition: ".25s",
+                                            cursor:"pointer"
+                                        }}      
+                                        size={26}
+                                    />
 									<label htmlFor="useOrbit">Ping-Pong</label>
 									<Switch id="useOrbit" checked={pingpong} onCheckedChange={e=> setPingpong(e)} />
 								</div>
+
+                                <div className='border-b my-2' />
 							</Hider>
                             
                             <label htmlFor="useTime">Animate Time</label>
@@ -258,11 +274,8 @@ const ExportImageSettings = () => {
 							</Button>
 
                         </div>
-                        <div className="grid grid-cols-[auto_60px] items-center gap-2 my-2">
-                            <label htmlFor="usePreview">Export Preview</label>
-                            <Switch id="usePreview" checked={preview} onCheckedChange={e=> setPreview(e)} />
-                        </div>
-                        
+                        <div className='my-2'/>
+                        <Switcher leftText='Preview' rightText='Final' state={preview} onClick={()=> setPreview(!preview)} />
                     </Hider>
                 </div>
             </Hider>
