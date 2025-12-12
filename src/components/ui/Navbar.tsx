@@ -46,19 +46,21 @@ const Navbar = React.memo(function Navbar() {
 		<nav className="navbar" ref={navRef}>
 			<Tooltip delayDuration={500}>
 				<TooltipTrigger asChild>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="navbar-trigger size-10"
-						aria-expanded={isOpen}
-						onClick={() => setIsOpen((prev) => !prev)}
-					>
-						{isOpen ? (
-							<RiCloseLargeLine className="size-4" />
-						) : (
-							<RiMenu2Line className="size-6" />
-						)}
-					</Button>
+					{plotOn && (
+						<Button
+							variant="ghost"
+							size="icon"
+							className="navbar-trigger size-10"
+							aria-expanded={isOpen}
+							onClick={() => setIsOpen((prev) => !prev)}
+						>
+							{isOpen ? (
+								<RiCloseLargeLine className="size-4" />
+							) : (
+								<RiMenu2Line className="size-6" />
+							)}
+						</Button>
+					)}
 				</TooltipTrigger>
 				<TooltipContent side="right" align="start">
 					{isOpen ? "Close navigation" : "Open navigation"}
