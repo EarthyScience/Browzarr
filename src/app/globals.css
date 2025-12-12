@@ -56,6 +56,7 @@
   --glass-bg: rgba(255, 255, 255, 0.1);
   --glass-border: rgba(255, 255, 255, 0.2);
   --glass-shadow: rgba(0, 0, 0, 0.1);
+  --warning-area: rgb(255, 205, 67);
 }
 
 /* Light Theme */
@@ -83,6 +84,7 @@
   --glass-shadow: rgba(0, 0, 0, 0.15);
   --play-background: rgba(200, 200, 200, 0.8);
   --notice-shadow: rgb(230, 230, 230);
+  --warning-area: rgba(255, 205, 67, 0.616);
 }
 
 /* Dark Theme */
@@ -141,6 +143,7 @@
   --glass-shadow: rgba(0, 0, 0, 0.3);
   --play-background: rgba(200, 200, 200, 0.8);
   --notice-shadow: rgb(70, 70, 70);
+  --warning-area: rgba(255, 183, 49, 0.555);
 }
 
 @layer utilities {

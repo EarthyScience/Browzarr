@@ -8,7 +8,7 @@ import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow';
 import { lerp } from 'three/src/math/MathUtils.js';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-
+import { deg2rad } from './HelperFuncs';
 const DrawComposite = (
     compositeCanvas: HTMLCanvasElement,
     gl: THREE.WebGLRenderer,
@@ -27,7 +27,7 @@ const DrawComposite = (
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    if (includeBackground) {
+    if (includeBackground || animate) {
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, width, height);
     } else {
@@ -238,13 +238,14 @@ async function DrawTextOverlay(
 
 
 const ExportCanvas = ({show}:{show: boolean}) => {
-    const {exportImg, enableExport, animate, frames, frameRate, useTime, timeRate, orbit, loopTime,
+    const {exportImg, enableExport, animate, frames, frameRate, useTime, timeRate, orbit, orbitDeg, orbitDir, loopTime,
         preview, useCustomRes, customRes, doubleSize, setHideAxis, setHideAxisControls
     } = useImageExportStore(useShallow(state => ({
         exportImg: state.exportImg, enableExport:state.enableExport, animate:state.animate,
         frames:state.frames, frameRate:state.frameRate, useTime:state.useTime, timeRate:state.timeRate,
-        orbit:state.orbit, loopTime:state.loopTime, preview:state.preview, useCustomRes:state.useCustomRes,
-        customRes:state.customRes, doubleSize:state.doubleSize, setHideAxis:state.setHideAxis, setHideAxisControls:state.setHideAxisControls
+        orbit:state.orbit, orbitDeg:state.orbitDeg, orbitDir:state.orbitDir, loopTime:state.loopTime, preview:state.preview, 
+        useCustomRes:state.useCustomRes, customRes:state.customRes, doubleSize:state.doubleSize, 
+        setHideAxis:state.setHideAxis, setHideAxisControls:state.setHideAxisControls
     })))
     const {setAnimProg, setQuality} = usePlotStore.getState()
     const {setStatus, setProgress} = useGlobalStore.getState()
@@ -330,7 +331,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
 
                 ffmpeg.on('progress', ({ progress, time }) => {
                     // progress is a value between 0 and 1
-                    setProgress(Math.round(progress * 100));
+                    setProgress(Math.min(Math.round(progress * 100), 100));
                 });
 
                 setStatus("Rendering Frames")
@@ -348,8 +349,8 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                 for (let frame=0; frame<frames; frame++){
                     // ----- UPDATE VISUALS ---- //
                     if (orbit){
-                        const angle = (frame / (frames+1)) * Math.PI * 2;
-                        const newAngle = originalAngle + angle;
+                        const angle = (frame / (frames+1)) * deg2rad(orbitDeg);
+                        const newAngle = originalAngle + (orbitDir ? -angle : angle);
                         camera.position.x = radius * Math.sin(newAngle);
                         camera.position.z = radius * Math.cos(newAngle);
                         camera.lookAt(0, 0, 0);
