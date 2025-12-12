@@ -1,6 +1,7 @@
 "use client";
 import React, {useEffect, useRef, useState } from 'react'
 import { Button } from './button'
+import { ButtonGroup } from "@/components/ui/button-group"
 import { useImageExportStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import { Slider } from './slider'
@@ -9,6 +10,12 @@ import { TbDiamondsFilled } from "react-icons/tb";
 import { Input } from './input';
 import { IoCloseCircleSharp } from "react-icons/io5";
 import { CiWarning } from "react-icons/ci";
+import { FaPlusCircle } from "react-icons/fa";
+import { MdDeleteForever } from "react-icons/md";
+import { MdPreview } from "react-icons/md";
+import { TbKeyframeFilled } from "react-icons/tb";
+import { TbKeyframesFilled } from "react-icons/tb";
+import { Card, CardContent } from "@/components/ui/card";
 
 function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
   return keys.reduce((acc, key) => {
@@ -80,7 +87,8 @@ const KeyFrames = () => {
     },[])
 
   return (
-    <div className='keyframes-container'>
+   <Card className='keyframes-container'>
+      <CardContent className='flex flex-col gap-1 w-full h-full px-1 py-1'>
 		<IoCloseCircleSharp 
 			style={{
 				position:'absolute',
@@ -89,10 +97,9 @@ const KeyFrames = () => {
 				cursor:'pointer'
 			}}
 			size={20}
-			color='var(--play-background)'
 			onClick={()=>useImageExportStore.getState().setKeyFrameEditor(false)}
 		/>
-        <div className='flex justify-between items-center'>
+        <div className='flex gap-1'>
 			{/* Information */}
 			<div className={`ml-4 bg-[var(--warning-area)] min-w-[20%] px-4 py-2 rounded-md`}
                 style={{
@@ -100,7 +107,7 @@ const KeyFrames = () => {
                 }}
             >
 				<div style={{display: orbit? "flex" : "none", alignItems:"center", width:"100%", justifyContent:"space-between"}}>
-					<CiWarning /><b> Camera Motion overwriten by orbit</b><CiWarning />
+					<CiWarning /><b> Camera Motion overwritten by orbit</b><CiWarning />
 				</div>
                 <div style={{display: (orbit && !keyFrames)? "flex" : "none", alignItems:"center", width:"100%", justifyContent:"space-between"}}>
 					<CiWarning /><b>Keyframe required to preview orbit</b><CiWarning />
@@ -109,44 +116,54 @@ const KeyFrames = () => {
 			</div>
 
 			{/* Buttons */}
-			<div className='flex justify-center items-center'>
+			<ButtonGroup>
 				<Button 
 					className='cursor-pointer'
+                    size="sm"
+                    variant="outline"
 					onClick={()=>{SetKeyFrame(currentFrame)}}
-				>Add Keyframe
+				> 
+                    <FaPlusCircle /> Keyframe
 				</Button>
 				<Button 
 					disabled={!keyFrameList}
 					className='cursor-pointer'
+                    size="sm"
+                    variant="outline"
 					onClick={()=>{useImageExportStore.setState({keyFrames: undefined})}}
-				>Clear Keyframes
+				>
+                    <MdDeleteForever className='size-6'/> Keyframes
 				</Button>
 				<Button 
 					disabled={!keyFrameList}
 					className='cursor-pointer'
+                    size="sm"
+                    variant="outline"
 					onClick={()=>{useImageExportStore.getState().PreviewKeyFrames()}}
-				>Preview Full Animation
+				>
+                    <MdPreview className='size-6'/> Preview
 				</Button>
-			</div>
-			
+			</ButtonGroup>
 			{/* Frame Information */}
-			<div className='flex justify-center'>
-				<div className='flex justify-end items-center mr-2'>
-					<label htmlFor="frames"><b>Frames:</b></label>
-					<Input className='w-[80px] ml-2' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(Math.max(parseInt(e.target.value),2))} />
-				</div>
-				<div className='flex justify-end items-center'>
-					<b >Frame:</b>
-					<Input value={currentFrame} type='number' 
-						className='w-[80px] ml-2'
-						min={1} 
-						step={1} 
-						onChange={e =>parseInt(e.target.value) ? setCurrentFrame(Math.max(parseInt(e.target.value), 1)) : 1}
-					/>
-				</div>
-			</div>
+            <ButtonGroup >
+                <Button size="sm" variant="outline">
+                    <TbKeyframesFilled/> Frames
+                </Button>
+                <Input className='w-[80px] h-[32px]' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(Math.max(parseInt(e.target.value),2))} />
+            </ButtonGroup>
+            <ButtonGroup >
+                <Button size="sm" variant="outline">
+                    <TbKeyframeFilled/> Frame
+                </Button>
+                <Input value={currentFrame} type='number' 
+                    className='w-[80px] h-[32px]'
+                    min={1} 
+                    step={1} 
+                    onChange={e =>parseInt(e.target.value) ? setCurrentFrame(Math.max(parseInt(e.target.value), 1)) : 1}
+                />
+            </ButtonGroup>
 		</div>
-        <div className="relative w-full my-2 px-2 bg-[var(--background)] drop-shadow-[0_0_4px_var(--notice-shadow)] rounded-lg">
+        <div className="relative w-full my-2 px-2 drop-shadow-[0_0_4px_var(--notice-shadow)] rounded-lg">
             {keyFrameList?.map((frame) => {
                 const thumbRadius = 8 + 8; //Thumbradius plus padding
                 const percent = ((frame - 1 )/(frames - 1)) * 100; 
@@ -187,7 +204,8 @@ const KeyFrames = () => {
             />
 		</div>
 		
-    </div>
+    </CardContent>
+    </Card>
   )
 }
 
