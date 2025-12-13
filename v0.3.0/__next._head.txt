@@ -1,0 +1,8 @@
+1:"$Sreact.fragment"
+2:I[26819,["/v0.3.0/_next/static/chunks/8aa0efca034f1bca.js","/v0.3.0/_next/static/chunks/15cb800ad5b7ba48.js"],"ViewportBoundary"]
+4:I[26819,["/v0.3.0/_next/static/chunks/8aa0efca034f1bca.js","/v0.3.0/_next/static/chunks/15cb800ad5b7ba48.js"],"MetadataBoundary"]
+5:"$Sreact.suspense"
+7:I[40748,["/v0.3.0/_next/static/chunks/8aa0efca034f1bca.js","/v0.3.0/_next/static/chunks/15cb800ad5b7ba48.js"],"IconMark"]
+0:{"buildId":"k8jdTz4oYiT_mLjIi8vYG","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],null]}],"loading":null,"isPartial":false}
+3:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, viewport-fit=cover"}]]
+6:[["$","title","0",{"children":"Browzarr"}],["$","meta","1",{"name":"description","content":"A browser-based visualization toolkit for exploring and analyzing Zarr data stores"}],["$","link","2",{"rel":"icon","href":"/v0.3.0/favicon.ico?favicon.346a909e.ico","sizes":"150x150","type":"image/x-icon"}],["$","$L7","3",{}]]
