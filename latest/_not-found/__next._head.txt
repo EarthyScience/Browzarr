@@ -3,6 +3,6 @@
 4:I[26819,["/latest/_next/static/chunks/8aa0efca034f1bca.js","/latest/_next/static/chunks/15cb800ad5b7ba48.js"],"MetadataBoundary"]
 5:"$Sreact.suspense"
 7:I[40748,["/latest/_next/static/chunks/8aa0efca034f1bca.js","/latest/_next/static/chunks/15cb800ad5b7ba48.js"],"IconMark"]
-0:{"buildId":"xnl34MzwwWosRALdnxxg1","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],null]}],"loading":null,"isPartial":false}
+0:{"buildId":"haOGBl2vXIZjm2LteRg8Q","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],null]}],"loading":null,"isPartial":false}
 3:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, viewport-fit=cover"}]]
 6:[["$","title","0",{"children":"Browzarr"}],["$","meta","1",{"name":"description","content":"A browser-based visualization toolkit for exploring and analyzing Zarr data stores"}],["$","link","2",{"rel":"icon","href":"/latest/favicon.ico?favicon.346a909e.ico","sizes":"150x150","type":"image/x-icon"}],["$","$L7","3",{}]]
