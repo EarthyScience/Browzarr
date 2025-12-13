@@ -22,7 +22,7 @@ export default function RootLayout({
       <body className="antialiased">
         <ClientRoot>
           {children}
-          <Toaster position="top-center" duration={1500}/>
+          <Toaster richColors expand={true} position="top-center" duration={5000}/>
         </ClientRoot>
       </body>
     </html>
