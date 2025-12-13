@@ -94,7 +94,7 @@ const ExportImageSettings = () => {
         </PopoverTrigger>
         <PopoverContent
             side="right"
-            className="w-[200px] select-none"
+            className="w-[200px] max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden select-none"
         >
         <div className="grid items-center gap-2">
             {/* TITLES */}

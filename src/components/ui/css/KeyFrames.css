@@ -7,10 +7,11 @@
     bottom: 10%;
     z-index: 3;
     filter: drop-shadow(0px 0px 4px hsla(0, 0%, 50%, 0.2));
-    padding: 1rem;
+    padding: 0.25rem;
     border: 2px solid hsla(0, 0%, 50%, 0.2);
     border-radius: 1rem;
-    background: var(--background);
+    background-color: var(--modal-shadow);
+    backdrop-filter: blur(22px) saturate(180%);
     display: grid;
     gap:8px;
     user-select: none;

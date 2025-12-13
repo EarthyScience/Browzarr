@@ -1,14 +1,25 @@
 "use client";
 import React, {useEffect, useRef, useState } from 'react'
 import { Button } from './button'
+import { ButtonGroup } from "@/components/ui/button-group"
 import { useImageExportStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import { Slider } from './slider'
 import './css/KeyFrames.css'
-import { TbDiamondsFilled } from "react-icons/tb";
 import { Input } from './input';
 import { IoCloseCircleSharp } from "react-icons/io5";
-import { CiWarning } from "react-icons/ci";
+import { FaPlusCircle } from "react-icons/fa";
+import { MdDeleteForever } from "react-icons/md";
+import { MdPreview } from "react-icons/md";
+import { TbKeyframeFilled } from "react-icons/tb";
+import { TbKeyframesFilled } from "react-icons/tb";
+import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner"
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
   return keys.reduce((acc, key) => {
@@ -63,6 +74,7 @@ const KeyFrames = () => {
     const timeRatio = timeRate/frameRate
     const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
     const originalAnimProg = useRef<number | null>(null)
+    const [MdLg, setMdLg] = useState<"md" | "lg">("md");
 
 	useEffect(()=>{ // Clear KeyFrames if it is empty. 
 		if (keyFrameList && keyFrameList.length == 0){
@@ -79,9 +91,45 @@ const KeyFrames = () => {
         }
     },[])
 
+      useEffect(() => {
+        const handleResize = () => {
+          setMdLg(window.innerWidth < 768 ? "md" : "lg");
+        };
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+      }, []);
+
+    {/* Information */}
+    useEffect(() => {
+    if (orbit || useTime) {
+      toast.warning("Warning!", {
+        description: "Camera Motion overwritten by orbit!",
+        action: {
+          label: "close",
+          onClick: () => console.log("close"),
+        },
+      });
+    }
+  }, [orbit, useTime]);
+
+  useEffect(() => {
+    if ((orbit || useTime) && !keyFrames) {
+      toast.warning("Warning!", {
+        description: "Keyframe required to preview orbit!",
+        action: {
+          label: "close",
+          onClick: () => console.log("close"),
+        },
+      });
+    }
+  }, [orbit, useTime, keyFrames]);
+
   return (
-    <div className='keyframes-container'>
-		<IoCloseCircleSharp 
+   <Card className='keyframes-container'>
+    <Tooltip delayDuration={500}>
+				<TooltipTrigger asChild>
+    <IoCloseCircleSharp 
 			style={{
 				position:'absolute',
 				top:'10px',
@@ -89,69 +137,105 @@ const KeyFrames = () => {
 				cursor:'pointer'
 			}}
 			size={20}
-			color='var(--play-background)'
 			onClick={()=>useImageExportStore.getState().setKeyFrameEditor(false)}
 		/>
-        <div className='flex justify-between items-center'>
-			{/* Information */}
-			<div className={`ml-4 bg-[var(--warning-area)] min-w-[20%] px-4 py-2 rounded-md`}
-                style={{
-                    visibility:(orbit || useTime) ? "visible" : "hidden"
-                }}
-            >
-				<div style={{display: orbit? "flex" : "none", alignItems:"center", width:"100%", justifyContent:"space-between"}}>
-					<CiWarning /><b> Camera Motion overwriten by orbit</b><CiWarning />
-				</div>
-                <div style={{display: (orbit && !keyFrames)? "flex" : "none", alignItems:"center", width:"100%", justifyContent:"space-between"}}>
-					<CiWarning /><b>Keyframe required to preview orbit</b><CiWarning />
-				</div>
-
-			</div>
-
+        </TooltipTrigger>
+                <TooltipContent side="top" align="start">
+                    Close Keyframe Editor
+                </TooltipContent>
+                </Tooltip>
+      <CardContent className='flex flex-col gap-1 w-full h-full px-1 py-1'>
+        <div className='flex flex-wrap justify-center gap-1 ml-6 mr-0 md:ml-8 md:mr-4'>
 			{/* Buttons */}
-			<div className='flex justify-center items-center'>
-				<Button 
-					className='cursor-pointer'
-					onClick={()=>{SetKeyFrame(currentFrame)}}
-				>Add Keyframe
-				</Button>
+			<ButtonGroup>
+				<Tooltip delayDuration={500}>
+				<TooltipTrigger asChild>
+                    <Button 
+                        className='cursor-pointer'
+                        size="sm"
+                        variant="outline"
+                        onClick={()=>{SetKeyFrame(currentFrame)}}
+                    > 
+                        <FaPlusCircle /> { MdLg === "lg" ? 'Keyframe' : <TbKeyframeFilled/>}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="start">
+                    Add new Keyframe
+                </TooltipContent>
+                </Tooltip>
+                <Tooltip delayDuration={500}>
+                    <TooltipTrigger asChild>
+                        <Button 
+                            disabled={!keyFrameList}
+                            className='cursor-pointer'
+                            size="sm"
+                            variant="outline"
+                            onClick={()=>{useImageExportStore.setState({keyFrames: undefined})}}
+                        >
+                            <MdDeleteForever className='size-6'/> { MdLg === "lg" ? 'Keyframes' : <TbKeyframesFilled/>}
+                        </Button>
+                    </TooltipTrigger>
+                <TooltipContent side="top" align="start">
+                    Clear all Keyframes
+                </TooltipContent>
+                </Tooltip>
+
+                <Tooltip delayDuration={500}>
+                <TooltipTrigger asChild>
 				<Button 
 					disabled={!keyFrameList}
 					className='cursor-pointer'
-					onClick={()=>{useImageExportStore.setState({keyFrames: undefined})}}
-				>Clear Keyframes
-				</Button>
-				<Button 
-					disabled={!keyFrameList}
-					className='cursor-pointer'
+                    size="sm"
+                    variant="outline"
 					onClick={()=>{useImageExportStore.getState().PreviewKeyFrames()}}
-				>Preview Full Animation
+				>
+                    <MdPreview className='size-6'/> { MdLg === "lg" ? 'Preview' : ''}
 				</Button>
-			</div>
-			
+                </TooltipTrigger>
+                <TooltipContent side="top" align="start">
+                    Preview full animation
+                </TooltipContent>
+                </Tooltip>
+			</ButtonGroup>
 			{/* Frame Information */}
-			<div className='flex justify-center'>
-				<div className='flex justify-end items-center mr-2'>
-					<label htmlFor="frames"><b>Frames:</b></label>
-					<Input className='w-[80px] ml-2' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(Math.max(parseInt(e.target.value),2))} />
-				</div>
-				<div className='flex justify-end items-center'>
-					<b >Frame:</b>
-					<Input value={currentFrame} type='number' 
-						className='w-[80px] ml-2'
-						min={1} 
-						step={1} 
-						onChange={e =>parseInt(e.target.value) ? setCurrentFrame(Math.max(parseInt(e.target.value), 1)) : 1}
-					/>
-				</div>
-			</div>
+            <ButtonGroup >
+                <Tooltip delayDuration={500}>
+                <TooltipTrigger asChild>
+                <Button size="sm" variant="outline">
+                    <TbKeyframesFilled/> { MdLg === "lg" ? 'Frames' : ''}
+                </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="start">
+                    Frames
+                </TooltipContent>
+                </Tooltip>
+                <Input className='w-[80px] h-[32px]' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(Math.max(parseInt(e.target.value),2))} />
+            </ButtonGroup>
+            <ButtonGroup >
+                <Tooltip delayDuration={500}>
+                <TooltipTrigger asChild>
+                <Button size="sm" variant="outline">
+                    <TbKeyframeFilled/> { MdLg === "lg" ? 'Frame' : ''}
+                </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="start">
+                    Frame
+                </TooltipContent>
+                </Tooltip>
+                <Input value={currentFrame} type='number' 
+                    className='w-[80px] h-[32px]'
+                    min={1} 
+                    step={1} 
+                    onChange={e =>parseInt(e.target.value) ? setCurrentFrame(Math.max(parseInt(e.target.value), 1)) : 1}
+                />
+            </ButtonGroup>
 		</div>
-        <div className="relative w-full my-2 px-2 bg-[var(--background)] drop-shadow-[0_0_4px_var(--notice-shadow)] rounded-lg">
+        <div className="relative w-full my-2 px-2 drop-shadow-[0_0_4px_var(--notice-shadow)] rounded-lg">
             {keyFrameList?.map((frame) => {
                 const thumbRadius = 8 + 8; //Thumbradius plus padding
                 const percent = ((frame - 1 )/(frames - 1)) * 100; 
                 return (
-                <TbDiamondsFilled
+                <TbKeyframeFilled
                     key={frame}
                     style={{
                     position: "absolute",
@@ -162,7 +246,7 @@ const KeyFrames = () => {
                     cursor:"pointer",
 					visibility:percent <= 100 ? "visible" : "hidden"
                     }}
-					color='red'
+					color='orangered'
 					size={18}
 					onClick={()=>setCurrentFrame(frame)}
 					onDoubleClick={()=>{
@@ -187,7 +271,8 @@ const KeyFrames = () => {
             />
 		</div>
 		
-    </div>
+    </CardContent>
+    </Card>
   )
 }
 

@@ -20,7 +20,7 @@ export default function HomeButton() {
 						size="icon"
 						className="cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
 					>
-						<Image src={logoHome} alt="logoMPI" height={48} />
+						<Image src={logoHome} alt="logoMPI" height={32} />
 					</Button>
 				</Link>
 			</TooltipTrigger>
