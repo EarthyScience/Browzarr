@@ -27,7 +27,7 @@ export default function ClientRoot({
 				<HomeButton />
 				<BrowZarrPopover />
 				<Link
-					href="/docs"
+					href="https://browzarr.io/docs"
 					className="text-sm underline sm:inline-block"
 					target="_blank"
 					rel="noopener noreferrer"
