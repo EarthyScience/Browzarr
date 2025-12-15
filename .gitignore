@@ -47,3 +47,41 @@ package-lock.json
 .qodo
 *.sh
 pnpm-lock.yaml
+
+# Nuxt dev/build outputs
+docs/.output
+docs/.data
+docs/.nuxt
+docs/.nitro
+docs/.cache
+docs/dist
+
+# Node dependencies
+docs/node_modules
+
+# Logs
+docs/logs
+docs/*.log
+
+# Misc
+docs/.DS_Store
+docs/.fleet
+docs/.idea
+docs/.eslintcache
+
+# Local env files
+docs/.env
+docs/.env.*
+docs/!.env.example
+
+# npm pack
+docs/*.tgz
+
+# Temp files
+docs/.tmp
+docs/.profile
+docs/*.0x
+
+#VSC
+docs/.history
+docs/.wrangler
