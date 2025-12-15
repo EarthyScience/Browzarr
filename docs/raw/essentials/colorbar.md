@@ -1,0 +1,15 @@
+# Colorbar
+
+> Control bounds.
+
+### Lower and upper bounds
+
+You can control the lower and upper bounds of your displayed data by clicking and typing different numbers in the input boxes (extreme left and right).
+
+### Shift values
+
+Dragging the colorbar itself will also shift the bound values.
+
+### Attributes
+
+Clicking on the variable name (at the top of the colorbar) will also display their general attributes!
