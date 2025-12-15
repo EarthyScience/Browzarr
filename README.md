@@ -27,7 +27,7 @@
 </div>
 
 [docs-dev-img]: https://img.shields.io/badge/docs-%20tutorial-orange?style=round-square
-[docs-dev-url]: https://browzarr.io/latest/docs/
+[docs-dev-url]: https://browzarr.io/docs/
 
 Browzarr is a powerful, browser-native framework for visualizing, exploring, and analyzing **Zarr data stores**.  
 Load multi-dimensional datasets directly in the browser, interactively slice and inspect chunks, and gain insights without any backend or server setup.
