@@ -9,13 +9,55 @@
   /* Container */
   --ui-container: 90rem;
 
-  /* Primary colors */
-  --color-primary: #009689;      /* gold */
-  --color-primary-light: #6366f1; /* Indigo 500 */
-  --color-primary-dark: #4338ca;  /* Indigo 700 */
+  /* Sunset palette */
+  --color-sunset-50:  #E3F2FD;
+  --color-sunset-100: #BBDEFB;
+  --color-sunset-200: #90CAF9;
+  --color-sunset-300: #64B5F6;
+  --color-sunset-400: #42A5F5;
+  --color-sunset-500: #1E88E5;
+  --color-sunset-600: #5E35B1;
+  --color-sunset-700: #E91E63;
+  --color-sunset-800: #FF6F00;
+  --color-sunset-900: #8E24AA;
+  --color-sunset-950: #6A1B9A;
 
-  /* Secondary / accent colors (optional) */
-  --color-secondary: #ec4899;     /* Pink 500 */
-  --color-secondary-light: #f472b6;
-  --color-secondary-dark: #db2777;
+  /* neutrals */
+  --color-neutral-50:  #F9FAFB;
+  --color-neutral-100: #F3F4F6;
+  --color-neutral-200: #E5E7EB;
+  --color-neutral-300: #D1D5DB;
+  --color-neutral-400: #9CA3AF;
+  --color-neutral-500: #6B7280;
+  --color-neutral-600: #4B5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1F2937;
+  --color-neutral-900: #111827;
+  --color-neutral-950: #0F172A;
+}
+
+/* Map the semantic colors so utilities work */
+:root {
+  --ui-primary: var(--color-neutral-600);
+  --ui-secondary: var(--color-sunset-800);
+  --ui-info: var(--color-sunset-400);
+  --ui-success: var(--color-sunset-300);
+  --ui-warning: var(--color-sunset-800);
+  --ui-error: var(--color-sunset-700);
+
+  /* neutrals */
+  --ui-text: var(--color-neutral-700);
+  --ui-border: var(--color-neutral-200);
+}
+
+.dark {
+  --ui-primary: var(--color-neutral-300);
+  --ui-secondary: var(--color-sunset-700);
+  --ui-info: var(--color-sunset-200);
+  --ui-success: var(--color-sunset-400);
+  --ui-warning: var(--color-sunset-700);
+  --ui-error: var(--color-sunset-900);
+
+  --ui-text: var(--color-neutral-50);
+  --ui-border: var(--color-neutral-600);
 }
