@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* Define a static theme */
+@theme static {
+  /* Fonts */
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+
+  /* Container */
+  --ui-container: 90rem;
+
+  /* Primary colors */
+  --color-primary: #009689;      /* gold */
+  --color-primary-light: #6366f1; /* Indigo 500 */
+  --color-primary-dark: #4338ca;  /* Indigo 700 */
+
+  /* Secondary / accent colors (optional) */
+  --color-secondary: #ec4899;     /* Pink 500 */
+  --color-secondary-light: #f472b6;
+  --color-secondary-dark: #db2777;
+}

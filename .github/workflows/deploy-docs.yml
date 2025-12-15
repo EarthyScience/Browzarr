@@ -21,18 +21,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup repo 🔧
-        uses: ./.github/actions
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "npm"
 
       - name: Install dependencies
         working-directory: docs
-        run: pnpm install
+        run: npm install
 
       - name: Build docs site
         working-directory: docs
         env:
           NUXT_APP_BASE_URL: "/docs/"
-        run: pnpm build
+        run: npm run build
 
       - name: Deploying docs 🚀
         uses: JamesIves/github-pages-deploy-action@v4
