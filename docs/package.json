@@ -17,6 +17,7 @@
     "docus": "latest",
     "eslint": "^9.39.2",
     "nuxt": "^4.1.2",
+    "tailwindcss": "^4.1.17",
     "typescript": "^5.9.3"
   }
 }
