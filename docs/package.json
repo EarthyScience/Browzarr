@@ -2,7 +2,7 @@
   "name": "browzarr.io",
   "scripts": {
     "dev": "nuxt dev --extends docus",
-    "build": "nuxt build --extends docus"
+    "build": "nuxi generate --extends docus"
   },
   "dependencies": {
     "@nuxt/content": "^3.9.0",
