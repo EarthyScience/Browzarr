@@ -1,0 +1,22 @@
+{
+  "name": "browzarr.io",
+  "scripts": {
+    "dev": "nuxt dev --extends docus",
+    "build": "nuxi generate --extends docus"
+  },
+  "dependencies": {
+    "@nuxt/content": "^3.9.0",
+    "@nuxt/eslint": "^1.12.1",
+    "@nuxt/hints": "^1.0.0-alpha.3",
+    "@nuxt/image": "^2.0.0",
+    "@nuxt/scripts": "^0.13.1",
+    "@nuxt/test-utils": "^3.21.0",
+    "@nuxt/ui": "^4.2.1",
+    "@unhead/vue": "^2.0.19",
+    "better-sqlite3": "^12.2.0",
+    "docus": "latest",
+    "eslint": "^9.39.2",
+    "nuxt": "^4.1.2",
+    "typescript": "^5.9.3"
+  }
+}
