@@ -252,7 +252,7 @@ export async function GetArray(): Promise<{
 	const hasTimeChunks = is4D ? fullShape[1]/chunkShape[0] > 1 : fullShape[0]/chunkShape[0] > 1
 
 	//---- Strategy 1. Download whole array (No time chunks) ----//
-	if (!hasTimeChunks){ // No chunking along time axis, can download whole array at once
+	if (!hasTimeChunks){ 
 		setStatus("Downloading...")
 		const chunk = await fetchWithRetry(
             () => is4D ? zarr.get(outVar, [idx4D, null, null, null]) : zarr.get(outVar),
@@ -264,6 +264,7 @@ export async function GetArray(): Promise<{
             throw new Error("BigInt arrays not supported.");
         }
 		const shape = is4D ? outVar.shape.slice(1) : outVar.shape;
+		
 		setStrides(chunk.stride) // Need strides for the point cloud
 		const [typedArray, scalingFactor] = ToFloat16(chunk.data as Float32Array, null)
 		const cacheChunk = {
@@ -309,6 +310,10 @@ export async function GetArray(): Promise<{
         setArraySize(totalElements);
         setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); //These are used to stitch timeseries data 
     }
+	if (totalElements > 1e9){
+		useErrorStore.getState().setError('largeArray');
+		throw Error("Cannot allocate unbokrne memory segment for array.")
+	}
     const typedArray = new Float16Array(totalElements);
 
 	// State for the loop
