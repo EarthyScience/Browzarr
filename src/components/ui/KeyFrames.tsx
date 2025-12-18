@@ -56,7 +56,8 @@ const SetKeyFrame = (frame: number) =>{
     }
     const thisState = {
         visual : keyState,
-        camera: cameraState
+        camera: cameraState,
+        time: usePlotStore.getState().animProg
     }
     addKeyFrame(frame, thisState)
 }
@@ -102,16 +103,25 @@ const KeyFrames = () => {
 
     {/* Information */}
     useEffect(() => {
-    if (orbit || useTime) {
-      toast.warning("Warning!", {
-        description: "Camera Motion overwritten by orbit!",
-        action: {
-          label: "close",
-          onClick: () => console.log("close"),
-        },
-      });
-    }
-  }, [orbit, useTime]);
+        if (orbit) {
+            toast.warning("Warning!", {
+                description: "Camera Motion overwritten by Orbit!",
+                action: {
+                    label: "close",
+                    onClick: () => null,
+                },
+            });
+        }
+        if (useTime) {
+            toast.warning("Warning!", {
+                description: "Time changes overwritten by Animate Time!",
+                action: {
+                    label: "close",
+                    onClick: () => null,
+                },
+            });
+        }
+    }, [orbit, useTime]);
 
   useEffect(() => {
     if ((orbit || useTime) && !keyFrames) {

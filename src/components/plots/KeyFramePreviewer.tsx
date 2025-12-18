@@ -43,8 +43,11 @@ export const KeyFramePreviewer = () => {
     const KeyFrameLerper = (startState: Record<string,any>, endState:Record<string,any>, alpha:number, useCamera=true) => {
         const startVizState = startState["visual"]
         const endVizState = endState["visual"]
+        const startTime = startState["time"]
+        const endTime = endState["time"]
         const lerpedVizState: Record<string, any> = {};
         const lerpedCamState: Record<string, any> = {};   
+
         Object.keys(startVizState).forEach(key => {
             const sourceValue = startVizState[key];
             const targetValue = endVizState[key];
@@ -69,6 +72,10 @@ export const KeyFramePreviewer = () => {
             }
         });
         usePlotStore.setState(lerpedVizState)
+        if (!useTime){
+            const newTime = lerp(startTime, endTime, alpha)
+            usePlotStore.setState({animProg: newTime})
+        }
 
         if (useCamera){ // Don't lerp camera if orbiting
             const startCamState = startState["camera"]
