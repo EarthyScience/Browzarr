@@ -16,7 +16,8 @@ function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float1
 	let newArray : Float16Array;
 	let newScalingFactor: number | null = null;
 	const [minVal, maxVal] = ArrayMinMax(array)
-	if (maxVal <= 65504 && minVal >= -65504 && (Math.abs(maxVal) > 1e-3)){ // If values fit in Float16, use that to save memory
+	console.log(minVal, maxVal)
+	if (maxVal <= 65504 && minVal >= -65504 && Math.abs(maxVal) > 1e-3 && Math.abs(minVal) > 1e-3){ // If values fit in Float16, use that to save memory
 		newArray = new Float16Array(array)
 	}
 	else{
@@ -27,15 +28,24 @@ function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float1
 			for (let i = 0; i < array.length; i++) {
 				array[i] /= Math.pow(10,newScalingFactor);
 			}
-			newArray = new Float16Array(array)
+		} else if (Math.abs(minVal) < 1e-3 ){
+			const minFactor = Math.floor(Math.log10(Math.abs(minVal)))
+			const newMax = maxVal/Math.pow(10, minFactor)
+			const maxFactor = Math.ceil(Math.log10(newMax /65504))
+			newScalingFactor = maxFactor + minFactor
+			newScalingFactor = scalingFactor ? (scalingFactor < newScalingFactor ? scalingFactor : newScalingFactor) : newScalingFactor
+			for (let i = 0; i < array.length; i++) {
+				array[i] /= Math.pow(10,newScalingFactor);
+			}
+
 		} else {
 			newScalingFactor = Math.ceil(Math.log10(maxVal/65504))
 			newScalingFactor = scalingFactor ? (scalingFactor > newScalingFactor ? scalingFactor : newScalingFactor) : newScalingFactor
 			for (let i = 0; i < array.length; i++) {
 				array[i] /= Math.pow(10,newScalingFactor);
 			}
-			newArray = new Float16Array(array)
 		}	
+		newArray = new Float16Array(array)
 	}
 	return [newArray, newScalingFactor]
 }
@@ -243,7 +253,7 @@ export async function GetArray(): Promise<{
 
 	//---- 3. Determine Structure ----//
 	const fullShape = outVar.shape;
-	let [totalSize, _chunkSize, chunkShape] = GetSize(outVar);
+	let [_totalSize, _chunkSize, chunkShape] = GetSize(outVar);
 
 	if (is4D){
 		chunkShape = chunkShape.slice(1);
