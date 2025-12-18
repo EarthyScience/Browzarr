@@ -11,11 +11,11 @@ uniform vec2 lonBounds;
 vec2 giveUV(vec3 position){
     vec3 n = normalize(position);
     float latitude = asin(n.y);
-    float longitude = atan(n.z, n.x);
+    float longitude = -atan(n.z, n.x);
     latitude = (latitude - latBounds.x)/(latBounds.y - latBounds.x);
     longitude = (longitude - lonBounds.x)/(lonBounds.y - lonBounds.x);
 
-    return vec2(1.-longitude, latitude);
+    return vec2(longitude, latitude);
 }
 
 float sample1(vec2 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
