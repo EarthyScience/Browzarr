@@ -40,7 +40,7 @@ const Variables = ({
   const [openMetaPopover, setOpenMetaPopover] = useState(false);
 
   const [showMeta, setShowMeta] = useState(false);
-  const { variables, zMeta, metadata, dimNames, setMetadata, setDimNames, initStore } = useGlobalStore(
+  const { variables, zMeta, metadata, setMetadata, initStore } = useGlobalStore(
     useShallow((state) => ({
       variables: state.variables,
       zMeta: state.zMeta,
@@ -54,6 +54,7 @@ const Variables = ({
 
   const [dimArrays, setDimArrays] = useState([[0],[0],[0]]);
   const [dimUnits, setDimUnits] = useState([null,null,null]);
+  const [dimNames, setDimNames] = useState<string[]>(["Default"]);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedVar, setSelectedVar] = useState<string | null>(null);

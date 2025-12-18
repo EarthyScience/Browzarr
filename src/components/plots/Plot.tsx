@@ -11,7 +11,7 @@ import { Navbar, Colorbar, ExportExtent } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import AnalysisWG from './AnalysisWG';
-import { ParseExtent } from '@/utils/HelperFuncs';
+import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
 import ExportCanvas from '@/utils/ExportCanvas';
 import KeyFrames from '../ui/KeyFrames';
 
@@ -235,28 +235,31 @@ const Plot = () => {
       GetAttributes().then((result)=>{
         setMetadata(result);
         setStableMetadata(result);
-        let [dimArrs, dimUnits, dimNames] = GetDimArrays()
+      })
+      GetDimInfo(variable).then((arrays)=>{
+        let {dimArrays, dimUnits, dimNames}= arrays;
         if (is4D){
-          dimArrs = dimArrs.slice(1);
+          dimArrays = dimArrays.slice(1);
           dimUnits = dimUnits.slice(1);
           dimNames = dimNames.slice(1);
         }
-        setDimArrays(dimArrs)
-        if (dimArrs.length > 2){
-          if (dimArrs[1][1] < dimArrs[1][0])
+        setDimNames(dimNames)
+        setDimArrays(dimArrays)
+        if (dimArrays.length > 2){
+          if (dimArrays[1][1] < dimArrays[1][0])
             {setFlipY(true)}
           else
             {setFlipY(false)}
         }
         else{
-          if (dimArrs[0][1] < dimArrs[0][0])
+          if (dimArrays[0][1] < dimArrays[0][0])
             {setFlipY(true)}
           else
             {setFlipY(false)}
         }
         setDimUnits(dimUnits)
-        ParseExtent(dimUnits, dimArrs)
-      })
+        ParseExtent(dimUnits, dimArrays)
+      }) 
     }else{
       setMetadata(null)
     }
