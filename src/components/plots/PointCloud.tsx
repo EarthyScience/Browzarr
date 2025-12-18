@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import { pointFrag, pointVert } from '@/components/textures/shaders'
 import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
-import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
 import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 
@@ -25,7 +24,7 @@ interface pointSetters{
   setDimWidth: React.Dispatch<React.SetStateAction<number>>;
 }
 
-const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProps, ZarrDS: ZarrDataset, setters:pointSetters}) =>{
+const MappingCube = ({dimensions, setters} : {dimensions: dimensionsProps, setters:pointSetters}) =>{
   const {width, height, depth} = dimensions;
   const {setPoints, setStride, setDimWidth} = setters;
   const selectTS = usePlotStore(state => state.selectTS)
@@ -80,60 +79,56 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
         setPoints({})
       }
       lastNormal.current = dimAxis;
-      
-      if(ZarrDS){
-        const tempTS = GetTimeSeries({data: analysisMode? analysisArray : GetCurrentArray(), shape: dataShape, stride: strides},{uv,normal})
-        const plotDim = (normal.toArray()).map((val, idx) => {
-          if (Math.abs(val) > 0) {
-            return idx;
-          }
-          return null;}).filter(idx => idx !== null);
-        setPlotDim(2-plotDim[0]) //I think this 2 is only if there are 3-dims. Need to rework the logic
-        const coordUV = parseUVCoords({normal:normal,uv:uv})
-        let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length-.5)] : null)
-        const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
-        const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
-        dimCoords = dimCoords.filter(val => val !== null)
-        const tsID = `${dimCoords[0]}_${dimCoords[1]}`
-        const tsObj = {
-          color:evaluate_cmap(getColorIdx()/10,"Paired"),
-          data:tempTS
+      const tempTS = GetTimeSeries({data: analysisMode? analysisArray : GetCurrentArray(), shape: dataShape, stride: strides},{uv,normal})
+      const plotDim = (normal.toArray()).map((val, idx) => {
+        if (Math.abs(val) > 0) {
+          return idx;
         }
-        incrementColorIdx();
-        updateTimeSeries({ [tsID] : tsObj})
-        const dimObj = {
-          first:{
-            name:thisDimNames[0],
-            loc:dimCoords[0] ?? 0,
-            units:thisDimUnits[0]
-          },
-          second:{
-            name:thisDimNames[1],
-            loc:dimCoords[1] ?? 0,
-            units:thisDimUnits[1]
-          },
-          plot:{
-            units:dimUnits[2-plotDim[0]]
-          }
-        }
-        updateDimCoords({[tsID] : dimObj})
-        const dims = [depth, height, width].filter((_,idx)=> coordUV[idx] != null)
-        const dimWidth = [depth, height, width].filter((_,idx)=> coordUV[idx] == null)
-        const newUV = coordUV.filter((v)=> v != null)
-        const thisStride = strides.filter((_,idx)=> coordUV[idx] != null)
-        const uIdx = Math.round((newUV[0])*dims[0]-.5)
-        const vIdx = Math.round(newUV[1]*dims[1]-.5)
-        const newIdx = uIdx * thisStride[0] + vIdx * thisStride[1]
-        const dimStride = strides.filter((_,idx)=> coordUV[idx] == null)
-        setDimWidth(dimWidth[0])
-        setPoints(prevItems => {
-              const newEntry = {[tsID] : newIdx}
-              const updated = {...newEntry, ...prevItems};
-              return updated; // keep only first 10 items
-            })
-        setStride(dimStride[0])        
+        return null;}).filter(idx => idx !== null);
+      setPlotDim(2-plotDim[0]) //I think this 2 is only if there are 3-dims. Need to rework the logic
+      const coordUV = parseUVCoords({normal:normal,uv:uv})
+      let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length-.5)] : null)
+      const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
+      const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
+      dimCoords = dimCoords.filter(val => val !== null)
+      const tsID = `${dimCoords[0]}_${dimCoords[1]}`
+      const tsObj = {
+        color:evaluate_cmap(getColorIdx()/10,"Paired"),
+        data:tempTS
       }
-
+      incrementColorIdx();
+      updateTimeSeries({ [tsID] : tsObj})
+      const dimObj = {
+        first:{
+          name:thisDimNames[0],
+          loc:dimCoords[0] ?? 0,
+          units:thisDimUnits[0]
+        },
+        second:{
+          name:thisDimNames[1],
+          loc:dimCoords[1] ?? 0,
+          units:thisDimUnits[1]
+        },
+        plot:{
+          units:dimUnits[2-plotDim[0]]
+        }
+      }
+      updateDimCoords({[tsID] : dimObj})
+      const dims = [depth, height, width].filter((_,idx)=> coordUV[idx] != null)
+      const dimWidth = [depth, height, width].filter((_,idx)=> coordUV[idx] == null)
+      const newUV = coordUV.filter((v)=> v != null)
+      const thisStride = strides.filter((_,idx)=> coordUV[idx] != null)
+      const uIdx = Math.round((newUV[0])*dims[0]-.5)
+      const vIdx = Math.round(newUV[1]*dims[1]-.5)
+      const newIdx = uIdx * thisStride[0] + vIdx * thisStride[1]
+      const dimStride = strides.filter((_,idx)=> coordUV[idx] == null)
+      setDimWidth(dimWidth[0])
+      setPoints(prevItems => {
+            const newEntry = {[tsID] : newIdx}
+            const updated = {...newEntry, ...prevItems};
+            return updated; // keep only first 10 items
+          })
+      setStride(dimStride[0])        
     }
   return(
     <mesh scale={[2*globalScale, 2*shapeRatio*globalScale, 2*depthRatio*globalScale]} position={[-offset, -offset, offset]} onClick={HandleTimeSeries}>
@@ -143,7 +138,7 @@ const MappingCube = ({dimensions, ZarrDS, setters} : {dimensions: dimensionsProp
   )
 }
 
-export const PointCloud = ({textures, ZarrDS} : {textures:PCProps, ZarrDS: ZarrDataset} )=>{
+export const PointCloud = ({textures} : {textures:PCProps} )=>{
     const { colormap } = textures;
     const {timeSeries, flipY, dataShape, textureData} = useGlobalStore(useShallow(state=>({
       timeSeries: state.timeSeries,
@@ -265,7 +260,7 @@ export const PointCloud = ({textures, ZarrDS} : {textures:PCProps, ZarrDS: ZarrD
       <mesh scale={[1,flipY ? -1:1, 1]} >
         <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
       </mesh>
-      <MappingCube dimensions={{width,height,depth}} ZarrDS={ZarrDS} setters={{setPoints:setPointsObj, setStride, setDimWidth}}/>
+      <MappingCube dimensions={{width,height,depth}} setters={{setPoints:setPointsObj, setStride, setDimWidth}}/>
       </>
     );
   }
