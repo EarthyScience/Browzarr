@@ -8,7 +8,6 @@ import { flatFrag3D, fragmentFlat } from '../textures/shaders';
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
 import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
-import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
 import { evaluate_cmap } from 'js-colormaps-es';
 
 interface InfoSettersProps{
@@ -23,7 +22,7 @@ function Rescale(value: number, scales: {minVal: number, maxVal: number}){
   return value * range + scales.minVal
 }
 
-const FlatMap = ({textures, infoSetters, ZarrDS} : {textures : THREE.DataTexture | THREE.Data3DTexture[], infoSetters : InfoSettersProps, ZarrDS: ZarrDataset}) => {
+const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, colormap, valueScales, dimArrays, dimNames, dimUnits, 
       isFlat, dataShape, textureArrayDepths, strides, timeSeries,
@@ -134,7 +133,7 @@ const FlatMap = ({textures, infoSetters, ZarrDS} : {textures : THREE.DataTexture
     function HandleTimeSeries(event: THREE.Intersection){
             const uv = event.uv;
             const normal = new THREE.Vector3(0,0,1)
-            if(ZarrDS && uv){
+            if(uv){
               const tsUV = flipY ? new THREE.Vector2(uv.x, 1-uv.y) : uv
               const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:tsUV,normal})
               setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic

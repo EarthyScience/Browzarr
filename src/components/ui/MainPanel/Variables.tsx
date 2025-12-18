@@ -7,6 +7,7 @@ import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
 import MetaDataInfo from "./MetaDataInfo";
 import { GetDimInfo } from "@/utils/HelperFuncs";
+import { GetAttributes } from "@/components/zarr/ZarrLoaderLRU";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "../input";
@@ -26,7 +27,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ZarrDataset } from "@/components/zarr/ZarrLoaderLRU";
+
 
 const Variables = ({
   openVariables,
@@ -44,14 +45,12 @@ const Variables = ({
       variables: state.variables,
       zMeta: state.zMeta,
       metadata: state.metadata,
+      dimNames:state.dimNames,
       setMetadata: state.setMetadata,
+      setDimNames:state.setDimNames,
       initStore: state.initStore
     }))
   );
-  const { currentStore } = useZarrStore(useShallow(state => ({
-    currentStore: state.currentStore,
-  })));
-  const ZarrDS = useMemo(() => new ZarrDataset(currentStore), [currentStore]);
 
   const [dimArrays, setDimArrays] = useState([[0],[0],[0]]);
   const [dimUnits, setDimUnits] = useState([null,null,null]);
@@ -137,7 +136,7 @@ const Variables = ({
       const relevant = zMeta.find((e: any) => e.name === selectedVar);
       if (relevant){
         setMeta({...relevant, dimInfo : {dimArrays, dimNames, dimUnits}});
-        ZarrDS.GetAttributes(selectedVar).then(e=>setMetadata(e));
+        GetAttributes(selectedVar).then(e=>setMetadata(e));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

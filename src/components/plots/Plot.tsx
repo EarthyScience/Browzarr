@@ -4,14 +4,14 @@ import * as THREE from 'three';
 import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, CreateTexture } from '@/components/textures';
-import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
+import { GetArray, GetAttributes } from '../zarr/ZarrLoaderLRU';
 import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar, ExportExtent } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import AnalysisWG from './AnalysisWG';
-import { ParseExtent } from '@/utils/HelperFuncs';
+import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
 import ExportCanvas from '@/utils/ExportCanvas';
 import KeyFrames from '../ui/KeyFrames';
 
@@ -130,7 +130,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   );
 }
 
-const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
+const Plot = () => {
     const {
       setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
       setDimNames, setDimUnits, setPlotOn, setStatus} = useGlobalStore(
@@ -197,7 +197,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         setZSlice(zSlice);
         setYSlice(ySlice);
         setXSlice(xSlice);
-        ZarrDS.GetArray(variable, {xSlice, ySlice, zSlice}).then((result) => {
+        GetArray().then((result) => {
         const [tempTexture, scaling] = ArrayToTexture({
           data: result.data,
           shape: result.shape
@@ -232,37 +232,40 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         return;
       }
       //Get Metadata
-      ZarrDS.GetAttributes(variable).then((result)=>{
+      GetAttributes().then((result)=>{
         setMetadata(result);
         setStableMetadata(result);
-        let [dimArrs, dimUnits, dimNames] = ZarrDS.GetDimArrays()
+      })
+      GetDimInfo(variable).then((arrays)=>{
+        let {dimArrays, dimUnits, dimNames}= arrays;
         if (is4D){
-          dimArrs = dimArrs.slice(1);
+          dimArrays = dimArrays.slice(1);
           dimUnits = dimUnits.slice(1);
           dimNames = dimNames.slice(1);
         }
-        setDimArrays(dimArrs)
         setDimNames(dimNames)
-        if (dimArrs.length > 2){
-          if (dimArrs[1][1] < dimArrs[1][0])
+        setDimArrays(dimArrays)
+        if (dimArrays.length > 2){
+          if (dimArrays[1][1] < dimArrays[1][0])
             {setFlipY(true)}
           else
             {setFlipY(false)}
         }
         else{
-          if (dimArrs[0][1] < dimArrs[0][0])
+          if (dimArrays[0][1] < dimArrays[0][0])
             {setFlipY(true)}
           else
             {setFlipY(false)}
         }
         setDimUnits(dimUnits)
-        ParseExtent(dimUnits, dimArrs)
-      })
+        ParseExtent(dimUnits, dimArrays)
+      }) 
     }else{
       setMetadata(null)
     }
   }, [reFetch])
 
+  
   useEffect(()=>{ // Reset after analysis mode
     if(!analysisMode && show){
       const {dataShape} = useGlobalStore.getState();
@@ -322,7 +325,7 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
       <ExportExtent /> 
       {keyFrameEditor && <KeyFrames />}
       <TransectNotice />
-      <AnalysisWG setTexture={setTextures} ZarrDS={ZarrDS}/>
+      <AnalysisWG setTexture={setTextures} />
       {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
       <Nav />
       {(isFlat || plotType == "flat") && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }
@@ -338,22 +341,22 @@ const Plot = ({ZarrDS}:{ZarrDS: ZarrDataset}) => {
         {plotType == "volume" && show && 
           <>
             <DataCube volTexture={textures}/>
-            <UVCube ZarrDS={ZarrDS} />
+            <UVCube />
           </>
         }
         {plotType == "point-cloud" && show &&
           <>
-            <PointCloud textures={{texture: textures as THREE.Data3DTexture[],colormap}} ZarrDS={ZarrDS}/>
+            <PointCloud textures={{texture: textures as THREE.Data3DTexture[],colormap}}/>
           </> 
         }
         {plotType == "sphere" && show && 
           <>
-            {displaceSurface ? <Sphere textures={textures} ZarrDS={ZarrDS} /> : <SphereBlocks textures={textures} />}
+            {displaceSurface ? <Sphere textures={textures} /> : <SphereBlocks textures={textures} />}
           </>
         }
         <Orbiter isFlat={plotType == "flat"} />
         {plotType == "flat" && show && <>
-          {displaceSurface && <FlatMap textures={textures as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} ZarrDS={ZarrDS}/> }
+          {displaceSurface && <FlatMap textures={textures as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
           {!displaceSurface && <FlatBlocks textures={textures} />}
         </>
         }

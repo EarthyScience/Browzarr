@@ -2,7 +2,7 @@
 import * as THREE from 'three'
 THREE.Cache.enabled = true;
 import { GetZarrMetadata, GetVariableNames, GetTitleDescription } from '@/components/zarr/GetMetadata';
-import { ZarrDataset, GetStore } from '@/components/zarr/ZarrLoaderLRU';
+import { GetStore } from '@/components/zarr/ZarrLoaderLRU';
 import { useEffect, useMemo } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
 import { MainPanel } from '@/components/ui';
@@ -62,8 +62,6 @@ export function LandingHome() {
     setCurrentStore(newStore)
   }, [initStore, setCurrentStore])
 
-  const ZarrDS = useMemo(() => new ZarrDataset(currentStore), [currentStore])
-
   useEffect(() => {
     let isMounted = true;
 
@@ -80,9 +78,9 @@ export function LandingHome() {
     return () => { isMounted = false; };
   }, [currentStore, setZMeta, setVariables, setTitleDescription])
 
-  useEffect(()=>{
-    sendPing()
-  },[])
+  // useEffect(()=>{
+  //   sendPing()
+  // },[])
 
   return (
     <>
@@ -93,7 +91,7 @@ export function LandingHome() {
     <Loading />
     
     {/* {variable === "Default" && <ScrollableLinksTable />} */}
-    {variable != "Default" && <Plot ZarrDS={ZarrDS} />}
+    {variable != "Default" && <Plot />}
     {Object.keys(timeSeries).length >= 1 && <PlotArea />}
     </>
   );

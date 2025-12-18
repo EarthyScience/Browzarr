@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 import { DataReduction, Convolve, Multivariate2D, Multivariate3D, CUMSUM3D, Convolve2D } from '../computation/webGPU';
 import { useGlobalStore, useAnalysisStore, usePlotStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
-import { ZarrDataset } from '../zarr/ZarrLoaderLRU';
+import { GetArray } from '../zarr/ZarrLoaderLRU';
 import { CreateTexture } from '../textures';
 
 // The new centralized map for all operations
@@ -40,7 +40,7 @@ const ShaderMap = {
 // Define a type for our operations based on the ShaderMap keys
 type Operation = keyof typeof ShaderMap;
 
-const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture[] | THREE.DataTexture[] | null>>, ZarrDS: ZarrDataset }) => {
+const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture[] | THREE.DataTexture[] | null>> }) => {
 
     // Global state hooks remain the same
     const { strides, dataShape, valueScales, isFlat, setIsFlat, setStatus, setValueScales } = useGlobalStore(useShallow(state => ({
@@ -82,7 +82,7 @@ const AnalysisWG = ({ setTexture, ZarrDS }: { setTexture: React.Dispatch<React.S
             let var2Data: ArrayBufferView | null = null;
             if (useTwo) {
                 setStatus("Fetching second variable...")
-                const var2Array = await ZarrDS.GetArray(variable2, {zSlice, ySlice, xSlice});
+                const var2Array = await GetArray();
                 var2Data = var2Array?.data;
                 setStatus("Computing...");
                 if (!var2Data) {

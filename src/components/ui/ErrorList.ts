@@ -22,5 +22,9 @@ export const ErrorList = {
     tsException: {
         title: "1D Transect Unavailable",    
         description: "1D transects are unavailable when using face displacement on the sphere plot."
+    },
+    largeArray :{
+        title: "Requested too Much Memory",
+        description: "Browzarr cannot request that much data in one call. This is a fixable issue, open an issue on GitHub so I am motivated to implement it."
     }
 }
