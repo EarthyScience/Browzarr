@@ -40,19 +40,20 @@ const Variables = ({
   const [openMetaPopover, setOpenMetaPopover] = useState(false);
 
   const [showMeta, setShowMeta] = useState(false);
-  const { variables, zMeta, metadata, setMetadata, initStore } = useGlobalStore(
+  const { variables, zMeta, metadata, dimNames, setMetadata, setDimNames, initStore } = useGlobalStore(
     useShallow((state) => ({
       variables: state.variables,
       zMeta: state.zMeta,
       metadata: state.metadata,
+      dimNames:state.dimNames,
       setMetadata: state.setMetadata,
+      setDimNames:state.setDimNames,
       initStore: state.initStore
     }))
   );
 
   const [dimArrays, setDimArrays] = useState([[0],[0],[0]]);
   const [dimUnits, setDimUnits] = useState([null,null,null]);
-  const [dimNames, setDimNames] = useState<string[]>(["Default"]);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedVar, setSelectedVar] = useState<string | null>(null);
@@ -134,7 +135,7 @@ const Variables = ({
       const relevant = zMeta.find((e: any) => e.name === selectedVar);
       if (relevant){
         setMeta({...relevant, dimInfo : {dimArrays, dimNames, dimUnits}});
-        GetAttributes().then(e=>setMetadata(e));
+        GetAttributes(selectedVar).then(e=>setMetadata(e));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

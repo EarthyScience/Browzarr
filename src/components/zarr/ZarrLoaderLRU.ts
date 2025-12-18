@@ -205,7 +205,7 @@ export async function GetArray(): Promise<{
 		setStrides(thisChunk.stride)
 		return thisChunk;
 	}
-	const group = currentStore;
+	const group = await currentStore;
 	const outVar = await zarr.open(group.resolve(variable), {kind:"array"})
 	const shape = outVar.shape;
 	let [totalSize, _chunkSize, chunkShape] = GetSize(outVar);
@@ -489,7 +489,7 @@ export async function GetArray(): Promise<{
 	}
 }
 
-export async function GetAttributes(){
+export async function GetAttributes(thisVariable? : string){
 	const {initStore, variable } = useGlobalStore.getState();
 	const {cache} = useCacheStore.getState();
 	const {currentStore} = useZarrStore.getState();
@@ -498,10 +498,8 @@ export async function GetAttributes(){
 		const meta = cache.get(cacheName)
 		return meta;
 	}
-	console.log(currentStore)
 	const group = await currentStore;
-	console.log(group)
-	const outVar = await zarr.open(group.resolve(variable), {kind:"array"});
+	const outVar = await zarr.open(group.resolve(thisVariable?? variable), {kind:"array"});
 	const meta = outVar.attrs;
 	cache.set(cacheName, meta);
 	const dims = [];

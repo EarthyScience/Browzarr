@@ -155,7 +155,6 @@ export function linspace(start: number, stop: number, num: number): number[] {
   }
 
 export function ParseExtent(dimUnits: string[], dimArrays: number[][]){
-
   const {setLonExtent, setLatExtent, setLonResolution, setLatResolution, setOriginalExtent } = usePlotStore.getState();
   const {xSlice, ySlice} = usePlotStore.getState();
   const tempUnits = dimUnits.length > 2 ? dimUnits.slice(1) : dimUnits;

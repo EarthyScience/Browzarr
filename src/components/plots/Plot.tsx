@@ -242,7 +242,6 @@ const Plot = () => {
           dimNames = dimNames.slice(1);
         }
         setDimArrays(dimArrs)
-        setDimNames(dimNames)
         if (dimArrs.length > 2){
           if (dimArrs[1][1] < dimArrs[1][0])
             {setFlipY(true)}
@@ -263,6 +262,7 @@ const Plot = () => {
     }
   }, [reFetch])
 
+  
   useEffect(()=>{ // Reset after analysis mode
     if(!analysisMode && show){
       const {dataShape} = useGlobalStore.getState();
