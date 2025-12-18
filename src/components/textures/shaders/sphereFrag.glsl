@@ -26,12 +26,12 @@ uniform float nanAlpha;
 vec2 giveUV(vec3 position){
     vec3 n = normalize(position);
     float latitude = asin(n.y);
-    float longitude = atan(n.z, n.x);
+    float longitude = -atan(n.z, n.x);
 
     latitude = (latitude - latBounds.x)/(latBounds.y - latBounds.x);
     longitude = (longitude - lonBounds.x)/(lonBounds.y - lonBounds.x);
 
-    return vec2(1.-longitude, latitude);
+    return vec2(longitude, latitude);
 }
 
 bool isValid(vec2 sampleCoord){

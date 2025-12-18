@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { useGlobalStore, usePlotStore, useZarrStore, useCacheStore } from './GlobalStates';
 import { decompressSync } from 'fflate';
 import * as zarr from 'zarrita';
-import { GetStore, copyChunkToArray } from '@/components/zarr/ZarrLoaderLRU';
+import { copyChunkToArray } from '@/components/zarr/ZarrLoaderLRU';
 export function parseTimeUnit(units: string | undefined): [number, number] {
     if (units === "Default"){
         return [1, 0];
