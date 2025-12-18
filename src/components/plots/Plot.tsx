@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, CreateTexture } from '@/components/textures';
-import { GetArray, GetAttributes, GetDimArrays } from '../zarr/ZarrLoaderLRU';
+import { GetArray, GetAttributes } from '../zarr/ZarrLoaderLRU';
 import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar, ExportExtent } from '../ui';

@@ -214,7 +214,7 @@ async function fetchWithRetry<T>(
 }
 
 export async function GetArray(): Promise<{
-	data: Float16Array | Float32Array,
+	data: Float16Array,
 	shape: number[],
 	dtype: string,
 	scalingFactor: number | null
@@ -307,23 +307,23 @@ export async function GetArray(): Promise<{
     setStrides(destStride);
     if (!is2D) {
         setArraySize(totalElements);
-        setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] });
+        setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); //These are used to stitch timeseries data 
     }
     const typedArray = new Float16Array(totalElements);
 
 	// State for the loop
     let scalingFactor: number | null = null;
     const totalChunksToLoad = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
+	let iter = 1; // For progress bar
+	const rescaleIDs = [] // These are the downloaded chunks that need to be rescaled
 
     setStatus("Downloading...");
     setProgress(0);
-
-	let iter = 1; // For progress bar
-	const rescaleIDs = [] // These are the downloaded chunks that need to be rescaled
+	
 	for (let z= zDim.start ; z < zDim.end ; z++){ // Iterate through chunks we need 
 		for (let y= yDim.start ; y < yDim.end ; y++){
 			for (let x= xDim.start ; x < xDim.end ; x++){
-				const chunkID = `y${y}_x${x}` // Unique ID for each chunk
+				const chunkID = `z${z}_y${y}_x${x}` // Unique ID for each chunk
 				const cacheBase = `${initStore}_${variable}`
 				const cacheName = `${cacheBase}_chunk_${chunkID}`
 				if (cache.has(cacheName)){
@@ -344,8 +344,11 @@ export async function GetArray(): Promise<{
 				}
 				else{
 					// Download Chunk
+					const chunkSlice =  is4D ? [idx4D , zarr.slice(z*chunkShape[0], (z+1)*chunkShape[0]), zarr.slice(y*chunkShape[1], (y+1)*chunkShape[1]), zarr.slice(x*chunkShape[2], (x+1)*chunkShape[2])] : 
+											[zarr.slice(z*chunkShape[0], (z+1)*chunkShape[0]), zarr.slice(y*chunkShape[1], (y+1)*chunkShape[1]), zarr.slice(x*chunkShape[2], (x+1)*chunkShape[2])]
+
 					const chunk = await fetchWithRetry(
-						() => is4D ? zarr.get(outVar, [idx4D, null, null, null]) : zarr.get(outVar),
+						() => zarr.get(outVar, chunkSlice),
 						`variable ${variable}`,
 						setStatus
 					);
@@ -430,29 +433,5 @@ export async function GetAttributes(thisVariable? : string){
 	}
 	return meta;
 }
-
-export function GetDimArrays(){
-	const {initStore, variable, dimNames} = useGlobalStore.getState();
-	const {cache} = useCacheStore.getState();
-	const dimArr = [];
-	const dimUnits = []
-	const fallBackNames: string[] = [];
-	if (dimNames){
-		for (const dim of dimNames){
-			const dimArray = cache.get(`${initStore}_${dim}`)
-			const dimMeta = cache.get(`${initStore}_${dim}_meta`)
-			dimArr.push(dimArray ?? [0]) // this should not happend
-			dimUnits.push(dimMeta?.units ?? null) // Units may not be present
-		}
-	} else {
-		const shape = cache.get(`${initStore}_${variable}_meta`).shape
-		for (const dimLength of shape){
-			dimArr.push(Array(dimLength).fill(0))
-			dimUnits.push("Default")
-			fallBackNames.push("Default")
-		}
-	}
-	return [dimArr,dimUnits, dimNames??fallBackNames];
-}	
 
 
