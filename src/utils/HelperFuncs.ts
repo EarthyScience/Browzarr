@@ -283,6 +283,7 @@ export function TwoDecimals(val: number){
     return Math.round(val * 100)/100
 }
 
+
 export async function GetDimInfo(variable:string){
   const {cache} = useCacheStore.getState();
   const {initStore} = useGlobalStore.getState();

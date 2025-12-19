@@ -38,10 +38,19 @@ const operationMap = {
     CUMSUM3D: "Cumulative Sum"
 };
 
+function Num2String(value: number){
+    if (Math.abs(value) > 1e3 && Math.abs(value) < 1e6 || value === 0){
+        return value.toFixed(2)
+    } else{
+        return value.toExponential(2)
+    }
+}
+
 const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Record<string, any>, valueScales: {maxVal: number, minVal:number}}) => {
-    const {colormap, variable} = useGlobalStore(useShallow(state => ({
+    const {colormap, variable, scalingFactor} = useGlobalStore(useShallow(state => ({
         colormap: state.colormap,
-        variable: state.variable
+        variable: state.variable,
+        scalingFactor: state.scalingFactor
     })))
     const {cScale, cOffset, setCScale, setCOffset} = usePlotStore(useShallow(state => ({ 
         cScale: state.cScale,
@@ -61,8 +70,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     const scaling = useRef<boolean>(false)
     const prevPos = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
     const {origMin, origMax} = useMemo(()=>({
-        origMin: TwoDecimals(valueScales.minVal),
-        origMax: TwoDecimals(valueScales.maxVal)
+        origMin: valueScales.minVal,
+        origMax: valueScales.maxVal
     }),[valueScales])
     const range = origMax - origMin
     const zeroPoint = (0 - origMin) / range; // Used to account for shifting values
@@ -105,9 +114,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         const thisOffset = deltaX  / 100
         const lastMin = prevVals.current.min
         const lastMax = prevVals.current.max
-        setNewMin(TwoDecimals(lastMin+(range*thisOffset)))
-        setNewMax(TwoDecimals(lastMax+(range*thisOffset)))
-
+        setNewMin(lastMin+(range*thisOffset))
+        setNewMax(lastMax+(range*thisOffset))
     };
 
     // Mouse up handler
@@ -175,7 +183,6 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
             return `[${units}]`
         }
     },[analysisMode, execute])
-
     return (
         <>
         <div className='colorbar' >
@@ -185,13 +192,13 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                     left: `0%`,
                     top:'100%',
                     position:'absolute',
-                    width:`${String(newMin).length*8}px`,
+                    width:`${Num2String(newMin*Math.pow(10,scalingFactor??0)).length*8}px`,
                     transform:'translateX(-50%)',
                     textAlign:'right',
                     minWidth:'30px'
                 }}
-                value={newMin} 
-                onChange={e=>setNewMin(TwoDecimals(parseFloat(e.target.value)))}
+                value={Num2String(newMin*Math.pow(10,scalingFactor??0))} 
+                onChange={e=>setNewMin(parseFloat(e.target.value))}
             />
             {Array.from({length: tickCount}).map((_val,idx)=>{
                 if (idx == 0 || idx == tickCount-1){
@@ -205,7 +212,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                     position:'absolute',
                     transform:'translateX(-50%)',
                 }}
-            >{vals[idx].toFixed(2)}
+            >{Num2String(vals[idx]*Math.pow(10,scalingFactor??0))}
             </p>)}
             )}
             <input type="number" 
@@ -214,13 +221,13 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                     left: `100%`,
                     top:'100%',
                     position:'absolute',
-                    width:`${String(newMax).length*9+1}px`,
+                    width:`${Num2String(newMax*Math.pow(10,scalingFactor??0)).length*9+1}px`,
                     transform:'translateX(-50%)',
                     textAlign:'right',
                     minWidth:'30px'
                 }}
-                value={newMax}
-                onChange={e=>setNewMax(TwoDecimals(parseFloat(e.target.value)))}
+                value={Num2String(newMax*Math.pow(10,scalingFactor??0))}
+                onChange={e=>setNewMax(parseFloat(e.target.value))}
             />
             <canvas id="colorbar-canvas" ref={canvasRef} width={512} height={24} onMouseDown={handleMouseDown}/>
             <p className="colorbar-title"
@@ -250,7 +257,6 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
             <FaPlus className='cursor-pointer' onClick={()=>setTickCount(Math.min(tickCount+1, 10))}/>
         </div>
         </div>
-
         </>
         
     )
