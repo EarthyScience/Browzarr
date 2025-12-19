@@ -203,12 +203,8 @@ const Plot = () => {
           shape: result.shape
         })
         setTextures(tempTexture)
-        if (result.scalingFactor){
-          const {maxVal, minVal} = scaling
-          setValueScales({ maxVal: maxVal*(Math.pow(10,result.scalingFactor)), minVal: minVal*(Math.pow(10,result.scalingFactor)) });
-        }else{
-          setValueScales(scaling as { maxVal: number; minVal: number });
-        }
+        setValueScales(scaling as { maxVal: number; minVal: number });
+        useGlobalStore.getState().setScalingFactor(result.scalingFactor)
         const shapeLength = result.shape.length
         if (shapeLength == 2){
           setIsFlat(true)
