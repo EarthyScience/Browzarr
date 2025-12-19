@@ -16,7 +16,6 @@ function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float1
 	let newArray : Float16Array;
 	let newScalingFactor: number | null = null;
 	const [minVal, maxVal] = ArrayMinMax(array)
-	console.log(minVal, maxVal)
 	if (maxVal <= 65504 && minVal >= -65504 && Math.abs(maxVal) > 1e-3 && Math.abs(minVal) > 1e-3){ // If values fit in Float16, use that to save memory
 		newArray = new Float16Array(array)
 	}
@@ -24,7 +23,6 @@ function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float1
 		if ((Math.abs(maxVal) < 1e-3)){ // If low precision it will bump up
 			newScalingFactor = Math.floor(Math.log10(maxVal))
 			newScalingFactor = scalingFactor ? (scalingFactor < newScalingFactor ? scalingFactor : newScalingFactor) : newScalingFactor
-			console.log(Math.pow(10,newScalingFactor))
 			for (let i = 0; i < array.length; i++) {
 				array[i] /= Math.pow(10,newScalingFactor);
 			}

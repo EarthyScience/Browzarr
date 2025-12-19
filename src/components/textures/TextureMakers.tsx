@@ -13,7 +13,6 @@ function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number})
 
     const data = array.data;
     const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
-    console.log(minVal, maxVal)
     const textureData = new Uint8Array(
       data.map((i) => {
         const normed = (i - minVal) / (maxVal - minVal);
