@@ -1,13 +1,14 @@
 "use client";
 
 import React, { SetStateAction, useEffect, useState, ReactNode } from 'react';
-import { useGlobalStore } from '@/utils/GlobalStates';
+import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { Input } from '../input';
 import { Button } from '../button';
 import { TbDatabasePlus } from "react-icons/tb";
 import { TbVariable } from "react-icons/tb";
 import LocalZarr from './LocalZarr';
+import LocalNetCDF from './LocalNetCDF';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   Tooltip,
@@ -19,6 +20,8 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Switcher } from '../Switcher';
+
 
 const ZARR_STORES = {
   ESDC: 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr',
@@ -94,6 +97,9 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
   const [showDescriptionDialog, setShowDescriptionDialog] = useState<boolean>(false)
   const [openDescriptionPopover, setOpenDescriptionPopover] = useState<boolean>(false)
   const [isSafari, setIsSafari] = useState<boolean>(false)
+  const {useNC} = useZarrStore(useShallow(state => ({
+    useNC:state.useNC
+  })))
   
   const { initStore, setInitStore } = useGlobalStore(
     useShallow((state) => ({
@@ -248,17 +254,25 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
             >
               Local
             </DatasetOption>
-            {showLocalInput && (
+            {showLocalInput && 
               <div className="mt-2">
-                {isSafari ? (
+                {isSafari ? 
                   <div className="p-3 rounded-md border border-yellow-600 text-tiny max-w-[300px]">
                     <strong>Local folder upload is not supported in Safari.</strong> Please use Chrome, Firefox, or Edge instead.
                   </div>
-                ) : (
-                  <LocalZarr setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} setInitStore={setInitStore} />
-                )}
+                : 
+                <>
+                  <Switcher leftText='Zarr' rightText='NetCDF' state={!useNC} onClick={()=>useZarrStore.setState({useNC:!useNC})} />
+                  {
+                    useNC ? 
+                    <LocalNetCDF setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} />
+                    :
+                    <LocalZarr setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} setInitStore={setInitStore} />
+                  }
+                </>
+                }
               </div>
-            )}
+            }
           </div>
         </div>
       </PopoverContent>

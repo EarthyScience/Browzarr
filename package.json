@@ -70,6 +70,7 @@
     "gsap": "^3.13.0",
     "js-colormaps-es": "^0.0.5",
     "lucide-react": "^0.543.0",
+    "modern-netcdf": "^0.3.3",
     "next": ">=15.5.8",
     "next-themes": "^0.4.6",
     "radix-ui": "latest",
