@@ -39,7 +39,7 @@ const operationMap = {
 };
 
 function Num2String(value: number){
-    if (Math.abs(value) > 1e3 && Math.abs(value) < 1e6 || value === 0){
+    if ((Math.abs(value) > 1e-3 && Math.abs(value) < 1e6) || value === 0){
         return value.toFixed(2)
     } else{
         return value.toExponential(2)
