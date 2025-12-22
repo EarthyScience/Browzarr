@@ -3,7 +3,6 @@ import React, {ChangeEvent} from 'react'
 import { Input } from '../input'
 import { useGlobalStore } from '@/utils/GlobalStates';
 
-
 interface LocalNCType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
   setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>;
@@ -19,21 +18,17 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         setStatus(null)
         return;
         }
-
-        // The base directory name will be the first part of the relative path
-        const baseDir = files[0].webkitRelativePath.split('/')[0];
-
-        const reader = await NetCDFReader.open(baseDir, { lazy: true });
-        
     };
 
   return (
-    <div>
+    <div className='w-[100%]'>
+        Under construction
         <Input type="file" id="filepicker"
           className='hover:drop-shadow-md hover:scale-[110%]'
           style={{width:'200px', cursor:'pointer'}}
           accept='.nc, .netcdf, .nc3'
           onChange={handleFileSelect}
+          disabled
         />
     </div>
   )
