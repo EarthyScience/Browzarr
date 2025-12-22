@@ -454,6 +454,7 @@ type ZarrState = {
   reFetch: boolean;
   currentChunks: {x:number[], y:number[], z:number[]};
   arraySize: number,
+  useNC: boolean,
 
   setZSlice: (zSlice: [number , number | null]) => void;
   setYSlice: (ySlice: [number , number | null]) => void;
@@ -464,6 +465,7 @@ type ZarrState = {
   ReFetch: () => void;
   setCurrentChunks: (currentChunks: {x:number[], y:number[], z:number[]}) => void;
   setArraySize: (arraySize: number) => void;
+  setUseNC: (useNC: boolean) => void;
 }
 
 export const useZarrStore = create<ZarrState>((set, get) => ({
@@ -475,6 +477,7 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   reFetch: false,
   currentChunks: {x:[], y:[], z:[]},
   arraySize: 0,
+  useNC: false,
 
   setZSlice: (zSlice) => set({ zSlice }),
   setYSlice: (ySlice) => set({ ySlice }),
@@ -484,7 +487,8 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   setReFetch: (reFetch) => set({ reFetch }),
   ReFetch: () => set({ reFetch: !get().reFetch }),
   setCurrentChunks: (currentChunks) => set({ currentChunks }),
-  setArraySize: (arraySize) => set({ arraySize })
+  setArraySize: (arraySize) => set({ arraySize }),
+  setUseNC: (useNC) => set({ useNC })
 }))
 
 type CacheState = {
