@@ -139,12 +139,13 @@ const MappingCube = ({dimensions, setters} : {dimensions: dimensionsProps, sette
 }
 
 export const PointCloud = ({textures} : {textures:PCProps} )=>{
-    const { colormap } = textures;
-    const {timeSeries, flipY, dataShape, textureData} = useGlobalStore(useShallow(state=>({
+    const { texture, colormap } = textures;
+    const {timeSeries, flipY, dataShape, textureData, textureArrayDepths} = useGlobalStore(useShallow(state=>({
       timeSeries: state.timeSeries,
       flipY: state.flipY,
       dataShape: state.dataShape,
-      textureData: state.textureData
+      textureData: state.textureData,
+      textureArrayDepths: state.textureArrayDepths
     })))
     const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, selectTS, timeScale, xRange, yRange, zRange,} = usePlotStore(useShallow(state => ({
       scalePoints: state.scalePoints,
@@ -179,6 +180,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
 
     },[timeSeries, pointsObj])
 
+
     //Extract data and shape from Data3DTexture
     const { data, width, height, depth } = useMemo(() => {
         const [depth, height, width] = dataShape
@@ -191,13 +193,38 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
     }, [textureData, dataShape]);
 
     // Create buffer geometry
-    const geometry = useMemo(() => {
-      const geom = new THREE.BufferGeometry();
-      geom.setAttribute('value', new THREE.Uint8BufferAttribute(data as Uint8Array, 1));
-      const arrayLength = depth * height * width ;
-      geom.setDrawRange(0, arrayLength); // This is used to tell it how many data points are needed since we aren't giving it positions.
-      return geom;
-    }, [data]);
+    // const geometry = useMemo(() => {
+    //   const geom = new THREE.BufferGeometry();
+    //   geom.setAttribute('value', new THREE.Uint8BufferAttribute(data as Uint8Array, 1));
+    //   const arrayLength = depth * height * width ;
+    //   geom.setDrawRange(0, arrayLength); // This is used to tell it how many data points are needed since we aren't giving it positions.
+    //   return geom;
+    // }, [data]);
+
+    const {geometries, offSets} = useMemo(()=>{
+      if (!texture) return {geometries:null, offSets: null};
+      const geometries = []
+      const offSets = []
+      let idx = 0;
+      let offset = 0;
+      for (let z = 0; z < textureArrayDepths[0]; z++){
+        for (let y = 0; y< textureArrayDepths[1]; y++){
+          for (let x = 0; x < textureArrayDepths[2]; x++){
+            const geom = new THREE.BufferGeometry();
+            const thisTexture = texture[idx];
+            geom.setAttribute('value', new THREE.Uint8BufferAttribute(thisTexture.image.data as Uint8Array, 1));
+            const {width, depth, height} = thisTexture.image;
+            const arrayLength = width * depth * height;
+            geom.setDrawRange(0, arrayLength);
+            geometries.push(geom);
+            offSets.push(offset);
+            offset += arrayLength;
+            idx++;
+          }
+        }
+      }
+      return {geometries, offSets}
+    },[texture])
 
     const shaderMaterial = useMemo(()=> (new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
@@ -206,6 +233,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         cmap: {value: colormap},
         cOffset: {value: cOffset},
         cScale: {value: cScale},
+        valueOffset:{value: 0},
         valueRange: {value: new THREE.Vector2(valueRange[0], valueRange[1])},
         scalePoints:{value: scalePoints},
         scaleIntensity: {value: scaleIntensity},
@@ -254,11 +282,22 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       );
     }
   }, [pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, pointIDs, stride, selectTS, animProg, timeScale, xRange, yRange, zRange]);
-
+  console.log(offSets)
     return (
       <>
       <mesh scale={[1,flipY ? -1:1, 1]} >
-        <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
+        {geometries?.map((geo, idx)=>(
+          <points 
+            key={idx} 
+            geometry={geo} 
+            material={shaderMaterial} 
+            frustumCulled={false}
+            userData={{ offset: offSets[idx] }} 
+            onBeforeRender={(renderer, scene, camera, mesh) => {
+              shaderMaterial.uniforms.valueOffset.value = mesh.userData.offset;
+            }}
+          />
+        ))}
       </mesh>
       <MappingCube dimensions={{width,height,depth}} setters={{setPoints:setPointsObj, setStride, setDimWidth}}/>
       </>

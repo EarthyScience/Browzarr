@@ -17,6 +17,7 @@ uniform float animateProg;
 uniform vec4 flatBounds;
 uniform vec2 vertBounds;
 uniform vec3 shape;
+uniform int valueOffset;
 
 bool isValidPoint(){
     for (int i = 0; i < 10; i++){
@@ -54,7 +55,8 @@ vec3 computePosition(int vertexID) {
 
 void main() {
     vValue = float(value)/255.;
-    vec3 scaledPos = computePosition(gl_VertexID);
+
+    vec3 scaledPos = computePosition(gl_VertexID + valueOffset);
     float depthSize = float(shape.x)/500.;
     float globalScale = float(shape.z)/600.;
 
@@ -92,6 +94,10 @@ void main() {
     bool yCheck = scaledPos.y < scaledYBounds.x || scaledPos.y > scaledYBounds.y;
 
     if (xCheck || zCheck || yCheck){ //Hide points that are clipped
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+    }
+
+    if (valueOffset < 1){
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     }
     
