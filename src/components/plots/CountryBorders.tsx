@@ -231,7 +231,7 @@ const CountryBorders = () => {
 
     const isPC = plotType == 'point-cloud'
     const isFlatMap = plotType == "flat"
-    const timeRatio = Math.max(dataShape[0]/dataShape[2],2)
+    const timeRatio = isPC ? dataShape[0]/dataShape[2] :  Math.max(dataShape[0]/dataShape[2],2)
     const depthScale = timeRatio*timeScale
     const aspectRatio = dataShape[2]/dataShape[1]
     
