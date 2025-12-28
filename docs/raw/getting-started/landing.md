@@ -6,27 +6,61 @@
 
 <steps>
 
-### Stores
+### <icon className="icon-lg" name="i-tabler-database-plus"></icon> Select dataset
 
-Use the `store` icon to load curated datasets or your own!
+Use the `database` icon to load curated datasets or your own!
 
-### Select a variable
+### <icon className="icon-lg" name="i-tabler-variable"></icon> Select variable
 
-From the menu `x` variables select the one you would like to see and click plot!
+now, use the `variable` icon to select the variable you would like to see and click plot!
 
 ### Change plot type
 
+<icon className="icon-lg" name="i-ph-cube-light">
+
+
+
+</icon>
+
+ Cube: usually for spatio-temporal variables, `x-y-t`.
+
+<icon className="icon-lg" name="i-gg-menu-grid-o">
+
+
+
+</icon>
+
+ Point clouds
+
+<icon className="icon-lg" name="i-ph-sphere-thin">
+
+
+
+</icon>
+
+ Sphere projection
+
+<icon className="icon-lg" name="i-mdi-square-outline">
+
+
+
+</icon>
+
+ Rectangular projection
+
 There some default plotting options depending on your dataset dimensions, however you could change to a different plot type if your data dimensions allow it.
 
-### A different Colormap
+### <icon className="icon-lg" name="i-noto-v1-artist-palette"></icon> Change Colormap
 
 Hover the colormap options to see how your plot will change, then click on the one you like to setup that one!
 
-### Settings
+### <icon className="icon-lg" name="i-lucide-settings"></icon> Settings
 
-### Animation
+### <icon className="icon-lg" name="i-ph-play-pause-fill"></icon> Animation controls
 
-### Analytics
+### <icon className="icon-lg" name="i-ph-math-operations-bold"></icon> Apply operations
+
+WebGPU-powered analytics.
 
 </steps>
 
@@ -34,22 +68,36 @@ Hover the colormap options to see how your plot will change, then click on the o
 
 <prose-steps>
 
-### Reset camera
+### <icon className="icon-lg" name="i-ic-round-flip-camera-ios"></icon> Reset camera
 
 Did you move around a lot? then click the reset camera icon.
 
 ### View
 
-?
+<icon className="icon-lg" name="i-cil-grid">
 
-### 1D transects
+
+
+</icon>
+
+ Orthographic
+
+<icon className="icon-lg" name="i-icon-park-outline-perspective">
+
+
+
+</icon>
+
+ Perspective
+
+### <icon className="icon-lg" name="i-codicon-graph-line"></icon> Plot lines: 1D transects
 
 Click to view 1D transects (line plots) through the given dimension.
 
-### Export images and animations
+### <icon className="icon-lg" name="i-ion-image"></icon> Export images and animations
 
 Do you want to use the output somewhere else? either has a static image or a video? we got you covered!
 
-### Quality
+### <icon className="icon-lg" name="i-ic-outline-rocket-launch"></icon> Performance mode
 
 </prose-steps>
