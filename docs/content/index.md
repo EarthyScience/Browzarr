@@ -19,9 +19,9 @@ Load multi-dimensional datasets directly in the browser, interactively slice and
   color: neutral
   size: xl
   to: /getting-started/landing
-  trailing-icon: i-lucide-arrow-right
+  trailing-icon: i-lucide-plane-landing
   ---
-  Get started
+Landing
   :::
 
   :::u-button
