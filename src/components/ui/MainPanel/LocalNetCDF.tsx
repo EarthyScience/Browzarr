@@ -2,6 +2,7 @@
 import React, {ChangeEvent} from 'react'
 import { Input } from '../input'
 import { useGlobalStore } from '@/utils/GlobalStates';
+import { Dataset, NetCDF4 } from '@/components/netcdf-wasm';
 
 interface LocalNCType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -18,6 +19,10 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         setStatus(null)
         return;
         }
+        const file = files[0]
+        const data = await NetCDF4.fromBlob(file, 'r', {useWorkers: true})
+
+
     };
 
   return (
@@ -26,9 +31,8 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         <Input type="file" id="filepicker"
           className='hover:drop-shadow-md hover:scale-[110%]'
           style={{width:'200px', cursor:'pointer'}}
-          accept='.nc, .netcdf, .nc3'
+          accept='.nc, .netcdf, .nc3, .nc4'
           onChange={handleFileSelect}
-          disabled
         />
     </div>
   )
