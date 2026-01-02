@@ -177,7 +177,6 @@ export class NetCDF4 extends Group {
         if (!this.module) {
             throw new Error('NetCDF4 module not initialized. Call initialize() first.');
         }
-        console.log(this.module)
         return this.module;
     }
 
@@ -244,7 +243,6 @@ export class NetCDF4 extends Group {
     async defineDimension(ncid: number, name: string, size: number): Promise<number> {
         const module = this.getModule();
         const result = module.nc_def_dim(ncid, name, size);
-        console.log(result)
         if (result.result !== NC_CONSTANTS.NC_NOERR) {
             throw new Error(`Failed to define dimension: ${name} (error: ${result.result})`);
         }
@@ -283,6 +281,51 @@ export class NetCDF4 extends Group {
             throw new Error(`Failed to read variable data (error: ${result.result})`);
         }
         return result.data;
+    }
+
+    getDimCount(): number {    
+        const module = this.module
+        if (!module) return 0;
+        const result = module.nc_inq_ndims(this.ncid);
+        if (result.result !== NC_CONSTANTS.NC_NOERR) {
+            throw new Error(`Failed to get number of dimensions (error: ${result.result})`);
+        }
+        return result.ndims || 0;
+    }
+
+    getVariables(): (string | undefined)[] {
+        const variables = []
+        const module = this.module
+        if (!module) return [];
+        const varCount = this.getVarCount();
+
+        for (let varid = 0; varid < varCount; varid++) {
+            const result = module.nc_inq_varname(this.ncid,varid);
+            if (result.result !== NC_CONSTANTS.NC_NOERR) {
+                console.warn(`Failed to get variable name for varid ${varid} (error: ${result.result})`);
+                continue;
+            }
+            variables.push(result.name);
+        }
+        return variables;
+    }
+    getVarIDs(): number[] | Int32Array {    
+        const module = this.module
+        if (!module) return [];
+        const result = module.nc_inq_varids(this.ncid);
+        if (result.result !== NC_CONSTANTS.NC_NOERR) {
+            throw new Error(`Failed to get variable IDs (error: ${result.result})`);
+        }
+        return result.varids || [0];
+    }
+    getVarCount(): number {    
+        const module = this.module
+        if (!module) return 0;
+        const result = module.nc_inq_nvars(this.ncid);
+        if (result.result !== NC_CONSTANTS.NC_NOERR) {
+            throw new Error(`Failed to get number of variables (error: ${result.result})`);
+        }
+        return result.nvars || 0;
     }
 
     // Create a mock module for testing

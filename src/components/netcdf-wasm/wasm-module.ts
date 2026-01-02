@@ -258,7 +258,6 @@ export class WasmModuleLoader {
                 const ndimsPtr = module._malloc(4);
                 const dimidsPtr = module._malloc(NC_MAX_DIMS * 4);
                 const nattsPtr = module._malloc(4);
-                module.HEAPU8.fill(0, namePtr, namePtr + NC_MAX_NAME + 1);
                 const result = nc_inq_var_wrapper(ncid, varid, namePtr, typePtr, ndimsPtr, dimidsPtr, nattsPtr);
                 let name, type, ndims, dimids, natts;
                 if (result === NC_CONSTANTS.NC_NOERR) {
@@ -278,7 +277,6 @@ export class WasmModuleLoader {
 
             nc_inq_varname: (ncid: number, varid: number) => {
                 const namePtr = module._malloc(NC_MAX_NAME + 1);
-                module.HEAPU8.fill(0, namePtr, namePtr + NC_MAX_NAME + 1);
                 const result = nc_inq_varname_wrapper(ncid, varid, namePtr);
                 const name = result === NC_CONSTANTS.NC_NOERR ? module.UTF8ToString(namePtr) : undefined;
                 module._free(namePtr);

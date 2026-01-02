@@ -20,9 +20,9 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         return;
         }
         const file = files[0]
-        const data = await NetCDF4.fromBlob(file, 'r', {useWorkers: true})
-
-
+        const data = await NetCDF4.fromBlob(file, 'r')
+        console.log(data.getVariables())
+        
     };
 
   return (
