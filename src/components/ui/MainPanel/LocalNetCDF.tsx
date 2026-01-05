@@ -1,8 +1,8 @@
 "use client";
 import React, {ChangeEvent} from 'react'
 import { Input } from '../input'
-import { useGlobalStore } from '@/utils/GlobalStates';
-import { Dataset, NetCDF4 } from '@/components/netcdf-wasm';
+import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
+import { NetCDF4 } from '@/components/netcdf-wasm';
 
 interface LocalNCType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -24,10 +24,12 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         const variables = data.getVariables()
         const dims = data.getDims()
         const varInfo = data.getVariableInfo(0)
-        // const varArray = data.getVariableArray(4)
-        console.log(variables)
-        console.log(dims)
-        console.log(varInfo)
+        const globalAtts = data.getGlobalAttributes()
+        const fullmetadata = data.getFullMetadata()
+        console.log(fullmetadata)
+        useGlobalStore.setState({variables: Object.keys(variables)})
+        useZarrStore.setState({useNC: true})
+
     };
 
   return (

@@ -41,12 +41,13 @@ export function LandingHome() {
     setTitleDescription: state.setTitleDescription,
   })))
 
-  const { currentStore, setCurrentStore, setZSlice, setYSlice, setXSlice } = useZarrStore(useShallow(state => ({
+  const { currentStore, setCurrentStore, setZSlice, setYSlice, setXSlice, setUseNC } = useZarrStore(useShallow(state => ({
     currentStore: state.currentStore,
     setCurrentStore: state.setCurrentStore,
     setZSlice: state.setZSlice,
     setYSlice: state.setYSlice,
-    setXSlice: state.setXSlice
+    setXSlice: state.setXSlice,
+    setUseNC: state.setUseNC
   })))
     function resetSlices(){
       setZSlice([0,null])
@@ -55,7 +56,9 @@ export function LandingHome() {
     }
   useEffect(() => { // Update store if URL changes
     resetSlices();
+    setUseNC(false)
     if (initStore.startsWith('local')){ // Don't fetch store if local 
+      
       return
     }
     const newStore = GetStore(initStore)
@@ -72,15 +75,15 @@ export function LandingHome() {
     const fullmetadata = GetZarrMetadata(currentStore);
     const variables = GetVariableNames(fullmetadata);
 
-    fullmetadata.then(e => setZMeta(e))
+    fullmetadata.then(e => {setZMeta(e); console.log(e)})
     variables.then(e => setVariables(e))
 
     return () => { isMounted = false; };
   }, [currentStore, setZMeta, setVariables, setTitleDescription])
 
-  useEffect(()=>{
-    sendPing()
-  },[])
+  // useEffect(()=>{
+  //   sendPing()
+  // },[])
 
   return (
     <>

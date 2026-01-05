@@ -39,3 +39,7 @@ export const DATA_TYPE_MAP: { [key: string]: number } = {
     'byte': NC_CONSTANTS.NC_BYTE,
     'char': NC_CONSTANTS.NC_CHAR
 };
+
+export const DATA_TYPE_MAP_REVERSE = Object.fromEntries(
+    Object.entries(DATA_TYPE_MAP).map(([k, v]) => [v, k])
+);

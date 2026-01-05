@@ -2,7 +2,7 @@
 
 import { Group } from './group';
 import { WasmModuleLoader } from './wasm-module';
-import { NC_CONSTANTS } from './constants';
+import { NC_CONSTANTS, DATA_TYPE_MAP_REVERSE } from './constants';
 import type { NetCDF4Module, DatasetOptions, MemoryDatasetSource, WorkerFSSource } from './types';
 
 export class NetCDF4 extends Group {
@@ -229,6 +229,62 @@ export class NetCDF4 extends Group {
         }
     }
 
+    getGlobalAttributes(): Record<string, any> {
+        const attributes: Record<string, any> = {};
+        const module = this.module  
+        if (!module) return attributes;
+        const nattsResult = module.nc_inq_natts(this.ncid);
+        if (nattsResult.result !== NC_CONSTANTS.NC_NOERR) {
+            throw new Error(`Failed to get number of global attributes (error: ${nattsResult.result})`);
+        }
+        const nAtts = nattsResult.natts
+        if (!nAtts) return attributes;
+        const attNames = []
+        for (let i=0; i < nAtts; i++){
+            const name = this.getAttributeName(NC_CONSTANTS.NC_GLOBAL, i)
+            attNames.push(name)
+        }
+        if (attNames.length === 0) return attributes
+        for (const attname of attNames){
+            if (!attname) continue;
+            attributes[attname] = this.getAttributeValues(NC_CONSTANTS.NC_GLOBAL, attname)
+        }
+        return attributes
+    }
+
+    getFullMetadata(): Record<string, any>[] {
+        const varIds = this.getVarIDs()
+        const metas = []
+        for (const varid of varIds){
+            const varMeta = this.getVariableInfo(varid)
+            const {attributes, ...varDeets} = varMeta
+            metas.push({...varDeets,...attributes})
+        }
+        return metas
+    }
+
+    getAttributeValues(varid: number, attname: string): any {
+        const module = this.module
+        if (!module) return;
+        const attInfo = module.nc_inq_att(this.ncid, varid, attname);
+        if (attInfo.result !== NC_CONSTANTS.NC_NOERR) {
+            console.warn(`Failed to get attribute info for ${attname} (error: ${attInfo.result})`);
+            return;
+        }
+        const attType = attInfo.type;
+        if (!attType) return;
+        let attValue;
+        if (attType === 2) attValue = module.nc_get_att_text(this.ncid, varid, attname, attInfo.len as number);
+        else if (attType === 3) attValue = module.nc_get_att_short(this.ncid, varid, attname, attInfo.len as number);
+        else if (attType === 4) attValue = module.nc_get_att_int(this.ncid, varid, attname, attInfo.len as number);
+        else if (attType === 5) attValue = module.nc_get_att_float(this.ncid, varid, attname, attInfo.len as number);
+        else if (attType === 6) attValue = module.nc_get_att_double(this.ncid, varid, attname, attInfo.len as number);
+        else if (attType === 10) attValue = module.nc_get_att_longlong(this.ncid, varid, attname, attInfo.len as number);
+        else attValue = module.nc_get_att_double(this.ncid, varid, attname, attInfo.len as number);
+
+        return attValue.data
+    }
+
     getDimCount(): number {    
         const module = this.module
         if (!module) return 0;
@@ -331,18 +387,21 @@ export class NetCDF4 extends Group {
         if (result.result !== NC_CONSTANTS.NC_NOERR) {
             throw new Error(`Failed to get variable info (error: ${result.result})`);
         }
-        info["type"] = result.type
         info["name"] = result.name
+        info["dtype"] = DATA_TYPE_MAP_REVERSE[result.type as number]
         const dimids = result.dimids
         const dims = []
+        const shape = []
         let size = 1
         if (dimids){
             for (const dimid of dimids){
                 const {name, len:dimSize} = this.getDim(dimid)
                 size *= dimSize
                 dims.push(name)
+                shape.push(dimSize)
             }
         }
+        info["shape"] = shape
         info['dims'] = dims
         info["size"] = size
         const attNames = []
@@ -356,23 +415,7 @@ export class NetCDF4 extends Group {
         if (attNames.length > 0){
             for (const attname of attNames){
                 if (!attname) continue;
-                const attInfo = module.nc_inq_att(this.ncid, varid, attname);
-                if (attInfo.result !== NC_CONSTANTS.NC_NOERR) {
-                    console.warn(`Failed to get attribute info for ${attname} (error: ${attInfo.result})`);
-                    continue;
-                }
-                const attType = attInfo.type;
-                if (!attType) continue;
-
-                let attValue;
-                if (attType === 2) attValue = module.nc_get_att_text(this.ncid, varid, attname, attInfo.len as number);
-                else if (attType === 3) attValue = module.nc_get_att_short(this.ncid, varid, attname, attInfo.len as number);
-                else if (attType === 4) attValue = module.nc_get_att_int(this.ncid, varid, attname, attInfo.len as number);
-                else if (attType === 5) attValue = module.nc_get_att_float(this.ncid, varid, attname, attInfo.len as number);
-                else if (attType === 6) attValue = module.nc_get_att_double(this.ncid, varid, attname, attInfo.len as number);
-                else if (attType === 10) attValue = module.nc_get_att_longlong(this.ncid, varid, attname, attInfo.len as number);
-                else attValue = module.nc_get_att_double(this.ncid, varid, attname, attInfo.len as number);
-                atts[attname] = attValue.data
+                atts[attname] = this.getAttributeValues(varid, attname)
             }
         }
         info["attributes"] = atts

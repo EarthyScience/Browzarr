@@ -22,7 +22,6 @@ export class WasmModuleLoader {
                 locateFile: (path: string) => {
                     if (options.wasmPath) {
                         const wasmPath = options.wasmPath.replace('.js', '.wasm');
-                        console.log(wasmPath);
                         return wasmPath;
                     }
                     return path;

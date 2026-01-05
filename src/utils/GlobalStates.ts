@@ -454,7 +454,8 @@ type ZarrState = {
   reFetch: boolean;
   currentChunks: {x:number[], y:number[], z:number[]};
   arraySize: number,
-  useNC: boolean,
+  useNC: boolean, // This one is more static and so toggling switch doesn't break all other logic
+  fetchNC: boolean,
 
   setZSlice: (zSlice: [number , number | null]) => void;
   setYSlice: (ySlice: [number , number | null]) => void;
@@ -466,6 +467,7 @@ type ZarrState = {
   setCurrentChunks: (currentChunks: {x:number[], y:number[], z:number[]}) => void;
   setArraySize: (arraySize: number) => void;
   setUseNC: (useNC: boolean) => void;
+  setFetchNC: (fetchNC: boolean) => void;
 }
 
 export const useZarrStore = create<ZarrState>((set, get) => ({
@@ -478,6 +480,7 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   currentChunks: {x:[], y:[], z:[]},
   arraySize: 0,
   useNC: false,
+  fetchNC: false,
 
   setZSlice: (zSlice) => set({ zSlice }),
   setYSlice: (ySlice) => set({ ySlice }),
@@ -488,7 +491,8 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   ReFetch: () => set({ reFetch: !get().reFetch }),
   setCurrentChunks: (currentChunks) => set({ currentChunks }),
   setArraySize: (arraySize) => set({ arraySize }),
-  setUseNC: (useNC) => set({ useNC })
+  setUseNC: (useNC) => set({ useNC }),
+  setFetchNC: (fetchNC) => set({ fetchNC }),
 }))
 
 type CacheState = {
