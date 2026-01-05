@@ -64,6 +64,12 @@ export interface NetCDF4Module extends EmscriptenModule {
     nc_inq_attname(ncid: number, varid: number, attnum: number): { result: number; name?: string }
     nc_inq_atttype(ncid: number, varid: number, name: string): { result: number; type?: number }
     nc_inq_attlen(ncid: number, varid: number, name: string): { result: number; len?: number }
+    nc_get_att_text(ncid: number, varid: number, name: string, length: number): { result: number; data?: string }
+    nc_get_att_short(ncid: number, varid: number, name: string, length: number): { result: number; data?: number[] }
+    nc_get_att_int(ncid: number, varid: number, name: string, length: number): { result: number; data?: number[] }
+    nc_get_att_float(ncid: number, varid: number, name: string, length: number): { result: number; data?: number[] }
+    nc_get_att_double(ncid: number, varid: number, name: string, length: number): { result: number; data?: number[] }
+    nc_get_att_longlong(ncid: number, varid: number, name: string, length: number): { result: number; data?: bigint[] }
 }
 
 export interface NetCDF4WasmOptions {

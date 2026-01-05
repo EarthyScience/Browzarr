@@ -293,22 +293,27 @@ export class NetCDF4 extends Group {
         return result.ndims || 0;
     }
 
-    getVariables(): (string | undefined)[] {
-        const variables = []
+    getVariables(): Record<string, any> {
+        const variables:  Record<string, any> = {}; 
         const module = this.module
         if (!module) return [];
         const varCount = this.getVarCount();
-
+        const dimIds = this.getDimIDs()
         for (let varid = 0; varid < varCount; varid++) {
+            if (dimIds.includes(varid)) continue; //Don't include spatial Vars
+
             const result = module.nc_inq_varname(this.ncid,varid);
-            if (result.result !== NC_CONSTANTS.NC_NOERR) {
+            if (result.result !== NC_CONSTANTS.NC_NOERR || !result.name) {
                 console.warn(`Failed to get variable name for varid ${varid} (error: ${result.result})`);
                 continue;
             }
-            variables.push(result.name);
+            variables[result.name] = {
+                id: varid
+            }
         }
         return variables;
     }
+
     getVarIDs(): number[] | Int32Array {    
         const module = this.module
         if (!module) return [];
@@ -318,6 +323,40 @@ export class NetCDF4 extends Group {
         }
         return result.varids || [0];
     }
+
+    getDimIDs(): number[] | Int32Array {    
+        const module = this.module
+        if (!module) return [];
+        const result = module.nc_inq_dimids(this.ncid, 0);
+        if (result.result !== NC_CONSTANTS.NC_NOERR) {
+            throw new Error(`Failed to get dimension IDs (error: ${result.result})`);
+        }
+        return result.dimids || [0];
+    }
+
+    getDim(dimid: number): Record<string, any> {
+        const module = this.module
+        if (!module) return {};
+        const result = module.nc_inq_dim(this.ncid, dimid);
+        if (result.result !== NC_CONSTANTS.NC_NOERR) {
+            throw new Error(`Failed to get dim (error: ${result.result})`);
+        }
+        const {result:output, ...dim} = result
+        return dim;
+    }
+
+    getDims(): Record<string, any> {
+        const dimIDs = this.getDimIDs();
+        const dims: Record<string, any> = {};
+        for (const dimid of dimIDs) {
+            const dim = this.getDim(dimid)
+            dims[dim.name] = {
+                size: dim.len
+            }
+        }
+        return dims
+    }
+
     getVarCount(): number {    
         const module = this.module
         if (!module) return 0;
@@ -326,6 +365,69 @@ export class NetCDF4 extends Group {
             throw new Error(`Failed to get number of variables (error: ${result.result})`);
         }
         return result.nvars || 0;
+    }
+
+    getAttributeName(varid:number, attId: number) : string | undefined {
+        const module = this.module
+        if (!module) return;
+        const result = module.nc_inq_attname(this.ncid, varid, attId);
+        if (result.result !== NC_CONSTANTS.NC_NOERR) {
+            throw new Error(`Failed to get attribute (error: ${result.result})`);
+        }
+        return result.name
+    }
+
+    getVariableInfo(varid:number): Record<string, any>{
+        const info: Record<string, any> = {}
+        const module = this.module
+        if (!module) return info;
+        const result = module.nc_inq_var(this.ncid, varid);
+        if (result.result !== NC_CONSTANTS.NC_NOERR) {
+            throw new Error(`Failed to get variable info (error: ${result.result})`);
+        }
+        info["type"] = result.type
+        info["name"] = result.name
+        const dimids = result.dimids
+        const dims = []
+        if (dimids){
+            for (const dimid of dimids){
+                const {name} = this.getDim(dimid)
+                dims.push(name)
+            }
+        }
+        info['dims'] = dims
+        const attNames = []
+        if (result.natts){
+            for (let i = 0; i < result.natts; i++ ){
+                const attname = this.getAttributeName(varid, i)
+                attNames.push(attname)
+            } 
+        }
+        const atts: Record<string, any> = {}
+        if (attNames.length > 0){
+            for (const attname of attNames){
+                if (!attname) continue;
+                const attInfo = module.nc_inq_att(this.ncid, varid, attname);
+                if (attInfo.result !== NC_CONSTANTS.NC_NOERR) {
+                    console.warn(`Failed to get attribute info for ${attname} (error: ${attInfo.result})`);
+                    continue;
+                }
+                const attType = attInfo.type;
+                if (!attType) continue;
+
+                let attValue;
+                if (attType === 2) attValue = module.nc_get_att_text(this.ncid, varid, attname, attInfo.len as number);
+                else if (attType === 3) attValue = module.nc_get_att_short(this.ncid, varid, attname, attInfo.len as number);
+                else if (attType === 4) attValue = module.nc_get_att_int(this.ncid, varid, attname, attInfo.len as number);
+                else if (attType === 5) attValue = module.nc_get_att_float(this.ncid, varid, attname, attInfo.len as number);
+                else if (attType === 6) attValue = module.nc_get_att_double(this.ncid, varid, attname, attInfo.len as number);
+                else if (attType === 10) attValue = module.nc_get_att_longlong(this.ncid, varid, attname, attInfo.len as number);
+                else attValue = module.nc_get_att_double(this.ncid, varid, attname, attInfo.len as number);
+                atts[attname] = attValue.data
+            }
+        }
+        info["attributes"] = atts
+        return info;
     }
 
     // Create a mock module for testing

@@ -21,8 +21,12 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         }
         const file = files[0]
         const data = await NetCDF4.fromBlob(file, 'r')
-        console.log(data.getVariables())
-        
+        const variables = data.getVariables()
+        const dims = data.getDims()
+        const varInfo = data.getVariableInfo(4)
+        console.log(variables)
+        console.log(dims)
+        console.log(varInfo)
     };
 
   return (
