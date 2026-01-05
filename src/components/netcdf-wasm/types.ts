@@ -15,20 +15,18 @@ export interface EmscriptenModule {
     FS: any;
     ready: Promise<EmscriptenModule>;
     HEAPF64: Float64Array;
+    HEAP64: BigInt64Array;
     HEAP32: Int32Array;
+    HEAPF32: Float32Array;
     HEAPU8: Uint8Array;
+    HEAP16: Float16Array;
 }
 
 export interface NetCDF4Module extends EmscriptenModule {
     // Wrapped NetCDF4 functions
     nc_open: (path: string, mode: number) => { result: number; ncid: number };
     nc_close: (ncid: number) => number;
-    nc_create: (path: string, mode: number) => { result: number; ncid: number };
-    nc_def_dim: (ncid: number, name: string, len: number) => { result: number; dimid: number };
-    nc_def_var: (ncid: number, name: string, xtype: number, ndims: number, dimids: number[]) => { result: number; varid: number };
-    nc_put_var_double: (ncid: number, varid: number, data: Float64Array) => number;
-    nc_get_var_double: (ncid: number, varid: number, size: number) => { result: number; data: Float64Array };
-    nc_enddef: (ncid: number) => number;
+    
     // 1. Dimension inquiry
     nc_inq_ndims: (ncid: number) => { result: any; ndims: number | undefined; };
     nc_inq_dimids(ncid: number, include_parents: number): { result: number; ndims?: number; dimids?: Int32Array }
@@ -64,12 +62,28 @@ export interface NetCDF4Module extends EmscriptenModule {
     nc_inq_attname(ncid: number, varid: number, attnum: number): { result: number; name?: string }
     nc_inq_atttype(ncid: number, varid: number, name: string): { result: number; type?: number }
     nc_inq_attlen(ncid: number, varid: number, name: string): { result: number; len?: number }
+
+    // 4. Attribute Getters
     nc_get_att_text(ncid: number, varid: number, name: string, length: number): { result: number; data?: string }
     nc_get_att_short(ncid: number, varid: number, name: string, length: number): { result: number; data?: number[] }
     nc_get_att_int(ncid: number, varid: number, name: string, length: number): { result: number; data?: number[] }
     nc_get_att_float(ncid: number, varid: number, name: string, length: number): { result: number; data?: number[] }
     nc_get_att_double(ncid: number, varid: number, name: string, length: number): { result: number; data?: number[] }
-    nc_get_att_longlong(ncid: number, varid: number, name: string, length: number): { result: number; data?: bigint[] }
+    nc_get_att_longlong(ncid: number, varid: number, name: string, length: number): { result: number; data?: BigInt[] }
+
+    // 5. Variable Getters
+    nc_get_var_text: (ncid: number, varid: number,  length: number) => { result: number; data?: string[] };
+    nc_get_var_short: (ncid: number, varid: number,  length: number) => { result: number; data?: Int16Array };
+    nc_get_var_int: (ncid: number, varid: number,  length: number) => { result: number; data?: Int32Array };
+    nc_get_var_longlong: (ncid: number, varid: number,  length: number) => { result: number; data?: BigInt64Array };
+    nc_get_var_float: (ncid: number, varid: number,  length: number) => { result: number; data?: Float32Array };
+    nc_get_var_double: (ncid: number, varid: number,  length: number) => { result: number; data?: Float64Array };
+    
+    nc_get_vara_short: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: number[] };
+    nc_get_vara_int: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: number[] };
+    nc_get_vara_float: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: number[] };
+    nc_get_vara_double: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: number[] };
+
 }
 
 export interface NetCDF4WasmOptions {

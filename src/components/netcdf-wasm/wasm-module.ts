@@ -40,12 +40,6 @@ export class WasmModuleLoader {
         // Create wrappers for NetCDF functions
         const nc_open_wrapper = module.cwrap('nc_open_wrapper', 'number', ['string', 'number', 'number']);
         const nc_close_wrapper = module.cwrap('nc_close_wrapper', 'number', ['number']);
-        const nc_create_wrapper = module.cwrap('nc_create_wrapper', 'number', ['string', 'number', 'number']);
-        const nc_def_dim_wrapper = module.cwrap('nc_def_dim_wrapper', 'number', ['number', 'string', 'number', 'number']);
-        const nc_def_var_wrapper = module.cwrap('nc_def_var_wrapper', 'number', ['number', 'string', 'number', 'number', 'number', 'number']);
-        const nc_put_var_double_wrapper = module.cwrap('nc_put_var_double_wrapper', 'number', ['number', 'number', 'number']);
-        const nc_get_var_double_wrapper = module.cwrap('nc_get_var_double_wrapper', 'number', ['number', 'number', 'number']);
-        const nc_enddef_wrapper = module.cwrap('nc_enddef_wrapper', 'number', ['number']);
 
          // Dimension inquiry wrappers
         const nc_inq_ndims_wrapper = module.cwrap('nc_inq_ndims_wrapper', 'number', ['number', 'number']);
@@ -67,6 +61,7 @@ export class WasmModuleLoader {
             'number', 'number', 'number', // typep, ndimsp, dimidsp, nattsp
         ]);
 
+        // Variable inquiry wrappers
         const nc_inq_varname_wrapper = module.cwrap('nc_inq_varname_wrapper', 'number', ['number', 'number', 'number']);
         const nc_inq_vartype_wrapper = module.cwrap('nc_inq_vartype_wrapper', 'number', ['number', 'number', 'number']);
         const nc_inq_varndims_wrapper = module.cwrap('nc_inq_varndims_wrapper', 'number', ['number', 'number', 'number']);
@@ -81,12 +76,27 @@ export class WasmModuleLoader {
         const nc_inq_atttype_wrapper = module.cwrap('nc_inq_atttype_wrapper', 'number', ['number', 'number', 'string', 'number']);
         const nc_inq_attlen_wrapper = module.cwrap('nc_inq_attlen_wrapper', 'number', ['number', 'number', 'string', 'number']);
         
+        // Attribute getters
         const nc_get_att_text_wrapper = module.cwrap('nc_get_att_text_wrapper', 'number', ['number', 'number', 'string', 'number']);
         const nc_get_att_short_wrapper = module.cwrap('nc_get_att_short_wrapper', 'number', ['number', 'number', 'string', 'number']);
         const nc_get_att_int_wrapper = module.cwrap('nc_get_att_int_wrapper', 'number', ['number', 'number', 'string', 'number']);
         const nc_get_att_float_wrapper = module.cwrap('nc_get_att_float_wrapper', 'number', ['number', 'number', 'string', 'number']);
         const nc_get_att_double_wrapper = module.cwrap('nc_get_att_double_wrapper', 'number', ['number', 'number', 'string', 'number']);
         const nc_get_att_longlong_wrapper = module.cwrap('nc_get_att_longlong_wrapper', 'number', ['number', 'number', 'string', 'number']);
+
+        // Variable getters
+        const nc_get_vara_short_wrapper = module.cwrap('nc_get_vara_short_wrapper', 'number', ['number', 'number', 'number', 'number', 'number']);
+        const nc_get_vara_int_wrapper = module.cwrap('nc_get_vara_int_wrapper', 'number', ['number', 'number', 'number', 'number', 'number']);
+        const nc_get_vara_float_wrapper = module.cwrap('nc_get_vara_float_wrapper', 'number', ['number', 'number', 'number', 'number', 'number']);
+        const nc_get_vara_double_wrapper = module.cwrap('nc_get_vara_double_wrapper', 'number', ['number', 'number', 'number', 'number', 'number']);
+
+        const nc_get_var_text_wrapper = module.cwrap('nc_get_var_text_wrapper', 'number', ['number', 'number', 'number']);
+        const nc_get_var_short_wrapper = module.cwrap('nc_get_var_short_wrapper', 'number', ['number', 'number', 'number']);
+        const nc_get_var_int_wrapper = module.cwrap('nc_get_var_int_wrapper', 'number', ['number', 'number', 'number']);
+        const nc_get_var_longlong_wrapper = module.cwrap('nc_get_var_longlong_wrapper', 'number', ['number', 'number', 'number']);
+        const nc_get_var_float_wrapper = module.cwrap('nc_get_var_float_wrapper', 'number', ['number', 'number', 'number']);
+        const nc_get_var_double_wrapper = module.cwrap('nc_get_var_double_wrapper', 'number', ['number', 'number', 'number']);
+
 
         return {
             ...module,
@@ -103,59 +113,7 @@ export class WasmModuleLoader {
                 return nc_close_wrapper(ncid);
             },
 
-            nc_create: (path: string, mode: number) => {
-                const ncidPtr = module._malloc(4);
-                const result = nc_create_wrapper(path, mode, ncidPtr);
-                const ncid = module.getValue(ncidPtr, 'i32');
-                module._free(ncidPtr);
-                return { result, ncid };
-            },
-
-            nc_def_dim: (ncid: number, name: string, len: number) => {
-                const dimidPtr = module._malloc(4);
-                const result = nc_def_dim_wrapper(ncid, name, len, dimidPtr);
-                const dimid = module.getValue(dimidPtr, 'i32');
-                module._free(dimidPtr);
-                return { result, dimid };
-            },
-
-            nc_def_var: (ncid: number, name: string, xtype: number, ndims: number, dimids: number[]) => {
-                const varidPtr = module._malloc(4);
-                const dimidsPtr = module._malloc(dimids.length * 4);
-                
-                for (let i = 0; i < dimids.length; i++) {
-                    module.setValue(dimidsPtr + i * 4, dimids[i], 'i32');
-                }
-                
-                const result = nc_def_var_wrapper(ncid, name, xtype, ndims, dimidsPtr, varidPtr);
-                const varid = module.getValue(varidPtr, 'i32');
-                
-                module._free(varidPtr);
-                module._free(dimidsPtr);
-                return { result, varid };
-            },
-
-            nc_put_var_double: (ncid: number, varid: number, data: Float64Array) => {
-                const dataPtr = module._malloc(data.length * 8);
-                module.HEAPF64.set(data, dataPtr / 8);
-                const result = nc_put_var_double_wrapper(ncid, varid, dataPtr);
-                module._free(dataPtr);
-                return result;
-            },
-
-            nc_get_var_double: (ncid: number, varid: number, size: number) => {
-                const dataPtr = module._malloc(size * 8);
-                const result = nc_get_var_double_wrapper(ncid, varid, dataPtr);
-                const data = new Float64Array(module.HEAPF64.buffer, dataPtr, size);
-                const resultData = new Float64Array(data);
-                module._free(dataPtr);
-                return { result, data: resultData };
-            },
-
-            nc_enddef: (ncid: number) => {
-                return nc_enddef_wrapper(ncid);
-            },
-
+            // ---- Dimension Inquiry ----//
             nc_inq_ndims: (ncid: number) => {
                 const ndimsPtr = module._malloc(4);
                 const result = nc_inq_ndims_wrapper(ncid, ndimsPtr);
@@ -227,7 +185,7 @@ export class WasmModuleLoader {
                 return { result, name };
             },
 
-            // Variable inquiry functions
+            //---- Variable inquiry functions ----//
 
             nc_inq_nvars: (ncid: number) => {
                 const nvarsPtr = module._malloc(4);
@@ -337,7 +295,7 @@ export class WasmModuleLoader {
                 return { result, natts };
             },
 
-            // Attribute inquiry functions
+            //---- Attribute inquiry functions ----//
 
             nc_inq_natts: (ncid: number) => {
                 const nattsPtr = module._malloc(4);
@@ -393,6 +351,7 @@ export class WasmModuleLoader {
                 return { result, len };
             },
 
+            //---- Attribute Getters ----//
             nc_get_att_text: (ncid: number, varid: number, name: string, length: number) => {
                 const dataPtr = module._malloc(length + 1);
                 const result = nc_get_att_text_wrapper(ncid, varid, name, dataPtr);
@@ -453,7 +412,156 @@ export class WasmModuleLoader {
                 module._free(dataPtr);
                 return { result, data };
             },
-            
+
+            //---- Variable Getters ----//
+            nc_get_vara_short: (ncid: number, varid: number, start: number[], count: number[]) => {
+                const totalLength = count.reduce((a, b) => a * b, 1);
+                const dataPtr = module._malloc(totalLength * 2);
+                const startPtr = module._malloc(start.length * 8);
+                const countPtr = module._malloc(count.length * 8);
+                
+                start.forEach((val, i) => module.setValue(startPtr + i * 8, val, 'i64'));
+                count.forEach((val, i) => module.setValue(countPtr + i * 8, val, 'i64'));
+                
+                const result = nc_get_vara_short_wrapper(ncid, varid, startPtr, countPtr, dataPtr);
+                const data = result === NC_CONSTANTS.NC_NOERR
+                    ? Array.from({ length: totalLength }, (_, i) => module.getValue(dataPtr + i * 2, 'i16'))
+                    : undefined;
+                
+                module._free(dataPtr);
+                module._free(startPtr);
+                module._free(countPtr);
+                return { result, data };
+            },
+
+            nc_get_vara_int: (ncid: number, varid: number, start: number[], count: number[]) => {
+                const totalLength = count.reduce((a, b) => a * b, 1);
+                const dataPtr = module._malloc(totalLength * 4);
+                const startPtr = module._malloc(start.length * 8);
+                const countPtr = module._malloc(count.length * 8);
+                
+                start.forEach((val, i) => module.setValue(startPtr + i * 8, val, 'i64'));
+                count.forEach((val, i) => module.setValue(countPtr + i * 8, val, 'i64'));
+                
+                const result = nc_get_vara_int_wrapper(ncid, varid, startPtr, countPtr, dataPtr);
+                const data = result === NC_CONSTANTS.NC_NOERR
+                    ? Array.from({ length: totalLength }, (_, i) => module.getValue(dataPtr + i * 4, 'i32'))
+                    : undefined;
+                
+                module._free(dataPtr);
+                module._free(startPtr);
+                module._free(countPtr);
+                return { result, data };
+            },
+
+            nc_get_vara_float: (ncid: number, varid: number, start: number[], count: number[]) => {
+                const totalLength = count.reduce((a, b) => a * b, 1);
+                const dataPtr = module._malloc(totalLength * 4);
+                const startPtr = module._malloc(start.length * 8);
+                const countPtr = module._malloc(count.length * 8);
+                
+                start.forEach((val, i) => module.setValue(startPtr + i * 8, val, 'i64'));
+                count.forEach((val, i) => module.setValue(countPtr + i * 8, val, 'i64'));
+                
+                const result = nc_get_vara_float_wrapper(ncid, varid, startPtr, countPtr, dataPtr);
+                const data = result === NC_CONSTANTS.NC_NOERR
+                    ? Array.from({ length: totalLength }, (_, i) => module.getValue(dataPtr + i * 4, 'float'))
+                    : undefined;
+                
+                module._free(dataPtr);
+                module._free(startPtr);
+                module._free(countPtr);
+                return { result, data };
+            },
+
+            nc_get_vara_double: (ncid: number, varid: number, start: number[], count: number[]) => {
+                const totalLength = count.reduce((a, b) => a * b, 1);
+                const dataPtr = module._malloc(totalLength * 8);
+                const startPtr = module._malloc(start.length * 8);
+                const countPtr = module._malloc(count.length * 8);
+                
+                start.forEach((val, i) => module.setValue(startPtr + i * 8, val, 'i64'));
+                count.forEach((val, i) => module.setValue(countPtr + i * 8, val, 'i64'));
+                
+                const result = nc_get_vara_double_wrapper(ncid, varid, startPtr, countPtr, dataPtr);
+                const data = result === NC_CONSTANTS.NC_NOERR
+                    ? Array.from({ length: totalLength }, (_, i) => module.getValue(dataPtr + i * 8, 'double'))
+                    : undefined;
+                
+                module._free(dataPtr);
+                module._free(startPtr);
+                module._free(countPtr);
+                return { result, data };
+            },
+            //---- Full Varaible Getters ----//
+
+            nc_get_var_text: (ncid: number, varid: number, length: number) => {
+                const dataPtr = module._malloc(length);
+                const result = nc_get_var_text_wrapper(ncid, varid, dataPtr);
+                const data = result === NC_CONSTANTS.NC_NOERR
+                    ? Array.from({ length }, (_, i) => module.UTF8ToString(module.getValue(dataPtr + i, 'i8')))
+                    : undefined;
+                module._free(dataPtr);
+                return { result, data };
+            },
+
+            nc_get_var_short: (ncid: number, varid: number, length: number) => {
+                const dataPtr = module._malloc(length * 2);
+                const result = nc_get_var_short_wrapper(ncid, varid, dataPtr);
+                let data;
+                if (result === NC_CONSTANTS.NC_NOERR) {
+                    // Create a view of the heap and copy it into a new Int16Array
+                    data = new Int16Array(module.HEAP16.buffer, dataPtr, length).slice();
+                }
+                module._free(dataPtr);
+                return { result, data };
+            },
+
+            nc_get_var_int: (ncid: number, varid: number, length: number) => {
+                const dataPtr = module._malloc(length * 4);
+                const result = nc_get_var_int_wrapper(ncid, varid, dataPtr);
+                let data;
+                if (result === NC_CONSTANTS.NC_NOERR) {
+                    data = new Int32Array(module.HEAP32.buffer, dataPtr, length).slice();
+                }
+                module._free(dataPtr);
+                return { result, data };
+            },
+
+            nc_get_var_float: (ncid: number, varid: number, length: number) => {
+                const dataPtr = module._malloc(length * 4);
+                const result = nc_get_var_float_wrapper(ncid, varid, dataPtr);
+                let data;
+                if (result === NC_CONSTANTS.NC_NOERR) {
+                    data = new Float32Array(module.HEAPF32.buffer, dataPtr, length).slice();
+                }
+                module._free(dataPtr);
+                return { result, data };
+            },
+
+            nc_get_var_double: (ncid: number, varid: number, length: number) => {
+                const dataPtr = module._malloc(length * 8);
+                const result = nc_get_var_double_wrapper(ncid, varid, dataPtr);
+                let data;
+                console.log(Object.keys(module))
+                if (result === NC_CONSTANTS.NC_NOERR) {
+                    data = new Float64Array(module.HEAPF64.buffer, dataPtr, length).slice();
+                }
+                module._free(dataPtr);
+                return { result, data };
+            },
+
+            nc_get_var_longlong: (ncid: number, varid: number, length: number) => {
+                const dataPtr = module._malloc(length * 8);
+                const result = nc_get_var_longlong_wrapper(ncid, varid, dataPtr);
+                let data;
+                if (result === NC_CONSTANTS.NC_NOERR) {
+                    // BigInt64Array is used for i64 (long long)
+                    data = new BigInt64Array(module.HEAP64.buffer, dataPtr, length).slice();
+                }
+                module._free(dataPtr);
+                return { result, data };
+            },
         };
     }
 }

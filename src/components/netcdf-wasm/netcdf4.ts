@@ -134,9 +134,7 @@ export class NetCDF4 extends Group {
             if (this.options.format === 'NETCDF4') {
                 createMode |= NC_CONSTANTS.NC_NETCDF4;
             }
-            const result = await this.createFile(this.filename, createMode);
-            this.ncid = result;
-            (this as any).groupId = result;
+            console.log("Removed")
         } else if (this.mode === 'r' || this.mode === 'a' || this.mode === 'r+') {
             // Open existing file
             const modeValue = this.mode === 'r' ? NC_CONSTANTS.NC_NOWRITE : NC_CONSTANTS.NC_WRITE;
@@ -223,64 +221,12 @@ export class NetCDF4 extends Group {
         return result.ncid;
     }
 
-    async createFile(path: string, mode: number = NC_CONSTANTS.NC_CLOBBER): Promise<number> {
-        const module = this.getModule();
-        const result = module.nc_create(path, mode);
-        if (result.result !== NC_CONSTANTS.NC_NOERR) {
-            throw new Error(`Failed to create NetCDF file: ${path} (error: ${result.result})`);
-        }
-        return result.ncid;
-    }
-
     async closeFile(ncid: number): Promise<void> {
         const module = this.getModule();
         const result = module.nc_close(ncid);
         if (result !== NC_CONSTANTS.NC_NOERR) {
             throw new Error(`Failed to close NetCDF file with ID: ${ncid} (error: ${result})`);
         }
-    }
-
-    async defineDimension(ncid: number, name: string, size: number): Promise<number> {
-        const module = this.getModule();
-        const result = module.nc_def_dim(ncid, name, size);
-        if (result.result !== NC_CONSTANTS.NC_NOERR) {
-            throw new Error(`Failed to define dimension: ${name} (error: ${result.result})`);
-        }
-        return result.dimid;
-    }
-
-    async defineVariable(ncid: number, name: string, type: number, dimids: number[]): Promise<number> {
-        const module = this.getModule();
-        const result = module.nc_def_var(ncid, name, type, dimids.length, dimids);
-        if (result.result !== NC_CONSTANTS.NC_NOERR) {
-            throw new Error(`Failed to define variable: ${name} (error: ${result.result})`);
-        }
-        return result.varid;
-    }
-
-    async endDefineMode(ncid: number): Promise<void> {
-        const module = this.getModule();
-        const result = module.nc_enddef(ncid);
-        if (result !== NC_CONSTANTS.NC_NOERR) {
-            throw new Error(`Failed to end define mode (error: ${result})`);
-        }
-    }
-
-    async putVariableDouble(ncid: number, varid: number, data: Float64Array): Promise<void> {
-        const module = this.getModule();
-        const result = module.nc_put_var_double(ncid, varid, data);
-        if (result !== NC_CONSTANTS.NC_NOERR) {
-            throw new Error(`Failed to write variable data (error: ${result})`);
-        }
-    }
-
-    async getVariableDouble(ncid: number, varid: number, size: number): Promise<Float64Array> {
-        const module = this.getModule();
-        const result = module.nc_get_var_double(ncid, varid, size);
-        if (result.result !== NC_CONSTANTS.NC_NOERR) {
-            throw new Error(`Failed to read variable data (error: ${result.result})`);
-        }
-        return result.data;
     }
 
     getDimCount(): number {    
@@ -389,13 +335,16 @@ export class NetCDF4 extends Group {
         info["name"] = result.name
         const dimids = result.dimids
         const dims = []
+        let size = 1
         if (dimids){
             for (const dimid of dimids){
-                const {name} = this.getDim(dimid)
+                const {name, len:dimSize} = this.getDim(dimid)
+                size *= dimSize
                 dims.push(name)
             }
         }
         info['dims'] = dims
+        info["size"] = size
         const attNames = []
         if (result.natts){
             for (let i = 0; i < result.natts; i++ ){
@@ -430,6 +379,25 @@ export class NetCDF4 extends Group {
         return info;
     }
 
+    getVariableArray(varid: number): Float32Array | Float64Array | Int16Array | Int32Array | BigInt64Array | BigInt[] | string[]  {
+        const module = this.getModule()
+        if (!module) return ["error"];
+        const info = this.getVariableInfo(varid)
+        const arraySize = info.size
+        const arrayType = info.type
+        if (!arrayType || !arraySize) return ["error"];
+        let arrayData;
+        console.log(arrayType)
+        if (arrayType === 2) arrayData = module.nc_get_var_text(this.ncid, varid, arraySize);
+        else if (arrayType === 3) arrayData = module.nc_get_var_short(this.ncid, varid, arraySize);
+        else if (arrayType === 4) arrayData = module.nc_get_var_int(this.ncid, varid, arraySize);
+        else if (arrayType === 10) arrayData = module.nc_get_var_longlong(this.ncid, varid, arraySize);
+        else if (arrayType === 5) arrayData = module.nc_get_var_float(this.ncid, varid, arraySize);
+        else if (arrayType === 6) arrayData = module.nc_get_var_double(this.ncid, varid, arraySize);
+        else arrayData = module.nc_get_var_double(this.ncid, varid, arraySize);
+        if (!arrayData.data) return ["error"]
+        return arrayData.data
+    }
     // Create a mock module for testing
     private createMockModule(): NetCDF4Module {
         // Global mock file storage to simulate persistence across instances
