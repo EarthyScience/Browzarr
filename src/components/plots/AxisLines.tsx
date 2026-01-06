@@ -107,7 +107,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const xTitleOffset = useMemo(() => (dimNames[2].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
   const yTitleOffset = useMemo(() => (dimNames[1].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
   const zTitleOffset = useMemo(() => (dimNames[0].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
-
+  
   return (
     <group visible={plotType != 'sphere' && plotType != 'flat' && !hideAxis}>
     {/* Horizontal Group */}

@@ -381,7 +381,7 @@ export class NetCDF4 extends Group {
         }
         return result.name
     }
-
+    
     getVariableInfo(variable: number | string): Record<string, any>{
         const info: Record<string, any> = {}
         const module = this.module

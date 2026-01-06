@@ -22,14 +22,17 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         const file = files[0]
         const data = await NetCDF4.fromBlob(file, 'r')
         const variables = data.getVariables()
-        const dims = data.getDims()
-        const varInfo = data.getVariableInfo(0)
         const globalAtts = data.getGlobalAttributes()
         const fullmetadata = data.getFullMetadata()
-        console.log(globalAtts)
         useGlobalStore.setState({variables: Object.keys(variables), zMeta:fullmetadata, initStore:`local_${file.name}`})
         useZarrStore.setState({useNC: true, ncModule: data})
-
+        const titleDescription = {
+          title: globalAtts.title?? file.name,
+          description: globalAtts.history?? ''
+        }
+        useGlobalStore.setState({titleDescription})
+        setOpenVariables(true)
+        setShowLocal(false)
     };
 
   return (

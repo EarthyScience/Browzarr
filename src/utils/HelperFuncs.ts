@@ -289,31 +289,7 @@ export function TwoDecimals(val: number){
 
 
 export async function GetDimInfo(variable:string){
-  const {cache} = useCacheStore.getState();
-  const {initStore} = useGlobalStore.getState();
   const {useNC} = useZarrStore.getState()
-  const cacheName = `${initStore}_${variable}_meta`
-  const dimArrays = []
-  const dimUnits = []
-  if (cache.has(cacheName)){
-    const meta = cache.get(cacheName)
-    const dimNames = meta._ARRAY_DIMENSIONS as string[]
-    if (dimNames){
-      for (const dim of dimNames){
-        const dimArray = cache.get(`${initStore}_${dim}`)
-        const dimMeta = cache.get(`${initStore}_${dim}_meta`)
-        dimArrays.push(dimArray ?? [0]) // guard against missing cached arrays, though this should not happen
-        dimUnits.push(dimMeta?.units ?? null) // guards against missing cached metadata
-      }
-    } else {
-      for (const dimLength of meta.shape){
-        dimArrays.push(Array(dimLength).fill(0))
-        dimUnits.push("Default")
-      }
-    }
-    return {dimNames: dimNames??Array(meta.shape.length).fill("Default"), dimArrays, dimUnits};
-  }
-  else{
     if (useNC){
       const output = GetNCDims(variable)
       return output
@@ -322,7 +298,7 @@ export async function GetDimInfo(variable:string){
       return output
     }
   }      
-}
+
 
 export function deg2rad(deg: number){
   return deg*Math.PI/180;

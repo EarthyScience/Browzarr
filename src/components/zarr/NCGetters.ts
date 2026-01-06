@@ -5,9 +5,20 @@ export function GetNCDims(variable: string){
     const {ncModule} = useZarrStore.getState()
     const {cache} = useCacheStore.getState();
     const {initStore} = useGlobalStore.getState();
+    const cacheName = `${initStore}_${variable}_meta`
     const dimNames = []
     const dimArrays = []
     const dimUnits = []
+    if (cache.has(cacheName)){
+        const meta = cache.get(cacheName)
+        for (const dim of meta.dims){
+            dimNames.push(dim.name)
+            const dimArray = cache.get(`${initStore}_${dim.name}`)
+            dimArrays.push(dimArray ?? [0]) // guard against missing cached arrays, though this should not happen
+            dimUnits.push(dim?.units ?? null) // guards against missing cached metadata
+        }
+        return {dimNames: dimNames??Array(meta.shape.length).fill("Default"), dimArrays, dimUnits};
+    }
     const varInfo = ncModule.getVariableInfo(variable)
     const {dims} = varInfo
     for (const dim of dims){
@@ -15,8 +26,7 @@ export function GetNCDims(variable: string){
         dimUnits.push(dim.units)
         const dimArray = ncModule.getVariableArray(dim.id)
         dimArrays.push(dimArray)
-        cache.set(`${initStore}_${dim.name}`, dimArray.data);
-        cache.set(`${initStore}_${dim.name}_meta`, dim)
+        cache.set(`${initStore}_${dim.name}`, dimArray);
     }
     return {dimNames, dimArrays, dimUnits};
 }
@@ -49,8 +59,12 @@ export function GetNCArray() {
     
     const atts = varInfo.attributes
     let fillValue = NaN
-    fillValue = !Number.isNaN(atts["missing_value"][0]) ? atts["missing_value"][0] : fillValue
-    fillValue = !Number.isNaN(atts["_FillValue"][0]) ? atts["_FillValue"][0] : fillValue
+    if ("missing_value" in atts){
+        fillValue = !Number.isNaN(atts["missing_value"][0]) ? atts["missing_value"][0] : fillValue
+    }
+    if ("_FillValue" in atts){
+        fillValue = !Number.isNaN(atts["_FillValue"][0]) ? atts["_FillValue"][0] : fillValue
+    }
 
     const [typedArray, scalingFactor] = ToFloat16(outputArray.map((v: number) => v === fillValue ? NaN : v), null)
 
