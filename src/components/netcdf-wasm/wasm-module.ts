@@ -454,7 +454,7 @@ export class WasmModuleLoader {
                 
                 const result = nc_get_vara_short_wrapper(ncid, varid, startPtr, countPtr, dataPtr);
                 const data = result === NC_CONSTANTS.NC_NOERR
-                    ? Array.from({ length: totalLength }, (_, i) => module.getValue(dataPtr + i * 2, 'i16'))
+                    ? new Int16Array(module.HEAP16.buffer, dataPtr, totalLength).slice()
                     : undefined;
                 
                 module._free(dataPtr);
@@ -474,7 +474,7 @@ export class WasmModuleLoader {
                 
                 const result = nc_get_vara_int_wrapper(ncid, varid, startPtr, countPtr, dataPtr);
                 const data = result === NC_CONSTANTS.NC_NOERR
-                    ? Array.from({ length: totalLength }, (_, i) => module.getValue(dataPtr + i * 4, 'i32'))
+                    ? new Int32Array(module.HEAP32.buffer, dataPtr, totalLength).slice()
                     : undefined;
                 
                 module._free(dataPtr);
@@ -486,17 +486,15 @@ export class WasmModuleLoader {
             nc_get_vara_float: (ncid: number, varid: number, start: number[], count: number[]) => {
                 const totalLength = count.reduce((a, b) => a * b, 1);
                 const dataPtr = module._malloc(totalLength * 4);
-                const startPtr = module._malloc(start.length * 8);
-                const countPtr = module._malloc(count.length * 8);
-                
-                start.forEach((val, i) => module.setValue(startPtr + i * 8, val, 'i64'));
-                count.forEach((val, i) => module.setValue(countPtr + i * 8, val, 'i64'));
+                const startPtr = module._malloc(start.length * 4);
+                const countPtr = module._malloc(count.length * 4);
+                start.forEach((val, i) => module.setValue(startPtr + i * 4, val, 'i32'));
+                count.forEach((val, i) => module.setValue(countPtr + i * 4, val, 'i32'));
                 
                 const result = nc_get_vara_float_wrapper(ncid, varid, startPtr, countPtr, dataPtr);
                 const data = result === NC_CONSTANTS.NC_NOERR
-                    ? Array.from({ length: totalLength }, (_, i) => module.getValue(dataPtr + i * 4, 'float'))
+                    ? new Float32Array(module.HEAPF32.buffer, dataPtr, totalLength).slice()
                     : undefined;
-                
                 module._free(dataPtr);
                 module._free(startPtr);
                 module._free(countPtr);
@@ -514,7 +512,7 @@ export class WasmModuleLoader {
                 
                 const result = nc_get_vara_double_wrapper(ncid, varid, startPtr, countPtr, dataPtr);
                 const data = result === NC_CONSTANTS.NC_NOERR
-                    ? Array.from({ length: totalLength }, (_, i) => module.getValue(dataPtr + i * 8, 'double'))
+                    ? new Float64Array(module.HEAPF64.buffer, dataPtr, totalLength).slice()
                     : undefined;
                 
                 module._free(dataPtr);
@@ -522,7 +520,7 @@ export class WasmModuleLoader {
                 module._free(countPtr);
                 return { result, data };
             },
-            //---- Full Varaible Getters ----//
+            //---- Full Variable Getters ----//
 
             nc_get_var_text: (ncid: number, varid: number, length: number) => {
                 const dataPtr = module._malloc(length);

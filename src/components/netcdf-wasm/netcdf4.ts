@@ -381,7 +381,7 @@ export class NetCDF4 extends Group {
         }
         return result.name
     }
-    
+
     getVariableInfo(variable: number | string): Record<string, any>{
         const info: Record<string, any> = {}
         const module = this.module
@@ -466,6 +466,28 @@ export class NetCDF4 extends Group {
         else if (arrayType === 5) arrayData = module.nc_get_var_float(this.ncid, varid, arraySize);
         else if (arrayType === 6) arrayData = module.nc_get_var_double(this.ncid, varid, arraySize);
         else arrayData = module.nc_get_var_double(this.ncid, varid, arraySize);
+        if (!arrayData.data) return ["error"]
+        return arrayData.data
+    }
+
+    getSlicedVariableArray(variable: number | string, start: number[], count: number[]): Float32Array | Float64Array | Int16Array | Int32Array | BigInt64Array | BigInt[] | string[] {
+        const module = this.module
+        if (!module) return ["error"];
+        const isId = typeof variable === "number"
+        let varid = isId ? variable as number : 0
+        if (!isId){
+            const result = module.nc_inq_varid(this.ncid, variable)
+            varid = result.varid as number
+        }
+        const info = this.getVariableInfo(varid)
+        const arrayType = info.nctype
+        
+        let arrayData;
+        if (arrayType === 3) arrayData = module.nc_get_vara_short(this.ncid, varid, start, count);
+        else if (arrayType === 4) arrayData = module.nc_get_vara_int(this.ncid, varid, start, count);
+        else if (arrayType === 5) arrayData = module.nc_get_vara_float(this.ncid, varid, start, count);
+        else if (arrayType === 6) arrayData = module.nc_get_vara_double(this.ncid, varid, start, count);
+        else arrayData = module.nc_get_vara_double(this.ncid, varid, start, count);
         if (!arrayData.data) return ["error"]
         return arrayData.data
     }

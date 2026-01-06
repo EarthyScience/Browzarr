@@ -65,7 +65,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
         ySlice: state.ySlice,
         xSlice: state.xSlice
     })));
-
+    
     useEffect(() => {
         const dataArray = GetCurrentArray(analysisStore);
         // Guard clauses: exit if not triggered, no operation is selected, or data is invalid.

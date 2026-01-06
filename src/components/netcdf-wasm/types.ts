@@ -80,10 +80,10 @@ export interface NetCDF4Module extends EmscriptenModule {
     nc_get_var_float: (ncid: number, varid: number,  length: number) => { result: number; data?: Float32Array };
     nc_get_var_double: (ncid: number, varid: number,  length: number) => { result: number; data?: Float64Array };
     
-    nc_get_vara_short: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: number[] };
-    nc_get_vara_int: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: number[] };
-    nc_get_vara_float: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: number[] };
-    nc_get_vara_double: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: number[] };
+    nc_get_vara_short: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: Int16Array };
+    nc_get_vara_int: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: Int32Array };
+    nc_get_vara_float: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: Float32Array };
+    nc_get_vara_double: (ncid: number, varid: number, startp: number[], countp: number[]) => { result: number; data?: Float64Array };
 
 }
 
