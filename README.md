@@ -48,7 +48,7 @@ We are still in active development but plan to release a stable 1.0.0 when all o
 - [x] Larger texture support
 - [ ] NetCDF Support
 - [ ] Customizable export
-- [ ] Animation export
+- [x] Animation export
 - [ ] Stability pass
 
 
