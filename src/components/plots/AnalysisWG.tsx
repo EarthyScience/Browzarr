@@ -1,7 +1,7 @@
 "use client";
 import { ArrayMinMax, GetCurrentArray } from '@/utils/HelperFuncs';
 import * as THREE from 'three';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { DataReduction, Convolve, Multivariate2D, Multivariate3D, CUMSUM3D, Convolve2D } from '../computation/webGPU';
 import { useGlobalStore, useAnalysisStore, usePlotStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
@@ -43,9 +43,9 @@ type Operation = keyof typeof ShaderMap;
 const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture[] | THREE.DataTexture[] | null>> }) => {
 
     // Global state hooks remain the same
-    const { strides, dataShape, valueScales, isFlat, setIsFlat, setStatus, setValueScales } = useGlobalStore(useShallow(state => ({
+    const { strides, dataShape, valueScales, isFlat, plotOn, setIsFlat, setStatus, setValueScales } = useGlobalStore(useShallow(state => ({
         strides: state.strides, dataShape: state.dataShape, valueScales: state.valueScales,
-        isFlat: state.isFlat, setIsFlat: state.setIsFlat, setStatus: state.setStatus,
+        isFlat: state.isFlat, plotOn:state.plotOn, setIsFlat: state.setIsFlat, setStatus: state.setStatus,
          setValueScales: state.setValueScales,
     })));
 
@@ -65,8 +65,12 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
         ySlice: state.ySlice,
         xSlice: state.xSlice
     })));
+    const isMounted = useRef(false)
     
     useEffect(() => {
+        if (!plotOn){
+            return
+        }
         const dataArray = GetCurrentArray(analysisStore);
         // Guard clauses: exit if not triggered, no operation is selected, or data is invalid.
         if (!operation || dataArray.length <= 1) {
