@@ -456,6 +456,7 @@ type ZarrState = {
   arraySize: number,
   useNC: boolean, // This one is more static and so toggling switch doesn't break all other logic
   fetchNC: boolean,
+  ncModule: any,
 
   setZSlice: (zSlice: [number , number | null]) => void;
   setYSlice: (ySlice: [number , number | null]) => void;
@@ -481,6 +482,7 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   arraySize: 0,
   useNC: false,
   fetchNC: false,
+  ncModule: null,
 
   setZSlice: (zSlice) => set({ zSlice }),
   setYSlice: (ySlice) => set({ ySlice }),

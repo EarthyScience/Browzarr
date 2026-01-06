@@ -4,6 +4,10 @@ import { useGlobalStore, usePlotStore, useZarrStore, useCacheStore } from './Glo
 import { decompressSync } from 'fflate';
 import * as zarr from 'zarrita';
 import { copyChunkToArray } from '@/components/zarr/ZarrLoaderLRU';
+import { GetNCDims } from '@/components/zarr/NCGetters';
+import { GetZarrDims } from '@/components/zarr/ZarrGetters';
+
+
 export function parseTimeUnit(units: string | undefined): [number, number] {
     if (units === "Default"){
         return [1, 0];
@@ -287,6 +291,7 @@ export function TwoDecimals(val: number){
 export async function GetDimInfo(variable:string){
   const {cache} = useCacheStore.getState();
   const {initStore} = useGlobalStore.getState();
+  const {useNC} = useZarrStore.getState()
   const cacheName = `${initStore}_${variable}_meta`
   const dimArrays = []
   const dimUnits = []
@@ -297,7 +302,6 @@ export async function GetDimInfo(variable:string){
       for (const dim of dimNames){
         const dimArray = cache.get(`${initStore}_${dim}`)
         const dimMeta = cache.get(`${initStore}_${dim}_meta`)
-
         dimArrays.push(dimArray ?? [0]) // guard against missing cached arrays, though this should not happen
         dimUnits.push(dimMeta?.units ?? null) // guards against missing cached metadata
       }
@@ -310,34 +314,14 @@ export async function GetDimInfo(variable:string){
     return {dimNames: dimNames??Array(meta.shape.length).fill("Default"), dimArrays, dimUnits};
   }
   else{
-    const group = await useZarrStore.getState().currentStore
-    if (!group) {
-      throw new Error(`Failed to open Zarr store: ${initStore}`);
-    }
-    const outVar = await zarr.open(group.resolve(variable), {kind:"array"});
-    const meta = outVar.attrs;
-    meta.shape = outVar.shape;
-    cache.set(cacheName, meta);
-    const dimNames = meta._ARRAY_DIMENSIONS as string[]
-    if (dimNames){
-      for (const dim of dimNames){
-        const dimArray = await zarr.open(group.resolve(dim), {kind:"array"})
-            .then((result) => zarr.get(result));
-        const dimMeta = await zarr.open(group.resolve(dim), {kind:"array"})
-          .then((result) => result.attrs)
-        cache.set(`${initStore}_${dim}`, dimArray.data);
-        cache.set(`${initStore}_${dim}_meta`, dimMeta)
-        dimArrays.push(dimArray.data)
-        dimUnits.push(dimMeta.units)
-      } 
+    if (useNC){
+      const output = GetNCDims(variable)
+      return output
     } else {
-      for (const dimLength of outVar.shape){
-        dimArrays.push(Array(dimLength).fill(0))
-        dimUnits.push("Default")
-      }
+      const output = GetZarrDims(variable)
+      return output
     }
-    return {dimNames: dimNames?? Array(outVar.shape.length).fill("Default"), dimArrays, dimUnits};
-  }
+  }      
 }
 
 export function deg2rad(deg: number){

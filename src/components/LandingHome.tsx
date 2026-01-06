@@ -56,9 +56,7 @@ export function LandingHome() {
     }
   useEffect(() => { // Update store if URL changes
     resetSlices();
-    setUseNC(false)
     if (initStore.startsWith('local')){ // Don't fetch store if local 
-      
       return
     }
     const newStore = GetStore(initStore)
@@ -75,7 +73,7 @@ export function LandingHome() {
     const fullmetadata = GetZarrMetadata(currentStore);
     const variables = GetVariableNames(fullmetadata);
 
-    fullmetadata.then(e => {setZMeta(e); console.log(e)})
+    fullmetadata.then(e => setZMeta(e))
     variables.then(e => setVariables(e))
 
     return () => { isMounted = false; };

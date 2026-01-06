@@ -10,7 +10,6 @@ interface Array {
 
 function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number}): {minVal: number, maxVal: number}{
     const { setTextureData} = useGlobalStore.getState()
-
     const data = array.data;
     const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
     const textureData = new Uint8Array(

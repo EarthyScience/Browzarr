@@ -66,6 +66,7 @@ export class WasmModuleLoader {
         const nc_inq_varndims_wrapper = module.cwrap('nc_inq_varndims_wrapper', 'number', ['number', 'number', 'number']);
         const nc_inq_vardimid_wrapper = module.cwrap('nc_inq_vardimid_wrapper', 'number', ['number', 'number', 'number']);
         const nc_inq_varnatts_wrapper = module.cwrap('nc_inq_varnatts_wrapper', 'number', ['number', 'number', 'number']);
+        const nc_inq_var_chunking_wrapper = module.cwrap('nc_inq_var_chunking_wrapper', 'number', ['number', 'number', 'number', 'number']);
 
         // Attribute inquiry wrappers
         const nc_inq_natts_wrapper = module.cwrap('nc_inq_natts_wrapper', 'number', ['number', 'number']);
@@ -292,6 +293,35 @@ export class WasmModuleLoader {
                 const natts = result === NC_CONSTANTS.NC_NOERR ? module.getValue(nattsPtr, 'i32') : undefined;
                 module._free(nattsPtr);
                 return { result, natts };
+            },
+
+            nc_inq_var_chunking: (ncid: number, varid: number) => {
+                const chunkingPtr = module._malloc(4);
+                const chunkSizesPtr = module._malloc(NC_MAX_DIMS * 4); // assuming size_t is 8 bytes
+                const result = nc_inq_var_chunking_wrapper(ncid, varid, chunkingPtr, chunkSizesPtr);
+                let chunking, chunkSizes;
+                if (result === NC_CONSTANTS.NC_NOERR) {
+                    chunking = module.getValue(chunkingPtr, 'i32');
+                    
+                    // First, get the number of dimensions for this variable
+                    const ndimsPtr = module._malloc(4);
+                    const inqResult = nc_inq_varndims_wrapper(ncid, varid, ndimsPtr);
+                    let ndims = NC_MAX_DIMS; // default fallback
+                    if (inqResult === NC_CONSTANTS.NC_NOERR) {
+                        ndims = module.getValue(ndimsPtr, 'i32');
+                    }
+                    module._free(ndimsPtr);
+                    
+                    // Only read the actual number of dimensions
+                    chunkSizes = new Array(ndims);
+                    for (let i = 0; i < ndims; i++) {
+                        chunkSizes[i] = module.getValue(chunkSizesPtr + i * 4, 'i32');
+                    }
+                }
+                
+                module._free(chunkingPtr);
+                module._free(chunkSizesPtr);
+                return { result, chunking, chunkSizes };
             },
 
             //---- Attribute inquiry functions ----//
@@ -542,7 +572,6 @@ export class WasmModuleLoader {
                 const dataPtr = module._malloc(length * 8);
                 const result = nc_get_var_double_wrapper(ncid, varid, dataPtr);
                 let data;
-                console.log(Object.keys(module))
                 if (result === NC_CONSTANTS.NC_NOERR) {
                     data = new Float64Array(module.HEAPF64.buffer, dataPtr, length).slice();
                 }

@@ -2,7 +2,7 @@
 
 import { Group } from './group';
 import { WasmModuleLoader } from './wasm-module';
-import { NC_CONSTANTS, DATA_TYPE_MAP_REVERSE } from './constants';
+import { NC_CONSTANTS, DATA_TYPE_SIZE, CONSTANT_DTYPE_MAP } from './constants';
 import type { NetCDF4Module, DatasetOptions, MemoryDatasetSource, WorkerFSSource } from './types';
 
 export class NetCDF4 extends Group {
@@ -344,7 +344,8 @@ export class NetCDF4 extends Group {
             throw new Error(`Failed to get dim (error: ${result.result})`);
         }
         const {result:output, ...dim} = result
-        return dim;
+        const unitResult = this.getAttributeValues(dimid, "units")
+        return {...dim, units:unitResult, id:dimid}; 
     }
 
     getDims(): Record<string, any> {
@@ -353,7 +354,9 @@ export class NetCDF4 extends Group {
         for (const dimid of dimIDs) {
             const dim = this.getDim(dimid)
             dims[dim.name] = {
-                size: dim.len
+                size: dim.len,
+                units:dim.units,
+                id:dim.id
             }
         }
         return dims
@@ -379,35 +382,44 @@ export class NetCDF4 extends Group {
         return result.name
     }
 
-    getVariableInfo(varid:number): Record<string, any>{
+    getVariableInfo(variable: number | string): Record<string, any>{
         const info: Record<string, any> = {}
         const module = this.module
         if (!module) return info;
-        const result = module.nc_inq_var(this.ncid, varid);
+        const isId = typeof variable === "number"
+        let varid = variable
+        if (!isId){
+            const result = module.nc_inq_varid(this.ncid, variable)
+            varid = result.varid as number
+        }
+        const result = module.nc_inq_var(this.ncid, varid as number);
         if (result.result !== NC_CONSTANTS.NC_NOERR) {
             throw new Error(`Failed to get variable info (error: ${result.result})`);
         }
+        const typeMultiplier = DATA_TYPE_SIZE[result.type as number]
         info["name"] = result.name
-        info["dtype"] = DATA_TYPE_MAP_REVERSE[result.type as number]
+        info["dtype"] = CONSTANT_DTYPE_MAP[result.type as number]
+        info['nctype'] = result.type
         const dimids = result.dimids
         const dims = []
         const shape = []
         let size = 1
         if (dimids){
             for (const dimid of dimids){
-                const {name, len:dimSize} = this.getDim(dimid)
-                size *= dimSize
-                dims.push(name)
-                shape.push(dimSize)
+                const dim = this.getDim(dimid)
+                size *= dim.len
+                dims.push(dim)
+                shape.push(dim.len)
             }
         }
         info["shape"] = shape
         info['dims'] = dims
         info["size"] = size
+        info["totalSize"] = typeMultiplier * size
         const attNames = []
         if (result.natts){
             for (let i = 0; i < result.natts; i++ ){
-                const attname = this.getAttributeName(varid, i)
+                const attname = this.getAttributeName(varid as number, i)
                 attNames.push(attname)
             } 
         }
@@ -415,22 +427,38 @@ export class NetCDF4 extends Group {
         if (attNames.length > 0){
             for (const attname of attNames){
                 if (!attname) continue;
-                atts[attname] = this.getAttributeValues(varid, attname)
+                atts[attname] = this.getAttributeValues(varid as number, attname)
             }
         }
         info["attributes"] = atts
+        const chunkResult = module.nc_inq_var_chunking(this.ncid, varid as number);
+        if (chunkResult.result === NC_CONSTANTS.NC_NOERR){
+            const chunked = chunkResult.chunking === NC_CONSTANTS.NC_CHUNKED
+            info["chunked"] = chunked
+            if (chunked) {
+                info["chunks"] = chunkResult.chunkSizes
+            } else{
+                info["chunks"] = shape
+            }
+        }
+        const chunkElements = info['chunks'].reduce((a: number, b: number) => a * b, 1)
+        info["chunkSize"] = chunkElements * typeMultiplier
         return info;
     }
-
-    getVariableArray(varid: number): Float32Array | Float64Array | Int16Array | Int32Array | BigInt64Array | BigInt[] | string[]  {
-        const module = this.getModule()
+    getVariableArray(variable: number | string): Float32Array | Float64Array | Int16Array | Int32Array | BigInt64Array | BigInt[] | string[]  {
+        const module = this.module
         if (!module) return ["error"];
+        const isId = typeof variable === "number"
+        let varid = isId ? variable as number : 0
+        if (!isId){
+            const result = module.nc_inq_varid(this.ncid, variable)
+            varid = result.varid as number
+        }
         const info = this.getVariableInfo(varid)
         const arraySize = info.size
-        const arrayType = info.type
+        const arrayType = info.nctype
         if (!arrayType || !arraySize) return ["error"];
         let arrayData;
-        console.log(arrayType)
         if (arrayType === 2) arrayData = module.nc_get_var_text(this.ncid, varid, arraySize);
         else if (arrayType === 3) arrayData = module.nc_get_var_short(this.ncid, varid, arraySize);
         else if (arrayType === 4) arrayData = module.nc_get_var_int(this.ncid, varid, arraySize);

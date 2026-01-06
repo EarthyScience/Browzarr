@@ -54,6 +54,7 @@ export interface NetCDF4Module extends EmscriptenModule {
     nc_inq_varndims(ncid: number, varid: number): { result: number; ndims?: number }
     nc_inq_vardimid(ncid: number, varid: number): { result: number; dimids?: Int32Array }
     nc_inq_varnatts(ncid: number, varid: number): { result: number; natts?: number }
+    nc_inq_var_chunking(ncid: number, varid: number): { result: number; chunking?: number; chunkSizes?: number[] }
 
     // 3. Attribute inquiry
     nc_inq_natts(ncid: number): { result: number; natts?: number }  // global attributes

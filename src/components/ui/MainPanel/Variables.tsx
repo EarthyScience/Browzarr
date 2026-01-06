@@ -52,11 +52,15 @@ const Variables = ({
     }))
   );
 
+  const {useNC, ncModule} = useZarrStore(useShallow(state => ({
+    useNC:state.useNC,
+    ncModule:state.ncModule
+  })))
+
   const [dimArrays, setDimArrays] = useState([[0],[0],[0]]);
   const [dimUnits, setDimUnits] = useState([null,null,null]);
   const [dimNames, setDimNames] = useState<string[]>(["Default"]);
 
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedVar, setSelectedVar] = useState<string | null>(null);
   const [meta, setMeta] = useState<any>(null);
   const [query, setQuery] = useState("");
@@ -116,7 +120,6 @@ const Variables = ({
 
   // Handle variable selection
   const handleVariableSelect = (val: string, idx: number) => {
-    setSelectedIndex(idx);
     setSelectedVar(val);
     GetDimInfo(val).then(e => {
       setDimNames(e.dimNames);
@@ -143,7 +146,6 @@ const Variables = ({
   }, [selectedVar, variables, zMeta, dimArrays, dimNames, dimUnits]);
 
   useEffect(()=>{
-    setSelectedIndex(null);
     setSelectedVar(null);
     setMeta(null);
     setMetadata(null);
@@ -307,7 +309,6 @@ const Variables = ({
               Clear
             </Button>
           </div>
-
           {VariableList}
         </PopoverContent>
       </Popover>
