@@ -3,8 +3,6 @@
 import type { NetCDF4 } from './netcdf4';
 import { Dimension } from './dimension';
 import { Variable } from './variable';
-import { NC_CONSTANTS, DATA_TYPE_MAP } from './constants';
-import type { VariableOptions } from './types';
 
 export class Group {
     public readonly dimensions: { [name: string]: Dimension } = {};
@@ -53,27 +51,6 @@ export class Group {
         return Object.keys(this._attributes);
     }
 
-    async createDimension(name: string, size: number | null): Promise<Dimension> {
-        // Check for duplicate dimension name
-        if (this.dimensions[name]) {
-            throw new Error(`Dimension '${name}' already exists`);
-        }
-        
-        // Check for invalid size values
-        if (size !== null && size < 0 && size !== NC_CONSTANTS.NC_UNLIMITED) {
-            throw new Error(`Invalid dimension size: ${size}. Size must be non-negative or null for unlimited.`);
-        }
-        
-        // Handle unlimited dimension (null or NC_UNLIMITED constant)
-        const isUnlimited = size === null || size === NC_CONSTANTS.NC_UNLIMITED;
-        const ncSize = isUnlimited ? 0 : size as number; // Use 0 for unlimited in the actual NetCDF API
-        const dimid = await this.netcdf.defineDimension(this.groupId, name, ncSize);
-        
-        const actualSize = isUnlimited ? NC_CONSTANTS.NC_UNLIMITED : size as number;
-        const dimension = new Dimension(name, actualSize, isUnlimited);
-        this.dimensions[name] = dimension;
-        return dimension;
-    }
 
     // Load dimensions and variables from mock storage when in test mode
     public loadMockDimensions(): void {
@@ -104,48 +81,6 @@ export class Group {
                 }
             }
         }
-    }
-
-    async createVariable(
-        name: string, 
-        datatype: string, 
-        dimensions: string[] = [],
-        options: VariableOptions = {}
-    ): Promise<Variable> {
-        const ncType = DATA_TYPE_MAP[datatype];
-        if (ncType === undefined) {
-            throw new Error(`Unsupported datatype: ${datatype}`);
-        }
-
-        // Get dimension IDs
-        const dimIds = dimensions.map(dimName => {
-            const dim = this.dimensions[dimName];
-            if (!dim) {
-                throw new Error(`Dimension '${dimName}' not found`);
-            }
-            // For now, we'll use the dimension name as ID (simplified)
-            return Object.keys(this.dimensions).indexOf(dimName);
-        });
-
-        const varid = await this.netcdf.defineVariable(this.groupId, name, ncType, dimIds);
-        const variable = new Variable(this.netcdf, name, datatype, dimensions, varid, this.groupId);
-        this.variables[name] = variable;
-        
-        // Store variable metadata in mock storage if in test mode
-        if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
-            const mockFiles = (global as any).__netcdf4_mock_files;
-            const dataset = this.netcdf as any;
-            if (mockFiles && dataset.filename && mockFiles[dataset.filename]) {
-                mockFiles[dataset.filename].variables[name] = {
-                    datatype: datatype,
-                    dimensions: dimensions,
-                    data: new Float64Array(0),
-                    attributes: {}
-                };
-            }
-        }
-        
-        return variable;
     }
 
     createGroup(name: string): Group {
