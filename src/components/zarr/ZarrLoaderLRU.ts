@@ -200,28 +200,6 @@ export function DecompressArray(compressed : Uint8Array){
 	return floatArray
 }
 
-async function fetchWithRetry<T>(
-    operation: () => Promise<T>, 
-    context: string, 
-    setStatus: (s: string | null) => void,
-    maxRetries = 3, 
-    retryDelay = 1000
-): Promise<T> {
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-            return await operation();
-        } catch (error) {
-            if (attempt === maxRetries) {
-                useErrorStore.getState().setError('zarrFetch');
-                setStatus(null);
-                throw new ZarrError(`Failed to fetch ${context}`, error);
-            }
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
-        }
-    }
-    throw new Error("Unreachable");
-}
-
 export async function GetArray(): Promise<{
 	data: Float16Array,
 	shape: number[],

@@ -2,7 +2,6 @@
 import * as THREE from 'three'
 import { useGlobalStore, usePlotStore, useZarrStore, useCacheStore } from './GlobalStates';
 import { decompressSync } from 'fflate';
-import * as zarr from 'zarrita';
 import { copyChunkToArray } from '@/components/zarr/ZarrLoaderLRU';
 import { GetNCDims } from '@/components/zarr/NCGetters';
 import { GetZarrDims } from '@/components/zarr/ZarrGetters';
@@ -39,12 +38,18 @@ export function parseTimeUnit(units: string | undefined): [number, number] {
       day: 24 * 60 * 60 * 1000,
       days: 24 * 60 * 60 * 1000,
     };
-  
     // Handle singular/plural variations (e.g., "second" vs "seconds")
     const singularUnit = normalizedUnit.endsWith('s') ? normalizedUnit.slice(0, -1) : normalizedUnit;
     const effectiveUnit = unitToMilliseconds[normalizedUnit] !== undefined ? normalizedUnit : singularUnit;
-    const baseDate = referenceDate ? new Date(referenceDate) : new Date();
-
+    let baseDate;
+    if (referenceDate.length <= 10){
+      const [year, month, day] = referenceDate.split('-');
+      console.log(year, month, day)
+      baseDate = new Date(Date.UTC(parseInt(year),parseInt(month),parseInt(day)))
+      console.log(baseDate, Date.UTC(parseInt(year),parseInt(month),parseInt(day)))
+    } else {
+     baseDate = referenceDate ? new Date(referenceDate) : new Date();
+    }
     if (!(effectiveUnit in unitToMilliseconds)) {
       throw new Error(`Unsupported time unit: "${unit}". Supported units: ${Object.keys(unitToMilliseconds).join(', ')}`);
     }
@@ -63,7 +68,7 @@ export function parseLoc(input:number, units: string | undefined, verbose: boole
       }
         return input?.toFixed(2);
     }
-    if (typeof(input) == 'bigint'){
+    if (typeof(input) === 'bigint' || units.match(/^(\w+)\s+since\s+(.+)$/i)){
       if (!units){
         return Number(input)
       }
@@ -83,15 +88,13 @@ export function parseLoc(input:number, units: string | undefined, verbose: boole
       catch{
         return input;
       }
-        
     }
     if ( units.match(/(degree|degrees|deg|°)/i) ){
         if (input){
           return `${input.toFixed(2)}°`
         } else{
           return input
-        }
-        
+        } 
     }
     else {
         return input ? input.toFixed(2) : input;

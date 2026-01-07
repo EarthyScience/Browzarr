@@ -100,7 +100,6 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const hasXChunks = (meta.shape[shapeLength-1]/meta.chunks[shapeLength-1] > 1 ) 
   const chunkIDs = meta.chunks && useMemo(()=>ChunkIDs({xSlice, ySlice, zSlice}, meta.chunks, meta.shape, meta.shape.length == 4),[zSlice, xSlice, ySlice, meta])
   const isFlat = meta.shape.length == 2
- 
   const currentSize = useMemo(() => {
     const is2D = isFlat
     
@@ -191,6 +190,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     }
     
   },[meta, chunkIDs])
+
   return (
       // Don't put any more work in the landing page version. Since it won't be visible in the future
       // The logic here was to just get divs to be used later in a Card or Dialog component!
@@ -361,8 +361,8 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
                             <span className="text-sm font-semibold">MB</span>
                           </div>
 
-                          <Tooltip>
-                            <TooltipTrigger>
+                          <Tooltip >
+                            <TooltipTrigger asChild>
                             <BsFillQuestionCircleFill/>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -385,8 +385,8 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
             <div className="grid grid-cols-[auto_50%] gap-2 mt-2">
               <div>
               <label htmlFor="compress-data">Compress Data </label>
-              <Tooltip>
-                <TooltipTrigger>
+              <Tooltip >
+                <TooltipTrigger asChild>
                   <BsFillQuestionCircleFill/>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-[min(100%,16rem)] break-words whitespace-normal">

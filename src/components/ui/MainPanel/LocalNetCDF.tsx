@@ -12,6 +12,7 @@ interface LocalNCType {
 const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
 
     const {setStatus} = useGlobalStore.getState()
+    const {ncModule} = useZarrStore.getState()
 
     const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
@@ -20,6 +21,8 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         return;
         }
         const file = files[0]
+        if (ncModule) ncModule.close();
+        setStatus("Loading...")
         const data = await NetCDF4.fromBlob(file, 'r')
         const variables = data.getVariables()
         const globalAtts = data.getGlobalAttributes()
@@ -33,11 +36,11 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         useGlobalStore.setState({titleDescription})
         setOpenVariables(true)
         setShowLocal(false)
+        setStatus(null)
     };
 
   return (
     <div className='w-[100%]'>
-        Under construction
         <Input type="file" id="filepicker"
           className='hover:drop-shadow-md hover:scale-[110%]'
           style={{width:'200px', cursor:'pointer'}}

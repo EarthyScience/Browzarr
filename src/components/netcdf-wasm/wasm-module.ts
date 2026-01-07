@@ -373,9 +373,9 @@ export class WasmModuleLoader {
             },
 
             nc_inq_attlen: (ncid: number, varid: number, name: string) => {
-                const lenPtr = module._malloc(8);
+                const lenPtr = module._malloc(4);
                 const result = nc_inq_attlen_wrapper(ncid, varid, name, lenPtr);
-                const len = result === NC_CONSTANTS.NC_NOERR ? module.getValue(lenPtr, 'i64') : undefined;
+                const len = result === NC_CONSTANTS.NC_NOERR ? module.getValue(lenPtr, 'i32') : undefined;
                 module._free(lenPtr);
                 return { result, len };
             },
