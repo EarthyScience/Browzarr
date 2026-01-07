@@ -2,7 +2,7 @@
 import React, {ChangeEvent} from 'react'
 import { Input } from '../input'
 import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
-// import { NetCDF4 } from '@lazarusa/netcdf4-wasm-test';
+import useNetCDF from '@/hooks/useNetCDF';
 
 interface LocalNCType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -10,7 +10,7 @@ interface LocalNCType {
 }
 
 const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
-
+    const netCDF4 = useNetCDF();
     const {setStatus} = useGlobalStore.getState()
 
     const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -21,11 +21,9 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         }
         const file = files[0]
 
-        const { NetCDF4 } = await import('@lazarusa/netcdf4-wasm-test');
-        const data = await NetCDF4.fromBlob(file, 'r')
-        // await data.initialize();
+        const data = await netCDF4.fromBlob(file, 'r')
+        
         const variables = data.getVariables()
-        // console.log('Local NetCDF variables:', variables)
         const globalAtts = data.getGlobalAttributes()
         const fullmetadata = data.getFullMetadata()
         useGlobalStore.setState({variables: Object.keys(variables), zMeta:fullmetadata, initStore:`local_${file.name}`})
