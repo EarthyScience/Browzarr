@@ -3,6 +3,7 @@
 import type { EmscriptenModule, NetCDF4Module, NetCDF4WasmOptions } from './types';
 import { NC_CONSTANTS } from './constants';
 
+
 const NC_MAX_NAME = 256;
 const NC_MAX_DIMS = 1024;  
 const NC_MAX_VARS = 8192;

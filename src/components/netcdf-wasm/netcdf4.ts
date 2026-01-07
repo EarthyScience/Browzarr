@@ -645,9 +645,11 @@ export class NetCDF4 extends Group {
             } catch (e) {
                 // Directory might already exist, ignore error
             }
-
             // Write the memory data to a virtual file
             module.FS.writeFile(this.memorySource.filename, this.memorySource.data);
+
+            // Clear the data reference to free memory - we only need the filename now
+            this.memorySource = undefined
         } catch (error) {
             throw new Error(`Failed to mount memory data: ${error}`);
         }

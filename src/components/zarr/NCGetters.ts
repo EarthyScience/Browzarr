@@ -63,7 +63,8 @@ export function GetNCArray() {
     if ("_FillValue" in atts){
         fillValue = !Number.isNaN(atts["_FillValue"][0]) ? atts["_FillValue"][0] : fillValue
     }
-
+    console.log(atts)
+    console.log(fillValue)
     const calcDim = (slice: [number, number | null], dimIdx: number, chunkDim: number) => {
         const totalChunks = Math.ceil(shape[dimIdx + zIndexOffset] / chunkDim);
         const start = Math.floor(slice[0] / chunkDim);
@@ -82,7 +83,8 @@ export function GetNCArray() {
     const destStride = is2D 
         ? [outputShape[1], 1] 
         : [outputShape[1] * outputShape[2], outputShape[2], 1];
-
+    console.log(outputShape)
+    console.log(destStride)
     setStrides(destStride);
     if (!is2D) {
         setArraySize(totalElements);
@@ -128,6 +130,7 @@ export function GetNCArray() {
                 }
                 else{
                     const chunkArray = ncModule.getSlicedVariableArray(variable, [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]], chunkShape)
+                    console.log(chunkArray)
                     const [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
                     if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
                         if (scalingFactor == null || newScalingFactor > scalingFactor){ 
