@@ -2,7 +2,7 @@ import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/ut
 import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, copyChunkToArray2D, RescaleArray } from "./ZarrLoaderLRU";
 
 
-export function GetNCDims(variable: string){
+export async function GetNCDims(variable: string){
     const {ncModule} = useZarrStore.getState()
     const {cache} = useCacheStore.getState();
     const {initStore} = useGlobalStore.getState();
@@ -20,34 +20,35 @@ export function GetNCDims(variable: string){
         }
         return {dimNames: dimNames??Array(meta.shape.length).fill("Default"), dimArrays, dimUnits};
     }
-    const varInfo = ncModule.getVariableInfo(variable)
+    const varInfo = await ncModule.getVariableInfo(variable)
     const {dims} = varInfo
     for (const dim of dims){
         dimNames.push(dim.name)
         dimUnits.push(dim.units)
-        const dimArray = ncModule.getVariableArray(dim.id)
+        const dimArray = await ncModule.getVariableArray(dim.id)
         dimArrays.push(dimArray)
         cache.set(`${initStore}_${dim.name}`, dimArray);
     }
     return {dimNames, dimArrays, dimUnits};
 }
 
-export function GetNCAttributes(thisVariable? : string){
+export async function GetNCAttributes(thisVariable? : string){
     const {ncModule} = useZarrStore.getState();
     const {cache} = useCacheStore.getState();
     const {initStore, variable} = useGlobalStore.getState();
     const cacheName = `${initStore}_${thisVariable?? variable}_meta`
-    const meta = ncModule.getVariableInfo(thisVariable?? variable);
+    const meta = await ncModule.getVariableInfo(thisVariable?? variable);
     cache.set(cacheName, meta);
     return meta
 }
 
-export function GetNCArray() {
+export async function GetNCArray() {
     const {is4D, idx4D, initStore, variable, setProgress, setStrides, setStatus} = useGlobalStore.getState();
 	const {compress, xSlice, ySlice, zSlice, ncModule, setCurrentChunks, setArraySize} = useZarrStore.getState()
 	const {cache} = useCacheStore.getState();
 
-    const varInfo = ncModule.getVariableInfo(variable)
+    const varInfo = await ncModule.getVariableInfo(variable)
+    console.log(varInfo)
     const {shape, chunks:chunkShape} = varInfo
     const is2D = shape.length === 2;
     const chunkLength = chunkShape.length
@@ -63,8 +64,6 @@ export function GetNCArray() {
     if ("_FillValue" in atts){
         fillValue = !Number.isNaN(atts["_FillValue"][0]) ? atts["_FillValue"][0] : fillValue
     }
-    console.log(atts)
-    console.log(fillValue)
     const calcDim = (slice: [number, number | null], dimIdx: number, chunkDim: number) => {
         const totalChunks = Math.ceil(shape[dimIdx + zIndexOffset] / chunkDim);
         const start = Math.floor(slice[0] / chunkDim);
@@ -83,8 +82,6 @@ export function GetNCArray() {
     const destStride = is2D 
         ? [outputShape[1], 1] 
         : [outputShape[1] * outputShape[2], outputShape[2], 1];
-    console.log(outputShape)
-    console.log(destStride)
     setStrides(destStride);
     if (!is2D) {
         setArraySize(totalElements);
@@ -129,8 +126,7 @@ export function GetNCArray() {
                     iter ++;
                 }
                 else{
-                    const chunkArray = ncModule.getSlicedVariableArray(variable, [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]], chunkShape)
-                    console.log(chunkArray)
+                    const chunkArray = await ncModule.getSlicedVariableArray(variable, [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]], chunkShape)
                     const [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
                     if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
                         if (scalingFactor == null || newScalingFactor > scalingFactor){ 

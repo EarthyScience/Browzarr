@@ -11,7 +11,7 @@ interface LocalNCType {
 
 const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
 
-    const {setStatus} = useGlobalStore.getState()
+    const {setStatus, setVariables, setZMeta, setInitStore} = useGlobalStore.getState()
     const {ncModule} = useZarrStore.getState()
 
     const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -24,17 +24,20 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         if (ncModule) ncModule.close();
         setStatus("Loading...")
         const data = await NetCDF4.fromBlobLazy(file)
-        const variables = data.getVariables()
-        console.log(variables)
-        const globalAtts = data.getGlobalAttributes()
-        const fullmetadata = data.getFullMetadata()
-        useGlobalStore.setState({variables: Object.keys(variables), zMeta:fullmetadata, initStore:`local_${file.name}`})
+        const [variables, attrs, metadata] = await Promise.all([
+          data.getVariables(),
+          data.getGlobalAttributes(),
+          data.getFullMetadata()
+        ])
+        console.log(variables, metadata, attrs)
+        useGlobalStore.setState({variables: Object.keys(variables), zMeta: metadata, initStore:`local_${file.name}`})
         useZarrStore.setState({useNC: true, ncModule: data})
         const titleDescription = {
-          title: globalAtts.title?? file.name,
-          description: globalAtts.history?? ''
+          title: attrs.title?? file.name,
+          description: attrs.history?? ''
         }
         useGlobalStore.setState({titleDescription})
+        
         setOpenVariables(true)
         setShowLocal(false)
         setStatus(null)

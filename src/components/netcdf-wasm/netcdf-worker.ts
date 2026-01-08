@@ -31,10 +31,11 @@ const waitForModule = new Promise((resolve) => {
 // @ts-ignore: onmessage is available in worker global scope
 self.onmessage = async (e: MessageEvent) => {
     const data = e.data;
-    const {type} = data
+    const {type, id} = data
     const rawmod = (await waitForModule) as NetCDF4Module;
     const mod = WasmModuleLoader.wrapModule(rawmod)
     try {
+        let result;
         switch (type) {
             case 'init': {
                 const { blob, filename } = e.data; 
@@ -44,7 +45,6 @@ self.onmessage = async (e: MessageEvent) => {
                 const pathParts = filename.split('/');
                 const baseName = pathParts.pop(); // "data.nc"
                 const mountPoint = pathParts.join('/') || '/'; // "/working"
-                console.log(filename)
                 try {
                     // Ensure the directory exists before mounting
                     mod.FS.mkdir(mountPoint);
@@ -58,34 +58,90 @@ self.onmessage = async (e: MessageEvent) => {
                     // If already mounted, we can ignore or re-throw
                     console.warn("Mount failed (might already be mounted):", err.message);
                 }
-
-                self.postMessage({ type: 'ready' });
                 break;
             }
-
             case 'open': {
-                // Use the full mounted path, e.g., '/working/data.nc'
-                const result = mod.nc_open(data.path, data.modeValue); // data.path is your virtualFilename
-                const ncid = result.ncid ?? -1;
+                const openResult = mod.nc_open(data.path, data.modeValue); 
+                const ncid = openResult.ncid ?? -1;
                 if (ncid < 0) {
                     throw new Error('nc_open failed with code ' + ncid);
                 }
-                self.postMessage({ type: 'openResult', success: true, ncid });
+                result = ncid
                 break;
             }
 
-            case 'getVariables': {
-                console.log(data)
-                const vars = NCGet.getVariables(mod, data.ncid);
-                console.log(vars)
-                self.postMessage({ type: 'variables', success: true, result: vars });
+            //---- Getters ----//
+            //Globals
+            case 'getGlobalAttributes' : {
+                result = NCGet.getGlobalAttributes(mod, data.ncid);
                 break;
             }
+            case 'getFullMetadata' : {
+                result = NCGet.getFullMetadata(mod, data.ncid);
+                break;
+            }
+            //Dims
+            case 'getDimCount' : {
+                result = NCGet.getDimCount(mod, data.ncid);
+                break;
+            }
+            case 'getDimIDs' : {
+                result = NCGet.getDimIDs(mod, data.ncid);
+                break;
+            }
+            case 'getDims' : {
+                result = NCGet.getDims(mod, data.ncid);
+                break;
+            }
+            case 'getDim' : {
+                result = NCGet.getDim(mod, data.ncid, data.dimid);
+                break;
+            }
+            case 'getDims' : {
+                result = NCGet.getDims(mod, data.ncid);
+                break;
+            }
+            case 'getDims' : {
+                result = NCGet.getDims(mod, data.ncid);
+                break;
+            }
+            case 'getDims' : {
+                result = NCGet.getDims(mod, data.ncid);
+                break;
+            }
+            //Vars
+            case 'getVariables': {
+                result = NCGet.getVariables(mod, data.ncid);
+                break;
+            }
+            case 'getVarCount': {
+                result = NCGet.getVarCount(mod, data.ncid);
+                break;
+            }
+            case 'getVariableInfo': {
+                result = NCGet.getVariableInfo(mod, data.ncid, data.variable);
+                break;
+            }
+            case 'getAttributeValues': {
+                result = NCGet.getAttributeValues(mod, data.ncid, data.varid, data.attname);
+                break;
+            }
+            //Arrays
+            case 'getVariableArray': {
+                result = NCGet.getVariableArray(mod, data.ncid, data.varid);
+                break;
+            }
+            case 'getSlicedVariableArray': {
+                result = NCGet.getSlicedVariableArray(mod, data.ncid, data.varid, data.start, data.count);
+                break;
+            }
+
         }
+        self.postMessage({ type, id, success: true, result });
     } catch (err: any) {
         console.error(`Worker Error [${type}]:`, err);
-        self.postMessage({ type: 'error', message: err.message });
+        self.postMessage({ type: 'error', id, message: err.message });
     }
-
+    
     // Add more handlers here...
 };
