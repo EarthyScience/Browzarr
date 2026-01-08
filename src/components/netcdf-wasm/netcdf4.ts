@@ -242,14 +242,19 @@ export class NetCDF4 extends Group {
     }
 
     async closeFile(ncid: number): Promise<void> {
-        const module = this.module;
-        if (!module) throw new Error("Failed to load module. Ensure module is initialized before calling methods")
-        
-        const result = module.nc_close(ncid);
-        if (result !== NC_CONSTANTS.NC_NOERR) {
-            throw new Error(`Failed to close NetCDF file with ID: ${ncid} (error: ${result})`);
+        if (this.worker) {
+            this.callWorker('close')
+        } else {
+            const module = this.module;
+            if (!module) throw new Error("Failed to load module. Ensure module is initialized before calling methods")
+            
+            const result = module.nc_close(ncid);
+            if (result !== NC_CONSTANTS.NC_NOERR) {
+                throw new Error(`Failed to close NetCDF file with ID: ${ncid} (error: ${result})`);
+            }
         }
     }
+    
     private requestId = 0;
 
     private async callWorker(type: string, payload: any = {}): Promise<any> {

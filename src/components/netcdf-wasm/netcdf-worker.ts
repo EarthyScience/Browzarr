@@ -1,6 +1,7 @@
 import type { NetCDF4Module } from "./types";
 import * as NCGet from './netcdf-getters'
 import { WasmModuleLoader } from "./wasm-module";
+import { NC_CONSTANTS } from "./constants";
 
 declare function importScripts(...urls: string[]): void;
 declare function NetCDF4Module(config: any): any;
@@ -65,6 +66,13 @@ self.onmessage = async (e: MessageEvent) => {
                     throw new Error('nc_open failed with code ' + ncid);
                 }
                 result = ncid
+                break;
+            }
+            case 'close': {
+                const closeResult = mod.nc_close(data.ncid);
+                if (closeResult !== NC_CONSTANTS.NC_NOERR){
+                    throw new Error("Failed to close file");
+                }
                 break;
             }
 

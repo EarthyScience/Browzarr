@@ -139,7 +139,11 @@ export async function GetNCArray() {
                     iter ++;
                 }
                 else{
-                    const chunkArray = await ncModule.getSlicedVariableArray(variable, [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]], chunkShape)
+                    // const starts = is4D ? [idx4D, z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]] : [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]]
+                    const starts = [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]]
+                    const counts = chunkShape.map((v:number, i:number) =>Math.min(v, shape[i] - starts[i]));
+                    const chunkArray = await ncModule.getSlicedVariableArray(variable, starts, counts)
+                    const chunkStride = [counts[2] * counts[1], counts[2], 1]
                     const [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
                     if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
                         if (scalingFactor == null || newScalingFactor > scalingFactor){ 

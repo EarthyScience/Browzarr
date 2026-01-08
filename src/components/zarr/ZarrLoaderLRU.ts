@@ -13,27 +13,28 @@ export const ZARR_STORES = {
     LOCAL: 'http://localhost:5173/GlobalForcingTiny.zarr'
 } as const;
 
-export function ToFloat16(array : Float32Array | Float64Array, scalingFactor: number | null) : [Float16Array, number | null]{ 
+export function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float16Array, number | null]{ 
+	let newArray : Float16Array;
 	let newScalingFactor: number | null = null;
-	const [minVal, maxVal] = ArrayMinMax(array)
-	const peak = Math.max(Math.abs(minVal), Math.abs(maxVal));
-    const float16Max = 65504;
-	if (peak <= 65504 && peak > 1e-3){ // If values fit in Float16, use that to save memory
-		return [new Float16Array(array), scalingFactor]
-	}
-
-	else{
-		newScalingFactor = Math.ceil(Math.log10(peak / float16Max));
-
-		if (scalingFactor !== null) {
-			newScalingFactor = Math.max(newScalingFactor, scalingFactor);
+	if (scalingFactor){
+		for (let i = 0; i < array.length; i++) {
+			array[i] /= Math.pow(10,scalingFactor);
 		}
-		const divisor = Math.pow(10, newScalingFactor);
-        for (let i = 0; i < array.length; i++) {
-            array[i] /= divisor;
-        }
-		return [new Float16Array(array), newScalingFactor]
 	}
+	const [minVal, maxVal] = ArrayMinMax(array)
+	if (maxVal <= 65504 && minVal >= -65504 && Math.abs(maxVal) > 1e-3 ){ // If values fit in Float16, use that to save memory
+		newArray = new Float16Array(array)
+	}
+	else {
+		console.log("We're here now I guess")
+		console.log(scalingFactor)
+		newScalingFactor = Math.ceil(Math.log10(maxVal/65504))
+		for (let i = 0; i < array.length; i++) {
+			array[i] /= Math.pow(10,newScalingFactor);
+		}
+		newArray = new Float16Array(array)
+	}
+	return [newArray, newScalingFactor]
 }
 
 export function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales built array when new chunk has higher scalingFactor
