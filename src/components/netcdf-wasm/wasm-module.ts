@@ -36,7 +36,7 @@ export class WasmModuleLoader {
         }
     }
 
-    private static wrapModule(module: EmscriptenModule): NetCDF4Module {
+    static wrapModule(module: EmscriptenModule): NetCDF4Module {
         // Create wrappers for NetCDF functions
         const nc_open_wrapper = module.cwrap('nc_open_wrapper', 'number', ['string', 'number', 'number']);
         const nc_close_wrapper = module.cwrap('nc_close_wrapper', 'number', ['number']);

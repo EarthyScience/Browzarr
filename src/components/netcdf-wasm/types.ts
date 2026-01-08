@@ -124,6 +124,7 @@ declare global {
 }
 
 export interface WorkerFSSource {
-    data: Blob | File;
+    type: string
+    blob: Blob ;
     filename: string;
 }

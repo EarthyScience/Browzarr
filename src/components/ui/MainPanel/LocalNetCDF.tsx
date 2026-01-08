@@ -23,8 +23,9 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         const file = files[0]
         if (ncModule) ncModule.close();
         setStatus("Loading...")
-        const data = await NetCDF4.fromBlob(file, 'r')
+        const data = await NetCDF4.fromBlobLazy(file)
         const variables = data.getVariables()
+        console.log(variables)
         const globalAtts = data.getGlobalAttributes()
         const fullmetadata = data.getFullMetadata()
         useGlobalStore.setState({variables: Object.keys(variables), zMeta:fullmetadata, initStore:`local_${file.name}`})

@@ -4,6 +4,12 @@ import { Group } from './group';
 import { WasmModuleLoader } from './wasm-module';
 import { NC_CONSTANTS, DATA_TYPE_SIZE, CONSTANT_DTYPE_MAP } from './constants';
 import type { NetCDF4Module, DatasetOptions, MemoryDatasetSource, WorkerFSSource } from './types';
+import * as NCGet from './netcdf-getters'
+
+interface LazyDatasetSource {
+    url: string;        // blob: URL for local Blob/File, or http(s): for remote
+    filename: string;   // Virtual path, e.g., '/tmp/myfile.nc'
+}
 
 export class NetCDF4 extends Group {
     private module: NetCDF4Module | null = null;
@@ -11,7 +17,9 @@ export class NetCDF4 extends Group {
     private ncid: number = -1;
     private _isOpen = false;
     private memorySource?: MemoryDatasetSource;
-    private workerSource?: WorkerFSSource;
+    private workerSource?: { blob: Blob; filename: string };
+    private worker?: Worker;
+    private workerReady?: Promise<void>;
 
     constructor(
         private filename?: string,
@@ -24,33 +32,30 @@ export class NetCDF4 extends Group {
     }
 
     async initialize(): Promise<void> {
-        if (this.initialized) {
-            return;
-        }
+        if (this.initialized) return;
 
         try {
-            this.module = await WasmModuleLoader.loadModule(this.options);
-            this.initialized = true;
-
-            // Mount memory data in virtual file system if provided
-            if (this.memorySource) {
-                await this.mountMemoryData();
+            if (this.workerSource) {
+                // This now handles the WORKERFS mounting
+                await this.setupWorker();
+            } else {
+                this.module = await WasmModuleLoader.loadModule(this.options);
+                if (this.memorySource) {
+                    await this.mountMemoryData();
+                }
             }
 
-            // Auto-open file if filename provided (including empty strings which should error)
-            if (this.filename !== undefined && this.filename !== null) {
+            this.initialized = true;
+
+            // Automatically open the file if a filename was provided
+            if (this.filename) {
                 await this.open();
             }
         } catch (error) {
-            // Check if this is a test environment and we should use mock mode
             if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
-                // Mock the module for testing
                 this.module = this.createMockModule();
                 this.initialized = true;
-                
-                if (this.filename !== undefined && this.filename !== null) {
-                    await this.open();
-                }
+                if (this.filename) await this.open();
             } else {
                 throw error;
             }
@@ -116,37 +121,56 @@ export class NetCDF4 extends Group {
         return dataset;
     }
 
+    // New factory for Blob/File (local, no full preload)
+    static async fromBlobLazy(
+        blob: Blob,
+        options: DatasetOptions = {}
+    ): Promise<NetCDF4> {
+        // IMPORTANT: Keep this path consistent with the mount logic in the worker
+        const mountPoint = '/working';
+        const baseName = `netcdf_lazy_${Date.now()}.nc`;
+        const fullPath = `${mountPoint}/${baseName}`;
+        
+        const dataset = new NetCDF4(fullPath, 'r', options);
+        // Store the raw blob. The worker will mount it via WORKERFS
+        dataset.workerSource = { blob, filename: fullPath }; 
+        await dataset.initialize();
+        return dataset;
+    }
+
+
     private async open(): Promise<void> {
         if (this._isOpen) return;
-        if (!this.filename || this.filename.trim() === '') {
-            throw new Error('No filename specified');
-        }
 
-        // Check for valid modes early, before any WASM operations
-        const validModes = ['r', 'w', 'w-', 'a', 'r+'];
-        if (!validModes.includes(this.mode)) {
-            throw new Error(`Unsupported mode: ${this.mode}`);
+        if (this.worker) {
+            return new Promise((resolve, reject) => {
+                // Setup a one-time listener for the result
+                const handler = (e: MessageEvent) => {
+                    if (e.data.type === 'openResult') {
+                        this.worker!.removeEventListener('message', handler);
+                        if (e.data.success) {
+                            this.ncid = e.data.ncid;
+                            this._isOpen = true;
+                            resolve();
+                        } else {
+                            reject(new Error(e.data.error));
+                        }
+                    }
+                };
+                this.worker!.addEventListener('message', handler);
+                
+                this.worker!.postMessage({
+                    type: 'open',
+                    path: this.filename,
+                    // NC_NOWRITE is 0, usually safe to hardcode or import
+                    modeValue: 0 
+                });
+            });
+        } else {
+            // Main thread path
+            this.ncid = await this.openFile(this.filename!, this.mode as any);
+            this._isOpen = true;
         }
-
-        if (this.mode === 'w' || this.mode === 'w-') {
-            // Create new file
-            let createMode = NC_CONSTANTS.NC_CLOBBER;
-            if (this.options.format === 'NETCDF4') {
-                createMode |= NC_CONSTANTS.NC_NETCDF4;
-            }
-            console.log("Removed")
-        } else if (this.mode === 'r' || this.mode === 'a' || this.mode === 'r+') {
-            // Open existing file
-            const modeValue = this.mode === 'r' ? NC_CONSTANTS.NC_NOWRITE : NC_CONSTANTS.NC_WRITE;
-            this.ncid = await this.openFile(this.filename, this.mode as any);
-            (this as any).groupId = this.ncid;
-            
-            // Load existing data from mock storage if in test mode
-            if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
-                (this as any).loadMockDimensions();
-            }
-        }
-        this._isOpen = true;
     }
 
     // Property access similar to Python API
@@ -296,25 +320,31 @@ export class NetCDF4 extends Group {
         return result.ndims || 0;
     }
 
-    getVariables(): Record<string, any> {
-        const variables:  Record<string, any> = {}; 
-        const module = this.module
-        if (!module) throw new Error("Failed to load module. Ensure module is initialized before calling methods")
-        const varCount = this.getVarCount();
-        const dimIds = this.getDimIDs()
-        for (let varid = 0; varid < varCount; varid++) {
-            if (dimIds.includes(varid)) continue; //Don't include spatial Vars
-
-            const result = module.nc_inq_varname(this.ncid,varid);
-            if (result.result !== NC_CONSTANTS.NC_NOERR || !result.name) {
-                console.warn(`Failed to get variable name for varid ${varid} (error: ${result.result})`);
-                continue;
-            }
-            variables[result.name] = {
-                id: varid
-            }
+    async getVariables(): Promise<Record<string, any>> {
+        if (this.worker) {
+            return new Promise((resolve, reject) => {
+                // 1. Define the handler for the response
+                const handler = (e: MessageEvent) => {
+                    if (e.data.type === 'variables') {
+                        // 2. Clean up: remove this listener so it doesn't trigger again
+                        this.worker!.removeEventListener('message', handler);
+                        
+                        if (e.data.success) {
+                            resolve(e.data.result);
+                        } else {
+                            reject(new Error(e.data.error || 'Failed to get variables'));
+                        }
+                    }
+                };
+                // 3. Start listening for the worker's response
+                this.worker!.addEventListener('message', handler);
+                // 4. Tell the worker to start working
+                this.worker!.postMessage({ type: 'getVariables', ncid: this.ncid });
+            });
+        } else {
+            // Main thread path is already synchronous (or could be wrapped in Promise.resolve)
+            return NCGet.getVariables(this.module as NetCDF4Module, this.ncid);
         }
-        return variables;
     }
 
     getVarIDs(): number[] | Int32Array {    
@@ -620,6 +650,43 @@ export class NetCDF4 extends Group {
             },
             nc_enddef: (ncid: number) => NC_CONSTANTS.NC_NOERR,
         } as any;
+    }
+    
+    private async setupWorker(): Promise<void> {
+        if (!this.workerSource) throw new Error('No worker source');
+
+        // 1. Instantiate the worker if it doesn't exist
+        if (!this.worker) {
+            // Option A: If using Vite/Webpack 5
+            this.worker = new Worker(
+                new URL('./netcdf-worker.ts', import.meta.url), 
+                { type: 'module' }
+            );
+        }
+
+        this.workerReady = new Promise((resolve, reject) => {
+            // Use a named function so we can remove the listener later
+            const initHandler = (e: MessageEvent) => {
+                if (e.data.type === 'ready') {
+                    this.worker!.removeEventListener('message', initHandler);
+                    resolve();
+                } else if (e.data.type === 'error') {
+                    this.worker!.removeEventListener('message', initHandler);
+                    reject(new Error(e.data.message));
+                }
+            };
+
+            this.worker!.addEventListener('message', initHandler);
+
+            // 3. Send the initialization message
+            this.worker!.postMessage({
+                type: 'init',
+                blob: this.workerSource!.blob,
+                filename: this.workerSource!.filename
+            });
+        });
+
+        return this.workerReady;
     }
 
     // Mount memory data in the WASM virtual file system
