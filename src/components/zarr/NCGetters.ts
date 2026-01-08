@@ -139,10 +139,7 @@ export async function GetNCArray() {
                     iter ++;
                 }
                 else{
-                    const starts = [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]]
-                    const counts = chunkShape.map((v: number, i: number) => Math.min(v, shape[i] - starts[i])); // Don't extend beyond the dim bounds
-                    console.log(starts,counts)
-                    const chunkArray = await ncModule.getSlicedVariableArray(variable, starts, chunkShape)
+                    const chunkArray = await ncModule.getSlicedVariableArray(variable, [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]], chunkShape)
                     const [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
                     if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
                         if (scalingFactor == null || newScalingFactor > scalingFactor){ 
@@ -158,15 +155,11 @@ export async function GetNCArray() {
                             }
                         }
                     }
-                    const newChunkStride = [
-                        counts[1] * counts[2],  // or however your stride is calculated
-                        counts[2],
-                        1
-                    ] as [number, number, number];
+
                     copyChunkToArray(
                         chunkF16,
-                        counts,
-                        newChunkStride as [number, number, number],
+                        chunkShape,
+                        chunkStride as [number, number, number],
                         typedArray,
                         outputShape,
                         destStride as [number, number, number],
@@ -175,8 +168,8 @@ export async function GetNCArray() {
                     )
                     const cacheChunk = {
                         data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-                        shape: counts,
-                        stride: newChunkStride,
+                        shape: chunkShape,
+                        stride: chunkStride,
                         scaling: scalingFactor,
                         compressed: compress
                     }
