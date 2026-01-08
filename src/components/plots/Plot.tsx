@@ -190,7 +190,7 @@ const Plot = () => {
         if (textures) {
           textures.forEach(tex =>{
             tex.dispose();
-            tex.source.data = null
+            (tex.source as any).data = null;
           });
         }
         const {setZSlice, setYSlice, setXSlice} = usePlotStore.getState() // Set the plot slices with zarr slices
