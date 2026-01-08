@@ -70,6 +70,7 @@ self.onmessage = async (e: MessageEvent) => {
             }
             case 'close': {
                 const closeResult = mod.nc_close(data.ncid);
+                console.log(closeResult)
                 if (closeResult !== NC_CONSTANTS.NC_NOERR){
                     throw new Error("Failed to close file");
                 }
