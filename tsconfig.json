@@ -38,7 +38,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "next.config.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    "src/hooks/copy-wasm.mjs"
   ],
   "exclude": [
     "node_modules",

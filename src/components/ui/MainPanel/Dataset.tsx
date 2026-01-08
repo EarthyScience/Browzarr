@@ -98,7 +98,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
   const [openDescriptionPopover, setOpenDescriptionPopover] = useState<boolean>(false)
   const [isSafari, setIsSafari] = useState<boolean>(false)
   const {useNC} = useZarrStore(useShallow(state => ({
-    useNC:state.useNC
+    useNC:state.fetchNC
   })))
   
   const { initStore, setInitStore } = useGlobalStore(
@@ -262,7 +262,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
                   </div>
                 : 
                 <>
-                  <Switcher leftText='Zarr' rightText='NetCDF' state={!useNC} onClick={()=>useZarrStore.setState({useNC:!useNC})} />
+                  <Switcher leftText='Zarr' rightText='NetCDF' state={!useNC} onClick={()=>useZarrStore.setState({fetchNC:!useNC})} />
                   {
                     useNC ? 
                     <LocalNetCDF setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} />

@@ -1,7 +1,8 @@
 "use client";
 import React, {ChangeEvent} from 'react'
 import { Input } from '../input'
-import { useGlobalStore } from '@/utils/GlobalStates';
+import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
+import useNetCDF from '@/hooks/useNetCDF';
 
 interface LocalNCType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -9,7 +10,7 @@ interface LocalNCType {
 }
 
 const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
-
+    const netCDF4 = useNetCDF();
     const {setStatus} = useGlobalStore.getState()
 
     const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -18,6 +19,22 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         setStatus(null)
         return;
         }
+        const file = files[0]
+
+        const data = await netCDF4.fromBlob(file, 'r')
+        
+        const variables = data.getVariables()
+        const globalAtts = data.getGlobalAttributes()
+        const fullmetadata = data.getFullMetadata()
+        useGlobalStore.setState({variables: Object.keys(variables), zMeta:fullmetadata, initStore:`local_${file.name}`})
+        useZarrStore.setState({useNC: true, ncModule: data})
+        const titleDescription = {
+          title: globalAtts.title?? file.name,
+          description: globalAtts.history?? ''
+        }
+        useGlobalStore.setState({titleDescription})
+        setOpenVariables(true)
+        setShowLocal(false)
     };
 
   return (
@@ -26,9 +43,8 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         <Input type="file" id="filepicker"
           className='hover:drop-shadow-md hover:scale-[110%]'
           style={{width:'200px', cursor:'pointer'}}
-          accept='.nc, .netcdf, .nc3'
+          accept='.nc, .netcdf, .nc3, .nc4'
           onChange={handleFileSelect}
-          disabled
         />
     </div>
   )

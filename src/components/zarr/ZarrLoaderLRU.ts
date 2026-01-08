@@ -3,6 +3,8 @@ import {  ArrayMinMax } from "@/utils/HelperFuncs";
 import { GetSize } from "./GetMetadata";
 import { useGlobalStore, useZarrStore, useErrorStore, useCacheStore } from "@/utils/GlobalStates";
 import { gzipSync, decompressSync } from 'fflate';
+import { GetNCArray, GetNCAttributes } from "./NCGetters";
+import { GetZarrAttributes, GetZarrArray } from "./ZarrGetters";
 
 export const ZARR_STORES = {
     ESDC: 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr',
@@ -12,7 +14,7 @@ export const ZARR_STORES = {
     LOCAL: 'http://localhost:5173/GlobalForcingTiny.zarr'
 } as const;
 
-function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float16Array, number | null]{ 
+export function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float16Array, number | null]{ 
 	let newArray : Float16Array;
 	let newScalingFactor: number | null = null;
 	const [minVal, maxVal] = ArrayMinMax(array)
@@ -48,8 +50,7 @@ function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float1
 	return [newArray, newScalingFactor]
 }
 
-
-function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales built array when new chunk has higher scalingFactor
+export function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales built array when new chunk has higher scalingFactor
 	for (let i = 0; i < array.length; i++) {
 		array[i] /= Math.pow(10,scalingFactor);
 	}
@@ -187,13 +188,13 @@ export async function GetStore(storePath: string): Promise<zarr.Group<zarr.Fetch
 		}
 }
 
-function CompressArray(array: Float16Array, level: number){
+export function CompressArray(array: Float16Array, level: number){
 	const uint8View = new Uint8Array(array.buffer);
 	const compressed = gzipSync(uint8View, { level: level as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | undefined })
 	return compressed
 }
 // Infer compressed type
-function DecompressArray(compressed : Uint8Array){
+export function DecompressArray(compressed : Uint8Array){
 	const decompressed = decompressSync(compressed)
 	const floatArray = new Float16Array(decompressed.buffer)
 	return floatArray
@@ -227,8 +228,8 @@ export async function GetArray(): Promise<{
 	dtype: string,
 	scalingFactor: number | null
 }>{
-	const {is4D, idx4D, initStore, variable, setProgress, setStrides, setStatus} = useGlobalStore.getState();
-	const {compress, xSlice, ySlice, zSlice, currentStore, setCurrentChunks, setArraySize} = useZarrStore.getState()
+	const {is4D, idx4D, initStore, variable, setStrides} = useGlobalStore.getState();
+	const {useNC} = useZarrStore.getState()
 	const {cache} = useCacheStore.getState();
 
 	//---- 1. Global Cache Check ----//
@@ -240,211 +241,33 @@ export async function GetArray(): Promise<{
 		setStrides(thisChunk.stride)
 		return thisChunk;
 	}
-
-	//---- 2. Open Zarr Resource ----//
-	const group = await currentStore;
-	const outVar = await zarr.open(group.resolve(variable), {kind:"array"})
-
-	if (!outVar.is("number") && !outVar.is("bigint")) {
-        throw new Error(`Unsupported data type: Only numeric arrays are supported. Got: ${outVar.dtype}`);
-    }
-
-	//---- 3. Determine Structure ----//
-	const fullShape = outVar.shape;
-	let [_totalSize, _chunkSize, chunkShape] = GetSize(outVar);
-
-	if (is4D){
-		chunkShape = chunkShape.slice(1);
-	}
-
-	const hasTimeChunks = is4D ? fullShape[1]/chunkShape[0] > 1 : fullShape[0]/chunkShape[0] > 1
-
-	//---- Strategy 1. Download whole array (No time chunks) ----//
-	if (!hasTimeChunks){ 
-		setStatus("Downloading...")
-		const chunk = await fetchWithRetry(
-            () => is4D ? zarr.get(outVar, [idx4D, null, null, null]) : zarr.get(outVar),
-            `variable ${variable}`,
-            setStatus
-        );
-		if (!chunk) throw new Error('Unexpected: chunk was not assigned'); // This is redundant but satisfies TypeScript
-		if (chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
-            throw new Error("BigInt arrays not supported.");
-        }
-		const shape = is4D ? outVar.shape.slice(1) : outVar.shape;
-		
-		setStrides(chunk.stride) // Need strides for the point cloud
-		const [typedArray, scalingFactor] = ToFloat16(chunk.data as Float32Array, null)
-		const cacheChunk = {
-			data: compress ? CompressArray(typedArray, 7) : typedArray,
-			shape: chunk.shape,
-			stride: chunk.stride,
-			scaling: scalingFactor,
-			compressed: compress
-		}
-		cache.set(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`, cacheChunk)
-		setStatus(null)
-		return { data: typedArray, shape, dtype: outVar.dtype, scalingFactor };
-	} 
-
-	//---- Strategy 2. Download Chunks ----//
-	const is2D = outVar.shape.length === 2;
-    
-    // Calculate Indices
-    const zIndexOffset = is4D ? 1 : 0;
-	
-	// Helper to calculate start/end/shape for a dimension
-    const calcDim = (slice: [number, number | null], dimIdx: number, chunkDim: number) => {
-        const totalChunks = Math.ceil(fullShape[dimIdx + zIndexOffset] / chunkDim);
-        const start = Math.floor(slice[0] / chunkDim);
-        const end = slice[1] ? Math.ceil(slice[1] / chunkDim) : totalChunks;
-        const size = (slice[1] ? slice[1] : fullShape[dimIdx + zIndexOffset]) - slice[0];
-        return { start, end, size };
-    };
-
-    const xDim = calcDim(xSlice, 2, chunkShape[2]);
-    const yDim = calcDim(ySlice, 1, chunkShape[1]);
-    const zDim = is2D ? { start: 0, end: 1, size: 0 } : calcDim(zSlice, 0, chunkShape[0]);
-
-	// Setup Output Array
-    const outputShape = is2D ? [yDim.size, xDim.size] : [zDim.size, yDim.size, xDim.size];
-    const totalElements = is2D ? yDim.size * xDim.size : zDim.size * yDim.size * xDim.size;
-    const destStride = is2D 
-        ? [outputShape[1], 1] 
-        : [outputShape[1] * outputShape[2], outputShape[2], 1];
-
-    setStrides(destStride);
-    if (!is2D) {
-        setArraySize(totalElements);
-        setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); //These are used to stitch timeseries data 
-    }
-	if (totalElements > 1e9){
-		useErrorStore.getState().setError('largeArray');
-		throw Error("Cannot allocate unbokrne memory segment for array.")
-	}
-    const typedArray = new Float16Array(totalElements);
-
-	// State for the loop
-    let scalingFactor: number | null = null;
-    const totalChunksToLoad = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
-	let iter = 1; // For progress bar
-	const rescaleIDs = [] // These are the downloaded chunks that need to be rescaled
-
-    setStatus("Downloading...");
-    setProgress(0);
-	
-	for (let z= zDim.start ; z < zDim.end ; z++){ // Iterate through chunks we need 
-		for (let y= yDim.start ; y < yDim.end ; y++){
-			for (let x= xDim.start ; x < xDim.end ; x++){
-				const chunkID = `z${z}_y${y}_x${x}` // Unique ID for each chunk
-				const cacheBase = `${initStore}_${variable}`
-				const cacheName = `${cacheBase}_chunk_${chunkID}`
-				if (cache.has(cacheName)){
-					const cachedChunk = cache.get(cacheName)
-					const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed. Gemini thinks the .slice() helps with garbage collector as it doesn't maintain a reference to the original array
-					copyChunkToArray(
-						chunkData,
-						cachedChunk.shape,
-						cachedChunk.stride,
-						typedArray,
-						outputShape,
-						destStride as [number, number, number],
-						[z,y,x],
-						[zDim.start,yDim.start,xDim.start],
-					)
-					setProgress(Math.round(iter/totalChunksToLoad*100)) // Progress Bar
-					iter ++;
-				}
-				else{
-					// Download Chunk
-					const chunkSlice =  is4D ? [idx4D , zarr.slice(z*chunkShape[0], (z+1)*chunkShape[0]), zarr.slice(y*chunkShape[1], (y+1)*chunkShape[1]), zarr.slice(x*chunkShape[2], (x+1)*chunkShape[2])] : 
-											[zarr.slice(z*chunkShape[0], (z+1)*chunkShape[0]), zarr.slice(y*chunkShape[1], (y+1)*chunkShape[1]), zarr.slice(x*chunkShape[2], (x+1)*chunkShape[2])]
-
-					const chunk = await fetchWithRetry(
-						() => zarr.get(outVar, chunkSlice),
-						`variable ${variable}`,
-						setStatus
-					);
-					if (!chunk || chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
-						throw new Error("BigInt arrays are not supported for conversion to Float32Array.");
-					} 
-					const originalData = chunk.data as Float32Array;
-					const chunkStride = chunk.stride;
-					const [chunkF16, newScalingFactor] = ToFloat16(originalData, scalingFactor)
-					if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
-						if (scalingFactor == null || newScalingFactor > scalingFactor){ 
-							const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
-							RescaleArray(typedArray, thisScaling)
-							scalingFactor = newScalingFactor
-							for (const id of rescaleIDs){ // Set new scalingFactor on the chunks
-								const tempName = `${cacheBase}_chunk_${id}`
-								const tempChunk = cache.get(tempName)
-								tempChunk.scaling = scalingFactor
-								RescaleArray(tempChunk.data, thisScaling)
-								cache.set(tempName, tempChunk)
-							}
-						}
-					}
-					copyChunkToArray(
-						chunkF16,
-						chunkShape,
-						chunkStride as [number, number, number],
-						typedArray,
-						outputShape,
-						destStride as [number, number, number],
-						[z,y,x],
-						[zDim.start,yDim.start,xDim.start],
-					)
-					const cacheChunk = {
-						data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-						shape: chunkShape,
-						stride: chunkStride,
-						scaling: scalingFactor,
-						compressed: compress
-					}
-					cache.set(cacheName,cacheChunk)
-					setProgress(Math.round(iter/totalChunksToLoad*100)) // Progress Bar
-					iter ++;
-					rescaleIDs.push(chunkID)
-				}
-			}
-		}
-	}
-	setProgress(0) // Reset progress for next load
-	return {
-		data: typedArray,
-		shape: outputShape,
-		dtype: outVar.dtype,
-		scalingFactor
+	if (useNC){
+		const output = GetNCArray()
+		return output
+	} else{
+		const output = await GetZarrArray()
+		return output
 	}
 }
 
 export async function GetAttributes(thisVariable? : string){
 	const {initStore, variable } = useGlobalStore.getState();
 	const {cache} = useCacheStore.getState();
-	const {currentStore} = useZarrStore.getState();
-	const cacheName = `${initStore}_${variable}_meta`
+	const {useNC} = useZarrStore.getState();
+	const cacheName = `${initStore}_${thisVariable?? variable}_meta`
 	if (cache.has(cacheName)){
 		const meta = cache.get(cacheName)
 		return meta;
 	}
-	const group = await currentStore;
-	const outVar = await zarr.open(group.resolve(thisVariable?? variable), {kind:"array"});
-	const meta = outVar.attrs;
-	cache.set(cacheName, meta);
-	const dims = [];
-	for (const dim of meta._ARRAY_DIMENSIONS as string[]){ //Put the dimension arrays in the cache to access later
-		if (!cache.has(dim)){
-			const dimArray = await zarr.open(group.resolve(dim), {kind:"array"})
-					.then((result) => zarr.get(result));
-				const dimMeta = await zarr.open(group.resolve(dim), {kind:"array"})
-					.then((result) => result.attrs)
-				cache.set(`${initStore}_${dim}`, dimArray.data);
-				cache.set(`${initStore}_${dim}_meta`, dimMeta)
-			}
-			dims.push(dim)
+	else {
+		if (useNC){
+			const meta = GetNCAttributes(thisVariable)
+			return meta
+		} else {
+			const meta = await GetZarrAttributes(thisVariable)
+			return meta
+		}
 	}
-	return meta;
 }
 
 

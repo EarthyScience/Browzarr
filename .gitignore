@@ -85,3 +85,4 @@ docs/*.0x
 #VSC
 docs/.history
 docs/.wrangler
+*.wasm

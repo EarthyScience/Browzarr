@@ -10,7 +10,6 @@ interface Array {
 
 function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number}): {minVal: number, maxVal: number}{
     const { setTextureData} = useGlobalStore.getState()
-
     const data = array.data;
     const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
     const textureData = new Uint8Array(
@@ -60,7 +59,6 @@ export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTe
     const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths)
     const chunks = []
     for (const chunk of chunkData){   
-        //@ts-expect-error stop whining
         const volTexture = new THREE.Data3DTexture(chunk.data, chunk.dims.x, chunk.dims.y, chunk.dims.z);
         volTexture.format = THREE.RedFormat;
         volTexture.minFilter = THREE.NearestFilter;

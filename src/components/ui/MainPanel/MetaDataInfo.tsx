@@ -71,11 +71,12 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const {dimArrays, dimNames, dimUnits} = meta.dimInfo
   const {maxSize, setMaxSize} = useCacheStore.getState()
   const [cacheSize, setCacheSize] = useState(maxSize)
-  const { zSlice, ySlice, xSlice, compress, setZSlice, setYSlice, setXSlice, ReFetch, setCompress } = useZarrStore(useShallow(state => ({
+  const { zSlice, ySlice, xSlice, compress, useNC, setZSlice, setYSlice, setXSlice, ReFetch, setCompress } = useZarrStore(useShallow(state => ({
     zSlice: state.zSlice,
     ySlice: state.ySlice,
     xSlice: state.xSlice,
     compress: state.compress,
+    useNC:state.useNC,
     setZSlice: state.setZSlice,
     setYSlice: state.setYSlice,
     setXSlice: state.setXSlice,
@@ -94,11 +95,12 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const yLength = useMemo(() => meta.shape ? meta.shape[shapeLength-2] : 0, [meta])
   const xLength = useMemo(() => meta.shape ? meta.shape[shapeLength-1] : 0, [meta])
   const is3D = useMemo(() => meta.shape ? meta.shape.length == 3 : false, [meta])
-  const hasTimeChunks = shapeLength > 2 ? meta.shape[shapeLength-3]/meta.chunks[shapeLength-3] > 1 : false
-  const hasYChunks = meta.shape[shapeLength-2]/meta.chunks[shapeLength-2] > 1 
-  const hasXChunks = meta.shape[shapeLength-1]/meta.chunks[shapeLength-1] > 1 
-  const chunkIDs = useMemo(()=>ChunkIDs({xSlice, ySlice, zSlice}, meta.chunks, meta.shape, meta.shape.length == 4),[zSlice, xSlice, ySlice, meta])
+  const hasTimeChunks = (shapeLength > 2 ? meta.shape[shapeLength-3]/meta.chunks[shapeLength-3] > 1 : false) 
+  const hasYChunks = (meta.shape[shapeLength-2]/meta.chunks[shapeLength-2] > 1 ) 
+  const hasXChunks = (meta.shape[shapeLength-1]/meta.chunks[shapeLength-1] > 1 ) 
+  const chunkIDs = meta.chunks && useMemo(()=>ChunkIDs({xSlice, ySlice, zSlice}, meta.chunks, meta.shape, meta.shape.length == 4),[zSlice, xSlice, ySlice, meta])
   const isFlat = meta.shape.length == 2
+ 
   const currentSize = useMemo(() => {
     const is2D = isFlat
     
@@ -111,7 +113,6 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     const z = is2D ? { first: 0, last: 1, steps: 1 } : getSliceDims(zSlice, zLength);
     const x = getSliceDims(xSlice, meta.shape[is4D ? 3 : is3D ? 2 : 1]);
     const y = getSliceDims(ySlice, meta.shape[is4D ? 2 : is3D ? 1 : 0]);
-
     const maxSize = is2D ? maxTextureSize : max3DTextureSize;
     const texCounts = [z.steps / maxSize, y.steps / maxSize, x.steps / maxSize];
     
@@ -138,10 +139,11 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
       const xChunksNeeded = Math.ceil(x.steps / meta.chunks[chunkIndices[0]]);
       const yChunksNeeded = Math.ceil(y.steps / meta.chunks[chunkIndices[1]]);
       const zChunksNeeded = Math.ceil(z.steps / meta.chunks[chunkIndices[2]]);
+      
       return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
     }
   }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D]);
-
+  
   const cachedSize = useMemo(()=>{
     const thisDtype = meta.dtype as string
     if (thisDtype.includes("32")){
