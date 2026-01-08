@@ -14,18 +14,18 @@ export const ZARR_STORES = {
     LOCAL: 'http://localhost:5173/GlobalForcingTiny.zarr'
 } as const;
 
-export function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float16Array, number | null]{ 
+export function ToFloat16(array : Float32Array | Float64Array, scalingFactor: number | null) : [Float16Array, number | null]{ 
 	let newScalingFactor: number | null = null;
 	const [minVal, maxVal] = ArrayMinMax(array)
-
 	const peak = Math.max(Math.abs(minVal), Math.abs(maxVal));
     const float16Max = 65504;
-
+	console.log(minVal, maxVal)
 	if (peak <= 65504 && peak > 1e-3){ // If values fit in Float16, use that to save memory
 		return [new Float16Array(array), scalingFactor]
 	}
 
 	else{
+		console.log("scaling I guess")
 		newScalingFactor = Math.ceil(Math.log10(peak / float16Max));
 
 		if (scalingFactor !== null) {
@@ -37,7 +37,6 @@ export function ToFloat16(array : Float32Array, scalingFactor: number | null) : 
         }
 		return [new Float16Array(array), newScalingFactor]
 	}
-	
 }
 
 export function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales built array when new chunk has higher scalingFactor

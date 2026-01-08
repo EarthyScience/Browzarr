@@ -56,6 +56,7 @@ export async function GetNCArray() {
                 : [chunkShape[chunkLength -1] * chunkShape[chunkLength -2], chunkShape[chunkLength -1], 1]
     const zIndexOffset = is4D ? 1 : 0;
     const atts = varInfo.attributes
+    console.log(atts)
     let fillValue = NaN
     if ("missing_value" in atts){
         fillValue = !Number.isNaN(atts["missing_value"][0]) ? atts["missing_value"][0] : fillValue
@@ -144,10 +145,15 @@ export async function GetNCArray() {
                             }
                         }
                     }
+                    const newChunkStride = [
+                        counts[1] * counts[2],  // or however your stride is calculated
+                        counts[2],
+                        1
+                    ] as [number, number, number];
                     copyChunkToArray(
                         chunkF16,
-                        chunkShape,
-                        chunkStride as [number, number, number],
+                        counts,
+                        newChunkStride as [number, number, number],
                         typedArray,
                         outputShape,
                         destStride as [number, number, number],
@@ -156,8 +162,8 @@ export async function GetNCArray() {
                     )
                     const cacheChunk = {
                         data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-                        shape: chunkShape,
-                        stride: chunkStride,
+                        shape: counts,
+                        stride: newChunkStride,
                         scaling: scalingFactor,
                         compressed: compress
                     }

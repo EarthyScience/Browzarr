@@ -304,3 +304,32 @@ export async function GetDimInfo(variable:string){
 export function deg2rad(deg: number){
   return deg*Math.PI/180;
 }
+
+export function percentileRange<T extends TypedArray>(arr: T) {
+  if (arr.length === 0) {
+    throw new Error("Array is empty");
+  }
+
+  // Copy into a normal array for sorting (TypedArrays sort in-place too, but we avoid mutating input)
+  const sorted = Array.from(arr).sort((a, b) => a - b);
+
+  const p = (q: number) => {
+    const idx = q * (sorted.length - 1);
+    const lo = Math.floor(idx);
+    const hi = Math.ceil(idx);
+    const t = idx - lo;
+    return sorted[lo] * (1 - t) + sorted[hi] * t; // linear interpolation
+  };
+
+  return {
+    low2: p(0.02),
+    high98: p(0.98),
+  };
+}
+
+export type TypedArray =
+  | Float32Array | Float64Array
+  | Int8Array | Uint8Array | Uint8ClampedArray
+  | Int16Array | Uint16Array
+  | Int32Array | Uint32Array;
+

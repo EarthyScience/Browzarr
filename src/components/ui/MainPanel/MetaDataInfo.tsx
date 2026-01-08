@@ -145,11 +145,11 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   
   const cachedSize = useMemo(()=>{
     const thisDtype = meta.dtype as string
-    if (thisDtype.includes("32")){
+    if (thisDtype.includes("32") || thisDtype.includes("f4")){
       return currentSize / 2;
-    } else if (thisDtype.includes("64")){
+    } else if (thisDtype.includes("64") || thisDtype.includes("f8")){
       return currentSize / 4;
-    } else if (thisDtype.includes("8")){
+    } else if (thisDtype.includes("8") || thisDtype.includes("i1") ){
       return currentSize * 2;
     } else {
       return currentSize;
