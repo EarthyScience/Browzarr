@@ -29,7 +29,6 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
           data.getGlobalAttributes(),
           data.getFullMetadata()
         ])
-        console.log(variables, metadata, attrs)
         useGlobalStore.setState({variables: Object.keys(variables), zMeta: metadata, initStore:`local_${file.name}`})
         useZarrStore.setState({useNC: true, ncModule: data})
         const titleDescription = {

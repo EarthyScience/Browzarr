@@ -299,7 +299,9 @@ export function getSlicedVariableArray(
     else if (arrayType === 5) arrayData = module.nc_get_vara_float(ncid, varid, start, count);
     else if (arrayType === 6) arrayData = module.nc_get_vara_double(ncid, varid, start, count);
     else arrayData = module.nc_get_vara_double(ncid, varid, start, count);
-    if (!arrayData.data) throw new Error("Failed to read array data")
+    if (!arrayData.data) {
+        console.log(arrayData)
+        throw new Error("Failed to read array data")}
     return arrayData.data
 }
 

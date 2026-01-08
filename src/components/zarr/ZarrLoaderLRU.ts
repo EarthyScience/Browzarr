@@ -15,39 +15,29 @@ export const ZARR_STORES = {
 } as const;
 
 export function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float16Array, number | null]{ 
-	let newArray : Float16Array;
 	let newScalingFactor: number | null = null;
 	const [minVal, maxVal] = ArrayMinMax(array)
-	if (maxVal <= 65504 && minVal >= -65504 && Math.abs(maxVal) > 1e-3 && Math.abs(minVal) > 1e-3){ // If values fit in Float16, use that to save memory
-		newArray = new Float16Array(array)
-	}
-	else{
-		if ((Math.abs(maxVal) < 1e-3)){ // If low precision it will bump up
-			newScalingFactor = Math.floor(Math.log10(maxVal))
-			newScalingFactor = scalingFactor ? (scalingFactor < newScalingFactor ? scalingFactor : newScalingFactor) : newScalingFactor
-			for (let i = 0; i < array.length; i++) {
-				array[i] /= Math.pow(10,newScalingFactor);
-			}
-		} else if (Math.abs(minVal) < 1e-3 ){
-			const minFactor = Math.floor(Math.log10(Math.abs(minVal)))
-			const newMax = maxVal/Math.pow(10, minFactor)
-			const maxFactor = Math.ceil(Math.log10(newMax /65504))
-			newScalingFactor = maxFactor + minFactor
-			newScalingFactor = scalingFactor ? (scalingFactor < newScalingFactor ? scalingFactor : newScalingFactor) : newScalingFactor
-			for (let i = 0; i < array.length; i++) {
-				array[i] /= Math.pow(10,newScalingFactor);
-			}
 
-		} else {
-			newScalingFactor = Math.ceil(Math.log10(maxVal/65504))
-			newScalingFactor = scalingFactor ? (scalingFactor > newScalingFactor ? scalingFactor : newScalingFactor) : newScalingFactor
-			for (let i = 0; i < array.length; i++) {
-				array[i] /= Math.pow(10,newScalingFactor);
-			}
-		}	
-		newArray = new Float16Array(array)
+	const peak = Math.max(Math.abs(minVal), Math.abs(maxVal));
+    const float16Max = 65504;
+
+	if (peak <= 65504 && peak > 1e-3){ // If values fit in Float16, use that to save memory
+		return [new Float16Array(array), scalingFactor]
 	}
-	return [newArray, newScalingFactor]
+
+	else{
+		newScalingFactor = Math.ceil(Math.log10(peak / float16Max));
+
+		if (scalingFactor !== null) {
+			newScalingFactor = Math.max(newScalingFactor, scalingFactor);
+		}
+		const divisor = Math.pow(10, newScalingFactor);
+        for (let i = 0; i < array.length; i++) {
+            array[i] /= divisor;
+        }
+		return [new Float16Array(array), newScalingFactor]
+	}
+	
 }
 
 export function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales built array when new chunk has higher scalingFactor

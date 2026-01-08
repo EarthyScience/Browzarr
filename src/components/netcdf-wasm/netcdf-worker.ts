@@ -128,11 +128,11 @@ self.onmessage = async (e: MessageEvent) => {
             }
             //Arrays
             case 'getVariableArray': {
-                result = NCGet.getVariableArray(mod, data.ncid, data.varid);
+                result = NCGet.getVariableArray(mod, data.ncid, data.variable);
                 break;
             }
             case 'getSlicedVariableArray': {
-                result = NCGet.getSlicedVariableArray(mod, data.ncid, data.varid, data.start, data.count);
+                result = NCGet.getSlicedVariableArray(mod, data.ncid, data.variable, data.start, data.count);
                 break;
             }
 

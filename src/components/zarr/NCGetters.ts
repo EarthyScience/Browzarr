@@ -48,7 +48,6 @@ export async function GetNCArray() {
 	const {cache} = useCacheStore.getState();
 
     const varInfo = await ncModule.getVariableInfo(variable)
-    console.log(varInfo)
     const {shape, chunks:chunkShape} = varInfo
     const is2D = shape.length === 2;
     const chunkLength = chunkShape.length
@@ -126,7 +125,10 @@ export async function GetNCArray() {
                     iter ++;
                 }
                 else{
-                    const chunkArray = await ncModule.getSlicedVariableArray(variable, [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]], chunkShape)
+                    const starts = [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]]
+                    const counts = chunkShape.map((v: number, i: number) => Math.min(v, shape[i] - starts[i])); // Don't extend beyond the dim bounds
+
+                    const chunkArray = await ncModule.getSlicedVariableArray(variable, starts, counts)
                     const [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
                     if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
                         if (scalingFactor == null || newScalingFactor > scalingFactor){ 
