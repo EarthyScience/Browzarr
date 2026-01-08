@@ -112,6 +112,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     const z = is2D ? { first: 0, last: 1, steps: 1 } : getSliceDims(zSlice, zLength);
     const x = getSliceDims(xSlice, meta.shape[is4D ? 3 : is3D ? 2 : 1]);
     const y = getSliceDims(ySlice, meta.shape[is4D ? 2 : is3D ? 1 : 0]);
+
     const maxSize = is2D ? maxTextureSize : max3DTextureSize;
     const texCounts = [z.steps / maxSize, y.steps / maxSize, x.steps / maxSize];
     

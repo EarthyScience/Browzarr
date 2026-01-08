@@ -2,15 +2,10 @@
 
 import { Group } from './group';
 import { WasmModuleLoader } from './wasm-module';
-import { NC_CONSTANTS, DATA_TYPE_SIZE, CONSTANT_DTYPE_MAP } from './constants';
-import type { NetCDF4Module, DatasetOptions, MemoryDatasetSource, WorkerFSSource } from './types';
+import { NC_CONSTANTS } from './constants';
+import type { NetCDF4Module, DatasetOptions, MemoryDatasetSource } from './types';
 import * as NCGet from './netcdf-getters'
-import { Theater } from 'lucide-react';
 
-interface LazyDatasetSource {
-    url: string;        // blob: URL for local Blob/File, or http(s): for remote
-    filename: string;   // Virtual path, e.g., '/tmp/myfile.nc'
-}
 
 export class NetCDF4 extends Group {
     private module: NetCDF4Module | null = null;

@@ -1,6 +1,5 @@
 import * as zarr from "zarrita";
 import {  ArrayMinMax } from "@/utils/HelperFuncs";
-import { GetSize } from "./GetMetadata";
 import { useGlobalStore, useZarrStore, useErrorStore, useCacheStore } from "@/utils/GlobalStates";
 import { gzipSync, decompressSync } from 'fflate';
 import { GetNCArray, GetNCAttributes } from "./NCGetters";
@@ -19,13 +18,11 @@ export function ToFloat16(array : Float32Array | Float64Array, scalingFactor: nu
 	const [minVal, maxVal] = ArrayMinMax(array)
 	const peak = Math.max(Math.abs(minVal), Math.abs(maxVal));
     const float16Max = 65504;
-	console.log(minVal, maxVal)
 	if (peak <= 65504 && peak > 1e-3){ // If values fit in Float16, use that to save memory
 		return [new Float16Array(array), scalingFactor]
 	}
 
 	else{
-		console.log("scaling I guess")
 		newScalingFactor = Math.ceil(Math.log10(peak / float16Max));
 
 		if (scalingFactor !== null) {
