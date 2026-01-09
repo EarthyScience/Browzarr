@@ -30,6 +30,7 @@ jobs:
       - name: Build site
         env:
           BASE_PATH: "/latest"
+          NEXT_PUBLIC_BASE_PATH: "/latest"
           TARGET_FOLDER: latest
         run: pnpm buildRepo
 
