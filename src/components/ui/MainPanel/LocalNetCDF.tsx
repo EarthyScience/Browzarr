@@ -2,8 +2,8 @@
 import React, {ChangeEvent} from 'react'
 import { Input } from '../input'
 import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
-import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
-
+// import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
+import useNetCDF from '@/hooks/useNetCDF';
 
 interface LocalNCType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -11,7 +11,7 @@ interface LocalNCType {
 }
 
 const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
-
+    const netCDF4 = useNetCDF();
     const {setStatus, setVariables, setZMeta, setInitStore} = useGlobalStore.getState()
     const {ncModule} = useZarrStore.getState()
 
@@ -24,7 +24,7 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         const file = files[0]
         if (ncModule) ncModule.close();
         setStatus("Loading...")
-        const data = await NetCDF4.fromBlobLazy(file)
+        const data = await netCDF4.fromBlobLazy(file)
         const [variables, attrs, metadata] = await Promise.all([
           data.getVariables(),
           data.getGlobalAttributes(),
