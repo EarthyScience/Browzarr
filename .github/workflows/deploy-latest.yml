@@ -1,4 +1,4 @@
-name: Deploy main → gh-pages/root
+name: Deploy main → gh-pages/latest
 
 on:
   push:
@@ -29,8 +29,8 @@ jobs:
 
       - name: Build site
         env:
-          BASE_PATH: 
-          TARGET_FOLDER: 
+          BASE_PATH: "/latest"
+          TARGET_FOLDER: latest
         run: pnpm buildRepo
 
       - name: Deploying latest 🚀
@@ -38,5 +38,5 @@ jobs:
         with:
           branch: gh-pages
           folder: out
-          target-folder: .
+          target-folder: latest
           clean: false
