@@ -34,6 +34,7 @@
   "private": true,
   "packageManager": "pnpm@10.11.1",
   "scripts": {
+    "postinstall": "node src/hooks/copy-wasm.mjs",
     "prBuild": "pnpm buildRepo",
     "prLint": "pnpm lint",
     "dev": "next dev",
