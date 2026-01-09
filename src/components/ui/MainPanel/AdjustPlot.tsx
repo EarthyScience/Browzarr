@@ -528,8 +528,6 @@ const GlobalOptions = () =>{
   const [thisFillVal, setThisFillValue] = useState(fillValue)
 
   const isPC = plotType == 'point-cloud'
-  console.log(fillValue)
-  console.log(valueScales)
   return (
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
       {!isPC &&

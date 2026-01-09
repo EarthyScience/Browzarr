@@ -127,7 +127,6 @@ void main() {
             if (alphaAcc >= 1.0) break;
         }
     }
-
     accumColor.a = alphaAcc; // Set the final accumulated alpha
     color = accumColor;
     if (color.a == 0.0) discard;
