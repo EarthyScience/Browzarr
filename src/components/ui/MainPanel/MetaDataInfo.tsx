@@ -58,15 +58,17 @@ function HandleCustomSteps(e: string, chunkSize: number){
 
 
 const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSide }: { meta: any, metadata: Record<string, any>, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>, popoverSide: string  }) => {
-  const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(state => ({
+  const {is4D, idx4D, variable, initStore, clampExtremes, setIs4D, setIdx4D, setVariable, setTextureArrayDepths, setClampExtremes} = useGlobalStore(useShallow(state => ({
     is4D: state.is4D,
     idx4D: state.idx4D,
     variable: state.variable,
     initStore: state.initStore,
+    clampExtremes: state.clampExtremes,
     setIs4D: state.setIs4D,
     setIdx4D: state.setIdx4D,
     setVariable: state.setVariable,
-    setTextureArrayDepths: state.setTextureArrayDepths
+    setTextureArrayDepths: state.setTextureArrayDepths,
+    setClampExtremes: state.setClampExtremes
   })))
   const {dimArrays, dimNames, dimUnits} = meta.dimInfo
   const {maxSize, setMaxSize} = useCacheStore.getState()
@@ -385,15 +387,16 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
             }
             <div className="grid grid-cols-[auto_50%] gap-2 mt-2">
               <div>
-              <label htmlFor="compress-data">Compress Data </label>
-              <Tooltip >
-                <TooltipTrigger asChild>
-                  <BsFillQuestionCircleFill/>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-[min(100%,16rem)] break-words whitespace-normal">
-                  Compress data to preserve memory at the expense of slightly longer load times
-                </TooltipContent>
-              </Tooltip>
+                <label htmlFor="compress-data" className="inline-flex">Compress Data 
+                <Tooltip >
+                  <TooltipTrigger asChild>
+                    <BsFillQuestionCircleFill/>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[min(100%,16rem)] break-words whitespace-normal">
+                    Compress data to preserve memory at the expense of slightly longer load times
+                  </TooltipContent>
+                </Tooltip>  
+                </label>
               </div>
               
               <Switch id="compress-data" checked={compress} onCheckedChange={e=>setCompress(e)}/>

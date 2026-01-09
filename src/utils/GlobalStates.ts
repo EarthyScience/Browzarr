@@ -47,6 +47,7 @@ type StoreState = {
   titleDescription: { title: string | null; description: string | null };
   textureArrayDepths: number[];
   textureData: Uint8Array;
+  clampExtremes: boolean; // Values to reprocess the texture by trimming extremes
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -79,6 +80,7 @@ type StoreState = {
   setTextureData: (textureData: Uint8Array ) => void;
   setDPR: (DPR: number) => void;
   setScalingFactor: (scalingFactor: number | null) => void;
+  setClampExtremes: (clampExtremes: boolean) => void
 };
 
 export const useGlobalStore = create<StoreState>((set, get) => ({
@@ -110,6 +112,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   textureData: new Uint8Array(1),
   DPR: 1,
   scalingFactor: null,
+  clampExtremes: false,
 
   setDataShape: (dataShape) => set({ dataShape }),
   setShape: (shape) => set({ shape }),
@@ -160,6 +163,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setTextureData: (textureData) => set({ textureData }),
   setDPR: (DPR) => set({ DPR }),
   setScalingFactor: (scalingFactor) => set({ scalingFactor }),
+  setClampExtremes: (clampExtremes) => set({ clampExtremes }),
 }));
 
 type PlotState ={
@@ -215,6 +219,7 @@ type PlotState ={
   interpPixels: boolean;
   useOrtho: boolean;
   rotateFlat: boolean;
+  fillValue: number | undefined,
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -268,6 +273,7 @@ type PlotState ={
   setXSlice: (xSlice: [number , number | null]) => void;
   setInterpPixels: (interpPixels: boolean) => void;
   setUseOrtho: (useOrtho: boolean) => void;
+  setFillValue: (fillValue: number | undefined) => void;
 }
 
 export const usePlotStore = create<PlotState>((set, get) => ({
@@ -323,6 +329,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   interpPixels: false,
   useOrtho: false,
   rotateFlat: false,
+  fillValue: undefined,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
@@ -377,7 +384,8 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setYSlice: (ySlice) => set({ ySlice }),
   setXSlice: (xSlice) => set({ xSlice }),
   setInterpPixels: (interpPixels) => set({ interpPixels }),
-  setUseOrtho: (useOrtho) => set({ useOrtho })
+  setUseOrtho: (useOrtho) => set({ useOrtho }),
+  setFillValue: (fillValue) => set({ fillValue })
 }))
 
 

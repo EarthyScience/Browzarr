@@ -6,6 +6,17 @@ import { copyChunkToArray } from '@/components/zarr/ZarrLoaderLRU';
 import { GetNCDims } from '@/components/zarr/NCGetters';
 import { GetZarrDims } from '@/components/zarr/ZarrGetters';
 
+export type TypedArray =
+  | Float32Array | Float64Array
+  | Int8Array | Uint8Array | Uint8ClampedArray
+  | Int16Array | Uint16Array
+  | Int32Array | Uint32Array;
+
+export type TypedArrayBufferLike = 
+  | Uint8Array<ArrayBufferLike> | Int16Array<ArrayBufferLike> 
+  | Float16Array<ArrayBufferLike>  | Float32Array<ArrayBufferLike> 
+  | Int32Array<ArrayBufferLike> | Uint32Array<ArrayBufferLike> 
+  | Float32Array<ArrayBufferLike> | Float64Array<ArrayBufferLike>
 
 export function parseTimeUnit(units: string | undefined): [number, number] {
     if (units === "Default"){
@@ -124,7 +135,7 @@ export function getUnitAxis(vec: THREE.Vector3) { //Takes the normal of a cube i
   return null;
 }
 
-export function ArrayMinMax(array:number[] | Uint8Array<ArrayBufferLike> | Int16Array<ArrayBufferLike> | Float16Array<ArrayBufferLike>  | Float32Array<ArrayBufferLike> | Int32Array<ArrayBufferLike> | Uint32Array<ArrayBufferLike> | Float32Array<ArrayBufferLike> | Float64Array<ArrayBufferLike>){
+export function ArrayMinMax(array:number[] | TypedArray | TypedArrayBufferLike){
   let minVal = Infinity;
   let maxVal = -Infinity;
   for (let i = 0; i < array.length; i++){
@@ -305,31 +316,12 @@ export function deg2rad(deg: number){
   return deg*Math.PI/180;
 }
 
-export function percentileRange<T extends TypedArray>(arr: T) {
-  if (arr.length === 0) {
-    throw new Error("Array is empty");
-  }
-
-  // Copy into a normal array for sorting (TypedArrays sort in-place too, but we avoid mutating input)
-  const sorted = Array.from(arr).sort((a, b) => a - b);
-
-  const p = (q: number) => {
-    const idx = q * (sorted.length - 1);
-    const lo = Math.floor(idx);
-    const hi = Math.ceil(idx);
-    const t = idx - lo;
-    return sorted[lo] * (1 - t) + sorted[hi] * t; // linear interpolation
-  };
-
-  return {
-    low2: p(0.02),
-    high98: p(0.98),
-  };
+export function normalize(val: number | null | undefined, min:number, max:number){
+  if (!val && val !=0) return undefined;
+  return (val-min)/(max-min)
 }
 
-export type TypedArray =
-  | Float32Array | Float64Array
-  | Int8Array | Uint8Array | Uint8ClampedArray
-  | Int16Array | Uint16Array
-  | Int32Array | Uint32Array;
-
+export function denormalize(  norm: number | null | undefined,  min: number,  max: number) {
+  if (!norm && norm !== 0) return undefined;
+  return norm * (max - min) + min;
+}
