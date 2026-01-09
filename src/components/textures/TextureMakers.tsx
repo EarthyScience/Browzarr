@@ -1,10 +1,10 @@
 //This File will have functions converting the array information into 2D or 3D textures that we will pass to the corresponding 2D or 3D object
 import * as THREE from 'three'
-import { ArrayMinMax, TypedArray  } from '@/utils/HelperFuncs';
+import { ArrayMinMax, TypedArray, TypedArrayBufferLike  } from '@/utils/HelperFuncs';
 import { useGlobalStore } from '@/utils/GlobalStates';
 
 interface Array {
-    data: TypedArray;
+    data: TypedArray | TypedArrayBufferLike;
     shape: number[];
 }
 
