@@ -38,13 +38,8 @@ jobs:
             VERSIONS_ARRAY=$(printf '%s\n' "$SORTED" | jq -R -s -c 'split("\n")[:-1]')
           fi
 
-          # Prepend 'latest' to the array if it exists
-          if [ -n "$HAS_LATEST" ]; then
-            VERSIONS_JSON=$(echo "$VERSIONS_ARRAY" | jq -c '["latest"] + .')
-          else
-            VERSIONS_JSON=$VERSIONS_ARRAY
-          fi
-
+          VERSIONS_JSON=$VERSIONS_ARRAY
+          
           # Create the versions.json file
           echo "$VERSIONS_JSON" > versions.json
 
