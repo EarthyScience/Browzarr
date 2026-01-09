@@ -547,7 +547,7 @@ const GlobalOptions = () =>{
         value={nanColor}
         onChange={e => setNanColor(e.target.value)}
       />
-      <b>Fill Value</b>
+      <b>Mask Value</b>
       <div className='grid grid-cols-[auto_60%] items-center gap-2 mt-2 text-left'>
       <Input
         type='number'

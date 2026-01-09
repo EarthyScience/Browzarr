@@ -103,9 +103,9 @@ void main() {
         float d = sample1(localCoord, textureIdx);
 
         bool cond = (d >= threshold.x) && (d <= threshold.y); 
-        cond = cond && !isnan(d) && abs(d - fillValue) > 0.005;
+
         if (cond) {
-            if (d == 1. ){
+            if (d == 1. || abs(d - fillValue) < 0.005){
                 accumColor.rgb += (1.0 - alphaAcc) * pow(nanAlpha, 5.) * nanColor.rgb;
                 alphaAcc += pow(nanAlpha, 5.);
             }

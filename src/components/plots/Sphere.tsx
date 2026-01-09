@@ -53,7 +53,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
     
     const {animate, animProg, cOffset, cScale, selectTS, lonExtent, latExtent, 
       lonResolution, latResolution, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
-      zSlice, ySlice, xSlice,
+      zSlice, ySlice, xSlice, fillValue,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
         animate: state.animate,
         animProg: state.animProg,
@@ -71,6 +71,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         zSlice: state.zSlice,
         ySlice: state.ySlice,
         xSlice: state.xSlice,
+        fillValue:state.fillValue,
         getColorIdx: state.getColorIdx,
         incrementColorIdx: state.incrementColorIdx
     })))
@@ -133,7 +134,8 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
                 nanColor: {value: new THREE.Color(nanColor)},
                 nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)},
-                displacement: {value: sphereDisplacement}
+                displacement: {value: sphereDisplacement},
+                fillValue: {value: fillValue}
             },
             vertexShader: isFlat ? sphereVertexFlat : sphereVertex,
             fragmentShader: isFlat ? flatSphereFrag : sphereFrag,
@@ -163,6 +165,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         uniforms.nanAlpha.value =  1 - nanTransparency
         uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
         uniforms.displacement.value = sphereDisplacement
+        uniforms.fillValue.value = fillValue
       }
       if (backMaterial){
         const uniforms = backMaterial.uniforms;
@@ -179,8 +182,9 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         uniforms.nanAlpha.value =  1 - nanTransparency
         uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
         uniforms.displacement.value = sphereDisplacement
+        uniforms.fillValue.value = fillValue
       }
-    },[textures, animProg, colormap, cOffset, cScale, animate, bounds, selectTS, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, valueScales])
+    },[textures, animProg, colormap, cOffset, cScale, animate, bounds, selectTS, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, fillValue, valueScales])
     
     
     function HandleTimeSeries(event: THREE.Intersection){
