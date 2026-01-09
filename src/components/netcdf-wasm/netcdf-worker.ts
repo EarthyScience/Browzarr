@@ -5,9 +5,10 @@ import { NC_CONSTANTS } from "./constants";
 
 declare function importScripts(...urls: string[]): void;
 declare function NetCDF4Module(config: any): any;
+const isProd = process.env.NODE_ENV === 'production';
 
 // @ts-ignore: location is available in worker global scope in browsers
-importScripts(`${(self as any).location.origin}/netcdf4.js`);
+importScripts(`${(self as any).location.origin}/${isProd ? 'latest/' : ''}netcdf4.js`);
 let netcdfModule: NetCDF4Module; // Will be created by NetCDF4Module(...)
 
 // Wait for runtime initialization

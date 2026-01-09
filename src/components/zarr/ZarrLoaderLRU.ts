@@ -26,8 +26,6 @@ export function ToFloat16(array : Float32Array, scalingFactor: number | null) : 
 		newArray = new Float16Array(array)
 	}
 	else {
-		console.log("We're here now I guess")
-		console.log(scalingFactor)
 		newScalingFactor = Math.ceil(Math.log10(maxVal/65504))
 		for (let i = 0; i < array.length; i++) {
 			array[i] /= Math.pow(10,newScalingFactor);
