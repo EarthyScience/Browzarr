@@ -18,6 +18,7 @@ uniform vec2 latBounds;
 uniform vec2 lonBounds;
 uniform vec3 nanColor;
 uniform float nanAlpha;
+uniform float fillValue;
 
 #define pi 3.141592653
 
@@ -58,13 +59,12 @@ void main(){
     localCoord = fract(localCoord);
 
     float strength = sample1(localCoord, textureIdx);
-    bool isNaN = strength == 1.;
+    bool isNaN = strength == 1. || abs(strength - fillValue) < 0.005;
     strength = isNaN ? strength : (strength - 0.5)*cScale + 0.5;
     strength = isNaN ? strength : min(strength+cOffset,0.99);
     color = isNaN ? vec4(nanColor, nanAlpha) : texture(cmap, vec2(strength, 0.5));
     if (!isNaN){
         color.a = 1.;
     }
-
 
 }

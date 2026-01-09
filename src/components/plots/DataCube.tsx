@@ -19,7 +19,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
     const {
       valueRange, xRange, yRange, zRange, quality, useOrtho, 
       animProg, cScale, cOffset, useFragOpt, transparency, 
-      nanTransparency, nanColor, vTransferRange, vTransferScale} = usePlotStore(useShallow(state => ({
+      nanTransparency, nanColor, vTransferRange, vTransferScale, fillValue} = usePlotStore(useShallow(state => ({
       valueRange: state.valueRange,
       xRange: state.xRange,
       yRange: state.yRange,
@@ -35,6 +35,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       nanColor: state.nanColor,
       vTransferRange: state.vTransferRange,
       vTransferScale: state.vTransferScale,
+      fillValue: state.fillValue,
     })))
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
@@ -58,7 +59,8 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           opacityMag: {value: vTransferScale},
           useClipScale: {value: vTransferRange},
           nanAlpha: {value: 1-nanTransparency},
-          nanColor: {value: new THREE.Color(nanColor)}
+          nanColor: {value: new THREE.Color(nanColor)},
+          fillValue: {value: fillValue}
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
       fragmentShader: useFragOpt ?  fragOpt : fragmentShader,
@@ -87,9 +89,10 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
         uniforms.nanColor.value.set(nanColor);
         uniforms.opacityMag.value = vTransferScale;
         uniforms.useClipScale.value = vTransferRange;
+        uniforms.fillValue.value = fillValue;
         invalidate() // Needed because Won't trigger re-render if camera is stationary. 
       }
-    }, [volTexture, shape, colormap, cOffset, cScale, valueRange, xRange, yRange, zRange, aspectRatio, quality, animProg, transparency, nanTransparency, nanColor, vTransferScale, vTransferRange]);
+    }, [volTexture, shape, colormap, cOffset, cScale, valueRange, xRange, yRange, zRange, aspectRatio, quality, animProg, transparency, nanTransparency, nanColor, fillValue, vTransferScale, vTransferRange]);
     useFrame(({camera})=>{ // This calculates InverseModel matrix for the orthographic raymarcher
       if (!useOrtho || !meshRef.current || !shaderMaterial) return;
       meshRef.current.modelViewMatrix.multiplyMatrices(camera.matrixWorldInverse, meshRef.current.matrixWorld);

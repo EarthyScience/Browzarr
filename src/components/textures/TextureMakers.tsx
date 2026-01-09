@@ -1,22 +1,22 @@
 //This File will have functions converting the array information into 2D or 3D textures that we will pass to the corresponding 2D or 3D object
 import * as THREE from 'three'
-import { ArrayMinMax} from '@/utils/HelperFuncs';
+import { ArrayMinMax, TypedArray, TypedArrayBufferLike  } from '@/utils/HelperFuncs';
 import { useGlobalStore } from '@/utils/GlobalStates';
 
 interface Array {
-    data: Float32Array | Float64Array | Int32Array | Uint32Array | Float32Array | Float16Array | Uint8Array;
+    data: TypedArray | TypedArrayBufferLike;
     shape: number[];
 }
 
 function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number}): {minVal: number, maxVal: number}{
-    const { setTextureData} = useGlobalStore.getState()
-
+    const { clampExtremes, setTextureData} = useGlobalStore.getState()
     const data = array.data;
-    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
+    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data )
     const textureData = new Uint8Array(
       data.map((i) => {
+        if (isNaN(i)) return 255;
         const normed = (i - minVal) / (maxVal - minVal);
-        return isNaN(normed) ? 255 : normed * 254;
+        return normed * 254;
       })
     );
     setTextureData(textureData)
@@ -71,8 +71,6 @@ export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTe
     return chunks
   }
 }
-
-
 
 export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
     const scales = StoreData(array, valueScales);

@@ -235,9 +235,9 @@ const Plot = () => {
       GetDimInfo(variable).then((arrays)=>{
         let {dimArrays, dimUnits, dimNames}= arrays;
         if (is4D){
-          dimArrays = dimArrays.slice(1);
-          dimUnits = dimUnits.slice(1);
-          dimNames = dimNames.slice(1);
+          dimArrays = dimArrays.slice();
+          dimUnits = dimUnits.slice();
+          dimNames = dimNames.slice();
         }
         setDimNames(dimNames)
         setDimArrays(dimArrays)

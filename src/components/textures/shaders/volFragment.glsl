@@ -24,6 +24,7 @@ uniform float nanAlpha;
 uniform vec3 nanColor;
 uniform float opacityMag;
 uniform bool useClipScale;
+uniform float fillValue;
 
 
 vec2 hitBox(vec3 orig, vec3 dir) {
@@ -101,10 +102,10 @@ void main() {
         localCoord = fract(localCoord);
         float d = sample1(localCoord, textureIdx);
 
-        bool cond = nanAlpha == 0. ? (d >= threshold.x) && (d <= threshold.y) : (d >= threshold.x) && (d <= threshold.y); //We skip over nans if the transparency is enabled
-        
+        bool cond = (d >= threshold.x) && (d <= threshold.y); 
+
         if (cond) {
-            if (d == 1.){
+            if (d == 1. || abs(d - fillValue) < 0.005){
                 accumColor.rgb += (1.0 - alphaAcc) * pow(nanAlpha, 5.) * nanColor.rgb;
                 alphaAcc += pow(nanAlpha, 5.);
             }
@@ -126,7 +127,6 @@ void main() {
             if (alphaAcc >= 1.0) break;
         }
     }
-
     accumColor.a = alphaAcc; // Set the final accumulated alpha
     color = accumColor;
     if (color.a == 0.0) discard;

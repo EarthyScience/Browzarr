@@ -17,6 +17,7 @@ uniform float animateProg;
 uniform vec4 flatBounds;
 uniform vec2 vertBounds;
 uniform vec3 shape;
+uniform float fillValue;
 
 bool isValidPoint(){
     for (int i = 0; i < 10; i++){
@@ -90,8 +91,9 @@ void main() {
     bool xCheck = scaledPos.x < scaledXBounds.x || scaledPos.x > scaledXBounds.y;
     bool zCheck = scaledPos.z < scaledZBounds.x || scaledPos.z > scaledZBounds.y;
     bool yCheck = scaledPos.y < scaledYBounds.x || scaledPos.y > scaledYBounds.y;
+    bool fillCheck = abs(vValue - fillValue) < 0.005;
 
-    if (xCheck || zCheck || yCheck){ //Hide points that are clipped
+    if (xCheck || zCheck || yCheck || fillCheck){ //Hide points that are clipped
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     }
     

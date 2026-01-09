@@ -2,8 +2,22 @@
 import * as THREE from 'three'
 import { useGlobalStore, usePlotStore, useZarrStore, useCacheStore } from './GlobalStates';
 import { decompressSync } from 'fflate';
-import * as zarr from 'zarrita';
 import { copyChunkToArray } from '@/components/zarr/ZarrLoaderLRU';
+import { GetNCDims } from '@/components/zarr/NCGetters';
+import { GetZarrDims } from '@/components/zarr/ZarrGetters';
+
+export type TypedArray =
+  | Float32Array | Float64Array
+  | Int8Array | Uint8Array | Uint8ClampedArray
+  | Int16Array | Uint16Array
+  | Int32Array | Uint32Array;
+
+export type TypedArrayBufferLike = 
+  | Uint8Array<ArrayBufferLike> | Int16Array<ArrayBufferLike> 
+  | Float16Array<ArrayBufferLike>  | Float32Array<ArrayBufferLike> 
+  | Int32Array<ArrayBufferLike> | Uint32Array<ArrayBufferLike> 
+  | Float32Array<ArrayBufferLike> | Float64Array<ArrayBufferLike>
+
 export function parseTimeUnit(units: string | undefined): [number, number] {
     if (units === "Default"){
         return [1, 0];
@@ -35,12 +49,16 @@ export function parseTimeUnit(units: string | undefined): [number, number] {
       day: 24 * 60 * 60 * 1000,
       days: 24 * 60 * 60 * 1000,
     };
-  
     // Handle singular/plural variations (e.g., "second" vs "seconds")
     const singularUnit = normalizedUnit.endsWith('s') ? normalizedUnit.slice(0, -1) : normalizedUnit;
     const effectiveUnit = unitToMilliseconds[normalizedUnit] !== undefined ? normalizedUnit : singularUnit;
-    const baseDate = referenceDate ? new Date(referenceDate) : new Date();
-
+    let baseDate;
+    if (referenceDate.length <= 10){
+      const [year, month, day] = referenceDate.split('-');
+      baseDate = new Date(Date.UTC(parseInt(year),parseInt(month),parseInt(day)))
+    } else {
+     baseDate = referenceDate ? new Date(referenceDate) : new Date();
+    }
     if (!(effectiveUnit in unitToMilliseconds)) {
       throw new Error(`Unsupported time unit: "${unit}". Supported units: ${Object.keys(unitToMilliseconds).join(', ')}`);
     }
@@ -59,7 +77,7 @@ export function parseLoc(input:number, units: string | undefined, verbose: boole
       }
         return input?.toFixed(2);
     }
-    if (typeof(input) == 'bigint'){
+    if (typeof(input) === 'bigint' || units.match(/^(\w+)\s+since\s+(.+)$/i)){
       if (!units){
         return Number(input)
       }
@@ -79,15 +97,13 @@ export function parseLoc(input:number, units: string | undefined, verbose: boole
       catch{
         return input;
       }
-        
     }
     if ( units.match(/(degree|degrees|deg|°)/i) ){
         if (input){
           return `${input.toFixed(2)}°`
         } else{
           return input
-        }
-        
+        } 
     }
     else {
         return input ? input.toFixed(2) : input;
@@ -119,7 +135,7 @@ export function getUnitAxis(vec: THREE.Vector3) { //Takes the normal of a cube i
   return null;
 }
 
-export function ArrayMinMax(array:number[] | Uint8Array<ArrayBufferLike> | Int16Array<ArrayBufferLike> | Float16Array<ArrayBufferLike>  | Float32Array<ArrayBufferLike> | Int32Array<ArrayBufferLike> | Uint32Array<ArrayBufferLike> | Float32Array<ArrayBufferLike> | Float64Array<ArrayBufferLike>){
+export function ArrayMinMax(array:number[] | TypedArray | TypedArrayBufferLike){
   let minVal = Infinity;
   let maxVal = -Infinity;
   for (let i = 0; i < array.length; i++){
@@ -285,61 +301,27 @@ export function TwoDecimals(val: number){
 
 
 export async function GetDimInfo(variable:string){
-  const {cache} = useCacheStore.getState();
-  const {initStore} = useGlobalStore.getState();
-  const cacheName = `${initStore}_${variable}_meta`
-  const dimArrays = []
-  const dimUnits = []
-  if (cache.has(cacheName)){
-    const meta = cache.get(cacheName)
-    const dimNames = meta._ARRAY_DIMENSIONS as string[]
-    if (dimNames){
-      for (const dim of dimNames){
-        const dimArray = cache.get(`${initStore}_${dim}`)
-        const dimMeta = cache.get(`${initStore}_${dim}_meta`)
+  const {useNC} = useZarrStore.getState()
+    if (useNC){
+      const output = GetNCDims(variable)
+      return output
+    } else {
+      const output = GetZarrDims(variable)
+      return output
+    }
+  }      
 
-        dimArrays.push(dimArray ?? [0]) // guard against missing cached arrays, though this should not happen
-        dimUnits.push(dimMeta?.units ?? null) // guards against missing cached metadata
-      }
-    } else {
-      for (const dimLength of meta.shape){
-        dimArrays.push(Array(dimLength).fill(0))
-        dimUnits.push("Default")
-      }
-    }
-    return {dimNames: dimNames??Array(meta.shape.length).fill("Default"), dimArrays, dimUnits};
-  }
-  else{
-    const group = await useZarrStore.getState().currentStore
-    if (!group) {
-      throw new Error(`Failed to open Zarr store: ${initStore}`);
-    }
-    const outVar = await zarr.open(group.resolve(variable), {kind:"array"});
-    const meta = outVar.attrs;
-    meta.shape = outVar.shape;
-    cache.set(cacheName, meta);
-    const dimNames = meta._ARRAY_DIMENSIONS as string[]
-    if (dimNames){
-      for (const dim of dimNames){
-        const dimArray = await zarr.open(group.resolve(dim), {kind:"array"})
-            .then((result) => zarr.get(result));
-        const dimMeta = await zarr.open(group.resolve(dim), {kind:"array"})
-          .then((result) => result.attrs)
-        cache.set(`${initStore}_${dim}`, dimArray.data);
-        cache.set(`${initStore}_${dim}_meta`, dimMeta)
-        dimArrays.push(dimArray.data)
-        dimUnits.push(dimMeta.units)
-      } 
-    } else {
-      for (const dimLength of outVar.shape){
-        dimArrays.push(Array(dimLength).fill(0))
-        dimUnits.push("Default")
-      }
-    }
-    return {dimNames: dimNames?? Array(outVar.shape.length).fill("Default"), dimArrays, dimUnits};
-  }
-}
 
 export function deg2rad(deg: number){
   return deg*Math.PI/180;
+}
+
+export function normalize(val: number | null | undefined, min:number, max:number){
+  if (!val && val !=0) return undefined;
+  return (val-min)/(max-min)
+}
+
+export function denormalize(  norm: number | null | undefined,  min: number,  max: number) {
+  if (!norm && norm !== 0) return undefined;
+  return norm * (max - min) + min;
 }

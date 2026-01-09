@@ -8,6 +8,7 @@ import HomeButton from "@/components/ui/HomeButton";
 import MobileUIHider from "@/components/ui/MobileUIHider";
 import ThemeSwitch from "@/components/ui/ThemeSwitch";
 import { BrowZarrPopover } from "./BrowZarrPopover";
+import Script from "next/script";
 
 export default function ClientRoot({
 	children,
@@ -21,6 +22,10 @@ export default function ClientRoot({
 			defaultTheme="system"
 			disableTransitionOnChange
 		>
+			<Script 
+                src="netcdf4.js" 
+                strategy="beforeInteractive" // Best for "Global" requirements
+            />
 			<MobileUIHider />
 			{/* left menu */}
 			<div className="fixed top-2 left-2 z-50 flex items-center gap-2">

@@ -19,6 +19,7 @@ uniform vec2 latBounds;
 uniform vec2 lonBounds;
 uniform vec3 nanColor;
 uniform float nanAlpha;
+uniform float fillValue;
 
 #define pi 3.141592653
 #define epsilon 0.0001
@@ -70,7 +71,6 @@ void main(){
     vec2 sampleCoord = giveUV(aPosition);
     bool inBounds = all(greaterThanEqual(sampleCoord, vec2(0.0))) && 
                 all(lessThanEqual(sampleCoord, vec2(1.0)));
-    
     if (inBounds) {
         int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
         int yStepSize = int(textureDepths.x); 
@@ -81,7 +81,7 @@ void main(){
         localCoord = fract(localCoord);
 
         float strength = sample1(localCoord, textureIdx);
-        bool isNaN = strength == 1.;
+        bool isNaN = strength == 1. || abs(strength - fillValue) < 0.005;
         strength = isNaN ? strength : (strength)*cScale;
         strength = isNaN ? strength : min(strength+cOffset,0.99);
         color = isNaN ? vec4(nanColor, nanAlpha) : texture(cmap, vec2(strength, 0.5));

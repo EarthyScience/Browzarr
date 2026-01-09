@@ -58,24 +58,27 @@ function HandleCustomSteps(e: string, chunkSize: number){
 
 
 const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSide }: { meta: any, metadata: Record<string, any>, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>, popoverSide: string  }) => {
-  const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(state => ({
+  const {is4D, idx4D, variable, initStore, clampExtremes, setIs4D, setIdx4D, setVariable, setTextureArrayDepths, setClampExtremes} = useGlobalStore(useShallow(state => ({
     is4D: state.is4D,
     idx4D: state.idx4D,
     variable: state.variable,
     initStore: state.initStore,
+    clampExtremes: state.clampExtremes,
     setIs4D: state.setIs4D,
     setIdx4D: state.setIdx4D,
     setVariable: state.setVariable,
-    setTextureArrayDepths: state.setTextureArrayDepths
+    setTextureArrayDepths: state.setTextureArrayDepths,
+    setClampExtremes: state.setClampExtremes
   })))
   const {dimArrays, dimNames, dimUnits} = meta.dimInfo
   const {maxSize, setMaxSize} = useCacheStore.getState()
   const [cacheSize, setCacheSize] = useState(maxSize)
-  const { zSlice, ySlice, xSlice, compress, setZSlice, setYSlice, setXSlice, ReFetch, setCompress } = useZarrStore(useShallow(state => ({
+  const { zSlice, ySlice, xSlice, compress, useNC, setZSlice, setYSlice, setXSlice, ReFetch, setCompress } = useZarrStore(useShallow(state => ({
     zSlice: state.zSlice,
     ySlice: state.ySlice,
     xSlice: state.xSlice,
     compress: state.compress,
+    useNC:state.useNC,
     setZSlice: state.setZSlice,
     setYSlice: state.setYSlice,
     setXSlice: state.setXSlice,
@@ -94,10 +97,10 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const yLength = useMemo(() => meta.shape ? meta.shape[shapeLength-2] : 0, [meta])
   const xLength = useMemo(() => meta.shape ? meta.shape[shapeLength-1] : 0, [meta])
   const is3D = useMemo(() => meta.shape ? meta.shape.length == 3 : false, [meta])
-  const hasTimeChunks = shapeLength > 2 ? meta.shape[shapeLength-3]/meta.chunks[shapeLength-3] > 1 : false
-  const hasYChunks = meta.shape[shapeLength-2]/meta.chunks[shapeLength-2] > 1 
-  const hasXChunks = meta.shape[shapeLength-1]/meta.chunks[shapeLength-1] > 1 
-  const chunkIDs = useMemo(()=>ChunkIDs({xSlice, ySlice, zSlice}, meta.chunks, meta.shape, meta.shape.length == 4),[zSlice, xSlice, ySlice, meta])
+  const hasTimeChunks = (shapeLength > 2 ? meta.shape[shapeLength-3]/meta.chunks[shapeLength-3] > 1 : false) 
+  const hasYChunks = (meta.shape[shapeLength-2]/meta.chunks[shapeLength-2] > 1 ) 
+  const hasXChunks = (meta.shape[shapeLength-1]/meta.chunks[shapeLength-1] > 1 ) 
+  const chunkIDs = meta.chunks && useMemo(()=>ChunkIDs({xSlice, ySlice, zSlice}, meta.chunks, meta.shape, meta.shape.length == 4),[zSlice, xSlice, ySlice, meta])
   const isFlat = meta.shape.length == 2
   const currentSize = useMemo(() => {
     const is2D = isFlat
@@ -138,17 +141,18 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
       const xChunksNeeded = Math.ceil(x.steps / meta.chunks[chunkIndices[0]]);
       const yChunksNeeded = Math.ceil(y.steps / meta.chunks[chunkIndices[1]]);
       const zChunksNeeded = Math.ceil(z.steps / meta.chunks[chunkIndices[2]]);
+      
       return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
     }
   }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D]);
-
+  
   const cachedSize = useMemo(()=>{
     const thisDtype = meta.dtype as string
-    if (thisDtype.includes("32")){
+    if (thisDtype.includes("32") || thisDtype.includes("f4")){
       return currentSize / 2;
-    } else if (thisDtype.includes("64")){
+    } else if (thisDtype.includes("64") || thisDtype.includes("f8")){
       return currentSize / 4;
-    } else if (thisDtype.includes("8")){
+    } else if (thisDtype.includes("8") || thisDtype.includes("i1") ){
       return currentSize * 2;
     } else {
       return currentSize;
@@ -189,6 +193,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     }
     
   },[meta, chunkIDs])
+
   return (
       // Don't put any more work in the landing page version. Since it won't be visible in the future
       // The logic here was to just get divs to be used later in a Card or Dialog component!
@@ -359,8 +364,8 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
                             <span className="text-sm font-semibold">MB</span>
                           </div>
 
-                          <Tooltip>
-                            <TooltipTrigger>
+                          <Tooltip >
+                            <TooltipTrigger asChild>
                             <BsFillQuestionCircleFill/>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -382,15 +387,16 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
             }
             <div className="grid grid-cols-[auto_50%] gap-2 mt-2">
               <div>
-              <label htmlFor="compress-data">Compress Data </label>
-              <Tooltip>
-                <TooltipTrigger>
-                  <BsFillQuestionCircleFill/>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-[min(100%,16rem)] break-words whitespace-normal">
-                  Compress data to preserve memory at the expense of slightly longer load times
-                </TooltipContent>
-              </Tooltip>
+                <label htmlFor="compress-data" className="inline-flex">Compress Data 
+                <Tooltip >
+                  <TooltipTrigger asChild>
+                    <BsFillQuestionCircleFill/>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[min(100%,16rem)] break-words whitespace-normal">
+                    Compress data to preserve memory at the expense of slightly longer load times
+                  </TooltipContent>
+                </Tooltip>  
+                </label>
               </div>
               
               <Switch id="compress-data" checked={compress} onCheckedChange={e=>setCompress(e)}/>

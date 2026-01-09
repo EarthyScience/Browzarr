@@ -16,7 +16,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { parseLoc } from '@/utils/HelperFuncs';
+import { parseLoc, normalize, denormalize } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
 import Hider from '../Hider';
@@ -508,19 +508,24 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, 
-    setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels} = usePlotStore(useShallow(state => ({
+  const {showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue,
+    setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(state => ({
     showBorders: state.showBorders, borderColor: state.borderColor,
     nanColor: state.nanColor, nanTransparency: state.nanTransparency,
     plotType: state.plotType, interpPixels: state.interpPixels,
+    fillValue: state.fillValue,
     setShowBorders: state.setShowBorders, setBorderColor: state.setBorderColor,
     setNanColor: state.setNanColor, setNanTransparency: state.setNanTransparency,
-    setInterpPixels: state.setInterpPixels
+    setInterpPixels: state.setInterpPixels, setFillValue:state.setFillValue
   })))
   const {analysisMode, axis} = useAnalysisStore(useShallow(state =>({
     analysisMode: state.analysisMode,
     axis: state.axis
   })))
+  const {valueScales} = useGlobalStore(useShallow(state =>({
+    valueScales:state.valueScales
+  })))
+  const [thisFillVal, setThisFillValue] = useState(fillValue)
 
   const isPC = plotType == 'point-cloud'
   return (
@@ -529,19 +534,32 @@ const GlobalOptions = () =>{
         <>
       <b>NaN Transparency</b>
       <UISlider
-              min={0}
-              max={1}
-              step={0.05}
-              value={[nanTransparency]}
-              className='w-full mb-2'
-          onValueChange={(vals:number[]) => setNanTransparency(vals[0])}
-          />
-        <b>NaN Color</b>
+        min={0}
+        max={1}
+        step={0.05}
+        value={[nanTransparency]}
+        className='w-full mb-2'
+        onValueChange={(vals:number[]) => setNanTransparency(vals[0])}
+      />
+      <b>NaN Color</b>
       <input type="color"
-      className='w-[100%] cursor-pointer'
-              value={nanColor}
-          onChange={e => setNanColor(e.target.value)}
-          />
+        className='w-[100%] cursor-pointer'
+        value={nanColor}
+        onChange={e => setNanColor(e.target.value)}
+      />
+      <b>Mask Value</b>
+      <div className='grid grid-cols-[auto_60%] items-center gap-2 mt-2 text-left'>
+      <Input
+        type='number'
+        defaultValue={denormalize(fillValue, valueScales.minVal, valueScales.maxVal)}
+        onChange={e=> setThisFillValue(parseFloat(e.target.value))}
+      />
+      <Button
+        disabled={normalize(thisFillVal, valueScales.minVal, valueScales.maxVal) === fillValue}
+        className='cursor-pointer'
+        onClick={()=>setFillValue(normalize(thisFillVal, valueScales.minVal, valueScales.maxVal))}
+      >Set Value</Button>
+      </div>
       <div className='grid grid-cols-[auto_20%] items-center gap-2 mt-2 text-left'>
         <label>Interpolate Pixels</label>
         <Switch className='h-5'  id="interpoalte-pixels" checked={interpPixels} onCheckedChange={e=>setInterpPixels(e)}/>

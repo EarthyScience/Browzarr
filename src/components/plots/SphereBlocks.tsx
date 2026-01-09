@@ -14,7 +14,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         dataShape: state.dataShape,
         textureArrayDepths: state.textureArrayDepths
     })))
-    const { animProg, cOffset, cScale, lonExtent, latExtent, lonResolution, latResolution, nanColor, nanTransparency, sphereDisplacement, offsetNegatives} = usePlotStore(useShallow(state=> ({
+    const { animProg, cOffset, cScale, lonExtent, latExtent, lonResolution, latResolution, nanColor, nanTransparency, sphereDisplacement, offsetNegatives, fillValue} = usePlotStore(useShallow(state=> ({
         animate: state.animate,
         animProg: state.animProg,
         cOffset: state.cOffset,
@@ -27,7 +27,8 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         nanTransparency: state.nanTransparency,
         sphereDisplacement: state.displacement,
         sphereResolution: state.sphereResolution,
-        offsetNegatives: state.offsetNegatives
+        offsetNegatives: state.offsetNegatives,
+        fillValue:state.fillValue
     })))
 
     const count = useMemo(()=>{
@@ -85,7 +86,8 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
                 nanColor: {value: new THREE.Color(nanColor)},
                 nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))},
-                displacement: {value: sphereDisplacement}
+                displacement: {value: sphereDisplacement},
+                fillValue: {value: fillValue}
             },
             vertexShader: isFlat ? sphereBlocksVertFlat : sphereBlocksVert,
             fragmentShader: sphereBlocksFrag,
@@ -109,9 +111,10 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
             uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
+            uniforms.fillValue.value = fillValue
         }
         invalidate();
-    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, offsetNegatives, textures])
+    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, offsetNegatives, textures, fillValue])
 
     const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor}),[])
     nanMaterial.transparent = true;
