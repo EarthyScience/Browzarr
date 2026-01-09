@@ -2,7 +2,8 @@
 import React, {ChangeEvent} from 'react'
 import { Input } from '../input'
 import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
-import { NetCDF4 } from '@/components/netcdf-wasm';
+import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
+
 
 interface LocalNCType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;

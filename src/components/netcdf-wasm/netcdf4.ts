@@ -6,7 +6,6 @@ import { NC_CONSTANTS } from './constants';
 import type { NetCDF4Module, DatasetOptions, MemoryDatasetSource } from './types';
 import * as NCGet from './netcdf-getters'
 
-
 export class NetCDF4 extends Group {
     private module: NetCDF4Module | null = null;
     private initialized = false;
