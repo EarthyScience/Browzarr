@@ -81,8 +81,13 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     const prevVals = useRef<{ min: number | null; max: number | null }>({ min: null, max: null });
 
     const colors = useMemo(()=>{
-        const colors = []
-        const data = colormap.source.data.data
+        const sourceData = colormap.source.data;
+        if (!sourceData || !sourceData.data) {
+            return []; // Early return
+        }
+        const colors: string[] = [];
+        const data = sourceData.data;
+
         for (let i = 0; i < data.length/4; i++){
             const newIdx = i*4
             const rgba = `rgba(${data[newIdx]}, ${data[newIdx+1]}, ${data[newIdx+2]}, ${data[newIdx+3]} )`
