@@ -10,6 +10,7 @@
 
 [![][docs-dev-img]][docs-dev-url]
 [![Zarr](https://img.shields.io/badge/Zarr-Compatible-e34b75)](https://zarr.dev/)
+[![NetCDF4](https://img.shields.io/badge/NetCDF4-Compatible-008B8B)](https://www.unidata.ucar.edu/software/netcdf/)
 [![Zarrita.js](https://img.shields.io/badge/Zarrita.js-0.5.x-0A7EA4)](https://github.com/manzt/zarrita.js)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/EarthyScience/Browzarr/blob/1c8d05d1c9ec0f96e599db26808b119839ece749/LICENSE)<br>
 [![Next.js](https://img.shields.io/badge/Next.js->=15.5.7-black)](https://nextjs.org/)
@@ -46,7 +47,7 @@ Stay tuned - major updates and new visualization features are on the way! 🚀
 We are still in active development but plan to release a stable 1.0.0 when all of the desired features are in place and a final stability and bug pass has been completed
 - [x] Temporal and spatial slicing
 - [x] Larger texture support
-- [ ] NetCDF Support
+- [x] NetCDF Support
 - [ ] Customizable export
 - [x] Animation export
 - [ ] Stability pass
