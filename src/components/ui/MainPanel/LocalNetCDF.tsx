@@ -38,14 +38,14 @@ const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
         useGlobalStore.setState({titleDescription})
         
         setOpenVariables(true)
-        setShowLocal(false)
+        // setShowLocal(false)
         setStatus(null)
     };
 
   return (
     <div className='w-[100%]'>
         <Input type="file" id="filepicker"
-          className='hover:drop-shadow-md hover:scale-[110%]'
+          className='hover:drop-shadow-md hover:scale-[102%]'
           style={{width:'200px', cursor:'pointer'}}
           accept='.nc, .netcdf, .nc3, .nc4'
           onChange={handleFileSelect}
