@@ -20,7 +20,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-
+import { Switcher } from '../Switcher';
 
 const ZARR_STORES = {
   ESDC: 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr',
@@ -90,13 +90,15 @@ const DatasetOption = ({
 
 const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>}) => {
   const [showStoreInput, setShowStoreInput] = useState(false);
-  const [showLocalZarrInput, setShowLocalZarrInput] = useState(false);
-  const [showLocalNetCDFInput, setShowLocalNetCDFInput] = useState(false);
+  const [showLocalInput, setShowLocalInput] = useState(false);
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
   const [activeOption, setActiveOption] = useState<string>('ESDC')
   const [showDescriptionDialog, setShowDescriptionDialog] = useState<boolean>(false)
   const [openDescriptionPopover, setOpenDescriptionPopover] = useState<boolean>(false)
   const [isSafari, setIsSafari] = useState<boolean>(false)
+  const {useNC} = useZarrStore(useShallow(state => ({
+    useNC:state.fetchNC
+  })))
   
   const { initStore, setInitStore } = useGlobalStore(
     useShallow((state) => ({
@@ -169,8 +171,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
             active={activeOption === 'ESDC'}
             onClick={() => {
               setShowStoreInput(false);
-              setShowLocalZarrInput(false);
-              setShowLocalNetCDFInput(false);
+              setShowLocalInput(false);
               setActiveOption('ESDC');
               setInitStore(ZARR_STORES.ESDC);
               if (popoverSide === 'top') {
@@ -186,8 +187,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
             active={activeOption === 'seasfire'}
             onClick={() => {
               setShowStoreInput(false);
-              setShowLocalZarrInput(false);
-              setShowLocalNetCDFInput(false);
+              setShowLocalInput(false);
               setActiveOption('seasfire');
               setInitStore(ZARR_STORES.SEASFIRE);
               if (popoverSide === 'top') {
@@ -206,8 +206,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
               active={activeOption === 'remote'}
               onClick={() => {
                 setShowStoreInput((prev) => !prev);
-                setShowLocalZarrInput(false);
-                setShowLocalNetCDFInput(false);
+                setShowLocalInput(false);
                 setActiveOption('remote');
               }}
             >
@@ -245,43 +244,30 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
           </div>
           <div className="w-full">
             <DatasetOption
-              active={activeOption === 'localZarr'}
+              active={activeOption === 'local'}
               onClick={() => {
-                setShowLocalZarrInput((prev) => !prev);
+                setShowLocalInput((prev) => !prev);
                 setShowStoreInput(false);
-                setShowLocalNetCDFInput(false);
-                setActiveOption('localZarr');
+                setActiveOption('local');
               }}
             >
-              Local Zarr
+              Local
             </DatasetOption>
-            {showLocalZarrInput && 
+            {showLocalInput && 
               <div className="mt-2">
-                {isSafari ? 
-                  <div className="p-3 rounded-md border border-yellow-600 text-tiny max-w-[300px]">
-                    <strong>Local folder upload is not supported in Safari.</strong> Please use Chrome, Firefox, or Edge instead.
-                  </div>
-                : 
-                  <LocalZarr setShowLocal={setShowLocalZarrInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} setInitStore={setInitStore} />
-                }
-              </div>
-            }
-          </div>
-          <div className="w-full">
-            <DatasetOption
-              active={activeOption === 'localNetCDF'}
-              onClick={() => {
-                setShowLocalNetCDFInput((prev) => !prev);
-                setShowStoreInput(false);
-                setShowLocalZarrInput(false);
-                setActiveOption('localNetCDF');
-              }}
-            >
-              Local NetCDF
-            </DatasetOption>
-            {showLocalNetCDFInput && 
-              <div className="mt-2">
-                <LocalNetCDF setShowLocal={setShowLocalNetCDFInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} />
+                <>
+                  <Switcher leftText='Zarr' rightText='NetCDF' state={!useNC} onClick={()=>useZarrStore.setState({fetchNC:!useNC})} />
+                  {
+                    useNC ? 
+                    <LocalNetCDF setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} />
+                    : isSafari ? 
+                      <div className="p-3 rounded-md border border-yellow-600 text-tiny max-w-[300px]">
+                        <strong>Local folder upload is not supported in Safari.</strong> Please use Chrome, Firefox, or Edge instead.
+                      </div>
+                    : 
+                    <LocalZarr setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} setInitStore={setInitStore} />
+                  }
+                </>
               </div>
             }
           </div>

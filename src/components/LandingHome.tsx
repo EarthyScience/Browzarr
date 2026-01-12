@@ -59,6 +59,7 @@ export function LandingHome() {
     if (initStore.startsWith('local')){ // Don't fetch store if local 
       return
     }
+    setUseNC(false)
     const newStore = GetStore(initStore)
     setCurrentStore(newStore)
   }, [initStore, setCurrentStore])
