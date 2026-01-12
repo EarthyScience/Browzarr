@@ -52,11 +52,6 @@ const Variables = ({
     }))
   );
 
-  const {useNC, ncModule} = useZarrStore(useShallow(state => ({
-    useNC:state.useNC,
-    ncModule:state.ncModule
-  })))
-
   const [dimArrays, setDimArrays] = useState([[0],[0],[0]]);
   const [dimUnits, setDimUnits] = useState([null,null,null]);
   const [dimNames, setDimNames] = useState<string[]>(["Default"]);
@@ -142,7 +137,6 @@ const Variables = ({
         GetAttributes(selectedVar).then(e=>setMetadata(e));
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVar, variables, zMeta, dimArrays, dimNames, dimUnits]);
 
   useEffect(()=>{

@@ -2,7 +2,7 @@ import * as zarr from "zarrita";
 import {  ArrayMinMax } from "@/utils/HelperFuncs";
 import { useGlobalStore, useZarrStore, useErrorStore, useCacheStore } from "@/utils/GlobalStates";
 import { gzipSync, decompressSync } from 'fflate';
-import { GetNCArray, GetNCAttributes } from "./NCGetters";
+import { GetNCArray, GetNCMetadata } from "./NCGetters";
 import { GetZarrAttributes, GetZarrArray } from "./ZarrGetters";
 
 export const ZARR_STORES = {
@@ -220,12 +220,12 @@ export async function GetAttributes(thisVariable? : string){
 	const cacheName = `${initStore}_${thisVariable?? variable}_meta`
 	if (cache.has(cacheName)){
 		const meta = cache.get(cacheName)
-		return meta;
+		return useNC ? meta.attributes : meta;
 	}
 	else {
 		if (useNC){
-			const meta = GetNCAttributes(thisVariable)
-			return meta
+			const meta = await GetNCMetadata(thisVariable)
+			return meta.attributes
 		} else {
 			const meta = await GetZarrAttributes(thisVariable)
 			return meta
