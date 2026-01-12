@@ -191,9 +191,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     } else {
       setCached(false)
     }
-    
   },[meta, chunkIDs])
-
   return (
       // Don't put any more work in the landing page version. Since it won't be visible in the future
       // The logic here was to just get divs to be used later in a Card or Dialog component!

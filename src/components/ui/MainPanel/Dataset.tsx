@@ -41,7 +41,7 @@ const DescriptionContent = ({
   return (
     <div className='grid gap-1'>
       <div className='mb-2'>
-        <h1 className='text-lg font-bold'>
+        <h1 className="text-lg font-bold break-all">
           {title ? title : "Store"}
         </h1>
         <p className="whitespace-pre-wrap break-words"
@@ -126,7 +126,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
       }, 0);
     }
   }, []);
-
+  console.log(activeOption)
   return (
     <>
     <Popover>
@@ -281,7 +281,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
             <div
               className="absolute -top-8"
               style={{
-                left: ['localZarr', 'localNetCDF', 'remote'].includes(activeOption) ? -215 : -130,
+                left: ['local', 'remote'].includes(activeOption) ? -215 : -130,
               }}
             />
           </PopoverTrigger>
