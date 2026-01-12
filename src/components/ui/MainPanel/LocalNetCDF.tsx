@@ -10,8 +10,8 @@ interface LocalNCType {
   setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const LocalNetCDF = ({setShowLocal, setOpenVariables}:LocalNCType) => {
-    const {setStatus, setVariables, setZMeta, setInitStore} = useGlobalStore.getState()
+const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
+    const {setStatus } = useGlobalStore.getState()
     const {ncModule} = useZarrStore.getState()
 
     const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {

@@ -56,6 +56,7 @@ const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType)
       setOpenVariables(true);
       setInitStore(`local_${baseDir}`)
       setStatus(null)
+      useZarrStore.setState({ useNC: false})
     } catch (error) {
       setStatus(null)
       if (error instanceof Error) {
