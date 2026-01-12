@@ -54,7 +54,11 @@ export function renderAttributes(
         <div className="font-mono whitespace-pre-wrap break-words md:col-start-2 md:row-start-auto pl-4 md:pl-2"
           style={{ overflowWrap: 'anywhere' }}
         >
-          {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+          {typeof value === 'object'
+            ? JSON.stringify(value, (_key, val) =>
+              typeof val === 'bigint' ? parseInt(val.toString()) : val)
+            : String(value)
+            }
         </div>
       </React.Fragment>
     );
