@@ -80,9 +80,9 @@ export function LandingHome() {
     return () => { isMounted = false; };
   }, [currentStore, setZMeta, setVariables, setTitleDescription])
 
-  // useEffect(()=>{
-  //   sendPing()
-  // },[])
+  useEffect(()=>{
+    sendPing()
+  },[])
 
   return (
     <>
