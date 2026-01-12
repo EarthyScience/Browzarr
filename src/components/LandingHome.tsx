@@ -81,7 +81,9 @@ export function LandingHome() {
   }, [currentStore, setZMeta, setVariables, setTitleDescription])
 
   useEffect(()=>{
-    sendPing()
+    if (process.env.NODE_ENV !== "development") {
+      sendPing()
+    }
   },[])
 
   return (
