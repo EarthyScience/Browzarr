@@ -126,7 +126,6 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.Se
       }, 0);
     }
   }, []);
-  console.log(activeOption)
   return (
     <>
     <Popover>

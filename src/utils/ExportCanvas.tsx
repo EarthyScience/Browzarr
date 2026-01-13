@@ -9,6 +9,8 @@ import { useShallow } from 'zustand/shallow';
 import { lerp } from 'three/src/math/MathUtils.js';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { deg2rad } from './HelperFuncs';
+
+
 const DrawComposite = (
     compositeCanvas: HTMLCanvasElement,
     gl: THREE.WebGLRenderer,
@@ -137,7 +139,7 @@ const DrawComposite = (
             ctx.fillStyle = textColor
             ctx.font = `${unitSize}px "Segoe UI" bold`
             ctx.textAlign = 'center'
-            const cbarString = `${cbarLabel?? variable} [${cbarUnits?? "undefined"}]`
+            const cbarString = `${cbarLabel?? variable} [${cbarUnits?? metadata?.units}]`
             ctx.fillText(cbarString, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4)
         }
     }

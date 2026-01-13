@@ -32,7 +32,7 @@ export async function GetNCDims(variable: string){
     return {dimNames, dimArrays, dimUnits};
 }
 
-export async function GetNCAttributes(thisVariable? : string){
+export async function GetNCMetadata(thisVariable? : string){
     const {ncModule} = useZarrStore.getState();
     const {cache} = useCacheStore.getState();
     const {initStore, variable} = useGlobalStore.getState();
