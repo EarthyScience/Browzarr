@@ -56,11 +56,20 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
       analysisArray: state.analysisArray
     })))
 
-    const dimSlices = [
-      dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-      dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-      dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
-    ]
+    const shapeLength = dimArrays.length
+    const is4D = shapeLength === 4
+
+    const dimSlices = isFlat 
+      ? [
+        dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+        dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+      ]
+      : [
+        dimArrays[shapeLength - 3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+        dimArrays[shapeLength - 2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+        dimArrays[shapeLength - 1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined )
+      ]
+
     const shapeRatio = useMemo(()=> {
       if (dataShape.length == 2){
         return dataShape[0]/dataShape[1]
@@ -77,6 +86,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
     const rotateMap = analysisMode && axis == 2;
     const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
     const analysisDims = useMemo(()=>dimArrays.length > 2 ? dimSlices.filter((_e,idx)=> idx != axis) : dimSlices,[dimSlices,axis])
+
     useEffect(()=>{
         geometry.dispose()
     },[geometry])
@@ -91,6 +101,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
         const { x, y } = e.uv;
         const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[2].length;
         const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[1].length;
+
         const xIdx = Math.round(x*xSize-.5)
         const yIdx = Math.round(y*ySize-.5)
         let dataIdx = xSize * yIdx + xIdx;
