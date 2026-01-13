@@ -35,7 +35,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         const width = dataShape[dataShape.length-1];
         const height = dataShape[dataShape.length-1]/2;
         const count = width * height;
-         if (count * 16 *4 > 2e9){
+        if (count * 16 *4 > 2e9){
             useErrorStore.setState({ error:'largeArray' })
             return 0
         }
@@ -47,7 +47,6 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         const height = dataShape[dataShape.length-1]/2;
         const count = width * height;
         if (count * 16 *4 > 2e9){
-            useErrorStore.setState({ error:'largeArray' })
             return undefined
         }
         const sqWidth = Math.PI*2;

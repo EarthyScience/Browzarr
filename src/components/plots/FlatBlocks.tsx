@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useAnalysisStore, useErrorStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksFrag, flatBlocksVert, flatBlocksVert3D } from '../textures/shaders'
@@ -34,8 +34,19 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
         }
     },[analysisMode, axis, dataShape]) 
     const rotateMap = analysisMode && axis == 2;
+    const count = useMemo(()=>{
+        const count = width * height;
+        if (count * 16 *4 > 2e9){
+            useErrorStore.setState({ error:'largeArray' })
+            return 0
+        }
+        return count
+    },[width, height])
     const geometry = useMemo(()=>{
             const count = width * height;
+            if (count * 16 *4 > 2e9){
+                return undefined
+            }
             const sqWidth = 2;
             const aspect = width/height
             const geo = new THREE.BoxGeometry(sqWidth/width, sqWidth/height/aspect, .01);
@@ -103,7 +114,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
     <instancedMesh 
         scale={[((analysisMode && axis == 2) && flipY) ? -1:  1, flipY ? -1 : ((analysisMode && axis == 2) ? -1 : 1) , 1]}
         rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]}
-        args={[geometry, shaderMaterial, (width * height)]}
+        args={[geometry, shaderMaterial, count]}
         frustumCulled={false}
     />
   )
