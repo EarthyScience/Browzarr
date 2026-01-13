@@ -526,7 +526,7 @@ const GlobalOptions = () =>{
   const {valueScales} = useGlobalStore(useShallow(state =>({
     valueScales:state.valueScales
   })))
-  const [thisFillVal, setThisFillValue] = useState(fillValue)
+  const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
 
   const isPC = plotType == 'point-cloud'
   return (
