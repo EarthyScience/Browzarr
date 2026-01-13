@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react'
-import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useErrorStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksVert, sphereBlocksVertFlat, sphereBlocksFrag } from '../textures/shaders'
@@ -35,6 +35,10 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         const width = dataShape[dataShape.length-1];
         const height = dataShape[dataShape.length-1]/2;
         const count = width * height;
+         if (count * 16 *4 > 2e9){
+            useErrorStore.setState({ error:'largeArray' })
+            return 0
+        }
         return count
     },[dataShape])
     
@@ -42,6 +46,10 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         const width = dataShape[dataShape.length-1];
         const height = dataShape[dataShape.length-1]/2;
         const count = width * height;
+        if (count * 16 *4 > 2e9){
+            useErrorStore.setState({ error:'largeArray' })
+            return undefined
+        }
         const sqWidth = Math.PI*2;
         const geo = new THREE.BoxGeometry(sqWidth/width, .05, sqWidth/height/2);
 
