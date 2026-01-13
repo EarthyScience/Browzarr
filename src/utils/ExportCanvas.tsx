@@ -11,6 +11,86 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { deg2rad } from './HelperFuncs';
 
 
+
+const DrawText = (
+    //Context and cbarlocs
+    ctx: CanvasRenderingContext2D,
+    cbarLocs: {cbarStartPos: number, cbarTop: number, cbarWidth: number, cbarHeight: number},
+    width: number,
+    height: number,
+    textColor:string
+) => {
+    const { doubleSize, mainTitle,
+    cbarLabel, cbarUnits, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
+    const {valueScales, variable, metadata } = useGlobalStore.getState()
+    let {cbarStartPos, cbarTop, cbarWidth, cbarHeight} = cbarLocs;
+    const transpose = cbarLoc === 'right' || cbarLoc === 'left'
+    const cbarTickSize = doubleSize ? 36 : 18
+    const unitSize = doubleSize ? 52 : 26
+    
+    if (mainTitle){
+        const variableSize = doubleSize ? 72 : 36
+        ctx.fillStyle = textColor
+        ctx.font = `${variableSize}px "Segoe UI"`
+        ctx.textBaseline = 'middle'
+        ctx.fillText(mainTitle, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // MainTitle in top Left
+    }
+    
+    // ---- WATERMARK ---- //
+    const waterMarkSize = doubleSize ? 40 : 20
+    ctx.fillStyle = "#888888"
+    ctx.font = `${waterMarkSize}px "Segoe UI", serif `
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'bottom'
+    ctx.fillText("browzarr.io", doubleSize ? 20 : 10, doubleSize ? height - 20 : height - 10) // Watermark
+
+    if (includeColorbar){
+        // ---- TickLabels ---- //
+        ctx.font = `${cbarTickSize}px "Segoe UI"`
+        const labelNum = cbarNum; // Number of cbar "ticks"
+        const valRange = valueScales.maxVal-valueScales.minVal;
+        const valScale = 1/(labelNum-1)
+        const posDelta = transpose ? 1/(labelNum-1)*cbarHeight : 1/(labelNum-1)*cbarWidth
+        if (transpose){
+            cbarTop = Math.round(height/2 - cbarHeight/2)
+            cbarStartPos = cbarLoc === 'right' ? (doubleSize ? width - 140 : width - 70) : (doubleSize ? 140 : 70)
+            ctx.textBaseline = 'middle'
+            ctx.textAlign = cbarLoc == 'left' ? 'left' : 'right'
+            for (let i =0; i < labelNum; i++){
+                if (cbarLoc == 'left'){
+                    ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos+cbarWidth+6, cbarTop+cbarHeight-i*posDelta) 
+                } else{
+                    ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos-6, cbarTop+cbarHeight-i*posDelta) 
+                }
+            }
+        }else{
+            ctx.textBaseline = 'top'
+            ctx.textAlign = 'center'
+            for (let i =0; i < labelNum; i++){
+                ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos+i*posDelta, cbarTop+cbarHeight+6) 
+            }
+        }
+
+        // ---- Cbar Label/Units ---- //
+        ctx.fillStyle = textColor
+        ctx.font = `${unitSize}px "Segoe UI" bold`
+        ctx.textAlign = 'center'
+        const cbarString = `${cbarLabel?? variable} [${cbarUnits?? metadata?.units}]`
+        if (transpose){
+            const xOffset = cbarLoc === 'right' ? cbarWidth+unitSize/2 : -cbarWidth-unitSize/2
+            const rotate = cbarLoc === 'right' ? Math.PI / 2 : -Math.PI / 2
+            ctx.save()
+            ctx.translate(cbarStartPos+cbarWidth/2+xOffset, cbarTop+cbarHeight/2)
+            ctx.rotate(rotate)
+            ctx.fillText(cbarString, 0, 0)
+            ctx.restore()
+        } else {
+            ctx.fillText(cbarString, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4)
+        }
+        
+    }
+}
+
 const DrawComposite = (
     compositeCanvas: HTMLCanvasElement,
     gl: THREE.WebGLRenderer,
@@ -21,24 +101,19 @@ const DrawComposite = (
 ): HTMLCanvasElement | undefined => {
 
     const {bgColor, textColor} = colors;
-    const { doubleSize, includeBackground, mainTitle,
-    cbarLabel, cbarUnits, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
-    const {valueScales, variable, metadata } = useGlobalStore.getState()
+    const { doubleSize, includeBackground, cbarLoc, includeColorbar} = useImageExportStore.getState()
     const ctx = compositeCanvas.getContext('2d')
     if (!ctx){return}
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    if (includeBackground || animate) {
+    if (includeBackground || animate) { // Always include background if animation, since no transparency in video
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, width, height);
     } else {
         ctx.clearRect(0, 0, width, height);
     }
     ctx.drawImage(gl.domElement, 0, 0, width, height) 
-
-    const cbarTickSize = doubleSize ? 36 : 18
-    const unitSize = doubleSize ? 52 : 26
 
     let cbarWidth = doubleSize ? Math.min(1024, width*0.8)  : Math.min(512, width*0.8)
     let cbarHeight = doubleSize ? 48: 24;
@@ -52,9 +127,7 @@ const DrawComposite = (
         const secondCanvas = document.getElementById('colorbar-canvas')
         if (secondCanvas instanceof HTMLCanvasElement) {
             if (transpose) {
-                const tempWidth = cbarWidth
-                cbarWidth = cbarHeight
-                cbarHeight = tempWidth
+                [cbarWidth, cbarHeight] = [cbarHeight, cbarWidth] // Swap values
                 cbarTop = Math.round(height/2 - cbarHeight/2)
                 cbarStartPos = cbarLoc === 'right' ? (doubleSize ? width - 140 : width - 70) : (doubleSize ? 140 : 70)
                 // Save the current canvas state
@@ -88,60 +161,13 @@ const DrawComposite = (
 
     // ---- TEXT ---- //
     if (!animate){ // If still image write text onto image
-         // ---- TITLE ---- //
-         if (mainTitle){
-            const variableSize = doubleSize ? 72 : 36
-            ctx.fillStyle = textColor
-            ctx.font = `${variableSize}px "Segoe UI"`
-            ctx.textBaseline = 'middle'
-            ctx.fillText(mainTitle, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // MainTitle in top Left
-         }
-        
-        // ---- WATERMARK ---- //
-        const waterMarkSize = doubleSize ? 40 : 20
-        ctx.fillStyle = "#888888"
-        ctx.font = `${waterMarkSize}px "Segoe UI", serif `
-        ctx.textAlign = 'left'
-        ctx.textBaseline = 'bottom'
-        ctx.fillText("browzarr.io", doubleSize ? 20 : 10, doubleSize ? height - 20 : height - 10) // Watermark
-
-        if (includeColorbar){
-            // ---- TickLabels ---- //
-            ctx.font = `${cbarTickSize}px "Segoe UI"`
-            const labelNum = cbarNum; // Number of cbar "ticks"
-            const valRange = valueScales.maxVal-valueScales.minVal;
-            const valScale = 1/(labelNum-1)
-            const posDelta = transpose ? 1/(labelNum-1)*cbarHeight : 1/(labelNum-1)*cbarWidth
-            if (transpose){
-                const tempWidth = cbarWidth
-                cbarWidth = cbarHeight
-                cbarHeight = tempWidth
-                cbarTop = Math.round(height/2 - cbarHeight/2)
-                cbarStartPos = cbarLoc === 'right' ? (doubleSize ? width - 140 : width - 70) : (doubleSize ? 140 : 70)
-                ctx.textBaseline = 'middle'
-                ctx.textAlign = cbarLoc == 'left' ? 'left' : 'right'
-                for (let i =0; i < labelNum; i++){
-                    if (cbarLoc == 'left'){
-                        ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos+cbarWidth+6, cbarTop+cbarHeight-i*posDelta) 
-                    } else{
-                        ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos-6, cbarTop+cbarHeight-i*posDelta) 
-                    }
-                }
-            }else{
-                ctx.textBaseline = 'top'
-                ctx.textAlign = 'center'
-                for (let i =0; i < labelNum; i++){
-                    ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos+i*posDelta, cbarTop+cbarHeight+6) 
-                }
-            }
-
-            // ---- Cbar Label/Units ---- //
-            ctx.fillStyle = textColor
-            ctx.font = `${unitSize}px "Segoe UI" bold`
-            ctx.textAlign = 'center'
-            const cbarString = `${cbarLabel?? variable} [${cbarUnits?? metadata?.units}]`
-            ctx.fillText(cbarString, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4)
-        }
+        DrawText(
+            ctx,
+            {cbarStartPos, cbarTop, cbarWidth, cbarHeight},
+            width,
+            height,
+            textColor
+        )
     }
     
 }
@@ -153,80 +179,39 @@ async function DrawTextOverlay(
     ffmpeg: FFmpeg
 ){
     const scaling = 4;
-    const { doubleSize, mainTitle,
-    cbarLabel, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
-    const {valueScales, variable, metadata } = useGlobalStore.getState()
+    const { doubleSize, cbarLoc } = useImageExportStore.getState();
     const textCanvas = document.createElement("canvas");
     textCanvas.width = width * scaling;
     textCanvas.height = height * scaling;
     const ctx = textCanvas.getContext("2d");
-    if (!ctx)return;
+    if (!ctx) return;
 
     ctx.scale(scaling, scaling)
-    const cbarTickSize = doubleSize ? 36 : 18
-    const unitSize = doubleSize ? 52 : 26
 
-    let cbarWidth = doubleSize ? Math.min(1024, width*0.8)  : Math.min(512, width*0.8)
-    let cbarHeight = doubleSize ? 48: 24;
+    let cbarWidth = doubleSize ? Math.min(1024 , width*0.8)  : Math.min(512 , width*0.8)
+    let cbarHeight = doubleSize ? 48 : 24;
 
-    let cbarStartPos = Math.round(width/2 - cbarWidth/2)
-    let cbarTop = cbarLoc === 'top' ? (doubleSize ? 140 : 70) : (doubleSize ? height - 140 : height-70)
     const transpose = cbarLoc === 'right' || cbarLoc === 'left'
+    if (transpose) {
+        [cbarWidth, cbarHeight] = [cbarHeight, cbarWidth] // Swap values
+    }
+    let cbarStartPos = Math.round(width/2 - cbarWidth/2)
+    let cbarTop;
+    if (transpose) {
+        cbarTop = (height / 2) - (cbarHeight / 2)
+        cbarStartPos = cbarLoc === 'right' ? (width - (doubleSize ? 140 : 70)) : (doubleSize ? 140 : 70)
+    } else {
+        cbarTop = cbarLoc === 'top' ? (doubleSize ? 140 : 70) : (height - (doubleSize ? 140 : 70))
+    }
 
     // ---- TEXT ---- //
-    
-     // ---- TITLE ---- //
-    const variableSize = doubleSize ? 72 : 36
-    ctx.fillStyle = textColor
-    ctx.font = `${variableSize}px "Segoe UI"`
-    ctx.textBaseline = 'middle'
-    ctx.textAlign = 'left'
-    ctx.fillText(mainTitle?? variable, doubleSize ? 40 : 20, doubleSize ? 100 : 50) // Variable in top Left
-
-    // ---- WATERMARK ---- //
-    const waterMarkSize = doubleSize ? 40 : 20
-    ctx.fillStyle = "#888888"
-    ctx.font = `${waterMarkSize}px "Segoe UI", serif `
-    ctx.textBaseline = 'bottom'
-    ctx.fillText("browzarr.io", doubleSize ? 20 : 10, doubleSize ? height - 20 : height - 10) // Watermark
-
-    if (includeColorbar){
-        // ---- TickLabels ---- //
-        ctx.font = `${cbarTickSize}px "Segoe UI"`;
-        ctx.fillStyle = textColor;
-        const labelNum = cbarNum; // Number of cbar "ticks"
-        const valRange = valueScales.maxVal-valueScales.minVal;
-        const valScale = 1/(labelNum-1)
-        const posDelta = transpose ? 1/(labelNum-1)*cbarHeight : 1/(labelNum-1)*cbarWidth
-        if (transpose){
-            const tempWidth = cbarWidth
-            cbarWidth = cbarHeight
-            cbarHeight = tempWidth
-            cbarTop = Math.round(height/2 - cbarHeight/2)
-            cbarStartPos = cbarLoc === 'right' ? (doubleSize ? width - 140 : width - 70) : (doubleSize ? 140 : 70)
-            ctx.textBaseline = 'middle'
-            ctx.textAlign = cbarLoc == 'left' ? 'left' : 'right'
-            for (let i =0; i < labelNum; i++){
-                if (cbarLoc == 'left'){
-                    ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos+cbarWidth+6, cbarTop+cbarHeight-i*posDelta) 
-                } else{
-                    ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos-6, cbarTop+cbarHeight-i*posDelta) 
-                }
-            }
-        }else{
-            ctx.textBaseline = 'top'
-            ctx.textAlign = 'center'
-            for (let i =0; i < labelNum; i++){
-                ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos+i*posDelta, cbarTop+cbarHeight+6) 
-            }
-        }
-
-        // ---- Cbar Label/Units ---- //
-        ctx.fillStyle = textColor
-        ctx.font = `${unitSize}px "Segoe UI" bold`
-        ctx.textAlign = 'center'
-        ctx.fillText(cbarLabel?? metadata?.units, cbarStartPos+cbarWidth/2, cbarTop-unitSize-4)
-    }
+    DrawText(
+        ctx,
+        {cbarStartPos, cbarTop, cbarWidth, cbarHeight},
+        width,
+        height,
+        textColor
+    )
     
     const blob = await new Promise(resolve => {
         textCanvas.toBlob(resolve, 'image/png');
@@ -266,7 +251,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         const dpr = useGlobalStore.getState().DPR;
         setQuality(preview ? 50 : 1000);
         (!preview || !animate) && useGlobalStore.setState({DPR: window.devicePixelRatio || 1}) // Use default pixel ratio unless its an animation preview
-
+        setProgress(0)
         const domWidth = gl.domElement.width;
         const domHeight = gl.domElement.height;
         let docWidth = useCustomRes ? customRes[0] : (doubleSize ? domWidth * 2 : domWidth);
