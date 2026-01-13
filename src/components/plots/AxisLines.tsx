@@ -28,12 +28,13 @@ const AXIS_CONSTANTS = {
 };
 
 const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, flipDown: boolean}) =>{
-  const {dimArrays, dimNames, dimUnits, dataShape, revY} = useGlobalStore(useShallow(state => ({
+  const {dimArrays, dimNames, dimUnits, dataShape, revY, is4D} = useGlobalStore(useShallow(state => ({
     dimArrays: state.dimArrays,
     dimNames: state.dimNames,
     dimUnits: state.dimUnits,
     dataShape: state.dataShape,
     revY: state.flipY,
+    is4D: state.is4D
   })))
 
   const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
@@ -49,20 +50,24 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     hideAxisControls: state.hideAxisControls
   })))
 
+  const shapeLength = dimArrays.length
+
   const dimLengths = [
-    (zSlice[1] ? zSlice[1] : dimArrays[0].length) - zSlice[0],
-    (ySlice[1] ? ySlice[1] : dimArrays[1].length) - ySlice[0],
-    (xSlice[1] ? xSlice[1] : dimArrays[2].length) - xSlice[0],
+    (zSlice[1] ? zSlice[1] : dimArrays[shapeLength - 3].length) - zSlice[0],
+    (ySlice[1] ? ySlice[1] : dimArrays[shapeLength - 2].length) - ySlice[0],
+    (xSlice[1] ? xSlice[1] : dimArrays[shapeLength - 1].length) - xSlice[0],
   ]
+
   const dimSlices = [
-    dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-    revY ? dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-    dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+    dimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+    revY ? dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+    dimArrays[shapeLength-1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
   ]
 
   const [xResolution, setXResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [yResolution, setYResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [zResolution, setZResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
+
 
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
   const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
@@ -104,9 +109,9 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const zDimScale = zResolution/(zResolution-1)
   const zValDelta = 1/(zResolution-1)
 
-  const xTitleOffset = useMemo(() => (dimNames[2].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
-  const yTitleOffset = useMemo(() => (dimNames[1].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
-  const zTitleOffset = useMemo(() => (dimNames[0].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
+  const xTitleOffset = useMemo(() => (dimNames[shapeLength - 1].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
+  const yTitleOffset = useMemo(() => (dimNames[shapeLength - 2].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
+  const zTitleOffset = useMemo(() => (dimNames[shapeLength - 3].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
   
   return (
     <group visible={plotType != 'sphere' && plotType != 'flat' && !hideAxis}>
@@ -130,7 +135,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]}
               position={[0, 0, flipX ? -AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale : AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale]}
-            >{parseLoc(dimSlices[2][Math.floor((dimLengths[2]-1)*idx*xValDelta)],dimUnits[2])}</Text>
+            >{parseLoc(dimSlices[2][Math.floor((dimLengths[2]-1)*idx*xValDelta)],dimUnits[shapeLength - 1])}</Text>
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]} position={[(xRange[0]+xRange[1])/2*globalScale, 0, flipX ? -AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale : AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale]}>
@@ -141,7 +146,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
             fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
             color={colorHex}
             material-depthTest={false}
-          >{dimNames[2]}</Text>
+          >{dimNames[shapeLength - 1]}</Text>
           <group visible={!hideAxisControls}>
             {xResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
             <Text 
@@ -194,7 +199,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]}
               position={[flipY ? AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale :-AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[0][(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]],dimUnits[0])}</Text>
+            >{parseLoc(dimSlices[0][(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]],dimUnits[shapeLength - 3])}</Text>
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]} position={[flipY ? AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale : -AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale, 0, isPC ? (zRange[0]+zRange[1])/2*depthRatio*(globalScale) : (zRange[0]+zRange[1])/2]}>
@@ -205,7 +210,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
             fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
             color={colorHex}
             material-depthTest={false}
-          >{dimNames[0]}</Text>
+          >{dimNames[shapeLength - 3]}</Text>
           
           <group visible={!hideAxisControls}>
             {zResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
@@ -260,7 +265,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[0, flipX ? Math.PI : 0, 0]}
               position={[flipY ? -0.07*globalScale : 0.07*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[1][Math.floor((dimLengths[1]-1)*idx*yValDelta)],dimUnits[1])}</Text>
+            >{parseLoc(dimSlices[1][Math.floor((dimLengths[1]-1)*idx*yValDelta)],dimUnits[shapeLength - 2])}</Text>
           </group>
         ))}
         <group rotation={[0, flipX ? Math.PI : 0 , 0]} position={[flipY ? -0.32*globalScale : 0.32*globalScale, (yRange[0]+yRange[1])/2*shapeRatio*globalScale, 0]}>
@@ -273,7 +278,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
             material-depthTest={false}
             rotation={[0, 0, Math.PI / 2]}
           >
-            {dimNames[1]}
+            {dimNames[shapeLength - 2]}
           </Text>
 
           <group visible={!hideAxisControls}>
@@ -332,12 +337,11 @@ const FLAT_AXIS_CONSTANTS = {
 };
 
 const FlatAxis = () =>{
-  const {dimArrays, dimNames, dimUnits, flipY, isFlat} = useGlobalStore(useShallow(state => ({
+  const {dimArrays, dimNames, dimUnits, flipY} = useGlobalStore(useShallow(state => ({
     dimArrays: state.dimArrays,
     dimNames: state.dimNames,
     dimUnits: state.dimUnits,
     flipY: state.flipY,
-    isFlat: state.isFlat
   })))
 
   const {plotType,  zSlice, ySlice, xSlice, rotateFlat} = usePlotStore(useShallow(state=>({
@@ -355,17 +359,11 @@ const FlatAxis = () =>{
     analysisMode: state.analysisMode,
     axis: state.axis
   })))
+  const shapeLength = dimArrays.length;
+  const is4D = dimArrays.length === 4;
   const originallyFlat = dimArrays.length == 2;
   const slices = originallyFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
-  const dimLengths = useMemo(()=>{
-    if (analysisMode && !originallyFlat){
-      return dimArrays.map((val, idx) => (slices[idx][1] ? slices[idx][1] : val.length) - slices[idx][0])
-        .filter((_val, idx )=> idx != axis)
-    }else{
-      return dimArrays.map((val, idx) => (slices[idx][1] ? slices[idx][1] : val.length) - slices[idx][0])
-    }
-  },[axis, dimArrays, analysisMode])
-
+  
   const dimSlices = useMemo(()=>originallyFlat ? 
     [
       flipY ? dimArrays[0].slice().reverse() : dimArrays[0], // Need the slice because inside useMemo it doesn't mutate the original properly
@@ -373,10 +371,19 @@ const FlatAxis = () =>{
     ] 
     :
     [
-      dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-      flipY ? dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-      dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+      dimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+      flipY ? dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+      dimArrays[shapeLength-1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
     ],[dimArrays, flipY])
+
+  const dimLengths = useMemo(()=>{
+    if (analysisMode && !originallyFlat){
+      return dimSlices.map((val, idx) => (slices[idx][1] ? slices[idx][1] : val.length) - slices[idx][0])
+        .filter((_val, idx )=> idx != axis)
+    }else{
+      return dimSlices.map((val, idx) => (slices[idx][1] ? slices[idx][1] : val.length) - slices[idx][0])
+    }
+  },[axis, dimSlices, analysisMode])
   
   const swap = useMemo(() => (analysisMode && axis == 2 && !originallyFlat),[axis, analysisMode]) // This is for the horrible case when users plot along the horizontal dimension i.e; Longitude. Everything swaps
   const widthIdx = swap ? dimLengths.length-2 : dimLengths.length-1
@@ -401,6 +408,7 @@ const FlatAxis = () =>{
       };
     }
   }, [analysisMode, dimArrays, dimUnits, dimNames, dimSlices]);
+
   const shapeRatio = useMemo(()=>{
     if(analysisMode && axis == 2){
       return dimLengths[heightIdx]/dimLengths[widthIdx]

@@ -99,6 +99,7 @@ const DimSlicer = () =>{
 
       const theseDims = is4D ? dimNames.slice(1) : dimNames
       const theseUnits = is4D ? dimUnits.slice(1) : dimUnits
+      const theseArrays = is4D ? dimArrays.slice(1) : dimArrays
 
       const [isSpatialOpen, setIsSpatialOpen] = useState(false);
   return (
@@ -141,7 +142,7 @@ const DimSlicer = () =>{
                   range={xRange} 
                   setRange={setXRange} 
                   valueScales={defaultScales} 
-                  array={dimArrays[2]} 
+                  array={theseArrays[2]} 
                   units={theseUnits[2]}
                 />
               </div>
@@ -151,7 +152,7 @@ const DimSlicer = () =>{
                 range={yRange} 
                 setRange={setYRange} 
                 valueScales={defaultScales} 
-                array={dimArrays[1]} 
+                array={theseArrays[1]} 
                 units={theseUnits[1]}
                 />
               </div>
@@ -161,7 +162,7 @@ const DimSlicer = () =>{
                   range={zRange} 
                   setRange={setZRange} 
                   valueScales={defaultScales} 
-                  array={dimArrays[0]} 
+                  array={theseArrays[0]} 
                   units={theseUnits[0]}
                 />
               </div>

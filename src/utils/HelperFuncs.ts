@@ -74,8 +74,12 @@ export function parseLoc(input:number, units: string | undefined, verbose: boole
     if (!units){
       if (typeof(input) == 'bigint'){
         return input;
-      }
+      } else if (typeof(input) == 'number'){
         return input?.toFixed(2);
+      } else {
+        return input
+      }
+        
     }
     if (typeof(input) === 'bigint' || units.match(/^(\w+)\s+since\s+(.+)$/i)){
       if (!units){
@@ -269,7 +273,7 @@ export function GetCurrentArray(overrideStore?:string){
       for (let y = yStartIdx; y < yEndIdx; y++) {
         for (let x = xStartIdx; x < xEndIdx; x++) {
           const chunkID = `z${z}_y${y}_x${x}`
-          const cacheName = is4D ? `${store}_${idx4D}_${variable}_chunk_${chunkID}` : `${store}_${variable}_chunk_${chunkID}`
+          const cacheName = is4D ? `${store}_${variable}_${idx4D}_chunk_${chunkID}` : `${store}_${variable}_chunk_${chunkID}`
           const chunk = cache.get(cacheName)
           const compressed = chunk.compressed
           const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
