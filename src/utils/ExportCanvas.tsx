@@ -20,7 +20,6 @@ const DrawText = (
     height: number,
     textColor:string
 ) => {
-    console.log(cbarLocs)
     const { doubleSize, mainTitle,
     cbarLabel, cbarUnits, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
     const {valueScales, variable, metadata } = useGlobalStore.getState()
