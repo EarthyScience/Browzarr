@@ -48,12 +48,11 @@ export async function GetNCArray() {
 	const {cache} = useCacheStore.getState();
 
     const varInfo = await ncModule.getVariableInfo(variable)
-    const {shape, chunks:chunkShape, chunked} = varInfo
+    const {shape, chunked} = varInfo
+    const chunkShape = is4D 
+        ? [varInfo.chunks[1], varInfo.chunks[2], varInfo.chunks[3]]
+        : varInfo.chunks
     const is2D = shape.length === 2;
-    const chunkLength = chunkShape.length
-    const chunkStride = is2D ? 
-                [chunkShape[1], 1] 
-                : [chunkShape[chunkLength -1] * chunkShape[chunkLength -2], chunkShape[chunkLength -1], 1]
     const zIndexOffset = is4D ? 1 : 0;
     const atts = varInfo.attributes
     let fillValue = NaN
@@ -115,12 +114,13 @@ export async function GetNCArray() {
 
     setStatus("Downloading...");
     setProgress(0);
-
     for (let z= zDim.start ; z < zDim.end ; z++){ // Iterate through chunks we need 
         for (let y= yDim.start ; y < yDim.end ; y++){
             for (let x= xDim.start ; x < xDim.end ; x++){
                 const chunkID = `z${z}_y${y}_x${x}` // Unique ID for each chunk
-                const cacheBase = `${initStore}_${variable}`
+                const cacheBase = is4D 
+                    ? `${initStore}_${variable}_${idx4D}`
+                    : `${initStore}_${variable}`
                 const cacheName = `${cacheBase}_chunk_${chunkID}`
                 if (cache.has(cacheName)){
                     const cachedChunk = cache.get(cacheName)
@@ -139,11 +139,23 @@ export async function GetNCArray() {
                     iter ++;
                 }
                 else{
-                    // const starts = is4D ? [idx4D, z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]] : [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]]
-                    const starts = [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]]
-                    const counts = chunkShape.map((v:number, i:number) =>Math.min(v, shape[i] - starts[i]));
+                    const getStartsAndCounts = () => {
+                        if (is4D){
+                            const starts = [idx4D, z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]] 
+                            //@ts-ignore Starts is same length as new array
+                            const counts = [1, ...chunkShape].map((v:number, i:number) =>Math.min(v, shape[i] - starts[i]));
+                            return [starts, counts]
+                        } else {
+                            const starts = [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]] 
+                            const counts = chunkShape.map((v:number, i:number) =>Math.min(v, shape[i] - starts[i]));
+                            return [starts, counts]
+                        }
+                    }
+                    const [starts, counts] = getStartsAndCounts();
                     const chunkArray = await ncModule.getSlicedVariableArray(variable, starts, counts)
-                    const chunkStride = [counts[2] * counts[1], counts[2], 1]
+                    const chunkStride = is4D 
+                        ? [counts[3] * counts[2], counts[3], 1] 
+                        : [counts[2] * counts[1], counts[2], 1]
                     const [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
                     if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
                         if (scalingFactor == null || newScalingFactor > scalingFactor){ 

@@ -129,7 +129,7 @@ const KeyFrames = () => {
         description: "Keyframe required to preview orbit!",
         action: {
           label: "close",
-          onClick: () => console.log("close"),
+          onClick: () => null,
         },
       });
     }

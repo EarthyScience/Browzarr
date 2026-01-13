@@ -229,7 +229,9 @@ export async function GetZarrArray(){
         for (let y= yDim.start ; y < yDim.end ; y++){
             for (let x= xDim.start ; x < xDim.end ; x++){
                 const chunkID = `z${z}_y${y}_x${x}` // Unique ID for each chunk
-                const cacheBase = `${initStore}_${variable}`
+                const cacheBase = is4D 
+                    ? `${initStore}_${variable}_${idx4D}`
+                    : `${initStore}_${variable}`
                 const cacheName = `${cacheBase}_chunk_${chunkID}`
                 if (cache.has(cacheName)){
                     const cachedChunk = cache.get(cacheName)
