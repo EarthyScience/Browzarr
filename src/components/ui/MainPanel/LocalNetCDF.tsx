@@ -8,6 +8,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@/components/ui/alert';
+import { isMobile } from '../MobileUIHider';
 
 interface LocalNCType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -61,6 +62,7 @@ const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
         <Input type="file" id="filepicker"
           className='hover:drop-shadow-md hover:scale-[102%]'
           style={{width:'200px', cursor:'pointer'}}
+          accept={isMobile() ? '' : '.nc,.netcdf,.nc3,.nc4'}
           onChange={handleFileSelect}
         />
         {ncError && (
