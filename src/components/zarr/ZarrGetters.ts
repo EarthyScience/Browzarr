@@ -174,7 +174,7 @@ export async function GetZarrArray(){
             scaling: scalingFactor,
             compressed: compress
         }
-        cache.set(is4D ? `${initStore}_${variable}` : `${initStore}_${variable}`, cacheChunk)
+        cache.set(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`, cacheChunk)
         setStatus(null)
         return { data: typedArray, shape, dtype: outVar.dtype, scalingFactor };
     } 
