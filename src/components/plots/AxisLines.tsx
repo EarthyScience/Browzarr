@@ -384,7 +384,7 @@ const FlatAxis = () =>{
       return dimSlices.map((val, idx) => (slices[idx][1] ? slices[idx][1] : val.length) - slices[idx][0])
     }
   },[axis, dimSlices, analysisMode])
-  
+
   const swap = useMemo(() => (analysisMode && axis == 2 && !originallyFlat),[axis, analysisMode]) // This is for the horrible case when users plot along the horizontal dimension i.e; Longitude. Everything swaps
   const widthIdx = swap ? dimLengths.length-2 : dimLengths.length-1
   const heightIdx = swap ? dimLengths.length-1 : dimLengths.length-2
@@ -397,8 +397,22 @@ const FlatAxis = () =>{
     if (analysisMode && !originallyFlat) {
       return {
         axisArrays: dimSlices.filter((_val, idx) => idx != axis),
-        axisUnits: dimUnits.filter((_val, idx) => idx != axis),
-        axisNames: dimNames.filter((_val, idx) => idx != axis),
+        axisUnits: is4D
+          ? dimUnits.slice(1).filter((_val, idx) => idx != axis)
+          : dimUnits.filter((_val, idx) => idx != axis),
+        axisNames: is4D
+          ? dimNames.slice(1).filter((_val, idx) => idx != axis)
+          : dimNames.filter((_val, idx) => idx != axis)
+      };
+    } else if (!originallyFlat) {
+      return {
+        axisArrays: dimSlices,
+        axisUnits: is4D 
+          ? dimUnits.slice(1)
+          : dimUnits,
+        axisNames: is4D
+          ? dimNames.slice(1)
+          : dimNames
       };
     } else {
       return {
@@ -407,7 +421,8 @@ const FlatAxis = () =>{
         axisNames: dimNames,
       };
     }
-  }, [analysisMode, dimArrays, dimUnits, dimNames, dimSlices]);
+  }, [analysisMode, dimArrays, dimUnits, is4D, dimNames, dimSlices]);
+  
 
   const shapeRatio = useMemo(()=>{
     if(analysisMode && axis == 2){
