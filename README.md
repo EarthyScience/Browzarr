@@ -6,18 +6,19 @@
   </a>
 </div>
 
-**Interactive Browser-Based Visualization Framework for Exploring Zarr Data Stores**
+**A browser-based visualization framework for exploring and analyzing Zarr and NetCDF datasets.**
 
 [![][docs-dev-img]][docs-dev-url]
 [![Zarr](https://img.shields.io/badge/Zarr-Compatible-e34b75)](https://zarr.dev/)
-[![NetCDF4](https://img.shields.io/badge/NetCDF4-Compatible-008B8B)](https://www.unidata.ucar.edu/software/netcdf/)
 [![Zarrita.js](https://img.shields.io/badge/Zarrita.js-0.5.x-0A7EA4)](https://github.com/manzt/zarrita.js)
+[![NetCDF4](https://img.shields.io/badge/NetCDF4-Compatible-008B8B)](https://www.unidata.ucar.edu/software/netcdf/)
+[![netcdf4-wasm](https://img.shields.io/badge/netcdf4--wasm-0.1.3-654FF0)](https://github.com/EarthyScience/netcdf4-wasm)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/EarthyScience/Browzarr/blob/1c8d05d1c9ec0f96e599db26808b119839ece749/LICENSE)<br>
-[![Next.js](https://img.shields.io/badge/Next.js->=15.5.7-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.1.1-black)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.x-61dafb)](https://react.dev/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-000000)](https://ui.shadcn.com/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-38bdf8)](https://tailwindcss.com/)<br>
-[![Three.js](https://img.shields.io/badge/Three.js-0.176-black)](https://threejs.org/)
+[![Three.js](https://img.shields.io/badge/Three.js-0.182-black)](https://threejs.org/)
 [![React Three Fiber](https://img.shields.io/badge/React%20Three%20Fiber-9.x-000000)](https://docs.pmnd.rs/react-three-fiber)
 [![GSAP](https://img.shields.io/badge/GSAP-3.x-88ce02)](https://gsap.com/)
 [![GLSL](https://img.shields.io/badge/GLSL-5586A4)](https://wikis.khronos.org/opengl/Core_Language_(GLSL))
@@ -30,7 +31,7 @@
 [docs-dev-img]: https://img.shields.io/badge/docs-%20tutorial-orange?style=round-square
 [docs-dev-url]: https://browzarr.io/docs/
 
-Browzarr is a powerful, browser-native framework for visualizing, exploring, and analyzing **Zarr data stores**.  
+Browzarr is a powerful, browser-native framework for visualizing, exploring and analyzing **Zarr and NetCDF datasets**.  
 Load multi-dimensional datasets directly in the browser, interactively slice and inspect chunks, and gain insights without any backend or server setup.
 
 ---
