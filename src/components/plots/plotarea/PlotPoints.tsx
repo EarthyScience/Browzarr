@@ -31,7 +31,6 @@ function PlotPoints({ points, tsID, pointSetters, scalers }: { points: THREE.Vec
   const geometry = useMemo(() => new THREE.SphereGeometry(pointSize), [pointSize])
   const material = useMemo(()=> new THREE.MeshBasicMaterial({color: new THREE.Color().setRGB(r/300, g/300, b/300).convertSRGBToLinear()}),[pointColor, useCustomPointColor, timeSeries])  // It was converting to sRGB colorspace while the line shader uses linear
 
-
   useEffect(() => {
     if (ref.current){
       const dummy = new THREE.Object3D()
