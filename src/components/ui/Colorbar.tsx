@@ -196,7 +196,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         <>
         <div className='colorbar' >
             <input type="number" 
-                className="text-[14px] font-semibold"
+                className="text-[16px] font-semibold"
                 style={{
                     left: `0%`,
                     top:'100%',
@@ -226,7 +226,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
             </p>)}
             )}
             <input type="number" 
-                className="text-[14px] font-semibold"
+                className="text-[16px] font-semibold"
                 style={{
                     left: `100%`,
                     top:'100%',
