@@ -14,10 +14,19 @@ uniform float fillValue;
 
 #define PI 3.1415926535
 
-vec3 givePosition(vec2 uv) {
+vec2 giveLonLat(vec2 uv) {
     // Reverse the normalization using the bounds
-    float longitude = ((1.0 - uv.x) * (lonBounds.y - lonBounds.x) + lonBounds.x);
+    float longitude = uv.x * (lonBounds.y - lonBounds.x) + lonBounds.x;
     float latitude = uv.y * (latBounds.y - latBounds.x) + latBounds.x;
+    
+    longitude = -longitude;
+    
+    return vec2(longitude, latitude);
+}
+
+vec3 givePosition(vec2 lonlat) {
+    float longitude = lonlat.x;
+    float latitude = lonlat.y;
     
     // Convert to Cartesian coordinates
     float x = cos(latitude) * cos(longitude);
@@ -65,11 +74,14 @@ void main() {
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     } else {
         vec2 centeredUV = (instanceUV - vec2(0.5, 0.5)) * vec2(2.0, 2.0); 
-        vec3 spherePosition = givePosition(instanceUV);
-        float latitudeFactor = cos(centeredUV.y * 3.14159 * 0.5); // Maps -1..1 to proper latitude
+        vec2 lonlat = giveLonLat(instanceUV);
+        vec3 spherePosition = givePosition(lonlat);
+        float latitudeFactor = cos(lonlat.y); // Maps -1..1 to proper latitude
+        float widthFactor = abs(lonBounds.y-lonBounds.x)/PI;
         float heightFactor = (dispStrength - displaceZero) * displacement;
         vec3 scaledPosition = position;
-        scaledPosition.x *= latitudeFactor;
+        scaledPosition.x *= latitudeFactor * widthFactor;
+        scaledPosition.z *= widthFactor;
         scaledPosition.y += 0.025;
         scaledPosition.y *= heightFactor;
 
