@@ -73,9 +73,9 @@ const MorphingPoints = () => {
     for (let x = 0; x < cubRes; x++) {
       for (let y = 0; y < cubRes; y++) {
         for (let z = 0; z < cubRes; z++) {
-          cubePositions[i * 3] = (x / cubRes - 0.5) * 2;
-          cubePositions[i * 3 + 1] = (y / cubRes - 0.5) * 2;
-          cubePositions[i * 3 + 2] = (z / cubRes - 0.5) * 2;
+          cubePositions[i * 3] = (x / (cubRes - 1) - 0.5) * 2;
+          cubePositions[i * 3 + 1] = (y / (cubRes - 1) - 0.5) * 2;
+          cubePositions[i * 3 + 2] = (z / (cubRes - 1) - 0.5) * 2;
           i++;
         }
       }
@@ -86,8 +86,8 @@ const MorphingPoints = () => {
     i = 0;
     for (let x = 0; x < planeRes; x++) {
       for (let y = 0; y < planeRes; y++) {
-        planePositions[i * 3] = (x / planeRes - 0.5) * 2.5;
-        planePositions[i * 3 + 1] = (y / planeRes - 0.5) * 2.5;
+        planePositions[i * 3] = (x / (planeRes - 1) - 0.5) * 2.5;
+        planePositions[i * 3 + 1] = (y / (planeRes - 1) - 0.5) * 2.5;
         planePositions[i * 3 + 2] = 0;
         i++;
       }
@@ -111,7 +111,7 @@ const MorphingPoints = () => {
     fragmentShader
   }),[])
 
-  // Enhanced animation with arrival and smooth transitions
+  // Enhanced animation with smoother arrival
   useEffect(() => {
     let tl: gsap.core.Timeline | null = null;
     
@@ -123,21 +123,21 @@ const MorphingPoints = () => {
         yoyo: false,
       });
       
-      const arrivalDuration = 3;
+      const arrivalDuration = 4.5; // Increased from 3 for much smoother arrival
       const duration = 2.5;
       const delay = 2.5;
 
-      // Initial arrival to sphere
+      // Initial arrival to sphere - smoother with custom easing
       tl.to(uniforms.uArrivalProgress, {
         value: 1,
         duration: arrivalDuration,
-        ease: 'power2.out',
+        ease: 'power1.out', // Gentler easing
       });
 
       tl.to(uniforms.uSphereMix, {
         value: 1,
         duration: arrivalDuration,
-        ease: 'power2.out',
+        ease: 'power1.out',
       }, "<");
 
       // Hold sphere
@@ -173,11 +173,11 @@ const MorphingPoints = () => {
       // Hold random
       tl.to({}, { duration: delay });
 
-      // Disperse back to spawn (reset arrival progress)
+      // Disperse back to spawn (reset arrival progress) - smoother exit
       tl.to(uniforms.uArrivalProgress, {
         value: 0,
         duration: duration,
-        ease: 'power2.in',
+        ease: 'power1.in',
       });
 
       // Reset shape mixes simultaneously
@@ -199,8 +199,8 @@ const MorphingPoints = () => {
           MorphMaterial.uniforms.uTime.value = state.clock.getElapsedTime();
       }
       if (pointsRef.current) {
-        pointsRef.current.rotation.y += 0.0002; // Reduced from 0.001
-        pointsRef.current.rotation.x += 0.0001; // Reduced from 0.001
+        pointsRef.current.rotation.y += 0.0002;
+        pointsRef.current.rotation.x += 0.0001;
       }
   });
 
