@@ -14,9 +14,6 @@ uniform float fillValue;
 
 #define PI 3.1415926535
 
-
-
-
 vec2 giveLonLat(vec2 uv) {
     // Reverse the normalization using the bounds
     float longitude = uv.x * (lonBounds.y - lonBounds.x) + lonBounds.x;
