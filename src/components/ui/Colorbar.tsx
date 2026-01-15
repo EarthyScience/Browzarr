@@ -7,7 +7,7 @@ import React, {useRef, useEffect, useMemo, useState} from 'react'
 import { useGlobalStore, usePlotStore, useAnalysisStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import './css/Colorbar.css'
-import { linspace, TwoDecimals } from '@/utils/HelperFuncs';
+import { linspace } from '@/utils/HelperFuncs';
 import Metadata from "./MetaData";
 
 const operationMap = {
@@ -40,7 +40,7 @@ const operationMap = {
 
 function Num2String(value: number){
     if ((Math.abs(value) > 1e-3 && Math.abs(value) < 1e6) || value === 0){
-        return value.toFixed(2)
+        return parseFloat(value.toFixed(2)).toString() // This seems redundant but it removes trailing zeros
     } else{
         return value.toExponential(2)
     }
