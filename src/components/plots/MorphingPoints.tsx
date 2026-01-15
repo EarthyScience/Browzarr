@@ -1,274 +1,211 @@
 "use client";
 
-import React, { useMemo, useRef, useEffect } from 'react';
-import * as THREE from 'three';
-import { Canvas, extend, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import gsap from 'gsap';
-import vertexShader from '@/components/textures/shaders/LandingVertex.glsl'
-import fragmentShader from '@/components/textures/shaders/LandingFrag.glsl'
-import './Plots.css';
-import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
-import { useShallow } from 'zustand/shallow';
+import React, { useMemo, useRef, useEffect } from "react";
+import * as THREE from "three";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import gsap from "gsap";
+import vertexShader from "@/components/textures/shaders/LandingVertex.glsl";
+import fragmentShader from "@/components/textures/shaders/LandingFrag.glsl";
+import "./Plots.css";
+import { useGlobalStore, usePlotStore } from "@/utils/GlobalStates";
+import { useShallow } from "zustand/shallow";
 
+const COUNT = 15625;
 
 const MorphingPoints = () => {
   const pointsRef = useRef<THREE.Points>(null);
-  const count = 15625;
-  const {gl} = useThree();
-  const { setMaxTextureSize, setMax3DTextureSize } = usePlotStore(useShallow(state => ({
-    setMaxTextureSize: state.setMaxTextureSize,
-    setMax3DTextureSize: state.setMax3DTextureSize
-  })))
+  const { gl } = useThree();
 
-  useEffect(()=>{
-    const context = gl.getContext()
-    //@ts-expect-error This parameter does exist
-    setMax3DTextureSize(context.getParameter(context.MAX_3D_TEXTURE_SIZE))
-    setMaxTextureSize(context.getParameter(context.MAX_TEXTURE_SIZE))
-  },[])
+  const { setMaxTextureSize, setMax3DTextureSize } = usePlotStore(
+    useShallow((s) => ({
+      setMaxTextureSize: s.setMaxTextureSize,
+      setMax3DTextureSize: s.setMax3DTextureSize,
+    }))
+  );
 
-  const {colormap} = useGlobalStore(useShallow(state => ({
-    colormap: state.colormap
-  })))
+  useEffect(() => {
+    const ctx = gl.getContext();
+    setMaxTextureSize(ctx.getParameter(ctx.MAX_TEXTURE_SIZE));
+    if (gl.capabilities.isWebGL2) {
+      setMax3DTextureSize(ctx.getParameter(ctx.MAX_3D_TEXTURE_SIZE));
+    }
+  }, [gl, setMaxTextureSize, setMax3DTextureSize]);
 
-  // Generate positions with improved distribution and spawn points
-  const { spherePositions, cubePositions, planePositions, spawnPositions, delays } = useMemo(() => {
-    const spherePositions = new Float32Array(count * 3);
-    const cubePositions = new Float32Array(count * 3);
-    const planePositions = new Float32Array(count * 3);
-    const spawnPositions = new Float32Array(count * 3);
-    const delays = new Float32Array(count);
+  const { colormap } = useGlobalStore(
+    useShallow((s) => ({ colormap: s.colormap }))
+  );
 
-    // Sphere - Fibonacci lattice for even distribution
-    const phi = Math.PI * (3.0 - Math.sqrt(5.0));
-    for (let i = 0; i < count; i++) {
-      const y = 1 - (i / (count - 1)) * 2;
-      const radius = Math.sqrt(1 - y * y);
-      const theta = phi * i;
+  // Geometry data
+  const {
+    spherePositions,
+    cubePositions,
+    planePositions,
+    spawnPositions,
+    delays,
+  } = useMemo(() => {
+    const sphere = new Float32Array(COUNT * 3);
+    const cube = new Float32Array(COUNT * 3);
+    const plane = new Float32Array(COUNT * 3);
+    const spawn = new Float32Array(COUNT * 3);
+    const delays = new Float32Array(COUNT);
 
-      const x = Math.cos(theta) * radius;
-      const z = Math.sin(theta) * radius;
+    // Sphere (Fibonacci)
+    const phi = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < COUNT; i++) {
+      const y = 1 - (i / (COUNT - 1)) * 2;
+      const r = Math.sqrt(1 - y * y);
+      const t = phi * i;
 
-      spherePositions[i * 3] = x * 1.2;
-      spherePositions[i * 3 + 1] = y * 1.2;
-      spherePositions[i * 3 + 2] = z * 1.2;
+      sphere[i * 3 + 0] = Math.cos(t) * r * 1.2;
+      sphere[i * 3 + 1] = y * 1.2;
+      sphere[i * 3 + 2] = Math.sin(t) * r * 1.2;
 
-      // Spawn positions - random directions from center
-      const spawnTheta = Math.random() * Math.PI * 2;
-      const spawnPhi = Math.random() * Math.PI;
-      const spawnDist = 4 + Math.random() * 2;
-      
-      spawnPositions[i * 3] = Math.sin(spawnPhi) * Math.cos(spawnTheta) * spawnDist;
-      spawnPositions[i * 3 + 1] = Math.sin(spawnPhi) * Math.sin(spawnTheta) * spawnDist;
-      spawnPositions[i * 3 + 2] = Math.cos(spawnPhi) * spawnDist;
+      const a = Math.random() * Math.PI * 2;
+      const b = Math.random() * Math.PI;
+      const d = 4 + Math.random() * 2;
 
-      // Random delays for staggered arrival (0 to 1)
+      spawn[i * 3 + 0] = Math.sin(b) * Math.cos(a) * d;
+      spawn[i * 3 + 1] = Math.sin(b) * Math.sin(a) * d;
+      spawn[i * 3 + 2] = Math.cos(b) * d;
+
       delays[i] = Math.random();
     }
 
-    // Cube - grid distribution
-    const cubRes = 25;
-    let i = 0;
-    for (let x = 0; x < cubRes; x++) {
-      for (let y = 0; y < cubRes; y++) {
-        for (let z = 0; z < cubRes; z++) {
-          cubePositions[i * 3] = (x / (cubRes - 1) - 0.5) * 2;
-          cubePositions[i * 3 + 1] = (y / (cubRes - 1) - 0.5) * 2;
-          cubePositions[i * 3 + 2] = (z / (cubRes - 1) - 0.5) * 2;
-          i++;
+    // Cube
+    const r = 25;
+    let idx = 0;
+    for (let x = 0; x < r; x++)
+      for (let y = 0; y < r; y++)
+        for (let z = 0; z < r; z++) {
+          cube[idx * 3 + 0] = (x / (r - 1) - 0.5) * 2;
+          cube[idx * 3 + 1] = (y / (r - 1) - 0.5) * 2;
+          cube[idx * 3 + 2] = (z / (r - 1) - 0.5) * 2;
+          idx++;
         }
+
+    // Plane
+    const p = 125;
+    idx = 0;
+    for (let x = 0; x < p; x++)
+      for (let y = 0; y < p; y++) {
+        plane[idx * 3 + 0] = (x / (p - 1) - 0.5) * 2.5;
+        plane[idx * 3 + 1] = (y / (p - 1) - 0.5) * 2.5;
+        plane[idx * 3 + 2] = 0;
+        idx++;
       }
-    }
 
-    // Plane - grid distribution
-    const planeRes = 125;
-    i = 0;
-    for (let x = 0; x < planeRes; x++) {
-      for (let y = 0; y < planeRes; y++) {
-        planePositions[i * 3] = (x / (planeRes - 1) - 0.5) * 2.5;
-        planePositions[i * 3 + 1] = (y / (planeRes - 1) - 0.5) * 2.5;
-        planePositions[i * 3 + 2] = 0;
-        i++;
-      }
-    }
-
-    return { spherePositions, cubePositions, planePositions, spawnPositions, delays };
-  }, [count]);
-
-  const MorphMaterial = useMemo(()=>new THREE.ShaderMaterial({
-    glslVersion: THREE.GLSL3,
-    uniforms: {
-      uSphereMix: {value: 0.0},
-      uCubeMix: {value: 0.0},
-      uPlaneMix: {value: 0.0},
-      uRandomMix: {value: 0.0},
-      uTime: {value: 0.0},
-      uArrivalProgress: {value: 0.0},
-      cmap: { value: colormap}
-    },
-    vertexShader,
-    fragmentShader
-  }),[])
-
-  // Enhanced animation with smoother arrival
-  useEffect(() => {
-    let tl: gsap.core.Timeline | null = null;
-    
-    if (MorphMaterial) {
-      const uniforms = MorphMaterial.uniforms;
-
-      tl = gsap.timeline({
-        repeat: -1,
-        yoyo: false,
-      });
-      
-      const arrivalDuration = 4.5; // Increased from 3 for much smoother arrival
-      const duration = 2.5;
-      const delay = 2.5;
-
-      // Initial arrival to sphere - smoother with custom easing
-      tl.to(uniforms.uArrivalProgress, {
-        value: 1,
-        duration: arrivalDuration,
-        ease: 'power1.out', // Gentler easing
-      });
-
-      tl.to(uniforms.uSphereMix, {
-        value: 1,
-        duration: arrivalDuration,
-        ease: 'power1.out',
-      }, "<");
-
-      // Hold sphere
-      tl.to({}, { duration: delay });
-
-      // Morph to Cube
-      tl.to([uniforms.uSphereMix, uniforms.uCubeMix], {
-        value: (index) => index === 0 ? 0 : 1,
-        duration,
-        ease: 'power1.inOut',
-      });
-
-      // Hold cube
-      tl.to({}, { duration: delay });
-
-      // Morph to Plane
-      tl.to([uniforms.uCubeMix, uniforms.uPlaneMix], {
-        value: (index) => index === 0 ? 0 : 1,
-        duration,
-        ease: 'power1.inOut',
-      });
-
-      // Hold plane
-      tl.to({}, { duration: delay });
-
-      // Morph to Random/Dispersed state
-      tl.to([uniforms.uPlaneMix, uniforms.uRandomMix], {
-        value: (index) => index === 0 ? 0 : 1,
-        duration,
-        ease: 'power1.inOut',
-      });
-
-      // Hold random
-      tl.to({}, { duration: delay });
-
-      // Disperse back to spawn (reset arrival progress) - smoother exit
-      tl.to(uniforms.uArrivalProgress, {
-        value: 0,
-        duration: duration,
-        ease: 'power1.in',
-      });
-
-      // Reset shape mixes simultaneously
-      tl.to([uniforms.uRandomMix, uniforms.uSphereMix], {
-        value: 0,
-        duration: 0.01, // Instant reset
-      });
-    }
-
-    return () => {
-      if (tl) {
-        tl.kill();
-      }
+    return {
+      spherePositions: sphere,
+      cubePositions: cube,
+      planePositions: plane,
+      spawnPositions: spawn,
+      delays,
     };
-  }, [MorphMaterial]);
-  
+  }, []);
+
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        glslVersion: THREE.GLSL3,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        uniforms: {
+          uSphereMix: { value: 0 },
+          uCubeMix: { value: 0 },
+          uPlaneMix: { value: 0 },
+          uRandomMix: { value: 0 },
+          uArrivalProgress: { value: 0 },
+          uHold: { value: 0 },
+          uTime: { value: 0 },
+          uSize: { value: 15 },
+          cmap: { value: colormap },
+        },
+        vertexShader,
+        fragmentShader,
+      }),
+    []
+  );
+
+  useEffect(() => {
+    material.uniforms.cmap.value = colormap;
+  }, [colormap, material]);
+
+  useEffect(() => {
+    const u = material.uniforms;
+    const tl = gsap.timeline({ repeat: -1 });
+
+    const arrive = 4.5;
+    const morph = 2.5;
+    const hold = 2.5;
+
+    tl.to(u.uArrivalProgress, { value: 1, duration: arrive, ease: "power1.out" });
+    tl.to(u.uSphereMix, { value: 1, duration: arrive }, "<");
+
+    const addHold = () => {
+      tl.to(u.uHold, { value: 1, duration: 0.01 });
+      tl.to({}, { duration: hold });
+      tl.to(u.uHold, { value: 0, duration: 0.01 });
+    };
+
+    addHold();
+
+    tl.to([u.uSphereMix, u.uCubeMix], {
+      value: (i) => (i === 0 ? 0 : 1),
+      duration: morph,
+    });
+
+    addHold();
+
+    tl.to([u.uCubeMix, u.uPlaneMix], {
+      value: (i) => (i === 0 ? 0 : 1),
+      duration: morph,
+    });
+
+    addHold();
+
+    tl.to([u.uPlaneMix, u.uRandomMix], {
+      value: (i) => (i === 0 ? 0 : 1),
+      duration: morph,
+    });
+
+    addHold();
+
+    tl.to(u.uArrivalProgress, { value: 0, duration: morph });
+    tl.set([u.uRandomMix, u.uSphereMix], { value: 0 });
+
+    return () => tl.kill();
+  }, [material]);
+
   useFrame((state) => {
-      if(MorphMaterial){
-          MorphMaterial.uniforms.uTime.value = state.clock.getElapsedTime();
-      }
-      if (pointsRef.current) {
-        pointsRef.current.rotation.y += 0.0002;
-        pointsRef.current.rotation.x += 0.0001;
-      }
+    material.uniforms.uTime.value = state.clock.getElapsedTime();
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y += 0.0002;
+      pointsRef.current.rotation.x += 0.0001;
+    }
   });
 
-  useEffect(()=>{
-    if(MorphMaterial){
-      MorphMaterial.uniforms.cmap.value = colormap
-    }
-  },[colormap])
-
   return (
-    <points ref={pointsRef} material={MorphMaterial}>
+    <points ref={pointsRef} material={material} frustumCulled={false}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[spawnPositions, 3]}
-          count={count}
-        />
-        <bufferAttribute
-          attach="attributes-aSpawnPosition"
-          args={[spawnPositions, 3]}
-          count={count}
-        />
-        <bufferAttribute
-          attach="attributes-aRandomPosition"
-          args={[spawnPositions, 3]}
-          count={count}
-        />
-        <bufferAttribute
-          attach="attributes-aSpherePosition"
-          args={[spherePositions, 3]}
-          count={count}
-        />
-        <bufferAttribute
-          attach="attributes-aCubePosition"
-          args={[cubePositions, 3]}
-          count={count}
-        />
-        <bufferAttribute
-          attach="attributes-aPlanePosition"
-          args={[planePositions, 3]}
-          count={count}
-        />
-        <bufferAttribute
-          attach="attributes-aDelay"
-          args={[delays, 1]}
-          count={count}
-        />
+        <bufferAttribute attach="attributes-position" args={[spawnPositions, 3]} />
+        <bufferAttribute attach="attributes-aSpawnPosition" args={[spawnPositions, 3]} />
+        <bufferAttribute attach="attributes-aRandomPosition" args={[spawnPositions, 3]} />
+        <bufferAttribute attach="attributes-aSpherePosition" args={[spherePositions, 3]} />
+        <bufferAttribute attach="attributes-aCubePosition" args={[cubePositions, 3]} />
+        <bufferAttribute attach="attributes-aPlanePosition" args={[planePositions, 3]} />
+        <bufferAttribute attach="attributes-aDelay" args={[delays, 1]} />
       </bufferGeometry>
     </points>
   );
 };
 
-
-export const LandingShapes = () =>{
-  return(
-    <div className='w-[100vw] h-[100vh]'>
-      <Canvas
-        camera={{position:[0, 0, 3]}}
-      >
-        <OrbitControls 
-          enableZoom={true}
-          enablePan={true}
-          enableRotate={true}
-          maxDistance={6}
-          minDistance={2}
-        />
-        <MorphingPoints/>
-      </Canvas>
-    </div>
-  )
-}
+export const LandingShapes = () => (
+  <div className="w-[100vw] h-[100vh]">
+    <Canvas camera={{ position: [0, 0, 3] }}>
+      <OrbitControls minDistance={2} maxDistance={6} />
+      <MorphingPoints />
+    </Canvas>
+  </div>
+);
