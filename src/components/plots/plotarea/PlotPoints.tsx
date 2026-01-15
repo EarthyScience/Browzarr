@@ -44,6 +44,7 @@ function PlotPoints({ points, tsID, pointSetters, scalers }: { points: THREE.Vec
         ref.current.setMatrixAt(i, dummy.matrix)
       }
       ref.current.instanceMatrix.needsUpdate = true
+      ref.current.computeBoundingSphere();
     }
   }, [points, zoom, geometry, material, xScale, yScale, pointSize]) // Add xScale, yScale as dependencies
 

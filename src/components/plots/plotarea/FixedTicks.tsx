@@ -35,7 +35,8 @@ export function FixedTicks({
   yScale = 1,
   xScale=1,
 }: FixedTicksProps) {
-  const { camera } = useThree()
+  const { camera, size } = useThree()
+  const initSize = useRef(size)
   const [bounds, setBounds] = useState<ViewportBounds>({ left: 0, right: 0, top: 0, bottom: 0 })
   const {dimCoords, dimArrays, plotDim, valueScales} = useGlobalStore(
     useShallow(state=>({
@@ -88,19 +89,6 @@ export function FixedTicks({
     }
   },[xDimArray,coords])
 
-  const initialBounds = useMemo<ViewportBounds>(()=>{
-  const worldWidth = window.innerWidth
-  const worldHeight = (window.innerHeight-height)
-    
-  const newBounds = {
-      left: -worldWidth / 2 + camera.position.x,
-      right: worldWidth / 2 + camera.position.x,
-      top: worldHeight / 2 + camera.position.y,
-      bottom: -worldHeight / 2 + camera.position.y
-    }
-    return newBounds;
-  },[])
-
   const [zoom, setZoom] = useState(camera.zoom)
   
   const sizes = useMemo(() => {
@@ -113,17 +101,13 @@ export function FixedTicks({
     }
   }, [camera.zoom, tickSize, fontSize])
 
-  // Update bounds when camera moves
-  // TODO: update bounds when camera zooms
-
-
 
   useFrame(() => {
     if (camera.zoom !== zoom) {
-      setZoom(camera.zoom) // this is not working properly
+      setZoom(camera.zoom) 
     }
-    const worldWidth = window.innerWidth / camera.zoom
-    const worldHeight = (window.innerHeight-height) / camera.zoom
+    const worldWidth = size.width / camera.zoom
+    const worldHeight = size.height / camera.zoom
     const newBounds = {
       left: -worldWidth / 2 + camera.position.x,
       right: worldWidth / 2 + camera.position.x,
@@ -161,9 +145,12 @@ export function FixedTicks({
       }
     };
   }, [height]);
-  const stickyLines = 1; //This is the amount of pixels you need to zoome before the ticks readjust
   const vertY = (bounds.top+bounds.bottom)/2
   const horX = (bounds.left+bounds.right)/2 //Moved calcs here to reduce calcs
+  const rescaleSizes = {
+    width: initSize.current.width/size.width,
+    height: initSize.current.height/size.height
+  }
   return (
     <group >
       {/* Grid Lines */}
@@ -172,9 +159,8 @@ export function FixedTicks({
           {/* Vertical grid lines */}
           {Array.from({ length: xTickCount }, (_, i) => {
             if (i === 0 || i === xTickCount-1) return null; // Skip edges
-            const x = Math.round(bounds.left / stickyLines) * stickyLines + 
-            (Math.round(bounds.right / stickyLines) *stickyLines -  Math.round(bounds.left / stickyLines) * stickyLines) * (i / (xTickCount-1))
-            const normX = x/xScale/(initialBounds.right - initialBounds.left)+.5;
+            const x = (size.width*(i / (xTickCount-1))-size.width/2 + camera.position.x)
+            const normX = (x/(rescaleSizes.width))/xScale/size.width+.5;
             const y = vertY
             return (
               <Fragment key={`vert-group-${i}`}>
@@ -231,8 +217,8 @@ export function FixedTicks({
           {/* Horizontal grid lines */}
           {Array.from({ length: yTickCount }, (_, i) => {
             if (i === 0 || i === yTickCount-1) return null; // Skip edges
-            const y = (bounds.bottom  + (bounds.top - bounds.bottom) * (i / (yTickCount-1)))
-            const normY = (y/yScale/(bounds.top - bounds.bottom)/zoom)+.5
+            const y = (size.height*(i / (yTickCount-1))-size.height/2 + camera.position.y)
+            const normY = (y/(rescaleSizes.height))/yScale/size.height+.5;
             const x = horX
             return (
               <Fragment key={`vert-group-${i}`}>
