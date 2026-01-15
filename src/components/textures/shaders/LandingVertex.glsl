@@ -1,6 +1,7 @@
 uniform float uSphereMix;
 uniform float uCubeMix;
 uniform float uPlaneMix;
+uniform float uRandomMix;
 uniform float uSize;
 uniform float uTime;
 uniform float uArrivalProgress;
@@ -10,6 +11,7 @@ attribute vec3 aSpherePosition;
 attribute vec3 aCubePosition;
 attribute vec3 aPlanePosition;
 attribute vec3 aSpawnPosition;
+attribute vec3 aRandomPosition;
 attribute float aDelay;
 
 varying vec3 vColor; 
@@ -28,13 +30,14 @@ void main() {
     // Calculate staggered arrival - each particle arrives at different time
     float particleArrival = smoothstep(aDelay, aDelay + 0.3, uArrivalProgress);
     
-    // Linearly interpolate between the three shapes using the mix uniforms
+    // Linearly interpolate between the four shapes using the mix uniforms
     vec3 pos = mix(aSpherePosition, aCubePosition, uCubeMix);
     pos = mix(pos, aPlanePosition, uPlaneMix);
+    pos = mix(pos, aRandomPosition, uRandomMix);
     
     // Add flow field for fluid, organic movement during transitions
     vec3 flow = flowField(pos, uTime);
-    float transitionAmount = uCubeMix + uPlaneMix;
+    float transitionAmount = uCubeMix + uPlaneMix + uRandomMix;
     float flowStrength = transitionAmount * 0.5; // More flow during transitions
     pos += flow * flowStrength;
     

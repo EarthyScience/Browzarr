@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { Canvas, extend, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import gsap from 'gsap';
 import vertexShader from '@/components/textures/shaders/LandingVertex.glsl'
 import fragmentShader from '@/components/textures/shaders/LandingFrag.glsl'
@@ -101,6 +102,7 @@ const MorphingPoints = () => {
       uSphereMix: {value: 0.0},
       uCubeMix: {value: 0.0},
       uPlaneMix: {value: 0.0},
+      uRandomMix: {value: 0.0},
       uTime: {value: 0.0},
       uArrivalProgress: {value: 0.0},
       cmap: { value: colormap}
@@ -141,50 +143,48 @@ const MorphingPoints = () => {
       // Hold sphere
       tl.to({}, { duration: delay });
 
-      // Morph to Cube with fluid motion
-      tl.to(uniforms.uSphereMix, {
-        value: 0,
+      // Morph to Cube
+      tl.to([uniforms.uSphereMix, uniforms.uCubeMix], {
+        value: (index) => index === 0 ? 0 : 1,
         duration,
         ease: 'power1.inOut',
       });
-      
-      tl.to(uniforms.uCubeMix, {
-        value: 1,
-        duration,
-        ease: 'power1.inOut',
-      }, "<");
 
       // Hold cube
       tl.to({}, { duration: delay });
 
       // Morph to Plane
-      tl.to(uniforms.uCubeMix, {
-        value: 0,
+      tl.to([uniforms.uCubeMix, uniforms.uPlaneMix], {
+        value: (index) => index === 0 ? 0 : 1,
         duration,
         ease: 'power1.inOut',
       });
-      
-      tl.to(uniforms.uPlaneMix, {
-        value: 1,
-        duration,
-        ease: 'power1.inOut',
-      }, "<");
 
       // Hold plane
       tl.to({}, { duration: delay });
 
-      // Morph back to Sphere
-      tl.to(uniforms.uPlaneMix, {
-        value: 0,
+      // Morph to Random/Dispersed state
+      tl.to([uniforms.uPlaneMix, uniforms.uRandomMix], {
+        value: (index) => index === 0 ? 0 : 1,
         duration,
         ease: 'power1.inOut',
       });
-      
-      tl.to(uniforms.uSphereMix, {
-        value: 1,
-        duration,
-        ease: 'power1.inOut',
-      }, "<");
+
+      // Hold random
+      tl.to({}, { duration: delay });
+
+      // Disperse back to spawn (reset arrival progress)
+      tl.to(uniforms.uArrivalProgress, {
+        value: 0,
+        duration: duration,
+        ease: 'power2.in',
+      });
+
+      // Reset shape mixes simultaneously
+      tl.to([uniforms.uRandomMix, uniforms.uSphereMix], {
+        value: 0,
+        duration: 0.01, // Instant reset
+      });
     }
 
     return () => {
@@ -199,8 +199,8 @@ const MorphingPoints = () => {
           MorphMaterial.uniforms.uTime.value = state.clock.getElapsedTime();
       }
       if (pointsRef.current) {
-        pointsRef.current.rotation.y += 0.001;
-        pointsRef.current.rotation.x += 0.001;
+        pointsRef.current.rotation.y += 0.0002; // Reduced from 0.001
+        pointsRef.current.rotation.x += 0.0001; // Reduced from 0.001
       }
   });
 
@@ -220,6 +220,11 @@ const MorphingPoints = () => {
         />
         <bufferAttribute
           attach="attributes-aSpawnPosition"
+          args={[spawnPositions, 3]}
+          count={count}
+        />
+        <bufferAttribute
+          attach="attributes-aRandomPosition"
           args={[spawnPositions, 3]}
           count={count}
         />
@@ -255,6 +260,13 @@ export const LandingShapes = () =>{
       <Canvas
         camera={{position:[0, 0, 3]}}
       >
+        <OrbitControls 
+          enableZoom={true}
+          enablePan={true}
+          enableRotate={true}
+          maxDistance={6}
+          minDistance={2}
+        />
         <MorphingPoints/>
       </Canvas>
     </div>
