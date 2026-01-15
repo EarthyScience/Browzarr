@@ -78,6 +78,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     const [tickCount, setTickCount] = useState<number>(5)
     const [newMin, setNewMin] = useState(origMin)
     const [newMax, setNewMax] = useState(origMax)
+    const [displayMin, setDisplayMin] = useState(Num2String(origMin))
+    const [displayMax, setDisplayMax] = useState(Num2String(origMax))
     const prevVals = useRef<{ min: number | null; max: number | null }>({ min: null, max: null });
 
     const colors = useMemo(()=>{
@@ -121,6 +123,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         const lastMax = prevVals.current.max
         setNewMin(lastMin+(range*thisOffset))
         setNewMax(lastMax+(range*thisOffset))
+        setDisplayMax(Num2String((lastMax+(range*thisOffset))*Math.pow(10, scalingFactor??0)))
+        setDisplayMin(Num2String((lastMin+(range*thisOffset))*Math.pow(10, scalingFactor??0)))
     };
 
     // Mouse up handler
@@ -128,22 +132,22 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         scaling.current = false;
         prevPos.current = {x: null, y: null}
         prevVals.current = {min: null, max: null}
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
+        document.removeEventListener("pointermove", handleMouseMove);
+        document.removeEventListener("pointerup", handleMouseUp);
     };
 
     // Mouse down handler
     const handleMouseDown = () => {
         scaling.current = true;
-        document.addEventListener("mousemove", handleMouseMove);
-        document.addEventListener("mouseup", handleMouseUp);
+        document.addEventListener("pointermove", handleMouseMove);
+        document.addEventListener("pointerup", handleMouseUp);
     };
 
     // Clean up in case component unmounts mid-drag
     useEffect(() => {
         return () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
+        document.removeEventListener("pointermove", handleMouseMove);
+        document.removeEventListener("pointerup", handleMouseUp);
         };
     }, []);
 
@@ -197,13 +201,14 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                     left: `0%`,
                     top:'100%',
                     position:'absolute',
-                    width:`${Num2String(newMin*Math.pow(10,scalingFactor??0)).length*8}px`,
+                    width:`${displayMin.length*9+1}px`,
                     transform:'translateX(-50%)',
                     textAlign:'right',
                     minWidth:'30px'
                 }}
-                value={Num2String(newMin*Math.pow(10,scalingFactor??0))} 
-                onChange={e=>setNewMin(parseFloat(e.target.value))}
+                value={displayMin} 
+                onChange={e=>{setDisplayMin(e.target.value); setNewMin(parseFloat(e.target.value)/Math.pow(10, scalingFactor??0))}}
+                onBlur={e=>setDisplayMin(Num2String(newMin*Math.pow(10, scalingFactor??0)))}
             />
             {Array.from({length: tickCount}).map((_val,idx)=>{
                 if (idx == 0 || idx == tickCount-1){
@@ -226,15 +231,19 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                     left: `100%`,
                     top:'100%',
                     position:'absolute',
-                    width:`${Num2String(newMax*Math.pow(10,scalingFactor??0)).length*9+1}px`,
+                    width:`${displayMax.length*9+1}px`,
                     transform:'translateX(-50%)',
                     textAlign:'right',
                     minWidth:'30px'
                 }}
-                value={Num2String(newMax*Math.pow(10,scalingFactor??0))}
-                onChange={e=>setNewMax(parseFloat(e.target.value))}
+                value={displayMax}
+                onChange={e=>{
+                    setDisplayMax(e.target.value); 
+                    setNewMax(parseFloat(e.target.value)/Math.pow(10, scalingFactor??0))
+                }}
+                onBlur={e=>setDisplayMax(Num2String(newMax*Math.pow(10, scalingFactor??0)))}
             />
-            <canvas id="colorbar-canvas" ref={canvasRef} width={512} height={24} onMouseDown={handleMouseDown}/>
+            <canvas id="colorbar-canvas" ref={canvasRef} width={512} height={24} onPointerDown={handleMouseDown}/>
             <p className="colorbar-title"
                 style={{
                 position:'absolute',
@@ -246,7 +255,12 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 {`${analysisString}`}
             </p>
         {(cScale != 1 || cOffset != 0) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} 
-            onClick={()=>{setNewMin(origMin); setNewMax(origMax)}}
+            onClick={()=>{
+                setNewMin(origMin); 
+                setNewMax(origMax); 
+                setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0))); 
+                setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)))
+            }}
         />}
         <div
             style={{
