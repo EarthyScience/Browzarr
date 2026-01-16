@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   site: {
-    name: 'browzarr.io'
+    name: 'docs'
   },
 
   // Disable server-only modules

@@ -1,6 +1,6 @@
 ---
 seo:
-  title: Browzarr
+  title: browzarr.io
   description: A powerful, browser-native framework for visualizing, exploring, and analyzing Zarr data stores.
 ---
 
@@ -9,9 +9,9 @@ seo:
 Browzarr
 
 #description
-A powerful, browser-native framework for visualizing, exploring, and analyzing Zarr data stores.
+A powerful, browser-native framework for exploring and analyzing Zarr and NetCDF datasets.
 
-Load multi-dimensional datasets directly in the browser, interactively slice and inspect chunks, and gain insights without any backend or server setup.
+Load multi-dimensional datasets in the browser, slice and inspect data interactively, and gain insights without any backend or server setup.
 
 #links
   :::u-button
@@ -32,7 +32,7 @@ Landing
   to: https://github.com/EarthyScience/Browzarr
   variant: outline
   ---
-  Star on GitHub
+  Give us a Star :icon{name="i-ph-star-fill" class="icon-md star-halo-wrapper" style="color: #f59e0b"}
   :::
 
   :::u-button
