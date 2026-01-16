@@ -13,8 +13,15 @@ import { useShallow } from "zustand/shallow";
 
 const COUNT = 15625;
 
+// Seeded random number generator for deterministic results
+const seededRandom = (seed: number) => {
+  const x = Math.sin(seed++) * 10000;
+  return x - Math.floor(x);
+};
+
 const MorphingPoints = () => {
   const pointsRef = useRef<THREE.Points>(null);
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
   const { gl } = useThree();
 
   const { setMaxTextureSize, setMax3DTextureSize } = usePlotStore(
@@ -26,9 +33,13 @@ const MorphingPoints = () => {
 
   useEffect(() => {
     const ctx = gl.getContext();
+
     setMaxTextureSize(ctx.getParameter(ctx.MAX_TEXTURE_SIZE));
-    if (gl.capabilities.isWebGL2) {
-      setMax3DTextureSize(ctx.getParameter(ctx.MAX_3D_TEXTURE_SIZE));
+
+    if (ctx instanceof WebGL2RenderingContext) {
+      setMax3DTextureSize(
+        ctx.getParameter(ctx.MAX_3D_TEXTURE_SIZE)
+      );
     }
   }, [gl, setMaxTextureSize, setMax3DTextureSize]);
 
@@ -36,7 +47,7 @@ const MorphingPoints = () => {
     useShallow((s) => ({ colormap: s.colormap }))
   );
 
-  // Geometry data
+  // Geometry data - use seeded random for deterministic results
   const {
     spherePositions,
     cubePositions,
@@ -61,15 +72,16 @@ const MorphingPoints = () => {
       sphere[i * 3 + 1] = y * 1.2;
       sphere[i * 3 + 2] = Math.sin(t) * r * 1.2;
 
-      const a = Math.random() * Math.PI * 2;
-      const b = Math.random() * Math.PI;
-      const d = 4 + Math.random() * 2;
+      // Use seeded random for deterministic spawn positions
+      const a = seededRandom(i * 3) * Math.PI * 2;
+      const b = seededRandom(i * 3 + 1) * Math.PI;
+      const d = 4 + seededRandom(i * 3 + 2) * 2;
 
       spawn[i * 3 + 0] = Math.sin(b) * Math.cos(a) * d;
       spawn[i * 3 + 1] = Math.sin(b) * Math.sin(a) * d;
       spawn[i * 3 + 2] = Math.cos(b) * d;
 
-      delays[i] = Math.random();
+      delays[i] = seededRandom(i * 5);
     }
 
     // Cube
@@ -104,36 +116,33 @@ const MorphingPoints = () => {
     };
   }, []);
 
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        glslVersion: THREE.GLSL3,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        uniforms: {
-          uSphereMix: { value: 0 },
-          uCubeMix: { value: 0 },
-          uPlaneMix: { value: 0 },
-          uRandomMix: { value: 0 },
-          uArrivalProgress: { value: 0 },
-          uHold: { value: 0 },
-          uTime: { value: 0 },
-          uSize: { value: 15 },
-          cmap: { value: colormap },
-        },
-        vertexShader,
-        fragmentShader,
-      }),
-    []
+  const initialUniforms = useMemo(
+    () => ({
+      uSphereMix: { value: 0 },
+      uCubeMix: { value: 0 },
+      uPlaneMix: { value: 0 },
+      uRandomMix: { value: 0 },
+      uArrivalProgress: { value: 0 },
+      uHold: { value: 0 },
+      uTime: { value: 0 },
+      uSize: { value: 15 },
+      cmap: { value: colormap },
+    }),
+    [colormap]
   );
 
+  // Update colormap when it changes
   useEffect(() => {
-    material.uniforms.cmap.value = colormap;
-  }, [colormap, material]);
+    if (materialRef.current) {
+      materialRef.current.uniforms.cmap.value = colormap;
+    }
+  }, [colormap]);
 
+  // Animation timeline
   useEffect(() => {
-    const u = material.uniforms;
+    if (!materialRef.current) return;
+
+    const u = materialRef.current.uniforms;
     const tl = gsap.timeline({ repeat: -1 });
 
     const arrive = 4.5;
@@ -152,21 +161,21 @@ const MorphingPoints = () => {
     addHold();
 
     tl.to([u.uSphereMix, u.uCubeMix], {
-      value: (i) => (i === 0 ? 0 : 1),
+      value: (i: number) => (i === 0 ? 0 : 1),
       duration: morph,
     });
 
     addHold();
 
     tl.to([u.uCubeMix, u.uPlaneMix], {
-      value: (i) => (i === 0 ? 0 : 1),
+      value: (i: number) => (i === 0 ? 0 : 1),
       duration: morph,
     });
 
     addHold();
 
     tl.to([u.uPlaneMix, u.uRandomMix], {
-      value: (i) => (i === 0 ? 0 : 1),
+      value: (i: number) => (i === 0 ? 0 : 1),
       duration: morph,
     });
 
@@ -175,11 +184,15 @@ const MorphingPoints = () => {
     tl.to(u.uArrivalProgress, { value: 0, duration: morph });
     tl.set([u.uRandomMix, u.uSphereMix], { value: 0 });
 
-    return () => tl.kill();
-  }, [material]);
+    return () => {
+      tl.kill();
+    };
+  }, []);
 
   useFrame((state) => {
-    material.uniforms.uTime.value = state.clock.getElapsedTime();
+    if (materialRef.current) {
+      materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime();
+    }
     if (pointsRef.current) {
       pointsRef.current.rotation.y += 0.0002;
       pointsRef.current.rotation.x += 0.0001;
@@ -187,7 +200,7 @@ const MorphingPoints = () => {
   });
 
   return (
-    <points ref={pointsRef} material={material} frustumCulled={false}>
+    <points ref={pointsRef} frustumCulled={false}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[spawnPositions, 3]} />
         <bufferAttribute attach="attributes-aSpawnPosition" args={[spawnPositions, 3]} />
@@ -197,6 +210,16 @@ const MorphingPoints = () => {
         <bufferAttribute attach="attributes-aPlanePosition" args={[planePositions, 3]} />
         <bufferAttribute attach="attributes-aDelay" args={[delays, 1]} />
       </bufferGeometry>
+      <shaderMaterial
+        ref={materialRef}
+        glslVersion={THREE.GLSL3}
+        transparent={true}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        uniforms={initialUniforms}
+        vertexShader={vertexShader}
+        fragmentShader={fragmentShader}
+      />
     </points>
   );
 };
