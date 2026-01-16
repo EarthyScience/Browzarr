@@ -1,0 +1,45 @@
+name: Deploy main docs → gh-pages/docs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: write-all
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install dependencies
+        working-directory: docs
+        run: npm install
+
+      - name: Build docs site
+        working-directory: docs
+        env:
+          NUXT_APP_BASE_URL: "/docs/"
+        run: npm run build
+
+      - name: Deploying docs 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: docs/.output/public
+          target-folder: docs
+          clean: false
