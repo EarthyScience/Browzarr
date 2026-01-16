@@ -126,15 +126,16 @@ const MorphingPoints = () => {
       uHold: { value: 0 },
       uTime: { value: 0 },
       uSize: { value: 15 },
-      cmap: { value: colormap },
+      cmap: { value: null },
     }),
-    [colormap]
+    []
   );
 
   // Update colormap when it changes
   useEffect(() => {
     if (materialRef.current) {
       materialRef.current.uniforms.cmap.value = colormap;
+      materialRef.current.needsUpdate = true;
     }
   }, [colormap]);
 
