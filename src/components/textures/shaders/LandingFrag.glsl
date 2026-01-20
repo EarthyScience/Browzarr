@@ -1,13 +1,9 @@
-precision highp float;
+// Fragment Shader
 
 in vec3 vColor;
-in float vGreyMix;
-in float vAlpha;
-
 out vec4 Color;
 
 void main() {
-    vec3 silver = vec3(0.75);
-    vec3 finalColor = mix(vColor, silver, vGreyMix);
-    Color = vec4(finalColor, vAlpha);
+    // Simple white color for the points
+    Color = vec4(vColor, 0.8);
 }
