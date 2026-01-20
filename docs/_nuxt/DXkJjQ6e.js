@@ -1,0 +1,1 @@
+import{$ as r,e as c,o as l,x as p,a5 as u,c as i,a8 as s}from"./COr8f8Jp.js";const m={base:""},g={__name:"ProseStrong",props:{class:{type:null,required:!1}},setup(e){const a=e,o=r(),t=i(()=>s({extend:s(m),...o.ui?.prose?.strong||{}}));return(n,f)=>(l(),c("strong",{class:u(t.value({class:a.class}))},[p(n.$slots,"default")],2))}};export{g as default};

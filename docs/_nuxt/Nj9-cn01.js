@@ -1,0 +1,1 @@
+import{$ as n,e as c,o as r,x as p,a5 as u,c as i,a8 as s}from"./COr8f8Jp.js";const m={base:"my-1.5 ps-1.5 leading-7 [&>ul]:my-0"},_={__name:"ProseLi",props:{class:{type:null,required:!1}},setup(e){const a=e,o=n(),l=i(()=>s({extend:s(m),...o.ui?.prose?.li||{}}));return(t,d)=>(r(),c("li",{class:u(l.value({class:a.class}))},[p(t.$slots,"default")],2))}};export{_ as default};

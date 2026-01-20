@@ -1,0 +1,1 @@
+import{$ as l,e as n,o as r,x as p,a5 as u,c as d,a8 as e}from"./COr8f8Jp.js";const m={base:"bg-muted"},h={__name:"ProseThead",props:{class:{type:null,required:!1}},setup(s){const a=s,t=l(),o=d(()=>e({extend:e(m),...t.ui?.prose?.thead||{}}));return(c,i)=>(r(),n("thead",{class:u(o.value({class:a.class}))},[p(c.$slots,"default")],2))}};export{h as default};

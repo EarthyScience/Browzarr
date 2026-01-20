@@ -1,0 +1,1 @@
+import{$ as t,e as c,o as l,a5 as n,c as p,a8 as e}from"./COr8f8Jp.js";const u={base:"border-t border-default my-12"},f={__name:"ProseHr",props:{class:{type:null,required:!1}},setup(s){const a=s,o=t(),r=p(()=>e({extend:e(u),...o.ui?.prose?.hr||{}}));return(m,i)=>(l(),c("hr",{class:n(r.value({class:a.class}))},null,2))}};export{f as default};
