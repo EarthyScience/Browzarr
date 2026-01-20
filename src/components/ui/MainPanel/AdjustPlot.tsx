@@ -19,6 +19,9 @@ import {
 import { parseLoc, normalize, denormalize } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
+import { FaArrowRotateRight } from "react-icons/fa6";
+import { Mirror } from '../Icons';
+
 import Hider from '../Hider';
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -124,7 +127,7 @@ const DimSlicer = () =>{
           <b>Spatial Cropping</b>
           <ChevronDown 
             className={`h-4 w-4 transition-transform duration-200 ${
-              isSpatialOpen ? 'rotate-180' : ''
+              !isSpatialOpen ? 'rotate-180' : ''
             }`}
           />
         </button>
@@ -527,40 +530,126 @@ const GlobalOptions = () =>{
     valueScales:state.valueScales
   })))
   const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
+  const [showMasks, setShowMasks] = useState(false);
+  const [showTransform, setShowTransform] = useState(false);
 
   const isPC = plotType == 'point-cloud'
   return (
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
       {!isPC &&
         <>
-      <b>NaN Transparency</b>
-      <UISlider
-        min={0}
-        max={1}
-        step={0.05}
-        value={[nanTransparency]}
-        className='w-full mb-2'
-        onValueChange={(vals:number[]) => setNanTransparency(vals[0])}
-      />
-      <b>NaN Color</b>
-      <input type="color"
-        className='w-[100%] cursor-pointer'
-        value={nanColor}
-        onChange={e => setNanColor(e.target.value)}
-      />
-      <b>Mask Value</b>
-      <div className='grid grid-cols-[auto_60%] items-center gap-2 mt-2 text-left'>
-      <Input
-        type='number'
-        defaultValue={denormalize(fillValue, valueScales.minVal, valueScales.maxVal)}
-        onChange={e=> setThisFillValue(parseFloat(e.target.value))}
-      />
-      <Button
-        disabled={normalize(thisFillVal, valueScales.minVal, valueScales.maxVal) === fillValue}
-        className='cursor-pointer'
-        onClick={()=>setFillValue(normalize(thisFillVal, valueScales.minVal, valueScales.maxVal))}
-      >Set Value</Button>
-      </div>
+        <button 
+          onClick={() => setShowMasks(!showMasks)}
+          className="flex items-center gap-2 w-full mb-2"
+        >
+          <b>Mask Values</b>
+          <ChevronDown 
+            className={`h-4 w-4 transition-transform duration-200 ${
+              showMasks ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+        <Hider show={!showMasks}>
+          <b>NaN Transparency</b>
+          <UISlider
+            min={0}
+            max={1}
+            step={0.05}
+            value={[nanTransparency]}
+            className='w-full mb-2'
+            onValueChange={(vals:number[]) => setNanTransparency(vals[0])}
+          />
+          <b>NaN Color</b>
+          <input type="color"
+            className='w-[100%] cursor-pointer'
+            value={nanColor}
+            onChange={e => setNanColor(e.target.value)}
+          />
+          <b>Mask Value</b>
+          <div className='grid grid-cols-[auto_60%] items-center gap-2 mt-2 text-left'>
+            <Input
+              type='number'
+              defaultValue={denormalize(fillValue, valueScales.minVal, valueScales.maxVal)}
+              onChange={e=> setThisFillValue(parseFloat(e.target.value))}
+            />
+            <Button
+              disabled={normalize(thisFillVal, valueScales.minVal, valueScales.maxVal) === fillValue}
+              className='cursor-pointer'
+              onClick={()=>setFillValue(normalize(thisFillVal, valueScales.minVal, valueScales.maxVal))}
+            >Set Value</Button>
+          </div>
+        </Hider>
+
+      <button 
+          onClick={() => setShowTransform(!showTransform)}
+          className="flex items-center gap-2 w-full mb-2"
+        >
+          <b>Transform Plot</b>
+          <ChevronDown 
+            className={`h-4 w-4 transition-transform duration-200 ${
+              showTransform ? 'rotate-180' : ''
+            }`}
+          />
+      </button>
+      <Hider show={!showTransform}>
+        <div className='grid grid-cols-2 gap-4 place-items-center'>
+            {/* Rotations */}
+            <div className='col-span-2'>
+              <b>Rotation</b>
+            </div>
+            <button
+              style={{
+                position:'relative',
+              }}
+              className='cursor-pointer'
+            >
+              <div 
+                style={{
+                  position:'absolute',
+                  top:'50%',
+                  left:0,
+                  width:'200%',
+                  transform:'translateX(-25%)',
+                  borderTop:'2px solid red',
+                  borderBottom:'2px solid red',
+                }}
+              />
+              <FaArrowRotateRight size={30}/>
+            </button>
+            <button
+              style={{
+                position:'relative',
+              }}
+              className='cursor-pointer'
+            >
+              <div 
+                style={{
+                  position:'absolute',
+                  top:'50%',
+                  left:'50%',
+                  transform:'translate(-50%,-50%)',
+                  borderRadius:'4px',
+                  border: '4px solid red',
+                }}
+              />
+              <FaArrowRotateRight size={30}/>
+            </button>
+            {/* Mirror */}
+            <div className='col-span-2'>
+              <b>Mirror</b>
+            </div>
+            <button
+              className='cursor-pointer'
+            >
+              <Mirror className='size-8'/>
+            </button>
+            <button
+              className='cursor-pointer'
+            >
+              <Mirror className='rotate-90 size-8'/>
+            </button>
+        </div>
+      </Hider>
       <div className='grid grid-cols-[auto_20%] items-center gap-2 mt-2 text-left'>
         <label>Interpolate Pixels</label>
         <Switch className='h-5'  id="interpoalte-pixels" checked={interpPixels} onCheckedChange={e=>setInterpPixels(e)}/>
