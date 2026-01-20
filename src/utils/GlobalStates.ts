@@ -30,6 +30,9 @@ type StoreState = {
   dimArrays: number[][];
   dimNames: string[];
   dimUnits: string[];
+  origDimArrays: number[][];
+  origDimNames: string[];
+  origDimUnits: string[];
   dimCoords: Record<string, DimCoords>;
   plotDim: number;
   flipY:boolean;
@@ -62,6 +65,9 @@ type StoreState = {
   setDimArrays: (dimArrays: number[][]) => void;
   setDimNames: (dimNames: string[]) => void;
   setDimUnits: (dimUnits: string[]) => void;
+  setOrigDimArrays: (dimArrays: number[][]) => void;
+  setOrigDimNames: (dimNames: string[]) => void;
+  setOrigDimUnits: (dimUnits: string[]) => void;
   setDimCoords: (dimCoords?: Record<string, DimCoords>) => void;
   updateDimCoords: (newDims: Record<string, DimCoords>) => void;
   setPlotDim: (plotDim: number) => void;
@@ -95,6 +101,9 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   dimArrays: [[0], [0], [0]],
   dimNames: ["Default"],
   dimUnits: ["Default"],
+  origDimArrays: [[0], [0], [0]],
+  origDimNames: ["Default"],
+  origDimUnits: ["Default"],
   dimCoords: {},
   plotDim: 0,
   flipY: false,
@@ -136,6 +145,9 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setDimArrays: (dimArrays) => set({ dimArrays }),
   setDimNames: (dimNames) => set({ dimNames }),
   setDimUnits: (dimUnits) => set({ dimUnits }),
+  setOrigDimArrays: (origDimArrays) => set({ origDimArrays }),
+  setOrigDimNames: (origDimNames) => set({ origDimNames }),
+  setOrigDimUnits: (origDimUnits) => set({ origDimUnits }),
   setDimCoords: (dimCoords) => set({ dimCoords }),
   updateDimCoords: (newDims) => {
     const merged = { ...newDims,...get().dimCoords  };
@@ -698,4 +710,28 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   PreviewKeyFrames: () => set({ previewKeyFrames: !get().previewKeyFrames }), // Changes state to preview keyframes in main view
   setCurrentFrame: (currentFrame) => set({ currentFrame}),
   setPreviewExtent: (previewExtent) => set({ previewExtent })
+}));
+
+type PlotTransformState = {
+  rotateZ: number;
+  rotateX: number;
+  mirrorVertical: boolean;
+  mirrorHorizontal: boolean;  
+
+  setRotateZ: (rotateZ: number) => void;
+  setRotateX: (rotateX: number) => void;
+  setMirrorVertical: (mirrorVertical: boolean) => void;
+  setMirrorHorizontal: (mirrorHorizontal: boolean) => void;
+}
+
+export const usePlotTransformStore = create<PlotTransformState>((set) => ({
+  rotateZ: 0,
+  rotateX: 0,
+  mirrorVertical: false,
+  mirrorHorizontal: false,
+
+  setRotateZ: (rotateZ) => set({ rotateZ }),
+  setRotateX: (rotateX) => set({ rotateX }),
+  setMirrorVertical: (mirrorVertical) => set({ mirrorVertical }),
+  setMirrorHorizontal: (mirrorHorizontal) => set({ mirrorHorizontal }),
 }));

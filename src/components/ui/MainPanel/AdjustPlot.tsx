@@ -1,6 +1,6 @@
 "use client";
 import React, {useState, useEffect} from 'react'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, usePlotStore, usePlotTransformStore } from '@/utils/GlobalStates';
 import '../css/MainPanel.css'
 import { useShallow } from 'zustand/shallow';
 import { Slider as UISlider } from '@/components/ui/slider';
@@ -529,13 +529,121 @@ const GlobalOptions = () =>{
   const {valueScales} = useGlobalStore(useShallow(state =>({
     valueScales:state.valueScales
   })))
+
+  const {rotateX, rotateZ, mirrorVertical, mirrorHorizontal, setRotateX, setRotateZ, setMirrorVertical, setMirrorHorizontal} = usePlotTransformStore(useShallow(state => ({
+    rotateX: state.rotateX, rotateZ: state.rotateZ,
+    mirrorVertical: state.mirrorVertical, mirrorHorizontal: state.mirrorHorizontal,
+    setRotateX: state.setRotateX, setRotateZ: state.setRotateZ, 
+    setMirrorVertical: state.setMirrorVertical, setMirrorHorizontal: state.setMirrorHorizontal
+  })))
+
   const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
   const [showMasks, setShowMasks] = useState(false);
   const [showTransform, setShowTransform] = useState(false);
+  const [xAngle, setXAngle] = useState(rotateX)
+  const [zAngle, setZAngle] = useState(rotateZ)
 
   const isPC = plotType == 'point-cloud'
   return (
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
+      <button 
+          onClick={() => setShowTransform(!showTransform)}
+          className="flex items-center gap-2 w-full mb-2"
+        >
+          <b>Transform Plot</b>
+          <ChevronDown 
+            className={`h-4 w-4 transition-transform duration-200 ${
+              showTransform ? 'rotate-180' : ''
+            }`}
+          />
+      </button>
+      <Hider show={!showTransform}>
+        <div className='grid grid-cols-2 gap-4 place-items-center'>
+            {/* Rotations */}
+            <div className='col-span-2'>
+              <b>Rotation</b>
+            </div>
+            <button
+              style={{
+                position:'relative',
+              }}
+              className='cursor-pointer'
+              onClick={()=>{setRotateX((rotateX + 1) % 4); setXAngle(x=> x + 1)}}
+            >
+              <div 
+                style={{
+                  position:'absolute',
+                  top:'50%',
+                  left:0,
+                  width:'200%',
+                  transform:'translateX(-25%)',
+                  borderTop:'2px solid red',
+                  borderBottom:'2px solid red',
+                }}
+              />
+              <FaArrowRotateRight 
+                size={30}
+                style={{
+                  transition:'0.2s',
+                  rotate:`${xAngle*90}deg`
+                }}
+              />
+            </button>
+            <button
+              style={{
+                position:'relative',
+              }}
+              className='cursor-pointer'
+              onClick={()=>{setRotateZ((rotateZ + 1) % 4); setZAngle(x=> x + 1)}}
+            >
+              <div 
+                style={{
+                  position:'absolute',
+                  top:'50%',
+                  left:'50%',
+                  transform:'translate(-50%,-50%)',
+                  borderRadius:'4px',
+                  border: '4px solid red',
+                }}
+              />
+              <FaArrowRotateRight 
+                size={30}
+                style={{
+                  transition:'0.2s',
+                  rotate:`${zAngle*90}deg`
+                }}
+              />
+            </button>
+            {/* Mirror */}
+            <div className='col-span-2'>
+              <b>Mirror</b>
+            </div>
+            <button
+              className='cursor-pointer'
+              onClick={()=>setMirrorHorizontal(!mirrorHorizontal)}
+            >
+              <Mirror 
+                style={{
+                  transition:'0.2s',
+                  transform:`scaleX(${mirrorHorizontal ? -1 : 1})`
+                }}
+                className='size-8'
+              />
+            </button>
+            <button
+              className='cursor-pointer'
+              onClick={()=>setMirrorVertical(!mirrorVertical)}
+            >
+              <Mirror 
+                style={{
+                  transition:'0.2s',
+                  transform:`scaleX(${mirrorVertical ? -1 : 1})`
+                }}
+                className='rotate-90 size-8'
+              />
+            </button>
+        </div>
+      </Hider>
       {!isPC &&
         <>
         <button 
@@ -579,77 +687,6 @@ const GlobalOptions = () =>{
             >Set Value</Button>
           </div>
         </Hider>
-
-      <button 
-          onClick={() => setShowTransform(!showTransform)}
-          className="flex items-center gap-2 w-full mb-2"
-        >
-          <b>Transform Plot</b>
-          <ChevronDown 
-            className={`h-4 w-4 transition-transform duration-200 ${
-              showTransform ? 'rotate-180' : ''
-            }`}
-          />
-      </button>
-      <Hider show={!showTransform}>
-        <div className='grid grid-cols-2 gap-4 place-items-center'>
-            {/* Rotations */}
-            <div className='col-span-2'>
-              <b>Rotation</b>
-            </div>
-            <button
-              style={{
-                position:'relative',
-              }}
-              className='cursor-pointer'
-            >
-              <div 
-                style={{
-                  position:'absolute',
-                  top:'50%',
-                  left:0,
-                  width:'200%',
-                  transform:'translateX(-25%)',
-                  borderTop:'2px solid red',
-                  borderBottom:'2px solid red',
-                }}
-              />
-              <FaArrowRotateRight size={30}/>
-            </button>
-            <button
-              style={{
-                position:'relative',
-              }}
-              className='cursor-pointer'
-            >
-              <div 
-                style={{
-                  position:'absolute',
-                  top:'50%',
-                  left:'50%',
-                  transform:'translate(-50%,-50%)',
-                  borderRadius:'4px',
-                  border: '4px solid red',
-                }}
-              />
-              <FaArrowRotateRight size={30}/>
-            </button>
-            {/* Mirror */}
-            <div className='col-span-2'>
-              <b>Mirror</b>
-            </div>
-            <button
-              className='cursor-pointer'
-            >
-              <Mirror className='size-8'/>
-            </button>
-            <button
-              className='cursor-pointer'
-            >
-              <Mirror className='rotate-90 size-8'/>
-            </button>
-        </div>
-      </Hider>
       <div className='grid grid-cols-[auto_20%] items-center gap-2 mt-2 text-left'>
         <label>Interpolate Pixels</label>
         <Switch className='h-5'  id="interpoalte-pixels" checked={interpPixels} onCheckedChange={e=>setInterpPixels(e)}/>

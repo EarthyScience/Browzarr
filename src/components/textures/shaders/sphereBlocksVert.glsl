@@ -69,7 +69,6 @@ void main() {
 
     float dispStrength = sample1(localCoord, textureIdx);
 
-
     if (dispStrength == 1.0 || abs(dispStrength - fillValue) < 0.005){ // Invalid value. Just hide it
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     } else {
@@ -77,10 +76,10 @@ void main() {
         vec2 lonlat = giveLonLat(instanceUV);
         vec3 spherePosition = givePosition(lonlat);
         float latitudeFactor = cos(lonlat.y); // Maps -1..1 to proper latitude
-        float widthFactor = abs(lonBounds.y-lonBounds.x)/PI;
+        float widthFactor = abs(lonBounds.y-lonBounds.x)/(2.0 * PI);
         float heightFactor = (dispStrength - displaceZero) * displacement;
         vec3 scaledPosition = position;
-        scaledPosition.x *= latitudeFactor * widthFactor / 2.0;
+        scaledPosition.x *= latitudeFactor * widthFactor;
         scaledPosition.z *= widthFactor;
         scaledPosition.y += 0.025;
         scaledPosition.y *= heightFactor;

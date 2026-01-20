@@ -1,10 +1,10 @@
 import {  useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { vertexShader, fragmentShader, fragOpt, orthoVertex } from '@/components/textures/shaders';
-import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
+import { useGlobalStore, usePlotStore, usePlotTransformStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { invalidate, useFrame } from '@react-three/fiber';
-
+import { UVCube } from './UVCube';
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
 }
@@ -37,6 +37,13 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       vTransferScale: state.vTransferScale,
       fillValue: state.fillValue,
     })))
+    const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+      rotateX: state.rotateX,
+      rotateZ: state.rotateZ,
+      mirrorHorizontal: state.mirrorHorizontal,
+      mirrorVertical: state.mirrorVertical
+    })))
+
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
     const timeRatio = shape.z/shape.x;
@@ -100,11 +107,22 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           .copy(meshRef.current.modelViewMatrix)
           .invert();
     })
+    const flipState = flipY ? -1: 1
   return (
-    <>
-    <mesh ref={meshRef} geometry={geometry} scale={[1,flipY ? -1: 1,1]}>
-      <primitive attach="material" object={shaderMaterial} />
-    </mesh>
-    </>
+    <group
+      rotation={[rotateX * Math.PI/2, 0, -rotateZ * Math.PI/2]}
+      scale={[
+        mirrorHorizontal ? 1 : -1,
+        mirrorVertical ? -flipState : flipState,
+        1
+      ]}
+    >
+      <mesh 
+        ref={meshRef} 
+        geometry={geometry} 
+        material={shaderMaterial}
+      />
+      <UVCube />
+    </group>
   )
 }

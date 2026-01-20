@@ -2,7 +2,7 @@
 import * as THREE from 'three'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { pointFrag, pointVert } from '@/components/textures/shaders'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, usePlotStore, usePlotTransformStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
@@ -161,7 +161,12 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       zRange: state.zRange,
       fillValue:state.fillValue
     })))
-    
+    const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+          rotateX: state.rotateX,
+          rotateZ: state.rotateZ,
+          mirrorHorizontal: state.mirrorHorizontal,
+          mirrorVertical: state.mirrorVertical
+    })))
     const [pointsObj, setPointsObj] = useState<Record<string, number>>({})
     const [pointIDs, setPointIDs] = useState<number[]>(new Array(10).fill(-1))
     const [stride, setStride] = useState<number>(1)
@@ -257,13 +262,21 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       uniforms.fillValue.value = fillValue
     }
   }, [pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, pointIDs, stride, selectTS, animProg, timeScale, xRange, yRange, fillValue, zRange]);
-
-    return (
-      <>
-      <mesh scale={[1,flipY ? -1:1, 1]} >
-        <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
-      </mesh>
+  
+  const flipState = flipY ? -1 : 1;
+  return (
+    <>
+    <group
+      rotation={[rotateX * Math.PI/2, 0, -rotateZ * Math.PI/2]}
+      scale={[
+        mirrorHorizontal ? 1 : -1,
+        mirrorVertical ? -flipState : flipState,
+        1
+      ]}
+    >
+      <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
       <MappingCube dimensions={{width,height,depth}} setters={{setPoints:setPointsObj, setStride, setDimWidth}}/>
-      </>
-    );
-  }
+    </group>
+    </>
+  );
+}

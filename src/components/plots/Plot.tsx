@@ -1,11 +1,11 @@
 import { OrbitControls } from '@react-three/drei';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
-import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
+import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, CreateTexture } from '@/components/textures';
 import { GetArray, GetAttributes } from '../zarr/ZarrLoaderLRU';
-import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore, usePlotTransformStore } from '@/utils/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar, ExportExtent } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
@@ -131,58 +131,129 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 }
 
 const Plot = () => {
-    const {
-      setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
-      setDimNames, setDimUnits, setPlotOn, setStatus} = useGlobalStore(
-        useShallow(state => ({  //UseShallow for object returns
-          setShape:state.setShape,
-          setDataShape: state.setDataShape,
-          setFlipY:state.setFlipY,
-          setValueScales:state.setValueScales,
-          setMetadata: state.setMetadata,
-          setDimArrays:state.setDimArrays, 
-          setDimNames:state.setDimNames,
-          setDimUnits:state.setDimUnits,
-          setPlotOn: state.setPlotOn,
-          setStatus: state.setStatus  
-        }
-        )))
-    const {colormap, variable, isFlat, DPR, valueScales, is4D, setIsFlat} = useGlobalStore(useShallow(state=>({
-      colormap: state.colormap, 
-      variable: state.variable, 
-      isFlat: state.isFlat, 
-      DPR: state.DPR, 
-      valueScales: state.valueScales,
-      is4D: state.is4D,
-      setIsFlat: state.setIsFlat, 
-    })))
-    const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
-    const {plotType, displaceSurface, interpPixels, setPlotType} = usePlotStore(useShallow(state => ({
-      plotType: state.plotType,
-      displaceSurface: state.displaceSurface,
-      interpPixels: state.interpPixels,
-      setPlotType: state.setPlotType
-    })))
+  const {
+    setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
+    setDimNames, setDimUnits, setOrigDimArrays, 
+    setOrigDimNames, setOrigDimUnits, setPlotOn, setStatus} = useGlobalStore(
+      useShallow(state => ({  //UseShallow for object returns
+        setShape:state.setShape,
+        setDataShape: state.setDataShape,
+        setFlipY:state.setFlipY,
+        setValueScales:state.setValueScales,
+        setMetadata: state.setMetadata,
+        setDimArrays:state.setDimArrays, 
+        setDimNames:state.setDimNames,
+        setDimUnits:state.setDimUnits,
+        setOrigDimArrays:state.setOrigDimArrays, 
+        setOrigDimNames:state.setOrigDimNames,
+        setOrigDimUnits:state.setOrigDimUnits,
+        setPlotOn: state.setPlotOn,
+        setStatus: state.setStatus  
+      }
+      )))
+  const {colormap, variable, isFlat, DPR, valueScales, is4D, origDimArrays, origDimNames, origDimUnits, setIsFlat} = useGlobalStore(useShallow(state=>({
+    colormap: state.colormap, 
+    variable: state.variable, 
+    isFlat: state.isFlat, 
+    DPR: state.DPR, 
+    valueScales: state.valueScales,
+    is4D: state.is4D,
+    origDimArrays: state.origDimArrays,
+    origDimNames: state.origDimNames,
+    origDimUnits: state.origDimUnits,
+    setIsFlat: state.setIsFlat, 
+  })))
+  const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
+  const {plotType, displaceSurface, interpPixels, setPlotType} = usePlotStore(useShallow(state => ({
+    plotType: state.plotType,
+    displaceSurface: state.displaceSurface,
+    interpPixels: state.interpPixels,
+    setPlotType: state.setPlotType
+  })))
+  const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(useShallow(state=> ({
+    zSlice: state.zSlice,
+    ySlice: state.ySlice,
+    xSlice: state.xSlice,
+    reFetch: state.reFetch
+  })))
+  const {analysisMode} = useAnalysisStore(useShallow(state => ({
+    analysisMode: state.analysisMode
+  })))
+  const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+    rotateX: state.rotateX,
+    rotateZ: state.rotateZ,
+    mirrorHorizontal: state.mirrorHorizontal,
+    mirrorVertical: state.mirrorVertical
+  })))
 
-    const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(useShallow(state=> ({
-      zSlice: state.zSlice,
-      ySlice: state.ySlice,
-      xSlice: state.xSlice,
-      reFetch: state.reFetch
-    })))
-    const {analysisMode} = useAnalysisStore(useShallow(state => ({
-      analysisMode: state.analysisMode
-    })))
-    const coords = useRef<number[]>([0,0])
-    const val = useRef<number>(0)
+  // ---- Transformation Handlers ---- //  
+  useEffect(()=>{
+    let axisMapping = [0, 1, 2];
+    let axisReversed = [false, false, false];
 
-    const [showInfo, setShowInfo] = useState<boolean>(false)
-    const [loc, setLoc] = useState<number[]>([0,0])
+    if (rotateZ === 1){
+      // 90: X=-Y, Y=X
+      axisMapping = [axisMapping[0], axisMapping[2], axisMapping[1]];
+      axisReversed = [!axisReversed[1], axisReversed[0], axisReversed[2]];
+    } else if ( rotateZ === 2){
+      // 180: X=-X, Y=-Y
+      axisReversed = [!axisReversed[0], !axisReversed[1], axisReversed[2]];
+    } else if (rotateZ === 3) {
+      // 270: X=Y, Y=-X
+      axisMapping = [axisMapping[1], axisMapping[0], axisMapping[2]];
+      axisReversed = [axisReversed[1], !axisReversed[0], axisReversed[2]];
+    }
 
-    const [textures, setTextures] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null)
-    const [show, setShow] = useState<boolean>(true) //Prevents rendering of 3D objects until data is fully loaded in
-    const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
-  //DATA LOADING
+    if (rotateX === 1){
+      // 90: Y=-Z, Z=Y
+      axisMapping = [axisMapping[0], axisMapping[2], axisMapping[1]];
+      axisReversed = [axisReversed[0], !axisReversed[2], axisReversed[1]];
+    }
+    else if (rotateX === 2){
+      // 180: Y=-Y, Z=-Z
+       axisReversed = [axisReversed[0], !axisReversed[1], !axisReversed[2]];
+    } else if (rotateZ === 3){
+      // 270: Y=Z, Z=-Y
+      axisMapping = [axisMapping[0], axisMapping[2], axisMapping[1]];
+      axisReversed = [axisReversed[0], axisReversed[2], !axisReversed[1]];
+    }
+
+    if (mirrorHorizontal) {
+      axisReversed[2] = !axisReversed[2];
+    }
+    if (mirrorVertical) {
+      axisReversed[1] = !axisReversed[1];
+    }
+
+    const transformedDimArrays = axisMapping.map((origIdx, newIdx) =>{
+      const arr = origDimArrays[origIdx];
+      return axisReversed[newIdx] ? [...arr].reverse() : arr
+    })
+    const transformedDimNames = axisMapping.map(origIdx => origDimNames[origIdx])
+    const transformedDimUnits = axisMapping.map(origIdx => origDimUnits[origIdx])
+
+    setDimArrays(transformedDimArrays)
+    setDimNames(transformedDimNames)
+    setDimUnits(transformedDimUnits)
+
+  },[rotateX, rotateZ, mirrorHorizontal, mirrorVertical, origDimArrays, origDimNames, origDimUnits])
+
+
+
+  
+  const coords = useRef<number[]>([0,0])
+  const val = useRef<number>(0)
+
+  const [showInfo, setShowInfo] = useState<boolean>(false)
+  const [loc, setLoc] = useState<number[]>([0,0])
+
+  const [textures, setTextures] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null)
+  const [show, setShow] = useState<boolean>(true) //Prevents rendering of 3D objects until data is fully loaded in
+  const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
+
+
+
+  // ----- DATA LOADING ----- //
   useEffect(() => {
     if (variable != "Default") {
       setShow(false)
@@ -239,8 +310,8 @@ const Plot = () => {
           dimUnits = dimUnits.slice();
           dimNames = dimNames.slice();
         }
-        setDimNames(dimNames)
-        setDimArrays(dimArrays)
+        setOrigDimNames(dimNames)
+        setOrigDimArrays(dimArrays)
         if (dimArrays.length > 2){
           if (dimArrays[1][1] < dimArrays[1][0])
             {setFlipY(true)}
@@ -253,7 +324,7 @@ const Plot = () => {
           else
             {setFlipY(false)}
         }
-        setDimUnits(dimUnits)
+        setOrigDimUnits(dimUnits)
         ParseExtent(dimUnits, dimArrays)
       }) 
     }else{
@@ -335,10 +406,7 @@ const Plot = () => {
         <ExportCanvas show={show}/>
         {show && <AxisLines />}
         {plotType == "volume" && show && 
-          <>
             <DataCube volTexture={textures}/>
-            <UVCube />
-          </>
         }
         {plotType == "point-cloud" && show &&
           <>

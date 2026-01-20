@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react'
-import { useErrorStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useErrorStore, useGlobalStore, usePlotStore, usePlotTransformStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksVert, sphereBlocksVertFlat, sphereBlocksFrag } from '../textures/shaders'
@@ -30,7 +30,12 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         offsetNegatives: state.offsetNegatives,
         fillValue:state.fillValue
     })))
-
+    const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+              rotateX: state.rotateX,
+              rotateZ: state.rotateZ,
+              mirrorHorizontal: state.mirrorHorizontal,
+              mirrorVertical: state.mirrorVertical
+            })))
     const count = useMemo(()=>{
         const width = dataShape[dataShape.length-1];
         const height = dataShape[dataShape.length-1]/2;
@@ -135,7 +140,14 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
     },[nanColor, nanTransparency])
 
   return (
-    <group scale={[1, 1, 1]}>
+    <group 
+        rotation={[rotateX * Math.PI/2, 0, -rotateZ * Math.PI/2]}
+        scale={[
+            mirrorHorizontal ? 1 : -1,
+            mirrorVertical ? -1 : 1,
+            1
+        ]}
+    >
         <instancedMesh 
             args={[geometry, shaderMaterial, count]}
             frustumCulled={false}

@@ -1,6 +1,6 @@
 import React, {useRef, useMemo, useState, useEffect} from 'react'
 import * as THREE from 'three'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useAnalysisStore, useGlobalStore, usePlotStore, usePlotTransformStore } from '@/utils/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import { sphereVertex, sphereVertexFlat, sphereFrag, flatSphereFrag } from '../textures/shaders'
 import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
@@ -75,6 +75,12 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         getColorIdx: state.getColorIdx,
         incrementColorIdx: state.incrementColorIdx
     })))
+    const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+          rotateX: state.rotateX,
+          rotateZ: state.rotateZ,
+          mirrorHorizontal: state.mirrorHorizontal,
+          mirrorVertical: state.mirrorVertical
+        })))
     const dimSlices = [
       dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
       dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
@@ -227,11 +233,20 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         updateDimCoords({[tsID] : dimObj})
         addBounds(uv, tsID);
       }
-
+  
   return (
     <>
-    <mesh renderOrder={1} geometry={geometry} material={shaderMaterial} onClick={e=>selectTS && HandleTimeSeries(e)}/>
-    <mesh renderOrder={0} geometry={geometry} material={backMaterial} />
+    <group
+      rotation={[rotateX * Math.PI/2, 0, -rotateZ * Math.PI/2]}
+      scale={[
+        mirrorHorizontal ? 1 : -1,
+        mirrorVertical ? -1 : 1,
+        1
+      ]}
+    >
+      <mesh renderOrder={1} geometry={geometry} material={shaderMaterial} onClick={e=>selectTS && HandleTimeSeries(e)}/>
+      <mesh renderOrder={0} geometry={geometry} material={backMaterial} />
+    </group>
     </>
   )
 }
