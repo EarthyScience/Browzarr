@@ -80,7 +80,7 @@ void main() {
         float widthFactor = abs(lonBounds.y-lonBounds.x)/PI;
         float heightFactor = (dispStrength - displaceZero) * displacement;
         vec3 scaledPosition = position;
-        scaledPosition.x *= latitudeFactor * widthFactor;
+        scaledPosition.x *= latitudeFactor * widthFactor / 2.0;
         scaledPosition.z *= widthFactor;
         scaledPosition.y += 0.025;
         scaledPosition.y *= heightFactor;
