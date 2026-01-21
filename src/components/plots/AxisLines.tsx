@@ -28,13 +28,12 @@ const AXIS_CONSTANTS = {
 };
 
 const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, flipDown: boolean}) =>{
-  const {dimArrays, dimNames, dimUnits, dataShape, revY, is4D} = useGlobalStore(useShallow(state => ({
+  const {dimArrays, dimNames, dimUnits, revY, axisShape} = useGlobalStore(useShallow(state => ({
     dimArrays: state.dimArrays,
     dimNames: state.dimNames,
     dimUnits: state.dimUnits,
-    dataShape: state.dataShape,
     revY: state.flipY,
-    is4D: state.is4D
+    axisShape: state.axisShape
   })))
 
   const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
@@ -70,11 +69,11 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
 
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
-  const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
+  const globalScale = isPC ? axisShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
 
-  const depthRatio = useMemo(()=>dataShape[0]/dataShape[2]*timeScale,[dataShape, timeScale]);
-  const shapeRatio = useMemo(()=>dataShape[1]/dataShape[2], [dataShape])
-  const timeRatio = Math.max(dataShape[0]/dataShape[2], 2);
+  const depthRatio = useMemo(()=>axisShape[0]/axisShape[2]*timeScale,[axisShape, timeScale]);
+  const shapeRatio = useMemo(()=>axisShape[1]/axisShape[2], [axisShape])
+  const timeRatio = Math.max(axisShape[0]/axisShape[2], 2);
 
   const secondaryColor = useCSSVariable('--text-plot') //replace with needed variable
   const colorHex = useMemo(()=>{

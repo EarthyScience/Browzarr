@@ -108,11 +108,12 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           .invert();
     })
     const flipState = flipY ? -1: 1
+
   return (
     <group
       rotation={[rotateX * Math.PI/2, 0, -rotateZ * Math.PI/2]}
       scale={[
-        mirrorHorizontal ? 1 : -1,
+        mirrorHorizontal ? -1 : 1,
         mirrorVertical ? -flipState : flipState,
         1
       ]}

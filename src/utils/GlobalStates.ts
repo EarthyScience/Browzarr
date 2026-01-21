@@ -20,6 +20,7 @@ interface Coord {
 
 type StoreState = {
   dataShape: number[];
+  axisShape: number[];
   shape: THREE.Vector3;
   valueScales: { maxVal: number; minVal: number };
   colormap: THREE.DataTexture;
@@ -54,6 +55,7 @@ type StoreState = {
   
   // setters
   setDataShape: (dataShape: number[]) => void;
+  setAxisShape: (axisShape: number[]) => void;
   setShape: (shape: THREE.Vector3) => void;
   setValueScales: (valueScales: { maxVal: number; minVal: number }) => void;
   setColormap: (colormap: THREE.DataTexture) => void;
@@ -91,6 +93,7 @@ type StoreState = {
 
 export const useGlobalStore = create<StoreState>((set, get) => ({
   dataShape: [1, 1, 1],
+  axisShape: [1, 1, 1],
   shape: new THREE.Vector3(2, 2, 2),
   valueScales: { maxVal: 1, minVal: -1 },
   colormap: GetColorMapTexture(),
@@ -124,6 +127,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   clampExtremes: false,
 
   setDataShape: (dataShape) => set({ dataShape }),
+  setAxisShape: (axisShape) => set({ axisShape }),
   setShape: (shape) => set({ shape }),
   setValueScales: (valueScales) => set({ valueScales }),
   setColormap: (colormap) => set({ colormap }),

@@ -134,7 +134,7 @@ const Plot = () => {
   const {
     setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
     setDimNames, setDimUnits, setOrigDimArrays, 
-    setOrigDimNames, setOrigDimUnits, setPlotOn, setStatus} = useGlobalStore(
+    setOrigDimNames, setOrigDimUnits, setPlotOn, setStatus, setAxisShape} = useGlobalStore(
       useShallow(state => ({  //UseShallow for object returns
         setShape:state.setShape,
         setDataShape: state.setDataShape,
@@ -148,10 +148,11 @@ const Plot = () => {
         setOrigDimNames:state.setOrigDimNames,
         setOrigDimUnits:state.setOrigDimUnits,
         setPlotOn: state.setPlotOn,
-        setStatus: state.setStatus  
+        setStatus: state.setStatus,
+        setAxisShape: state.setAxisShape  
       }
       )))
-  const {colormap, variable, isFlat, DPR, valueScales, is4D, origDimArrays, origDimNames, origDimUnits, setIsFlat} = useGlobalStore(useShallow(state=>({
+  const {colormap, variable, isFlat, DPR, valueScales, is4D, origDimArrays, origDimNames, origDimUnits, dataShape, setIsFlat} = useGlobalStore(useShallow(state=>({
     colormap: state.colormap, 
     variable: state.variable, 
     isFlat: state.isFlat, 
@@ -161,6 +162,7 @@ const Plot = () => {
     origDimArrays: state.origDimArrays,
     origDimNames: state.origDimNames,
     origDimUnits: state.origDimUnits,
+    dataShape: state.dataShape,
     setIsFlat: state.setIsFlat, 
   })))
   const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
@@ -190,32 +192,32 @@ const Plot = () => {
   useEffect(()=>{
     let axisMapping = [0, 1, 2];
     let axisReversed = [false, false, false];
-
+    console.log(rotateX, rotateZ)
     if (rotateZ === 1){
       // 90: X=-Y, Y=X
       axisMapping = [axisMapping[0], axisMapping[2], axisMapping[1]];
-      axisReversed = [!axisReversed[1], axisReversed[0], axisReversed[2]];
+      axisReversed = [axisReversed[0], axisReversed[2], !axisReversed[1]];
     } else if ( rotateZ === 2){
       // 180: X=-X, Y=-Y
-      axisReversed = [!axisReversed[0], !axisReversed[1], axisReversed[2]];
+      axisReversed = [axisReversed[0], !axisReversed[1], !axisReversed[2]];
     } else if (rotateZ === 3) {
       // 270: X=Y, Y=-X
-      axisMapping = [axisMapping[1], axisMapping[0], axisMapping[2]];
-      axisReversed = [axisReversed[1], !axisReversed[0], axisReversed[2]];
+      axisMapping = [axisMapping[0], axisMapping[2], axisMapping[1]];
+      axisReversed = [axisReversed[0], !axisReversed[2], axisReversed[1]];
     }
 
     if (rotateX === 1){
       // 90: Y=-Z, Z=Y
-      axisMapping = [axisMapping[0], axisMapping[2], axisMapping[1]];
-      axisReversed = [axisReversed[0], !axisReversed[2], axisReversed[1]];
+      axisMapping = [axisMapping[1], axisMapping[0], axisMapping[2]];
+      axisReversed = [axisReversed[1], !axisReversed[0], axisReversed[2]];
     }
     else if (rotateX === 2){
       // 180: Y=-Y, Z=-Z
-       axisReversed = [axisReversed[0], !axisReversed[1], !axisReversed[2]];
+       axisReversed = [!axisReversed[1], !axisReversed[0], axisReversed[2]];
     } else if (rotateZ === 3){
       // 270: Y=Z, Z=-Y
-      axisMapping = [axisMapping[0], axisMapping[2], axisMapping[1]];
-      axisReversed = [axisReversed[0], axisReversed[2], !axisReversed[1]];
+      axisMapping = [axisMapping[1], axisMapping[0], axisMapping[2]];
+      axisReversed = [!axisReversed[1], axisReversed[0], axisReversed[2]];
     }
 
     if (mirrorHorizontal) {
@@ -231,10 +233,16 @@ const Plot = () => {
     })
     const transformedDimNames = axisMapping.map(origIdx => origDimNames[origIdx])
     const transformedDimUnits = axisMapping.map(origIdx => origDimUnits[origIdx])
+    const axisShape = axisMapping.map(origIdx => dataShape[origIdx])
+    console.log(axisShape, dataShape)
+    // setDimArrays(transformedDimArrays)
+    // setDimNames(transformedDimNames)
+    // setDimUnits(transformedDimUnits)
 
-    setDimArrays(transformedDimArrays)
-    setDimNames(transformedDimNames)
-    setDimUnits(transformedDimUnits)
+    setDimArrays(origDimArrays)
+    setDimNames(origDimNames)
+    setDimUnits(origDimUnits)
+    setAxisShape(axisShape)
 
   },[rotateX, rotateZ, mirrorHorizontal, mirrorVertical, origDimArrays, origDimNames, origDimUnits])
 
@@ -290,6 +298,7 @@ const Plot = () => {
         const timeRatio = result.shape[shapeLength-3] / result.shape[shapeLength-1];
         setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio, 2)));
         setDataShape(result.shape)
+        setAxisShape(result.shape)
         setShow(true)
         setPlotOn(true)
         setStatus(null)
