@@ -94,9 +94,9 @@ const DimSlicer = () =>{
   
       const {valueScales, dimArrays, dimNames, dimUnits, is4D} = useGlobalStore(useShallow(state => ({
         valueScales : state.valueScales, 
-        dimArrays : state.dimArrays, 
-        dimNames: state.dimNames,
-        dimUnits: state.dimUnits,
+        dimArrays : state.origDimArrays, 
+        dimNames: state.origDimNames,
+        dimUnits: state.origDimUnits,
         is4D: state.is4D
       })))
 

@@ -1,7 +1,7 @@
 import { OrbitControls } from '@react-three/drei';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
-import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
+import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, CreateTexture } from '@/components/textures';
 import { GetArray, GetAttributes } from '../zarr/ZarrLoaderLRU';
@@ -192,6 +192,7 @@ const Plot = () => {
   useEffect(()=>{
     let axisMapping = [0, 1, 2];
     let axisReversed = [false, false, false];
+    const origSlices = [zSlice, ySlice, xSlice]
 
     if (rotateZ === 1){
       // 90: X=-Y, Y=X
@@ -214,7 +215,7 @@ const Plot = () => {
     else if (rotateX === 2){
       // 180: Y=-Y, Z=-Z
        axisReversed = [!axisReversed[1], !axisReversed[0], axisReversed[2]];
-    } else if (rotateZ === 3){
+    } else if (rotateX === 3){
       // 270: Y=Z, Z=-Y
       axisMapping = [axisMapping[1], axisMapping[0], axisMapping[2]];
       axisReversed = [!axisReversed[1], axisReversed[0], axisReversed[2]];
@@ -228,21 +229,23 @@ const Plot = () => {
     }
 
     const transformedDimArrays = axisMapping.map((origIdx, newIdx) =>{
-      const arr = origDimArrays[origIdx];
-      return axisReversed[newIdx] ? [...arr].reverse() : arr
+      const arr = origDimArrays[origIdx].slice();
+      if (axisReversed[newIdx]) arr.reverse()
+      return  arr
     })
     const transformedDimNames = axisMapping.map(origIdx => origDimNames[origIdx])
     const transformedDimUnits = axisMapping.map(origIdx => origDimUnits[origIdx])
-    const axisShape = axisMapping.map(origIdx => dataShape[origIdx])
-
-    // setDimArrays(transformedDimArrays)
-    // setDimNames(transformedDimNames)
-    // setDimUnits(transformedDimUnits)
-
-    setDimArrays(origDimArrays)
-    setDimNames(origDimNames)
-    setDimUnits(origDimUnits)
+    const axisShape = axisMapping.map(origIdx => dataShape[origIdx]/dataShape[dataShape.length-1])
+    const axisSlices = axisMapping.map(origIdx => origSlices[origIdx])
+    setDimArrays(transformedDimArrays)
+    setDimNames(transformedDimNames)
+    setDimUnits(transformedDimUnits)
     setAxisShape(axisShape)
+    usePlotStore.setState({
+      zSlice:axisSlices[0],
+      ySlice:axisSlices[1],
+      xSlice:axisSlices[2]
+    })
 
   },[rotateX, rotateZ, mirrorHorizontal, mirrorVertical, origDimArrays, origDimNames, origDimUnits])
 
@@ -410,7 +413,7 @@ const Plot = () => {
         gl={{ preserveDrawingBuffer: true }}
         dpr={[DPR,DPR]}
       >
-        <KeyFramePreviewer/>
+        {/* <KeyFramePreviewer/> */}
         <CountryBorders/>
         <ExportCanvas show={show}/>
         {show && <AxisLines />}

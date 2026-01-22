@@ -27,9 +27,9 @@ export const UVCube = ( )=>{
       shape:state.shape,
       dataShape: state.dataShape,
       strides: state.strides,
-      dimArrays:state.dimArrays,
-      dimNames:state.dimNames,
-      dimUnits:state.dimUnits
+      dimArrays:state.origDimArrays,
+      dimNames:state.origDimNames,
+      dimUnits:state.origDimUnits
     })))
   
   const {selectTS, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({

@@ -16,15 +16,14 @@ interface pointInfo{
   showPointInfo:boolean
   plotUnits:string
 }
-const MIN_HEIGHT = 10;
 
 function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
   const {plotDim, dimArrays, dimNames, dimUnits, timeSeries} = useGlobalStore(
     useShallow(state=>({
       plotDim:state.plotDim,
-      dimArrays:state.dimArrays,
-      dimNames:state.dimNames,
-      dimUnits:state.dimUnits,
+      dimArrays:state.origDimArrays,
+      dimNames:state.origDimNames,
+      dimUnits:state.origDimUnits,
       timeSeries:state.timeSeries,
     }))
   );

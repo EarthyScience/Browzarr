@@ -47,7 +47,6 @@ const Variables = ({
       metadata: state.metadata,
       dimNames:state.dimNames,
       setMetadata: state.setMetadata,
-      setDimNames:state.setDimNames,
       initStore: state.initStore
     }))
   );

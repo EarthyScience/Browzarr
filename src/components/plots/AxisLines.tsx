@@ -53,9 +53,6 @@ interface AxisType {
   anchorY: "bottom" | "top" | "top-baseline" | "middle" | "bottom-baseline"
 }
 
-
-
-
 const Axis = ({
   resolution, setResolution, hideAxisControls, varName, range, scale, axis, lineMat, 
   tickLength, labels, color, rotation=[0, 0, 0], position=[0, 0, 0], titleOffset,
@@ -64,8 +61,8 @@ const Axis = ({
 
   const lineGeom = useMemo(() => {
     let positions = [0, 0, 0, 0, 0, 0]
-    positions[axis] = range[0] * scale * shapeRatio - tickLength / 2
-    positions[axis + 3] = range[1] * scale * shapeRatio + tickLength / 2
+    positions[axis] = range[0] *  shapeRatio - tickLength / 2
+    positions[axis + 3] = range[1] *  shapeRatio + tickLength / 2
     const geom = new LineSegmentsGeometry().setPositions(positions);
     return new LineSegments2(geom, lineMat);
   }, [range, scale, color, tickLength])
@@ -199,12 +196,13 @@ const Axis = ({
 
 
 const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, flipDown: boolean}) =>{
-  const {dimArrays, dimNames, dimUnits, revY, axisShape} = useGlobalStore(useShallow(state => ({
+  const {dimArrays, dimNames, dimUnits, revY, axisShape, dataShape} = useGlobalStore(useShallow(state => ({
     dimArrays: state.dimArrays,
     dimNames: state.dimNames,
     dimUnits: state.dimUnits,
     revY: state.flipY,
-    axisShape: state.axisShape
+    axisShape: state.axisShape,
+    dataShape: state.dataShape
   })))
 
   const {xRange, yRange, zRange, plotType, timeScale, zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
@@ -222,22 +220,22 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
   const shapeLength = dimArrays.length
 
-  const dimSlices = [
+  const dimSlices = useMemo(()=>[
     dimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
     revY ? dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
     dimArrays[shapeLength-1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
-  ]
-
+  ], [dimArrays, zSlice, ySlice, xSlice, shapeLength, revY])
+  
   const [xResolution, setXResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [yResolution, setYResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [zResolution, setZResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
 
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
-  const globalScale = isPC ? axisShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
+  const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
 
-  const depthRatio = useMemo(()=>axisShape[0]/axisShape[2]*timeScale,[axisShape, timeScale]);
-  const shapeRatio = useMemo(()=>axisShape[1]/axisShape[2], [axisShape])
-  const timeRatio = Math.max(axisShape[0]/axisShape[2], 2);
+  const depthRatio = axisShape[0]*timeScale;
+  const shapeRatio = axisShape[1]
+  const timeRatio = Math.max(axisShape[0], 2);
 
   const secondaryColor = useCSSVariable('--text-plot') //replace with needed variable
   const colorHex = useMemo(()=>{
@@ -249,14 +247,14 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const lineMat = useMemo(()=>new LineMaterial({color: colorHex ? colorHex : 0, linewidth: AXIS_CONSTANTS.LINE_WIDTH}),[colorHex])
   const tickLength = AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale;
 
-  const xTitleOffset = useMemo(() => (dimNames[shapeLength - 1].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
-  const yTitleOffset = useMemo(() => (dimNames[shapeLength - 2].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
-  const zTitleOffset = useMemo(() => (dimNames[shapeLength - 3].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
+  const xTitleOffset = useMemo(() => (dimNames[shapeLength - 1].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale, shapeLength]);
+  const yTitleOffset = useMemo(() => (dimNames[shapeLength - 2].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale, shapeLength]);
+  const zTitleOffset = useMemo(() => (dimNames[shapeLength - 3].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale, shapeLength]);
 
   const zScale = isPC ? (depthRatio ) : (timeRatio / 2);
   const timeFront = 
     isPC
-    ? zRange[flipX ? 0 : 1] * depthRatio * globalScale +
+    ? zRange[flipX ? 0 : 1] * axisShape[0] * globalScale +
       (flipX ? -tickLength : tickLength) / 2
     : (zRange[flipX ? 0 : 1] * timeRatio +
       (flipX ? -tickLength : tickLength)) / 2
@@ -291,6 +289,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
           ]}
           isVertical={false}
           scale={globalScale}
+          shapeRatio={axisShape[2]}
           color={colorHex}
           anchorX='center'
           anchorY='top'
@@ -344,7 +343,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
         rotation={[0, 0, 0]}
         isVertical
         scale={globalScale}
-        shapeRatio={shapeRatio}
+        shapeRatio={axisShape[1]}
         color={colorHex}
         anchorX={flipY ? flipX ? 'left' : 'right' : flipX ? 'right' : 'left'}
         anchorY='middle'
