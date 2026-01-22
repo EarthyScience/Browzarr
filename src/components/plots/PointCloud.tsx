@@ -269,7 +269,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
     <group
       rotation={[rotateX * Math.PI/2, 0, -rotateZ * Math.PI/2]}
       scale={[
-        mirrorHorizontal ? 1 : -1,
+        mirrorHorizontal ? -1 : 1,
         mirrorVertical ? -flipState : flipState,
         1
       ]}

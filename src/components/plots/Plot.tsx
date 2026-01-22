@@ -192,7 +192,7 @@ const Plot = () => {
   useEffect(()=>{
     let axisMapping = [0, 1, 2];
     let axisReversed = [false, false, false];
-    console.log(rotateX, rotateZ)
+
     if (rotateZ === 1){
       // 90: X=-Y, Y=X
       axisMapping = [axisMapping[0], axisMapping[2], axisMapping[1]];
@@ -234,7 +234,7 @@ const Plot = () => {
     const transformedDimNames = axisMapping.map(origIdx => origDimNames[origIdx])
     const transformedDimUnits = axisMapping.map(origIdx => origDimUnits[origIdx])
     const axisShape = axisMapping.map(origIdx => dataShape[origIdx])
-    console.log(axisShape, dataShape)
+
     // setDimArrays(transformedDimArrays)
     // setDimNames(transformedDimNames)
     // setDimUnits(transformedDimUnits)

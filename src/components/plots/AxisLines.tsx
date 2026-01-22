@@ -25,7 +25,178 @@ const AXIS_CONSTANTS = {
   X_TITLE_OFFSET_FACTOR: 0.15,
   Y_TITLE_OFFSET_FACTOR: 0.325,
   Z_TITLE_OFFSET_FACTOR: 0.15,
+  CONTROL_DISTANCE: 0.2
 };
+
+interface AxisType {
+  varName: string,
+  resolution: number,
+  axis: number, // This is [X, Y, Z] ==> [0, 1, 2]
+  lineMat: LineMaterial,
+  setResolution: React.Dispatch<React.SetStateAction<number>>,
+  range: number[],
+  scale: number,
+  shapeRatio?: number,
+  tickLength: number,
+  tickRotations: [number, number]
+  labels: number[],
+  units: string,
+  titleOffset: number,
+  rotation: [number, number, number],
+  position: [number, number, number],
+  flip: boolean,
+  mirrorFlip?: boolean,
+  isVertical?: boolean,
+  hideAxisControls:boolean,
+  color: number | undefined,
+  anchorX: "center" | "left" | "right",
+  anchorY: "bottom" | "top" | "top-baseline" | "middle" | "bottom-baseline"
+}
+
+
+
+
+const Axis = ({
+  resolution, setResolution, hideAxisControls, varName, range, scale, axis, lineMat, 
+  tickLength, labels, color, rotation=[0, 0, 0], position=[0, 0, 0], titleOffset,
+  anchorX, anchorY, units, flip, mirrorFlip, tickRotations, isVertical=false, shapeRatio=1
+}: AxisType) => {
+
+  const lineGeom = useMemo(() => {
+    let positions = [0, 0, 0, 0, 0, 0]
+    positions[axis] = range[0] * scale * shapeRatio - tickLength / 2
+    positions[axis + 3] = range[1] * scale * shapeRatio + tickLength / 2
+    const geom = new LineSegmentsGeometry().setPositions(positions);
+    return new LineSegments2(geom, lineMat);
+  }, [range, scale, color, tickLength])
+
+  const tickLine = useMemo(()=> {
+    const geom = new LineSegmentsGeometry().setPositions([0, 0, 0, 0, 0, tickLength]);
+    return new LineSegments2(geom, lineMat)
+  },[lineMat, tickLength])
+
+  const dimScale = resolution/(resolution-1)
+  const valDelta = (labels.length-1)/(resolution-1)
+
+  let controlPosition = [0,0,0]
+  controlPosition[axis] = (range[0]+range[1])/2*shapeRatio*scale
+  const controlIdx = axis === 0 ? 2 : 0;
+  if (isVertical){
+    controlPosition[controlIdx] = flip 
+                                  ? mirrorFlip ? -titleOffset : -titleOffset*1.5 
+                                  :  mirrorFlip ? titleOffset*1.5 : titleOffset
+  } else {
+    controlPosition[controlIdx] = flip ? -titleOffset : titleOffset
+  }
+
+  return (
+    <group position={position} rotation={rotation}>
+      {/* Axis Lines */}
+      <primitive object={lineGeom} />
+
+      {/* Ticks and Labels */}
+      {Array(resolution).fill(null).map((_, idx) => {
+        let tickPosition = [0, 0, 0]
+        tickPosition[axis] = ((idx * (2 * scale / (resolution - 1))) - scale) * shapeRatio;
+
+        let labelOffset = [0, 0, 0]
+        if (axis === 0)labelOffset[2] = flip ? -AXIS_CONSTANTS.TICK_LENGTH_FACTOR*scale : AXIS_CONSTANTS.TICK_LENGTH_FACTOR*scale
+        else if (axis === 1) labelOffset[0] = flip ? -AXIS_CONSTANTS.TICK_LENGTH_FACTOR*scale : AXIS_CONSTANTS.TICK_LENGTH_FACTOR*scale
+        else labelOffset[0] = flip ? AXIS_CONSTANTS.TICK_LENGTH_FACTOR*scale : -AXIS_CONSTANTS.TICK_LENGTH_FACTOR*scale
+        return (
+        (((range[0] + 1)/2) <= (idx*dimScale)/resolution  &&
+        ((range[1] + 1)/2) >= (idx*dimScale)/resolution ) &&
+        <group key={idx} position={tickPosition as [number, number, number]} >
+          <primitive object={tickLine.clone()} rotation={[0, flip ? tickRotations[1] : tickRotations[0], 0]}/>
+          <Text 
+            fontSize={AXIS_CONSTANTS.TICK_FONT_SIZE_FACTOR * scale} 
+            color={color}
+            key={`text${axis}_${idx}`}
+            anchorX={
+              isVertical 
+              ? anchorX
+              : idx == 0 ? (flip ? 'right' : 'left') : idx == resolution-1 ? (flip ? 'left' : 'right') : 'center'
+
+            }
+            anchorY={anchorY}
+            material-depthTest={false}
+            rotation={[
+              isVertical ? 0 : -Math.PI/2,
+              isVertical ? 
+                mirrorFlip ? Math.PI : 0
+                : 0, 
+              isVertical 
+                ? 0
+                : flip ? tickRotations[1] : tickRotations[0]
+            ]}
+            position={labelOffset as [number, number, number]}
+          >
+            {parseLoc(labels[Math.floor(idx*valDelta)], units)}
+          </Text>
+        </group>)
+      })}
+
+      {/* Label and Adjust */}
+      <group position={controlPosition as [number, number, number]} 
+        rotation={[
+          isVertical ? 0 : -Math.PI/2,
+          mirrorFlip ? Math.PI : 0,
+          isVertical ? tickRotations[0] : (flip ? tickRotations[1] : tickRotations[0])
+        ]}
+      >
+        <Text 
+          key={`${axis}Title`}
+          anchorX={'center'}
+          anchorY={'top'} 
+          fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*scale} 
+          color={color}
+          material-depthTest={false}
+        >{varName}</Text>
+        <group visible={!hideAxisControls}>
+          {resolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
+          <Text 
+            key={`${axis}Add`}
+            anchorX={'center'}
+            anchorY={'middle'} 
+            fontSize={0.15*scale} 
+            color={color}
+            material-depthTest={false}
+            position={[
+              AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * scale * varName.length,
+              -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * scale / 2,
+              0
+            ]}
+            onClick={e=>setResolution(x=> Math.min(x+1,AXIS_CONSTANTS.MAX_RESOLUTION))}
+            onPointerEnter={e=>document.body.style.cursor = 'pointer'}
+            onPointerLeave={e=>document.body.style.cursor = 'default'}
+          >
+            +
+          </Text>}
+          { resolution > AXIS_CONSTANTS.MIN_RESOLUTION &&
+          <Text 
+            key={`${axis}Sub`}
+            anchorX={'center'}
+            anchorY={'middle'} 
+            fontSize={0.15*scale} 
+            color={color}
+            material-depthTest={false}
+            position={[
+              -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * scale * varName.length,
+              -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * scale / 2,
+              0
+            ]}
+            onClick={e=>setResolution(x=> Math.max(x-1,AXIS_CONSTANTS.MIN_RESOLUTION))}
+            onPointerEnter={e=>document.body.style.cursor = 'pointer'}
+            onPointerLeave={e=>document.body.style.cursor = 'default'}
+          >
+            -
+          </Text>}
+        </group>
+      </group>
+    </group>
+  )
+}
+
 
 const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, flipDown: boolean}) =>{
   const {dimArrays, dimNames, dimUnits, revY, axisShape} = useGlobalStore(useShallow(state => ({
@@ -36,10 +207,10 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     axisShape: state.axisShape
   })))
 
-  const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
+  const {xRange, yRange, zRange, plotType, timeScale, zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
     xRange: state.xRange, yRange: state.yRange,
     zRange: state.zRange, plotType: state.plotType,
-    timeScale: state.timeScale, animProg: state.animProg,
+    timeScale: state.timeScale, 
     zSlice: state.zSlice, ySlice: state.ySlice,
     xSlice: state.xSlice, 
   })))
@@ -51,12 +222,6 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
   const shapeLength = dimArrays.length
 
-  const dimLengths = [
-    (zSlice[1] ? zSlice[1] : dimArrays[shapeLength - 3].length) - zSlice[0],
-    (ySlice[1] ? ySlice[1] : dimArrays[shapeLength - 2].length) - ySlice[0],
-    (xSlice[1] ? xSlice[1] : dimArrays[shapeLength - 1].length) - xSlice[0],
-  ]
-
   const dimSlices = [
     dimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
     revY ? dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
@@ -66,7 +231,6 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const [xResolution, setXResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [yResolution, setYResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [zResolution, setZResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
-
 
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
   const globalScale = isPC ? axisShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
@@ -85,239 +249,110 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const lineMat = useMemo(()=>new LineMaterial({color: colorHex ? colorHex : 0, linewidth: AXIS_CONSTANTS.LINE_WIDTH}),[colorHex])
   const tickLength = AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale;
 
-  const xLine = useMemo(()=> {
-    const geom = new LineSegmentsGeometry().setPositions([xRange[0]*globalScale-tickLength/2, 0, 0, xRange[1]*globalScale+tickLength/2, 0, 0]);
-    return new LineSegments2(geom, lineMat)},[xRange, lineMat, globalScale])
-
-  const yLine = useMemo(() =>{
-    const geom = new LineSegmentsGeometry().setPositions([0, yRange[0]*shapeRatio*globalScale, 0, 0, yRange[1]*shapeRatio*globalScale+tickLength/2, 0]);
-    return new LineSegments2(geom, lineMat)},[yRange, shapeRatio, lineMat, globalScale])
-
-  const zLine = useMemo(()=> {
-    const geom = new LineSegmentsGeometry().setPositions([0, 0, isPC ? zRange[0]*globalScale*depthRatio-tickLength/2 : (zRange[0]*timeRatio-tickLength)/2, 0, 0, isPC ? zRange[1]*globalScale*depthRatio+tickLength/2 : (zRange[1]*timeRatio+tickLength)/2]);
-    return new LineSegments2(geom, lineMat)},[zRange, depthRatio, isPC, lineMat, globalScale])
-
-  const tickLine = useMemo(()=> {
-    const geom = new LineSegmentsGeometry().setPositions([0, 0, 0, 0, 0, tickLength]);
-    return new LineSegments2(geom, lineMat)},[lineMat, globalScale])
-  
-  const xDimScale = xResolution/(xResolution-1)
-  const xValDelta = 1/(xResolution-1)
-  const yDimScale = yResolution/(yResolution-1)
-  const yValDelta = 1/(yResolution-1)
-  const zDimScale = zResolution/(zResolution-1)
-  const zValDelta = 1/(zResolution-1)
-
   const xTitleOffset = useMemo(() => (dimNames[shapeLength - 1].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
   const yTitleOffset = useMemo(() => (dimNames[shapeLength - 2].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
   const zTitleOffset = useMemo(() => (dimNames[shapeLength - 3].length * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale]);
+
+  const zScale = isPC ? (depthRatio ) : (timeRatio / 2);
+  const timeFront = 
+    isPC
+    ? zRange[flipX ? 0 : 1] * depthRatio * globalScale +
+      (flipX ? -tickLength : tickLength) / 2
+    : (zRange[flipX ? 0 : 1] * timeRatio +
+      (flipX ? -tickLength : tickLength)) / 2
+  const xFront = 
+      xRange[flipY ? 0 : 1] * globalScale +
+          (flipY ? -tickLength : tickLength) / 2
   
+
   return (
     <group visible={plotType != 'sphere' && plotType != 'flat' && !hideAxis}>
-    {/* Horizontal Group */}
-    <group position={[0, isPC ? shapeRatio*globalScale*yRange[0] : shapeRatio*yRange[0], 0]}  >
-      {/* X Group */}
-      <group position={[0, 0, flipX ? isPC ? zRange[0]*depthRatio*(globalScale)-tickLength/2 : (zRange[0]*timeRatio-tickLength)/2 : isPC ? zRange[1] * (globalScale) * depthRatio +tickLength/2 : (zRange[1]*timeRatio+tickLength)/2]} rotation={[flipDown ? flipX ? -Math.PI/2 : Math.PI/2 : 0, 0, 0]}> 
-        <primitive key={'xLine'} object={xLine} />
-        {Array(xResolution).fill(null).map((_val,idx)=>(
-          (((xRange[0] + 1)/2) <= (idx*xDimScale)/xResolution &&
-           ((xRange[1] + 1)/2) >= (idx*xDimScale)/xResolution)
-           &&          
-          <group key={`xGroup_${idx}`} position={[isPC ? -globalScale + idx*xDimScale/(xResolution/2)*globalScale : -1 + idx*xDimScale/(xResolution/2), 0, 0]}>
-            <primitive key={idx} object={tickLine.clone()}  rotation={[0, flipX ? Math.PI : 0, 0]} />
-            <Text 
-              key={`textX_${idx}`}
-              anchorX={idx == 0 ? (flipX ? 'right' : 'left') : idx == xResolution-1 ? (flipX ? 'left' : 'right') : 'center'}
-              anchorY={'top'} 
-              fontSize={AXIS_CONSTANTS.TICK_FONT_SIZE_FACTOR*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
-              rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]}
-              position={[0, 0, flipX ? -AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale : AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale]}
-            >{parseLoc(dimSlices[2][Math.floor((dimLengths[2]-1)*idx*xValDelta)],dimUnits[shapeLength - 1])}</Text>
-          </group>
-        ))}
-        <group rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]} position={[(xRange[0]+xRange[1])/2*globalScale, 0, flipX ? -AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale : AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale]}>
-          <Text 
-            key={'xTitle'}
-            anchorX={'center'}
-            anchorY={'top'} 
-            fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
-            color={colorHex}
-            material-depthTest={false}
-          >{dimNames[shapeLength - 1]}</Text>
-          <group visible={!hideAxisControls}>
-            {xResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
-            <Text 
-              key={'xAdd'}
-              anchorX={'center'}
-              anchorY={'middle'} 
-              fontSize={0.15*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
-              position={[xTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
-              onClick={e=>setXResolution(x=> Math.min(x+1,AXIS_CONSTANTS.MAX_RESOLUTION))}
-              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
-              onPointerLeave={e=>document.body.style.cursor = 'default'}
-            >
-              +
-            </Text>}
-            { xResolution > AXIS_CONSTANTS.MIN_RESOLUTION &&
-            <Text 
-              key={'xSub'}
-              anchorX={'center'}
-              anchorY={'middle'} 
-              fontSize={0.15*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
-              position={[-xTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
-              onClick={e=>setXResolution(x=> Math.max(x-1,AXIS_CONSTANTS.MIN_RESOLUTION))}
-              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
-              onPointerLeave={e=>document.body.style.cursor = 'default'}
-            >
-              -
-            </Text>}
-          </group>
-        </group>
+      {/* Horizontal Group */}
+      <group position={[0, isPC ? shapeRatio*globalScale*yRange[0] : shapeRatio*yRange[0], 0]}  >
+        <Axis 
+          resolution={xResolution}
+          setResolution={setXResolution}
+          varName={dimNames[2]}
+          units={dimUnits[2]}
+          flip={flipX}
+          range={xRange}
+          lineMat={lineMat}
+          axis={0}
+          labels={dimSlices[2]}
+          position={[0, 0, timeFront]}
+          rotation={[
+            flipDown 
+            ? flipX 
+              ? -Math.PI/2 
+              : Math.PI/2 
+            : 0, 
+            0, 
+            0
+          ]}
+          isVertical={false}
+          scale={globalScale}
+          color={colorHex}
+          anchorX='center'
+          anchorY='top'
+          tickLength={tickLength}
+          tickRotations={[0, Math.PI]}
+          titleOffset={xTitleOffset}
+          hideAxisControls={hideAxisControls}
+        />
+        {/* Z Group */}
+        <Axis 
+          resolution={zResolution}
+          setResolution={setZResolution}
+          varName={dimNames[0]}
+          units={dimUnits[0]}
+          flip={flipY}
+          range={zRange}
+          lineMat={lineMat}
+          axis={2}
+          labels={dimSlices[0]}
+          position={[xRange[flipY ? 1 : 0]*globalScale + (flipY ? tickLength : -tickLength)/2, 0, 0]}
+          rotation={[0, 0, flipDown ? flipY ? -Math.PI/2 : Math.PI/2 : 0]}
+          isVertical={false}
+          scale={globalScale}
+          shapeRatio={zScale}
+          color={colorHex}
+          anchorX='center'
+          anchorY='top'
+          tickLength={tickLength}
+          tickRotations={[-Math.PI/2, Math.PI/2]}
+          titleOffset={-zTitleOffset}
+          hideAxisControls={hideAxisControls}
+        />
       </group>
-      {/* Z Group */}
-      <group position={[flipY ? xRange[1]*globalScale + tickLength/2: xRange[0]*globalScale - tickLength/2, 0, 0]} rotation={[0, 0, flipDown ? flipY ? -Math.PI/2 : Math.PI/2 : 0]}>
-        <primitive key={'zLine'} object={zLine} />
-        {Array(zResolution).fill(null).map((_val,idx)=>(
-          (((zRange[0] + 1)/2) <= (idx*zDimScale)/zResolution  &&
-          ((zRange[1] + 1)/2) >= (idx*zDimScale)/zResolution )
-          && 
-          <group key={`zGroup_${idx}`} position={[0, 0, isPC ? -depthRatio*globalScale + idx*zDimScale/(zResolution/2)*depthRatio*(globalScale) : -0.5*timeRatio + idx*zDimScale/(zResolution/2)*timeRatio/2]}>
-            <primitive key={idx} object={tickLine.clone()}  rotation={[0, flipY ? Math.PI/2 : -Math.PI/2 , 0]} />
-            <Text 
-              key={`textY_${idx}`}
-              anchorX={idx == 0 ? (flipY ? 'right' : 'left') : idx == zResolution-1 ? (flipY ? 'left' : 'right') : 'center'}
-              anchorY={'top'} 
-              fontSize={AXIS_CONSTANTS.TICK_FONT_SIZE_FACTOR*globalScale*0.8} 
-              color={colorHex}
-              material-depthTest={false}
-              rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]}
-              position={[flipY ? AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale :-AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[0][(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]],dimUnits[shapeLength - 3])}</Text>
-          </group>
-        ))}
-        <group rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]} position={[flipY ? AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale : -AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale, 0, isPC ? (zRange[0]+zRange[1])/2*depthRatio*(globalScale) : (zRange[0]+zRange[1])/2]}>
-          <Text 
-            key={'zTitle'}
-            anchorX={'center'}
-            anchorY={'top'} 
-            fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
-            color={colorHex}
-            material-depthTest={false}
-          >{dimNames[shapeLength - 3]}</Text>
-          
-          <group visible={!hideAxisControls}>
-            {zResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
-            <Text 
-              key={'zAdd'}
-              anchorX={'center'}
-              anchorY={'middle'} 
-              fontSize={0.15*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
-              position={[zTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
-              onClick={e=>setZResolution(x=> Math.min(x+1,AXIS_CONSTANTS.MAX_RESOLUTION))}
-              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
-              onPointerLeave={e=>document.body.style.cursor = 'default'}
-            >
-              +
-            </Text>}
-            {zResolution > AXIS_CONSTANTS.MIN_RESOLUTION &&
-            <Text 
-              key={'zSub'}
-              anchorX={'center'}
-              anchorY={'middle'} 
-              fontSize={0.15*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
-              position={[-zTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
-              onClick={e=>setZResolution(x=> Math.max(x-1,AXIS_CONSTANTS.MIN_RESOLUTION))}
-              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
-              onPointerLeave={e=>document.body.style.cursor = 'default'}
-            >
-              -
-            </Text>}
-          </group>
-        </group>
-      </group>
-    </group>
     {/* Vertical Group */}
-    <group position={[flipY ? xRange[0]*globalScale - tickLength/2 : xRange[1]*globalScale + tickLength/2, 0, flipX ? isPC ? zRange[0]*depthRatio*(globalScale) - tickLength/2 : (zRange[0]*timeRatio - tickLength)/2 : isPC ? zRange[1]*depthRatio*(globalScale) + tickLength/2 : (zRange[1]*timeRatio +tickLength)/2]}> 
-      <primitive key={'yLine'} object={yLine} />
-      {Array(yResolution).fill(null).map((_val,idx)=>(
-           (((yRange[0] + 1)/2) <= (idx*yDimScale)/yResolution &&
-           ((yRange[1] + 1)/2) >= (idx*yDimScale)/yResolution)
-           &&       
-          <group key={`yGroup_${idx}`} position={[0, isPC ?  (-shapeRatio*globalScale + idx*yDimScale/(yResolution/2)*shapeRatio*globalScale) : -shapeRatio + idx*yDimScale/(yResolution/2)*shapeRatio, 0]}>
-            <primitive key={idx} object={tickLine.clone()}  rotation={[0, flipY ? -Math.PI/2 :Math.PI/2 , 0]} />
-            <Text 
-              key={`text_${idx}`}
-              anchorX={flipY ? flipX ? 'left' : 'right' : flipX ? 'right' : 'left'}
-              anchorY={'middle'} 
-              fontSize={0.05*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
-              rotation={[0, flipX ? Math.PI : 0, 0]}
-              position={[flipY ? -0.07*globalScale : 0.07*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[1][Math.floor((dimLengths[1]-1)*idx*yValDelta)],dimUnits[shapeLength - 2])}</Text>
-          </group>
-        ))}
-        <group rotation={[0, flipX ? Math.PI : 0 , 0]} position={[flipY ? -0.32*globalScale : 0.32*globalScale, (yRange[0]+yRange[1])/2*shapeRatio*globalScale, 0]}>
-          <Text 
-            key={'yTitle'}
-            anchorX={'center'}
-            anchorY={'middle'} 
-            fontSize={0.08*globalScale} 
-            color={colorHex}
-            material-depthTest={false}
-            rotation={[0, 0, Math.PI / 2]}
-          >
-            {dimNames[shapeLength - 2]}
-          </Text>
-
-          <group visible={!hideAxisControls}>
-            {yResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
-            <Text 
-              key={'zAdd'}
-              anchorX={'center'}
-              anchorY={'middle'} 
-              fontSize={AXIS_CONSTANTS.CONTROL_FONT_SIZE_FACTOR*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
-              position={[0, yTitleOffset, 0]}
-              onClick={e=>setYResolution(x=> Math.min(x+1,AXIS_CONSTANTS.MAX_RESOLUTION))}
-              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
-              onPointerLeave={e=>document.body.style.cursor = 'default'}
-            >
-              +
-            </Text>
-          }
-          {yResolution > AXIS_CONSTANTS.MIN_RESOLUTION &&
-            <Text 
-              key={'zSub'}
-              anchorX={'center'}
-              anchorY={'middle'}
-              rotation={[0, 0, Math.PI / 2]}
-              fontSize={AXIS_CONSTANTS.CONTROL_FONT_SIZE_FACTOR*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
-              position={[0, -yTitleOffset, 0]}
-              onClick={e=>setYResolution(x=> Math.max(x-1,AXIS_CONSTANTS.MIN_RESOLUTION))}
-              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
-              onPointerLeave={e=>document.body.style.cursor = 'default'}
-            >
-              -
-            </Text>
-          }
-        </group>
-      </group>
-    </group>
-
+    <Axis 
+        resolution={yResolution}
+        setResolution={setYResolution}
+        varName={dimNames[1]}
+        units={dimUnits[1]}
+        flip={flipY}
+        mirrorFlip={flipX}
+        range={yRange}
+        lineMat={lineMat}
+        axis={1}
+        labels={dimSlices[1]}
+        position={[
+          xFront, 
+          0, 
+          timeFront
+        ]}
+        rotation={[0, 0, 0]}
+        isVertical
+        scale={globalScale}
+        shapeRatio={shapeRatio}
+        color={colorHex}
+        anchorX={flipY ? flipX ? 'left' : 'right' : flipX ? 'right' : 'left'}
+        anchorY='middle'
+        tickLength={tickLength}
+        tickRotations={[Math.PI/2, -Math.PI/2]}
+        titleOffset={yTitleOffset}
+        hideAxisControls={hideAxisControls}
+      />
   </group>
   )
 }
@@ -422,7 +457,6 @@ const FlatAxis = () =>{
     }
   }, [analysisMode, dimArrays, dimUnits, is4D, dimNames, dimSlices]);
   
-
   const shapeRatio = useMemo(()=>{
     if(analysisMode && axis == 2){
       return dimLengths[heightIdx]/dimLengths[widthIdx]
