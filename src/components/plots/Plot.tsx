@@ -133,8 +133,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const Plot = () => {
   const {
     setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
-    setDimNames, setDimUnits, setOrigDimArrays, 
-    setOrigDimNames, setOrigDimUnits, setPlotOn, setStatus, setAxisShape} = useGlobalStore(
+    setDimNames, setDimUnits, setAxisDimArrays, 
+    setAxisDimNames, setAxisDimUnits, setPlotOn, setStatus, setAxisShape, setAxisOrder, setAxisFlipped} = useGlobalStore(
       useShallow(state => ({  //UseShallow for object returns
         setShape:state.setShape,
         setDataShape: state.setDataShape,
@@ -144,24 +144,26 @@ const Plot = () => {
         setDimArrays:state.setDimArrays, 
         setDimNames:state.setDimNames,
         setDimUnits:state.setDimUnits,
-        setOrigDimArrays:state.setOrigDimArrays, 
-        setOrigDimNames:state.setOrigDimNames,
-        setOrigDimUnits:state.setOrigDimUnits,
+        setAxisDimArrays:state.setAxisDimArrays, 
+        setAxisDimNames:state.setAxisDimNames,
+        setAxisDimUnits:state.setAxisDimUnits,
         setPlotOn: state.setPlotOn,
         setStatus: state.setStatus,
-        setAxisShape: state.setAxisShape  
+        setAxisShape: state.setAxisShape,
+        setAxisOrder: state.setAxisOrder,
+        setAxisFlipped: state.setAxisFlipped
       }
       )))
-  const {colormap, variable, isFlat, DPR, valueScales, is4D, origDimArrays, origDimNames, origDimUnits, dataShape, setIsFlat} = useGlobalStore(useShallow(state=>({
+  const {colormap, variable, isFlat, DPR, valueScales, is4D, dimArrays, dimNames, dimUnits, dataShape, setIsFlat} = useGlobalStore(useShallow(state=>({
     colormap: state.colormap, 
     variable: state.variable, 
     isFlat: state.isFlat, 
     DPR: state.DPR, 
     valueScales: state.valueScales,
     is4D: state.is4D,
-    origDimArrays: state.origDimArrays,
-    origDimNames: state.origDimNames,
-    origDimUnits: state.origDimUnits,
+    dimArrays: state.dimArrays,
+    dimNames: state.dimNames,
+    dimUnits: state.dimUnits,
     dataShape: state.dataShape,
     setIsFlat: state.setIsFlat, 
   })))
@@ -229,25 +231,27 @@ const Plot = () => {
     }
 
     const transformedDimArrays = axisMapping.map((origIdx, newIdx) =>{
-      const arr = origDimArrays[origIdx].slice();
+      const arr = dimArrays[origIdx].slice();
       if (axisReversed[newIdx]) arr.reverse()
       return  arr
     })
-    const transformedDimNames = axisMapping.map(origIdx => origDimNames[origIdx])
-    const transformedDimUnits = axisMapping.map(origIdx => origDimUnits[origIdx])
+    const transformedDimNames = axisMapping.map(origIdx => dimNames[origIdx])
+    const transformedDimUnits = axisMapping.map(origIdx => dimUnits[origIdx])
     const axisShape = axisMapping.map(origIdx => dataShape[origIdx]/dataShape[dataShape.length-1])
     const axisSlices = axisMapping.map(origIdx => origSlices[origIdx])
-    setDimArrays(transformedDimArrays)
-    setDimNames(transformedDimNames)
-    setDimUnits(transformedDimUnits)
+    setAxisDimArrays(transformedDimArrays)
+    setAxisDimNames(transformedDimNames)
+    setAxisDimUnits(transformedDimUnits)
     setAxisShape(axisShape)
+    setAxisOrder(axisMapping)
+    setAxisFlipped(axisReversed)
     usePlotStore.setState({
       zSlice:axisSlices[0],
       ySlice:axisSlices[1],
       xSlice:axisSlices[2]
     })
 
-  },[rotateX, rotateZ, mirrorHorizontal, mirrorVertical, origDimArrays, origDimNames, origDimUnits])
+  },[rotateX, rotateZ, mirrorHorizontal, mirrorVertical, dimArrays, dimNames, dimUnits])
 
 
 
@@ -299,9 +303,11 @@ const Plot = () => {
         }
         const aspectRatio = result.shape[shapeLength-2] / result.shape[shapeLength-1];
         const timeRatio = result.shape[shapeLength-3] / result.shape[shapeLength-1];
-        setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio, 2)));
+
+        setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio * 2, 2)));
         setDataShape(result.shape)
-        setAxisShape(result.shape)
+        const axisShape = result.shape.map((val) => val/result.shape[result.shape.length-1])
+        setAxisShape(axisShape)
         setShow(true)
         setPlotOn(true)
         setStatus(null)
@@ -322,8 +328,8 @@ const Plot = () => {
           dimUnits = dimUnits.slice();
           dimNames = dimNames.slice();
         }
-        setOrigDimNames(dimNames)
-        setOrigDimArrays(dimArrays)
+        setDimNames(dimNames)
+        setDimArrays(dimArrays)
         if (dimArrays.length > 2){
           if (dimArrays[1][1] < dimArrays[1][0])
             {setFlipY(true)}
@@ -336,7 +342,7 @@ const Plot = () => {
           else
             {setFlipY(false)}
         }
-        setOrigDimUnits(dimUnits)
+        setDimUnits(dimUnits)
         ParseExtent(dimUnits, dimArrays)
       }) 
     }else{

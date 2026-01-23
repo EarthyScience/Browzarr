@@ -31,9 +31,11 @@ type StoreState = {
   dimArrays: number[][];
   dimNames: string[];
   dimUnits: string[];
-  origDimArrays: number[][];
-  origDimNames: string[];
-  origDimUnits: string[];
+  axisDimArrays: number[][];
+  axisDimNames: string[];
+  axisDimUnits: string[];
+  axisOrder: number[]; // Order of original axes for adjusting after transformation
+  axisFlipped: boolean[];
   dimCoords: Record<string, DimCoords>;
   plotDim: number;
   flipY:boolean;
@@ -67,9 +69,11 @@ type StoreState = {
   setDimArrays: (dimArrays: number[][]) => void;
   setDimNames: (dimNames: string[]) => void;
   setDimUnits: (dimUnits: string[]) => void;
-  setOrigDimArrays: (dimArrays: number[][]) => void;
-  setOrigDimNames: (dimNames: string[]) => void;
-  setOrigDimUnits: (dimUnits: string[]) => void;
+  setAxisDimArrays: (axisDimArrays: number[][]) => void;
+  setAxisDimNames: (axisDimNames: string[]) => void;
+  setAxisDimUnits: (axisDimUnits: string[]) => void;
+  setAxisOrder: (axisOrder: number[]) => void;
+  setAxisFlipped: (axisFlipped: boolean[]) => void;
   setDimCoords: (dimCoords?: Record<string, DimCoords>) => void;
   updateDimCoords: (newDims: Record<string, DimCoords>) => void;
   setPlotDim: (plotDim: number) => void;
@@ -104,9 +108,11 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   dimArrays: [[0], [0], [0]],
   dimNames: ["Default"],
   dimUnits: ["Default"],
-  origDimArrays: [[0], [0], [0]],
-  origDimNames: ["Default"],
-  origDimUnits: ["Default"],
+  axisDimArrays: [[0], [0], [0]],
+  axisDimNames: ["Default"],
+  axisDimUnits: ["Default"],
+  axisOrder: [0,1,2],
+  axisFlipped: [false, false, false],
   dimCoords: {},
   plotDim: 0,
   flipY: false,
@@ -149,9 +155,11 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setDimArrays: (dimArrays) => set({ dimArrays }),
   setDimNames: (dimNames) => set({ dimNames }),
   setDimUnits: (dimUnits) => set({ dimUnits }),
-  setOrigDimArrays: (origDimArrays) => set({ origDimArrays }),
-  setOrigDimNames: (origDimNames) => set({ origDimNames }),
-  setOrigDimUnits: (origDimUnits) => set({ origDimUnits }),
+  setAxisDimArrays: (axisDimArrays) => set({ axisDimArrays }),
+  setAxisDimNames: (axisDimNames) => set({ axisDimNames }),
+  setAxisDimUnits: (axisDimUnits) => set({ axisDimUnits }),
+  setAxisOrder: (axisOrder) => set({ axisOrder }),
+  setAxisFlipped: (axisFlipped) => set({ axisFlipped }),
   setDimCoords: (dimCoords) => set({ dimCoords }),
   updateDimCoords: (newDims) => {
     const merged = { ...newDims,...get().dimCoords  };

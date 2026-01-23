@@ -21,9 +21,9 @@ function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
   const {plotDim, dimArrays, dimNames, dimUnits, timeSeries} = useGlobalStore(
     useShallow(state=>({
       plotDim:state.plotDim,
-      dimArrays:state.origDimArrays,
-      dimNames:state.origDimNames,
-      dimUnits:state.origDimUnits,
+      dimArrays:state.dimArrays,
+      dimNames:state.dimNames,
+      dimUnits:state.dimUnits,
       timeSeries:state.timeSeries,
     }))
   );

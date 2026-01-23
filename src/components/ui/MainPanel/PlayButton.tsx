@@ -101,8 +101,8 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
   })))
 
   const {dimArrays, dimUnits, zMeta, variable} = useGlobalStore(useShallow(state => ({
-      dimArrays: state.origDimArrays,
-      dimUnits: state.origDimUnits,
+      dimArrays: state.dimArrays,
+      dimUnits: state.dimUnits,
       zMeta: state.zMeta,
       variable: state.variable,
   })))

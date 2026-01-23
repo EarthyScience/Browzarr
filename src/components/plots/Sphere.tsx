@@ -40,9 +40,9 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
           timeSeries, dataShape, strides, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,
         isFlat: state.isFlat,  
-        dimArrays:state.origDimArrays,
-        dimNames:state.origDimNames,
-        dimUnits:state.origDimUnits,
+        dimArrays:state.dimArrays,
+        dimNames:state.dimNames,
+        dimUnits:state.dimUnits,
         valueScales: state.valueScales,
         timeSeries: state.timeSeries,
         dataShape: state.dataShape,

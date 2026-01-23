@@ -78,6 +78,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
     }),[useFragOpt, useOrtho]);
 
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
+
     useEffect(() => {
       if (shaderMaterial) {
         const uniforms = shaderMaterial.uniforms

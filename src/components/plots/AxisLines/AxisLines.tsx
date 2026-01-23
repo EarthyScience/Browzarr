@@ -9,48 +9,48 @@ import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineMaterial } from 'three-stdlib';
 import { useFrame } from '@react-three/fiber';
 import { parseLoc } from '@/utils/HelperFuncs';
-import { useCSSVariable } from '../ui';
+import { useCSSVariable } from '../../ui';
 import * as THREE from 'three'
+import VolumeAxis from './VolumeAxis';
 
 const AXIS_CONSTANTS = {
-  INITIAL_RESOLUTION: 7,
-  MAX_RESOLUTION: 20,
-  MIN_RESOLUTION: 1,
-  PC_GLOBAL_SCALE_DIVISOR: 500,
-  LINE_WIDTH: 2.0,
-  TICK_LENGTH_FACTOR: 0.05,
-  TICK_FONT_SIZE_FACTOR: 0.05,
-  TITLE_FONT_SIZE_FACTOR: 0.08,
-  CONTROL_FONT_SIZE_FACTOR: 0.15,
-  X_TITLE_OFFSET_FACTOR: 0.15,
-  Y_TITLE_OFFSET_FACTOR: 0.325,
-  Z_TITLE_OFFSET_FACTOR: 0.15,
-  CONTROL_DISTANCE: 0.2
+    INITIAL_RESOLUTION: 7,
+    MAX_RESOLUTION: 20,
+    MIN_RESOLUTION: 1,
+    PC_GLOBAL_SCALE_DIVISOR: 500,
+    LINE_WIDTH: 2.0,
+    TICK_LENGTH_FACTOR: 0.05,
+    TICK_FONT_SIZE_FACTOR: 0.05,
+    TITLE_FONT_SIZE_FACTOR: 0.08,
+    CONTROL_FONT_SIZE_FACTOR: 0.15,
+    X_TITLE_OFFSET_FACTOR: 0.15,
+    Y_TITLE_OFFSET_FACTOR: 0.325,
+    Z_TITLE_OFFSET_FACTOR: 0.15,
+    CONTROL_DISTANCE: 0.2
 };
-
 interface AxisType {
-  varName: string,
-  resolution: number,
-  axis: number, // This is [X, Y, Z] ==> [0, 1, 2]
-  lineMat: LineMaterial,
-  setResolution: React.Dispatch<React.SetStateAction<number>>,
-  range: number[],
-  scale: number,
-  shapeRatio?: number,
-  tickLength: number,
-  tickRotations: [number, number]
-  labels: number[],
-  units: string,
-  titleOffset: number,
-  rotation: [number, number, number],
-  position: [number, number, number],
-  flip: boolean,
-  mirrorFlip?: boolean,
-  isVertical?: boolean,
-  hideAxisControls:boolean,
-  color: number | undefined,
-  anchorX: "center" | "left" | "right",
-  anchorY: "bottom" | "top" | "top-baseline" | "middle" | "bottom-baseline"
+    varName: string,
+    units: string,
+    labels: number[],
+    range: number[],
+    resolution: number,
+    setResolution: React.Dispatch<React.SetStateAction<number>>,
+    axis: 0 | 1 | 2 // X, Y, Z
+    position: [number, number, number],
+    rotation: [number, number, number],
+    flip: boolean,
+    mirrorFlip?: boolean,
+    isVertical?: boolean,
+    shapeRatio?: number,
+    scale: number,
+    tickLength: number,
+    tickRotations: [number, number]
+    titleOffset: number,
+    lineMat: LineMaterial,
+    color: number | undefined,
+    anchorX: "center" | "left" | "right",
+    anchorY: "bottom" | "top" | "top-baseline" | "middle" | "bottom-baseline"
+    hideAxisControls:boolean,
 }
 
 const Axis = ({
@@ -659,7 +659,7 @@ export const AxisLines = () => {
   const cond = isFlat || plotType == "flat"
   return (
     <>
-    {!cond && <CubeAxis flipX={flipX} flipY={flipY} flipDown={flipDown} />}
+    {!cond && <VolumeAxis flipX={flipX} flipY={flipY} flipDown={flipDown} />}
     {cond && <FlatAxis />}
     </>
   )
