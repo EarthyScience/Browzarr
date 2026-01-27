@@ -2,7 +2,7 @@
 import * as THREE from 'three'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { pointFrag, pointVert } from '@/components/textures/shaders'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import '../css/MainPanel.css'
-import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
+import { useGlobalStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { PiSphereThin } from "react-icons/pi";
 import { CgMenuGridO } from "react-icons/cg";

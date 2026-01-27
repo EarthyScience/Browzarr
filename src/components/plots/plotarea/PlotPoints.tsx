@@ -1,7 +1,7 @@
 import React, {useRef, useMemo, useEffect, useState} from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
-import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useGlobalStore, usePlotStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 
 interface pointSetters{

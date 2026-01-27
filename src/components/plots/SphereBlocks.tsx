@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react'
-import { useErrorStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useErrorStore, useGlobalStore, usePlotStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksVert, sphereBlocksVertFlat, sphereBlocksFrag } from '../textures/shaders'

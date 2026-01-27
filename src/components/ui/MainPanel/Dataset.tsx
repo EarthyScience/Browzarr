@@ -1,7 +1,7 @@
 "use client";
 
 import React, { SetStateAction, useEffect, useState, ReactNode } from 'react';
-import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
+import { useGlobalStore, useZarrStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { Input } from '../input';
 import { Button } from '../button';

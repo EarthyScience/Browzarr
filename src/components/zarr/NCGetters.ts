@@ -1,6 +1,6 @@
-import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/utils/GlobalStates"
+import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/GlobalStates"
 import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, copyChunkToArray2D, RescaleArray } from "./ZarrLoaderLRU";
-
+import { Convolve } from "../computation/webGPU";
 
 export async function GetNCDims(variable: string){
     const {ncModule} = useZarrStore.getState()

@@ -4,7 +4,7 @@
 import { RxReset } from "react-icons/rx";
 import { FaPlus, FaMinus } from "react-icons/fa";
 import React, {useRef, useEffect, useMemo, useState} from 'react'
-import { useGlobalStore, usePlotStore, useAnalysisStore } from '@/utils/GlobalStates'
+import { useGlobalStore, usePlotStore, useAnalysisStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import './css/Colorbar.css'
 import { linspace } from '@/utils/HelperFuncs';

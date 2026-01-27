@@ -7,7 +7,7 @@ import gsap from 'gsap';
 import vertexShader from '@/components/textures/shaders/LandingVertex.glsl'
 import fragmentShader from '@/components/textures/shaders/LandingFrag.glsl'
 import './Plots.css';
-import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
+import { useGlobalStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 
 

@@ -7,7 +7,7 @@ import { useEffect, useMemo } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
 import { MainPanel } from '@/components/ui';
 import { Loading, Navbar, Error as ErrorComponent } from '@/components/ui';
-import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
+import { useGlobalStore, useZarrStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 
 async function sendPing() {

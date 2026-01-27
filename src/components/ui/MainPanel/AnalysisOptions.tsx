@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useAnalysisStore, useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, useZarrStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import '../css/MainPanel.css';
 import { PiMathOperationsBold } from "react-icons/pi";

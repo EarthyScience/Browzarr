@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react"
-import { useCacheStore, useGlobalStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates'
+import { useCacheStore, useGlobalStore, usePlotStore, useZarrStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import { SliderThumbs } from "@/components/ui/SliderThumbs"
 import { Button } from "@/components/ui/button"

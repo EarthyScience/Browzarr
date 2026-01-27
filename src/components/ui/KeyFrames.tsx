@@ -2,7 +2,7 @@
 import React, {useEffect, useRef, useState } from 'react'
 import { Button } from './button'
 import { ButtonGroup } from "@/components/ui/button-group"
-import { useImageExportStore, usePlotStore } from '@/utils/GlobalStates'
+import { useImageExportStore, usePlotStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import { Slider } from './slider'
 import './css/KeyFrames.css'

@@ -2,7 +2,7 @@
 
 import React, {useMemo, useEffect, useRef, useState} from 'react'
 import * as THREE from 'three'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/GlobalStates'
 import { vertShader } from '@/components/computation/shaders'
 import { flatFrag3D, fragmentFlat } from '../textures/shaders';
 import { useShallow } from 'zustand/shallow'

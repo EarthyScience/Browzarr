@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useCursor, RoundedBox, Text, Edges } from '@react-three/drei'
 import { Group } from 'three'
 import { ZarrMetadata } from '@/components/zarr/Interfaces'
-import { useGlobalStore } from '@/utils/GlobalStates' // Import global store
+import { useGlobalStore } from '@/GlobalStates' // Import global store
 
 interface MetadataTextProps {
   position?: [number, number, number];

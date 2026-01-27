@@ -1,4 +1,4 @@
-import { useGlobalStore } from "@/utils/GlobalStates"
+import { useGlobalStore } from "@/GlobalStates"
 import './css/Loading.css'
 import { useShallow } from "zustand/shallow"
 

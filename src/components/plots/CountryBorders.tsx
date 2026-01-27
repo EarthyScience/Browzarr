@@ -1,6 +1,6 @@
 "use client";
 import React, {useEffect, useState, useMemo} from 'react'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/GlobalStates';
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow';
 import { useFrame } from '@react-three/fiber';

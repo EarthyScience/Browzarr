@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo} from 'react'
 import './Plots.css'
-import { useAnalysisStore, useGlobalStore } from '@/utils/GlobalStates'
+import { useAnalysisStore, useGlobalStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import { parseLoc } from '@/utils/HelperFuncs'
 
