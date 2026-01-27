@@ -15,6 +15,9 @@ type ZarrState = {
   useNC: boolean, // This one is more static and so toggling switch doesn't break all other logic
   fetchNC: boolean,
   ncModule: any,
+  coarsen: boolean,
+  kernelSize: number,
+  kernelDepth: number,
 
   setZSlice: (zSlice: [number , number | null]) => void;
   setYSlice: (ySlice: [number , number | null]) => void;
@@ -27,6 +30,9 @@ type ZarrState = {
   setArraySize: (arraySize: number) => void;
   setUseNC: (useNC: boolean) => void;
   setFetchNC: (fetchNC: boolean) => void;
+  setCoarsen: (coarsen: boolean) => void;
+  setKernelSize: (kernelSize: number) => void;
+  setKernelDepth: (kernelDepth: number) => void;
 }
 
 export const useZarrStore = create<ZarrState>((set, get) => ({
@@ -41,6 +47,9 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   useNC: false,
   fetchNC: false,
   ncModule: null,
+  coarsen: false,
+  kernelSize: 2,
+  kernelDepth: 2,
 
   setZSlice: (zSlice) => set({ zSlice }),
   setYSlice: (ySlice) => set({ ySlice }),
@@ -53,4 +62,7 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   setArraySize: (arraySize) => set({ arraySize }),
   setUseNC: (useNC) => set({ useNC }),
   setFetchNC: (fetchNC) => set({ fetchNC }),
+  setCoarsen: (coarsen) => set({ coarsen }),
+  setKernelSize: (kernelSize) => set({ kernelSize }),
+  setKernelDepth: (kernelDepth) => set({ kernelDepth }),
 }))

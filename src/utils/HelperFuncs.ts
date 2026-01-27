@@ -315,6 +315,15 @@ export async function GetDimInfo(variable:string){
     }
   }      
 
+export function HandleKernelNums(e: string){
+  const newVal = parseInt(e);
+  if (newVal % 2 == 0){
+    return Math.max(1, newVal - 1)
+  }
+  else{
+    return newVal
+  }
+}
 
 export function deg2rad(deg: number){
   return deg*Math.PI/180;
@@ -328,4 +337,43 @@ export function normalize(val: number | null | undefined, min:number, max:number
 export function denormalize(  norm: number | null | undefined,  min: number,  max: number) {
   if (!norm && norm !== 0) return undefined;
   return norm * (max - min) + min;
+}
+
+export function coarsen3DArray(
+  array: Float16Array,
+  shape: [number, number, number],
+  strides: [number, number, number],
+  spatialFactor: number,
+  depthFactor: number,
+  newSize: number
+) {
+  const [dimZ, dimY, dimX] = shape;
+  const [strideX, strideY, strideZ] = strides;
+  const spatialOffset = Math.floor(spatialFactor / 2);
+  const depthOffset = Math.floor(depthFactor / 2);
+  const outputArray = new Float16Array(newSize)
+
+  let outputIdx = 0;
+  for (let z = depthOffset; z < dimZ; z += depthFactor) {
+    for (let y = spatialOffset; y < dimY; y += spatialFactor) {
+      for (let x = spatialOffset; x < dimX; x += spatialFactor) {
+        // Calculate the flat index using strides
+        const flatIndex = z * strideZ + y * strideY + x * strideX;
+        outputArray[outputIdx] = array[flatIndex];
+        outputIdx++;
+      }
+    }
+  }
+  return outputArray
+}
+
+export function calculateStrides(
+  shape: number[]
+){
+  let newStrides = shape.slice()
+  newStrides = newStrides.map((_val:number, idx: number) => {
+      return newStrides.reduce((a: number, b: number, i: number) => a * (i < idx ? b : 1), 1)
+  })
+  newStrides.reverse()
+  return newStrides
 }

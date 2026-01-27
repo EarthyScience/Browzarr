@@ -13,6 +13,7 @@ import {KernelVisualizer} from "@/components/ui";
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { Switch } from '../switch';
+import { HandleKernelNums } from '@/utils/HelperFuncs';
 import {
   Select,
   SelectContent,
@@ -180,16 +181,6 @@ const AnalysisOptions = () => {
       window.addEventListener("resize", handleResize);
       return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  function HandleKernelNums(e: string){
-    const newVal = parseInt(e);
-    if (newVal % 2 == 0){
-      return Math.max(1, newVal - 1)
-    }
-    else{
-      return newVal
-    }
-  }
 
   return (
     <>

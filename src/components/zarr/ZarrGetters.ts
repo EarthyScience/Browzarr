@@ -1,7 +1,9 @@
 import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/GlobalStates";
 import * as zarr from 'zarrita';
-import { CompressArray, DecompressArray, ZarrError, RescaleArray, ToFloat16, copyChunkToArray, copyChunkToArray2D } from "./ZarrLoaderLRU";
+import { CompressArray, DecompressArray, ZarrError, RescaleArray, ToFloat16, copyChunkToArray } from "./ZarrLoaderLRU";
 import { GetSize } from "./GetMetadata";
+import { Convolve } from "../computation/webGPU";
+import { coarsen3DArray, calculateStrides } from "@/utils/HelperFuncs";
 
 export async function GetZarrDims(variable: string){
     const {cache} = useCacheStore.getState();
@@ -119,10 +121,9 @@ export async function GetStore(storePath: string): Promise<zarr.Group<zarr.Fetch
         }
 }
 
-
 export async function GetZarrArray(){
     const {is4D, idx4D, initStore, variable, setProgress, setStrides, setStatus} = useGlobalStore.getState();
-	const {compress, xSlice, ySlice, zSlice, currentStore, setCurrentChunks, setArraySize} = useZarrStore.getState()
+	const {compress, xSlice, ySlice, zSlice, currentStore, coarsen, kernelSize, kernelDepth, setCurrentChunks, setArraySize} = useZarrStore.getState()
 	const {cache} = useCacheStore.getState();
 
     //---- 2. Open Zarr Resource ----//
@@ -142,17 +143,17 @@ export async function GetZarrArray(){
     }
     
     //---- 3. Determine Structure ----//
-    const fullShape = outVar.shape;
+    let fullShape = outVar.shape;
     let [_totalSize, _chunkSize, chunkShape] = GetSize(outVar);
 
     if (is4D){
         chunkShape = chunkShape.slice(1);
     }
 
-    const hasTimeChunks = is4D ? fullShape[1]/chunkShape[0] > 1 : fullShape[0]/chunkShape[0] > 1
+    const notChunked = fullShape.every((dim, idx) => dim > chunkShape[idx]);
 
     //---- Strategy 1. Download whole array (No time chunks) ----//
-    if (!hasTimeChunks){ 
+    if (notChunked){ 
         setStatus("Downloading...")
         const chunk = await fetchWithRetry(
             () => is4D ? zarr.get(outVar, [idx4D, null, null, null]) : zarr.get(outVar),
@@ -164,9 +165,19 @@ export async function GetZarrArray(){
             throw new Error("BigInt arrays not supported.");
         }
         const shape = is4D ? outVar.shape.slice(1) : outVar.shape;
-        
-        setStrides(chunk.stride) // Need strides for the point cloud
-        const [typedArray, scalingFactor] = ToFloat16(chunk.data.map((v: number) => v === fillValue ? NaN : v) as Float32Array, null)
+        const strides = chunk.stride;
+        setStrides(strides) // Need strides for the point cloud
+
+        let [typedArray, scalingFactor] = ToFloat16(chunk.data.map((v: number) => v === fillValue ? NaN : v) as Float32Array, null)
+        if (coarsen){
+            typedArray = await Convolve(typedArray, {shape, strides}, "Mean", {kernelSize, kernelDepth}) as Float16Array
+            const newShape = shape.map((dim, idx) => Math.ceil(dim / (idx === 0 ? kernelDepth : kernelSize)))
+            let newStrides = newShape.slice()
+            newStrides = newStrides.map((val, idx) => {
+                return newStrides.reduce((a, b, i) => a * (i < idx ? b : 1), 1)
+            })
+            console.log(newStrides)
+        }
         const cacheChunk = {
             data: compress ? CompressArray(typedArray, 7) : typedArray,
             shape: chunk.shape,
@@ -199,12 +210,12 @@ export async function GetZarrArray(){
     const zDim = is2D ? { start: 0, end: 1, size: 0 } : calcDim(zSlice, 0, chunkShape[0]);
 
     // Setup Output Array
-    const outputShape = is2D ? [yDim.size, xDim.size] : [zDim.size, yDim.size, xDim.size];
-    const totalElements = is2D ? yDim.size * xDim.size : zDim.size * yDim.size * xDim.size;
-    const destStride = is2D 
-        ? [outputShape[1], 1] 
-        : [outputShape[1] * outputShape[2], outputShape[2], 1];
-
+    let outputShape = is2D ? [yDim.size, xDim.size] : [zDim.size, yDim.size, xDim.size];
+    if (coarsen) {
+        outputShape = outputShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
+    } 
+    const totalElements = outputShape.reduce((a ,b) => a * b, 1)
+    const destStride = calculateStrides(outputShape)
     setStrides(destStride);
     if (!is2D) {
         setArraySize(totalElements);
@@ -263,8 +274,24 @@ export async function GetZarrArray(){
                         throw new Error("BigInt arrays are not supported for conversion to Float32Array.");
                     } 
                     const originalData = chunk.data as Float32Array;
-                    const chunkStride = chunk.stride;
-                    const [chunkF16, newScalingFactor] = ToFloat16(originalData.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
+                    let chunkStride = chunk.stride;
+                    let thisShape = chunkShape
+                    let [chunkF16, newScalingFactor] = ToFloat16(originalData.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
+                    if (coarsen){
+                        chunkF16 = await Convolve(chunkF16, {shape:chunkShape, strides:chunkStride}, "Mean3D", {kernelSize, kernelDepth}) as Float16Array
+                        
+                        thisShape = chunkShape.map((dim: number, idx: number) => Math.ceil(dim / (idx === 0 ? kernelDepth : kernelSize)))
+                        const newSize = thisShape.reduce((a: number, b: number) => a*b, 1)
+                        chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as [number, number, number], kernelSize, kernelDepth, newSize)
+                        
+                        let newStrides = thisShape.slice()
+                        newStrides = newStrides.map((val:number, idx: number) => {
+                            return newStrides.reduce((a: number, b: number, i: number) => a * (i < idx ? b : 1), 1)
+                        })
+                        newStrides.reverse()
+                        chunkStride = newStrides
+                    }
+                    console.log(chunkF16)
                     if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
                         if (scalingFactor == null || newScalingFactor > scalingFactor){ 
                             const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
@@ -279,9 +306,10 @@ export async function GetZarrArray(){
                             }
                         }
                     }
+                    
                     copyChunkToArray(
                         chunkF16,
-                        chunkShape,
+                        thisShape,
                         chunkStride as [number, number, number],
                         typedArray,
                         outputShape,
