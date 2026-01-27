@@ -59,10 +59,10 @@ We are still in active development but plan to release a stable 1.0.0 when all o
 <div align="center">
 <table style="border-collapse: collapse; border: none; white-space: nowrap;">
 <tr>
-<td style="text-align: center; border: none;"><a href="https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe_en" target="_blank"><img src="./funding/EU.svg" width="120" /></a></td>
-<td style="text-align: center; border: none;"><a href="https://www.esa.int" target="_blank"><img src="./funding/esa-logo.jpg" width="120" /></a></td>
-<td style="text-align: center; border: none;"><a href="http://seasfire.hua.gr/" target="_blank"><img src="./funding/seasfire_logo.png" width="350" /></td>
-<td style="text-align: center; border: none;"><a href="https://ai4pex.org" target="_blank"><img src="./funding/AI4PEX_robot_long_light.png" width="220" /></td>
+<td style="text-align: center; border: none;"><a href="https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe_en" target="_blank"><img src="./docs/assets/funding/EU.svg" width="120" /></a></td>
+<td style="text-align: center; border: none;"><a href="https://www.esa.int" target="_blank"><img src="./docs/assets/funding/esa-logo.jpg" width="120" /></a></td>
+<td style="text-align: center; border: none;"><a href="http://seasfire.hua.gr/" target="_blank"><img src="./docs/assets/funding/seasfire_logo.png" width="350" /></td>
+<td style="text-align: center; border: none;"><a href="https://ai4pex.org" target="_blank"><img src="./docs/assets/funding/AI4PEX_robot_long_light.png" width="220" /></td>
 </tr>
 </table>
 </div>
