@@ -1,5 +1,5 @@
 "use client";
-import { useGlobalStore, useImageExportStore, usePlotStore } from '@/utils/GlobalStates'
+import { useGlobalStore, useImageExportStore, usePlotStore } from '@/GlobalStates'
 import { invalidate, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/shallow'

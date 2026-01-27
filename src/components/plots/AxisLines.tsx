@@ -1,6 +1,6 @@
 "use client";
 
-import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore } from '@/utils/GlobalStates'
+import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore } from '@/GlobalStates'
 import React, {useState, useMemo} from 'react'
 import { useShallow } from 'zustand/shallow'
 import { Text } from '@react-three/drei'

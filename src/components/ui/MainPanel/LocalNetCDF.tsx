@@ -1,7 +1,7 @@
 "use client";
 import React, {ChangeEvent, useState} from 'react'
 import { Input } from '../input'
-import { useGlobalStore, useZarrStore } from '@/utils/GlobalStates';
+import { useGlobalStore, useZarrStore } from '@/GlobalStates';
 import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
 import {
   Alert,

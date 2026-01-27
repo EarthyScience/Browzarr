@@ -5,7 +5,7 @@ import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLine
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, CreateTexture } from '@/components/textures';
 import { GetArray, GetAttributes } from '../zarr/ZarrLoaderLRU';
-import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar, ExportExtent } from '../ui';
 import AnalysisInfo from './AnalysisInfo';

@@ -1,6 +1,6 @@
 import React from 'react'
 import './css/Error.css'
-import { useErrorStore } from '@/utils/GlobalStates'
+import { useErrorStore } from '@/GlobalStates'
 import { ErrorList } from './ErrorList'
 import { useShallow } from 'zustand/shallow'
 import { Button } from './button'

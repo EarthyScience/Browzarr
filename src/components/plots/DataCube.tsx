@@ -1,7 +1,7 @@
 import {  useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { vertexShader, fragmentShader, fragOpt, orthoVertex } from '@/components/textures/shaders';
-import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
+import { useGlobalStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { invalidate, useFrame } from '@react-three/fiber';
 

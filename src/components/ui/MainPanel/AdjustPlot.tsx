@@ -1,6 +1,6 @@
 "use client";
 import React, {useState, useEffect} from 'react'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/utils/GlobalStates';
+import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/GlobalStates';
 import '../css/MainPanel.css'
 import { useShallow } from 'zustand/shallow';
 import { Slider as UISlider } from '@/components/ui/slider';

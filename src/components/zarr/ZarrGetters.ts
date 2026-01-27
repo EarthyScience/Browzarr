@@ -1,4 +1,4 @@
-import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/utils/GlobalStates";
+import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/GlobalStates";
 import * as zarr from 'zarrita';
 import { CompressArray, DecompressArray, ZarrError, RescaleArray, ToFloat16, copyChunkToArray, copyChunkToArray2D } from "./ZarrLoaderLRU";
 import { GetSize } from "./GetMetadata";

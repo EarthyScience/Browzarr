@@ -3,7 +3,7 @@ import { ArrayMinMax, GetCurrentArray } from '@/utils/HelperFuncs';
 import * as THREE from 'three';
 import React, { useEffect, useRef } from 'react';
 import { DataReduction, Convolve, Multivariate2D, Multivariate3D, CUMSUM3D, Convolve2D } from '../computation/webGPU';
-import { useGlobalStore, useAnalysisStore, usePlotStore } from '@/utils/GlobalStates';
+import { useGlobalStore, useAnalysisStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { GetArray } from '../zarr/ZarrLoaderLRU';
 import { CreateTexture } from '../textures';

@@ -2,7 +2,7 @@
 
 import React, {useEffect, useState} from 'react'
 import { GetColorMapTexture } from '@/components/textures';
-import { useGlobalStore } from '@/utils/GlobalStates';
+import { useGlobalStore } from '@/GlobalStates';
 import { colormaps } from '@/components/textures';
 import { useShallow } from 'zustand/shallow';
 import { MdOutlineSwapVert } from "react-icons/md";

@@ -3,7 +3,7 @@ import { useThree, useFrame } from '@react-three/fiber'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { parseTimeUnit } from '@/utils/HelperFuncs'
 import { Fragment } from 'react'
-import { useGlobalStore, usePlotStore } from '@/utils/GlobalStates'
+import { useGlobalStore, usePlotStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 
 

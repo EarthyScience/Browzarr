@@ -2,7 +2,7 @@
 
 import React, {useEffect, useMemo, useRef, useState} from 'react'
 import * as THREE from 'three'
-import { usePlotStore, useGlobalStore } from '@/utils/GlobalStates'
+import { usePlotStore, useGlobalStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow'
 import vertexShader from '@/components/textures/shaders/thickLineVert.glsl'
 import { PlotPoints } from './PlotPoints';
