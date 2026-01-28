@@ -55,6 +55,8 @@ type PlotState ={
   useOrtho: boolean;
   rotateFlat: boolean;
   fillValue: number | undefined,
+  coarsen: boolean, //Seperate from zarr store so dependencies don't update when changing coarsen in a menu
+  kernel:{kernelSize:number, kernelDepth:number}
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -165,6 +167,8 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   useOrtho: false,
   rotateFlat: false,
   fillValue: undefined,
+  coarsen: false,
+  kernel:{kernelDepth:1, kernelSize:1},
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),

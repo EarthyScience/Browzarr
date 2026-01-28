@@ -2,12 +2,12 @@
 
 import React, {useMemo, useEffect, useRef, useState} from 'react'
 import * as THREE from 'three'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/GlobalStates'
+import { useAnalysisStore, useGlobalStore, usePlotStore, useZarrStore } from '@/GlobalStates'
 import { vertShader } from '@/components/computation/shaders'
 import { flatFrag3D, fragmentFlat } from '../textures/shaders';
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
-import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 
 interface InfoSettersProps{
@@ -39,14 +39,14 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
     })))
 
     const {cScale, cOffset, animProg, nanTransparency, nanColor, 
-      zSlice, ySlice, xSlice, selectTS,
+      zSlice, ySlice, xSlice, selectTS, coarsen,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
       cOffset: state.cOffset, cScale: state.cScale,
       resetAnim: state.resetAnim, animate: state.animate,
       animProg: state.animProg, nanTransparency: state.nanTransparency,
       nanColor: state.nanColor, zSlice: state.zSlice,
       ySlice: state.ySlice, xSlice: state.xSlice,
-      selectTS: state.selectTS,
+      selectTS: state.selectTS, coarsen: state.coarsen,
       getColorIdx: state.getColorIdx,
       incrementColorIdx: state.incrementColorIdx
     })))
@@ -55,20 +55,27 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
       analysisMode: state.analysisMode,
       analysisArray: state.analysisArray
     })))
+    const {kernelSize, kernelDepth} = useZarrStore(useShallow(state => ({
+      kernelSize: state.kernelSize,
+      kernelDepth: state.kernelDepth
+    })))
 
     const shapeLength = dimArrays.length
-    const is4D = shapeLength === 4
 
-    const dimSlices = isFlat 
-      ? [
-        dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-        dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-      ]
-      : [
-        dimArrays[shapeLength - 3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-        dimArrays[shapeLength - 2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-        dimArrays[shapeLength - 1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined )
-      ]
+    const dimSlices = useMemo (() => {
+      let slices = isFlat 
+        ? [
+          dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+          dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+        ]
+        : [
+          dimArrays[shapeLength - 3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+          dimArrays[shapeLength - 2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+          dimArrays[shapeLength - 1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined )
+        ]
+      if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 ? kernelDepth : kernelSize)))
+      return slices
+    } ,[dimArrays, zSlice, ySlice, xSlice, coarsen])
 
     const shapeRatio = useMemo(()=> {
       if (dataShape.length == 2){

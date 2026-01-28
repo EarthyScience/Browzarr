@@ -11,7 +11,7 @@ import { Navbar, Colorbar, ExportExtent } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import AnalysisWG from './AnalysisWG';
-import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
+import { ParseExtent, GetDimInfo, coarsenFlatArray } from '@/utils/HelperFuncs';
 import ExportCanvas from '@/utils/ExportCanvas';
 import KeyFrames from '../ui/KeyFrames';
 
@@ -164,11 +164,14 @@ const Plot = () => {
       setPlotType: state.setPlotType
     })))
 
-    const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(useShallow(state=> ({
+    const {zSlice, ySlice, xSlice, reFetch, coarsen, kernelDepth, kernelSize} = useZarrStore(useShallow(state=> ({
       zSlice: state.zSlice,
       ySlice: state.ySlice,
       xSlice: state.xSlice,
-      reFetch: state.reFetch
+      reFetch: state.reFetch,
+      coarsen: state.coarsen,
+      kernelDepth: state.kernelDepth,
+      kernelSize: state.kernelSize
     })))
     const {analysisMode} = useAnalysisStore(useShallow(state => ({
       analysisMode: state.analysisMode
@@ -182,7 +185,8 @@ const Plot = () => {
     const [textures, setTextures] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null)
     const [show, setShow] = useState<boolean>(true) //Prevents rendering of 3D objects until data is fully loaded in
     const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
-  //DATA LOADING
+  
+    //DATA LOADING
   useEffect(() => {
     if (variable != "Default") {
       setShow(false)
@@ -234,10 +238,11 @@ const Plot = () => {
       })
       GetDimInfo(variable).then((arrays)=>{
         let {dimArrays, dimUnits, dimNames}= arrays;
+
         if (is4D){
-          dimArrays = dimArrays.slice();
-          dimUnits = dimUnits.slice();
-          dimNames = dimNames.slice();
+          dimArrays = dimArrays.slice(1);
+          dimUnits = dimUnits.slice(1);
+          dimNames = dimNames.slice(1);
         }
         setDimNames(dimNames)
         setDimArrays(dimArrays)

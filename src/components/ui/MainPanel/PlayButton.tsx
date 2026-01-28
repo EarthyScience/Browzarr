@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/shallow'
 import '../css/MainPanel.css'
 import { PiPlayPauseFill } from "react-icons/pi";
 import { FaPlay, FaPause, FaForwardStep , FaBackwardStep  } from "react-icons/fa6";
-import { parseLoc } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, parseLoc } from '@/utils/HelperFuncs';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
@@ -92,10 +92,11 @@ const ChunkVisualizer = ({zSlice, timeLength, chunkWidth, showNext, showPrev, an
 }
 
 const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: React.Dispatch<React.SetStateAction<boolean>>}) => {
-  const {animate, animProg, zSlice, setAnimate, setAnimProg} = usePlotStore(useShallow(state => ({
+  const {animate, animProg, zSlice, coarsen, setAnimate, setAnimProg} = usePlotStore(useShallow(state => ({
       animate: state.animate,
       animProg: state.animProg,
       zSlice: state.zSlice,
+      coarsen: state.coarsen,
       setAnimate: state.setAnimate,
       setAnimProg: state.setAnimProg
   })))
@@ -106,8 +107,9 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
       zMeta: state.zMeta,
       variable: state.variable,
   })))
-  const {reFetch, setZSlice, ReFetch} = useZarrStore(useShallow(state => ({
+  const {reFetch, kernelDepth, setZSlice, ReFetch} = useZarrStore(useShallow(state => ({
     reFetch: state.reFetch,
+    kernelDepth: state.kernelDepth,
     setZSlice: state.setZSlice,
     ReFetch: state.ReFetch
   })))
@@ -121,10 +123,14 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
 
   // TIME SLICE INFO
   const timeArray = dimArrays[dimArrays.length-3]
-  const timeSlice = timeArray?.slice(zSlice[0], zSlice[1] ?? undefined)
+  let timeSlice = timeArray?.slice(zSlice[0], zSlice[1] ?? undefined)
   const timeLength = timeArray?.length || 1
-  const sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0]
-
+  let sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0]
+  if (coarsen) {
+    timeSlice = coarsenFlatArray(timeSlice, kernelDepth)
+    sliceDist = Math.floor(sliceDist/kernelDepth)
+  }
+  
   // CHUNK INFO
   const [chunkTimeLength, chunkDivWidth, chunkSize] = useMemo(()=>{
     const meta = (zMeta as {name : string, chunks:number[], chunkSize:number}[])?.find(e => e.name === variable)
@@ -144,7 +150,6 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
       setMaxSize(maxSize + chunkSize)
     }
   }
-
   // ANIMATION LOOP
   useEffect(() => {
     if (!timeSlice?.length) return

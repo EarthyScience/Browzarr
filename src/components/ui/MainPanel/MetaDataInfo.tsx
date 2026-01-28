@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import Metadata, { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"
 import { Input } from "../input"
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { parseLoc, HandleKernelNums } from "@/utils/HelperFuncs"
+import { parseLoc, HandleCoarselNums } from "@/utils/HelperFuncs"
 import {
   Tooltip,
   TooltipContent,
@@ -82,6 +82,8 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const [cached, setCached] = useState(false)
   const [cachedChunks, setCachedChunks] = useState<string | null>(null)
   const [texCount, setTexCount] = useState(0)
+  const [displaySpat, setDisplaySpat] = useState(String(kernelSize))
+  const [displayDepth, setDisplayDepth] = useState(String(kernelDepth))
 
   // ---- Meta Info ---- //
   const {dimArrays, dimNames, dimUnits} = meta.dimInfo
@@ -235,16 +237,24 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
           <div className="grid grid-cols-2 gap-x-1">
             <div className="grid grid-cols-[auto_50px]">
               <b>Temporal Coarsening</b>
-              <Input type='number' min='2' step='2' value={String(kernelDepth)} 
-                onChange={e=>setKernelDepth(parseInt(e.target.value))}
-                onBlur={e=>setKernelDepth(Math.max(1, HandleKernelNums(e.target.value)+1))}
+              <Input type='number' min='1' value={displayDepth} 
+                onChange={e=>setDisplayDepth(e.target.value)}
+                onBlur={e=>{
+                  const value = Math.max(1, HandleCoarselNums(e.target.value))
+                  setKernelDepth(value)
+                  setDisplayDepth(String(value))
+                }}
               />
             </div>
             <div className="grid grid-cols-[auto_50px]">
               <b>Spatial Coarsening</b>
-              <Input type='number' min='2' step='2' value={String(kernelSize)} 
-                onChange={e=>setKernelSize(parseInt(e.target.value))}
-                onBlur={e=>setKernelSize(Math.max(1, HandleKernelNums(e.target.value)+1))}
+              <Input type='number' min='1' value={displaySpat} 
+                onChange={e=>setDisplaySpat(e.target.value)}
+                onBlur={e=>{
+                  const value = Math.max(1, HandleCoarselNums(e.target.value))
+                  setKernelSize(value)
+                  setDisplaySpat(String(value))
+                }}
               />
             </div>
           </div>
@@ -278,7 +288,6 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
                     value={[zSlice[0] ? zSlice[0] : 0, zSlice[1] ? zSlice[1] : zLength]}
                     step={chunkShape[0]}
                     onValueChange={(values: number[]) => setZSlice([values[0], values[1]] as [number, number | null])}
-                    
                   />
                   <div className="grid grid-cols-2">
                     <span >Min: <b>{parseLoc(dimArrays[is4D ? 1 : 0]?.[zSlice[0]]?? null, dimUnits[is4D ? 1 : 0]?? null)}</b>  <br /> Index: 
@@ -453,6 +462,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
             }
             setShowMeta(false)
             setOpenVariables(false)
+            usePlotStore.setState({coarsen, kernel:{kernelDepth, kernelSize}})
           }}
         >
         Plot

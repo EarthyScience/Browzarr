@@ -325,6 +325,16 @@ export function HandleKernelNums(e: string){
   }
 }
 
+export function HandleCoarselNums(e: string){
+  const newVal = parseInt(e);
+  if (newVal % 2 == 1){
+    return Math.max(1, newVal - 1 )
+  }
+  else{
+    return newVal
+  }
+}
+
 export function deg2rad(deg: number){
   return deg*Math.PI/180;
 }
@@ -365,6 +375,18 @@ export function coarsen3DArray(
     }
   }
   return outputArray
+}
+
+export function coarsenFlatArray(
+  array: any,
+  factor: number
+) {
+  const offset = Math.floor(factor/2);
+  const output = [];
+  for ( let i = offset; i < array.length; i += factor){
+    output.push(array[i])
+  }
+  return output
 }
 
 export function calculateStrides(
