@@ -106,7 +106,6 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
       zMeta: state.zMeta,
       variable: state.variable,
   })))
-
   const {reFetch, setZSlice, ReFetch} = useZarrStore(useShallow(state => ({
     reFetch: state.reFetch,
     setZSlice: state.setZSlice,

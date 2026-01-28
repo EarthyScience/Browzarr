@@ -152,43 +152,45 @@ export async function GetZarrArray(){
 
     const notChunked = fullShape.every((dim, idx) => dim > chunkShape[idx]);
 
-    //---- Strategy 1. Download whole array (No time chunks) ----//
-    if (notChunked){ 
-        setStatus("Downloading...")
-        const chunk = await fetchWithRetry(
-            () => is4D ? zarr.get(outVar, [idx4D, null, null, null]) : zarr.get(outVar),
-            `variable ${variable}`,
-            setStatus
-        );
-        if (!chunk) throw new Error('Unexpected: chunk was not assigned'); // This is redundant but satisfies TypeScript
-        if (chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
-            throw new Error("BigInt arrays not supported.");
-        }
-        const shape = is4D ? outVar.shape.slice(1) : outVar.shape;
-        const strides = chunk.stride;
-        setStrides(strides) // Need strides for the point cloud
+    // ---- I THINK THIS CODE IS REDUNDANT. BUT NEED TO TEST ON AN UNCHUNCKED ZARR DATASET TO BE SURE ---- //
 
-        let [typedArray, scalingFactor] = ToFloat16(chunk.data.map((v: number) => v === fillValue ? NaN : v) as Float32Array, null)
-        if (coarsen){
-            typedArray = await Convolve(typedArray, {shape, strides}, "Mean", {kernelSize, kernelDepth}) as Float16Array
-            const newShape = shape.map((dim, idx) => Math.ceil(dim / (idx === 0 ? kernelDepth : kernelSize)))
-            let newStrides = newShape.slice()
-            newStrides = newStrides.map((val, idx) => {
-                return newStrides.reduce((a, b, i) => a * (i < idx ? b : 1), 1)
-            })
-            console.log(newStrides)
-        }
-        const cacheChunk = {
-            data: compress ? CompressArray(typedArray, 7) : typedArray,
-            shape: chunk.shape,
-            stride: chunk.stride,
-            scaling: scalingFactor,
-            compressed: compress
-        }
-        cache.set(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`, cacheChunk)
-        setStatus(null)
-        return { data: typedArray, shape, dtype: outVar.dtype, scalingFactor };
-    } 
+    // //---- Strategy 1. Download whole array (No time chunks) ----//
+    // if (notChunked){ 
+    //     setStatus("Downloading...")
+    //     const chunk = await fetchWithRetry(
+    //         () => is4D ? zarr.get(outVar, [idx4D, null, null, null]) : zarr.get(outVar),
+    //         `variable ${variable}`,
+    //         setStatus
+    //     );
+    //     if (!chunk) throw new Error('Unexpected: chunk was not assigned'); // This is redundant but satisfies TypeScript
+    //     if (chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
+    //         throw new Error("BigInt arrays not supported.");
+    //     }
+    //     const shape = is4D ? outVar.shape.slice(1) : outVar.shape;
+    //     const strides = chunk.stride;
+    //     setStrides(strides) // Need strides for the point cloud
+
+    //     let [typedArray, scalingFactor] = ToFloat16(chunk.data.map((v: number) => v === fillValue ? NaN : v) as Float32Array, null)
+    //     if (coarsen){
+    //         typedArray = await Convolve(typedArray, {shape, strides}, "Mean", {kernelSize, kernelDepth}) as Float16Array
+    //         const newShape = shape.map((dim, idx) => Math.ceil(dim / (idx === 0 ? kernelDepth : kernelSize)))
+    //         let newStrides = newShape.slice()
+    //         newStrides = newStrides.map((val, idx) => {
+    //             return newStrides.reduce((a, b, i) => a * (i < idx ? b : 1), 1)
+    //         })
+    //         console.log(newStrides)
+    //     }
+    //     const cacheChunk = {
+    //         data: compress ? CompressArray(typedArray, 7) : typedArray,
+    //         shape: chunk.shape,
+    //         stride: chunk.stride,
+    //         scaling: scalingFactor,
+    //         compressed: compress
+    //     }
+    //     cache.set(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`, cacheChunk)
+    //     setStatus(null)
+    //     return { data: typedArray, shape, dtype: outVar.dtype, scalingFactor };
+    // } 
 
     //---- Strategy 2. Download Chunks ----//
     const is2D = outVar.shape.length === 2;
@@ -205,7 +207,7 @@ export async function GetZarrArray(){
         return { start, end, size };
     };
 
-    // ---- Chunk Span ----//
+    //---- Chunk Span ----//
     const xDim = calcDim(xSlice, 2, chunkShape[2]);
     const yDim = calcDim(ySlice, 1, chunkShape[1]);
     const zDim = is2D ? { start: 0, end: 1, size: 0 } : calcDim(zSlice, 0, chunkShape[0]);
@@ -245,8 +247,11 @@ export async function GetZarrArray(){
                     ? `${initStore}_${variable}_${idx4D}`
                     : `${initStore}_${variable}`
                 const cacheName = `${cacheBase}_chunk_${chunkID}`
-                if (cache.has(cacheName)){
-                    const cachedChunk = cache.get(cacheName)
+                const cachedChunk = cache.get(cacheName)
+                const isCacheValid = cachedChunk && 
+                                    cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) && // If the data is coarsened. Make sure it's the same as current coarsen. OTherwise refetch
+                                    cachedChunk.kernel.kernelDepth === (coarsen ? kernelSize : undefined) ;
+                if (isCacheValid){
                     const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed. Gemini thinks the .slice() helps with garbage collector as it doesn't maintain a reference to the original array
                     copyChunkToArray(
                         chunkData,
@@ -314,7 +319,12 @@ export async function GetZarrArray(){
                         shape: chunkShape,
                         stride: chunkStride,
                         scaling: scalingFactor,
-                        compressed: compress
+                        compressed: compress,
+                        coarsened: coarsen,
+                        kernel: {
+                            kernelDepth: coarsen ? kernelDepth : undefined,
+                            kernelSize: coarsen ? kernelSize : undefined
+                        }
                     }
                     cache.set(cacheName,cacheChunk)
                     setProgress(Math.round(iter/totalChunksToLoad*100)) // Progress Bar

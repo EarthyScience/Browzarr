@@ -1,5 +1,5 @@
 import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/GlobalStates"
-import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, copyChunkToArray2D, RescaleArray } from "./ZarrLoaderLRU";
+import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, RescaleArray } from "./ZarrLoaderLRU";
 import { Convolve } from "../computation/webGPU";
 import {coarsen3DArray, calculateStrides} from '@/utils/HelperFuncs'
 
@@ -49,7 +49,7 @@ export async function GetNCArray() {
 	const {cache} = useCacheStore.getState();
 
     const varInfo = await ncModule.getVariableInfo(variable)
-    const {shape, chunked} = varInfo
+    const {shape} = varInfo
     const chunkShape = is4D 
         ? [varInfo.chunks[1], varInfo.chunks[2], varInfo.chunks[3]]
         : varInfo.chunks
@@ -62,19 +62,6 @@ export async function GetNCArray() {
     }
     if ("_FillValue" in atts){
         fillValue = !Number.isNaN(atts["_FillValue"][0]) ? atts["_FillValue"][0] : fillValue
-    }
-
-    if (!chunked){
-        setStatus("Downloading...");
-        const array = await ncModule.getVariableArray(variable)
-        const [typedArray, scalingFactor] = ToFloat16(array, null)
-        setStatus(null);
-        return {
-            data: typedArray,
-            shape: varInfo.shape,
-            dtype: varInfo.dtype,
-            scalingFactor
-        }
     }
 
     const calcDim = (slice: [number, number | null], dimIdx: number, chunkDim: number) => {
@@ -125,8 +112,12 @@ export async function GetNCArray() {
                     ? `${initStore}_${variable}_${idx4D}`
                     : `${initStore}_${variable}`
                 const cacheName = `${cacheBase}_chunk_${chunkID}`
-                if (cache.has(cacheName)){
-                    const cachedChunk = cache.get(cacheName)
+                const cachedChunk = cache.get(cacheName);
+
+                const isCacheValid = cachedChunk && 
+                                    cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) && // If the data is coarsened. Make sure it's the same as current coarsen. OTherwise refetch
+                                    cachedChunk.kernel.kernelDepth === (coarsen ? kernelSize : undefined) ;
+                if (isCacheValid){
                     const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed. Gemini thinks the .slice() helps with garbage collector as it doesn't maintain a reference to the original array
                     copyChunkToArray(
                         chunkData,
@@ -182,7 +173,6 @@ export async function GetNCArray() {
                             }
                         }
                     }
-
                     copyChunkToArray(
                         chunkF16,
                         thisShape,
@@ -198,7 +188,12 @@ export async function GetNCArray() {
                         shape: chunkShape,
                         stride: chunkStride,
                         scaling: scalingFactor,
-                        compressed: compress
+                        compressed: compress,
+                        coarsened: coarsen,
+                        kernel: {
+                            kernelDepth: coarsen ? kernelDepth : undefined,
+                            kernelSize: coarsen ? kernelSize : undefined
+                        }
                     }
                     cache.set(cacheName,cacheChunk)
                     setProgress(Math.round(iter/totalChunksToLoad*100)) // Progress Bar

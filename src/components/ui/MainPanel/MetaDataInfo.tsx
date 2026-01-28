@@ -140,10 +140,12 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
       const xChunksNeeded = Math.ceil(x.steps / meta.chunks[chunkIndices[0]]);
       const yChunksNeeded = Math.ceil(y.steps / meta.chunks[chunkIndices[1]]);
       const zChunksNeeded = Math.ceil(z.steps / meta.chunks[chunkIndices[2]]);
+
+      const size = xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize
       
-      return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
+      return size / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1)
     }
-  }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D]);
+  }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D, coarsen]);
   
   const cachedSize = useMemo(()=>{
     const thisDtype = meta.dtype as string
