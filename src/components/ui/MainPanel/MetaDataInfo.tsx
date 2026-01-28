@@ -147,7 +147,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
       
       return size / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1)
     }
-  }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D, coarsen]);
+  }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D, coarsen, kernelSize, kernelDepth]);
   
   const cachedSize = useMemo(()=>{
     const thisDtype = meta.dtype as string
@@ -237,25 +237,26 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
           <div className="grid grid-cols-2 gap-x-1">
             <div className="grid grid-cols-[auto_50px]">
               <b>Temporal Coarsening</b>
-              <Input type='number' min='1' value={displayDepth} 
-                onChange={e=>setDisplayDepth(e.target.value)}
-                onBlur={e=>{
-                  const value = Math.max(1, HandleCoarselNums(e.target.value))
-                  setKernelDepth(value)
-                  setDisplayDepth(String(value))
+              <Input type='number' min='0' step={1} value={displayDepth} 
+                onChange={e=>{
+                  const val = parseInt(e.target.value)
+                  setDisplayDepth(e.target.value)
+                  setKernelDepth(Math.pow(2,val))
                 }}
               />
             </div>
             <div className="grid grid-cols-[auto_50px]">
               <b>Spatial Coarsening</b>
-              <Input type='number' min='1' value={displaySpat} 
-                onChange={e=>setDisplaySpat(e.target.value)}
-                onBlur={e=>{
-                  const value = Math.max(1, HandleCoarselNums(e.target.value))
-                  setKernelSize(value)
-                  setDisplaySpat(String(value))
+              <Input type='number' min='0' step={1} value={displaySpat} 
+                onChange={e=>{
+                  const val = parseInt(e.target.value)
+                  setDisplaySpat(e.target.value)
+                  setKernelSize(Math.pow(2, val))
                 }}
               />
+            </div>
+            <div className="col-span-2 font-small mt-2 flex justify-center items-center">
+                <i>Values represent 2<sup>n</sup></i>
             </div>
           </div>
         </Hider>
