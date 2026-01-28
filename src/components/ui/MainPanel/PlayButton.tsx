@@ -92,11 +92,12 @@ const ChunkVisualizer = ({zSlice, timeLength, chunkWidth, showNext, showPrev, an
 }
 
 const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: React.Dispatch<React.SetStateAction<boolean>>}) => {
-  const {animate, animProg, zSlice, coarsen, setAnimate, setAnimProg} = usePlotStore(useShallow(state => ({
+  const {animate, animProg, zSlice, coarsen, kernel, setAnimate, setAnimProg} = usePlotStore(useShallow(state => ({
       animate: state.animate,
       animProg: state.animProg,
       zSlice: state.zSlice,
       coarsen: state.coarsen,
+      kernel: state.kernel,
       setAnimate: state.setAnimate,
       setAnimProg: state.setAnimProg
   })))
@@ -107,9 +108,8 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
       zMeta: state.zMeta,
       variable: state.variable,
   })))
-  const {reFetch, kernelDepth, setZSlice, ReFetch} = useZarrStore(useShallow(state => ({
+  const {reFetch, setZSlice, ReFetch} = useZarrStore(useShallow(state => ({
     reFetch: state.reFetch,
-    kernelDepth: state.kernelDepth,
     setZSlice: state.setZSlice,
     ReFetch: state.ReFetch
   })))
@@ -127,8 +127,8 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
   const timeLength = timeArray?.length || 1
   let sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0]
   if (coarsen) {
-    timeSlice = coarsenFlatArray(timeSlice, kernelDepth)
-    sliceDist = Math.floor(sliceDist/kernelDepth)
+    timeSlice = coarsenFlatArray(timeSlice, kernel.kernelDepth)
+    sliceDist = Math.floor(sliceDist/kernel.kernelDepth)
   }
   
   // CHUNK INFO
@@ -236,7 +236,7 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
         </div>
 
         {/* VISUALIZER */}
-        {(sliceDist < timeLength) && <ChunkVisualizer
+        {(sliceDist < Math.floor(timeLength / (coarsen ? kernel.kernelDepth : 1))) && <ChunkVisualizer
           zSlice={zSlice}
           timeLength={timeLength}
           chunkWidth={chunkDivWidth}
