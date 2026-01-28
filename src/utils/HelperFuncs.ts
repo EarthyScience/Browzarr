@@ -348,7 +348,7 @@ export function coarsen3DArray(
   newSize: number
 ) {
   const [dimZ, dimY, dimX] = shape;
-  const [strideX, strideY, strideZ] = strides;
+  const [strideZ, strideY, strideX] = strides;
   const spatialOffset = Math.floor(spatialFactor / 2);
   const depthOffset = Math.floor(depthFactor / 2);
   const outputArray = new Float16Array(newSize)
@@ -370,10 +370,8 @@ export function coarsen3DArray(
 export function calculateStrides(
   shape: number[]
 ){
-  let newStrides = shape.slice()
-  newStrides = newStrides.map((_val:number, idx: number) => {
-      return newStrides.reduce((a: number, b: number, i: number) => a * (i < idx ? b : 1), 1)
+  const newStrides = shape.map((_val, idx) => {
+    return shape.reduce((a: number, b: number, i: number) => a * (i > idx ? b : 1), 1)
   })
-  newStrides.reverse()
   return newStrides
 }

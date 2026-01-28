@@ -91,8 +91,8 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const zLength = useMemo(() => meta.shape ? meta.shape[shapeLength-3] : 0, [meta])
   const yLength = useMemo(() => meta.shape ? meta.shape[shapeLength-2] : 0, [meta])
   const xLength = useMemo(() => meta.shape ? meta.shape[shapeLength-1] : 0, [meta])
-  const dataShape = coarsen ? meta.shape.map((val: number, idx: number) => idx === 0 ? val/kernelDepth : val/kernelSize): meta.shape
-  const chunkShape = coarsen ? meta.chunks.map((val: number, idx: number) => idx === 0 ? val/kernelDepth : val/kernelSize): meta.chunks
+  const dataShape = coarsen ? meta.shape.map((val: number, idx: number) => Math.floor(idx === 0 ? val/kernelDepth : val/kernelSize)): meta.shape
+  const chunkShape = coarsen ? meta.chunks.map((val: number, idx: number) => Math.floor(idx === 0 ? val/kernelDepth : val/kernelSize)): meta.chunks
 
   // ---- Booleans ---- //
   const is3D = useMemo(() => meta.shape ? meta.shape.length == 3 : false, [meta])
@@ -235,14 +235,14 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
               <b>Temporal Coarsening</b>
               <Input type='number' min='2' step='2' value={String(kernelDepth)} 
                 onChange={e=>setKernelDepth(parseInt(e.target.value))}
-                onBlur={e=>setKernelDepth(Math.max(2, HandleKernelNums(e.target.value)))}
+                onBlur={e=>setKernelDepth(Math.max(1, HandleKernelNums(e.target.value)+1))}
               />
             </div>
             <div className="grid grid-cols-[auto_50px]">
               <b>Spatial Coarsening</b>
               <Input type='number' min='2' step='2' value={String(kernelSize)} 
                 onChange={e=>setKernelSize(parseInt(e.target.value))}
-                onBlur={e=>setKernelSize(Math.max(2, HandleKernelNums(e.target.value)))}
+                onBlur={e=>setKernelSize(Math.max(1, HandleKernelNums(e.target.value)+1))}
               />
             </div>
           </div>

@@ -205,6 +205,7 @@ export async function GetZarrArray(){
         return { start, end, size };
     };
 
+    // ---- Chunk Span ----//
     const xDim = calcDim(xSlice, 2, chunkShape[2]);
     const yDim = calcDim(ySlice, 1, chunkShape[1]);
     const zDim = is2D ? { start: 0, end: 1, size: 0 } : calcDim(zSlice, 0, chunkShape[0]);
@@ -214,6 +215,7 @@ export async function GetZarrArray(){
     if (coarsen) {
         outputShape = outputShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
     } 
+
     const totalElements = outputShape.reduce((a ,b) => a * b, 1)
     const destStride = calculateStrides(outputShape)
     setStrides(destStride);
@@ -226,7 +228,6 @@ export async function GetZarrArray(){
         throw Error("Cannot allocate unbroken memory segment for array.")
     }
     const typedArray = new Float16Array(totalElements);
-
     // State for the loop
     let scalingFactor: number | null = null;
     const totalChunksToLoad = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
@@ -279,19 +280,11 @@ export async function GetZarrArray(){
                     let [chunkF16, newScalingFactor] = ToFloat16(originalData.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
                     if (coarsen){
                         chunkF16 = await Convolve(chunkF16, {shape:chunkShape, strides:chunkStride}, "Mean3D", {kernelSize, kernelDepth}) as Float16Array
-                        
-                        thisShape = chunkShape.map((dim: number, idx: number) => Math.ceil(dim / (idx === 0 ? kernelDepth : kernelSize)))
+                        thisShape = chunkShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
                         const newSize = thisShape.reduce((a: number, b: number) => a*b, 1)
                         chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as [number, number, number], kernelSize, kernelDepth, newSize)
-                        
-                        let newStrides = thisShape.slice()
-                        newStrides = newStrides.map((val:number, idx: number) => {
-                            return newStrides.reduce((a: number, b: number, i: number) => a * (i < idx ? b : 1), 1)
-                        })
-                        newStrides.reverse()
-                        chunkStride = newStrides
+                        chunkStride = calculateStrides(thisShape)
                     }
-                    console.log(chunkF16)
                     if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
                         if (scalingFactor == null || newScalingFactor > scalingFactor){ 
                             const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
@@ -306,7 +299,6 @@ export async function GetZarrArray(){
                             }
                         }
                     }
-                    
                     copyChunkToArray(
                         chunkF16,
                         thisShape,
