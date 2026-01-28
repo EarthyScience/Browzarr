@@ -192,8 +192,13 @@ export function ParseExtent(dimUnits: string[], dimArrays: number[][]){
     const maxLat = tempArrs[0][ySlice[1]??tempArrs[0].length-1]
     let minLon = tempArrs[1][xSlice[0]]
     let maxLon = tempArrs[1][xSlice[1]?? tempArrs[1].length-1]
-    minLon = minLon > 180 ? minLon - 360 : minLon
-    maxLon = maxLon > 180 ? maxLon - 360 : maxLon
+    if (maxLon > 180){
+      maxLon -= 180
+      minLon -=180
+      usePlotStore.setState({is360Deg:true})
+    } else{
+      usePlotStore.setState({is360Deg:false})
+    }
     setLonExtent([minLon, maxLon])
     setLatExtent([minLat, maxLat])
 
