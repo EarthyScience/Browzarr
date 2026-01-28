@@ -77,7 +77,7 @@ void main() {
         vec2 lonlat = giveLonLat(instanceUV);
         vec3 spherePosition = givePosition(lonlat);
         float latitudeFactor = cos(lonlat.y); // Maps -1..1 to proper latitude
-        float widthFactor = abs(lonBounds.y-lonBounds.x)/PI;
+        float widthFactor = abs(lonBounds.y-lonBounds.x)/(2.0*PI);
         float heightFactor = (dispStrength - displaceZero) * displacement;
         vec3 scaledPosition = position;
         scaledPosition.x *= latitudeFactor * widthFactor;
