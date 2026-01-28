@@ -51,12 +51,6 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
   const shapeLength = dimArrays.length
 
-  const dimLengths = [
-    (zSlice[1] ? zSlice[1] : dimArrays[shapeLength - 3].length) - zSlice[0],
-    (ySlice[1] ? ySlice[1] : dimArrays[shapeLength - 2].length) - ySlice[0],
-    (xSlice[1] ? xSlice[1] : dimArrays[shapeLength - 1].length) - xSlice[0],
-  ]
-
   const dimSlices = useMemo(()=> {
     let slices = [
       dimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
@@ -69,6 +63,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     }
     return slices
   },[revY, dimArrays, zSlice, ySlice, xSlice, coarsen])
+  const dimLengths = dimSlices.map(val => val.length)
 
   const [xResolution, setXResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [yResolution, setYResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)

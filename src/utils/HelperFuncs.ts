@@ -383,11 +383,12 @@ export function coarsenFlatArray(
 ) {
   const offset = Math.floor(factor/2);
   const output = [];
-  for ( let i = offset; i < array.length; i += factor){
+  for ( let i = offset; i < array.length-offset; i += factor){
     output.push(array[i])
   }
   return output
 }
+
 
 export function calculateStrides(
   shape: number[]
