@@ -1,7 +1,9 @@
 import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/GlobalStates";
 import * as zarr from 'zarrita';
-import { CompressArray, DecompressArray, ZarrError, RescaleArray, ToFloat16, copyChunkToArray, copyChunkToArray2D } from "./ZarrLoaderLRU";
+import { CompressArray, DecompressArray, ZarrError, RescaleArray, ToFloat16, copyChunkToArray } from "./ZarrLoaderLRU";
 import { GetSize } from "./GetMetadata";
+import { Convolve } from "../computation/webGPU";
+import { coarsen3DArray, calculateStrides } from "@/utils/HelperFuncs";
 
 export async function GetZarrDims(variable: string){
     const {cache} = useCacheStore.getState();
@@ -119,10 +121,9 @@ export async function GetStore(storePath: string): Promise<zarr.Group<zarr.Fetch
         }
 }
 
-
 export async function GetZarrArray(){
     const {is4D, idx4D, initStore, variable, setProgress, setStrides, setStatus} = useGlobalStore.getState();
-	const {compress, xSlice, ySlice, zSlice, currentStore, setCurrentChunks, setArraySize} = useZarrStore.getState()
+	const {compress, xSlice, ySlice, zSlice, currentStore, coarsen, kernelSize, kernelDepth, setCurrentChunks, setArraySize} = useZarrStore.getState()
 	const {cache} = useCacheStore.getState();
 
     //---- 2. Open Zarr Resource ----//
@@ -142,42 +143,54 @@ export async function GetZarrArray(){
     }
     
     //---- 3. Determine Structure ----//
-    const fullShape = outVar.shape;
+    let fullShape = outVar.shape;
     let [_totalSize, _chunkSize, chunkShape] = GetSize(outVar);
 
     if (is4D){
         chunkShape = chunkShape.slice(1);
     }
 
-    const hasTimeChunks = is4D ? fullShape[1]/chunkShape[0] > 1 : fullShape[0]/chunkShape[0] > 1
+    const notChunked = fullShape.every((dim, idx) => dim > chunkShape[idx]);
 
-    //---- Strategy 1. Download whole array (No time chunks) ----//
-    if (!hasTimeChunks){ 
-        setStatus("Downloading...")
-        const chunk = await fetchWithRetry(
-            () => is4D ? zarr.get(outVar, [idx4D, null, null, null]) : zarr.get(outVar),
-            `variable ${variable}`,
-            setStatus
-        );
-        if (!chunk) throw new Error('Unexpected: chunk was not assigned'); // This is redundant but satisfies TypeScript
-        if (chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
-            throw new Error("BigInt arrays not supported.");
-        }
-        const shape = is4D ? outVar.shape.slice(1) : outVar.shape;
-        
-        setStrides(chunk.stride) // Need strides for the point cloud
-        const [typedArray, scalingFactor] = ToFloat16(chunk.data.map((v: number) => v === fillValue ? NaN : v) as Float32Array, null)
-        const cacheChunk = {
-            data: compress ? CompressArray(typedArray, 7) : typedArray,
-            shape: chunk.shape,
-            stride: chunk.stride,
-            scaling: scalingFactor,
-            compressed: compress
-        }
-        cache.set(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`, cacheChunk)
-        setStatus(null)
-        return { data: typedArray, shape, dtype: outVar.dtype, scalingFactor };
-    } 
+    // ---- I THINK THIS CODE IS REDUNDANT. BUT NEED TO TEST ON AN UNCHUNCKED ZARR DATASET TO BE SURE ---- //
+
+    // //---- Strategy 1. Download whole array (No time chunks) ----//
+    // if (notChunked){ 
+    //     setStatus("Downloading...")
+    //     const chunk = await fetchWithRetry(
+    //         () => is4D ? zarr.get(outVar, [idx4D, null, null, null]) : zarr.get(outVar),
+    //         `variable ${variable}`,
+    //         setStatus
+    //     );
+    //     if (!chunk) throw new Error('Unexpected: chunk was not assigned'); // This is redundant but satisfies TypeScript
+    //     if (chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
+    //         throw new Error("BigInt arrays not supported.");
+    //     }
+    //     const shape = is4D ? outVar.shape.slice(1) : outVar.shape;
+    //     const strides = chunk.stride;
+    //     setStrides(strides) // Need strides for the point cloud
+
+    //     let [typedArray, scalingFactor] = ToFloat16(chunk.data.map((v: number) => v === fillValue ? NaN : v) as Float32Array, null)
+    //     if (coarsen){
+    //         typedArray = await Convolve(typedArray, {shape, strides}, "Mean", {kernelSize, kernelDepth}) as Float16Array
+    //         const newShape = shape.map((dim, idx) => Math.ceil(dim / (idx === 0 ? kernelDepth : kernelSize)))
+    //         let newStrides = newShape.slice()
+    //         newStrides = newStrides.map((val, idx) => {
+    //             return newStrides.reduce((a, b, i) => a * (i < idx ? b : 1), 1)
+    //         })
+    //         console.log(newStrides)
+    //     }
+    //     const cacheChunk = {
+    //         data: compress ? CompressArray(typedArray, 7) : typedArray,
+    //         shape: chunk.shape,
+    //         stride: chunk.stride,
+    //         scaling: scalingFactor,
+    //         compressed: compress
+    //     }
+    //     cache.set(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`, cacheChunk)
+    //     setStatus(null)
+    //     return { data: typedArray, shape, dtype: outVar.dtype, scalingFactor };
+    // } 
 
     //---- Strategy 2. Download Chunks ----//
     const is2D = outVar.shape.length === 2;
@@ -194,17 +207,19 @@ export async function GetZarrArray(){
         return { start, end, size };
     };
 
+    //---- Chunk Span ----//
     const xDim = calcDim(xSlice, 2, chunkShape[2]);
     const yDim = calcDim(ySlice, 1, chunkShape[1]);
     const zDim = is2D ? { start: 0, end: 1, size: 0 } : calcDim(zSlice, 0, chunkShape[0]);
 
     // Setup Output Array
-    const outputShape = is2D ? [yDim.size, xDim.size] : [zDim.size, yDim.size, xDim.size];
-    const totalElements = is2D ? yDim.size * xDim.size : zDim.size * yDim.size * xDim.size;
-    const destStride = is2D 
-        ? [outputShape[1], 1] 
-        : [outputShape[1] * outputShape[2], outputShape[2], 1];
+    let outputShape = is2D ? [yDim.size, xDim.size] : [zDim.size, yDim.size, xDim.size];
+    if (coarsen) {
+        outputShape = outputShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
+    } 
 
+    const totalElements = outputShape.reduce((a ,b) => a * b, 1)
+    const destStride = calculateStrides(outputShape)
     setStrides(destStride);
     if (!is2D) {
         setArraySize(totalElements);
@@ -215,7 +230,6 @@ export async function GetZarrArray(){
         throw Error("Cannot allocate unbroken memory segment for array.")
     }
     const typedArray = new Float16Array(totalElements);
-
     // State for the loop
     let scalingFactor: number | null = null;
     const totalChunksToLoad = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
@@ -233,8 +247,11 @@ export async function GetZarrArray(){
                     ? `${initStore}_${variable}_${idx4D}`
                     : `${initStore}_${variable}`
                 const cacheName = `${cacheBase}_chunk_${chunkID}`
-                if (cache.has(cacheName)){
-                    const cachedChunk = cache.get(cacheName)
+                const cachedChunk = cache.get(cacheName)
+                const isCacheValid = cachedChunk && 
+                                    cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) && // If the data is coarsened. Make sure it's the same as current coarsen. OTherwise refetch
+                                    cachedChunk.kernel.kernelDepth === (coarsen ? kernelSize : undefined) ;
+                if (isCacheValid){
                     const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed. Gemini thinks the .slice() helps with garbage collector as it doesn't maintain a reference to the original array
                     copyChunkToArray(
                         chunkData,
@@ -263,8 +280,16 @@ export async function GetZarrArray(){
                         throw new Error("BigInt arrays are not supported for conversion to Float32Array.");
                     } 
                     const originalData = chunk.data as Float32Array;
-                    const chunkStride = chunk.stride;
-                    const [chunkF16, newScalingFactor] = ToFloat16(originalData.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
+                    let chunkStride = chunk.stride;
+                    let thisShape = chunkShape
+                    let [chunkF16, newScalingFactor] = ToFloat16(originalData.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
+                    if (coarsen){
+                        chunkF16 = await Convolve(chunkF16, {shape:chunkShape, strides:chunkStride}, "Mean3D", {kernelSize, kernelDepth}) as Float16Array
+                        thisShape = chunkShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
+                        const newSize = thisShape.reduce((a: number, b: number) => a*b, 1)
+                        chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as [number, number, number], kernelSize, kernelDepth, newSize)
+                        chunkStride = calculateStrides(thisShape)
+                    }
                     if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
                         if (scalingFactor == null || newScalingFactor > scalingFactor){ 
                             const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
@@ -281,7 +306,7 @@ export async function GetZarrArray(){
                     }
                     copyChunkToArray(
                         chunkF16,
-                        chunkShape,
+                        thisShape,
                         chunkStride as [number, number, number],
                         typedArray,
                         outputShape,
@@ -294,7 +319,12 @@ export async function GetZarrArray(){
                         shape: chunkShape,
                         stride: chunkStride,
                         scaling: scalingFactor,
-                        compressed: compress
+                        compressed: compress,
+                        coarsened: coarsen,
+                        kernel: {
+                            kernelDepth: coarsen ? kernelDepth : undefined,
+                            kernelSize: coarsen ? kernelSize : undefined
+                        }
                     }
                     cache.set(cacheName,cacheChunk)
                     setProgress(Math.round(iter/totalChunksToLoad*100)) // Progress Bar

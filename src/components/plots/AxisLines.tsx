@@ -1,6 +1,6 @@
 "use client";
 
-import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore } from '@/GlobalStates'
+import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/GlobalStates'
 import React, {useState, useMemo} from 'react'
 import { useShallow } from 'zustand/shallow'
 import { Text } from '@react-three/drei'
@@ -8,7 +8,7 @@ import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineMaterial } from 'three-stdlib';
 import { useFrame } from '@react-three/fiber';
-import { parseLoc } from '@/utils/HelperFuncs';
+import { parseLoc, coarsenFlatArray } from '@/utils/HelperFuncs';
 import { useCSSVariable } from '../ui';
 import * as THREE from 'three'
 
@@ -37,14 +37,13 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     is4D: state.is4D
   })))
 
-  const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
+  const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice, coarsen} = usePlotStore(useShallow(state => ({
     xRange: state.xRange, yRange: state.yRange,
     zRange: state.zRange, plotType: state.plotType,
     timeScale: state.timeScale, animProg: state.animProg,
     zSlice: state.zSlice, ySlice: state.ySlice,
-    xSlice: state.xSlice, 
+    xSlice: state.xSlice, coarsen: state.coarsen,
   })))
-
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow( state => ({
     hideAxis: state.hideAxis,
     hideAxisControls: state.hideAxisControls
@@ -52,17 +51,19 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
   const shapeLength = dimArrays.length
 
-  const dimLengths = [
-    (zSlice[1] ? zSlice[1] : dimArrays[shapeLength - 3].length) - zSlice[0],
-    (ySlice[1] ? ySlice[1] : dimArrays[shapeLength - 2].length) - ySlice[0],
-    (xSlice[1] ? xSlice[1] : dimArrays[shapeLength - 1].length) - xSlice[0],
-  ]
-
-  const dimSlices = [
-    dimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-    revY ? dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-    dimArrays[shapeLength-1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
-  ]
+  const dimSlices = useMemo(()=> {
+    let slices = [
+      dimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+      revY ? dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+      dimArrays[shapeLength-1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+    ] 
+    if (coarsen) {
+      const {kernelDepth, kernelSize} = useZarrStore.getState()
+      slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 ? kernelDepth : kernelSize)))
+    }
+    return slices
+  },[revY, dimArrays, zSlice, ySlice, xSlice, coarsen])
+  const dimLengths = dimSlices.map(val => val.length)
 
   const [xResolution, setXResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [yResolution, setYResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)

@@ -1,6 +1,7 @@
 import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/GlobalStates"
-import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, copyChunkToArray2D, RescaleArray } from "./ZarrLoaderLRU";
+import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, RescaleArray } from "./ZarrLoaderLRU";
 import { Convolve } from "../computation/webGPU";
+import {coarsen3DArray, calculateStrides} from '@/utils/HelperFuncs'
 
 export async function GetNCDims(variable: string){
     const {ncModule} = useZarrStore.getState()
@@ -44,11 +45,11 @@ export async function GetNCMetadata(thisVariable? : string){
 
 export async function GetNCArray() {
     const {is4D, idx4D, initStore, variable, setProgress, setStrides, setStatus} = useGlobalStore.getState();
-	const {compress, xSlice, ySlice, zSlice, ncModule, setCurrentChunks, setArraySize} = useZarrStore.getState()
+	const {compress, xSlice, ySlice, zSlice, ncModule, coarsen, kernelDepth, kernelSize, setCurrentChunks, setArraySize} = useZarrStore.getState()
 	const {cache} = useCacheStore.getState();
 
     const varInfo = await ncModule.getVariableInfo(variable)
-    const {shape, chunked} = varInfo
+    const {shape} = varInfo
     const chunkShape = is4D 
         ? [varInfo.chunks[1], varInfo.chunks[2], varInfo.chunks[3]]
         : varInfo.chunks
@@ -61,19 +62,6 @@ export async function GetNCArray() {
     }
     if ("_FillValue" in atts){
         fillValue = !Number.isNaN(atts["_FillValue"][0]) ? atts["_FillValue"][0] : fillValue
-    }
-
-    if (!chunked){
-        setStatus("Downloading...");
-        const array = await ncModule.getVariableArray(variable)
-        const [typedArray, scalingFactor] = ToFloat16(array, null)
-        setStatus(null);
-        return {
-            data: typedArray,
-            shape: varInfo.shape,
-            dtype: varInfo.dtype,
-            scalingFactor
-        }
     }
 
     const calcDim = (slice: [number, number | null], dimIdx: number, chunkDim: number) => {
@@ -89,11 +77,13 @@ export async function GetNCArray() {
     const zDim = is2D ? { start: 0, end: 1, size: 0 } : calcDim(zSlice, 0, chunkShape[0]);
 
     // Setup Output Array
-    const outputShape = is2D ? [yDim.size, xDim.size] : [zDim.size, yDim.size, xDim.size];
-    const totalElements = is2D ? yDim.size * xDim.size : zDim.size * yDim.size * xDim.size;
-    const destStride = is2D 
-        ? [outputShape[1], 1] 
-        : [outputShape[1] * outputShape[2], outputShape[2], 1];
+    let outputShape = is2D ? [yDim.size, xDim.size] : [zDim.size, yDim.size, xDim.size];
+    if (coarsen) {
+        outputShape = outputShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
+    } 
+    const totalElements = outputShape.reduce((a ,b) => a * b, 1)
+    const destStride = calculateStrides(outputShape)
+
     setStrides(destStride);
     if (!is2D) {
         setArraySize(totalElements);
@@ -122,8 +112,12 @@ export async function GetNCArray() {
                     ? `${initStore}_${variable}_${idx4D}`
                     : `${initStore}_${variable}`
                 const cacheName = `${cacheBase}_chunk_${chunkID}`
-                if (cache.has(cacheName)){
-                    const cachedChunk = cache.get(cacheName)
+                const cachedChunk = cache.get(cacheName);
+
+                const isCacheValid = cachedChunk && 
+                                    cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) && // If the data is coarsened. Make sure it's the same as current coarsen. OTherwise refetch
+                                    cachedChunk.kernel.kernelDepth === (coarsen ? kernelSize : undefined) ;
+                if (isCacheValid){
                     const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed. Gemini thinks the .slice() helps with garbage collector as it doesn't maintain a reference to the original array
                     copyChunkToArray(
                         chunkData,
@@ -153,10 +147,18 @@ export async function GetNCArray() {
                     }
                     const [starts, counts] = getStartsAndCounts();
                     const chunkArray = await ncModule.getSlicedVariableArray(variable, starts, counts)
-                    const chunkStride = is4D 
+                    let chunkStride = is4D 
                         ? [counts[3] * counts[2], counts[3], 1] 
                         : [counts[2] * counts[1], counts[2], 1]
-                    const [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
+                    let thisShape = chunkShape
+                    let [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
+                    if (coarsen){
+                        chunkF16 = await Convolve(chunkF16, {shape:chunkShape, strides:chunkStride}, "Mean3D", {kernelSize, kernelDepth}) as Float16Array
+                        thisShape = chunkShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
+                        const newSize = thisShape.reduce((a: number, b: number) => a*b, 1)
+                        chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as [number, number, number], kernelSize, kernelDepth, newSize)
+                        chunkStride = calculateStrides(thisShape)
+                    }
                     if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
                         if (scalingFactor == null || newScalingFactor > scalingFactor){ 
                             const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
@@ -171,10 +173,9 @@ export async function GetNCArray() {
                             }
                         }
                     }
-
                     copyChunkToArray(
                         chunkF16,
-                        chunkShape,
+                        thisShape,
                         chunkStride as [number, number, number],
                         typedArray,
                         outputShape,
@@ -187,7 +188,12 @@ export async function GetNCArray() {
                         shape: chunkShape,
                         stride: chunkStride,
                         scaling: scalingFactor,
-                        compressed: compress
+                        compressed: compress,
+                        coarsened: coarsen,
+                        kernel: {
+                            kernelDepth: coarsen ? kernelDepth : undefined,
+                            kernelSize: coarsen ? kernelSize : undefined
+                        }
                     }
                     cache.set(cacheName,cacheChunk)
                     setProgress(Math.round(iter/totalChunksToLoad*100)) // Progress Bar

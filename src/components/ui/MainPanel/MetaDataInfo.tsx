@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import Metadata, { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"
 import { Input } from "../input"
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { parseLoc } from "@/utils/HelperFuncs"
+import { parseLoc, HandleCoarselNums } from "@/utils/HelperFuncs"
 import {
   Tooltip,
   TooltipContent,
@@ -15,6 +15,7 @@ import {
 import {Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "../switch"
+import Hider from "../Hider"
 
 const formatArray = (value: string | number[]): string => {
   if (typeof value === 'string') return value
@@ -58,50 +59,50 @@ function HandleCustomSteps(e: string, chunkSize: number){
 
 
 const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSide }: { meta: any, metadata: Record<string, any>, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>, popoverSide: string  }) => {
-  const {is4D, idx4D, variable, initStore, clampExtremes, setIs4D, setIdx4D, setVariable, setTextureArrayDepths, setClampExtremes} = useGlobalStore(useShallow(state => ({
-    is4D: state.is4D,
-    idx4D: state.idx4D,
-    variable: state.variable,
+  const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(state => ({
+    is4D: state.is4D, idx4D: state.idx4D, variable: state.variable,
     initStore: state.initStore,
-    clampExtremes: state.clampExtremes,
-    setIs4D: state.setIs4D,
-    setIdx4D: state.setIdx4D,
-    setVariable: state.setVariable,
+    setIs4D: state.setIs4D, setIdx4D: state.setIdx4D, setVariable: state.setVariable,
     setTextureArrayDepths: state.setTextureArrayDepths,
-    setClampExtremes: state.setClampExtremes
   })))
-  const {dimArrays, dimNames, dimUnits} = meta.dimInfo
-  const {maxSize, setMaxSize} = useCacheStore.getState()
+  const {maxSize, cache, setMaxSize} = useCacheStore(useShallow(state => ({maxSize: state.maxSize, cache:state.cache, setMaxSize:state.setMaxSize})))
   const [cacheSize, setCacheSize] = useState(maxSize)
-  const { zSlice, ySlice, xSlice, compress, useNC, setZSlice, setYSlice, setXSlice, ReFetch, setCompress } = useZarrStore(useShallow(state => ({
-    zSlice: state.zSlice,
-    ySlice: state.ySlice,
-    xSlice: state.xSlice,
-    compress: state.compress,
-    useNC:state.useNC,
-    setZSlice: state.setZSlice,
-    setYSlice: state.setYSlice,
-    setXSlice: state.setXSlice,
-    ReFetch: state.ReFetch,
-    setCompress: state.setCompress
+  const { zSlice, ySlice, xSlice, compress, coarsen, kernelSize, kernelDepth, setZSlice, setYSlice, setXSlice, ReFetch, setCompress, setCoarsen, setKernelSize, setKernelDepth } = useZarrStore(useShallow(state => ({
+    zSlice: state.zSlice, ySlice: state.ySlice, xSlice: state.xSlice,
+    compress: state.compress, coarsen: state.coarsen, kernelSize: state.kernelSize,
+    kernelDepth: state.kernelDepth,
+    setZSlice: state.setZSlice, setYSlice: state.setYSlice, setXSlice: state.setXSlice,
+    ReFetch: state.ReFetch, setCompress: state.setCompress,
+    setCoarsen: state.setCoarsen, setKernelSize: state.setKernelSize,
+    setKernelDepth: state.setKernelDepth
   })))
-  const cache = useCacheStore(state => state.cache)
   const {maxTextureSize, max3DTextureSize} = usePlotStore(useShallow(state => ({maxTextureSize: state.maxTextureSize, max3DTextureSize: state.max3DTextureSize})))
+
   const [tooBig, setTooBig] = useState(false)
   const [cached, setCached] = useState(false)
   const [cachedChunks, setCachedChunks] = useState<string | null>(null)
   const [texCount, setTexCount] = useState(0)
-  const totalSize = useMemo(() => meta.totalSize ? meta.totalSize : 0, [meta])
+  const [displaySpat, setDisplaySpat] = useState(String(kernelSize))
+  const [displayDepth, setDisplayDepth] = useState(String(kernelDepth))
+
+  // ---- Meta Info ---- //
+  const {dimArrays, dimNames, dimUnits} = meta.dimInfo
+  const totalSize = meta.totalSize ? meta.totalSize : 0
   const shapeLength = meta.shape.length;
+  const chunkIDs = meta.chunks && useMemo(()=>ChunkIDs({xSlice, ySlice, zSlice}, meta.chunks, meta.shape, meta.shape.length == 4),[zSlice, xSlice, ySlice, meta])
   const zLength = useMemo(() => meta.shape ? meta.shape[shapeLength-3] : 0, [meta])
   const yLength = useMemo(() => meta.shape ? meta.shape[shapeLength-2] : 0, [meta])
   const xLength = useMemo(() => meta.shape ? meta.shape[shapeLength-1] : 0, [meta])
+  const dataShape = coarsen ? meta.shape.map((val: number, idx: number) => Math.floor(idx === 0 ? val/kernelDepth : val/kernelSize)): meta.shape
+  const chunkShape = coarsen ? meta.chunks.map((val: number, idx: number) => Math.floor(idx === 0 ? val/kernelDepth : val/kernelSize)): meta.chunks
+
+  // ---- Booleans ---- //
   const is3D = useMemo(() => meta.shape ? meta.shape.length == 3 : false, [meta])
+  const isFlat = meta.shape.length == 2
   const hasTimeChunks = (shapeLength > 2 ? meta.shape[shapeLength-3]/meta.chunks[shapeLength-3] > 1 : false) 
   const hasYChunks = (meta.shape[shapeLength-2]/meta.chunks[shapeLength-2] > 1 ) 
   const hasXChunks = (meta.shape[shapeLength-1]/meta.chunks[shapeLength-1] > 1 ) 
-  const chunkIDs = meta.chunks && useMemo(()=>ChunkIDs({xSlice, ySlice, zSlice}, meta.chunks, meta.shape, meta.shape.length == 4),[zSlice, xSlice, ySlice, meta])
-  const isFlat = meta.shape.length == 2
+
   const currentSize = useMemo(() => {
     const is2D = isFlat
     
@@ -141,10 +142,12 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
       const xChunksNeeded = Math.ceil(x.steps / meta.chunks[chunkIndices[0]]);
       const yChunksNeeded = Math.ceil(y.steps / meta.chunks[chunkIndices[1]]);
       const zChunksNeeded = Math.ceil(z.steps / meta.chunks[chunkIndices[2]]);
+
+      const size = xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize
       
-      return xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize;
+      return size / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1)
     }
-  }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D]);
+  }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D, coarsen, kernelSize, kernelDepth]);
   
   const cachedSize = useMemo(()=>{
     const thisDtype = meta.dtype as string
@@ -165,7 +168,8 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     const this4D = meta.shape.length == 4;
     setIs4D(this4D);
   },[meta])
-  const chunkShape = meta.chunks
+
+  // ---- Available Chunks ---- //
   useEffect(()=>{
     setCompress(false)
     setIdx4D(null);
@@ -192,9 +196,8 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
       setCached(false)
     }
   },[meta, chunkIDs])
+
   return (
-      // Don't put any more work in the landing page version. Since it won't be visible in the future
-      // The logic here was to just get divs to be used later in a Card or Dialog component!
     <> 
         <b>{`${meta.long_name} `}</b>
           { popoverSide=="left" ? <Popover>
@@ -216,19 +219,48 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
           }
         <br/>
         <br/>
-        <div className="grid grid-cols-2">
-          <div>
-            <b>Data Shape</b><br/> 
-          {`[${formatArray(meta.shape)}]`}
+        <div className="grid grid-cols-[40%_40%_20%]">
+          <div className="flex flex-col">
+            <b>Data Shape</b>
+          {`[${formatArray(dataShape)}]`}
           </div>
-          <div>
-            <b>Chunk Shape</b><br/> 
-          {`[${formatArray(meta.chunks)}]`}
+          <div className="flex flex-col">
+            <b>Chunk Shape</b>
+          {`[${formatArray(chunkShape)}]`}
+          </div>
+          <div className="flex flex-col items-center">
+            <label htmlFor="coarsen"><b>Coarsen</b></label>
+            <Switch id="coarsen"  checked={coarsen} onCheckedChange={e=> setCoarsen(e)}/>
           </div>
         </div>
-        
+        <Hider show={coarsen} className="mt-2">
+          <div className="grid grid-cols-2 gap-x-1">
+            <div className="grid grid-cols-[auto_50px]">
+              <b>Temporal Coarsening</b>
+              <Input type='number' min='0' step={1} value={displayDepth} 
+                onChange={e=>{
+                  const val = parseInt(e.target.value)
+                  setDisplayDepth(e.target.value)
+                  setKernelDepth(Math.pow(2,val))
+                }}
+              />
+            </div>
+            <div className="grid grid-cols-[auto_50px]">
+              <b>Spatial Coarsening</b>
+              <Input type='number' min='0' step={1} value={displaySpat} 
+                onChange={e=>{
+                  const val = parseInt(e.target.value)
+                  setDisplaySpat(e.target.value)
+                  setKernelSize(Math.pow(2, val))
+                }}
+              />
+            </div>
+            <div className="col-span-2 font-small mt-2 flex justify-center items-center">
+                <i>Values represent 2<sup>n</sup></i>
+            </div>
+          </div>
+        </Hider>
         <br/>
-        {true && 
         <>
         {is4D &&
         <>
@@ -257,7 +289,6 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
                     value={[zSlice[0] ? zSlice[0] : 0, zSlice[1] ? zSlice[1] : zLength]}
                     step={chunkShape[0]}
                     onValueChange={(values: number[]) => setZSlice([values[0], values[1]] as [number, number | null])}
-                    
                   />
                   <div className="grid grid-cols-2">
                     <span >Min: <b>{parseLoc(dimArrays[is4D ? 1 : 0]?.[zSlice[0]]?? null, dimUnits[is4D ? 1 : 0]?? null)}</b>  <br /> Index: 
@@ -400,7 +431,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
               <Switch id="compress-data" checked={compress} onCheckedChange={e=>setCompress(e)}/>
             </div>
           </>}
-      </>}
+      </>
       <div className="grid gap-2 mt-2">
         {cached &&
         <div>
@@ -432,6 +463,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
             }
             setShowMeta(false)
             setOpenVariables(false)
+            usePlotStore.setState({coarsen, kernel:{kernelDepth, kernelSize}})
           }}
         >
         Plot
