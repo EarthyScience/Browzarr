@@ -62,10 +62,13 @@ void main() {
     } else {
         vec2 centeredUV = (instanceUV - vec2(0.5, 0.5)) * vec2(2.0, 2.0); 
         vec3 spherePosition = givePosition(instanceUV);
-        float latitudeFactor = cos(centeredUV.y * 3.14159 * 0.5); // Maps -1..1 to proper latitude
+        float latitudeFactor = cos(lonlat.y); // Maps -1..1 to proper latitude
+        float widthFactor = abs(lonBounds.y-lonBounds.x)/(2.0*PI);
+        float vertFactor = (latBounds.y-latBounds.x)/PI;
         float heightFactor = (dispStrength - displaceZero) * displacement;
         vec3 scaledPosition = position;
-        scaledPosition.x *= latitudeFactor;
+        scaledPosition.x *= latitudeFactor * widthFactor;
+        scaledPosition.z *= vertFactor ;
         scaledPosition.y += 0.025;
         scaledPosition.y *= heightFactor;
 
