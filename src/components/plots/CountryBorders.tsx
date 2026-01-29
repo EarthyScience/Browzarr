@@ -28,11 +28,12 @@ function Spherize([lon, lat] : [number, number]){
 }
 
 function Borders({features}:{features: any}){
-    const {xRange, yRange, plotType, borderColor, lonExtent, latExtent, lonResolution, latResolution} = usePlotStore(useShallow(state => ({
+    const {xRange, yRange, plotType, borderColor, lonExtent, latExtent, lonResolution, latResolution, is360Deg} = usePlotStore(useShallow(state => ({
         xRange: state.xRange, yRange: state.yRange,
         plotType: state.plotType, borderColor: state.borderColor,
         lonExtent: state.lonExtent, latExtent: state.latExtent,
         lonResolution: state.lonResolution, latResolution: state.latResolution,
+        is360Deg:state.is360Deg
     })))
     const {flipY, shape } = useGlobalStore(useShallow(state => ({
         flipY: state.flipY,
@@ -90,65 +91,12 @@ function Borders({features}:{features: any}){
         const lines = [];
 
         if (feature.geometry.type === 'LineString') {
-        const points: THREE.Vector3[] = [];
-        feature.geometry.coordinates.forEach(([lon, lat]: [number, number]) => {
-            const [x, y, z] = spherize
-            ? Spherize([ -lon, lat])
-            : Reproject([lon, lat],lonBounds,latBounds);
-            points.push(new THREE.Vector3(x, y, z));
-        });
-        const positions = new Float32Array(points.length * 3);
-        points.forEach((point, i) => {
-            positions.set([point.x, point.y, point.z], i * 3);
-        });
-
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-        lines.push(
-            geometry
-        );
-        }
-
-        else if (feature.geometry.type === 'MultiPolygon') {
-        const islands = feature.geometry.coordinates;
-        islands.forEach((island: number[][][], idx: number) => {
-            let thisIdx = idx;
-            const ring = island[0]; // outer ring
-            const islandPoints: THREE.Vector3[] = [];
-            ring.forEach(([lon, lat]) => {
-                thisIdx ++;
-            const [x, y, z] = spherize
-                ? Spherize([ -lon, lat])
-                : Reproject([lon, lat],lonBounds,latBounds);
-                islandPoints.push(new THREE.Vector3(x, y, z));
-            });
-            const positions = new Float32Array(islandPoints.length * 3);
-            islandPoints.forEach((point, i) => {
-                positions.set([point.x, point.y, point.z], i * 3);
-            });
-            const geometry = new THREE.BufferGeometry();
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            lines.push(
-                geometry
-            );
-        });
-        }
-        else {
-        const polygons =
-            feature.geometry.type === 'Polygon'
-            ? [feature.geometry.coordinates]
-            : feature.geometry.coordinates;
-
-        polygons.forEach((polygon: number[][][]) => {
             const points: THREE.Vector3[] = [];
-            polygon.forEach((ring: number[][]) => {
-            ring.forEach(([lon, lat]) => {
+            feature.geometry.coordinates.forEach(([lon, lat]: [number, number]) => {
                 const [x, y, z] = spherize
                 ? Spherize([ -lon, lat])
                 : Reproject([lon, lat],lonBounds,latBounds);
                 points.push(new THREE.Vector3(x, y, z));
-            });
             });
             const positions = new Float32Array(points.length * 3);
             points.forEach((point, i) => {
@@ -156,27 +104,92 @@ function Borders({features}:{features: any}){
             });
             const geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            lines.push(
-                geometry
-            );
-        });
+            lines.push(geometry);
+        }
+        else if (feature.geometry.type === 'MultiPolygon') {
+            const islands = feature.geometry.coordinates;
+            islands.forEach((island: number[][][], idx: number) => {
+                let thisIdx = idx;
+                const ring = island[0]; // outer ring
+                const islandPoints: THREE.Vector3[] = [];
+                ring.forEach(([lon, lat]) => {
+                    thisIdx ++;
+                const [x, y, z] = spherize
+                    ? Spherize([ -lon, lat])
+                    : Reproject([lon, lat],lonBounds,latBounds);
+                    islandPoints.push(new THREE.Vector3(x, y, z));
+                });
+                const positions = new Float32Array(islandPoints.length * 3);
+                islandPoints.forEach((point, i) => {
+                    positions.set([point.x, point.y, point.z], i * 3);
+                });
+                const geometry = new THREE.BufferGeometry();
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                lines.push(geometry);
+            });
+        }
+        else {
+            const polygons =
+                feature.geometry.type === 'Polygon'
+                ? [feature.geometry.coordinates]
+                : feature.geometry.coordinates;
+
+            polygons.forEach((polygon: number[][][]) => {
+                const points: THREE.Vector3[] = [];
+                polygon.forEach((ring: number[][]) => {
+                ring.forEach(([lon, lat]) => {
+                    const [x, y, z] = spherize
+                    ? Spherize([ -lon, lat])
+                    : Reproject([lon, lat],lonBounds,latBounds);
+                    points.push(new THREE.Vector3(x, y, z));
+                });
+                });
+                const positions = new Float32Array(points.length * 3);
+                points.forEach((point, i) => {
+                    positions.set([point.x, point.y, point.z], i * 3);
+                });
+                const geometry = new THREE.BufferGeometry();
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                lines.push(geometry);
+            });
         }
         return lines;
     });
     }, [features, spherize, flipY, lonBounds, latBounds]);
 
+
     const lines = useMemo(() => {
-        return lineGeometries.map((geom: THREE.BufferGeometry, idx: number) => {
-            const line = new THREE.Line(geom, lineShaderMat);
-            return <primitive key={`border-${idx}`} object={line} />;
+        const results: any[] = []
+        lineGeometries.map((geom: THREE.BufferGeometry, idx: number) => {
+            if (is360Deg && !spherize) {
+                const wrappedGeom = geom.clone()
+                const {count, array} = geom.attributes.position
+                for (let i = 0; i < count; i++){
+                    const idx = i*3;
+                    array[idx] = array[idx]+0.5
+                }
+                const wrappedArray = wrappedGeom.attributes.position.array
+                for (let i = 0; i < count; i++){
+                    const idx = i*3;
+                    wrappedArray[idx] = wrappedArray[idx]-1
+                }
+                const line = new THREE.Line(geom, lineShaderMat);
+                const wrappedLine = new THREE.Line(wrappedGeom, lineShaderMat);
+                results.push(<primitive key={`border-${idx}`} object={line} />)
+                results.push(<primitive key={`border-${idx}_wrap`} object={wrappedLine} />)
+            } else {
+                const line = new THREE.Line(geom, lineShaderMat);
+                results.push(<primitive key={`border-${idx}`} object={line} />);
+            }
         });
+        return results
     }, [lineGeometries, lineShaderMat]);
 
     return (
-    <>
-    {lines}
-    </>
-  )
+        <>
+            {lines}
+        </>
+    )
 }
 const CountryBorders = () => {
     const [coastLines, setCoastLines] = useState<any>(null)
@@ -187,10 +200,11 @@ const CountryBorders = () => {
         dataShape: state.dataShape,
         is4D: state.is4D
     })))
-    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize} = usePlotStore(useShallow(state => ({
+    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, is360Deg} = usePlotStore(useShallow(state => ({
         zRange: state.zRange, plotType: state.plotType,
         showBorders: state.showBorders, timeScale: state.timeScale,
-        rotateFlat: state.rotateFlat, pointSize:state.pointSize
+        rotateFlat: state.rotateFlat, pointSize:state.pointSize,
+        is360Deg: state.is360Deg
     })))
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
         analysisMode: state.analysisMode,
@@ -245,6 +259,7 @@ const CountryBorders = () => {
             <group 
                 visible={showBorders && !(analysisMode && axis != 0)} 
                 position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale + pointSize/10000 : timeRatio/2) : zRange[1]*(isPC ? depthScale + pointSize/10000 : timeRatio/2)]} // I don't know what value to use here. THis seems okay but not perfect
+                rotation={[0, (is360Deg && spherize) ? Math.PI : 0, 0]} 
             >
                 {coastLines && <Borders features={coastLines} />}
                 {borders && <Borders features={borders} />}
