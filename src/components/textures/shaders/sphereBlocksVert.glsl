@@ -78,10 +78,11 @@ void main() {
         vec3 spherePosition = givePosition(lonlat);
         float latitudeFactor = cos(lonlat.y); // Maps -1..1 to proper latitude
         float widthFactor = abs(lonBounds.y-lonBounds.x)/(2.0*PI);
+        float vertFactor = (latBounds.y-latBounds.x)/PI;
         float heightFactor = (dispStrength - displaceZero) * displacement;
         vec3 scaledPosition = position;
         scaledPosition.x *= latitudeFactor * widthFactor;
-        scaledPosition.z *= widthFactor;
+        scaledPosition.z *= vertFactor ;
         scaledPosition.y += 0.025;
         scaledPosition.y *= heightFactor;
 
