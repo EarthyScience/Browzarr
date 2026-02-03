@@ -126,7 +126,8 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
   let timeSlice = timeArray?.slice(zSlice[0], zSlice[1] ?? undefined)
   const timeLength = timeArray?.length || 1
   let sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0]
-  if (coarsen) {
+
+  if (coarsen && timeSlice) {
     timeSlice = coarsenFlatArray(timeSlice, kernel.kernelDepth)
     sliceDist = Math.floor(sliceDist/kernel.kernelDepth)
   }

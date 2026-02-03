@@ -93,8 +93,37 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const zLength = useMemo(() => meta.shape ? meta.shape[shapeLength-3] : 0, [meta])
   const yLength = useMemo(() => meta.shape ? meta.shape[shapeLength-2] : 0, [meta])
   const xLength = useMemo(() => meta.shape ? meta.shape[shapeLength-1] : 0, [meta])
-  const dataShape = coarsen ? meta.shape.map((val: number, idx: number) => Math.floor(idx === 0 ? val/kernelDepth : val/kernelSize)): meta.shape
-  const chunkShape = coarsen ? meta.chunks.map((val: number, idx: number) => Math.floor(idx === 0 ? val/kernelDepth : val/kernelSize)): meta.chunks
+  const { dataShape, chunkShape } = useMemo(() => {
+    if (coarsen) {
+      const n = meta.shape.length;
+      const Coarsen = (val: number, idx:number ) =>{
+        if (n <= 2) {
+          return Math.floor(val / kernelSize);
+        }
+        const thirdLast = n - 3;
+        const secondLast = n - 2;
+        const last = n - 1;
+        if (idx === thirdLast) {
+          return Math.floor(val / kernelDepth);
+        }
+        if (idx === secondLast || idx === last) {
+          return Math.floor(val / kernelSize);
+        }
+        return val; 
+      } 
+      const dataShape = meta.shape.map((val: number, idx: number) => {
+        return Coarsen(val, idx)
+      });
+      const chunkShape = meta.chunks.map((val: number, idx: number) => {
+        return Coarsen(val, idx)
+      });
+      return { dataShape, chunkShape };
+    }
+    return {
+      dataShape: meta.shape,
+      chunkShape: meta.chunks
+    };
+  }, [meta, coarsen, kernelDepth, kernelSize]);
 
   // ---- Booleans ---- //
   const is3D = useMemo(() => meta.shape ? meta.shape.length == 3 : false, [meta])
@@ -235,7 +264,11 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
         </div>
         <Hider show={coarsen} className="mt-2">
           <div className="grid grid-cols-2 gap-x-1">
-            <div className="grid grid-cols-[auto_50px]">
+            <div className="grid grid-cols-[auto_50px]"
+              style={{
+                visibility: dataShape.length >= 3 ? 'visible' : 'hidden'
+              }}
+            >
               <b>Temporal Coarsening</b>
               <Input type='number' min='0' step={1} value={displayDepth} 
                 onChange={e=>{
