@@ -153,7 +153,10 @@ export const KeyFramePreviewer = () => {
 
     // PREVIEW ANIMATION
     useEffect(()=>{
-        if (!keyFrames || isAnimating.current) return;
+        if (!keyFrames || !previewKeyFrames){ 
+            isAnimating.current = false;
+            return;
+        }
         const {animProg, setAnimProg} = usePlotStore.getState()
         originalAnimProg.current = animProg
         const keyFrameList = Array.from(keyFrames.keys()).sort((a, b) => a - b)
@@ -167,6 +170,7 @@ export const KeyFramePreviewer = () => {
             if (frame > frames) {
                 clearInterval(intervalRef.current as NodeJS.Timeout);
                 isAnimating.current = false;
+                useImageExportStore.setState({previewKeyFrames:false})
                 setAnimProg(originalAnimProg.current)
                 return;
             }

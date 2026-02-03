@@ -68,9 +68,9 @@ const KeyFrames = () => {
         animProg:state.animProg, setAnimProg:state.setAnimProg
     })))
 
-    const {keyFrames, frames, useTime, frameRate, timeRate, orbit, currentFrame, setCurrentFrame, setFrames} = useImageExportStore(useShallow(state=>({
+    const {keyFrames, frames, useTime, frameRate, timeRate, orbit, currentFrame, previewKeyFrames, setCurrentFrame, setFrames} = useImageExportStore(useShallow(state=>({
         keyFrames:state.keyFrames, frames:state.frames, orbit:state.orbit, currentFrame:state.currentFrame,
-        useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, setCurrentFrame:state.setCurrentFrame, setFrames:state.setFrames
+        useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, previewKeyFrames:state.previewKeyFrames, setCurrentFrame:state.setCurrentFrame, setFrames:state.setFrames
     })))
     const timeRatio = timeRate/frameRate
     const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
@@ -199,7 +199,7 @@ const KeyFrames = () => {
                     variant="outline"
 					onClick={()=>{useImageExportStore.getState().PreviewKeyFrames()}}
 				>
-                    <MdPreview className='size-6'/> { MdLg === "lg" ? 'Preview' : ''}
+                    <MdPreview className='size-6'/> { MdLg === "lg" ? (previewKeyFrames ? 'Stop Preview' : "Preview") : ''}
 				</Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" align="start">
