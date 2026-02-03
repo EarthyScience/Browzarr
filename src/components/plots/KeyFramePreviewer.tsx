@@ -39,6 +39,7 @@ export const KeyFramePreviewer = () => {
         const originalAngle = Math.atan2(originalPos.x, originalPos.z);
         return { radius, originalAngle}
     },[keyFrames])
+    const timeRatio = timeRate/frameRate;
 
     const KeyFrameLerper = (startState: Record<string,any>, endState:Record<string,any>, alpha:number, useCamera=true) => {
         const startVizState = startState["visual"]
@@ -127,6 +128,18 @@ export const KeyFramePreviewer = () => {
                 invalidate();
             }
         }   
+        if (useTime) { 
+            //This is currently incongruent with the export. This uses the timestep at the first keyframe as the intital progress
+            //whereas export uses the current timestep at time of export. If the first keyframe is not on the first frame export will look different than preview. 
+            //Will come back to this
+            const animProg = keyFrames?.get(keyFrameList[0]).time
+            const {dataShape} = useGlobalStore.getState()
+            const timeFrames = dataShape[dataShape.length-3]
+            const dt = 1/timeFrames
+            let newProg = dt * Math.floor(currentFrame * timeRatio) + animProg;
+            newProg = loopTime ? newProg - Math.floor(newProg) : Math.min(newProg, 1);
+            usePlotStore.setState({animProg:newProg})
+        }
         if (orbit){
             const angle = (currentFrame / (frames+1)) * deg2rad(orbitDeg);
             const newAngle = originalAngle + (orbitDir ? -angle : angle);
@@ -140,11 +153,13 @@ export const KeyFramePreviewer = () => {
 
     // PREVIEW ANIMATION
     useEffect(()=>{
-        if (!keyFrames || isAnimating.current) return;
+        if (!keyFrames || !previewKeyFrames){ 
+            isAnimating.current = false;
+            return;
+        }
         const {animProg, setAnimProg} = usePlotStore.getState()
         originalAnimProg.current = animProg
         const keyFrameList = Array.from(keyFrames.keys()).sort((a, b) => a - b)
-        const timeRatio = timeRate/frameRate;
         const {dataShape} = useGlobalStore.getState()
         const timeFrames = dataShape[dataShape.length-3]
         const dt = 1/timeFrames
@@ -155,17 +170,13 @@ export const KeyFramePreviewer = () => {
             if (frame > frames) {
                 clearInterval(intervalRef.current as NodeJS.Timeout);
                 isAnimating.current = false;
+                useImageExportStore.setState({previewKeyFrames:false})
                 setAnimProg(originalAnimProg.current)
                 return;
             }
             useImageExportStore.getState().setCurrentFrame(frame)
             const startFrame = keyFrameList[keyFrameIdx];
             if (keyFrameIdx + 1 < keyFrameList.length) {
-                if (useTime) {
-                    let newProg = dt * Math.floor(frame * timeRatio) + animProg;
-                    newProg = loopTime ? newProg - Math.floor(newProg) : Math.min(newProg, 1);
-                    setAnimProg(newProg);
-                }
                 const endFrame = keyFrameList[keyFrameIdx + 1];
                 const thisFrames = endFrame - startFrame;
                 const alpha = Math.max(frame - startFrame, 0) / thisFrames;
@@ -182,6 +193,11 @@ export const KeyFramePreviewer = () => {
                     camera.updateProjectionMatrix();
                     invalidate();
                 }
+            }
+            if (useTime) {
+                let newProg = dt * Math.floor(frame * timeRatio) + animProg;
+                newProg = loopTime ? newProg - Math.floor(newProg) : Math.min(newProg, 1);
+                setAnimProg(newProg);
             }
             if (orbit){
                 const angle = (frame / (frames+1)) * deg2rad(orbitDeg);
