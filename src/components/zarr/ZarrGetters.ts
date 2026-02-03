@@ -2,7 +2,7 @@ import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/Gl
 import * as zarr from 'zarrita';
 import { CompressArray, DecompressArray, ZarrError, RescaleArray, ToFloat16, copyChunkToArray } from "./ZarrLoaderLRU";
 import { GetSize } from "./GetMetadata";
-import { Convolve } from "../computation/webGPU";
+import { Convolve, Convolve2D } from "../computation/webGPU";
 import { coarsen3DArray, calculateStrides } from "@/utils/HelperFuncs";
 
 export async function GetZarrDims(variable: string){
@@ -149,52 +149,45 @@ export async function GetZarrArray(){
     if (is4D){
         chunkShape = chunkShape.slice(1);
     }
-
-    const notChunked = fullShape.every((dim, idx) => dim > chunkShape[idx]);
-
-    // ---- I THINK THIS CODE IS REDUNDANT. BUT NEED TO TEST ON AN UNCHUNCKED ZARR DATASET TO BE SURE ---- //
-
-    // //---- Strategy 1. Download whole array (No time chunks) ----//
-    // if (notChunked){ 
-    //     setStatus("Downloading...")
-    //     const chunk = await fetchWithRetry(
-    //         () => is4D ? zarr.get(outVar, [idx4D, null, null, null]) : zarr.get(outVar),
-    //         `variable ${variable}`,
-    //         setStatus
-    //     );
-    //     if (!chunk) throw new Error('Unexpected: chunk was not assigned'); // This is redundant but satisfies TypeScript
-    //     if (chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
-    //         throw new Error("BigInt arrays not supported.");
-    //     }
-    //     const shape = is4D ? outVar.shape.slice(1) : outVar.shape;
-    //     const strides = chunk.stride;
-    //     setStrides(strides) // Need strides for the point cloud
-
-    //     let [typedArray, scalingFactor] = ToFloat16(chunk.data.map((v: number) => v === fillValue ? NaN : v) as Float32Array, null)
-    //     if (coarsen){
-    //         typedArray = await Convolve(typedArray, {shape, strides}, "Mean", {kernelSize, kernelDepth}) as Float16Array
-    //         const newShape = shape.map((dim, idx) => Math.ceil(dim / (idx === 0 ? kernelDepth : kernelSize)))
-    //         let newStrides = newShape.slice()
-    //         newStrides = newStrides.map((val, idx) => {
-    //             return newStrides.reduce((a, b, i) => a * (i < idx ? b : 1), 1)
-    //         })
-    //         console.log(newStrides)
-    //     }
-    //     const cacheChunk = {
-    //         data: compress ? CompressArray(typedArray, 7) : typedArray,
-    //         shape: chunk.shape,
-    //         stride: chunk.stride,
-    //         scaling: scalingFactor,
-    //         compressed: compress
-    //     }
-    //     cache.set(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`, cacheChunk)
-    //     setStatus(null)
-    //     return { data: typedArray, shape, dtype: outVar.dtype, scalingFactor };
-    // } 
-
-    //---- Strategy 2. Download Chunks ----//
     const is2D = outVar.shape.length === 2;
-    
+
+    // //---- Strategy 1. Download whole array (Chunking Logic doesn't work on 2D atm) ----//
+    if (is2D){ 
+        setStatus("Downloading...")
+        const chunk = await fetchWithRetry(
+            () => zarr.get(outVar),
+            `variable ${variable}`,
+            setStatus
+        );
+        if (!chunk) throw new Error('Unexpected: chunk was not assigned'); // This is redundant but satisfies TypeScript
+        if (chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
+            throw new Error("BigInt arrays not supported.");
+        }
+        const shape = outVar.shape;
+        const strides = chunk.stride;
+        setStrides(strides) // Need strides for the point cloud
+
+        let [typedArray, scalingFactor] = ToFloat16(chunk.data.map((v: number) => v === fillValue ? NaN : v) as Float32Array, null)
+        if (coarsen){
+            typedArray = await Convolve2D(typedArray, {shape, strides}, "Mean2D", kernelSize) as Float16Array
+            const newShape = shape.map((dim) => Math.ceil(dim / kernelSize))
+            let newStrides = newShape.slice()
+            newStrides = newStrides.map((_val, idx) => {
+                return newStrides.reduce((a, b, i) => a * (i < idx ? b : 1), 1)
+            })
+        }
+        const cacheChunk = {
+            data: compress ? CompressArray(typedArray, 7) : typedArray,
+            shape: chunk.shape,
+            stride: chunk.stride,
+            scaling: scalingFactor,
+            compressed: compress
+        }
+        cache.set(`${initStore}_${variable}`, cacheChunk)
+        setStatus(null)
+        return { data: typedArray, shape, dtype: outVar.dtype, scalingFactor };
+    } 
+   
     // Calculate Indices
     const zIndexOffset = is4D ? 1 : 0;
     
