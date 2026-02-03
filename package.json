@@ -37,7 +37,7 @@
     "postinstall": "node src/hooks/copy-wasm.mjs",
     "prBuild": "pnpm buildRepo",
     "prLint": "pnpm lint",
-    "dev": "next dev",
+    "dev": "TURBOPACK=0 next dev",
     "buildRepo": "pnpm rmBuild && pnpm build",
     "rmBuild": "pnpm -r exec rm -rf out",
     "build": "next build",
