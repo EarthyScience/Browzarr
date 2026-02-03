@@ -150,11 +150,11 @@ export async function GetNCArray() {
                     let chunkStride = is4D 
                         ? [counts[3] * counts[2], counts[3], 1] 
                         : [counts[2] * counts[1], counts[2], 1]
-                    let thisShape = chunkShape
+                    let thisShape = counts
                     let [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
                     if (coarsen){
                         chunkF16 = await Convolve(chunkF16, {shape:chunkShape, strides:chunkStride}, "Mean3D", {kernelSize, kernelDepth}) as Float16Array
-                        thisShape = chunkShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
+                        thisShape = thisShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
                         const newSize = thisShape.reduce((a: number, b: number) => a*b, 1)
                         chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as [number, number, number], kernelSize, kernelDepth, newSize)
                         chunkStride = calculateStrides(thisShape)
