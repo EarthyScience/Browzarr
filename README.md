@@ -50,7 +50,9 @@ We are still in active development but plan to release a stable 1.0.0 when all o
 - [x] Larger texture support
 - [x] NetCDF Support
 - [ ] Customizable export
+- [ ] Increase flexibility for personal datasets
 - [x] Animation export
+- [ ] Docs/Manual
 - [ ] Stability pass
 
 
