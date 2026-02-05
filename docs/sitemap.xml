@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>/getting-started/introduction</loc>
+  </url>
+  <url>
+    <loc>/getting-started/landing</loc>
+  </url>
+  <url>
+    <loc>/essentials/variable-selection</loc>
+  </url>
+  <url>
+    <loc>/essentials/colorbar</loc>
+  </url>
+  <url>
+    <loc>/essentials/plot-settings</loc>
+  </url>
+  <url>
+    <loc>/essentials/analytics</loc>
+  </url>
+  <url>
+    <loc>/</loc>
+  </url>
+</urlset>
