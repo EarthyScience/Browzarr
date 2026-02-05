@@ -44,18 +44,23 @@ export async function GetNCMetadata(thisVariable? : string){
 }
 
 export async function GetNCArray() {
-    const {is4D, idx4D, initStore, variable, setProgress, setStrides, setStatus} = useGlobalStore.getState();
+    const {idx4D, initStore, variable, setProgress, setStrides, setStatus} = useGlobalStore.getState();
 	const {compress, xSlice, ySlice, zSlice, ncModule, coarsen, kernelDepth, kernelSize, setCurrentChunks, setArraySize} = useZarrStore.getState()
 	const {cache} = useCacheStore.getState();
 
     const varInfo = await ncModule.getVariableInfo(variable)
-    const {shape} = varInfo
-    const chunkShape = is4D 
-        ? [varInfo.chunks[1], varInfo.chunks[2], varInfo.chunks[3]]
-        : varInfo.chunks
-    const is2D = shape.length === 2;
-    const zIndexOffset = is4D ? 1 : 0;
-    const atts = varInfo.attributes
+    const { shape, attributes: atts } = varInfo;
+    const chunkShape = varInfo.chunks || shape;
+
+    //---- Shape Info ----//
+    const rank = shape.length;
+    const hasZ = rank >= 3;
+
+    const xDimIndex = rank - 1;
+    const yDimIndex = rank - 2;
+    const zDimIndex = rank - 3;
+
+    //---- Fill-Value ----//
     let fillValue = NaN
     if ("missing_value" in atts){
         fillValue = !Number.isNaN(atts["missing_value"][0]) ? atts["missing_value"][0] : fillValue
@@ -64,31 +69,43 @@ export async function GetNCArray() {
         fillValue = !Number.isNaN(atts["_FillValue"][0]) ? atts["_FillValue"][0] : fillValue
     }
 
-    const calcDim = (slice: [number, number | null], dimIdx: number, chunkDim: number) => {
-        const totalChunks = Math.ceil(shape[dimIdx + zIndexOffset] / chunkDim);
+    //---- Dimension Indices to Grab ----//
+    const calcDim = (slice: [number, number | null], dimIdx: number) => {
+        // Return an empty array if no zIdx
+        if (dimIdx < 0) return { start: 0, end: 1, size: 0, chunkDim: 1 };
+        const dimSize = shape[dimIdx];
+        const chunkDim = chunkShape[dimIdx];
         const start = Math.floor(slice[0] / chunkDim);
-        const end = slice[1] ? Math.ceil(slice[1] / chunkDim) : totalChunks;
-        const size = (slice[1] ? slice[1] : shape[dimIdx + zIndexOffset]) - slice[0];
-        return { start, end, size };
+        const sliceEnd = slice[1] ?? dimSize; 
+        const end = Math.ceil(sliceEnd / chunkDim);
+        const size = sliceEnd - slice[0];
+        //Chunkdim is the shape of the chunk at that index
+        return { start, end, size, chunkDim };
     };
 
-    const xDim = calcDim(xSlice, 2, chunkShape[2]);
-    const yDim = calcDim(ySlice, 1, chunkShape[1]);
-    const zDim = is2D ? { start: 0, end: 1, size: 0 } : calcDim(zSlice, 0, chunkShape[0]);
+    const xDim = calcDim(xSlice, xDimIndex);
+    const yDim = calcDim(ySlice, yDimIndex);
+    const zDim = calcDim(zSlice, zDimIndex);
 
     // Setup Output Array
-    let outputShape = is2D ? [yDim.size, xDim.size] : [zDim.size, yDim.size, xDim.size];
+    let outputShape = hasZ 
+        ? [zDim.size, yDim.size, xDim.size] 
+        : [yDim.size, xDim.size];
+    
     if (coarsen) {
-        outputShape = outputShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
+        outputShape = outputShape.map((dim: number, idx: number) => {
+            const isDepth = hasZ && idx === 0;
+            const kern = isDepth ? kernelDepth : kernelSize;
+            return Math.floor(dim / kern)
+        })
     } 
     const totalElements = outputShape.reduce((a ,b) => a * b, 1)
     const destStride = calculateStrides(outputShape)
 
     setStrides(destStride);
-    if (!is2D) {
-        setArraySize(totalElements);
-        setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); //These are used to stitch timeseries data 
-    }
+    setArraySize(totalElements);
+    setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); //These are used to stitch timeseries data 
+    
     if (totalElements > 1e9){
         useErrorStore.getState().setError('largeArray');
         throw Error("Cannot allocate unbroken memory segment for array.")
@@ -108,14 +125,14 @@ export async function GetNCArray() {
         for (let y= yDim.start ; y < yDim.end ; y++){
             for (let x= xDim.start ; x < xDim.end ; x++){
                 const chunkID = `z${z}_y${y}_x${x}` // Unique ID for each chunk
-                const cacheBase = is4D 
+                const cacheBase = rank > 3
                     ? `${initStore}_${variable}_${idx4D}`
                     : `${initStore}_${variable}`
                 const cacheName = `${cacheBase}_chunk_${chunkID}`
                 const cachedChunk = cache.get(cacheName);
 
                 const isCacheValid = cachedChunk && 
-                                    cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) && // If the data is coarsened. Make sure it's the same as current coarsen. OTherwise refetch
+                                    cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) && // If the data is coarsened. Make sure it's the same as current coarsen. Otherwise refetch
                                     cachedChunk.kernel.kernelDepth === (coarsen ? kernelSize : undefined) ;
                 if (isCacheValid){
                     const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed. Gemini thinks the .slice() helps with garbage collector as it doesn't maintain a reference to the original array
@@ -134,20 +151,27 @@ export async function GetNCArray() {
                 }
                 else{
                     const getStartsAndCounts = () => {
-                        if (is4D){
-                            const starts = [idx4D, z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]] 
-                            //@ts-ignore Starts is same length as new array
-                            const counts = [1, ...chunkShape].map((v:number, i:number) =>Math.min(v, shape[i] - starts[i]));
-                            return [starts, counts]
-                        } else {
-                            const starts = [z*chunkShape[0], y*chunkShape[1], x*chunkShape[2]] 
-                            const counts = chunkShape.map((v:number, i:number) =>Math.min(v, shape[i] - starts[i]));
-                            return [starts, counts]
+                        const starts = new Array(rank).fill(0);
+                        const counts = new Array(rank).fill(1);
+                        if (rank > 3) { //When rank is 4 or 5. The first will always be depth. In the case of 5 that will only be if last dimension is vector variable
+                            starts[0] = idx4D; 
+                            counts[0] = 1;
                         }
+                        starts[xDimIndex] = x * chunkShape[xDimIndex];
+                        counts[xDimIndex] = Math.min(chunkShape[xDimIndex], shape[xDimIndex] - starts[xDimIndex]);
+
+                        starts[yDimIndex] = y * chunkShape[yDimIndex];
+                        counts[yDimIndex] = Math.min(chunkShape[yDimIndex], shape[yDimIndex] - starts[yDimIndex]);
+
+                        if (zDimIndex >= 0) {
+                            starts[zDimIndex] = z * chunkShape[zDimIndex];
+                            counts[zDimIndex] = Math.min(chunkShape[zDimIndex], shape[zDimIndex] - starts[zDimIndex]);
+                        }
+                        return {starts, counts}
                     }
-                    const [starts, counts] = getStartsAndCounts();
+                    const { starts, counts } = getStartsAndCounts();
                     const chunkArray = await ncModule.getSlicedVariableArray(variable, starts, counts)
-                    let chunkStride = is4D 
+                    let chunkStride = rank > 3 
                         ? [counts[3] * counts[2], counts[3], 1] 
                         : [counts[2] * counts[1], counts[2], 1]
                     let thisShape = counts

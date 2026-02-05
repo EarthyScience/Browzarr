@@ -107,6 +107,7 @@ export const KeyFramePreviewer = () => {
     // PREVIEW KEYFRAME
     useEffect(()=>{
         if (!keyFrames || isAnimating.current) return;
+        console.log(timeRatio)
         const keyFrameList = Array.from(keyFrames.keys()).sort((a, b) => a - b)
         if (keyFrameList.length == 0) return;
         const keyFrameIdx = Math.max(keyFrameList.findLastIndex(n => n <= currentFrame), 0)
