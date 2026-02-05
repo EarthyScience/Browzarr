@@ -193,7 +193,7 @@ export async function GetZarrArray(){
    
     //---- Dimension Indices to Grab ----//
     const calcDim = (slice: [number, number | null], dimIdx: number) => {
-        // If the dimension index is invalid (e.g. asking for Z on a 2D array), return a flat generic
+        // Return an empty array if no zIdx
         if (dimIdx < 0) return { start: 0, end: 1, size: 0, chunkDim: 1 };
         const dimSize = fullShape[dimIdx];
         const chunkDim = chunkShape[dimIdx];
