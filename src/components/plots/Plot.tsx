@@ -3,18 +3,16 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
-import { ArrayToTexture, CreateTexture } from '@/components/textures';
-import { GetArray, GetAttributes } from '../zarr/ZarrLoaderLRU';
-import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore, useZarrStore } from '@/GlobalStates';
+import { CreateTexture } from '@/components/textures';
+import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar, ExportExtent } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import AnalysisWG from './AnalysisWG';
-import { ParseExtent, GetDimInfo, coarsenFlatArray } from '@/utils/HelperFuncs';
 import ExportCanvas from '@/utils/ExportCanvas';
 import KeyFrames from '../ui/KeyFrames';
-
+import { useDataFetcher } from '@/hooks/useDataFetcher';
 
 const TransectNotice = () =>{
   const {selectTS} = usePlotStore(useShallow(state => ({selectTS: state.selectTS})))
@@ -131,143 +129,29 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 }
 
 const Plot = () => {
-    const {
-      setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
-      setDimNames, setDimUnits, setPlotOn, setStatus} = useGlobalStore(
-        useShallow(state => ({  //UseShallow for object returns
-          setShape:state.setShape,
-          setDataShape: state.setDataShape,
-          setFlipY:state.setFlipY,
-          setValueScales:state.setValueScales,
-          setMetadata: state.setMetadata,
-          setDimArrays:state.setDimArrays, 
-          setDimNames:state.setDimNames,
-          setDimUnits:state.setDimUnits,
-          setPlotOn: state.setPlotOn,
-          setStatus: state.setStatus  
-        }
-        )))
-    const {colormap, variable, isFlat, DPR, valueScales, is4D, setIsFlat} = useGlobalStore(useShallow(state=>({
-      colormap: state.colormap, 
-      variable: state.variable, 
-      isFlat: state.isFlat, 
-      DPR: state.DPR, 
-      valueScales: state.valueScales,
-      is4D: state.is4D,
-      setIsFlat: state.setIsFlat, 
-    })))
-    const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
-    const {plotType, displaceSurface, interpPixels, setPlotType} = usePlotStore(useShallow(state => ({
-      plotType: state.plotType,
-      displaceSurface: state.displaceSurface,
-      interpPixels: state.interpPixels,
-      setPlotType: state.setPlotType
-    })))
+  const {colormap, isFlat, DPR, valueScales, setIsFlat} = useGlobalStore(useShallow(state=>({
+    colormap: state.colormap, 
+    isFlat: state.isFlat, 
+    DPR: state.DPR, 
+    valueScales: state.valueScales,
+    setIsFlat: state.setIsFlat, 
+  })))
+  const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
+  const {plotType, displaceSurface} = usePlotStore(useShallow(state => ({
+    plotType: state.plotType,
+    displaceSurface: state.displaceSurface,
+  })))
+  const {analysisMode} = useAnalysisStore(useShallow(state => ({
+    analysisMode: state.analysisMode
+  })))
+  const coords = useRef<number[]>([0,0])
+  const val = useRef<number>(0)
 
-    const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(useShallow(state=> ({
-      zSlice: state.zSlice,
-      ySlice: state.ySlice,
-      xSlice: state.xSlice,
-      reFetch: state.reFetch,
-      coarsen: state.coarsen,
-      kernelDepth: state.kernelDepth,
-      kernelSize: state.kernelSize
-    })))
-    const {analysisMode} = useAnalysisStore(useShallow(state => ({
-      analysisMode: state.analysisMode
-    })))
-    const coords = useRef<number[]>([0,0])
-    const val = useRef<number>(0)
-
-    const [showInfo, setShowInfo] = useState<boolean>(false)
-    const [loc, setLoc] = useState<number[]>([0,0])
-
-    const [textures, setTextures] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null)
-    const [show, setShow] = useState<boolean>(true) //Prevents rendering of 3D objects until data is fully loaded in
-    const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
+  const [showInfo, setShowInfo] = useState<boolean>(false)
+  const [loc, setLoc] = useState<number[]>([0,0])
   
   //DATA LOADING
-  useEffect(() => {
-    if (variable != "Default") {
-      setShow(false)
-      try{
-        if (textures) {
-          textures.forEach(tex =>{
-            tex.dispose();
-            (tex.source as any).data = null;
-          });
-        }
-        const {setZSlice, setYSlice, setXSlice} = usePlotStore.getState() // Set the plot slices with zarr slices
-        setZSlice(zSlice);
-        setYSlice(ySlice);
-        setXSlice(xSlice);
-        GetArray().then((result) => {
-        // const shape = result.shape.filter(x => x>1) //This is np.squeeze(). Using this works as expected but there are some fringe cases where it breaks things. Will implement later
-        const shape = result.shape
-        const [tempTexture, scaling] = ArrayToTexture({
-          data: result.data,
-          shape
-        })
-        setTextures(tempTexture)
-        setValueScales(scaling as { maxVal: number; minVal: number });
-        useGlobalStore.getState().setScalingFactor(result.scalingFactor)
-        const shapeLength = shape.length
-        if (shapeLength == 2){
-          setIsFlat(true)
-          if (!["flat", "sphere"].includes(plotType)){// If the plottype isn't already sphere or flat, change it to sphere
-            setPlotType("sphere")
-          }
-        }
-        else{
-          setIsFlat(false)
-        }
-        const aspectRatio = shape[shapeLength-2] / shape[shapeLength-1];
-        const timeRatio = shape[shapeLength-3] / shape[shapeLength-1];
-        setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio, 2)));
-        setDataShape(result.shape)
-        setShow(true)
-        setPlotOn(true)
-        setStatus(null)
-      })
-      }catch{
-        setStatus(null);
-        return;
-      }
-      //Get Metadata
-      GetAttributes().then((result)=>{
-        setMetadata(result);
-        setStableMetadata(result);
-      })
-      GetDimInfo(variable).then((arrays)=>{
-        let {dimArrays, dimUnits, dimNames}= arrays;
-
-        if (is4D){
-          dimArrays = dimArrays.slice(1);
-          dimUnits = dimUnits.slice(1);
-          dimNames = dimNames.slice(1);
-        }
-        setDimNames(dimNames)
-        setDimArrays(dimArrays)
-        if (dimArrays.length > 2){
-          if (dimArrays[1][1] < dimArrays[1][0])
-            {setFlipY(true)}
-          else
-            {setFlipY(false)}
-        }
-        else{
-          if (dimArrays[0][1] < dimArrays[0][0])
-            {setFlipY(true)}
-          else
-            {setFlipY(false)}
-        }
-        setDimUnits(dimUnits)
-        ParseExtent(dimUnits, dimArrays)
-      }) 
-    }else{
-      setMetadata(null)
-    }
-  }, [reFetch])
-
+  const {textures, show, stableMetadata, setTextures} = useDataFetcher()
   
   useEffect(()=>{ // Reset after analysis mode
     if(!analysisMode && show){
@@ -286,35 +170,6 @@ const Plot = () => {
     coords,
     val
   }),[])
-
-  useEffect(() => {
-    // This cleanup function will run when the `textures` state is about to change,
-    // or when the component unmounts.
-    return () => {
-      if (textures) {
-        textures.forEach(tex => {
-          tex.dispose();
-        });
-      }
-    };
-  }, [textures]);
-
-  useEffect(()=> {
-    if (!textures) return;
-    const updated = textures.map(tex => {
-      const clone = tex.clone(); 
-      if (interpPixels) {
-        clone.minFilter = THREE.LinearFilter;
-        clone.magFilter = THREE.LinearFilter;
-      } else {
-        clone.minFilter = THREE.NearestFilter;
-        clone.magFilter = THREE.NearestFilter;
-      }
-      clone.needsUpdate = true; 
-      return clone ;
-    });
-    setTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
-  },[interpPixels])
 
   useEffect(()=>{ // Rotates flat back when changing away
     usePlotStore.setState({rotateFlat: false})
