@@ -2,7 +2,7 @@
 import React from "react";
 import {ExportImageSettings,PlotLineButton,} from "./index";
 import {useCSSVariable} from "@/hooks";
-import "./css/Navbar.css";
+import "../css/Navbar.css";
 import { useRef, useState } from "react";
 import { MdFlipCameraIos } from "react-icons/md";
 import { RiCloseLargeLine, RiMenu2Line } from "react-icons/ri";
