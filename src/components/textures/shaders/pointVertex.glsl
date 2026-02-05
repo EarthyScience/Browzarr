@@ -57,7 +57,6 @@ void main() {
     vValue = float(value)/255.;
     vec3 scaledPos = computePosition(gl_VertexID);
     float depthSize = float(shape.x)/500.;
-    float globalScale = float(shape.z)/600.;
 
     scaledPos.z += depthSize;
     scaledPos.z = mod(scaledPos.z + animateProg*depthSize*2., depthSize*2.);
@@ -98,7 +97,7 @@ void main() {
     }
     
     if (showTransect){
-        gl_PointSize = isValid ? pointScale*5.*globalScale : pointScale;
+        gl_PointSize = isValid ? pointScale*5. : pointScale;
     }
     else{
         gl_PointSize =  pointScale;

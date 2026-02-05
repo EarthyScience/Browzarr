@@ -122,16 +122,17 @@ export async function GetStore(storePath: string): Promise<zarr.Group<zarr.Fetch
 }
 
 export async function GetZarrArray(){
-    const {is4D, idx4D, initStore, variable, setProgress, setStrides, setStatus} = useGlobalStore.getState();
+    const {idx4D, initStore, variable, setProgress, setStrides, setStatus} = useGlobalStore.getState();
 	const {compress, xSlice, ySlice, zSlice, currentStore, coarsen, kernelSize, kernelDepth, setCurrentChunks, setArraySize} = useZarrStore.getState()
 	const {cache} = useCacheStore.getState();
 
-    //---- 2. Open Zarr Resource ----//
+    //---- Open Zarr Resource ----//
     const group = await currentStore;
     const outVar = await zarr.open(group.resolve(variable), {kind:"array"})
     const symbols = Object.getOwnPropertySymbols(outVar);
 
-    // 2. Find the one that belongs to zarrita (usually the first or specifically named)
+    //---- Fill Value ----//
+    //fillValue is hidden in Zarrita for some reason. Need to extract it this way
     const contextSymbol = symbols.find(s => s.toString().includes('zarrita.context'));
 
     let fillValue = NaN
@@ -142,17 +143,19 @@ export async function GetZarrArray(){
         throw new Error(`Unsupported data type: Only numeric arrays are supported. Got: ${outVar.dtype}`);
     }
     
-    //---- 3. Determine Structure ----//
+    //----  Shape Info ----//
     let fullShape = outVar.shape;
     let [_totalSize, _chunkSize, chunkShape] = GetSize(outVar);
 
-    if (is4D){
-        chunkShape = chunkShape.slice(1);
-    }
-    const is2D = outVar.shape.length === 2;
+    const rank = fullShape.length;
+    const hasZ = rank >= 3;
 
-    // //---- Strategy 1. Download whole array (Chunking Logic doesn't work on 2D atm) ----//
-    if (is2D){ 
+    const xDimIndex = rank - 1;
+    const yDimIndex = rank - 2;
+    const zDimIndex = rank - 3;
+
+    //---- If 2D download whole array (Chunking Logic doesn't work on 2D atm) ----//
+    if (rank === 2){ 
         setStatus("Downloading...")
         const chunk = await fetchWithRetry(
             () => zarr.get(outVar),
@@ -188,42 +191,50 @@ export async function GetZarrArray(){
         return { data: typedArray, shape, dtype: outVar.dtype, scalingFactor };
     } 
    
-    // Calculate Indices
-    const zIndexOffset = is4D ? 1 : 0;
-    
-    // Helper to calculate start/end/shape for a dimension
-    const calcDim = (slice: [number, number | null], dimIdx: number, chunkDim: number) => {
-        const totalChunks = Math.ceil(fullShape[dimIdx + zIndexOffset] / chunkDim);
+    //---- Dimension Indices to Grab ----//
+    const calcDim = (slice: [number, number | null], dimIdx: number) => {
+        // Return an empty array if no zIdx
+        if (dimIdx < 0) return { start: 0, end: 1, size: 0, chunkDim: 1 };
+        const dimSize = fullShape[dimIdx];
+        const chunkDim = chunkShape[dimIdx];
         const start = Math.floor(slice[0] / chunkDim);
-        const end = slice[1] ? Math.ceil(slice[1] / chunkDim) : totalChunks;
-        const size = (slice[1] ? slice[1] : fullShape[dimIdx + zIndexOffset]) - slice[0];
-        return { start, end, size };
+        const sliceEnd = slice[1] ?? dimSize; 
+        const end = Math.ceil(sliceEnd / chunkDim);
+        const size = sliceEnd - slice[0];
+        //Chunkdim is the shape of the chunk at that index
+        return { start, end, size, chunkDim };
     };
 
-    //---- Chunk Span ----//
-    const xDim = calcDim(xSlice, 2, chunkShape[2]);
-    const yDim = calcDim(ySlice, 1, chunkShape[1]);
-    const zDim = is2D ? { start: 0, end: 1, size: 0 } : calcDim(zSlice, 0, chunkShape[0]);
+    const xDim = calcDim(xSlice, xDimIndex);
+    const yDim = calcDim(ySlice, yDimIndex);
+    const zDim = calcDim(zSlice, zDimIndex);
 
-    // Setup Output Array
-    let outputShape = is2D ? [yDim.size, xDim.size] : [zDim.size, yDim.size, xDim.size];
+    //---- Setup Output Array ----//
+    let outputShape = hasZ 
+        ? [zDim.size, yDim.size, xDim.size] 
+        : [yDim.size, xDim.size];
+    
     if (coarsen) {
-        outputShape = outputShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
+        outputShape = outputShape.map((dim: number, idx: number) => {
+            const isDepth = hasZ && idx === 0;
+            const kern = isDepth ? kernelDepth : kernelSize;
+            return Math.floor(dim / kern)
+        })
     } 
-
     const totalElements = outputShape.reduce((a ,b) => a * b, 1)
     const destStride = calculateStrides(outputShape)
+
     setStrides(destStride);
-    if (!is2D) {
-        setArraySize(totalElements);
-        setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); //These are used to stitch timeseries data 
-    }
+    setArraySize(totalElements);
+    setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); //These are used to stitch timeseries data 
+
     if (totalElements > 1e9){
         useErrorStore.getState().setError('largeArray');
         throw Error("Cannot allocate unbroken memory segment for array.")
     }
     const typedArray = new Float16Array(totalElements);
-    // State for the loop
+    
+    //---- State for the loop ----//
     let scalingFactor: number | null = null;
     const totalChunksToLoad = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
     let iter = 1; // For progress bar
@@ -231,12 +242,11 @@ export async function GetZarrArray(){
 
     setStatus("Downloading...");
     setProgress(0);
-    
     for (let z= zDim.start ; z < zDim.end ; z++){ // Iterate through chunks we need 
         for (let y= yDim.start ; y < yDim.end ; y++){
             for (let x= xDim.start ; x < xDim.end ; x++){
                 const chunkID = `z${z}_y${y}_x${x}` // Unique ID for each chunk
-                const cacheBase = is4D 
+                const cacheBase = rank > 3 
                     ? `${initStore}_${variable}_${idx4D}`
                     : `${initStore}_${variable}`
                 const cacheName = `${cacheBase}_chunk_${chunkID}`
@@ -261,9 +271,20 @@ export async function GetZarrArray(){
                 }
                 else{
                     // Download Chunk
-                    const chunkSlice =  is4D ? [idx4D , zarr.slice(z*chunkShape[0], (z+1)*chunkShape[0]), zarr.slice(y*chunkShape[1], (y+1)*chunkShape[1]), zarr.slice(x*chunkShape[2], (x+1)*chunkShape[2])] : 
-                                            [zarr.slice(z*chunkShape[0], (z+1)*chunkShape[0]), zarr.slice(y*chunkShape[1], (y+1)*chunkShape[1]), zarr.slice(x*chunkShape[2], (x+1)*chunkShape[2])]
+                    const getChunkSlice = () =>{
+                        const chunkSlice = new Array(rank).fill(0);
 
+                        chunkSlice[xDimIndex] = zarr.slice(x * chunkShape[xDimIndex], (x + 1) * chunkShape[xDimIndex]);
+                        chunkSlice[yDimIndex] = zarr.slice(y * chunkShape[yDimIndex], (y + 1) * chunkShape[yDimIndex]);
+                        if (zDimIndex >= 0) {
+                            chunkSlice[zDimIndex] = zarr.slice(z * chunkShape[zDimIndex], (z + 1) * chunkShape[zDimIndex]);
+                        }
+                        if (rank >= 4) { //When rank is 4 or 5. The first will always be depth. In the case of 5 that will only be if last dimension is vector variable
+                            chunkSlice[0] = idx4D; 
+                        }
+                        return chunkSlice;
+                    }
+                    const chunkSlice = getChunkSlice()
                     const chunk = await fetchWithRetry(
                         () => zarr.get(outVar, chunkSlice),
                         `variable ${variable}`,

@@ -164,7 +164,7 @@ const Plot = () => {
       setPlotType: state.setPlotType
     })))
 
-    const {zSlice, ySlice, xSlice, reFetch, coarsen, kernelDepth, kernelSize} = useZarrStore(useShallow(state=> ({
+    const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(useShallow(state=> ({
       zSlice: state.zSlice,
       ySlice: state.ySlice,
       xSlice: state.xSlice,
@@ -186,7 +186,7 @@ const Plot = () => {
     const [show, setShow] = useState<boolean>(true) //Prevents rendering of 3D objects until data is fully loaded in
     const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
   
-    //DATA LOADING
+  //DATA LOADING
   useEffect(() => {
     if (variable != "Default") {
       setShow(false)
@@ -202,14 +202,16 @@ const Plot = () => {
         setYSlice(ySlice);
         setXSlice(xSlice);
         GetArray().then((result) => {
+        // const shape = result.shape.filter(x => x>1) //This is np.squeeze(). Using this works as expected but there are some fringe cases where it breaks things. Will implement later
+        const shape = result.shape
         const [tempTexture, scaling] = ArrayToTexture({
           data: result.data,
-          shape: result.shape
+          shape
         })
         setTextures(tempTexture)
         setValueScales(scaling as { maxVal: number; minVal: number });
         useGlobalStore.getState().setScalingFactor(result.scalingFactor)
-        const shapeLength = result.shape.length
+        const shapeLength = shape.length
         if (shapeLength == 2){
           setIsFlat(true)
           if (!["flat", "sphere"].includes(plotType)){// If the plottype isn't already sphere or flat, change it to sphere
@@ -219,8 +221,8 @@ const Plot = () => {
         else{
           setIsFlat(false)
         }
-        const aspectRatio = result.shape[shapeLength-2] / result.shape[shapeLength-1];
-        const timeRatio = result.shape[shapeLength-3] / result.shape[shapeLength-1];
+        const aspectRatio = shape[shapeLength-2] / shape[shapeLength-1];
+        const timeRatio = shape[shapeLength-3] / shape[shapeLength-1];
         setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio, 2)));
         setDataShape(result.shape)
         setShow(true)
