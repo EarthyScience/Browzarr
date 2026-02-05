@@ -3,12 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import logoHome from "public/logo-light.svg";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/widgets/button";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/widgets/tooltip";
 
 export default function HomeButton() {
 	return (

@@ -6,14 +6,14 @@ import { useGlobalStore } from '@/GlobalStates';
 import { colormaps } from '@/components/textures';
 import { useShallow } from 'zustand/shallow';
 import { MdOutlineSwapVert } from "react-icons/md";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/widgets/popover"
+import { Button } from "@/components/ui/widgets/button";
 import Image from 'next/image';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/widgets/tooltip"
 
 const Colormaps = () => {
 

@@ -5,14 +5,12 @@ import { useAnalysisStore, useGlobalStore, useZarrStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import '../css/MainPanel.css';
 import { PiMathOperationsBold } from "react-icons/pi";
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Input } from '../input';
-import { Button } from '../button';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/widgets/popover';
+import { Input, Button, Switch } from '../widgets';
 import { CiUndo } from "react-icons/ci";
 import {KernelVisualizer} from "@/components/ui";
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/widgets/tooltip';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { Switch } from '../switch';
 import { HandleKernelNums } from '@/utils/HelperFuncs';
 import {
   Select,
@@ -22,7 +20,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/widgets/select';
 
 const singleVarReductionOps = [
   { value: 'Mean', label: 'Mean' },

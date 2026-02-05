@@ -1,25 +1,22 @@
 "use client";
 import React from "react";
-import {
-	ExportImageSettings,
-	PlotLineButton,
-	useCSSVariable,
-} from "@/components/ui";
+import {ExportImageSettings,PlotLineButton,} from "./index";
+import {useCSSVariable} from "@/hooks";
 import "./css/Navbar.css";
 import { useRef, useState } from "react";
 import { MdFlipCameraIos } from "react-icons/md";
 import { RiCloseLargeLine, RiMenu2Line } from "react-icons/ri";
 import { useShallow } from "zustand/shallow";
-import { Button } from "@/components/ui/button";
 import {
+	Button,
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/widgets";
 import { cn } from "@/lib/utils";
 import { useGlobalStore, usePlotStore } from "@/GlobalStates";
-import { Orthographic, Perspective } from "./Icons";
-import PerformanceMode from "./PerformanceMode";
+import { Orthographic, Perspective } from "../Icons";
+import PerformanceMode from "../PerformanceMode";
 
 const Navbar = React.memo(function Navbar() {
 	const { isFlat, plotOn } = useGlobalStore(

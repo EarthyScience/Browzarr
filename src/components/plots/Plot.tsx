@@ -12,7 +12,7 @@ import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import AnalysisWG from './AnalysisWG';
 import ExportCanvas from '@/utils/ExportCanvas';
 import KeyFrames from '../ui/KeyFrames';
-import { useDataFetcher } from '@/hooks/useDataFetcher';
+import { useDataFetcher } from '@/hooks';
 
 const TransectNotice = () =>{
   const {selectTS} = usePlotStore(useShallow(state => ({selectTS: state.selectTS})))

@@ -1,4 +1,4 @@
-import Navbar from "./Navbar";
+import Navbar from "./Navbar/Navbar";
 import Footer from "./Footer";
 import AboutInfo from "./AboutInfo";
 import  Metadata from "./MetaData";
@@ -7,9 +7,7 @@ import YScaler from "./LinePlotArea/YScaler";
 import XScaler from "./LinePlotArea/XScaler";
 import ThemeSwitch from "./ThemeSwitch";
 import { Loading } from "./Loading";
-import useCSSVariable from "./useCSSVariable";
 import ShowLinePlot from "./ShowLinePlot";
-import PlotLineButton from "./PlotLineButton";
 import Colorbar from "./Colorbar";
 import LocalZarr from "./MainPanel/LocalZarr";
 import MainPanel from "./MainPanel/MainPanel";
@@ -22,11 +20,9 @@ import PlayButton from "./MainPanel/PlayButton";
 import Error from "./Error";
 import AnalysisOptions from "./MainPanel/AnalysisOptions";
 import KernelVisualizer from "./KernelVisualizer";
-import ExportImageSettings from "./ExportImageSettings";
 import LogoDrawer from "./AboutDrawer";
 import DatasetToast from "./DatasetToast";
 import VersionSelector from "./VersionSelector";
-import Hider from "./Hider";
 import { ExportExtent } from "./ExportExtent";
 export {
   Navbar,
@@ -39,9 +35,7 @@ export {
   XScaler,
   ThemeSwitch,
   Loading,
-  useCSSVariable,
   ShowLinePlot,
-  PlotLineButton,
   Colorbar,
   LocalZarr,
   MainPanel,
@@ -55,8 +49,6 @@ export {
   Error,
   AnalysisOptions,
   KernelVisualizer,
-  ExportImageSettings,
   VersionSelector,
-  Hider,
   ExportExtent
 };

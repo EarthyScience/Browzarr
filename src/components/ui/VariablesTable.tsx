@@ -1,9 +1,9 @@
 import React, {useState, useMemo} from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/widgets/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/widgets/table";
+import { ScrollArea } from "@/components/ui/widgets/scroll-area";
+import { Input } from "@/components/ui/widgets/input";
+import { Button } from "@/components/ui/widgets/button";
 import { useGlobalStore } from "@/GlobalStates";
 import { useShallow } from "zustand/shallow";
 import MetaDataInfo from "./MainPanel/MetaDataInfo";
@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/ui/widgets/dialog";
 
 export default function VariablesTable() {
   const { variables, zMeta, setVariable } = useGlobalStore(

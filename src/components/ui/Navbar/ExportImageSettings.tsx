@@ -1,13 +1,13 @@
 "use client";
 import React, {useEffect, useState} from 'react'
 import { IoImage } from "react-icons/io5";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Input } from "./input";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/widgets/popover"
+import { Input, Switch, Hider, Button, Switcher } from "@/components/ui/widgets";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/widgets/tooltip"
 import { useGlobalStore, useImageExportStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { ChevronDown } from 'lucide-react';
@@ -17,12 +17,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Switch } from './switch';
-import Hider from './Hider';
-import { Button } from './button';
+} from "@/components/ui/widgets/select"
 import { BsBoxArrowRight } from "react-icons/bs";
-import { Switcher } from './Switcher';
 import { FaLongArrowAltRight } from "react-icons/fa";
 
 
@@ -291,4 +287,4 @@ const ExportImageSettings = () => {
   )
 }
 
-export default ExportImageSettings
+export {ExportImageSettings}

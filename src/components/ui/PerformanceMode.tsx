@@ -3,9 +3,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import { MdOutlineRocketLaunch } from "react-icons/md";
 import { Potato } from './Icons';
 import { FaCarSide } from "react-icons/fa6";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/widgets/popover"
 import { useGlobalStore } from '@/GlobalStates';
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/widgets/button"
 
 const icons = {
     "fast": <MdOutlineRocketLaunch className='size-8'/>,

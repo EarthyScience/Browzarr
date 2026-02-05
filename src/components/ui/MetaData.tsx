@@ -9,16 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/widgets/dialog"
 
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/widgets/tooltip"
 
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/widgets/button"
 
 export const defaultAttributes = [
     "long_name",

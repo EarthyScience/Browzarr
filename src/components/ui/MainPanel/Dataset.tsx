@@ -3,24 +3,23 @@
 import React, { SetStateAction, useEffect, useState, ReactNode } from 'react';
 import { useGlobalStore, useZarrStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
-import { Input } from '../input';
-import { Button } from '../button';
+import { Input, Button } from '../widgets';
 import { TbDatabasePlus } from "react-icons/tb";
 import { TbVariable } from "react-icons/tb";
 import LocalZarr from './LocalZarr';
 import LocalNetCDF from './LocalNetCDF';
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/widgets";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/widgets/tooltip"
 import {
   Dialog,
   DialogContent,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Switcher } from '../Switcher';
+} from "@/components/ui/widgets/dialog";
+import { Switcher } from '../widgets/Switcher';
 
 const ZARR_STORES = {
   ESDC: 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr',

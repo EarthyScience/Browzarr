@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/widgets/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/widgets/tooltip";
+import { Button } from "@/components/ui/widgets/button";
 import { FaCheck } from "react-icons/fa6";
 import { LuChevronDown } from "react-icons/lu";
 import { BsTags } from "react-icons/bs";

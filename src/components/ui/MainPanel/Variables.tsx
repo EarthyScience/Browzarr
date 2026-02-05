@@ -2,31 +2,29 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { TbVariable } from "react-icons/tb";
-import { useGlobalStore, useZarrStore } from "@/GlobalStates";
+import { useGlobalStore } from "@/GlobalStates";
 import { useShallow } from "zustand/shallow";
-import { Separator } from "@/components/ui/separator";
 import MetaDataInfo from "./MetaDataInfo";
 import { GetDimInfo } from "@/utils/HelperFuncs";
 import { GetAttributes } from "@/components/zarr/ZarrLoaderLRU";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Input } from "../input";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/widgets";
+import { Button, Input, Separator } from "@/components/ui/widgets";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/widgets";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/widgets";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
+} from "@/components/ui/widgets";
 
 
 const Variables = ({

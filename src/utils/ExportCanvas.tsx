@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react'
 import { useGlobalStore, useImageExportStore, usePlotStore } from '@/GlobalStates'
 import { useThree } from '@react-three/fiber'
-import { useCSSVariable } from '@/components/ui';
+import { useCSSVariable } from '@/hooks';
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow';
 import { lerp } from 'three/src/math/MathUtils.js';

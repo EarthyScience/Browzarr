@@ -5,8 +5,8 @@ import { VscGraphLine } from "react-icons/vsc"; //Use this if you hate the svg
 import { useErrorStore, usePlotStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow';
 import './css/PlotLineButton.css'
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/widgets/tooltip"
+import { Button } from "@/components/ui/widgets/button"
 
 const PlotLineButton = () => {
     const {selectTS, resetAnim, animate, plotType, displaceSurface, setSelectTS, setResetAnim} = usePlotStore(useShallow(state => ({
@@ -50,4 +50,4 @@ const PlotLineButton = () => {
   )
 }
 
-export default PlotLineButton
+export {PlotLineButton}

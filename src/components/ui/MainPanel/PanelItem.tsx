@@ -4,8 +4,8 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/widgets/popover"
+import { Button } from "@/components/ui/widgets/button"
 import { ReactNode } from "react"
 
 export function PanelItem({ children, options }: { children: ReactNode; options: ReactNode }) {

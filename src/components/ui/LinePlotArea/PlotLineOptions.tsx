@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/widgets/button"
 import '../css/PlotLineOptions.css'
 import {
   DropdownMenu,
@@ -8,10 +8,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/widgets/dropdown-menu"
 import { usePlotStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow'
-import { Slider } from "@/components/ui/slider"
+import { Slider } from "@/components/ui/widgets/slider"
 
 // Memoized Point Options
 const PointOptions = React.memo(function PointOptions(){

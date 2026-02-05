@@ -3,14 +3,14 @@ import './css/Error.css'
 import { useErrorStore } from '@/GlobalStates'
 import { ErrorList } from './ErrorList'
 import { useShallow } from 'zustand/shallow'
-import { Button } from './button'
+import { Button } from './widgets/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/ui/widgets/dialog";
 
 const Error = () => {
     const {error, setError} = useErrorStore(useShallow(state => ({

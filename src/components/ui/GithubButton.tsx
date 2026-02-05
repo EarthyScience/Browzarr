@@ -2,8 +2,8 @@
 
 import { FaGithub } from "react-icons/fa";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/widgets/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/widgets/tooltip";
 
 export default function GithubButton() {
   return (

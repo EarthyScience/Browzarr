@@ -15,4 +15,4 @@ const Hider = ({children, className, show}:{children: React.ReactNode, className
   )
 }
 
-export default Hider
+export {Hider}

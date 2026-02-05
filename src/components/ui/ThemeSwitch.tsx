@@ -3,12 +3,12 @@
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { BsMoonStarsFill, BsSunFill } from "react-icons/bs";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/widgets/button";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/widgets/tooltip";
 
 const ThemeSwitch = () => {
 	const [mounted, setMounted] = useState(false);

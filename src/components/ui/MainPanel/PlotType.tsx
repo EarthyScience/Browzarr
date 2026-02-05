@@ -8,13 +8,13 @@ import { PiSphereThin } from "react-icons/pi";
 import { CgMenuGridO } from "react-icons/cg";
 import { PiCubeLight } from "react-icons/pi";
 import { MdOutlineSquare } from "react-icons/md";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/widgets/popover"
 import {
+  Button,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/widgets"
 
 const plotTypes = ['volume', 'point-cloud', 'sphere', 'flat']
 const plotIcons = {

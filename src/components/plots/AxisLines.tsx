@@ -9,7 +9,7 @@ import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineMaterial } from 'three-stdlib';
 import { useFrame } from '@react-three/fiber';
 import { parseLoc, coarsenFlatArray } from '@/utils/HelperFuncs';
-import { useCSSVariable } from '../ui';
+import { useCSSVariable } from '@/hooks';
 import * as THREE from 'three'
 
 const AXIS_CONSTANTS = {

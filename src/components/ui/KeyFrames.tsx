@@ -1,25 +1,25 @@
 "use client";
 import React, {useEffect, useRef, useState } from 'react'
-import { Button } from './button'
-import { ButtonGroup } from "@/components/ui/button-group"
+import { Button } from './widgets/button'
+import { ButtonGroup } from "@/components/ui/widgets/button-group"
 import { useImageExportStore, usePlotStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow'
-import { Slider } from './slider'
+import { Slider } from './widgets/slider'
 import './css/KeyFrames.css'
-import { Input } from './input';
+import { Input } from './widgets/input';
 import { IoCloseCircleSharp } from "react-icons/io5";
 import { FaPlusCircle } from "react-icons/fa";
 import { MdDeleteForever } from "react-icons/md";
 import { MdPreview } from "react-icons/md";
 import { TbKeyframeFilled } from "react-icons/tb";
 import { TbKeyframesFilled } from "react-icons/tb";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/widgets/card";
 import { toast } from "sonner"
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/widgets/tooltip";
 
 function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
   return keys.reduce((acc, key) => {

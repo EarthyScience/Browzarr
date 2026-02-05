@@ -50,4 +50,4 @@ const useCSSVariable = (variableName: string, fallback: string = '') => {
   return value;
 };
 
-export default useCSSVariable;
+export {useCSSVariable};

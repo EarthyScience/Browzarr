@@ -1,8 +1,8 @@
 "use client";
-import React, {useState, useEffect, ChangeEvent} from 'react'
+import React, {ChangeEvent} from 'react'
 import * as zarr from 'zarrita'
 import { useZarrStore, useGlobalStore } from '@/GlobalStates';
-import { Input } from '../input';
+import { Input } from '../widgets';
 import ZarrParser from '@/components/zarr/ZarrParser';
 
 interface LocalZarrType {

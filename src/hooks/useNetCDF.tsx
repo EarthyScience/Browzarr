@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
  * Note: WASM files are automatically copied to `public/` during npm install
  */
 
-export default function useNetCDF() {
+export function useNetCDF() {
   const [NetCDF4, setNetCDF4] = useState<any>(null);
   
   useEffect(() => {

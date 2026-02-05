@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import ClientRoot from "./ClientRoot";
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from "@/components/ui/widgets/toaster"
 import "./globals.css";
 
 export const viewport: Viewport = {

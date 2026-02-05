@@ -6,11 +6,8 @@ import '../css/MainPanel.css'
 import { PiPlayPauseFill } from "react-icons/pi";
 import { FaPlay, FaPause, FaForwardStep , FaBackwardStep  } from "react-icons/fa6";
 import { coarsenFlatArray, parseLoc } from '@/utils/HelperFuncs';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-
+import { Slider, Button, Card, CardContent } from "@/components/ui/widgets";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/widgets"
 
 const frameRates = [1, 2, 4, 6, 8, 12, 16, 24, 36, 48, 54, 60, 80, 120]
 

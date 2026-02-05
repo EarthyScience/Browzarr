@@ -1,13 +1,13 @@
 "use client";
 import React, {ChangeEvent, useState} from 'react'
-import { Input } from '../input'
+import { Input } from '../widgets/input'
 import { useGlobalStore, useZarrStore } from '@/GlobalStates';
 import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from '@/components/ui/alert';
+} from '@/components/ui/widgets/alert';
 import { isMobile } from '../MobileUIHider';
 
 interface LocalNCType {
