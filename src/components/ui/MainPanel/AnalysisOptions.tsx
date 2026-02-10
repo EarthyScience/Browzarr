@@ -255,7 +255,6 @@ const AnalysisOptions = () => {
                               </TooltipContent>
                             </Tooltip>
                           </div>
-                          
                         </div>}
                         <button 
                           className={`rounded-[6px] self-center ${analysisMode ? null : 'col-span-2'} w-[100%] pl-2 relative border border-gray-150 py-[5px] ${analysisMode ?'hover:scale-[0.95]' : ''} transition-[0.2s]`}

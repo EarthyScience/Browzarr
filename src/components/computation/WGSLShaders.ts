@@ -133,6 +133,11 @@ export const createShaders = (precision: Precision) => {
     // #endregion
 
     const allShaders = {
+    boilerPlates:{
+        ReductionBoilerPlate,
+        ConvolutionBoilerPlate,
+        ConvolutionBoilerPlate2D
+    },
     // #region REDUCTION SHADERS
     MeanReduction: /* wgsl */`
         ${ReductionBoilerPlate}

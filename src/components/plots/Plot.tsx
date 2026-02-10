@@ -6,7 +6,7 @@ import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { CreateTexture } from '@/components/textures';
 import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
-import { Navbar, Colorbar, ExportExtent } from '../ui';
+import { Navbar, Colorbar, ExportExtent, ShaderEditor } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import AnalysisWG from './AnalysisWG';
@@ -187,6 +187,7 @@ const Plot = () => {
       {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
       <Nav />
       {(isFlat || plotType == "flat") && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }
+      <ShaderEditor />
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
         frameloop="demand"
         gl={{ preserveDrawingBuffer: true }}
