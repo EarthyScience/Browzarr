@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { BsBoxArrowLeft } from "react-icons/bs";
 
 const singleVarReductionOps = [
   { value: 'Mean', label: 'Mean' },
@@ -469,7 +470,14 @@ const AnalysisOptions = () => {
                   }
                 </tbody>
               </table>
-
+              <Button
+                onClick={()=>{
+                  useAnalysisStore.setState({useEditor:true})
+                }}
+                className='cursor-pointer'
+              >
+                <BsBoxArrowLeft /> Open Shader Editor
+              </Button>
               <Button
                 className="cursor-pointer active:scale-[0.95]"
                 disabled={

@@ -141,8 +141,9 @@ const Plot = () => {
     plotType: state.plotType,
     displaceSurface: state.displaceSurface,
   })))
-  const {analysisMode} = useAnalysisStore(useShallow(state => ({
-    analysisMode: state.analysisMode
+  const {analysisMode, useEditor} = useAnalysisStore(useShallow(state => ({
+    analysisMode: state.analysisMode,
+    useEditor: state.useEditor
   })))
   const coords = useRef<number[]>([0,0])
   const val = useRef<number>(0)
@@ -187,9 +188,9 @@ const Plot = () => {
       {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
       <Nav />
       {(isFlat || plotType == "flat") && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }
-      <ShaderEditor />
+      <ShaderEditor visible={useEditor}/>
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
-        frameloop="demand"
+        frameloop={useEditor ? "never" : "demand"}
         gl={{ preserveDrawingBuffer: true }}
         dpr={[DPR,DPR]}
       >

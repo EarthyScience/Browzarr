@@ -17,6 +17,8 @@ type AnalysisState = {
   reverseDirection: number;
   analysisStore: string;
   analysisDim: number | null;
+  customShader: string | undefined;
+  useEditor: boolean;
 
   setAnalysisMode: (analysisMode: boolean) => void;
   setAxis: (axis: number) => void;
@@ -32,6 +34,7 @@ type AnalysisState = {
   setReverseDirection: (reverseDirection: number) => void;
   setAnalysisStore: (analysisStore: string) => void;
   setAnalysisDim: (analysisDim: number | null) => void;
+  setCustomShader: (customShader: string | undefined) => void;
 }
 
 export const useAnalysisStore = create<AnalysisState>((set) => ({
@@ -49,6 +52,8 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   reverseDirection: 0,
   analysisStore: ESDC,
   analysisDim: null,
+  customShader: undefined,
+  useEditor: false,
 
   setAnalysisMode: (analysisMode) => set({ analysisMode }),
   setAxis: (axis) => set({ axis }),
@@ -64,4 +69,5 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   setReverseDirection: (reverseDirection) => set( { reverseDirection} ),
   setAnalysisStore: (analysisStore) => set({ analysisStore }),
   setAnalysisDim: (analysisDim) => set({ analysisDim }),
+  setCustomShader: (customShader) => set({ customShader }),
 }));
