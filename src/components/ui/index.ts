@@ -28,6 +28,9 @@ import DatasetToast from "./DatasetToast";
 import VersionSelector from "./VersionSelector";
 import Hider from "./Hider";
 import { ExportExtent } from "./ExportExtent";
+import { ShaderEditor } from "./ShaderEditor";
+import { Input } from "./input";
+import { Switcher } from "./Switcher";
 export {
   Navbar,
   Footer,
@@ -58,5 +61,8 @@ export {
   ExportImageSettings,
   VersionSelector,
   Hider,
-  ExportExtent
+  ExportExtent,
+  ShaderEditor,
+  Input,
+  Switcher
 };

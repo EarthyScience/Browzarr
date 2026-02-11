@@ -1,5 +1,5 @@
 .colorbar{
-    z-index: 10;
+    z-index: 3;
     position: absolute;
     left: 50%;
     top: 32px;
