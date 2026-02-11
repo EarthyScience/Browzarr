@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { ThemeProvider } from "next-themes";
 import { Footer, VersionSelector } from "@/components/ui";
-import GithubButton from "@/components/ui/GithubButton";
-import HomeButton from "@/components/ui/HomeButton";
+import GithubButton from "@/components/ui/Elements/GithubButton";
+import HomeButton from "@/components/ui/Elements/HomeButton";
 import MobileUIHider from "@/components/ui/MobileUIHider";
-import ThemeSwitch from "@/components/ui/ThemeSwitch";
+import ThemeSwitch from "@/components/ui/Elements/ThemeSwitch";
 import { BrowZarrPopover } from "./BrowZarrPopover";
 
 export default function ClientRoot({

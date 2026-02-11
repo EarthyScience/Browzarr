@@ -20,7 +20,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Switcher } from '../Switcher';
+import { Switcher } from '../Widgets/Switcher';
 
 const ZARR_STORES = {
   ESDC: 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr',

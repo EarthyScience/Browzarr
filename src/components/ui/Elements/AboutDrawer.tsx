@@ -1,5 +1,5 @@
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
-import AboutInfo from "@/components/ui/AboutInfo";
+import AboutInfo from "@/components/ui/Elements/AboutInfo";
 import logo from "@/app/logo.png";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";

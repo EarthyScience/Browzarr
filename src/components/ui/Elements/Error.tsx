@@ -1,18 +1,16 @@
 import React from 'react'
-import './css/Error.css'
+import '../css/Error.css'
 import { useErrorStore } from '@/GlobalStates'
 import { ErrorList } from './ErrorList'
 import { useShallow } from 'zustand/shallow'
-import { Button } from './button'
+import { Button } from '@/components/ui'
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
-const Error = () => {
+export const Error = () => {
     const {error, setError} = useErrorStore(useShallow(state => ({
         error: state.error,
         setError: state.setError
@@ -41,5 +39,3 @@ const Error = () => {
     </>
   )
 }
-
-export default Error

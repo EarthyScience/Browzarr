@@ -1,6 +1,6 @@
 import React from 'react'
 
-const Hider = ({children, className, show}:{children: React.ReactNode, className?:string, show: boolean}) => {
+export const Hider = ({children, className, show}:{children: React.ReactNode, className?:string, show: boolean}) => {
   return (
     <div 
         className={`${className} grid transition-all duration-300 ease-in-out`}
@@ -15,4 +15,3 @@ const Hider = ({children, className, show}:{children: React.ReactNode, className
   )
 }
 
-export default Hider

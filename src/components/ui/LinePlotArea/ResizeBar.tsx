@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import './css/ResizeBar.css'
+import '../css/ResizeBar.css'
 
 const MIN_HEIGHT = 50; // Minimum height in pixels
 const KEYBOARD_STEP = 10; // Pixels to move per keypress

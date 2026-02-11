@@ -62,7 +62,7 @@ const SetKeyFrame = (frame: number) =>{
     addKeyFrame(frame, thisState)
 }
 
-const KeyFrames = () => {
+export const KeyFrames = () => {
 
     const {animProg, setAnimProg} = usePlotStore(useShallow(state => ({
         animProg:state.animProg, setAnimProg:state.setAnimProg
@@ -285,5 +285,3 @@ const KeyFrames = () => {
     </Card>
   )
 }
-
-export default KeyFrames
