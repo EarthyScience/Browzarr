@@ -5,6 +5,7 @@ const ESDC = 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-4
 type AnalysisState = {
   analysisMode: boolean;
   axis: number;
+  reduceOnAxis: boolean;
   operation: string;
   execute: boolean;
   useTwo: boolean;
@@ -19,9 +20,12 @@ type AnalysisState = {
   analysisDim: number | null;
   customShader: string | undefined;
   useEditor: boolean;
+  executeCustom: boolean;
+  outputShape: number[];
 
   setAnalysisMode: (analysisMode: boolean) => void;
   setAxis: (axis: number) => void;
+  setReduceOnAxis: (reduceOnAxis: boolean) => void;
   setOperation: (operation: string) => void;
   setExecute: (execute: boolean) => void;
   setUseTwo: (useTwo: boolean) => void;
@@ -35,11 +39,13 @@ type AnalysisState = {
   setAnalysisStore: (analysisStore: string) => void;
   setAnalysisDim: (analysisDim: number | null) => void;
   setCustomShader: (customShader: string | undefined) => void;
+  setOutPutShape: (outputShape: number[]) => void;
 }
 
 export const useAnalysisStore = create<AnalysisState>((set) => ({
   analysisMode: false,
   axis: 0,
+  reduceOnAxis: false,
   operation: "Default", 
   execute: false,
   useTwo: false,
@@ -54,9 +60,12 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   analysisDim: null,
   customShader: undefined,
   useEditor: false,
+  executeCustom:false,
+  outputShape: [],
 
   setAnalysisMode: (analysisMode) => set({ analysisMode }),
   setAxis: (axis) => set({ axis }),
+  setReduceOnAxis: (reduceOnAxis) => set({ reduceOnAxis }),
   setOperation: (operation) => set({ operation }),
   setExecute: (execute) => set({ execute }),
   setUseTwo: (useTwo) => set({ useTwo}),
@@ -70,4 +79,5 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   setAnalysisStore: (analysisStore) => set({ analysisStore }),
   setAnalysisDim: (analysisDim) => set({ analysisDim }),
   setCustomShader: (customShader) => set({ customShader }),
+  setOutPutShape: (outputShape) => set({ outputShape }),
 }));

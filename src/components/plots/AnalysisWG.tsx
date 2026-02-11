@@ -2,7 +2,7 @@
 import { ArrayMinMax, GetCurrentArray } from '@/utils/HelperFuncs';
 import * as THREE from 'three';
 import React, { useEffect, useRef } from 'react';
-import { DataReduction, Convolve, Multivariate2D, Multivariate3D, CUMSUM3D, Convolve2D } from '../computation/webGPU';
+import { DataReduction, Convolve, Multivariate2D, Multivariate3D, CUMSUM3D, Convolve2D, CustomShader } from '../computation/webGPU';
 import { useGlobalStore, useAnalysisStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { GetArray } from '../zarr/ZarrLoaderLRU';
@@ -51,13 +51,14 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
 
     const setPlotType = usePlotStore(state => state.setPlotType);
 
-    const { axis, execute, operation, useTwo, variable2, valueScalesOrig, kernelOperation, kernelSize, kernelDepth, reverseDirection, analysisStore, analysisMode, analysisArray, analysisDim,
-        setValueScalesOrig, setAnalysisArray, setAnalysisMode, setOperation } = useAnalysisStore(useShallow(state => ({
+    const { axis, execute, operation, useTwo, variable2, executeCustom, valueScalesOrig, kernelOperation, kernelSize, kernelDepth, reverseDirection, outputShape, analysisStore, analysisMode, analysisArray, analysisDim,
+        setValueScalesOrig, setAnalysisArray, setAnalysisMode, customShader } = useAnalysisStore(useShallow(state => ({
             axis: state.axis, execute: state.execute, operation: state.operation, useTwo: state.useTwo, variable2: state.variable2,
             valueScalesOrig: state.valueScalesOrig, kernelOperation: state.kernelOperation, kernelSize: state.kernelSize, kernelDepth: state.kernelDepth,
             reverseDirection: state.reverseDirection, analysisStore: state.analysisStore, analysisMode: state.analysisMode,
-            analysisArray: state.analysisArray, analysisDim: state.analysisDim, setValueScalesOrig: state.setValueScalesOrig,
-            setAnalysisArray: state.setAnalysisArray, setAnalysisMode: state.setAnalysisMode, setOperation: state.setOperation
+            analysisArray: state.analysisArray, analysisDim: state.analysisDim, outputShape:state.outputShape,
+            executeCustom: state.executeCustom, setValueScalesOrig: state.setValueScalesOrig,
+            setAnalysisArray: state.setAnalysisArray, setAnalysisMode: state.setAnalysisMode, customShader: state.customShader
         })));
 
     const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
@@ -189,6 +190,35 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
         executeAnalysis();
 
     }, [execute]); 
+
+    useEffect(()=>{
+        const shapeInfo = { dataShape, outputShape, strides};
+        const kernelParams = { kernelDepth, kernelSize };
+
+        const is2D = outputShape.length === 2
+        async function Analyze(){
+            const dataArray = GetCurrentArray(analysisStore);
+            const newArray = await CustomShader(dataArray, shapeInfo, kernelParams, axis, customShader?? "") as Float16Array
+            const {minVal, maxVal} = valueScales
+            const textureData = new Uint8Array(
+                newArray.map((i) => {
+                    const normed = (i - minVal) / (maxVal - minVal);
+                    return isNaN(normed) ? 255 : normed * 254;
+                })
+            );
+            const newTexture = CreateTexture(outputShape, textureData)
+            setAnalysisArray(newArray);
+            if (newTexture){
+                setTexture(newTexture);
+            }
+            setIsFlat(is2D)
+            setPlotType(is2D ? 'flat' : 'volume')
+            setAnalysisMode(true);
+            setStatus(null);
+        }
+       
+        Analyze()
+    },[executeCustom])
 
     return null;
 }

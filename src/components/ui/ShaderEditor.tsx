@@ -10,8 +10,11 @@ import {
 } from '@/components/ui/select';
 import { Button } from './button';
 import { createShaders } from '../computation/WGSLShaders';
-import { useAnalysisStore } from '@/GlobalStates';
+import { useAnalysisStore, useGlobalStore } from '@/GlobalStates';
 import { IoCloseCircleSharp } from "react-icons/io5";
+import { useShallow } from 'zustand/shallow';
+import {Hider, KernelVisualizer, Input, Switcher} from '../ui';
+import { HandleKernelNums } from '@/utils/HelperFuncs';
 
 const boilerplates = createShaders("f16")['boilerPlates']
 
@@ -81,14 +84,38 @@ const GenBoilerPlat = (boilerPlate: string) =>{
 
 export const ShaderEditor = ({visible} : {visible: boolean}) => {
     const [shader, setShader] = useState<string | undefined>()
+    const [showUniforms, setShowUniforms] = useState(false)
+    const [newDim, setNewDim] = useState(0)
     const [boilerPlate, setBoilerPlate] = useState("")
     const {resolvedTheme} = useTheme()
-    
+    const {executeCustom, kernelDepth, kernelSize, reduceOnAxis, setKernelDepth, setKernelSize, setReduceOnAxis} = useAnalysisStore(useShallow(state => ({
+        executeCustom: state.executeCustom,
+        kernelSize: state.kernelSize,
+        kernelDepth: state.kernelDepth,
+        reduceOnAxis: state.reduceOnAxis,
+        setKernelDepth: state.setKernelDepth,
+        setKernelSize: state.setKernelSize,
+        setReduceOnAxis: state.setReduceOnAxis
+    })))
+    const {dimNames, dataShape} = useGlobalStore(useShallow(state=>({
+        dimNames: state.dimNames,
+        dataShape: state.dataShape
+    })))
+    const [outputShape, setOutPutShape] = useState(dataShape)
+
     useEffect(()=>{
         if (boilerPlate != "None")setShader(GenBoilerPlat(boilerPlate))
         else setShader("")
     }, [boilerPlate])
 
+    useEffect(()=>{
+        if (reduceOnAxis){
+            const newShape = dataShape.filter((_val,idx) => idx != newDim)
+            setOutPutShape(newShape)
+        } else{
+            setOutPutShape(dataShape)
+        }
+    },[reduceOnAxis, newDim, dataShape])
     return (
         <div
             className='flex fixed flex-col items-center w-[100%] h-[100%] z-10  left-1/2 -translate-x-1/2'
@@ -101,9 +128,63 @@ export const ShaderEditor = ({visible} : {visible: boolean}) => {
                 display: visible ? "" : "none"
             }}
         >
-            
+            <Button
+                onClick={()=>setShowUniforms(x=> !x)}
+            >
+                {(showUniforms ? 'Hide' : 'Show') + ' Uniforms'}
+            </Button>
+            <Hider className='w-[60%]' show={showUniforms}>
+                <div className='flex justify-left '>
+                    <div className='mx-8'>
+                        <div className='grid grid-cols-2 gap-2 place-items-center'>
+                            <div className='grid place-items-center'>
+                                <b>reduceDim</b>
+                                <Select onValueChange={e => setNewDim(parseInt(e))}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={dimNames[newDim]} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {dimNames.map((dimName, idx) => (
+                                        <SelectItem key={idx} value={String(idx)}>
+                                            {dimName}
+                                        </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className='grid place-items-center'>
+                                <b>dimLength</b>
+                                {dataShape[newDim]}
+                            </div>
+                        </div>
+                        
+                        <Switcher leftText='Reduce' rightText='Keep' state={reduceOnAxis} onClick={()=> setReduceOnAxis(!reduceOnAxis)} />
+                        <b>Output Shape</b><br/>
+                        {JSON.stringify(outputShape)}
+                    </div>
+                    <div className='grid grid-cols-[80px_auto]'>
+                        <div className='grid'>
+                            <div>
+                                <b>kernelSize</b>
+                                <Input type='number' min='1' step='2' value={String(kernelSize)} 
+                                    onChange={e=>setKernelSize(parseInt(e.target.value))}
+                                    onBlur={e=>setKernelSize(HandleKernelNums(e.target.value))}
+                                />  
+                            </div>
+                            <div>
+                                <b>kernelDepth</b>
+                                <Input type='number' min='1' step='2' value={String(kernelDepth)} 
+                                    onChange={e=>setKernelDepth(parseInt(e.target.value))}
+                                    onBlur={e=>setKernelDepth(HandleKernelNums(e.target.value))}
+                                />
+                            </div>
+                        </div>
+                        <KernelVisualizer size={kernelSize} depth={kernelDepth}/>
+                    </div>
+                </div>                
+            </Hider>
             <div className='mt-8 mb-2 flex justify-start items-center'>
-                <Select onValueChange={e=>setBoilerPlate(e)}>
+                <Select onValueChange={setBoilerPlate}>
                     <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
                         <SelectValue placeholder={ "Include Boilderplate"} />
                     </SelectTrigger>
@@ -144,7 +225,7 @@ export const ShaderEditor = ({visible} : {visible: boolean}) => {
             <Button 
                 className='mt-4 cursor-pointer'
                 onClick={()=>{
-                    useAnalysisStore.setState({customShader:shader})
+                    useAnalysisStore.setState({customShader:shader, executeCustom:!executeCustom, axis:newDim, outputShape})
                 }}
             >
                 Inject

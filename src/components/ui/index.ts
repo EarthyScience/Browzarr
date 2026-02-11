@@ -29,6 +29,8 @@ import VersionSelector from "./VersionSelector";
 import Hider from "./Hider";
 import { ExportExtent } from "./ExportExtent";
 import { ShaderEditor } from "./ShaderEditor";
+import { Input } from "./input";
+import { Switcher } from "./Switcher";
 export {
   Navbar,
   Footer,
@@ -60,5 +62,7 @@ export {
   VersionSelector,
   Hider,
   ExportExtent,
-  ShaderEditor
+  ShaderEditor,
+  Input,
+  Switcher
 };
