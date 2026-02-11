@@ -146,7 +146,6 @@ export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {sha
     pass.setBindGroup(0, bindGroup);
     pass.dispatchWorkgroups(workGroups[0], workGroups[1]);
     pass.end();
-    console.log(workGroups)
     encoder.copyBufferToBuffer(
     outputBuffer, 0,
     readBuffer, 0,
@@ -255,7 +254,6 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
     const pass = encoder.beginComputePass({
         label: 'convolution compute pass',
     });
-    console.log(workGroups)
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bindGroup);
     pass.dispatchWorkgroups(workGroups[2], workGroups[1], workGroups[0]);
@@ -776,19 +774,6 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
 
     const defs = makeShaderDataDefinitions(shaderCode);
     const myUniformValues = makeStructuredView(defs.uniforms.params);
-    console.log({
-        xStride,
-        yStride,
-        zStride,
-        xSize: shape[2], 
-        ySize: shape[1],
-        zSize: shape[0],
-        workGroups:[workGroups[2], workGroups[1], workGroups[0]],
-        kernelDepth,
-        kernelSize,
-        reduceDim,
-        dimLength
-    })
     myUniformValues.set({
         xStride,
         yStride,
@@ -849,7 +834,6 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bindGroup);
     if (is2D){
-        console.log(workGroups)
         pass.dispatchWorkgroups(workGroups[1], workGroups[2]); //Honestly don't know why it's Y/X on 2D but X/Y/Z on 3D but it is what it is
     } else {
         pass.dispatchWorkgroups(workGroups[2], workGroups[1], workGroups[0]);
