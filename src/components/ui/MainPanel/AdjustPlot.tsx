@@ -3,14 +3,11 @@ import React, {useState, useEffect} from 'react'
 import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/GlobalStates';
 import '../css/MainPanel.css'
 import { useShallow } from 'zustand/shallow';
-import { Slider as UISlider } from '@/components/ui/slider';
-import { SliderThumbs } from '@/components/ui/SliderThumbs';
-import { Button } from '../button';
+import { SliderThumbs } from '@/components/ui/Widgets/SliderThumbs';
 import { LuSettings } from "react-icons/lu";
 import { RxReset } from "react-icons/rx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Input } from '../input';
-import { Switch } from '../switch';
+import { Input, Switch, Hider, Button, Slider as UISlider } from '@/components/ui';
 import {
   Tooltip,
   TooltipContent,
@@ -19,7 +16,6 @@ import {
 import { parseLoc, normalize, denormalize } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
-import Hider from '../Hider';
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
     return val*range+min;

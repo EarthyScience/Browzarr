@@ -2,7 +2,7 @@
 import React, {useEffect, useState} from 'react'
 import { IoImage } from "react-icons/io5";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Input } from "./input";
+import { Input, Switch, Hider, Button, Switcher } from "@/components/ui";
 import {
   Tooltip,
   TooltipContent,
@@ -18,11 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Switch } from './switch';
-import Hider from './Hider';
-import { Button } from './button';
 import { BsBoxArrowRight } from "react-icons/bs";
-import { Switcher } from './Switcher';
 import { FaLongArrowAltRight } from "react-icons/fa";
 
 

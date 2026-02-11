@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react"
 import { useCacheStore, useGlobalStore, usePlotStore, useZarrStore } from '@/GlobalStates'
 import { useShallow } from 'zustand/shallow'
-import { SliderThumbs } from "@/components/ui/SliderThumbs"
-import { Button } from "@/components/ui/button"
+import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs"
 import Metadata, { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"
-import { Input } from "../input"
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { parseLoc, HandleCoarselNums } from "@/utils/HelperFuncs"
 import {
@@ -13,9 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "../switch"
-import Hider from "../Hider"
+import { Badge, Hider, Switch, Input, Button } from "@/components/ui"
 
 const formatArray = (value: string | number[]): string => {
   if (typeof value === 'string') return value

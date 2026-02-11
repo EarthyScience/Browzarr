@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react'
 import { MdOutlineRocketLaunch } from "react-icons/md";
-import { Potato } from './Icons';
+import { Potato } from '../Elements/Icons';
 import { FaCarSide } from "react-icons/fa6";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { useGlobalStore } from '@/GlobalStates';

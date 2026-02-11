@@ -1,5 +1,5 @@
 import React from 'react'
-import './css/ShowLinePlot.css'
+import '../css/ShowLinePlot.css'
 
 const ShowLinePlot = ({onClick}: {onClick: () => void}) => {
 

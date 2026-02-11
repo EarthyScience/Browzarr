@@ -5,7 +5,7 @@ import {
 	PlotLineButton,
 	useCSSVariable,
 } from "@/components/ui";
-import "./css/Navbar.css";
+import "../css/Navbar.css";
 import { useRef, useState } from "react";
 import { MdFlipCameraIos } from "react-icons/md";
 import { RiCloseLargeLine, RiMenu2Line } from "react-icons/ri";
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useGlobalStore, usePlotStore } from "@/GlobalStates";
-import { Orthographic, Perspective } from "./Icons";
+import { Orthographic, Perspective } from "../Elements/Icons";
 import PerformanceMode from "./PerformanceMode";
 
 const Navbar = React.memo(function Navbar() {
