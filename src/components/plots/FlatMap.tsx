@@ -63,7 +63,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
     const shapeLength = dimArrays.length
 
     const dimSlices = useMemo (() => {
-      let slices = isFlat 
+      let slices = dimArrays.length === 2
         ? [
           dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
           dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
