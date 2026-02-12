@@ -9,14 +9,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from './button';
-import { createShaders } from '../computation/WGSLShaders';
 import { useAnalysisStore, useGlobalStore } from '@/GlobalStates';
 import { IoCloseCircleSharp } from "react-icons/io5";
 import { useShallow } from 'zustand/shallow';
-import {Hider, KernelVisualizer, Input, Switcher} from '../ui';
-import { HandleKernelNums } from '@/utils/HelperFuncs';
-
-const boilerplates = createShaders("f16")['boilerPlates']
+import {Hider, Input, Switcher} from '../ui';
+import { templates } from './ShaderTemplates';
 
 const selectedPlates = {
     None: " ",
@@ -25,86 +22,32 @@ const selectedPlates = {
     Convolution2D: "ConvolutionBoilerPlate2D"
 }
 
-const kernelLoop3D = /* WGSL */`
-    for (var kx: i32 = xy_start; kx < xy_end; kx++) {
-        for (var ky: i32 = xy_start; ky < xy_end; ky++) {
-            for (var kz: i32 = z_start; kz < z_end; kz++){
-                let in_coord = vec3<i32>(global_id) + vec3<i32>(kx, ky, kz);
-                if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
-                    in_coord.y >= 0 && in_coord.y < i32(ySize) &&
-                    in_coord.z >= 0 && in_coord.z < i32(zSize)) { //Ensure the sampled point is within dataspace
-                    let xOffset = kx * i32(xStride);
-                    let yOffset = ky * i32(yStride);
-                    let zOffset = kz * i32(zStride);
-                    let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
-
-                    //Write your Kernel Code here
-                }
-            }
-        }
-    }
-`
-const kernelLoop2D = /* WGSL */`
-     for (var kx: i32 = -xy_radius; kx <= xy_radius; kx++) {
-        for (var ky: i32 = -xy_radius; ky <= xy_radius; ky++) {
-            let in_coord = vec2<i32>(i32(global_id.x), i32(global_id.y)) + vec2<i32>(kx, ky);
-            if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
-                in_coord.y >= 0 && in_coord.y < i32(ySize)) { //Ensure the sampled point is within dataspace
-                let xOffset = kx * i32(xStride);
-                let yOffset = ky * i32(yStride);
-                let newIdx = i32(globalIdx) + xOffset + yOffset;
-                
-                //Write your Kernel Code here
-            }
-        }
-    }
-    
-`
-
-const GenBoilerPlat = (boilerPlate: string) =>{
-    let header =  boilerplates[boilerPlate as keyof typeof boilerplates]?.replace("    ", "")?? "" 
-    function convolution (boilerPlate: string){
-        switch ( boilerPlate ){
-        case "ConvolutionBoilerPlate":
-            return kernelLoop3D;
-        case "ConvolutionBoilerPlate2D":
-            return kernelLoop2D;
-        default:
-            return ""
-    }
-    }
-    const codeRegion = `
-    //WRITE YOUR CODE HERE
-
-    ${convolution(boilerPlate)}
-}
-`
-    return header ? header + codeRegion : ""
-}
-
 export const ShaderEditor = ({visible} : {visible: boolean}) => {
     const [shader, setShader] = useState<string | undefined>()
     const [showUniforms, setShowUniforms] = useState(false)
     const [newDim, setNewDim] = useState(0)
     const [boilerPlate, setBoilerPlate] = useState("")
     const {resolvedTheme} = useTheme()
-    const {executeCustom, kernelDepth, kernelSize, reduceOnAxis, setKernelDepth, setKernelSize, setReduceOnAxis} = useAnalysisStore(useShallow(state => ({
+    const {executeCustom, kernelDepth, kernelSize, axis, reduceOnAxis, variable2, setKernelDepth, setKernelSize, setReduceOnAxis} = useAnalysisStore(useShallow(state => ({
         executeCustom: state.executeCustom,
         kernelSize: state.kernelSize,
         kernelDepth: state.kernelDepth,
         reduceOnAxis: state.reduceOnAxis,
+        axis: state.axis,
+        variable2: state.variable2,
         setKernelDepth: state.setKernelDepth,
         setKernelSize: state.setKernelSize,
         setReduceOnAxis: state.setReduceOnAxis
     })))
-    const {dimNames, dataShape} = useGlobalStore(useShallow(state=>({
+    const {dimNames, dataShape, variable} = useGlobalStore(useShallow(state=>({
         dimNames: state.dimNames,
-        dataShape: state.dataShape
+        dataShape: state.dataShape,
+        variable: state.variable
     })))
     const [outputShape, setOutPutShape] = useState(dataShape)
 
     useEffect(()=>{
-        if (boilerPlate != "None")setShader(GenBoilerPlat(boilerPlate))
+        if (boilerPlate != "None")setShader(templates[boilerPlate as keyof typeof templates])
         else setShader("")
     }, [boilerPlate])
 
@@ -118,7 +61,7 @@ export const ShaderEditor = ({visible} : {visible: boolean}) => {
     },[reduceOnAxis, newDim, dataShape])
     return (
         <div
-            className='flex fixed flex-col items-center w-[100%] h-[100%] z-10  left-1/2 -translate-x-1/2'
+            className='fixed flex flex-col items-center w-[100%] h-[100%] z-10 left-1/2 -translate-x-1/2'
             style={{
                 backdropFilter:'blur(20px)',
                 borderRadius:'10px',
@@ -128,65 +71,43 @@ export const ShaderEditor = ({visible} : {visible: boolean}) => {
                 display: visible ? "" : "none"
             }}
         >
-            <Button
-                onClick={()=>setShowUniforms(x=> !x)}
-            >
-                {(showUniforms ? 'Hide' : 'Show') + ' Uniforms'}
-            </Button>
-            <Hider className='w-[60%]' show={showUniforms}>
-                <div className='flex justify-left '>
-                    <div className='mx-8'>
-                        <div className='grid grid-cols-2 gap-2 place-items-center'>
-                            <div className='grid place-items-center'>
-                                <b>reduceDim</b>
-                                <Select onValueChange={e => setNewDim(parseInt(e))}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder={dimNames[newDim]} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {dimNames.map((dimName, idx) => (
-                                        <SelectItem key={idx} value={String(idx)}>
-                                            {dimName}
-                                        </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className='grid place-items-center'>
-                                <b>dimLength</b>
-                                {dataShape[newDim]}
-                            </div>
-                        </div>
-                        
-                        <Switcher leftText='Reduce' rightText='Keep' state={reduceOnAxis} onClick={()=> setReduceOnAxis(!reduceOnAxis)} />
-                        <b>Output Shape</b><br/>
-                        {JSON.stringify(outputShape)}
-                    </div>
-                    <div className='grid grid-cols-[80px_auto]'>
-                        <div className='grid'>
-                            <div>
-                                <b>kernelSize</b>
-                                <Input type='number' min='1' step='2' value={String(kernelSize)} 
-                                    onChange={e=>setKernelSize(parseInt(e.target.value))}
-                                    onBlur={e=>setKernelSize(HandleKernelNums(e.target.value))}
-                                />  
-                            </div>
-                            <div>
-                                <b>kernelDepth</b>
-                                <Input type='number' min='1' step='2' value={String(kernelDepth)} 
-                                    onChange={e=>setKernelDepth(parseInt(e.target.value))}
-                                    onBlur={e=>setKernelDepth(HandleKernelNums(e.target.value))}
-                                />
-                            </div>
-                        </div>
-                        <KernelVisualizer size={kernelSize} depth={kernelDepth}/>
-                    </div>
-                </div>                
-            </Hider>
-            <div className='mt-8 mb-2 flex justify-start items-center'>
-                <Select onValueChange={setBoilerPlate}>
+            <Hider className='w-[60%] mt-4' show={showUniforms}>
+                <div style={{
+                    all: "unset",
+                    display: "grid",
+                    gridTemplateColumns: "0.5fr 1.33fr 0.5fr 1.33fr 0.5fr 1.33fr",
+                    gap: "2px",
+                    borderRadius:'12px',
+                    padding: "8px",
+                    placeItems:'center',
+                    background:'var(--modal-shadow)',
+                    border: "1px solid var(--border)"
+                    }}
+                >
+                    <b>reduceDim</b>
+                    <p>This is the dimension kernels will move alonge. It is currently set to <b>{axis}({dimNames[axis]})</b></p>
+                    <b>kernelSize</b>
+                    <p>This is the spatial radius of the kernel for convolution operations. It is currently set to <b>{kernelSize}</b></p>
+                    <b>inputData</b>
+                    <p>This is the input array</p>
+                    <b>dimLength</b>
+                    <p>This is the length of the dimension being reduced. It is currently <b>{dataShape[axis]}</b></p>
+                    <b>kernelDepth</b>
+                    <p>This is the depth radius of the kernel for convolution operations. It is currently set to <b>{kernelDepth}</b></p>
+                    <b>outputData</b>
+                    <p>This is the array computations are written to</p>  
+                    <b>firstData</b>
+                    <p>When using two inputs, this is the first array. It is currently set to <b>{variable}</b></p>
+                    <b>secondData</b>
+                    <p>When using two inputs, this is the second array. It is currently set to <b>{variable2}</b></p>
+                </div>
+            </Hider>   
+            <div className='mt-8 mb-2 flex gap-4 items-center w-[60%]'> 
+                <div className='flex flex-col items-center self-end'> 
+                    <b>Get started with presets</b>
+                    <Select onValueChange={setBoilerPlate}>
                     <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
-                        <SelectValue placeholder={ "Include Boilderplate"} />
+                        <SelectValue placeholder={ "Select Template"} />
                     </SelectTrigger>
                     <SelectContent>
                         {["None", "Reduction", "Convolution3D", "Convolution2D"].map((val,idx)=>(
@@ -196,14 +117,19 @@ export const ShaderEditor = ({visible} : {visible: boolean}) => {
                         ))}
                     </SelectContent>
                 </Select>
-                <b>Get started with presets</b>
+                </div>
+                <Button
+                    onClick={()=>setShowUniforms(x=> !x)}
+                >
+                    {(showUniforms ? 'Hide' : 'Show') + ' Uniforms'}
+                </Button>
             </div>
             <div className='w-[60%] h-[70%] relative'>
                 <IoCloseCircleSharp 
                     size={40}
                     style={{
                         position:'absolute',
-                        left:0,
+                        right:0,
                         bottom:"100%",
                         zIndex:6,
                         cursor:'pointer'
