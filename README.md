@@ -1,12 +1,9 @@
 <div align="center">
 
-<div style="justify-content: center;">
-  <a href="https://browzarr.io">
-    <img src="./public/logo_banner.png" alt="Launch browzarr" height="100">
-  </a>
-</div>
-
+# browzarr.io
 **A browser-based visualization framework for exploring and analyzing Zarr and NetCDF datasets.**
+
+<img src="./public/logo_min.svg" align="right" style="padding-left:0px;" width="180"/>
 
 [![][docs-dev-img]][docs-dev-url]
 [![Zarr](https://img.shields.io/badge/Zarr-Compatible-e34b75)](https://zarr.dev/)
