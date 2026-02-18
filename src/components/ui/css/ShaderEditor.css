@@ -1,0 +1,26 @@
+.configure-uniforms {
+  background:var(--modal-shadow);              
+  border: 1px solid #d0d0d0;    
+  padding: 10px 20px;   
+  border-radius: 6px;               
+  cursor: pointer;
+  display: inline-block;
+  transition: 
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);  
+}
+
+.configure-uniforms:hover {
+  background: #e6e6e6;              
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+  transform: translateY(-1px);      
+}
+
+.configure-uniforms:active {
+  background: #dcdcdc;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.10);
+  transform: translateY(0);         
+}

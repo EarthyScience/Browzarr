@@ -8,18 +8,77 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import './css/ShaderEditor.css'
 import { Button } from './button';
 import { useAnalysisStore, useGlobalStore } from '@/GlobalStates';
 import { IoCloseCircleSharp } from "react-icons/io5";
 import { useShallow } from 'zustand/shallow';
 import {Hider, Input, Switcher} from '../ui';
 import { templates } from './ShaderTemplates';
+import { HiMiniWrench } from "react-icons/hi2";
+import { Popover, PopoverContent, PopoverTrigger } from '../ui';
 
 const selectedPlates = {
     None: " ",
     Reduction:"ReductionBoilerPlate",
     Convolution3D: "ConvolutionBoilerPlate",
     Convolution2D: "ConvolutionBoilerPlate2D"
+}
+
+const ConfigureUniforms = ({newDim, setNewDim} : {newDim:number, setNewDim: React.Dispatch<React.SetStateAction<number>>})=>{
+    const {reduceOnAxis, setKernelDepth, setKernelSize, setReduceOnAxis} = useAnalysisStore(useShallow(state => ({
+        reduceOnAxis: state.reduceOnAxis,
+        axis: state.axis,
+        variable2: state.variable2,
+        setKernelDepth: state.setKernelDepth,
+        setKernelSize: state.setKernelSize,
+        setReduceOnAxis: state.setReduceOnAxis
+    })))
+    const {dimNames} = useGlobalStore(useShallow(state => ({dimNames: state.dimNames})))
+    const [thisKernelSize, setThisKernelSize] = useState(String(useAnalysisStore.getState().kernelSize))
+    const [thisKernelDepth, setThisKernelDepth] = useState(String(useAnalysisStore.getState().kernelDepth))
+
+    return(
+        <Popover>
+            <PopoverTrigger>
+                <div className='configure-uniforms'>
+                    <HiMiniWrench size={26}/>
+                </div>
+            </PopoverTrigger>
+            <PopoverContent>
+                <div className='grid grid-cols-2 gap-2'>
+                    <Switcher leftText='Remain' rightText='Reduce' state={!reduceOnAxis} onClick={()=>setReduceOnAxis(!reduceOnAxis)} className='col-span-2'/>
+                    <b>Reduction Axis</b>
+                    <Select onValueChange={e=> setNewDim(parseInt(e))}>
+                        <SelectTrigger>
+                            <SelectValue placeholder={dimNames[newDim]} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {dimNames.map((val, idx) =>(
+                                <SelectItem key={idx} value={String(idx)}>
+                                    {val}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <div>
+                        kernelSize
+                        <Input type='number' value={thisKernelSize} 
+                            onChange={e=> setThisKernelSize(e.target.value)}
+
+                        />
+                    </div>
+                    <div>
+                        kernelDepth
+                        <Input type='number' value={thisKernelDepth} 
+                            onChange={e=> setThisKernelDepth(e.target.value)}
+
+                        />
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
+    )
 }
 
 export const ShaderEditor = ({visible} : {visible: boolean}) => {
@@ -102,27 +161,40 @@ export const ShaderEditor = ({visible} : {visible: boolean}) => {
                     <p>When using two inputs, this is the second array. It is currently set to <b>{variable2}</b></p>
                 </div>
             </Hider>   
-            <div className='mt-8 mb-2 flex gap-4 items-center w-[60%]'> 
-                <div className='flex flex-col items-center self-end'> 
+            <div className='mt-8 mb-2 flex gap-4 items-center w-[60%] h-[50px]'> 
+                <div className='flex flex-col items-center self-end '> 
                     <b>Get started with presets</b>
                     <Select onValueChange={setBoilerPlate}>
-                    <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
-                        <SelectValue placeholder={ "Select Template"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {["None", "Reduction", "Convolution3D", "Convolution2D"].map((val,idx)=>(
-                            <SelectItem key={idx} value={selectedPlates[val as keyof typeof selectedPlates]}>
-                                {val}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                        <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
+                            <SelectValue placeholder={ "Select Template"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {["None", "Reduction", "Convolution3D", "Convolution2D"].map((val,idx)=>(
+                                <SelectItem key={idx} value={selectedPlates[val as keyof typeof selectedPlates]}>
+                                    {val}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <Button
                     onClick={()=>setShowUniforms(x=> !x)}
                 >
                     {(showUniforms ? 'Hide' : 'Show') + ' Uniforms'}
                 </Button>
+                <div>
+                    Reduction:  
+                    <span style={{ color: reduceOnAxis ? "#44ef91" : "#ef4444" }}>
+                        {reduceOnAxis ? " True" : " False"}
+                    </span>
+                </div>
+                <div>
+                    Using Two Variables:  
+                    <span style={{ color: variable2 != "Default" ? "#44ef91" : "#ef4444" }}>
+                        {reduceOnAxis ? "  True" : "  False"}
+                    </span>
+                </div>
+                <ConfigureUniforms newDim={newDim} setNewDim={setNewDim}/>
             </div>
             <div className='w-[60%] h-[70%] relative'>
                 <IoCloseCircleSharp 
