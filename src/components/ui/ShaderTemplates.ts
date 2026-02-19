@@ -133,11 +133,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     //Continue Here
 
-    let outputIndex = outY * xSize + outX;
-
     // Cast final value to f16 and write to output
     let calculatedValue = 0.0; 
-    outputData[outputIndex] = f16(calculatedValue); 
+    outputData[globalIdx] = f16(calculatedValue); 
 }
 `
 
@@ -196,11 +194,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
     }
     //Continue Here
 
-    let outputIndex = outY * xSize + outX;
-
     // Cast final value to f16 and write to output
     let calculatedValue = 0.0; 
-    outputData[outputIndex] = f16(calculatedValue); 
+    outputData[globalIdx] = f16(calculatedValue); 
 }
 `
 

@@ -1,10 +1,10 @@
 import React from 'react'
 
-export const Switcher = ({leftText, rightText, state, onClick} : {leftText: string, rightText: string, state: boolean, onClick: () => void}) => {
+export const Switcher = ({leftText, rightText, state, onClick, className} : {leftText: string, rightText: string, state: boolean, onClick: () => void, className?: string}) => {
 
   return (
     <div 
-        className='relative w-full text-center h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
+        className={`${className} relative w-full text-center h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4`}
         onClick={onClick}  
     >
         <span className={`z-10 font-semibold transition-colors ${state ? 'text-primary' : 'text-secondary'}`}>
