@@ -1,6 +1,6 @@
 {
   "name": "browzarr",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A browser-based visualization toolkit for exploring and analyzing Zarr data stores.",
   "keywords": [
     "zarr",
