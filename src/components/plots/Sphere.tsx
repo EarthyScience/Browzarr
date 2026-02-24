@@ -53,7 +53,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
     
     const {animate, animProg, cOffset, cScale, selectTS, lonExtent, latExtent, 
       lonResolution, latResolution, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
-      zSlice, ySlice, xSlice, fillValue,
+      zSlice, ySlice, xSlice, fillValue, borderTexture,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
         animate: state.animate,
         animProg: state.animProg,
@@ -72,6 +72,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         ySlice: state.ySlice,
         xSlice: state.xSlice,
         fillValue:state.fillValue,
+        borderTexture:state.borderTexture,
         getColorIdx: state.getColorIdx,
         incrementColorIdx: state.incrementColorIdx
     })))
@@ -122,6 +123,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
             glslVersion: THREE.GLSL3,
             uniforms: {
                 map: { value: textures },
+                borders: { value: borderTexture},
                 textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
                 selectTS: {value: selectTS},
                 selectBounds: {value: bounds},
@@ -145,7 +147,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
             depthWrite:true,
         })
         return shader
-    },[isFlat, textures])
+    },[isFlat, textures, borderTexture])
 
     const backMaterial = shaderMaterial.clone()
     backMaterial.side = THREE.BackSide;

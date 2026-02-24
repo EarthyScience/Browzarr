@@ -58,6 +58,7 @@ type PlotState ={
   coarsen: boolean, //Seperate from zarr store so dependencies don't update when changing coarsen in a menu
   kernel:{kernelSize:number, kernelDepth:number}
   is360Deg:boolean,
+  borderTexture: THREE.Texture | undefined;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -171,6 +172,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   coarsen: false,
   kernel:{kernelDepth:1, kernelSize:1},
   is360Deg:false,
+  borderTexture: undefined,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),

@@ -7,6 +7,7 @@ out vec4 color;
 in vec3 aPosition;
 
 uniform sampler3D map[14];
+uniform sampler2D borders;
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
 
@@ -69,6 +70,12 @@ float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so
 
 void main(){
     vec2 sampleCoord = giveUV(aPosition);
+    float border = texture(borders, vec2(sampleCoord.x, 1.-sampleCoord.y)).r;
+    border = abs((border-0.5)*2.0);
+    if (border < 0.05){
+        color = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
     bool inBounds = all(greaterThanEqual(sampleCoord, vec2(0.0))) && 
                 all(lessThanEqual(sampleCoord, vec2(1.0)));
     if (inBounds) {
