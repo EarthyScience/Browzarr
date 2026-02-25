@@ -599,9 +599,9 @@ const GlobalOptions = () =>{
       <>
         <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
         <Hider show={showBorders}>
-          <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
+          {/* <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
             ()=>usePlotStore.setState({useBorderTexture:!useBorderTexture})
-          } />
+          } /> */}
           <Hider show={useBorderTexture} >
             <b>Line Width</b>
             <Slider className='my-2'
