@@ -8,7 +8,8 @@ in vec3 vDirection;
 
 out vec4 color;
 
-uniform sampler3D map[14];
+uniform sampler3D map[14]; // We are limited to 16 textures. Cmap counts as one. 15 is weird so we use 14. 
+uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
 
@@ -26,6 +27,12 @@ uniform vec3 nanColor;
 uniform float opacityMag;
 uniform bool useClipScale;
 uniform float fillValue;
+uniform int maskValue;
+uniform vec2 latBounds;
+uniform vec2 lonBounds;
+
+#define epsilon 0.000001
+#define pi 3.1415926535
 
 
 vec2 hitBox(vec3 orig, vec3 dir) {
@@ -41,6 +48,17 @@ vec2 hitBox(vec3 orig, vec3 dir) {
     return vec2(t0, t1);
 }
 
+vec2 realCoords(vec2 uv){
+    vec2 normalizedLon = lonBounds/2./pi+0.5;
+    vec2 normalizedLat = latBounds/pi+0.5;
+    float lonScale = normalizedLon.y-normalizedLon.x;
+    float latScale = normalizedLat.y-normalizedLat.x;
+    
+    float u = uv.x * lonScale + normalizedLon.x;
+    float v = uv.y * latScale + normalizedLat.x;
+
+    return vec2(u, v);
+}
 
 float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
 
@@ -60,8 +78,6 @@ float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so
     else if (index == 13) return texture(map[13], p).r;
     else return 0.0;
 }
-
-#define epsilon 0.00001
 
 void main() {
     vec3 rayDir = normalize(vDirection);
@@ -102,8 +118,17 @@ void main() {
             t += useCoarseStep ? coarseDelta : fineDelta;
             continue;
         }
-
         vec3 texCoord = p / scale + 0.5;
+        if (maskValue != 0){
+            vec2 newV = texCoord.xy; 
+            vec2 realV = realCoords(newV);
+            float mask = texture(maskTexture, realV).r;
+            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
+            if (cond){
+                t += useCoarseStep ? coarseDelta : fineDelta;
+                continue;
+            }
+        }
         texCoord.z = mod(texCoord.z + animateProg, 1.0001);
         texCoord = clamp(texCoord, vec3(0.0), 1. - vec3(epsilon)); // This prevents the the very end of the dimensions having floating point errors
 

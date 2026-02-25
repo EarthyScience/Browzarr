@@ -174,13 +174,16 @@ const Plot = () => {
   useEffect(()=>{ // Rotates flat back when changing away
     usePlotStore.setState({rotateFlat: false})
   },[plotType])
-  const text = useLoader(THREE.TextureLoader, '/global_borders_sdf.png')
+
   useEffect(()=>{
-    if (!text) return;
-    text.magFilter = THREE.LinearFilter
-    text.minFilter = THREE.LinearFilter
-    usePlotStore.setState({borderTexture:text})
-  },[text])
+    const loader = new THREE.TextureLoader()
+    async function SetTextures(){
+      const maskTexture = await loader.loadAsync('/land_mask_sdf.png')
+      const borderTexture = await loader.loadAsync('/border_distance_sdf.png')
+      usePlotStore.setState({borderTexture, maskTexture})
+    }
+    SetTextures()
+  },[])
   
   const Nav = useMemo(()=>Navbar,[])
   return (
