@@ -5,6 +5,7 @@ import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
+import { useCoordBounds } from '@/hooks/useCoordBounds';
 
 interface PCProps {
   texture: THREE.Data3DTexture[] | null,
@@ -147,7 +148,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
     })))
     const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, 
       selectTS, timeScale, xRange, yRange, zRange, fillValue,
-      maskTexture, maskValue, lonExtent, latExtent, lonResolution, latResolution, } = usePlotStore(useShallow(state => ({
+      maskTexture, maskValue } = usePlotStore(useShallow(state => ({
       scalePoints: state.scalePoints,
       scaleIntensity: state.scaleIntensity,
       pointSize: state.pointSize,
@@ -163,10 +164,6 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       fillValue:state.fillValue,
       maskTexture: state.maskTexture,
       maskValue: state.maskValue,
-      lonExtent: state.lonExtent,
-      latExtent: state.latExtent,
-      lonResolution: state.lonResolution,
-      latResolution: state.latResolution,
     })))
     
     const [pointsObj, setPointsObj] = useState<Record<string, number>>({})
@@ -206,13 +203,8 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       geom.setDrawRange(0, arrayLength); // This is used to tell it how many data points are needed since we aren't giving it positions.
       return geom;
     }, [data]);
-    const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
-            const newLatStep = latResolution/2;
-            const newLonStep = lonResolution/2;
-            const newLonBounds = [Math.max(lonExtent[0]-newLonStep, -180), Math.min(lonExtent[1]+newLonStep, 180)]
-            const newLatBounds = [Math.max(latExtent[0]-newLatStep, -90), Math.min(latExtent[1]+newLatStep, 90)]
-            return [newLonBounds, newLatBounds]
-        },[latExtent, lonExtent, lonResolution, latResolution])
+    const {lonBounds, latBounds} = useCoordBounds() 
+
     const shaderMaterial = useMemo(()=> (new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {

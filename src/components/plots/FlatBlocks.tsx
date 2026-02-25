@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { sphereBlocksFrag, flatBlocksVert, flatBlocksVert3D } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
 import { deg2rad } from '@/utils/HelperFuncs'
+import { useCoordBounds } from '@/hooks/useCoordBounds'
 
 const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const {colormap, isFlat, valueScales, flipY,
@@ -17,16 +18,12 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
         textureArrayDepths: state.textureArrayDepths
     })))
     const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, offsetNegatives, rotateFlat, maskTexture, maskValue,
-        lonResolution, latResolution, lonExtent, latExtent} = usePlotStore(useShallow(state=> ({
+        } = usePlotStore(useShallow(state=> ({
         animate: state.animate, animProg: state.animProg, cOffset: state.cOffset,
         cScale: state.cScale, nanColor: state.nanColor, nanTransparency: state.nanTransparency,
         displacement: state.displacement, sphereResolution: state.sphereResolution,
         offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat,
         maskTexture:state.maskTexture, maskValue:state.maskValue,
-        lonExtent: state.lonExtent,
-        latExtent: state.latExtent,
-        lonResolution: state.lonResolution,
-        latResolution: state.latResolution,
     })))
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
         analysisMode: state.analysisMode, axis:state.axis
@@ -75,13 +72,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             );
             return geo
         },[width, height])
-    const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
-          const newLatStep = latResolution/2;
-          const newLonStep = lonResolution/2;
-          const newLonBounds = [Math.max(lonExtent[0]-newLonStep, -180), Math.min(lonExtent[1]+newLonStep, 180)]
-          const newLatBounds = [Math.max(latExtent[0]-newLatStep, -90), Math.min(latExtent[1]+newLatStep, 90)]
-          return [newLonBounds, newLatBounds]
-        },[latExtent, lonExtent, lonResolution, latResolution])
+    const {lonBounds, latBounds} = useCoordBounds()
 
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({

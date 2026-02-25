@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/shallow'
 import { sphereVertex, sphereVertexFlat, sphereFrag, flatSphereFrag } from '../textures/shaders'
 import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
+import { useCoordBounds } from '@/hooks/useCoordBounds'
 
 
 function XYZtoUV(xyz : THREE.Vector3, width: number, height : number){
@@ -51,8 +52,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         textureArrayDepths: state.textureArrayDepths
     })))
     
-    const {animate, animProg, cOffset, cScale, selectTS, lonExtent, latExtent, 
-      lonResolution, latResolution, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
+    const {animate, animProg, cOffset, cScale, selectTS, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
       zSlice, ySlice, xSlice, fillValue, borderTexture, maskTexture, maskValue,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
         animate: state.animate,
@@ -60,10 +60,6 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         cOffset: state.cOffset,
         cScale: state.cScale,
         selectTS: state.selectTS,
-        lonExtent: state.lonExtent,
-        latExtent: state.latExtent,
-        lonResolution: state.lonResolution,
-        latResolution: state.latResolution,
         nanColor: state.nanColor,
         nanTransparency: state.nanTransparency,
         sphereDisplacement: state.displacement,
@@ -109,13 +105,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
       setBoundsObj(prev=>{ return {...newBoundObj, ...prev}})
     }
 
-    const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
-      const newLatStep = latResolution/2;
-      const newLonStep = lonResolution/2;
-      const newLonBounds = [lonExtent[0]-newLonStep, lonExtent[1]+newLonStep]
-      const newLatBounds = [latExtent[0]-newLatStep, latExtent[1]+newLatStep]
-      return [newLonBounds, newLatBounds]
-    },[latExtent, lonExtent, lonResolution, latResolution])
+    const {lonBounds, latBounds} = useCoordBounds()
 
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
     const shaderMaterial = useMemo(()=>{

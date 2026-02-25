@@ -9,6 +9,7 @@ import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
 import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
+import { useCoordBounds } from '@/hooks/useCoordBounds';
 
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
@@ -40,7 +41,6 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
 
     const {cScale, cOffset, animProg, nanTransparency, nanColor, 
       zSlice, ySlice, xSlice, selectTS, coarsen, maskTexture, maskValue,
-      lonResolution, latResolution, lonExtent, latExtent,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
       cOffset: state.cOffset, cScale: state.cScale,
       resetAnim: state.resetAnim, animate: state.animate,
@@ -49,10 +49,6 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
       ySlice: state.ySlice, xSlice: state.xSlice,
       selectTS: state.selectTS, coarsen: state.coarsen,
       maskTexture:state.maskTexture, maskValue:state.maskValue,
-      lonExtent: state.lonExtent,
-      latExtent: state.latExtent,
-      lonResolution: state.lonResolution,
-      latResolution: state.latResolution,
       getColorIdx: state.getColorIdx,
       incrementColorIdx: state.incrementColorIdx
     })))
@@ -100,13 +96,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
     const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
     const analysisDims = useMemo(()=>dimArrays.length > 2 ? dimSlices.filter((_e,idx)=> idx != axis) : dimSlices,[dimSlices,axis])
 
-    const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
-      const newLatStep = latResolution/2;
-      const newLonStep = lonResolution/2;
-      const newLonBounds = [Math.max(lonExtent[0]-newLonStep, -180), Math.min(lonExtent[1]+newLonStep, 180)]
-      const newLatBounds = [Math.max(latExtent[0]-newLatStep, -90), Math.min(latExtent[1]+newLatStep, 90)]
-      return [newLonBounds, newLatBounds]
-    },[latExtent, lonExtent, lonResolution, latResolution])
+    const {lonBounds, latBounds} = useCoordBounds()
 
     useEffect(()=>{
         geometry.dispose()

@@ -5,6 +5,7 @@ import { useGlobalStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
 import { invalidate, useFrame } from '@react-three/fiber';
 import { deg2rad } from '@/utils/HelperFuncs';
+import { useCoordBounds } from '@/hooks/useCoordBounds';
 
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
@@ -20,8 +21,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
     const {
       valueRange, xRange, yRange, zRange, quality, useOrtho, 
       animProg, cScale, cOffset, useFragOpt, transparency, maskTexture, maskValue,
-      nanTransparency, nanColor, vTransferRange, vTransferScale, fillValue, lonExtent, latExtent, 
-      lonResolution, latResolution} = usePlotStore(useShallow(state => ({
+      nanTransparency, nanColor, vTransferRange, vTransferScale, fillValue} = usePlotStore(useShallow(state => ({
       valueRange: state.valueRange, xRange: state.xRange,
       yRange: state.yRange, zRange: state.zRange,
       quality: state.quality, useOrtho: state.useOrtho,
@@ -35,22 +35,12 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       vTransferRange: state.vTransferRange,
       vTransferScale: state.vTransferScale,
       fillValue: state.fillValue,
-      lonExtent: state.lonExtent,
-      latExtent: state.latExtent,
-      lonResolution: state.lonResolution,
-      latResolution: state.latResolution,
     })))
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
     const timeRatio = shape.z/shape.x;
-     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
-          const newLatStep = latResolution/2;
-          const newLonStep = lonResolution/2;
-          const newLonBounds = [lonExtent[0]-newLonStep, lonExtent[1]+newLonStep]
-          const newLatBounds = [latExtent[0]-newLatStep, latExtent[1]+newLatStep]
-          return [newLonBounds, newLatBounds]
-    },[latExtent, lonExtent, lonResolution, latResolution])
-    console.log(lonBounds)
+    const {lonBounds, latBounds} = useCoordBounds()
+
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
