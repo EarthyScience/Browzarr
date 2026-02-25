@@ -1,6 +1,7 @@
 //This is for Flat Textures but with 3D textures to sample from i,e; animation
 
 uniform sampler3D map[14];
+uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
 
@@ -10,11 +11,27 @@ uniform float cScale;
 uniform float animateProg;
 uniform float nanAlpha;
 uniform vec3 nanColor;
+uniform vec2 latBounds;
+uniform vec2 lonBounds;
 uniform vec4[10] selectBounds; 
+uniform int maskValue;
 
 varying vec2 vUv;
 out vec4 Color;
 #define epsilon 0.0001
+#define PI 3.14159265
+
+vec2 realCoords(vec2 uv){
+    vec2 normalizedLon = lonBounds/2./PI+0.5;
+    vec2 normalizedLat = latBounds/PI+0.5;
+    float lonScale = normalizedLon.y-normalizedLon.x;
+    float latScale = normalizedLat.y-normalizedLat.x;
+    
+    float u = uv.x * lonScale + normalizedLon.x;
+    float v = uv.y * latScale + normalizedLat.x;
+
+    return vec2(u, v);
+}
 
 float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
     if (index == 0) return texture(map[0], p).r;
@@ -49,6 +66,16 @@ bool isValid(vec2 sampleCoord){
 }
 
 void main() {
+    if (maskValue != 0){
+        vec2 maskUV = realCoords(vUv);
+        float mask = texture(maskTexture, maskUV).r;
+        bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
+        if (cond){
+            Color = vec4(nanColor, 1.);
+            Color.a = nanAlpha;  
+            return;
+        }
+    }
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     vec3 texCoord = vec3(vUv, animateProg);

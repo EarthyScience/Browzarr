@@ -1,10 +1,9 @@
-
 import * as THREE from 'three'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { pointFrag, pointVert } from '@/components/textures/shaders'
 import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
-import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
+import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 
 interface PCProps {
@@ -146,7 +145,9 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       dataShape: state.dataShape,
       textureData: state.textureData
     })))
-    const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, selectTS, timeScale, xRange, yRange, zRange, fillValue} = usePlotStore(useShallow(state => ({
+    const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, 
+      selectTS, timeScale, xRange, yRange, zRange, fillValue,
+      maskTexture, maskValue, lonExtent, latExtent, lonResolution, latResolution, } = usePlotStore(useShallow(state => ({
       scalePoints: state.scalePoints,
       scaleIntensity: state.scaleIntensity,
       pointSize: state.pointSize,
@@ -159,7 +160,13 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       xRange: state.xRange,
       yRange: state.yRange,
       zRange: state.zRange,
-      fillValue:state.fillValue
+      fillValue:state.fillValue,
+      maskTexture: state.maskTexture,
+      maskValue: state.maskValue,
+      lonExtent: state.lonExtent,
+      latExtent: state.latExtent,
+      lonResolution: state.lonResolution,
+      latResolution: state.latResolution,
     })))
     
     const [pointsObj, setPointsObj] = useState<Record<string, number>>({})
@@ -199,10 +206,20 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       geom.setDrawRange(0, arrayLength); // This is used to tell it how many data points are needed since we aren't giving it positions.
       return geom;
     }, [data]);
-
+    const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
+            const newLatStep = latResolution/2;
+            const newLonStep = lonResolution/2;
+            const newLonBounds = [Math.max(lonExtent[0]-newLonStep, -180), Math.min(lonExtent[1]+newLonStep, 180)]
+            const newLatBounds = [Math.max(latExtent[0]-newLatStep, -90), Math.min(latExtent[1]+newLatStep, 90)]
+            return [newLonBounds, newLatBounds]
+        },[latExtent, lonExtent, lonResolution, latResolution])
     const shaderMaterial = useMemo(()=> (new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
+        maskTexture: {value: maskTexture},
+        maskValue: {value: maskValue},
+        latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
+        lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
         pointSize: {value: pointSize},
         cmap: {value: colormap},
         cOffset: {value: cOffset},
@@ -243,6 +260,8 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       uniforms.scaleIntensity.value = scaleIntensity;
       uniforms.startIDs.value = pointIDs;
       uniforms.stride.value = stride;
+      uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
+      uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
       uniforms.showTransect.value = selectTS;
       uniforms.dimWidth.value = dimWidth;
       uniforms.timeScale.value = timeScale;
@@ -255,8 +274,9 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         yRange[0], yRange[1]
       );
       uniforms.fillValue.value = fillValue
+      uniforms.maskValue.value = maskValue
     }
-  }, [pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, pointIDs, stride, selectTS, animProg, timeScale, xRange, yRange, fillValue, zRange]);
+  }, [pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, pointIDs, stride, selectTS, animProg, timeScale, xRange, yRange, fillValue, zRange, maskValue, lonBounds, latBounds]);
 
     return (
       <>

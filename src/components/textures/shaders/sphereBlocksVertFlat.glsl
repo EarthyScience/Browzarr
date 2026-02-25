@@ -3,6 +3,7 @@
 attribute vec2 instanceUV;
 
 uniform sampler2D map[14];
+uniform sampler2D maskTexture;
 uniform vec3 textureDepths;
 
 uniform float displaceZero;
@@ -10,13 +11,22 @@ uniform float displacement;
 uniform vec2 latBounds;
 uniform vec2 lonBounds;
 uniform float animateProg;
+uniform int maskValue;
 
 #define PI 3.1415926535
 
-vec3 givePosition(vec2 uv) {
+vec2 giveLonLat(vec2 uv) {
     // Reverse the normalization using the bounds
-    float longitude = ((1.0 - uv.x) * (lonBounds.y - lonBounds.x) + lonBounds.x);
+    float longitude = uv.x * (lonBounds.y - lonBounds.x) + lonBounds.x;
     float latitude = uv.y * (latBounds.y - latBounds.x) + latBounds.x;
+    
+    longitude = -longitude;
+    
+    return vec2(longitude, latitude);
+}
+vec3 givePosition(vec2 lonlat) {
+    float longitude = lonlat.x;
+    float latitude = lonlat.y;
     
     // Convert to Cartesian coordinates
     float x = cos(latitude) * cos(longitude);
@@ -24,6 +34,17 @@ vec3 givePosition(vec2 uv) {
     float z = cos(latitude) * sin(longitude);
     
     return vec3(x, y, z);
+}
+vec2 realCoords(vec2 uv){
+    vec2 normalizedLon = lonBounds/2./PI+0.5;
+    vec2 normalizedLat = latBounds/PI+0.5;
+    float lonScale = normalizedLon.y-normalizedLon.x;
+    float latScale = normalizedLat.y-normalizedLat.x;
+    
+    float u = uv.x * lonScale + normalizedLon.x;
+    float v = uv.y * latScale + normalizedLat.x;
+
+    return vec2(u, v);
 }
 
 
@@ -48,7 +69,15 @@ float sample1(vec2 p, int index) { // Shader doesn't support dynamic indexing so
 out float vStrength;
 
 void main() {
-
+    if (maskValue != 0 ){
+        vec2 newV = realCoords(instanceUV);
+        float mask = texture(maskTexture, newV).r;
+        bool cond = maskValue == 1 ? mask< 0.5 : mask>=0.5;
+        if (cond){
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            return;
+        }
+    }
     int yStepSize = int(textureDepths.x); 
     ivec2 idx = clamp(ivec2(instanceUV * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
     int textureIdx = idx.y * yStepSize + idx.x;
@@ -61,7 +90,8 @@ void main() {
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     } else {
         vec2 centeredUV = (instanceUV - vec2(0.5, 0.5)) * vec2(2.0, 2.0); 
-        vec3 spherePosition = givePosition(instanceUV);
+        vec2 lonlat = giveLonLat(instanceUV);
+        vec3 spherePosition = givePosition(lonlat);
         float latitudeFactor = cos(lonlat.y); // Maps -1..1 to proper latitude
         float widthFactor = abs(lonBounds.y-lonBounds.x)/(2.0*PI);
         float vertFactor = (latBounds.y-latBounds.x)/PI;

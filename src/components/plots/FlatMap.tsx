@@ -7,7 +7,7 @@ import { vertShader } from '@/components/computation/shaders'
 import { flatFrag3D, fragmentFlat } from '../textures/shaders';
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
-import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 
 interface InfoSettersProps{
@@ -39,7 +39,8 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
     })))
 
     const {cScale, cOffset, animProg, nanTransparency, nanColor, 
-      zSlice, ySlice, xSlice, selectTS, coarsen,
+      zSlice, ySlice, xSlice, selectTS, coarsen, maskTexture, maskValue,
+      lonResolution, latResolution, lonExtent, latExtent,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
       cOffset: state.cOffset, cScale: state.cScale,
       resetAnim: state.resetAnim, animate: state.animate,
@@ -47,6 +48,11 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
       nanColor: state.nanColor, zSlice: state.zSlice,
       ySlice: state.ySlice, xSlice: state.xSlice,
       selectTS: state.selectTS, coarsen: state.coarsen,
+      maskTexture:state.maskTexture, maskValue:state.maskValue,
+      lonExtent: state.lonExtent,
+      latExtent: state.latExtent,
+      lonResolution: state.lonResolution,
+      latResolution: state.latResolution,
       getColorIdx: state.getColorIdx,
       incrementColorIdx: state.incrementColorIdx
     })))
@@ -93,6 +99,14 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
     const rotateMap = analysisMode && axis == 2;
     const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
     const analysisDims = useMemo(()=>dimArrays.length > 2 ? dimSlices.filter((_e,idx)=> idx != axis) : dimSlices,[dimSlices,axis])
+
+    const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
+      const newLatStep = latResolution/2;
+      const newLonStep = lonResolution/2;
+      const newLonBounds = [Math.max(lonExtent[0]-newLonStep, -180), Math.min(lonExtent[1]+newLonStep, 180)]
+      const newLatBounds = [Math.max(latExtent[0]-newLatStep, -90), Math.min(latExtent[1]+newLatStep, 90)]
+      return [newLonBounds, newLatBounds]
+    },[latExtent, lonExtent, lonResolution, latResolution])
 
     useEffect(()=>{
         geometry.dispose()
@@ -196,6 +210,10 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
               selectTS: {value: selectTS},
               selectBounds: {value: bounds},
               map : {value: textures},
+              maskTexture: {value: maskTexture},
+              maskValue: {value: maskValue},
+              latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
+              lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
               textureDepths: {value:  new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
               cmap : { value : colormap},
               animateProg: {value:animProg},
@@ -217,10 +235,13 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
         uniforms.nanColor.value = new THREE.Color(nanColor);
         uniforms.nanAlpha.value = 1 - nanTransparency;
         uniforms.cScale.value = cScale;
+        uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
+        uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
         uniforms.selectBounds.value = bounds;
-        uniforms.selectTS.value = selectTS
+        uniforms.selectTS.value = selectTS;
+        uniforms.maskValue.value = maskValue
       }
-    },[cScale, cOffset, textures, colormap, animProg, nanColor, nanTransparency, bounds, selectTS])
+    },[cScale, cOffset, textures, colormap, animProg, nanColor, nanTransparency, bounds, selectTS, latBounds, lonBounds, maskValue])
 
   return (
     <>

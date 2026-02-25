@@ -547,6 +547,7 @@ const GlobalOptions = () =>{
         value={nanColor}
         onChange={e => setNanColor(e.target.value)}
       />
+      </>}
       <button
         onClick={()=>setShowMasks(x=>!x)}
         className="flex items-center gap-2 w-full mb-2"
@@ -594,7 +595,6 @@ const GlobalOptions = () =>{
         <label>Interpolate Pixels</label>
         <Switch className='h-5'  id="interpoalte-pixels" checked={interpPixels} onCheckedChange={e=>setInterpPixels(e)}/>
       </div>
-      </>}
       {!(analysisMode && axis != 0) && // Hide if Analysismode and Axis != 0
       <>
         <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>

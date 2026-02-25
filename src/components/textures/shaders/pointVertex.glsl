@@ -3,6 +3,7 @@ attribute float value;
 out float vValue;
 
 flat out int highlight;
+uniform sampler2D maskTexture;
 
 uniform float pointSize;
 uniform bool scalePoints;
@@ -18,6 +19,11 @@ uniform vec4 flatBounds;
 uniform vec2 vertBounds;
 uniform vec3 shape;
 uniform float fillValue;
+uniform vec2 latBounds;
+uniform vec2 lonBounds;
+uniform int maskValue;
+
+#define PI 3.1415925
 
 bool isValidPoint(){
     for (int i = 0; i < 10; i++){
@@ -34,7 +40,6 @@ bool isValidPoint(){
     }
     return false;
 }
-
 vec3 computePosition(int vertexID) {
     int depth = int(shape.x);
     int height = int(shape.y);
@@ -52,8 +57,42 @@ vec3 computePosition(int vertexID) {
 
     return vec3(px * 2.0, py * 2.0, pz * 2.0);
 }
+vec2 giveUV(int vertexID){
+    int height = int(shape.y);
+    int width = int(shape.z);
+
+    int sliceSize = width * height;
+    int y = (vertexID % sliceSize) / width;
+    int x = vertexID % width;
+    float u = float(x)/float(width);
+    float v = float(y)/float(height);
+
+    return vec2(u, v);
+}
+vec2 realCoords(vec2 uv){
+    vec2 normalizedLon = lonBounds/2./PI+0.5;
+    vec2 normalizedLat = latBounds/PI+0.5;
+    float lonScale = normalizedLon.y-normalizedLon.x;
+    float latScale = normalizedLat.y-normalizedLat.x;
+    
+    float u = uv.x * lonScale + normalizedLon.x;
+    float v = uv.y * latScale + normalizedLat.x;
+
+    return vec2(u, v);
+}
 
 void main() {
+    vec2 testV = giveUV(gl_VertexID);
+    if (maskValue != 0 ){
+        vec2 newV = realCoords(giveUV(gl_VertexID));
+        float mask = texture(maskTexture, newV).r;
+        bool cond = maskValue == 1 ? mask< 0.5 : mask>=0.5;
+        if (cond){
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            return;
+        }
+    }
+
     vValue = float(value)/255.;
     vec3 scaledPos = computePosition(gl_VertexID);
     float depthSize = float(shape.x)/500.;
