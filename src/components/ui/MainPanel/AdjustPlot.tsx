@@ -7,7 +7,7 @@ import { SliderThumbs } from '@/components/ui/Widgets/SliderThumbs';
 import { LuSettings } from "react-icons/lu";
 import { RxReset } from "react-icons/rx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Input, Switch, Hider, Button, Slider as UISlider } from '@/components/ui';
+import { Input, Switch, Hider, Button, Slider as UISlider, Switcher, Slider } from '@/components/ui';
 import {
   Tooltip,
   TooltipContent,
@@ -16,6 +16,8 @@ import {
 import { parseLoc, normalize, denormalize } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
+import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
+
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
     return val*range+min;
@@ -120,7 +122,7 @@ const DimSlicer = () =>{
           <b>Spatial Cropping</b>
           <ChevronDown 
             className={`h-4 w-4 transition-transform duration-200 ${
-              isSpatialOpen ? 'rotate-180' : ''
+              !isSpatialOpen ? 'rotate-180' : ''
             }`}
           />
         </button>
@@ -505,12 +507,12 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue,
+  const {showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
     setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(state => ({
     showBorders: state.showBorders, borderColor: state.borderColor,
     nanColor: state.nanColor, nanTransparency: state.nanTransparency,
     plotType: state.plotType, interpPixels: state.interpPixels,
-    fillValue: state.fillValue,
+    fillValue: state.fillValue, useBorderTexture:state.useBorderTexture,
     setShowBorders: state.setShowBorders, setBorderColor: state.setBorderColor,
     setNanColor: state.setNanColor, setNanTransparency: state.setNanTransparency,
     setInterpPixels: state.setInterpPixels, setFillValue:state.setFillValue
@@ -523,7 +525,8 @@ const GlobalOptions = () =>{
     valueScales:state.valueScales
   })))
   const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
-
+  const [showMasks, setShowMasks] = useState(false)
+  const masks = ["None", "Land", "Water"]
   const isPC = plotType == 'point-cloud'
   return (
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
@@ -544,37 +547,78 @@ const GlobalOptions = () =>{
         value={nanColor}
         onChange={e => setNanColor(e.target.value)}
       />
-      <b>Mask Value</b>
-      <div className='grid grid-cols-[auto_60%] items-center gap-2 mt-2 text-left'>
-      <Input
-        type='number'
-        defaultValue={denormalize(fillValue, valueScales.minVal, valueScales.maxVal)}
-        onChange={e=> setThisFillValue(parseFloat(e.target.value))}
-      />
-      <Button
-        disabled={normalize(thisFillVal, valueScales.minVal, valueScales.maxVal) === fillValue}
-        className='cursor-pointer'
-        onClick={()=>setFillValue(normalize(thisFillVal, valueScales.minVal, valueScales.maxVal))}
-      >Set Value</Button>
-      </div>
       <div className='grid grid-cols-[auto_20%] items-center gap-2 mt-2 text-left'>
         <label>Interpolate Pixels</label>
         <Switch className='h-5'  id="interpoalte-pixels" checked={interpPixels} onCheckedChange={e=>setInterpPixels(e)}/>
       </div>
       </>}
+      <button
+        onClick={()=>setShowMasks(x=>!x)}
+        className="flex items-center gap-2 w-full mb-2"
+      >
+        <b>Masking</b>
+        <ChevronDown 
+          className={`h-4 w-4 transition-transform duration-200 ${
+            showMasks ? '' : 'rotate-180'
+          }`}
+        />
+      </button>
+      
+      <Hider show={showMasks} >
+          <b>Mask Value</b>
+          <div className='grid grid-cols-[auto_60%] items-center gap-2 mt-2 text-left'>
+          <Input
+            type='number'
+            defaultValue={denormalize(fillValue, valueScales.minVal, valueScales.maxVal)}
+            onChange={e=> setThisFillValue(parseFloat(e.target.value))}
+          />
+          <Button
+            disabled={normalize(thisFillVal, valueScales.minVal, valueScales.maxVal) === fillValue}
+            className='cursor-pointer'
+            onClick={()=>setFillValue(normalize(thisFillVal, valueScales.minVal, valueScales.maxVal))}
+          >Set Value</Button>
+          <b>Mask Land</b>
+          <Select onValueChange={e=>{
+            const idx = masks.indexOf(e)
+            usePlotStore.setState({maskValue:idx})
+          }}>
+            <SelectTrigger className='w-[100%]'>
+              <SelectValue placeholder={masks[usePlotStore.getState().maskValue]}/>
+            </SelectTrigger>
+            <SelectContent>
+              {masks.map((val,idx)=>(
+                <SelectItem value={val}>
+                  {val}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </Hider>
       {!(analysisMode && axis != 0) && // Hide if Analysismode and Axis != 0
       <>
         <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
-        {showBorders && 
-          <div>
+        <Hider show={showBorders}>
+          {/* <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
+            ()=>usePlotStore.setState({useBorderTexture:!useBorderTexture})
+          } /> */}
+          <Hider show={useBorderTexture} >
+            <b>Line Width</b>
+            <Slider className='my-2'
+              min={0.01}
+              max={0.4}
+              step={0.01}
+              onValueChange={e=>console.log(e[0])}
+            />
+          </Hider>
           <b>Border Color</b>
           <input type="color"
               className='w-[100%] cursor-pointer'
                   value={borderColor}
               onChange={e => setBorderColor(e.target.value)}
               />
-          </div>
-        }</>
+        </Hider>
+      </>
       }
       <Popover>
         <PopoverTrigger asChild>

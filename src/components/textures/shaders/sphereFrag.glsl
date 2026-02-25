@@ -7,6 +7,7 @@ out vec4 color;
 in vec3 aPosition;
 
 uniform sampler3D map[14];
+uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
 
@@ -20,6 +21,7 @@ uniform vec2 lonBounds;
 uniform vec3 nanColor;
 uniform float nanAlpha;
 uniform float fillValue;
+uniform int maskValue;
 
 #define pi 3.141592653
 #define epsilon 0.0001
@@ -34,6 +36,18 @@ vec2 giveUV(vec3 position){
 
     return vec2(longitude, latitude);
 }
+
+vec2 giveMaskUV(vec3 position){
+    vec3 n = normalize(position);
+    float latitude = asin(n.y);
+    float longitude = -atan(n.z, n.x);
+    latitude /= pi;
+    longitude /= (2. * pi);
+    float u = longitude + 0.5;
+    float v = latitude + 0.5;
+    return vec2(u, v);
+}
+
 
 bool isValid(vec2 sampleCoord){
     for (int i = 0; i < 10; i++){
@@ -91,6 +105,15 @@ void main(){
         if (selectTS){
             bool cond = isValid(sampleCoord);
             color.rgb *= cond ? 1. : 0.65;
+        }
+        if (maskValue != 0){
+            vec2 maskUV = giveMaskUV(aPosition);
+            float mask = texture(maskTexture, maskUV).r;
+            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
+            if (cond){
+                color = vec4(nanColor, 1.);
+                color.a = nanAlpha;  
+            }
         }
     } else {
         color = vec4(nanColor, 1.);

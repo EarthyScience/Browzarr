@@ -7,6 +7,7 @@ out vec4 color;
 in vec3 aPosition;
 
 uniform sampler2D map[14];
+uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
 
@@ -19,6 +20,7 @@ uniform vec2 lonBounds;
 uniform vec3 nanColor;
 uniform float nanAlpha;
 uniform float fillValue;
+uniform int maskValue;
 
 #define pi 3.141592653
 
@@ -50,21 +52,48 @@ vec2 giveUV(vec3 position){
     return vec2(1.-longitude, latitude);
 }
 
+vec2 giveMaskUV(vec3 position){
+    vec3 n = normalize(position);
+    float latitude = asin(n.y);
+    float longitude = -atan(n.z, n.x);
+    latitude /= pi;
+    longitude /= (2. * pi);
+    float u = longitude + 0.5;
+    float v = latitude + 0.5;
+    return vec2(u, v);
+}
+
 void main(){
     vec2 texCoord = giveUV(aPosition);
-    int yStepSize = int(textureDepths.x); 
-    ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
-    int textureIdx = idx.y * yStepSize + idx.x;
-    vec2 localCoord = texCoord * (textureDepths.xy); // Scale up
-    localCoord = fract(localCoord);
-
-    float strength = sample1(localCoord, textureIdx);
-    bool isNaN = strength == 1. || abs(strength - fillValue) < 0.005;
-    strength = isNaN ? strength : (strength - 0.5)*cScale + 0.5;
-    strength = isNaN ? strength : min(strength+cOffset,0.99);
-    color = isNaN ? vec4(nanColor, nanAlpha) : texture(cmap, vec2(strength, 0.5));
-    if (!isNaN){
-        color.a = 1.;
+    bool inBounds = all(greaterThanEqual(texCoord, vec2(0.0))) && 
+                all(lessThanEqual(texCoord, vec2(1.0)));
+    if (inBounds) {
+        int yStepSize = int(textureDepths.x); 
+        ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
+        int textureIdx = idx.y * yStepSize + idx.x;
+        vec2 localCoord = texCoord * (textureDepths.xy); // Scale up
+        localCoord = fract(localCoord);
+        float strength = sample1(localCoord, textureIdx);
+        bool isNaN = strength == 1. || abs(strength - fillValue) < 0.005;
+        strength = isNaN ? strength : (strength - 0.5)*cScale + 0.5;
+        strength = isNaN ? strength : min(strength+cOffset,0.99);
+        color = isNaN ? vec4(nanColor, nanAlpha) : texture(cmap, vec2(strength, 0.5));
+        if (!isNaN){
+            color.a = 1.;
+        }
+        if (maskValue != 0){
+            vec2 maskUV = giveMaskUV(aPosition);
+            float mask = texture(maskTexture, maskUV).r;
+            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
+            if (cond){
+                color = vec4(nanColor, 1.);
+                color.a = nanAlpha;  
+            }
+        }
+    }
+    else{
+        color = vec4(nanColor, 1.);
+        color.a = nanAlpha;
     }
 
 }

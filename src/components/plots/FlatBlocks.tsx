@@ -4,6 +4,9 @@ import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksFrag, flatBlocksVert, flatBlocksVert3D } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
+import { deg2rad } from '@/utils/HelperFuncs'
+import { useCoordBounds } from '@/hooks/useCoordBounds'
+
 const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const {colormap, isFlat, valueScales, flipY,
             dataShape, textureArrayDepths} = useGlobalStore(useShallow(state=>({
@@ -14,11 +17,13 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
         dataShape: state.dataShape,
         textureArrayDepths: state.textureArrayDepths
     })))
-    const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, offsetNegatives, rotateFlat} = usePlotStore(useShallow(state=> ({
+    const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, offsetNegatives, rotateFlat, maskTexture, maskValue,
+        } = usePlotStore(useShallow(state=> ({
         animate: state.animate, animProg: state.animProg, cOffset: state.cOffset,
         cScale: state.cScale, nanColor: state.nanColor, nanTransparency: state.nanTransparency,
         displacement: state.displacement, sphereResolution: state.sphereResolution,
-        offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat
+        offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat,
+        maskTexture:state.maskTexture, maskValue:state.maskValue,
     })))
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
         analysisMode: state.analysisMode, axis:state.axis
@@ -67,12 +72,17 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             );
             return geo
         },[width, height])
+    const {lonBounds, latBounds} = useCoordBounds()
 
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
                 map: { value: textures },
+                maskTexture: {value: maskTexture},
+                maskValue: {value: maskValue},
+                latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
+                lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
                 aspect: {value: width/height},
                 textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
                 cmap:{value: colormap},
@@ -103,11 +113,14 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             uniforms.cmap.value =  colormap
             uniforms.cOffset.value = cOffset
             uniforms.cScale.value = cScale
+            uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
+            uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
             uniforms.aspect.value = width/height;
+            uniforms.maskValue.value = maskValue
         }
         invalidate();
-    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, textures, analysisMode, axis, width, height])
+    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, textures, analysisMode, axis, width, height, latBounds, lonBounds, maskValue])
 
   return (
 

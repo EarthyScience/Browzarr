@@ -1,8 +1,8 @@
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, useTexture } from '@react-three/drei';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
-import { Canvas, invalidate, useThree } from '@react-three/fiber';
+import { Canvas, invalidate, useThree, useLoader } from '@react-three/fiber';
 import { CreateTexture } from '@/components/textures';
 import { useAnalysisStore, useGlobalStore, useImageExportStore, usePlotStore } from '@/GlobalStates';
 import { useShallow } from 'zustand/shallow';
@@ -174,6 +174,16 @@ const Plot = () => {
   useEffect(()=>{ // Rotates flat back when changing away
     usePlotStore.setState({rotateFlat: false})
   },[plotType])
+
+  useEffect(()=>{
+    const loader = new THREE.TextureLoader()
+    async function SetTextures(){
+      const maskTexture = await loader.loadAsync('/land_mask_sdf.png')
+      const borderTexture = await loader.loadAsync('/border_distance_sdf.png')
+      usePlotStore.setState({borderTexture, maskTexture})
+    }
+    SetTextures()
+  },[])
   
   const Nav = useMemo(()=>Navbar,[])
   return (

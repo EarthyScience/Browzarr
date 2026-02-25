@@ -7,12 +7,16 @@ out vec4 color;
 varying vec2 vUv;
 
 uniform sampler2D map[14];
+uniform sampler2D maskTexture;
 uniform vec3 textureDepths;
 uniform sampler2D cmap;
 uniform float nanAlpha;
 uniform vec3 nanColor;
 uniform float cOffset;
 uniform float cScale;
+uniform vec2 latBounds;
+uniform vec2 lonBounds;
+uniform int maskValue;
 
 #define epsilon 0.0001
 
@@ -34,8 +38,17 @@ float sample1(vec2 p, int index) { // Shader doesn't support dynamic indexing so
     else return 0.0;
 }
 
-
 void main(){
+    if (maskValue != 0){
+        vec2 maskUV = realCoords(vUv);
+        float mask = texture(maskTexture, maskUV).r;
+        bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
+        if (cond){
+            Color = vec4(nanColor, 1.);
+            Color.a = nanAlpha;  
+            return;
+        }
+    }
     int yStepSize = int(textureDepths.x); 
     vec2 texCoord = vUv;
     texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts

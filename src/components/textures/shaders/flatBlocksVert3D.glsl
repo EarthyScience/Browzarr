@@ -3,19 +3,35 @@
 attribute vec2 instanceUV;
 
 uniform sampler3D map[14];
+uniform sampler2D maskTexture;
 uniform vec3 textureDepths;
+
 
 uniform float aspect;
 uniform float displaceZero;
 uniform float displacement;
 uniform float animateProg;
+uniform int maskValue;
+uniform vec2 latBounds;
+uniform vec2 lonBounds;
+
 
 #define PI 3.1415926535
 
 vec3 givePosition(vec2 uv) {
     return vec3(uv.x*2., uv.y/aspect*2., 0.);
 }
+vec2 realCoords(vec2 uv){
+    vec2 normalizedLon = lonBounds/2./PI+0.5;
+    vec2 normalizedLat = latBounds/PI+0.5;
+    float lonScale = normalizedLon.y-normalizedLon.x;
+    float latScale = normalizedLat.y-normalizedLat.x;
+    
+    float u = uv.x * lonScale + normalizedLon.x;
+    float v = uv.y * latScale + normalizedLat.x;
 
+    return vec2(u, v);
+}
 
 float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
     if (index == 0) return texture(map[0], p).r;
@@ -38,7 +54,15 @@ float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so
 out float vStrength;
 
 void main() {
-
+    if (maskValue != 0){
+        vec2 maskUV = realCoords(instanceUV);
+        float mask = texture(maskTexture, maskUV).r;
+        bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
+        if (cond){
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            return;
+        }
+    }
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     vec3 texCoord = vec3(instanceUV, animateProg);
