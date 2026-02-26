@@ -13,6 +13,7 @@ import AnalysisWG from './AnalysisWG';
 import ExportCanvas from '@/utils/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
 
+
 const TransectNotice = () =>{
   const {selectTS} = usePlotStore(useShallow(state => ({selectTS: state.selectTS})))
 
@@ -176,11 +177,12 @@ const Plot = () => {
   },[plotType])
 
   useEffect(()=>{
+    const isDev = process.env.NODE_ENV !== "development";
     const loader = new THREE.TextureLoader()
     async function SetTextures(){
-      const maskTexture = await loader.loadAsync('/land_mask_sdf.png')
-      const borderTexture = await loader.loadAsync('/border_distance_sdf.png')
-      usePlotStore.setState({borderTexture, maskTexture})
+      const maskTexture = await loader.loadAsync('./land_mask.webp');
+      const borderTexture = await loader.loadAsync('./border_distance_sdf.png');
+      usePlotStore.setState({borderTexture, maskTexture});
     }
     SetTextures()
   },[])
