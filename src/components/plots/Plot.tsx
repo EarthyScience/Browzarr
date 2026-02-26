@@ -13,7 +13,6 @@ import AnalysisWG from './AnalysisWG';
 import ExportCanvas from '@/utils/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
 
-
 const TransectNotice = () =>{
   const {selectTS} = usePlotStore(useShallow(state => ({selectTS: state.selectTS})))
 
