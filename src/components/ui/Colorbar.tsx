@@ -154,15 +154,14 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     useEffect(()=>{
         const newRange = (newMax - newMin);
         const scale = range/newRange;
-        let offset = -(newMin - origMin)/(newMax - newMin)
-        const newZeroPoint = (0 - newMin)/newRange;
-        const zeroOffset = newZeroPoint - zeroPoint;
-        offset += zeroOffset;
+        const offset = -(newMin - origMin)/newRange
         setCOffset(offset)
         setCScale(scale)
     },[newMin, newMax])
 
     useEffect(()=>{ // Update internal vals when global vals change
+        setDisplayMin(Num2String(origMin))
+        setDisplayMax(Num2String(origMax))
         setNewMin(origMin)
         setNewMax(origMax)
     },[origMax, origMin])
@@ -179,7 +178,6 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
             }     
         }
     }, [colors]);
-
     const analysisString = useMemo(()=>{
         
         if (analysisMode){

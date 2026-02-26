@@ -87,7 +87,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             let var2Data: ArrayBufferView | null = null;
             if (useTwo) {
                 setStatus("Fetching second variable...")
-                const var2Array = await GetArray();
+                const var2Array = await GetArray(variable2);
                 var2Data = var2Array?.data;
                 setStatus("Computing...");
                 if (!var2Data) {

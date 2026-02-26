@@ -185,15 +185,16 @@ export function DecompressArray(compressed : Uint8Array){
 	return floatArray
 }
 
-export async function GetArray(): Promise<{
+export async function GetArray(newVariable?: string): Promise<{
 	data: Float16Array,
 	shape: number[],
 	dtype: string,
 	scalingFactor: number | null
 }>{
-	const {is4D, idx4D, initStore, variable, setStrides} = useGlobalStore.getState();
+	const {is4D, idx4D, initStore, variable:storedVariable, setStrides} = useGlobalStore.getState();
 	const {useNC} = useZarrStore.getState()
 	const {cache} = useCacheStore.getState();
+	const variable = newVariable ?? storedVariable;
 
 	//---- 1. Global Cache Check ----//
 	if (cache.has(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`)){
@@ -205,10 +206,10 @@ export async function GetArray(): Promise<{
 		return thisChunk;
 	}
 	if (useNC){
-		const output = GetNCArray()
+		const output = GetNCArray(variable)
 		return output
 	} else{
-		const output = await GetZarrArray()
+		const output = await GetZarrArray(variable)
 		return output
 	}
 }
