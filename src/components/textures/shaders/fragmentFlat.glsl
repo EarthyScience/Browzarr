@@ -17,8 +17,20 @@ uniform float cScale;
 uniform vec2 latBounds;
 uniform vec2 lonBounds;
 uniform int maskValue;
-
 #define epsilon 0.0001
+#define PI 3.14159265
+
+vec2 realCoords(vec2 uv){
+    vec2 normalizedLon = lonBounds/2./PI+0.5;
+    vec2 normalizedLat = latBounds/PI+0.5;
+    float lonScale = normalizedLon.y-normalizedLon.x;
+    float latScale = normalizedLat.y-normalizedLat.x;
+    
+    float u = uv.x * lonScale + normalizedLon.x;
+    float v = uv.y * latScale + normalizedLat.x;
+
+    return vec2(u, v);
+}
 
 float sample1(vec2 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
     if (index == 0) return texture(map[0], p).r;
@@ -44,8 +56,8 @@ void main(){
         float mask = texture(maskTexture, maskUV).r;
         bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
         if (cond){
-            Color = vec4(nanColor, 1.);
-            Color.a = nanAlpha;  
+            color = vec4(nanColor, 1.);
+            color.a = nanAlpha;  
             return;
         }
     }
