@@ -43,11 +43,10 @@ export async function GetNCMetadata(thisVariable? : string){
     return meta
 }
 
-export async function GetNCArray() {
-    const {idx4D, initStore, variable, setProgress, setStrides, setStatus} = useGlobalStore.getState();
+export async function GetNCArray(variable: string){
+    const {idx4D, initStore, setProgress, setStrides, setStatus} = useGlobalStore.getState();
 	const {compress, xSlice, ySlice, zSlice, ncModule, coarsen, kernelDepth, kernelSize, setCurrentChunks, setArraySize} = useZarrStore.getState()
 	const {cache} = useCacheStore.getState();
-
     const varInfo = await ncModule.getVariableInfo(variable)
     const { shape, attributes: atts } = varInfo;
     const chunkShape = varInfo.chunks || shape;

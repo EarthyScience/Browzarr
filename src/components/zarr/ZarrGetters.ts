@@ -121,8 +121,8 @@ export async function GetStore(storePath: string): Promise<zarr.Group<zarr.Fetch
         }
 }
 
-export async function GetZarrArray(){
-    const {idx4D, initStore, variable, setProgress, setStrides, setStatus} = useGlobalStore.getState();
+export async function GetZarrArray(variable: string){
+    const {idx4D, initStore, setProgress, setStrides, setStatus} = useGlobalStore.getState();
 	const {compress, xSlice, ySlice, zSlice, currentStore, coarsen, kernelSize, kernelDepth, setCurrentChunks, setArraySize} = useZarrStore.getState()
 	const {cache} = useCacheStore.getState();
 
