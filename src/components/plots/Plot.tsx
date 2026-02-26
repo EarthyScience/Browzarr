@@ -178,9 +178,9 @@ const Plot = () => {
   useEffect(()=>{
     const loader = new THREE.TextureLoader()
     async function SetTextures(){
-      const maskTexture = await loader.loadAsync('/land_mask_sdf.png')
-      const borderTexture = await loader.loadAsync('/border_distance_sdf.png')
-      usePlotStore.setState({borderTexture, maskTexture})
+      const maskTexture = await loader.loadAsync('./land_mask.webp');
+      const borderTexture = await loader.loadAsync('./border_distance_sdf.png');
+      usePlotStore.setState({borderTexture, maskTexture});
     }
     SetTextures()
   },[])
