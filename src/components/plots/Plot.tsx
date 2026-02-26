@@ -177,7 +177,6 @@ const Plot = () => {
   },[plotType])
 
   useEffect(()=>{
-    const isDev = process.env.NODE_ENV !== "development";
     const loader = new THREE.TextureLoader()
     async function SetTextures(){
       const maskTexture = await loader.loadAsync('./land_mask.webp');
