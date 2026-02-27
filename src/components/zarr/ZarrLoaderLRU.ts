@@ -21,7 +21,7 @@ export function ToFloat16(array : Float32Array, scalingFactor: number | null) : 
 			array[i] /= Math.pow(10,scalingFactor);
 		}
 	}
-	const maxVal = array.reduce((max, val) => val > max ? val : max, -Infinity)
+	const maxVal = array.reduce((max, val) => Math.max(max, Math.abs(val)), -Infinity)
 	newScalingFactor = Math.ceil(Math.log10(maxVal/65504))
 	if (newScalingFactor > 1 || newScalingFactor < -8){
 		newScalingFactor = newScalingFactor + (scalingFactor ?? 0)

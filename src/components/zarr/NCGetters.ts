@@ -188,33 +188,30 @@ export async function GetNCArray(variable: string){
                         ? [counts[3] * counts[2], counts[3], 1] 
                         : [counts[2] * counts[1], counts[2], 1]
                     let thisShape = counts
-                    const filterValues = (value: number) =>{
-                        if (value === fillValue && !isInt) return NaN
-                        if (validRange){
-                            if (isInt){
-                                if (value < validRange.min) return validRange.min 
-                                if (value > validRange.max) return validRange.max
-                                return value
-                            } else{
-                                if (value < validRange.min || value > validRange.max) return NaN
-                                return value
+                    const filterValues = (array: TypedArray) =>{
+                        for (let i = 0; i < array.length; i++){
+                            if (array[i] === fillValue && !isInt) array[i] = NaN
+                            if (validRange){
+                                if (isInt){
+                                    if (array[i] < validRange.min) array[i] = validRange.min 
+                                    if (array[i] > validRange.max) array[i] = validRange.max
+                                } else{
+                                    if (array[i] < validRange.min || array[i] > validRange.max) array[i] = NaN
+                                }
+
                             }
                         }
-                        return value
                     }
                     const preScale = (array: TypedArray, scaler: number) =>{
-                        if (isInt){
-                            const tempArray = new Float32Array(array.length)
-                            for (let i = 0; i < array.length; i++){
-                                tempArray[i] = array[i] * scaler
-                            }
-                            return tempArray
-                        }else{
-                            return array.map(v => v * scaler)
+                        const tempArray = new Float32Array(array.length);
+                        for (let i = 0; i < array.length; i++){
+                            tempArray[i] = array[i] * scaler;
                         }
+                        return tempArray;
                     }
+                    filterValues(chunkArray)
                     if (preScaling) chunkArray = preScale(chunkArray, preScaling)
-                    let [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => filterValues(v)), scalingFactor)
+                    let [chunkF16, newScalingFactor] = ToFloat16(chunkArray, scalingFactor)
                     if (coarsen){
                         chunkF16 = await Convolve(chunkF16, {shape:chunkShape, strides:chunkStride}, "Mean3D", {kernelSize, kernelDepth}) as Float16Array
                         thisShape = thisShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
