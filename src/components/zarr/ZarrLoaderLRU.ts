@@ -21,16 +21,17 @@ export function ToFloat16(array : Float32Array, scalingFactor: number | null) : 
 			array[i] /= Math.pow(10,scalingFactor);
 		}
 	}
-	const [minVal, maxVal] = ArrayMinMax(array)
-	if (maxVal <= 65504 && minVal >= -65504 && Math.abs(maxVal) > 1e-3 ){ // If values fit in Float16, use that to save memory
-		newArray = new Float16Array(array)
-	}
-	else {
-		newScalingFactor = Math.ceil(Math.log10(maxVal/65504))
+	const maxVal = array.reduce((max, val) => val > max ? val : max, -Infinity)
+	newScalingFactor = Math.ceil(Math.log10(maxVal/65504))
+	if (newScalingFactor > 1 || newScalingFactor < -8){
+		newScalingFactor = newScalingFactor + (scalingFactor ?? 0)
 		for (let i = 0; i < array.length; i++) {
 			array[i] /= Math.pow(10,newScalingFactor);
 		}
 		newArray = new Float16Array(array)
+	} else{
+		newArray = new Float16Array(array)
+		newScalingFactor = scalingFactor
 	}
 	return [newArray, newScalingFactor]
 }

@@ -1,7 +1,7 @@
 import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/GlobalStates"
 import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, RescaleArray } from "./ZarrLoaderLRU";
 import { Convolve } from "../computation/webGPU";
-import {coarsen3DArray, calculateStrides} from '@/utils/HelperFuncs'
+import {coarsen3DArray, calculateStrides, TypedArray} from '@/utils/HelperFuncs'
 
 export async function GetNCDims(variable: string){
     const {ncModule} = useZarrStore.getState()
@@ -66,6 +66,18 @@ export async function GetNCArray(variable: string){
     }
     if ("_FillValue" in atts){
         fillValue = !Number.isNaN(atts["_FillValue"][0]) ? atts["_FillValue"][0] : fillValue
+    }
+    let validRange: {min: number, max: number} | undefined;
+    if("valid_min" in atts && "valid_max" in atts){
+        validRange = {
+            min: atts["valid_min"][0],
+            max: atts["valid_max"][0]
+        }
+    }
+    let preScaling: number | undefined;
+    if ("scale_factor" in atts){
+        const thisScale = atts["scale_factor"][0]
+        if (thisScale != 1) preScaling = thisScale
     }
 
     //---- Dimension Indices to Grab ----//
@@ -169,12 +181,40 @@ export async function GetNCArray(variable: string){
                         return {starts, counts}
                     }
                     const { starts, counts } = getStartsAndCounts();
-                    const chunkArray = await ncModule.getSlicedVariableArray(variable, starts, counts)
+                    let chunkArray = await ncModule.getSlicedVariableArray(variable, starts, counts)
+                    const chunkType = chunkArray.constructor.name
+                    const isInt = chunkType.includes("int") 
                     let chunkStride = rank > 3 
                         ? [counts[3] * counts[2], counts[3], 1] 
                         : [counts[2] * counts[1], counts[2], 1]
                     let thisShape = counts
-                    let [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => v === fillValue ? NaN : v), scalingFactor)
+                    const filterValues = (value: number) =>{
+                        if (value === fillValue && !isInt) return NaN
+                        if (validRange){
+                            if (isInt){
+                                if (value < validRange.min) return validRange.min 
+                                if (value > validRange.max) return validRange.max
+                                return value
+                            } else{
+                                if (value < validRange.min || value > validRange.max) return NaN
+                                return value
+                            }
+                        }
+                        return value
+                    }
+                    const preScale = (array: TypedArray, scaler: number) =>{
+                        if (isInt){
+                            const tempArray = new Float32Array(array.length)
+                            for (let i = 0; i < array.length; i++){
+                                tempArray[i] = array[i] * scaler
+                            }
+                            return tempArray
+                        }else{
+                            return array.map(v => v * scaler)
+                        }
+                    }
+                    if (preScaling) chunkArray = preScale(chunkArray, preScaling)
+                    let [chunkF16, newScalingFactor] = ToFloat16(chunkArray.map((v: number) => filterValues(v)), scalingFactor)
                     if (coarsen){
                         chunkF16 = await Convolve(chunkF16, {shape:chunkShape, strides:chunkStride}, "Mean3D", {kernelSize, kernelDepth}) as Float16Array
                         thisShape = thisShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))

@@ -73,13 +73,12 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       blending: THREE.NormalBlending,
       depthWrite: false,
       side: useOrtho ? THREE.FrontSide : THREE.BackSide,
-    }),[useFragOpt, useOrtho]);
+    }),[useFragOpt, useOrtho, volTexture]);
 
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
     useEffect(() => {
       if (shaderMaterial) {
         const uniforms = shaderMaterial.uniforms
-        uniforms.map.value = volTexture;
         uniforms.cmap.value = colormap;
         uniforms.cOffset.value = cOffset;
         uniforms.cScale.value = cScale;
@@ -100,7 +99,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
         uniforms.maskValue.value = maskValue
         invalidate() // Needed because Won't trigger re-render if camera is stationary. 
       }
-    }, [volTexture, shape, colormap, cOffset, cScale, valueRange, xRange, yRange, zRange, aspectRatio, latBounds, lonBounds, quality, animProg, transparency, nanTransparency, nanColor, maskValue, fillValue, vTransferScale, vTransferRange]);
+    }, [shape, colormap, cOffset, cScale, valueRange, xRange, yRange, zRange, aspectRatio, latBounds, lonBounds, quality, animProg, transparency, nanTransparency, nanColor, maskValue, fillValue, vTransferScale, vTransferRange]);
     useFrame(({camera})=>{ // This calculates InverseModel matrix for the orthographic raymarcher
       if (!useOrtho || !meshRef.current || !shaderMaterial) return;
       meshRef.current.modelViewMatrix.multiplyMatrices(camera.matrixWorldInverse, meshRef.current.matrixWorld);
