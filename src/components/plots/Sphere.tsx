@@ -141,9 +141,12 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         return shader
     },[isFlat, textures, borderTexture])
 
-    const backMaterial = useMemo(()=>shaderMaterial.clone(),[shaderMaterial])
+    const backMaterial = useMemo(()=>{
+      const mat = shaderMaterial.clone()
+      mat.side = THREE.BackSide;
+      return mat;
+    },[shaderMaterial])
 
-    backMaterial.side = THREE.BackSide;
     useEffect(()=>{
       if (shaderMaterial){
         const uniforms = shaderMaterial.uniforms;
