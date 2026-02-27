@@ -224,7 +224,6 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             setAnalysisMode(true);
             setStatus(null);
         }
-       
         Analyze()
     },[executeCustom])
 
