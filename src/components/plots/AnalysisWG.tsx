@@ -171,12 +171,12 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             let _scales;
             const thisShape = dataShape.length > 2 ? dataShape.filter((_, idx) => idx !== axis) : dataShape;
             const textureData = new Uint8Array(newArray.length)
+            const range = (maxVal - minVal)
             for (let i = 0; i < newArray.length; i++){
-                const val = newArray[i]
-                if (isNaN(val)){
+                const normed = (newArray[i] - minVal) / range;
+                if (isNaN(normed)){
                     textureData[i] = 255;
                 } else {
-                    const normed = (newArray[i] - minVal) / (maxVal - minVal);
                     textureData[i] = normed * 254;
                 }
             };
@@ -205,12 +205,12 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             const newArray = await CustomShader(dataArray, shapeInfo, kernelParams, axis, customShader?? "") as Float16Array
             const {minVal, maxVal} = valueScales
             const textureData = new Uint8Array(newArray.length)
+            const range = (maxVal - minVal)
             for (let i = 0; i < newArray.length; i++){
-                const val = newArray[i]
-                if (isNaN(val)){
+                const normed = (newArray[i] - minVal) / range;
+                if (isNaN(normed)){
                     textureData[i] = 255;
                 } else {
-                    const normed = (newArray[i] - minVal) / (maxVal - minVal);
                     textureData[i] = normed * 254;
                 }
             };
