@@ -47,7 +47,7 @@
     "lint": "eslint . --max-warnings=100"
   },
   "dependencies": {
-    "@earthyscience/netcdf4-wasm": "^0.1.3",
+    "@earthyscience/netcdf4-wasm": "0.2.3",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@monaco-editor/react": "^4.7.0",
