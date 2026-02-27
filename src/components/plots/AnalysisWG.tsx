@@ -170,12 +170,16 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             setValueScales({ minVal, maxVal });
             let _scales;
             const thisShape = dataShape.length > 2 ? dataShape.filter((_, idx) => idx !== axis) : dataShape;
-            const textureData = new Uint8Array(
-                newArray.map((i) => {
-                    const normed = (i - minVal) / (maxVal - minVal);
-                    return isNaN(normed) ? 255 : normed * 254;
-                })
-            );
+            const textureData = new Uint8Array(newArray.length)
+            for (let i = 0; i < newArray.length; i++){
+                const val = newArray[i]
+                if (isNaN(val)){
+                    textureData[i] = 255;
+                } else {
+                    const normed = (newArray[i] - minVal) / (maxVal - minVal);
+                    textureData[i] = normed * 254;
+                }
+            };
             const newTexture = CreateTexture(is3DResult ? dataShape : thisShape, textureData)
             // --- Final state updates ---
             setAnalysisArray(newArray);
@@ -200,12 +204,16 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             const dataArray = GetCurrentArray(analysisStore);
             const newArray = await CustomShader(dataArray, shapeInfo, kernelParams, axis, customShader?? "") as Float16Array
             const {minVal, maxVal} = valueScales
-            const textureData = new Uint8Array(
-                newArray.map((i) => {
-                    const normed = (i - minVal) / (maxVal - minVal);
-                    return isNaN(normed) ? 255 : normed * 254;
-                })
-            );
+            const textureData = new Uint8Array(newArray.length)
+            for (let i = 0; i < newArray.length; i++){
+                const val = newArray[i]
+                if (isNaN(val)){
+                    textureData[i] = 255;
+                } else {
+                    const normed = (newArray[i] - minVal) / (maxVal - minVal);
+                    textureData[i] = normed * 254;
+                }
+            };
             const newTexture = CreateTexture(outputShape, textureData)
             setAnalysisArray(newArray);
             if (newTexture){

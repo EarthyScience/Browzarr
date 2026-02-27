@@ -12,13 +12,16 @@ function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number})
     const { clampExtremes, setTextureData} = useGlobalStore.getState()
     const data = array.data;
     const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data )
-    const textureData = new Uint8Array(
-      data.map((i) => {
-        if (isNaN(i)) return 255;
-        const normed = (i - minVal) / (maxVal - minVal);
-        return normed * 254;
-      })
-    );
+    const textureData = new Uint8Array(data.length)
+    for (let i = 0; i < data.length; i++){
+      const val = data[i]
+      if (isNaN(val)){
+        textureData[i] = 255;
+      } else {
+        const normed = (data[i] - minVal) / (maxVal - minVal);
+        textureData[i] = normed * 254;
+      }
+    };
     setTextureData(textureData)
     return {minVal, maxVal}
 }
