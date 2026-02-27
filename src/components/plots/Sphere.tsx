@@ -107,6 +107,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
 
     const {lonBounds, latBounds} = useCoordBounds()
 
+
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
@@ -140,8 +141,12 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         return shader
     },[isFlat, textures, borderTexture])
 
-    const backMaterial = shaderMaterial.clone()
-    backMaterial.side = THREE.BackSide;
+    const backMaterial = useMemo(()=>{
+      const mat = shaderMaterial.clone()
+      mat.side = THREE.BackSide;
+      return mat;
+    },[shaderMaterial])
+
     useEffect(()=>{
       if (shaderMaterial){
         const uniforms = shaderMaterial.uniforms;
