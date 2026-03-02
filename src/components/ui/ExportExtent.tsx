@@ -1,4 +1,6 @@
-import { useGlobalStore, useImageExportStore } from '@/GlobalStates'
+import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+
 import React from 'react'
 import { useShallow } from 'zustand/shallow'
 

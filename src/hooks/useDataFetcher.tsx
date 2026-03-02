@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import * as THREE from 'three';
-import { useGlobalStore, usePlotStore, useZarrStore } from '@/GlobalStates';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
 import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
 import { GetArray, GetAttributes } from '@/components/zarr/ZarrLoaderLRU';

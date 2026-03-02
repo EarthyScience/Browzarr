@@ -1,6 +1,8 @@
 import React, {useRef, useMemo, useState, useEffect} from 'react'
 import * as THREE from 'three'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/GlobalStates'
+import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import { sphereVertex, sphereVertexFlat, sphereFrag, flatSphereFrag } from '../textures/shaders'
 import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';

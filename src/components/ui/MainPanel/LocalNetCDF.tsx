@@ -1,7 +1,8 @@
 "use client";
 import React, {ChangeEvent, useState} from 'react'
 import { Input } from '../input'
-import { useGlobalStore, useZarrStore } from '@/GlobalStates';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
 import {
   Alert,
@@ -45,7 +46,7 @@ const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
           data.getFullMetadata()
         ])
         useGlobalStore.setState({variables: Object.keys(variables), zMeta: metadata, initStore:`local_${file.name}`})
-        useZarrStore.setState({ fetchNC:true, useNC: true, ncModule: data})
+        useZarrStore.setState({ useNC: true, ncModule: data})
         const titleDescription = {
           title: attrs.title?? file.name,
           description: attrs.history?? ''

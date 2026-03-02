@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { TbVariable } from "react-icons/tb";
-import { useGlobalStore, useZarrStore } from "@/GlobalStates";
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
 import MetaDataInfo from "./MetaDataInfo";

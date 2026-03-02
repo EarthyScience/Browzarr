@@ -4,7 +4,7 @@ import { MdOutlineRocketLaunch } from "react-icons/md";
 import { Potato } from '../Elements/Icons';
 import { FaCarSide } from "react-icons/fa6";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { useGlobalStore } from '@/GlobalStates';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { Button } from "@/components/ui/button"
 
 const icons = {

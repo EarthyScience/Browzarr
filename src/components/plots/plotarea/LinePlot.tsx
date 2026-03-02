@@ -4,7 +4,7 @@ import { FixedTicks, ThickLine } from '@/components/plots'
 import {  RefObject, useEffect, useRef, useState } from 'react'
 import { ResizeBar, YScaler, XScaler, ShowLinePlot } from '@/components/ui'
 import './LinePlot.css'
-import { useGlobalStore } from '@/GlobalStates'
+import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 import { useShallow } from 'zustand/shallow'
 import PlotLineOptions from '@/components/ui/LinePlotArea/PlotLineOptions'
 import { IoCloseCircleSharp } from "react-icons/io5";

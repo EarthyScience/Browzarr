@@ -1,6 +1,6 @@
 import * as zarr from "zarrita";
 import { ZarrMetadata, ZarrItem, ZarrTitleDescription } from "./Interfaces";
-import { useGlobalStore } from "@/GlobalStates";
+import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 
 export function formatBytes(bytes: number): string {
     const units = ["bytes", "KB", "MB", "GB", "TB", "PB"];

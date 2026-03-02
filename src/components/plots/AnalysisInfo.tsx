@@ -1,6 +1,8 @@
+'use client';
 import React, {useEffect, useMemo} from 'react'
 import './Plots.css'
-import { useAnalysisStore, useGlobalStore } from '@/GlobalStates'
+import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow'
 import { parseLoc } from '@/utils/HelperFuncs'
 

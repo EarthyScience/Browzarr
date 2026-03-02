@@ -17,7 +17,8 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useGlobalStore, usePlotStore } from "@/GlobalStates";
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { Orthographic, Perspective } from "../Elements/Icons";
 import PerformanceMode from "./PerformanceMode";
 

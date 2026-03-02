@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { usePlotStore } from "@/GlobalStates";
+import { usePlotStore } from "@/GlobalStates/PlotStore";
 import { useShallow } from "zustand/shallow";
 
 

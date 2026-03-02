@@ -1,6 +1,9 @@
 import * as zarr from "zarrita";
 import {  ArrayMinMax } from "@/utils/HelperFuncs";
-import { useGlobalStore, useZarrStore, useErrorStore, useCacheStore } from "@/GlobalStates";
+import { useGlobalStore } from "@/GlobalStates/GlobalStore";
+import { useZarrStore } from "@/GlobalStates/ZarrStore";
+import { useErrorStore } from "@/GlobalStates/ErrorStore";
+import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { gzipSync, decompressSync } from 'fflate';
 import { GetNCArray, GetNCMetadata } from "./NCGetters";
 import { GetZarrAttributes, GetZarrArray } from "./ZarrGetters";

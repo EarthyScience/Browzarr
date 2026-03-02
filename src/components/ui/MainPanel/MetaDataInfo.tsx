@@ -1,5 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react"
-import { useCacheStore, useGlobalStore, usePlotStore, useZarrStore } from '@/GlobalStates'
+import { useCacheStore } from "@/GlobalStates/CacheStore";
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow'
 import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs"
 import Metadata, { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"

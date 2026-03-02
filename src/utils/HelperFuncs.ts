@@ -1,6 +1,9 @@
 'use client';
 import * as THREE from 'three'
-import { useGlobalStore, usePlotStore, useZarrStore, useCacheStore } from '@/GlobalStates';
+import { useCacheStore } from '@/GlobalStates/CacheStore';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { decompressSync } from 'fflate';
 import { copyChunkToArray } from '@/components/zarr/ZarrLoaderLRU';
 import { GetNCDims } from '@/components/zarr/NCGetters';
