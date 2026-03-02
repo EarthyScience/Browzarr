@@ -1,5 +1,8 @@
 "use client";
-import { useCacheStore, useGlobalStore, usePlotStore, useZarrStore } from '@/GlobalStates'
+import { useCacheStore } from '@/GlobalStates/CacheStore';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import {useEffect, useMemo, useState, useRef} from 'react'
 import { useShallow } from 'zustand/shallow'
 import '../css/MainPanel.css'

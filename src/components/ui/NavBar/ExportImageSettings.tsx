@@ -8,7 +8,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useGlobalStore, useImageExportStore, usePlotStore } from '@/GlobalStates';
+import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
 import { ChevronDown } from 'lucide-react';
 import {

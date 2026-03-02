@@ -2,7 +2,7 @@ import Image from "next/image";
 import { logoBGC_MPI, logoBGC, logoMPI } from "@/assets/index";
 
 import './css/Footer.css';
-import { useImageExportStore } from "@/GlobalStates";
+import { useImageExportStore } from "@/GlobalStates/ImageExportStore";
 import { useShallow } from "zustand/shallow";
 
 const Footer = () => {

@@ -1,6 +1,8 @@
 "use client";
 import React, {useState, useEffect} from 'react'
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/GlobalStates';
+import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
 import '../css/MainPanel.css'
 import { useShallow } from 'zustand/shallow';
 import { SliderThumbs } from '@/components/ui/Widgets/SliderThumbs';

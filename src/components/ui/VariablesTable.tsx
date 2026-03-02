@@ -4,9 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useGlobalStore } from "@/GlobalStates";
+import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 import { useShallow } from "zustand/shallow";
-import MetaDataInfo from "./MainPanel/MetaDataInfo";
 import {
   Dialog,
   DialogContent,

@@ -2,7 +2,8 @@
 
 import React from 'react'
 import { VscGraphLine } from "react-icons/vsc"; //Use this if you hate the svg
-import { useErrorStore, usePlotStore } from '@/GlobalStates'
+import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useShallow } from 'zustand/shallow';
 import '../css/PlotLineButton.css'
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"

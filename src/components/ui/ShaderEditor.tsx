@@ -10,7 +10,8 @@ import {
 } from '@/components/ui/select';
 import './css/ShaderEditor.css'
 import { Button } from './button';
-import { useAnalysisStore, useGlobalStore } from '@/GlobalStates';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { IoCloseCircleSharp } from "react-icons/io5";
 import { useShallow } from 'zustand/shallow';
 import {Hider, Input, Switcher} from '../ui';

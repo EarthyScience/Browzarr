@@ -1,4 +1,7 @@
-import { useZarrStore, useCacheStore, useGlobalStore, useErrorStore } from "@/GlobalStates"
+import { useZarrStore } from "@/GlobalStates/ZarrStore";
+import { useCacheStore } from "@/GlobalStates/CacheStore";
+import { useGlobalStore } from "@/GlobalStates/GlobalStore";
+import { useErrorStore } from "@/GlobalStates/ErrorStore";
 import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, RescaleArray } from "./ZarrLoaderLRU";
 import { Convolve } from "../computation/webGPU";
 import {coarsen3DArray, calculateStrides, TypedArray} from '@/utils/HelperFuncs'

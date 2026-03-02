@@ -1,7 +1,9 @@
 import * as THREE from 'three'
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
-import { useAnalysisStore, useGlobalStore, usePlotStore } from '@/GlobalStates';
+import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
 import { evaluate_cmap } from 'js-colormaps-es';
 
