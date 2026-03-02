@@ -10,7 +10,7 @@ import { useRef, useState } from "react";
 import { MdFlipCameraIos } from "react-icons/md";
 import { RiCloseLargeLine, RiMenu2Line } from "react-icons/ri";
 import { useShallow } from "zustand/shallow";
-import { Button } from "@/components/ui/button";
+import { Button, AxisBars } from "@/components/ui";
 import {
 	Tooltip,
 	TooltipContent,
@@ -72,6 +72,7 @@ const Navbar = React.memo(function Navbar() {
 				<div className="navbar-left">
 					{plotOn && (
 						<>
+							<AxisBars />
 							<Tooltip delayDuration={500}>
 								<TooltipTrigger asChild>
 									<Button

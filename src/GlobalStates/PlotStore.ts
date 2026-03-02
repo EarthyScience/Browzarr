@@ -62,6 +62,7 @@ type PlotState ={
   borderTexture: THREE.Texture | undefined;
   useBorderTexture: boolean;
   maskValue: number;
+  cameraPosition: THREE.Vector3;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -116,6 +117,7 @@ type PlotState ={
   setInterpPixels: (interpPixels: boolean) => void;
   setUseOrtho: (useOrtho: boolean) => void;
   setFillValue: (fillValue: number | undefined) => void;
+  setCameraPosition: (cameraPosition: THREE.Vector3) => void;
 }
 
 export const usePlotStore = create<PlotState>((set, get) => ({
@@ -180,6 +182,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   useBorderTexture: false,
   maskValue: 0,
   borderWidth: 0.05,
+  cameraPosition: new THREE.Vector3(0, 0, 5),
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
@@ -235,5 +238,6 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setXSlice: (xSlice) => set({ xSlice }),
   setInterpPixels: (interpPixels) => set({ interpPixels }),
   setUseOrtho: (useOrtho) => set({ useOrtho }),
-  setFillValue: (fillValue) => set({ fillValue })
+  setFillValue: (fillValue) => set({ fillValue }),
+  setCameraPosition: (cameraPosition) => set({ cameraPosition }),
 }))

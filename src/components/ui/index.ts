@@ -31,6 +31,7 @@ export { ShaderEditor } from "./ShaderEditor";
 export { Input } from "./input";
 export { Switcher } from "./Widgets/Switcher";
 export {KeyFrames} from "./KeyFrames";
+export {AxisBars} from "./Elements/AxisBars";
 export {
   Navbar,
   Footer,
