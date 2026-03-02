@@ -2,9 +2,17 @@ import Image from "next/image";
 import { logoBGC_MPI, logoBGC, logoMPI } from "@/assets/index";
 
 import './css/Footer.css';
+import { useImageExportStore } from "@/GlobalStates";
+import { useShallow } from "zustand/shallow";
 
-const Footer = () => (
-  <div className="footer">
+const Footer = () => {
+  const {previewExtent} = useImageExportStore(useShallow(state => ({
+    previewExtent:state.previewExtent,
+  })))
+  return(
+  <div className="footer"
+    style={{visibility: previewExtent ? 'hidden' : 'visible'}}
+  >
     <div className="large-screen-logo">
       <a href="https://www.bgc-jena.mpg.de/en/bgi/mdi" target="_blank" rel="noreferrer">
         <Image src={logoBGC_MPI} alt="logoMPI" height={32}/>
@@ -26,6 +34,6 @@ const Footer = () => (
       </a>
     </div>
   </div>
-);
+)}
 
 export default Footer;

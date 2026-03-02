@@ -85,6 +85,7 @@
   --play-background: rgba(200, 200, 200, 0.8);
   --notice-shadow: rgb(230, 230, 230);
   --warning-area: rgba(255, 205, 67, 0.616);
+  --axis-shadow: hsla(0, 0%, 0%, 0.5);
 }
 
 /* Dark Theme */
@@ -144,6 +145,7 @@
   --play-background: rgba(200, 200, 200, 0.8);
   --notice-shadow: rgb(70, 70, 70);
   --warning-area: rgba(255, 183, 49, 0.555);
+  --axis-shadow: rgb(255, 255, 255);
 }
 
 @layer utilities {

@@ -26,10 +26,11 @@ const TransectNotice = () =>{
 }
 
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
-  const {resetCamera, useOrtho, displaceSurface} = usePlotStore(useShallow(state => ({
+  const {resetCamera, useOrtho, displaceSurface, cameraPosition} = usePlotStore(useShallow(state => ({
       resetCamera: state.resetCamera,
       useOrtho: state.useOrtho,
-      displaceSurface: state.displaceSurface
+      displaceSurface: state.displaceSurface,
+      cameraPosition:state.cameraPosition
     })))
   const {setCameraRef} = useImageExportStore(useShallow(state=>({setCameraRef:state.setCameraRef})))
   const orbitRef = useRef<OrbitControlsImpl | null>(null)
@@ -78,7 +79,6 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       return () => cancelAnimationFrame(frameId);
     }
   },[resetCamera, isFlat])
-
   useEffect(()=>{
     if (hasMounted.current){
       let newCamera;
@@ -114,6 +114,25 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
     }
   }
   },[useOrtho])
+
+  useEffect(()=>{
+    const cam = cameraRef.current
+    const controls = orbitRef.current
+    if (cam && controls){
+      const wasDamping = controls.enableDamping;
+      controls.enableDamping = false;
+      controls.update() //Need this extra update to clear the internal inertia buffer. Cant seem to access it in code. 
+      invalidate()
+      cam.position.copy(cameraPosition)
+      cam.lookAt(new THREE.Vector3(0, 0, 0))
+      //@ts-ignore the check means it is ortho
+      if (useOrtho) cam.updateProjectionMatrix()
+      else cam.updateMatrix()
+      controls.update()
+      controls.enableDamping = wasDamping
+      invalidate()
+    }
+  },[cameraPosition])
 
   return (
     <OrbitControls 

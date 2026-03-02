@@ -1,0 +1,68 @@
+ .axis-panel{
+    width: 90px;
+    height: 75px;
+    position: relative;
+  }
+ 
+ .origin{
+    width: 8px;
+    height: 8px;
+    background: #cdd6f4;
+    border-radius: 50%;
+    position: absolute;
+    left: 50%;
+    top: 60%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    box-shadow: 0 0 6px #cdd6f4;
+}
+
+.axis{
+    position: absolute;
+    left: 50%;
+    top: 60%;
+    transform-origin: left center;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.axis:hover {
+    filter: drop-shadow(0 0 5px var(--axis-shadow)) opacity(1);
+}
+
+.arrow{
+    width: 30px; 
+    height: 11px;
+    clip-path: polygon(0% 40%, 80% 40%, 80% 0%, 100% 50%, 80% 100%, 80% 60%, 0% 60%);
+    flex-shrink: 0;
+    transition: filter 0.2s ease;
+}
+
+.axis-label{
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    margin-left: 4px;
+    flex-shrink: 0;
+    user-select: none;
+    transition: text-shadow 0.2s ease, color 0.2s ease;
+}
+
+.axis-x{
+    transform: translateY(-50%) rotate(30deg);
+}
+.axis-x .arrow{ background: #f38ba8; }
+.axis-x .axis-label{ color: #f38ba8; transform: rotate(-30deg);}
+
+.axis-y {
+    transform: translateY(-50%) rotate(-90deg);
+}
+.axis-y .arrow{ background: #a6e3a1; }
+.axis-y .axis-label{ color: #a6e3a1; transform: rotate(90deg); }
+
+.axis-z {
+    transform: translateY(-50%) rotate(150deg);
+}
+.axis-z .arrow{ background: #89b4fa; opacity: 0.78; }
+.axis-z .axis-label{ color: #89b4fa; opacity: 0.78; transform: rotate(-150deg); }
