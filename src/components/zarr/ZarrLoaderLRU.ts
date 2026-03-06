@@ -16,28 +16,55 @@ export const ZARR_STORES = {
     LOCAL: 'http://localhost:5173/GlobalForcingTiny.zarr'
 } as const;
 
+
+
 export function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float16Array, number | null]{ 
-	let newArray : Float16Array;
-	let newScalingFactor: number | null = null;
-	if (scalingFactor){
-		for (let i = 0; i < array.length; i++) {
-			array[i] /= Math.pow(10,scalingFactor);
-		}
+	const initialScale = scalingFactor ?? 0
+	let denominator =  Math.pow(10,initialScale); 
+	let multiplier = 1/denominator;
+	let maxVal = 0;
+	for (let i = 0; i < array.length; i++) {
+		const val = Math.abs(array[i] * multiplier);
+		if (val > maxVal && isFinite(val)) {
+            maxVal = val;
+        }
 	}
-	const maxVal = array.reduce((max, val) => Math.max(max, Math.abs(val)), -Infinity)
-	newScalingFactor = Math.ceil(Math.log10(maxVal/65504))
-	if (newScalingFactor > 1 || newScalingFactor < -8){
-		newScalingFactor = newScalingFactor + (scalingFactor ?? 0)
-		for (let i = 0; i < array.length; i++) {
-			array[i] /= Math.pow(10,newScalingFactor);
-		}
-		newArray = new Float16Array(array)
-	} else{
-		newArray = new Float16Array(array)
-		newScalingFactor = scalingFactor
+	const additionalScaling = Math.ceil(Math.log10(maxVal/65504))
+	const needsRescale =
+		additionalScaling > 0 ||
+		additionalScaling <= -6 ||
+		(scalingFactor && scalingFactor <= -6 && additionalScaling < 0)
+	const newScalingFactor = needsRescale ?
+		additionalScaling + initialScale :
+		initialScale
+	denominator = Math.pow(10,newScalingFactor);
+	multiplier = 1/denominator;
+	const newArray = new Float16Array(array.length)
+	for (let i = 0; i < array.length; i++) {
+		newArray[i] = array[i] * multiplier;
 	}
 	return [newArray, newScalingFactor]
 }
+
+export function testToFloat16(){
+	const largeArray = new Float32Array([100.0, 1000.0, 10000.0, 100000.0]);
+	const largerArray = largeArray.map((val)=>val*100);
+	const [largeFloat16Array, largeScalingFactor] = ToFloat16(largeArray, null);
+	const [largerFloat16Array, largerScalingFactor] = ToFloat16(largerArray, largeScalingFactor);
+	const smallArray = new Float32Array([1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]);
+	const smallerArray = smallArray.map((val) => val/100);
+	const [smallFloat16Array, smallScalingFactor] = ToFloat16(smallArray, null);
+	const [smallerFloat16Array, smallerScalingFactor] = ToFloat16(smallerArray, smallScalingFactor);
+	console.log(`largeFloat16Array`, largeFloat16Array)
+	console.log("largerFloat16Array", largerFloat16Array)
+	console.log(`largeScalingFactor ${largeScalingFactor}`, `largerScalingFactor ${largerScalingFactor}`)
+	console.log(`smallFloat16Array`, smallFloat16Array)
+	console.log("smallerFloat16Array", smallerFloat16Array)
+	console.log(`smallScalingFactor ${smallScalingFactor}`, `smallerScalingFactor ${smallerScalingFactor}`)
+}
+
+// testToFloat16()
+
 
 export function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales built array when new chunk has higher scalingFactor
 	for (let i = 0; i < array.length; i++) {
