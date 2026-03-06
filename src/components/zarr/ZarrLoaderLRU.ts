@@ -64,7 +64,7 @@ export function testToFloat16(){
 	console.log(`smallScalingFactor ${smallScalingFactor}`, `smallerScalingFactor ${smallerScalingFactor}`)
 }
 
-testToFloat16()
+// testToFloat16()
 
 
 export function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales built array when new chunk has higher scalingFactor
