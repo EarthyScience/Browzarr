@@ -69,7 +69,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
         xSlice: state.xSlice
     })));
     const isMounted = useRef(false)
-    
+
     useEffect(() => {
         if (!plotOn){
             return
@@ -198,6 +198,9 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
     }, [execute]); 
 
     useEffect(()=>{
+        if (!plotOn){
+            return
+        }
         const shapeInfo = { dataShape, outputShape, strides};
         const kernelParams = { kernelDepth, kernelSize };
 

@@ -152,21 +152,20 @@ const maxRetries = 10;
 const retryDelay = 500; // 0.5 seconds in milliseconds
 
 export async function GetStore(storePath: string): Promise<zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore>> | undefined>{
-		const {setStatus} = useGlobalStore.getState();
 		for (let attempt = 0; attempt <= maxRetries; attempt++) {
 			try {
 				const d_store = zarr.tryWithConsolidated(
 					new zarr.FetchStore(storePath)
 				);
 				const gs = await d_store.then(store => zarr.open(store, {kind: 'group'}));
-				setStatus(null)
+				useGlobalStore.setState({ status: null })
 				return gs;
 			} catch (error) {
 				// If this is the final attempt, handle the error
 				if (attempt === maxRetries) {
 					if (storePath.slice(0,5) != 'local'){
 						useErrorStore.getState().setError('zarrFetch')
-						setStatus(null)
+						useGlobalStore.setState({ status: null })
 					}
 					throw new ZarrError(`Failed to initialize store at ${storePath}`, error);
 				}

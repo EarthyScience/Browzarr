@@ -127,8 +127,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       controls.update() //Need this extra update to clear the internal inertia buffer. Cant seem to access it in code. 
       invalidate()
       cam.position.copy(cameraPosition)
-      cam.lookAt(new THREE.Vector3(0, 0, 0))
-      //@ts-ignore the check means it is ortho
+      controls.target.copy(new THREE.Vector3(0, 0, 0))
+      //@ts-ignore the check means cam will have that method
       if (useOrtho) cam.updateProjectionMatrix()
       else cam.updateMatrix()
       controls.update()
