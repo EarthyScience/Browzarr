@@ -230,7 +230,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         shape: {value: new THREE.Vector3(depth, height, width)},
         flatBounds:{value: new THREE.Vector4(xRange[0], xRange[1], zRange[0], zRange[1])},
         vertBounds:{value: new THREE.Vector2(yRange[0], yRange[1])},
-        fillValue: {value: fillValue}
+        fillValue: {value: NaN}
       },
       vertexShader:pointVert,
       fragmentShader:pointFrag,
@@ -267,7 +267,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       uniforms.vertBounds.value.set(
         yRange[0], yRange[1]
       );
-      uniforms.fillValue.value = fillValue
+      uniforms.fillValue.value = fillValue?? NaN
       uniforms.maskValue.value = maskValue
     }
   }, [pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, pointIDs, stride, selectTS, animProg, timeScale, xRange, yRange, fillValue, zRange, maskValue, lonBounds, latBounds]);

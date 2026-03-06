@@ -82,7 +82,6 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
     const [boundsObj, setBoundsObj] = useState<Record<string, THREE.Vector4>>({})
     const [bounds, setBounds] = useState<THREE.Vector4[]>(new Array(10).fill(new THREE.Vector4(-1 , -1, -1, -1)))
     const [height, width] = useMemo(()=>isFlat ? dataShape : [dataShape[1], dataShape[2]], [dataShape])
-
     useEffect(()=>{ //This goes through the list of highlighted squares and removes those that aren't included in the timeseries object.
       let boundIDs = Object.keys(boundsObj)
       const tsIDs = Object.keys(timeSeries)
@@ -131,7 +130,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
                 nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)},
                 displacement: {value: sphereDisplacement},
-                fillValue: {value: fillValue},
+                fillValue: {value: NaN},
             },
             vertexShader: isFlat ? sphereVertexFlat : sphereVertex,
             fragmentShader: isFlat ? flatSphereFrag : sphereFrag,
@@ -166,7 +165,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         uniforms.nanAlpha.value =  1 - nanTransparency
         uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
         uniforms.displacement.value = sphereDisplacement
-        uniforms.fillValue.value = fillValue
+        uniforms.fillValue.value = fillValue?? NaN
       }
       if (backMaterial){
         const uniforms = backMaterial.uniforms;
@@ -184,7 +183,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         uniforms.nanAlpha.value =  1 - nanTransparency
         uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
         uniforms.displacement.value = sphereDisplacement
-        uniforms.fillValue.value = fillValue
+        uniforms.fillValue.value = fillValue?? NaN
       }
     },[textures, animProg, colormap, cOffset, cScale, animate, bounds, selectTS, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, fillValue, maskValue, valueScales])
     
