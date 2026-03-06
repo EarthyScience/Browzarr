@@ -20,7 +20,7 @@ export const ZARR_STORES = {
 
 export function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float16Array, number | null]{ 
 	const initialScale = scalingFactor ?? 0
-	let denominator = scalingFactor ? Math.pow(10,scalingFactor) : 1; 
+	let denominator =  Math.pow(10,initialScale); 
 	let multiplier = 1/denominator;
 	let maxVal = 0;
 	for (let i = 0; i < array.length; i++) {
