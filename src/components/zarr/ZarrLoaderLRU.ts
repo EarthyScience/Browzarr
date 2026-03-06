@@ -16,31 +16,33 @@ export const ZARR_STORES = {
     LOCAL: 'http://localhost:5173/GlobalForcingTiny.zarr'
 } as const;
 
+
+
 export function ToFloat16(array : Float32Array, scalingFactor: number | null) : [Float16Array, number | null]{ 
-	let newArray : Float16Array;
-	let newScalingFactor: number | null = null;
-	if (scalingFactor){
-		for (let i = 0; i < array.length; i++) {
-			array[i] /= Math.pow(10,scalingFactor);
-		}
-	}
-	let maxVal = -Infinity
+	const initialScale = scalingFactor ?? 0
+	let denominator = scalingFactor ? Math.pow(10,scalingFactor) : 1; 
+	let multiplier = 1/denominator;
+	let maxVal = 0;
 	for (let i = 0; i < array.length; i++) {
-		const absVal = Math.abs(array[i]);
-		if (isFinite(absVal) && absVal > maxVal) {
-			maxVal = absVal;
-		}
+		const val = Math.abs(array[i] * multiplier);
+		if (val > maxVal && isFinite(val)) {
+            maxVal = val;
+        }
 	}
-	newScalingFactor = Math.ceil(Math.log10(maxVal/65504))
-	if (newScalingFactor > 0 || newScalingFactor <= -6 || (scalingFactor && scalingFactor <= -6 && newScalingFactor < 0)){
-		for (let i = 0; i < array.length; i++) {
-			array[i] /= Math.pow(10,newScalingFactor);
-		}
-		newArray = new Float16Array(array)
-		newScalingFactor = newScalingFactor + (scalingFactor ?? 0)
-	} else{
-		newArray = new Float16Array(array)
-		newScalingFactor = scalingFactor
+
+	const additionalScaling = Math.ceil(Math.log10(maxVal/65504))
+	const needsRescale =
+		additionalScaling > 0 ||
+		additionalScaling <= -6 ||
+		(scalingFactor && scalingFactor <= -6 && additionalScaling < 0)
+	const newScalingFactor = needsRescale ?
+		additionalScaling + initialScale :
+		initialScale
+	denominator = Math.pow(10,newScalingFactor);
+	multiplier = 1/denominator;
+	const newArray = new Float16Array(array.length)
+	for (let i = 0; i < array.length; i++) {
+		newArray[i] = array[i] * multiplier;
 	}
 	return [newArray, newScalingFactor]
 }
@@ -62,7 +64,7 @@ export function testToFloat16(){
 	console.log(`smallScalingFactor ${smallScalingFactor}`, `smallerScalingFactor ${smallerScalingFactor}`)
 }
 
-// testToFloat16()
+testToFloat16()
 
 
 export function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales built array when new chunk has higher scalingFactor
