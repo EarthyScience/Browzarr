@@ -29,7 +29,6 @@ export function ToFloat16(array : Float32Array, scalingFactor: number | null) : 
             maxVal = val;
         }
 	}
-
 	const additionalScaling = Math.ceil(Math.log10(maxVal/65504))
 	const needsRescale =
 		additionalScaling > 0 ||
