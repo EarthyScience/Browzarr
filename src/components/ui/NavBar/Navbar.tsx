@@ -67,13 +67,11 @@ const Navbar = React.memo(function Navbar() {
 					{isOpen ? "Close navigation" : "Open navigation"}
 				</TooltipContent>
 			</Tooltip>
-
 			<div className={cn("navbar-content", isOpen ? "open" : "closed")}>
 				{/* <LogoDrawer /> */}
 				<div className="navbar-left">
 					{plotOn && (
 						<>
-							<AxisBars />
 							<Tooltip delayDuration={500}>
 								<TooltipTrigger asChild>
 									<Button
@@ -122,6 +120,7 @@ const Navbar = React.memo(function Navbar() {
 					)}
 				</div>
 			</div>
+			{plotOn && <AxisBars />}
 		</nav>
 	);
 });

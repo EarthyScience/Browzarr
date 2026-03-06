@@ -66,7 +66,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           useClipScale: {value: vTransferRange},
           nanAlpha: {value: 1-nanTransparency},
           nanColor: {value: new THREE.Color(nanColor)},
-          fillValue: {value: fillValue}
+          fillValue: {value: NaN}
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
       fragmentShader: useFragOpt ?  fragOpt : fragmentShader,
@@ -96,7 +96,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
         uniforms.nanColor.value.set(nanColor);
         uniforms.opacityMag.value = vTransferScale;
         uniforms.useClipScale.value = vTransferRange;
-        uniforms.fillValue.value = fillValue;
+        uniforms.fillValue.value = fillValue?? NaN;
         uniforms.maskValue.value = maskValue
         invalidate() // Needed because Won't trigger re-render if camera is stationary. 
       }

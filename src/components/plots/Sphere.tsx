@@ -82,7 +82,6 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
     const [boundsObj, setBoundsObj] = useState<Record<string, THREE.Vector4>>({})
     const [bounds, setBounds] = useState<THREE.Vector4[]>(new Array(10).fill(new THREE.Vector4(-1 , -1, -1, -1)))
     const [height, width] = useMemo(()=>isFlat ? dataShape : [dataShape[1], dataShape[2]], [dataShape])
-
     useEffect(()=>{ //This goes through the list of highlighted squares and removes those that aren't included in the timeseries object.
       let boundIDs = Object.keys(boundsObj)
       const tsIDs = Object.keys(timeSeries)
@@ -131,7 +130,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
                 nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)},
                 displacement: {value: sphereDisplacement},
-                fillValue: {value: fillValue},
+                fillValue: {value: NaN},
             },
             vertexShader: isFlat ? sphereVertexFlat : sphereVertex,
             fragmentShader: isFlat ? flatSphereFrag : sphereFrag,
@@ -149,42 +148,31 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
       return mat;
     },[shaderMaterial])
 
+    const updateMaterial = (material: THREE.ShaderMaterial) =>{
+      const uniforms = material.uniforms;
+      uniforms.map.value =  textures 
+      uniforms.selectTS.value =  selectTS
+      uniforms.selectBounds.value =  bounds
+      uniforms.cmap.value =  colormap
+      uniforms.maskValue.value = maskValue
+      uniforms.cOffset.value =  cOffset
+      uniforms.cScale.value =  cScale
+      uniforms.animateProg.value =  animProg
+      uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
+      uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
+      uniforms.nanColor.value =  new THREE.Color(nanColor)
+      uniforms.nanAlpha.value =  1 - nanTransparency
+      uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
+      uniforms.displacement.value = sphereDisplacement
+      uniforms.fillValue.value = fillValue?? NaN
+    }
+
     useEffect(()=>{
       if (shaderMaterial){
-        const uniforms = shaderMaterial.uniforms;
-        uniforms.map.value =  textures 
-        uniforms.selectTS.value =  selectTS
-        uniforms.selectBounds.value =  bounds
-        uniforms.cmap.value =  colormap
-        uniforms.maskValue.value = maskValue
-        uniforms.cOffset.value =  cOffset
-        uniforms.cScale.value =  cScale
-        uniforms.animateProg.value =  animProg
-        uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
-        uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
-        uniforms.nanColor.value =  new THREE.Color(nanColor)
-        uniforms.nanAlpha.value =  1 - nanTransparency
-        uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
-        uniforms.displacement.value = sphereDisplacement
-        uniforms.fillValue.value = fillValue
+        updateMaterial(shaderMaterial)
       }
       if (backMaterial){
-        const uniforms = backMaterial.uniforms;
-        uniforms.map. value =  textures 
-        uniforms.selectTS.value =  selectTS
-        uniforms.selectBounds.value =  bounds
-        uniforms.cmap.value =  colormap
-        uniforms.maskValue.value = maskValue
-        uniforms.cOffset.value =  cOffset
-        uniforms.cScale.value =  cScale
-        uniforms.animateProg.value =  animProg
-        uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
-        uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
-        uniforms.nanColor.value =  new THREE.Color(nanColor)
-        uniforms.nanAlpha.value =  1 - nanTransparency
-        uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
-        uniforms.displacement.value = sphereDisplacement
-        uniforms.fillValue.value = fillValue
+        updateMaterial(backMaterial)
       }
     },[textures, animProg, colormap, cOffset, cScale, animate, bounds, selectTS, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, fillValue, maskValue, valueScales])
     
