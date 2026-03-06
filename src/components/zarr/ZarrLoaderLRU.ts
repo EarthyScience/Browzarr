@@ -24,20 +24,46 @@ export function ToFloat16(array : Float32Array, scalingFactor: number | null) : 
 			array[i] /= Math.pow(10,scalingFactor);
 		}
 	}
-	const maxVal = array.reduce((max, val) => Math.max(max, Math.abs(val)), -Infinity)
+	let maxVal = -Infinity
+	for (let i = 0; i < array.length; i++) {
+		const absVal = Math.abs(array[i]);
+		if (isFinite(absVal) && absVal > maxVal) {
+			maxVal = absVal;
+		}
+	}
 	newScalingFactor = Math.ceil(Math.log10(maxVal/65504))
-	if (newScalingFactor > 1 || newScalingFactor < -8){
-		newScalingFactor = newScalingFactor + (scalingFactor ?? 0)
+	if (newScalingFactor > 0 || newScalingFactor <= -6 || (scalingFactor && scalingFactor <= -6 && newScalingFactor < 0)){
 		for (let i = 0; i < array.length; i++) {
 			array[i] /= Math.pow(10,newScalingFactor);
 		}
 		newArray = new Float16Array(array)
+		newScalingFactor = newScalingFactor + (scalingFactor ?? 0)
 	} else{
 		newArray = new Float16Array(array)
 		newScalingFactor = scalingFactor
 	}
 	return [newArray, newScalingFactor]
 }
+
+export function testToFloat16(){
+	const largeArray = new Float32Array([100.0, 1000.0, 10000.0, 100000.0]);
+	const largerArray = largeArray.map((val)=>val*100);
+	const [largeFloat16Array, largeScalingFactor] = ToFloat16(largeArray, null);
+	const [largerFloat16Array, largerScalingFactor] = ToFloat16(largerArray, largeScalingFactor);
+	const smallArray = new Float32Array([1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]);
+	const smallerArray = smallArray.map((val) => val/100);
+	const [smallFloat16Array, smallScalingFactor] = ToFloat16(smallArray, null);
+	const [smallerFloat16Array, smallerScalingFactor] = ToFloat16(smallerArray, smallScalingFactor);
+	console.log(`largeFloat16Array`, largeFloat16Array)
+	console.log("largerFloat16Array", largerFloat16Array)
+	console.log(`largeScalingFactor ${largeScalingFactor}`, `largerScalingFactor ${largerScalingFactor}`)
+	console.log(`smallFloat16Array`, smallFloat16Array)
+	console.log("smallerFloat16Array", smallerFloat16Array)
+	console.log(`smallScalingFactor ${smallScalingFactor}`, `smallerScalingFactor ${smallerScalingFactor}`)
+}
+
+// testToFloat16()
+
 
 export function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales built array when new chunk has higher scalingFactor
 	for (let i = 0; i < array.length; i++) {
