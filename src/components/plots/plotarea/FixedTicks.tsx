@@ -56,8 +56,7 @@ export function FixedTicks({
     dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
     dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
   ]
-  const coords = dimCoords
-  const xDimArray = dimSlices[plotDim]
+  const xDimArray = useMemo(()=>dimSlices[plotDim],[dimSlices, plotDim])
   const xTickCount = 10;
   const yTickCount = 8;
 
@@ -69,11 +68,11 @@ export function FixedTicks({
   const textArray = useMemo(()=>{
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     if (xDimArray){
-      const isBig = xDimArray.every(item => typeof item === "bigint");
-      if (isBig){
-        const check = Object.keys(coords).length > 0;
-        const firstID = check ? Object.keys(coords)[0] : null
-        const [unit, offset] = firstID ? parseTimeUnit(coords[firstID].plot.units) : [1, 0];
+      const check = Object.keys(dimCoords).length > 0;
+      const firstID = check ? Object.keys(dimCoords)[0] : null
+      const timeLike = firstID && dimCoords[firstID].plot.units.includes("since");
+      if (timeLike){
+        const [unit, offset] = firstID ? parseTimeUnit(dimCoords[firstID].plot.units) : [1, 0];
         const timeStrings = []
         for (let i = 0 ; i < xDimArray.length; i++){
           const timeStamp = Number(xDimArray[i])*unit
@@ -88,7 +87,7 @@ export function FixedTicks({
       }
       return xDimArray.map(val => String(val))
     }
-  },[xDimArray,coords])
+  },[xDimArray,dimCoords])
 
   const [zoom, setZoom] = useState(camera.zoom)
   
