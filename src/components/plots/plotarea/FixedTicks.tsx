@@ -51,12 +51,12 @@ export function FixedTicks({
                 ySlice: state.ySlice,
                 xSlice: state.xSlice
       })))
-  const dimSlices = [
+  const dimSlices = useMemo(() => [
     dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
     dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
     dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
-  ]
-  const xDimArray = useMemo(()=>dimSlices[plotDim],[dimSlices, plotDim])
+  ], [dimArrays])
+  const xDimArray = useMemo(() => dimSlices[plotDim], [dimSlices, plotDim])
   const xTickCount = 10;
   const yTickCount = 8;
 
@@ -68,11 +68,10 @@ export function FixedTicks({
   const textArray = useMemo(()=>{
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     if (xDimArray){
-      const check = Object.keys(dimCoords).length > 0;
-      const firstID = check ? Object.keys(dimCoords)[0] : null
+      const firstID = Object.keys(dimCoords)[0]?? null
       const timeLike = firstID && dimCoords[firstID].plot.units.includes("since");
       if (timeLike){
-        const [unit, offset] = firstID ? parseTimeUnit(dimCoords[firstID].plot.units) : [1, 0];
+        const [unit, offset] = parseTimeUnit(dimCoords[firstID].plot.units);
         const timeStrings = []
         for (let i = 0 ; i < xDimArray.length; i++){
           const timeStamp = Number(xDimArray[i])*unit
