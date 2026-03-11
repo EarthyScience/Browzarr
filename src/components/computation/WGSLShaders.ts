@@ -136,8 +136,7 @@ export const createShaders = (precision: Precision) => {
 
         let globalIdx = outY * xSize + outX;
         let thisVal = inputData[globalIdx];
-        let isNaN: bool = isNaN(f32(thisVal));
-        if (isNaN){
+        if (isNaN(f32(thisVal))){
             outputData[globalIdx] = thisVal;
             return;
         }   
