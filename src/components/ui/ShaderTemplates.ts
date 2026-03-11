@@ -1,3 +1,11 @@
+const NaNFunc =  /* wgsl */`
+fn isNaN(val: f32) -> bool {
+    let bits = bitcast<u32>(val);
+    // If the exponent is all 1s (0x7f800000), it's either NaN or Infinity
+    return (bits & 0x7f800000u) == 0x7f800000u;
+}
+`
+
 const reduction = /* wgsl */`
 enable f16;
 struct Params {
@@ -12,6 +20,8 @@ struct Params {
 @group(0) @binding(0) var<storage, read> inputData: array<f16>;
 @group(0) @binding(1) var<storage, read_write> outputData: array<f16>;
 @group(0) @binding(2) var<uniform> params: Params;
+
+${NaNFunc}
 
 @compute @workgroup_size(16, 16, 1) // Don't touch this as workgroups are predefined
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -78,6 +88,8 @@ struct Params {
 @group(0) @binding(0) var<storage, read> inputData: array<f16>;
 @group(0) @binding(1) var<storage, read_write> outputData: array<f16>;
 @group(0) @binding(2) var<uniform> params: Params;
+
+${NaNFunc}
 
 @compute @workgroup_size(4, 4, 4) // Don't touch this as workgroups are predefined
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -151,6 +163,8 @@ struct Params {
 @group(0) @binding(0) var<storage, read> inputData: array<f16>;
 @group(0) @binding(1) var<storage, read_write> outputData: array<f16>;
 @group(0) @binding(2) var<uniform> params: Params;
+
+${NaNFunc}
 
 @compute @workgroup_size(16, 16, 1) // Don't touch this as workgroups are predefined
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {

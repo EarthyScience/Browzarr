@@ -107,8 +107,7 @@ const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
   const viewWidth = useMemo(()=>window.innerWidth,[window.innerWidth])
   const viewHeight = useMemo(()=>window.innerHeight - height, [window.innerWidth, height])
 
-  const [instancePoints, setInstancePoints] = useState<Record<string, THREE.Vector3[]>>({})
-  const geometries = useMemo(()=>{
+  const {geometries, instancePoints} = useMemo(()=>{
     const geomObj: Record<string, THREE.BufferGeometry> = {}
     const tempInstances: Record<string, THREE.Vector3[]> = {}
     Object.keys(timeSeries).map((val, idx)=>{ 
@@ -170,10 +169,9 @@ const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
       geometry.setIndex(new THREE.Uint16BufferAttribute(indices, 1));
       geomObj[val] = geometry
     })
-    setInstancePoints(tempInstances)
-    return geomObj
-  },[timeSeries, lineResolution]) 
 
+    return {geometries:geomObj, instancePoints:tempInstances}
+  },[timeSeries, lineResolution]) 
 
   useEffect(()=>{
     invalidate()

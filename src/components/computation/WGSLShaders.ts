@@ -6,137 +6,147 @@ export const createShaders = (precision: Precision) => {
 
     const enableF16 = precision === 'f16' ? 'enable f16;' : '';
 
+
+
+    const isNaNFunc = /* WGSL */`
+            fn isNaN(val: f32) -> bool {
+                let bits = bitcast<u32>(val);
+                // If the exponent is all 1s (0x7f800000), it's either NaN or Infinity
+                return (bits & 0x7f800000u) == 0x7f800000u;
+            }
+        `
+
     // #region BOILERPLATES
     //They are untabbed for formatting reasons in the editor
     const ReductionBoilerPlate = /* WGSL */`
-${enableF16}
-struct Params {
-    zStride: u32,
-    yStride: u32,
-    xStride: u32,
-    xSize: u32,
-    ySize: u32,
-    reduceDim: u32,
-    dimLength: u32,
-};
-@group(0) @binding(0) var<storage, read> inputData: array<${precision}>;
-@group(0) @binding(1) var<storage, read_write> outputData: array<${precision}>;
-@group(0) @binding(2) var<uniform> params: Params;
+    ${enableF16}
+    struct Params {
+        zStride: u32,
+        yStride: u32,
+        xStride: u32,
+        xSize: u32,
+        ySize: u32,
+        reduceDim: u32,
+        dimLength: u32,
+    };
+    @group(0) @binding(0) var<storage, read> inputData: array<${precision}>;
+    @group(0) @binding(1) var<storage, read_write> outputData: array<${precision}>;
+    @group(0) @binding(2) var<uniform> params: Params;
 
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let zStride = params.zStride;
-    let yStride = params.yStride;
-    let xStride = params.xStride;
-    let xSize = params.xSize;
-    let ySize = params.ySize;
-    let reduceDim = params.reduceDim;
-    let dimLength = params.dimLength;
-                    
-    let outX = global_id.y;
-    let outY = global_id.x;
-    
-    if (outX >= xSize || outY >= ySize) {
-        return;
-    }
-    `
-    const ConvolutionBoilerPlate = /* WGSL */`
-${enableF16}
-struct Params {
-    xStride: u32,
-    yStride: u32,
-    zStride: u32,
-    xSize: u32,
-    ySize: u32,
-    zSize: u32,
-    workGroups: vec3<u32>,
-    kernelSize: u32,
-    kernelDepth: u32
-};
-@group(0) @binding(0) var<storage, read> inputData: array<${precision}>;
-@group(0) @binding(1) var<storage, read_write> outputData: array<${precision}>;
-@group(0) @binding(2) var<uniform> params: Params;
+    ${isNaNFunc}
 
-@compute @workgroup_size(4, 4, 4)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let zStride = params.zStride;
-    let yStride = params.yStride;
-    let xStride = params.xStride; 
-    let xSize = params.xSize;
-    let ySize = params.ySize;
-    let zSize = params.zSize; 
-    let workGroups = params.workGroups;
-    let kernelSize = params.kernelSize;
-    let kernelDepth = params.kernelDepth;
+    @compute @workgroup_size(16, 16, 1)
+    fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+        let zStride = params.zStride;
+        let yStride = params.yStride;
+        let xStride = params.xStride;
+        let xSize = params.xSize;
+        let ySize = params.ySize;
+        let reduceDim = params.reduceDim;
+        let dimLength = params.dimLength;
+                        
+        let outX = global_id.y;
+        let outY = global_id.x;
+        
+        if (outX >= xSize || outY >= ySize) {
+            return;
+        }
+        `
+        const ConvolutionBoilerPlate = /* WGSL */`
+    ${enableF16}
+    struct Params {
+        xStride: u32,
+        yStride: u32,
+        zStride: u32,
+        xSize: u32,
+        ySize: u32,
+        zSize: u32,
+        workGroups: vec3<u32>,
+        kernelSize: u32,
+        kernelDepth: u32
+    };
+    @group(0) @binding(0) var<storage, read> inputData: array<${precision}>;
+    @group(0) @binding(1) var<storage, read_write> outputData: array<${precision}>;
+    @group(0) @binding(2) var<uniform> params: Params;
 
-    let outX = global_id.x; 
-    let outY = global_id.y;
-    let outZ = global_id.z; 
+    ${isNaNFunc}
 
-    if (outX >= xSize || outY >= ySize || outZ >= zSize) {
-        return;
-    }
+    @compute @workgroup_size(4, 4, 4)
+    fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+        let zStride = params.zStride;
+        let yStride = params.yStride;
+        let xStride = params.xStride; 
+        let xSize = params.xSize;
+        let ySize = params.ySize;
+        let zSize = params.zSize; 
+        let workGroups = params.workGroups;
+        let kernelSize = params.kernelSize;
+        let kernelDepth = params.kernelDepth;
 
-    let total_threads_per_slice = workGroups.x * workGroups.y * 16;
-    let globalIdx = global_id.z * total_threads_per_slice + 
-                    global_id.y * (workGroups.x * 4) + 
-                    global_id.x;
+        let outX = global_id.x; 
+        let outY = global_id.y;
+        let outZ = global_id.z; 
 
-    let xy_radius: i32 = i32(kernelSize/2u);
-    let z_radius: i32 = i32(kernelDepth/2u);
+        if (outX >= xSize || outY >= ySize || outZ >= zSize) {
+            return;
+        }
 
-    let xy_start: i32 = select(-xy_radius, 0, kernelSize == 1u);
-    let xy_end: i32 = select(xy_radius + 1, 1, kernelSize == 1u);
-    let z_start: i32 = select(-z_radius, 0, kernelDepth == 1u);
-    let z_end: i32 = select(z_radius + 1, 1, kernelDepth == 1u);
-    `
-    const ConvolutionBoilerPlate2D = /* WGSL */`
-${enableF16}
-struct Params {
-    xStride: u32,
-    yStride: u32,
-    xSize: u32,
-    ySize: u32,
-    kernelSize: u32,
-};
-@group(0) @binding(0) var<storage, read> inputData: array<${precision}>;
-@group(0) @binding(1) var<storage, read_write> outputData: array<${precision}>;
-@group(0) @binding(2) var<uniform> params: Params;
+        let total_threads_per_slice = workGroups.x * workGroups.y * 16;
+        let globalIdx = global_id.z * total_threads_per_slice + 
+                        global_id.y * (workGroups.x * 4) + 
+                        global_id.x;
 
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
-    let xStride = params.xStride; 
-    let yStride = params.yStride;
-    let xSize = params.xSize;
-    let ySize = params.ySize;
-    let kernelSize = params.kernelSize;
+        let xy_radius: i32 = i32(kernelSize/2u);
+        let z_radius: i32 = i32(kernelDepth/2u);
 
-    let outX = global_id.x; 
-    let outY = global_id.y;
+        let xy_start: i32 = select(-xy_radius, 0, kernelSize == 1u);
+        let xy_end: i32 = select(xy_radius + 1, 1, kernelSize == 1u);
+        let z_start: i32 = select(-z_radius, 0, kernelDepth == 1u);
+        let z_end: i32 = select(z_radius + 1, 1, kernelDepth == 1u);
+        `
+        const ConvolutionBoilerPlate2D = /* WGSL */`
+    ${enableF16}
+    struct Params {
+        xStride: u32,
+        yStride: u32,
+        xSize: u32,
+        ySize: u32,
+        kernelSize: u32,
+    };
+    @group(0) @binding(0) var<storage, read> inputData: array<${precision}>;
+    @group(0) @binding(1) var<storage, read_write> outputData: array<${precision}>;
+    @group(0) @binding(2) var<uniform> params: Params;
 
-    if (outX >= xSize|| outY >= ySize) {
-        return;
-    }
+    ${isNaNFunc}
 
-    let globalIdx = outY * xSize + outX;
-    let thisVal = inputData[globalIdx];
-    let isNaN: bool = thisVal != thisVal;
-    if (isNaN){
-        outputData[globalIdx] = thisVal;
-        return;
-    }   
+    @compute @workgroup_size(16, 16, 1)
+    fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
+        let xStride = params.xStride; 
+        let yStride = params.yStride;
+        let xSize = params.xSize;
+        let ySize = params.ySize;
+        let kernelSize = params.kernelSize;
 
-    let xy_radius: i32 = i32(kernelSize/2u);
+        let outX = global_id.x; 
+        let outY = global_id.y;
+
+        if (outX >= xSize|| outY >= ySize) {
+            return;
+        }
+
+        let globalIdx = outY * xSize + outX;
+        let thisVal = inputData[globalIdx];
+        if (isNaN(f32(thisVal))){
+            outputData[globalIdx] = thisVal;
+            return;
+        }   
+
+        let xy_radius: i32 = i32(kernelSize/2u);
 
     `
     // #endregion
 
     const allShaders = {
-    boilerPlates:{
-        ReductionBoilerPlate,
-        ConvolutionBoilerPlate,
-        ConvolutionBoilerPlate2D
-    },
     // #region REDUCTION SHADERS
     MeanReduction: /* wgsl */`
         ${ReductionBoilerPlate}
@@ -148,7 +158,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                 for (var z: u32 = 0u; z < dimLength; z++) {
                     let inputIndex = cCoord + (z * zStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
-                    if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    if (isNaN(newVal)){ 
                         continue;
                     }
                     sum += newVal;
@@ -158,7 +168,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                 for (var y: u32 = 0u; y < dimLength; y++) {
                     let inputIndex = cCoord + (y * yStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
-                    if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    if (isNaN(newVal)){ 
                         continue;
                     }
                     sum += newVal;
@@ -168,7 +178,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                 for (var x: u32 = 0u; x < dimLength; x++) {
                     let inputIndex = cCoord + (x * xStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
-                    if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    if (isNaN(newVal)){ 
                         continue;
                     }
                     sum += newVal;
@@ -268,7 +278,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                 for (var z: u32 = 0u; z < dimLength; z++) {
                     let inputIndex = cCoord + (z * zStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
-                    if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    if (isNaN(newVal)){ 
                         continue;
                     }
                     sum += newVal;
@@ -278,7 +288,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                 for (var y: u32 = 0u; y < dimLength; y++) {
                     let inputIndex = cCoord + (y * yStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
-                    if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    if (isNaN(newVal)){ 
                         continue;
                     }
                     sum += newVal;
@@ -288,7 +298,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                 for (var x: u32 = 0u; x < dimLength; x++) {
                     let inputIndex = cCoord + (x * xStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
-                    if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    if (isNaN(newVal)){
                         continue;
                     }
                     sum += newVal;
@@ -305,7 +315,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                 for (var z: u32 = 0u; z < dimLength; z++) {
                     let inputIndex = cCoord + (z * zStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
-                    if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    if (isNaN(newVal)){ 
                         continue;
                     }
                     let diff: f32 = mean - newVal;
@@ -316,7 +326,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                 for (var y: u32 = 0u; y < dimLength; y++) {
                     let inputIndex = cCoord + (y * yStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
-                    if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    if (isNaN(newVal)){ 
                         continue;
                     }
                     let diff: f32 = mean - newVal;
@@ -327,7 +337,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                 for (var x: u32 = 0u; x < dimLength; x++) {
                     let inputIndex = cCoord + (x * xStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
-                    if (newVal != newVal){ //This only evaluates if newVal is NaN
+                    if (isNaN(newVal)){ 
                         continue;
                     }
                     let diff: f32 = mean - newVal;
@@ -509,7 +519,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                     let inputIndex = cCoord + (z * zStride);
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
-                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                    if (isNaN(xi) || isNaN(yi)){ 
                         continue;
                     }
                     xSum += f32(firstData[inputIndex]);
@@ -521,7 +531,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                     let inputIndex = cCoord + (y * yStride);
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
-                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                    if (isNaN(xi) || isNaN(yi)){ 
                         continue;
                     }
                     xSum += f32(firstData[inputIndex]);
@@ -533,7 +543,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                     let inputIndex = cCoord + (x * xStride);
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
-                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                    if (isNaN(xi) || isNaN(yi)){ 
                         continue;
                     }
                     xSum += f32(firstData[inputIndex]);
@@ -552,7 +562,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                     let inputIndex = cCoord + (z * zStride);
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
-                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                    if (isNaN(xi) || isNaN(yi)){ 
                         continue;
                     }
                     numSum += (xi - xMean)*(f32(yi) - yMean);
@@ -564,7 +574,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                     let inputIndex = cCoord + (y * yStride);
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
-                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                    if (isNaN(xi) || isNaN(yi)){ 
                         continue;
                     }
                     numSum += (xi - xMean)*(f32(yi) - yMean);
@@ -576,7 +586,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                     let inputIndex = cCoord + (x * xStride);
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
-                    if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                    if (isNaN(xi) || isNaN(yi)){ 
                         continue;
                     }
                     numSum += (xi - xMean)*(f32(yi) - yMean);
@@ -645,7 +655,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                 let inputIndex = baseCoord + (i * iterStride);
                 let xi: f32 = f32(firstData[inputIndex]);
                 let yi: f32 = f32(secondData[inputIndex]);
-                if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                if (isNaN(xi) || isNaN(yi)){ 
                     continue;
                 }
                 xSum += xi;
@@ -660,7 +670,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                 let inputIndex = baseCoord + (i * iterStride);
                 let xi: f32 = f32(firstData[inputIndex]);
                 let yi: f32 = f32(secondData[inputIndex]);
-                if (xi != xi || yi != yi){ //This only evaluates if a value is NaN
+                if (isNaN(xi) || isNaN(yi)){ 
                     continue;
                 }
                 numSum += (xi - xMean) * (yi - yMean);
@@ -716,7 +726,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                     let inputIndex = cCoord + (z * zStride);
                     let xI = f32(firstData[inputIndex]);
                     let yI = f32(secondData[inputIndex]);
-                    if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                    if (isNaN(xI) || isNaN(yI)){ 
                         continue;
                     }
                     xSum += xI;
@@ -731,7 +741,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                     let inputIndex = cCoord + (y * yStride);
                     let xI = f32(firstData[inputIndex]);
                     let yI = f32(secondData[inputIndex]);
-                    if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                    if (isNaN(xI) || isNaN(yI)){ 
                         continue;
                     }
                     xSum += xI;
@@ -746,7 +756,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                     let inputIndex = cCoord + (x * xStride);
                     let xI = f32(firstData[inputIndex]);
                     let yI = f32(secondData[inputIndex]);
-                    if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                    if (isNaN(xI) || isNaN(yI)){ 
                         continue;
                     }
                     xSum += xI;
@@ -877,7 +887,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                             let zOffset = kz * i32(zStride);
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let newVal = f32(inputData[u32(newIdx)]);
-                            if (newVal != newVal){ //This only evaluates if newVal is NaN
+                            if (isNaN(newVal)){ 
                                 continue;
                             }
                             sum += newVal;
@@ -904,7 +914,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                             let zOffset = kz * i32(zStride);
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let newVal = f32(inputData[u32(newIdx)]);
-                            if (newVal != newVal){ //This only evaluates if newVal is NaN
+                            if (isNaN(newVal)){ 
                                 continue;
                             }
                             let diff: f32 = mean - newVal;
@@ -998,7 +1008,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
 
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
-                            if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                            if (isNaN(xI) || isNaN(yI)){ 
                                 continue;
                             }
                             xSum += xI;
@@ -1101,7 +1111,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
-                            if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                            if (isNaN(xI) || isNaN(yI)){ 
                                 continue;
                             }
                             xSum += xI;    
@@ -1129,7 +1139,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
-                            if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                            if (isNaN(xI) || isNaN(yI)){ 
                                 continue;
                             }
                             numSum += (xI - meanX) * (yI - meanY);
@@ -1214,7 +1224,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
-                            if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                            if (isNaN(xI) || isNaN(yI)){ 
                                 continue;
                             }
                             xSum += xI;    
@@ -1245,7 +1255,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
-                            if (xI != xI || yI != yI){ //This only evaluates if a value is NaN
+                            if (isNaN(xI) || isNaN(yI)){ 
                                 continue;
                             }
                             numSum += (xI - meanX)*(f32(yI) - meanY);
@@ -1273,7 +1283,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                         let yOffset = ky * i32(yStride);
                         let newIdx = i32(globalIdx) + xOffset + yOffset;
                         let newVal = f32(inputData[u32(newIdx)]);
-                        if (newVal != newVal){ //This only evaluates if newVal is NaN
+                        if (isNaN(newVal)){ 
                             continue;
                         }
                         sum += newVal;
@@ -1297,7 +1307,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                         let yOffset = ky * i32(yStride);
                         let newIdx = i32(globalIdx) + xOffset + yOffset;
                         let newVal = f32(inputData[u32(newIdx)]);
-                        if (newVal != newVal){ //This only evaluates if newVal is NaN
+                        if (isNaN(newVal)){ 
                             continue;
                         }
                         if (newVal < minVal){
@@ -1322,7 +1332,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                         let yOffset = ky * i32(yStride);
                         let newIdx = i32(globalIdx) + xOffset + yOffset;
                         let newVal = f32(inputData[u32(newIdx)]);
-                        if (newVal != newVal){ //This only evaluates if newVal is NaN
+                        if (isNaN(newVal)){ 
                             continue;
                         }
                         if (newVal > maxVal){
@@ -1348,7 +1358,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                         let yOffset = ky * i32(yStride);
                         let newIdx = i32(globalIdx) + xOffset + yOffset;
                         let newVal = f32(inputData[u32(newIdx)]);
-                        if (newVal != newVal){ //This only evaluates if newVal is NaN
+                        if (isNaN(newVal)){ 
                             continue;
                         }
                         sum += newVal;
@@ -1370,7 +1380,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
                         let yOffset = ky * i32(yStride);
                         let newIdx = i32(globalIdx) + xOffset + yOffset;
                         let newVal = f32(inputData[u32(newIdx)]);
-                        if (newVal != newVal){ //This only evaluates if newVal is NaN
+                        if (isNaN(newVal)){ 
                             continue;
                         }
                         let diff: f32 = mean - newVal;

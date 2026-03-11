@@ -37,7 +37,8 @@ function PlotPoints({ points, tsID, pointSetters, scalers }: { points: THREE.Vec
       const dummy = new THREE.Object3D()
       for (let i = 0 ; i< count; i++){
         const position = points[i].toArray()
-        dummy.position.set(position[0]*(xScale/2), position[1]*yScale, 1)
+        if (position.every((val)=>isFinite(val)))dummy.position.set(position[0]*(xScale/2), position[1]*yScale, 1);
+        else dummy.position.set(0, 0, 110) //If NaN position, Place the point behind the camera (z=100)
         // Apply both zoom scaling and data scaling to the instance matrix
         dummy.scale.set(pointSize/zoom, pointSize/zoom, pointSize/zoom)
         dummy.updateMatrix()
