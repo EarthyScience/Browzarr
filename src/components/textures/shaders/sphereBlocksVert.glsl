@@ -2,7 +2,11 @@
 
 attribute vec2 instanceUV;
 
-uniform sampler3D map[14];
+#ifdef IS_FLAT
+    uniform sampler2D map[14];
+#else
+    uniform sampler3D map[14];
+#endif
 uniform sampler2D maskTexture;
 uniform vec3 textureDepths;
 
@@ -50,7 +54,14 @@ vec2 realCoords(vec2 uv){
     return vec2(u, v);
 }
 
-float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
+float sample1(
+     #ifdef IS_FLAT
+        vec2 p,
+    #else
+        vec3 p,
+    #endif
+    int index
+    ) { // Shader doesn't support dynamic indexing so we gotta use switching
     if (index == 0) return texture(map[0], p).r;
     else if (index == 1) return texture(map[1], p).r;
     else if (index == 2) return texture(map[2], p).r;
@@ -82,10 +93,16 @@ void main() {
     }
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
-    vec3 texCoord = vec3(instanceUV, animateProg);
-    ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1); // Ivec3 is like running a "floor" operation on all three at once. The clamp is because the very last idx is OOR
-    int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
-    vec3 localCoord = texCoord * textureDepths; // Scale up
+    #ifdef IS_FLAT
+        ivec2 idx = clamp(ivec2(instanceUV * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
+        int textureIdx = idx.y * yStepSize + idx.x;
+        vec2 localCoord = instanceUV * (textureDepths.xy); // Scale up
+    #else
+        vec3 texCoord = vec3(instanceUV, animateProg);
+        ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1); // Ivec3 is like running a "floor" operation on all three at once. The clamp is because the very last idx is OOR
+        int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
+        vec3 localCoord = texCoord * textureDepths; // Scale up
+    #endif
     localCoord = fract(localCoord);
     float dispStrength = sample1(localCoord, textureIdx);
 

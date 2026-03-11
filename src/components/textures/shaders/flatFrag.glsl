@@ -1,6 +1,10 @@
 //This is for Flat Textures but with 3D textures to sample from i,e; animation
 
-uniform sampler3D map[14];
+#ifdef IS_FLAT
+    uniform sampler2D map[14];
+#else
+    uniform sampler3D map[14];
+#endif
 uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
@@ -33,7 +37,14 @@ vec2 realCoords(vec2 uv){
     return vec2(u, v);
 }
 
-float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
+float sample1(
+     #ifdef IS_FLAT
+        vec2 p,
+    #else
+        vec3 p,
+    #endif
+    int index
+    ) { // Shader doesn't support dynamic indexing so we gotta use switching
     if (index == 0) return texture(map[0], p).r;
     else if (index == 1) return texture(map[1], p).r;
     else if (index == 2) return texture(map[2], p).r;
@@ -78,11 +89,19 @@ void main() {
     }
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
-    vec3 texCoord = vec3(vUv, animateProg);
-    texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
-    ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
-    int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
-    vec3 localCoord = texCoord * (textureDepths); // Scale up
+    #ifdef IS_FLAT
+        vec2 texCoord = vUv;
+        texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
+        ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
+        int textureIdx = idx.y * yStepSize + idx.x;
+        vec2 localCoord = texCoord * (textureDepths.xy); // Scale up
+    #else
+        vec3 texCoord = vec3(vUv, animateProg);
+        texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
+        ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
+        int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
+        vec3 localCoord = texCoord * (textureDepths); // Scale up
+    #endif
     localCoord = fract(localCoord);
 
     float strength = sample1(localCoord, textureIdx);

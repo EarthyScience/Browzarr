@@ -4,10 +4,11 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
-import { sphereBlocksVert, sphereBlocksVertFlat, sphereBlocksFrag } from '../textures/shaders'
+import { sphereBlocksFrag } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
 import { deg2rad } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
+import { GetVert } from '../textures';
 const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const {colormap, isFlat, valueScales, 
             dataShape, textureArrayDepths} = useGlobalStore(useShallow(state=>({
@@ -93,7 +94,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
                 displacement: {value: sphereDisplacement},
                 fillValue: {value: fillValue},
             },
-            vertexShader: isFlat ? sphereBlocksVertFlat : sphereBlocksVert,
+            vertexShader: GetVert("sphereBlocksVert", isFlat),
             fragmentShader: sphereBlocksFrag,
             blending: THREE.NormalBlending,
             side:THREE.DoubleSide,

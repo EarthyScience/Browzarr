@@ -1,12 +1,14 @@
  // by Jeran Poehls
-precision highp float;
-precision highp sampler3D;
-
 out vec4 color;
 
 in vec3 aPosition;
 
-uniform sampler3D map[14];
+#ifdef IS_FLAT
+    uniform sampler2D map[14];
+#else
+    uniform sampler3D map[14];
+#endif
+
 uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
@@ -63,7 +65,14 @@ bool isValid(vec2 sampleCoord){
     return false;
 }
 
-float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
+float sample1( 
+    #ifdef IS_FLAT
+        vec2 p,
+    #else
+        vec3 p,
+    #endif
+    int index
+    ) { // Shader doesn't support dynamic indexing so we gotta use switching
     if (index == 0) return texture(map[0], p).r;
     else if (index == 1) return texture(map[1], p).r;
     else if (index == 2) return texture(map[2], p).r;
@@ -82,18 +91,30 @@ float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so
 }
 
 void main(){
-    vec2 sampleCoord = giveUV(aPosition);
-    bool inBounds = all(greaterThanEqual(sampleCoord, vec2(0.0))) && 
-                all(lessThanEqual(sampleCoord, vec2(1.0)));
+    #ifdef IS_FLAT
+        vec2 texCoord = giveUV(aPosition);
+        bool inBounds = all(greaterThanEqual(texCoord, vec2(0.0))) && 
+            all(lessThanEqual(texCoord, vec2(1.0)));
+    #else
+        vec2 sampleCoord = giveUV(aPosition);
+        bool inBounds = all(greaterThanEqual(sampleCoord, vec2(0.0))) && 
+            all(lessThanEqual(sampleCoord, vec2(1.0)));
+    #endif
+   
     if (inBounds) {
         int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
         int yStepSize = int(textureDepths.x); 
-        vec3 texCoord = vec3(sampleCoord, animateProg);
-        ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
-        int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
-        vec3 localCoord = texCoord * (textureDepths); // Scale up
+        #ifdef IS_FLAT
+            ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
+            int textureIdx = idx.y * yStepSize + idx.x;
+            vec2 localCoord = texCoord * (textureDepths.xy); // Scale up
+        #else
+            vec3 texCoord = vec3(sampleCoord, animateProg);
+            ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
+            int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
+            vec3 localCoord = texCoord * (textureDepths); // Scale up
+        #endif
         localCoord = fract(localCoord);
-
         float strength = sample1(localCoord, textureIdx);
         bool isNaN = strength == 1. || abs(strength - fillValue) < 0.005;
         strength = isNaN ? strength : (strength)*cScale;
@@ -102,10 +123,12 @@ void main(){
         if (!isNaN){
             color.a = 1.;
         }
-        if (selectTS){
-            bool cond = isValid(sampleCoord);
-            color.rgb *= cond ? 1. : 0.65;
-        }
+        #ifndef IS_FLAT
+            if (selectTS){
+                bool cond = isValid(sampleCoord);
+                color.rgb *= cond ? 1. : 0.65;
+            }
+        #endif
         if (maskValue != 0){
             vec2 maskUV = giveMaskUV(aPosition);
             float mask = texture(maskTexture, maskUV).r;

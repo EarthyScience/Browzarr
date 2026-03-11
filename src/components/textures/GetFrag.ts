@@ -1,0 +1,15 @@
+import { sphereFrag, flatFrag } from "./shaders"
+
+const shaders ={
+  sphereFrag,
+  flatFrag
+}
+
+export const GetFrag = (shader:string, isFlat: boolean) => {
+    const frag = shaders[shader as keyof typeof shaders]
+    const prefix = isFlat ? "#define IS_FLAT\n" : "";
+    const output = prefix + frag;
+  return (
+    output
+  )
+}
