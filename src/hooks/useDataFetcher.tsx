@@ -63,7 +63,8 @@ export const useDataFetcher = () => {
                         if (tex.source) (tex.source as any).data = null;
                     });
                 }
-
+                //----- TS Cleanup ----//
+                useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
                 //---- Set Plot Slicez ----//
                 const { setZSlice, setYSlice, setXSlice } = usePlotStore.getState();
                 setZSlice(zSlice);

@@ -58,7 +58,7 @@ function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
           top:`${divY}px`
         }}
       >
-        {`${pointY.toFixed(2)}${plotUnits}`}<br/>
+        {`${pointY.toFixed(2)}${plotUnits??''}`}<br/>
         {`${dimNames[plotDim]}: ${parseLoc(pointX,dimUnits[plotDim])}       
         `}
       </div>}
@@ -169,7 +169,7 @@ export function PlotArea() {
     metadata: state.metadata,
     timeSeries: state.timeSeries
   })))
-  const plotUnits = metadata ? (metadata as any).units : "Default"
+  const plotUnits = (metadata as any)?.units 
   const [open, setOpen] = useState(true);
   const [pinned, setPinned] = useState<boolean>(false);
   const divRef = useRef<HTMLDivElement | null>(null);
