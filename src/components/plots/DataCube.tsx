@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { vertexShader, fragmentShader, fragOpt, orthoVertex } from '@/components/textures/shaders';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { usePlotTransformStore } from '@/GlobalStates/PlotTransformStore';
 import { useShallow } from 'zustand/shallow';
 import { invalidate, useFrame } from '@react-three/fiber';
 import { deg2rad } from '@/utils/HelperFuncs';
@@ -36,6 +37,12 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       vTransferRange: state.vTransferRange,
       vTransferScale: state.vTransferScale,
       fillValue: state.fillValue,
+    })))
+    const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+      rotateX: state.rotateX,
+      rotateZ: state.rotateZ,
+      mirrorHorizontal: state.mirrorHorizontal,
+      mirrorVertical: state.mirrorVertical
     })))
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
@@ -110,9 +117,18 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
     })
   return (
     <>
-    <mesh ref={meshRef} geometry={geometry} scale={[1,flipY ? -1: 1,1]}>
-      <primitive attach="material" object={shaderMaterial} />
-    </mesh>
+    <group
+      rotation={[rotateX * Math.PI/2, 0, -rotateZ * Math.PI/2]}
+      scale={[
+        mirrorHorizontal ? -1 : 1,
+        mirrorVertical ? -1 : 1,
+        1
+      ]}
+    >
+      <mesh ref={meshRef} geometry={geometry} scale={[1,flipY ? -1: 1,1]}>
+        <primitive attach="material" object={shaderMaterial} />
+      </mesh>
+    </group>
     </>
   )
 }
