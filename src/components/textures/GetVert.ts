@@ -6,7 +6,7 @@ const shaders ={
     sphereBlocksVert
 }
 
-export const GetVert = (shader:string, isFlat: boolean) => {
+export const GetVert = (shader:keyof typeof shaders, isFlat: boolean) => {
     const vert = shaders[shader as keyof typeof shaders]
     const prefix = isFlat ? "#define IS_FLAT\n" : "";
     const output = prefix + vert;

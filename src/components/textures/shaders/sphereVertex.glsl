@@ -54,38 +54,31 @@ out vec3 aPosition;
 void main() {
     vec2 uv = giveUV(position); // We can't just pass this as a varying because the fragment will try to interpoalte between the seems which looks bad 
     int yStepSize = int(textureDepths.x); 
-    #ifdef IS_FLAT
-        ivec2 idx = clamp(ivec2(uv * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
-        int textureIdx = idx.y * yStepSize + idx.x;
-        vec2 localCoord = uv * (textureDepths.xy); // Scale up
-        localCoord = fract(localCoord);
-        float dispStrength = sample1(localCoord, textureIdx);
-        float noNan = float(dispStrength != 1.0);
-        vec3 newPos = position + (normal * (dispStrength-displaceZero) * noNan * displacement);
-        aPosition = position; //Pass out position for sphere frag
-        vec4 worldPos = modelViewMatrix * vec4( newPos, 1.0 );
-        gl_Position = projectionMatrix * worldPos;
-    #else
-        bool inBounds = all(greaterThanEqual(uv, vec2(0.0))) && 
-                    all(lessThanEqual(uv, vec2(1.0)));
-        aPosition = position;
-        if (inBounds){
-            vec3 normal = normalize(position);
-            int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
+    bool inBounds = all(greaterThanEqual(uv, vec2(0.0))) && 
+                all(lessThanEqual(uv, vec2(1.0)));
+    aPosition = position;
+    if (inBounds){
+        vec3 normal = normalize(position);
+        int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
+        #ifdef IS_FLAT
+            ivec2 idx = clamp(ivec2(uv * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
+            int textureIdx = idx.y * yStepSize + idx.x;
+            vec2 localCoord = uv * (textureDepths.xy); // Scale up
+        #else
             vec3 texCoord = vec3(uv, animateProg);
             ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1); // Ivec3 is like running a "floor" operation on all three at once. The clamp is because the very last idx is OOR
             int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
             vec3 localCoord = texCoord * textureDepths; // Scale up
-            localCoord = fract(localCoord);
-            float dispStrength = sample1(localCoord, textureIdx);
-            float noNan = float(dispStrength != 1.0);
-            vec3 newPos = position + (normal * (dispStrength-displaceZero) * noNan * displacement);
-            //Pass out position for sphere frag
-            vec4 worldPos = modelViewMatrix * vec4( newPos, 1.0 );
-            gl_Position = projectionMatrix * worldPos;
-        } else {
-            vec4 worldPos = modelViewMatrix * vec4( position, 1.0 );
-            gl_Position = projectionMatrix * worldPos;
-        }
-    #endif
+        #endif
+        localCoord = fract(localCoord);
+        float dispStrength = sample1(localCoord, textureIdx);
+        float noNan = float(dispStrength != 1.0);
+        vec3 newPos = position + (normal * (dispStrength-displaceZero) * noNan * displacement);
+        //Pass out position for sphere frag
+        vec4 worldPos = modelViewMatrix * vec4( newPos, 1.0 );
+        gl_Position = projectionMatrix * worldPos;
+    } else {
+        vec4 worldPos = modelViewMatrix * vec4( position, 1.0 );
+        gl_Position = projectionMatrix * worldPos;
+    }
 }

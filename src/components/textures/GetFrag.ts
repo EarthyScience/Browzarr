@@ -5,8 +5,8 @@ const shaders ={
   flatFrag
 }
 
-export const GetFrag = (shader:string, isFlat: boolean) => {
-    const frag = shaders[shader as keyof typeof shaders]
+export const GetFrag = (shader:keyof typeof shaders, isFlat: boolean) => {
+    const frag = shaders[shader]
     const prefix = isFlat ? "#define IS_FLAT\n" : "";
     const output = prefix + frag;
   return (
