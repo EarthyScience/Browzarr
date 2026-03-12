@@ -21,7 +21,7 @@ import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
 import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
 import { FaArrowRotateRight } from "react-icons/fa6";
-
+import { Mirror } from '../Elements/Icons';
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
     return val*range+min;
