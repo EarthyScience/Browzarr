@@ -314,7 +314,6 @@ const Plot = () => {
         {plotType == "volume" && show && 
           <>
             <DataCube volTexture={textures}/>
-            <UVCube />
           </>
         }
         {plotType == "point-cloud" && show &&
