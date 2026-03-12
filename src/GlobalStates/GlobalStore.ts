@@ -17,6 +17,7 @@ interface Coord {
 
 type StoreState = {
   dataShape: number[];
+  axisShape: number[];
   shape: THREE.Vector3;
   valueScales: { maxVal: number; minVal: number };
   colormap: THREE.DataTexture;
@@ -27,6 +28,11 @@ type StoreState = {
   dimArrays: number[][];
   dimNames: string[];
   dimUnits: string[];
+  axisDimArrays: number[][];
+  axisDimNames: string[];
+  axisDimUnits: string[];
+  axisOrder: number[]; // Order of original axes for adjusting after transformation
+  axisFlipped: boolean[];
   dimCoords: Record<string, DimCoords>;
   plotDim: number;
   flipY:boolean;
@@ -48,6 +54,7 @@ type StoreState = {
   
   // setters
   setDataShape: (dataShape: number[]) => void;
+  setAxisShape: (axisShape: number[]) => void;
   setShape: (shape: THREE.Vector3) => void;
   setValueScales: (valueScales: { maxVal: number; minVal: number }) => void;
   setColormap: (colormap: THREE.DataTexture) => void;
@@ -59,6 +66,11 @@ type StoreState = {
   setDimArrays: (dimArrays: number[][]) => void;
   setDimNames: (dimNames: string[]) => void;
   setDimUnits: (dimUnits: string[]) => void;
+  setAxisDimArrays: (axisDimArrays: number[][]) => void;
+  setAxisDimNames: (axisDimNames: string[]) => void;
+  setAxisDimUnits: (axisDimUnits: string[]) => void;
+  setAxisOrder: (axisOrder: number[]) => void;
+  setAxisFlipped: (axisFlipped: boolean[]) => void;
   setDimCoords: (dimCoords?: Record<string, DimCoords>) => void;
   updateDimCoords: (newDims: Record<string, DimCoords>) => void;
   setPlotDim: (plotDim: number) => void;
@@ -82,6 +94,7 @@ type StoreState = {
 
 export const useGlobalStore = create<StoreState>((set, get) => ({
   dataShape: [1, 1, 1],
+  axisShape: [1, 1, 1],
   shape: new THREE.Vector3(2, 2, 2),
   valueScales: { maxVal: 1, minVal: -1 },
   colormap: GetColorMapTexture(),
@@ -92,6 +105,11 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   dimArrays: [[0], [0], [0]],
   dimNames: ["Default"],
   dimUnits: ["Default"],
+  axisDimArrays: [[0], [0], [0]],
+  axisDimNames: ["Default"],
+  axisDimUnits: ["Default"],
+  axisOrder: [0,1,2],
+  axisFlipped: [false, false, false],
   dimCoords: {},
   plotDim: 0,
   flipY: false,
@@ -112,6 +130,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   clampExtremes: false,
 
   setDataShape: (dataShape) => set({ dataShape }),
+  setAxisShape: (axisShape) => set({ axisShape }),
   setShape: (shape) => set({ shape }),
   setValueScales: (valueScales) => set({ valueScales }),
   setColormap: (colormap) => set({ colormap }),
@@ -133,6 +152,11 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setDimArrays: (dimArrays) => set({ dimArrays }),
   setDimNames: (dimNames) => set({ dimNames }),
   setDimUnits: (dimUnits) => set({ dimUnits }),
+  setAxisDimArrays: (axisDimArrays) => set({ axisDimArrays }),
+  setAxisDimNames: (axisDimNames) => set({ axisDimNames }),
+  setAxisDimUnits: (axisDimUnits) => set({ axisDimUnits }),
+  setAxisOrder: (axisOrder) => set({ axisOrder }),
+  setAxisFlipped: (axisFlipped) => set({ axisFlipped }),
   setDimCoords: (dimCoords) => set({ dimCoords }),
   updateDimCoords: (newDims) => {
     const merged = { ...newDims,...get().dimCoords  };
