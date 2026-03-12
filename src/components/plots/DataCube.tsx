@@ -41,7 +41,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
     const aspectRatio = shape.y/shape.x
     const timeRatio = shape.z/shape.x;
     const {lonBounds, latBounds} = useCoordBounds()
-
+    
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {

@@ -4,11 +4,10 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
-import { sphereVertex, sphereVertexFlat, sphereFrag, flatSphereFrag } from '../textures/shaders'
 import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
-
+import { GetFrag, GetVert } from '../textures';
 
 function XYZtoUV(xyz : THREE.Vector3, width: number, height : number){
     const lon = Math.atan2(xyz.z,xyz.x)
@@ -132,8 +131,8 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
                 displacement: {value: sphereDisplacement},
                 fillValue: {value: NaN},
             },
-            vertexShader: isFlat ? sphereVertexFlat : sphereVertex,
-            fragmentShader: isFlat ? flatSphereFrag : sphereFrag,
+            vertexShader: GetVert('sphereVertex', isFlat),
+            fragmentShader: GetFrag('sphereFrag', isFlat),
             blending: THREE.NormalBlending,
             side:THREE.FrontSide,
             transparent: true,

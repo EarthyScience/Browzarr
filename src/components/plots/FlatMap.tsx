@@ -7,12 +7,12 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { vertShader } from '@/components/computation/shaders'
-import { flatFrag3D, fragmentFlat } from '../textures/shaders';
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
 import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
+import { GetFrag } from '../textures';
 
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
@@ -214,7 +214,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
               nanAlpha: {value: 1 - nanTransparency},
             },
             vertexShader: vertShader,
-            fragmentShader: isFlat ? fragmentFlat : flatFrag3D,
+            fragmentShader: GetFrag("flatFrag", isFlat),
             side: THREE.DoubleSide,
         }),[isFlat, textures])
     
