@@ -2,7 +2,7 @@ import { useZarrStore } from "@/GlobalStates/ZarrStore";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 import { useErrorStore } from "@/GlobalStates/ErrorStore";
-import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, RescaleArray } from "./ZarrLoaderLRU";
+import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, RescaleArray, copyChunkToArray2D } from "./ZarrLoaderLRU";
 import { Convolve } from "../computation/webGPU";
 import {coarsen3DArray, calculateStrides, TypedArray} from '@/utils/HelperFuncs'
 
@@ -187,10 +187,8 @@ export async function GetNCArray(variable: string){
                     let chunkArray = await ncModule.getSlicedVariableArray(variable, starts, counts)
                     const chunkType = chunkArray.constructor.name
                     const isInt = chunkType.includes("int") 
-                    let chunkStride = rank > 3 
-                        ? [counts[3] * counts[2], counts[3], 1] 
-                        : [counts[2] * counts[1], counts[2], 1]
                     let thisShape = counts
+                    let chunkStride = calculateStrides(thisShape)
                     const filterValues = (array: TypedArray) =>{
                         for (let i = 0; i < array.length; i++){
                             if (array[i] === fillValue && !isInt) array[i] = NaN
@@ -236,7 +234,7 @@ export async function GetNCArray(variable: string){
                             }
                         }
                     }
-                    copyChunkToArray(
+                    if (hasZ)copyChunkToArray(
                         chunkF16,
                         thisShape,
                         chunkStride as [number, number, number],
@@ -245,6 +243,16 @@ export async function GetNCArray(variable: string){
                         destStride as [number, number, number],
                         [z,y,x],
                         [zDim.start,yDim.start,xDim.start],
+                    )
+                    else copyChunkToArray2D(
+                        chunkF16,
+                        thisShape,
+                        chunkStride as [number, number],
+                        typedArray,
+                        outputShape,
+                        destStride as [number, number],
+                        [y,x],
+                        [yDim.start,xDim.start],
                     )
                     const cacheChunk = {
                         data: compress ? CompressArray(chunkF16, 7) : chunkF16,
