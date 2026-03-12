@@ -171,6 +171,69 @@ const Plot = () => {
 
   const [showInfo, setShowInfo] = useState<boolean>(false)
   const [loc, setLoc] = useState<number[]>([0,0])
+
+   // ---- Transformation Handlers ---- //  
+  useEffect(()=>{
+    let axisMapping = [0, 1, 2];
+    let axisReversed = [false, false, false];
+    const origSlices = [zSlice, ySlice, xSlice]
+
+    if (rotateZ === 1){
+      // 90: X=-Y, Y=X
+      axisMapping = [axisMapping[0], axisMapping[2], axisMapping[1]];
+      axisReversed = [axisReversed[0], axisReversed[2], !axisReversed[1]];
+    } else if ( rotateZ === 2){
+      // 180: X=-X, Y=-Y
+      axisReversed = [axisReversed[0], !axisReversed[1], !axisReversed[2]];
+    } else if (rotateZ === 3) {
+      // 270: X=Y, Y=-X
+      axisMapping = [axisMapping[0], axisMapping[2], axisMapping[1]];
+      axisReversed = [axisReversed[0], !axisReversed[2], axisReversed[1]];
+    }
+
+    if (rotateX === 1){
+      // 90: Y=-Z, Z=Y
+      axisMapping = [axisMapping[1], axisMapping[0], axisMapping[2]];
+      axisReversed = [axisReversed[1], !axisReversed[0], axisReversed[2]];
+    }
+    else if (rotateX === 2){
+      // 180: Y=-Y, Z=-Z
+       axisReversed = [!axisReversed[1], !axisReversed[0], axisReversed[2]];
+    } else if (rotateX === 3){
+      // 270: Y=Z, Z=-Y
+      axisMapping = [axisMapping[1], axisMapping[0], axisMapping[2]];
+      axisReversed = [!axisReversed[1], axisReversed[0], axisReversed[2]];
+    }
+
+    if (mirrorHorizontal) {
+      axisReversed[2] = !axisReversed[2];
+    }
+    if (mirrorVertical) {
+      axisReversed[1] = !axisReversed[1];
+    }
+
+    const transformedDimArrays = axisMapping.map((origIdx, newIdx) =>{
+      const arr = dimArrays[origIdx].slice();
+      if (axisReversed[newIdx]) arr.reverse()
+      return  arr
+    })
+    const transformedDimNames = axisMapping.map(origIdx => dimNames[origIdx])
+    const transformedDimUnits = axisMapping.map(origIdx => dimUnits[origIdx])
+    const axisShape = axisMapping.map(origIdx => dataShape[origIdx]/dataShape[dataShape.length-1])
+    const axisSlices = axisMapping.map(origIdx => origSlices[origIdx])
+    setAxisDimArrays(transformedDimArrays)
+    setAxisDimNames(transformedDimNames)
+    setAxisDimUnits(transformedDimUnits)
+    setAxisShape(axisShape)
+    setAxisOrder(axisMapping)
+    setAxisFlipped(axisReversed)
+    usePlotStore.setState({
+      zSlice:axisSlices[0],
+      ySlice:axisSlices[1],
+      xSlice:axisSlices[2]
+    })
+
+  },[rotateX, rotateZ, mirrorHorizontal, mirrorVertical, dimArrays, dimNames, dimUnits])
   
   //DATA LOADING
   const {textures, show, stableMetadata, setTextures} = useDataFetcher()
