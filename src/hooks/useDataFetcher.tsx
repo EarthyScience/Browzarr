@@ -73,7 +73,7 @@ export const useDataFetcher = () => {
 
                 //---- Main Fetch ----//
                 GetArray().then((result) => {
-                    const shape = result.shape;
+                    const shape = result.shape.filter((val) => val != 1);
                     const [tempTexture, scaling] = ArrayToTexture({
                         data: result.data,
                         shape
