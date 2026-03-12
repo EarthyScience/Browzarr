@@ -8,6 +8,7 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
+import { usePlotTransformStore } from '@/GlobalStates/PlotTransformStore';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar, ExportExtent, ShaderEditor, KeyFrames } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
@@ -150,17 +151,28 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 }
 
 const Plot = () => {
-  const {colormap, isFlat, DPR, valueScales, setIsFlat} = useGlobalStore(useShallow(state=>({
+  
+  const {colormap, isFlat, DPR, valueScales, dimNames, dimUnits, dimArrays, dataShape, setIsFlat} = useGlobalStore(useShallow(state=>({
     colormap: state.colormap, 
     isFlat: state.isFlat, 
     DPR: state.DPR, 
     valueScales: state.valueScales,
+    dimNames: state.dimNames, dimUnits: state.dimUnits, dimArrays: state.dimArrays, dataShape: state.dataShape,
     setIsFlat: state.setIsFlat, 
   })))
+  const {setAxisDimArrays, setAxisDimNames, setAxisDimUnits, setAxisOrder, setAxisShape, setAxisFlipped} = useGlobalStore(useShallow(state => ({
+    setAxisDimArrays: state.setAxisDimArrays,
+    setAxisDimNames: state.setAxisDimNames,
+    setAxisDimUnits: state.setAxisDimUnits,
+    setAxisOrder: state.setAxisOrder,
+    setAxisShape: state.setAxisShape,
+    setAxisFlipped: state.setAxisFlipped
+  })))
   const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
-  const {plotType, displaceSurface} = usePlotStore(useShallow(state => ({
+  const {plotType, displaceSurface, zSlice, ySlice, xSlice,} = usePlotStore(useShallow(state => ({
     plotType: state.plotType,
     displaceSurface: state.displaceSurface,
+    zSlice: state.zSlice, ySlice: state.ySlice, xSlice: state.xSlice,
   })))
   const {analysisMode, useEditor} = useAnalysisStore(useShallow(state => ({
     analysisMode: state.analysisMode,
@@ -171,6 +183,13 @@ const Plot = () => {
 
   const [showInfo, setShowInfo] = useState<boolean>(false)
   const [loc, setLoc] = useState<number[]>([0,0])
+
+  const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+    rotateX: state.rotateX,
+    rotateZ: state.rotateZ,
+    mirrorHorizontal: state.mirrorHorizontal,
+    mirrorVertical: state.mirrorVertical
+  })))
 
    // ---- Transformation Handlers ---- //  
   useEffect(()=>{
