@@ -3,6 +3,7 @@ import React, {useState, useEffect} from 'react'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { usePlotTransformStore } from '@/GlobalStates/PlotTransformStore';
 import '../css/MainPanel.css'
 import { useShallow } from 'zustand/shallow';
 import { SliderThumbs } from '@/components/ui/Widgets/SliderThumbs';
@@ -19,6 +20,7 @@ import { parseLoc, normalize, denormalize } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
 import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
+import { FaArrowRotateRight } from "react-icons/fa6";
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -526,11 +528,18 @@ const GlobalOptions = () =>{
   const {valueScales} = useGlobalStore(useShallow(state =>({
     valueScales:state.valueScales
   })))
-  const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
-  const [showMasks, setShowMasks] = useState(false)
-  const [showTransform, setShowTransform] = useState(false)
+  const {rotateX, rotateZ, mirrorVertical, mirrorHorizontal, setRotateX, setRotateZ, setMirrorVertical, setMirrorHorizontal} = usePlotTransformStore(useShallow(state => ({
+    rotateX: state.rotateX, rotateZ: state.rotateZ,
+    mirrorVertical: state.mirrorVertical, mirrorHorizontal: state.mirrorHorizontal,
+    setRotateX: state.setRotateX, setRotateZ: state.setRotateZ, 
+    setMirrorVertical: state.setMirrorVertical, setMirrorHorizontal: state.setMirrorHorizontal
+  })))
 
-  const {setRotateX, setRotateZ, setXAngle, }
+  const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
+  const [showMasks, setShowMasks] = useState(false);
+  const [showTransform, setShowTransform] = useState(false);
+  const [xAngle, setXAngle] = useState(rotateX)
+  const [zAngle, setZAngle] = useState(rotateZ)
   const masks = ["None", "Land", "Water"]
   const isPC = plotType == 'point-cloud'
   return (
