@@ -1,7 +1,10 @@
  .axis-panel{
+    position: absolute;
+    top: 0%;
+    left: 100%;
     width: 90px;
     height: 75px;
-    position: relative;
+    margin-top: 8px;
   }
  
  .origin{
@@ -17,14 +20,18 @@
     box-shadow: 0 0 6px #cdd6f4;
 }
 
-.axis{
-    position: absolute;
-    left: 50%;
-    top: 60%;
-    transform-origin: left center;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
+.axis {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  transform-origin: left center;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px) saturate(180%);
+  border-radius: 12px;
+  padding: 2px 4px;
 }
 
 .axis:hover {
