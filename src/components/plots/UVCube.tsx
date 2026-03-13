@@ -34,7 +34,8 @@ export const UVCube = ( )=>{
       dimUnits:state.dimUnits
     })))
   
-  const {selectTS, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
+  const {selectTS, xRange, yRange, zRange,getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
+    xRange: state.xRange, yRange: state.yRange, zRange:state.zRange,
     selectTS: state.selectTS,
     getColorIdx: state.getColorIdx,
     incrementColorIdx: state.incrementColorIdx
@@ -43,7 +44,6 @@ export const UVCube = ( )=>{
   const lastNormal = useRef<number | null>( 0 )
 
   function HandleTimeSeries(event: THREE.Intersection){
-    const point = event.point;
     const uv = event.uv!;
     const normal = event.normal!;
     const dimAxis = getUnitAxis(normal);
@@ -90,7 +90,23 @@ export const UVCube = ( )=>{
     updateDimCoords({[tsID] : dimObj})
   }
 
-  const geometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
+  const {geometry, position} = useMemo(() => {
+    const xScale = xRange[1] - xRange[0]
+    const yScale = yRange[1] - yRange[0]
+    const zScale = zRange[1] - zRange[0]
+
+    const aspect = shape.y/shape.x;
+    const depth = shape.z/shape.x;
+
+    const xPos = (xRange[1] + xRange[0]) / 2
+    const yPos = (yRange[1] + yRange[0]) / 2
+    const zPos = (zRange[1] + zRange[0]) / 2
+
+    const geometry = new THREE.BoxGeometry(xScale/2, yScale/2, zScale/2)
+    const position = new THREE.Vector3(xPos, yPos * aspect, zPos * depth)
+    return {geometry, position}
+  
+  }, [xRange, yRange, zRange]);
 
   useEffect(() => {
     return () => {
@@ -99,15 +115,18 @@ export const UVCube = ( )=>{
   }, []);
 
   return (
-    <>
-      <mesh geometry={geometry} scale={shape} onClick={(e) => {
+      <mesh geometry={geometry} position={position} scale={shape} onClick={(e) => {
         e.stopPropagation();
         if (e.intersections.length > 0 && selectTS) {
           HandleTimeSeries(e.intersections[0]);
         }
       }}>
-        <meshBasicMaterial transparent opacity={0} />
+        <meshBasicMaterial 
+          // colorWrite={false}
+          // depthWrite={false}
+          transparent 
+          opacity={1}
+        />
       </mesh>
-    </>
   )
 }
