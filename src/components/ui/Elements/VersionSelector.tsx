@@ -104,14 +104,17 @@ const VersionSelector = () => {
             {selectedVersion}
           </TooltipContent>
         </Tooltip>
-        <PopoverContent className="w-28 p-1" align="end">
+        <PopoverContent
+          className="w-28 p-1 backdrop-blur-[10px] backdrop-saturate-[180%] rounded-xl [background:var(--glass-bg)]"
+          align="end"
+        >
           <div className="space-y-1">
             {versions.map((version) => (
               <Button
                 key={version}
                 variant= "ghost"
                 size="sm"
-                className="cursor-pointer flex items-center justify-between w-full px-3 py-2 text-sm rounded-sm"
+                className="cursor-pointer flex items-center justify-between w-full px-3 py-2 text-sm rounded-xl"
                 onClick={() => handleVersionSelect(version)}
                 aria-label={`Select version ${version}`}
               >
