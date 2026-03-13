@@ -1,7 +1,7 @@
  .axis-panel{
     position: absolute;
-    top: 0%;
-    left: 100%;
+    top: 100%;
+    left: 0%;
     width: 90px;
     height: 75px;
     margin-top: 8px;
