@@ -230,10 +230,7 @@ const Plot = () => {
         <ExportCanvas show={show}/>
         {show && <AxisLines />}
         {plotType == "volume" && show && 
-          <>
             <DataCube volTexture={textures}/>
-            <UVCube />
-          </>
         }
         {plotType == "point-cloud" && show &&
           <>
