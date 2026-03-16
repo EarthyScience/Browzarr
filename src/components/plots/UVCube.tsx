@@ -61,7 +61,7 @@ const UpdateUVs = (
   }
 
 
-export const UVCube = ( )=>{
+export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
 
   const {setTimeSeries,setPlotDim,setDimCoords, updateTimeSeries, 
     updateDimCoords} = useGlobalStore(
@@ -174,7 +174,7 @@ export const UVCube = ( )=>{
   }, []);
 
   return (
-      <mesh geometry={geometry} position={position} scale={shape} onClick={(e) => {
+      <mesh geometry={geometry} position={position} scale={scale??shape} onClick={(e) => {
         e.stopPropagation();
         if (e.intersections.length > 0 && selectTS) {
           HandleTimeSeries(e.intersections[0]);
