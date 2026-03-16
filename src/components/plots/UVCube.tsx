@@ -165,7 +165,7 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     )
     const position = new THREE.Vector3(xPos, yPos * aspect, zPos * depth)
     return {geometry, position}
-  }, [xRange, yRange, zRange]);
+  }, [xRange, yRange, zRange, shape]);
 
   useEffect(() => {
     return () => {
