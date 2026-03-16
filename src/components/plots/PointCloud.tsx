@@ -8,135 +8,33 @@ import { useShallow } from 'zustand/shallow';
 import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
+import { UVCube } from './UVCube';
 
 interface PCProps {
   texture: THREE.Data3DTexture[] | null,
   colormap: THREE.DataTexture
 }
 
-interface dimensionsProps{
-  width: number;
-  height: number;
-  depth: number;
-}
+const MappingCube = () =>{
 
-interface pointSetters{
-  setPoints: React.Dispatch<React.SetStateAction<Record<string, number>>>;
-  setStride: React.Dispatch<React.SetStateAction<number>>;
-  setDimWidth: React.Dispatch<React.SetStateAction<number>>;
-}
-
-const MappingCube = ({dimensions, setters} : {dimensions: dimensionsProps, setters:pointSetters}) =>{
-  const {width, height, depth} = dimensions;
-  const {setPoints, setStride, setDimWidth} = setters;
-  const selectTS = usePlotStore(state => state.selectTS)
-
-  const {dimArrays, dimUnits, dimNames, strides, dataShape, setPlotDim, setTimeSeries, updateTimeSeries, setDimCoords, updateDimCoords} = useGlobalStore(useShallow(state => ({
-    dimArrays: state.dimArrays,
-    dimUnits: state.dimUnits,
-    dimNames: state.dimNames,
-    strides: state.strides,
+  const {dataShape} = useGlobalStore(useShallow(state => ({
     dataShape: state.dataShape,
-    setPlotDim: state.setPlotDim,
-    setTimeSeries: state.setTimeSeries,
-    updateTimeSeries: state.updateTimeSeries,
-    setDimCoords: state.setDimCoords,
-    updateDimCoords: state.updateDimCoords
-  })))
-  const {analysisMode, analysisArray} = useAnalysisStore(useShallow(state=> ({
-    analysisMode: state.analysisMode,
-    analysisArray: state.analysisArray
   })))
 
-  const {timeScale, zSlice, ySlice, xSlice, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
+  const {timeScale} = usePlotStore(useShallow(state=> ({
     timeScale: state.timeScale,
-    zSlice: state.zSlice,
-    ySlice: state.ySlice,
-    xSlice: state.xSlice,
-    getColorIdx: state.getColorIdx,
-    incrementColorIdx: state.incrementColorIdx
   })))
 
-  const dimSlices = [
-    dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-    dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-    dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
-  ]
-  const lastNormal = useRef<number | null> ( null )
   const globalScale = dataShape[2]/500
   const offset = 1/500; //I don't really understand that. But the cube is off by one pixel in each dimension
   
   const depthRatio = useMemo(()=>dataShape[0]/dataShape[2]*timeScale,[dataShape, timeScale]);
   const shapeRatio = useMemo(()=>dataShape[1]/dataShape[2], [dataShape])
-  function HandleTimeSeries(event: THREE.Intersection){
-      if (!selectTS){
-        return
-      }
-      const uv = event.uv!;
-      const normal = event.normal!;
-      const dimAxis = getUnitAxis(normal);
-      if (dimAxis != lastNormal.current){
-        setTimeSeries({}); //Clear timeseries if new axis
-        setDimCoords({});
-        setPoints({})
-      }
-      lastNormal.current = dimAxis;
-      const tempTS = GetTimeSeries({data: analysisMode? analysisArray : GetCurrentArray(), shape: dataShape, stride: strides},{uv,normal})
-      const plotDim = (normal.toArray()).map((val, idx) => {
-        if (Math.abs(val) > 0) {
-          return idx;
-        }
-        return null;}).filter(idx => idx !== null);
-      setPlotDim(2-plotDim[0]) //I think this 2 is only if there are 3-dims. Need to rework the logic
-      const coordUV = parseUVCoords({normal:normal,uv:uv})
-      let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length-.5)] : null)
-      const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
-      const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
-      dimCoords = dimCoords.filter(val => val !== null)
-      const tsID = `${dimCoords[0]}_${dimCoords[1]}`
-      const tsObj = {
-        color:evaluate_cmap(getColorIdx()/10,"Paired"),
-        data:tempTS
-      }
-      incrementColorIdx();
-      updateTimeSeries({ [tsID] : tsObj})
-      const dimObj = {
-        first:{
-          name:thisDimNames[0],
-          loc:dimCoords[0] ?? 0,
-          units:thisDimUnits[0]
-        },
-        second:{
-          name:thisDimNames[1],
-          loc:dimCoords[1] ?? 0,
-          units:thisDimUnits[1]
-        },
-        plot:{
-          units:dimUnits[2-plotDim[0]]
-        }
-      }
-      updateDimCoords({[tsID] : dimObj})
-      const dims = [depth, height, width].filter((_,idx)=> coordUV[idx] != null)
-      const dimWidth = [depth, height, width].filter((_,idx)=> coordUV[idx] == null)
-      const newUV = coordUV.filter((v)=> v != null)
-      const thisStride = strides.filter((_,idx)=> coordUV[idx] != null)
-      const uIdx = Math.round((newUV[0])*dims[0]-.5)
-      const vIdx = Math.round(newUV[1]*dims[1]-.5)
-      const newIdx = uIdx * thisStride[0] + vIdx * thisStride[1]
-      const dimStride = strides.filter((_,idx)=> coordUV[idx] == null)
-      setDimWidth(dimWidth[0])
-      setPoints(prevItems => {
-            const newEntry = {[tsID] : newIdx}
-            const updated = {...newEntry, ...prevItems};
-            return updated; // keep only first 10 items
-          })
-      setStride(dimStride[0])        
-    }
+
   return(
-    <mesh scale={[2*globalScale, 2*shapeRatio*globalScale, 2*depthRatio*globalScale]} position={[-offset, -offset, offset]} onClick={HandleTimeSeries}>
-        <boxGeometry />
-        <meshBasicMaterial transparent opacity={0}/>
-    </mesh>
+    <group position={[-offset, -offset, -offset]}>
+      <UVCube scale={new THREE.Vector3(2*globalScale, 2*shapeRatio*globalScale, 2*depthRatio*globalScale)} />
+    </group>
   )
 }
 
@@ -277,7 +175,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       <mesh scale={[1,flipY ? -1:1, 1]} >
         <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
       </mesh>
-      <MappingCube dimensions={{width,height,depth}} setters={{setPoints:setPointsObj, setStride, setDimWidth}}/>
+      <MappingCube/>
       </>
     );
   }

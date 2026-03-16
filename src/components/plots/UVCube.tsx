@@ -7,7 +7,61 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
 import { evaluate_cmap } from 'js-colormaps-es';
 
-export const UVCube = ( )=>{
+function normalizeUV(uv:number, scale:number, pos:number){
+  return (uv*scale) + (pos-0.5*scale+0.5)
+}
+
+function updateFace(
+  startID:number, 
+  xData:{pos:number, scale:number},
+  yData:{pos:number, scale:number}, 
+  uvs:THREE.BufferAttribute | THREE.InterleavedBufferAttribute){
+  for (let i=startID; i < startID+4; i++){
+    const thisX = uvs.getX(i)
+    const thisY = uvs.getY(i)
+    const newX = normalizeUV(thisX, xData.scale, xData.pos)
+    const newY = normalizeUV(thisY, yData.scale, yData.pos)
+    uvs.setX(i,newX)
+    uvs.setY(i,newY)
+  }
+}
+
+
+const UpdateUVs = (
+  geometry: THREE.BoxGeometry, 
+  xData:{
+    xPos: number,
+    xScale: number
+  }, 
+  yData:{ 
+    yPos: number,
+    yScale: number
+  },
+  zData:{
+    zPos: number,
+    zScale: number
+  }) => {
+  const uvs = geometry.attributes.uv;
+  const {xPos, xScale} = xData;
+  const {yPos, yScale} = yData;
+  const {zPos, zScale} = zData;
+  //X+
+  updateFace(0, {pos:zPos, scale:zScale}, {pos:yPos, scale:yScale}, uvs)
+  //X-
+  updateFace(4, {pos:zPos, scale:zScale}, {pos:yPos, scale:yScale}, uvs)
+  //Y+
+  updateFace(8, {pos:xPos, scale:xScale}, {pos:zPos, scale:zScale}, uvs)
+  //Y-
+  updateFace(12, {pos:xPos, scale:xScale}, {pos:zPos, scale:zScale}, uvs)
+  //Z+
+  updateFace(16, {pos:xPos, scale:xScale}, {pos:yPos, scale:yScale}, uvs)
+  //Z-
+  updateFace(20, {pos:xPos, scale:xScale}, {pos:yPos, scale:yScale}, uvs)
+
+  }
+
+
+export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
 
   const {setTimeSeries,setPlotDim,setDimCoords, updateTimeSeries, 
     updateDimCoords} = useGlobalStore(
@@ -34,7 +88,8 @@ export const UVCube = ( )=>{
       dimUnits:state.dimUnits
     })))
   
-  const {selectTS, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
+  const {selectTS, xRange, yRange, zRange,getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
+    xRange: state.xRange, yRange: state.yRange, zRange:state.zRange,
     selectTS: state.selectTS,
     getColorIdx: state.getColorIdx,
     incrementColorIdx: state.incrementColorIdx
@@ -43,7 +98,6 @@ export const UVCube = ( )=>{
   const lastNormal = useRef<number | null>( 0 )
 
   function HandleTimeSeries(event: THREE.Intersection){
-    const point = event.point;
     const uv = event.uv!;
     const normal = event.normal!;
     const dimAxis = getUnitAxis(normal);
@@ -90,7 +144,28 @@ export const UVCube = ( )=>{
     updateDimCoords({[tsID] : dimObj})
   }
 
-  const geometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
+  const {geometry, position} = useMemo(() => {
+    const xScale = (xRange[1] - xRange[0])/2
+    const yScale = (yRange[1] - yRange[0])/2
+    const zScale = (zRange[1] - zRange[0])/2
+
+    const aspect = shape.y/shape.x;
+    const depth = shape.z/shape.x;
+
+    const xPos = (xRange[1] + xRange[0]) / 2
+    const yPos = (yRange[1] + yRange[0]) / 2
+    const zPos = (zRange[1] + zRange[0]) / 2
+
+    const geometry = new THREE.BoxGeometry(xScale, yScale, zScale)
+    UpdateUVs(
+      geometry,
+      {xPos:xPos/2,xScale},
+      {yPos:yPos/2,yScale},
+      {zPos:-zPos/2, zScale}
+    )
+    const position = new THREE.Vector3(xPos, yPos * aspect, zPos * depth)
+    return {geometry, position}
+  }, [xRange, yRange, zRange, shape]);
 
   useEffect(() => {
     return () => {
@@ -99,15 +174,18 @@ export const UVCube = ( )=>{
   }, []);
 
   return (
-    <>
-      <mesh geometry={geometry} scale={shape} onClick={(e) => {
+      <mesh geometry={geometry} position={position} scale={scale??shape} onClick={(e) => {
         e.stopPropagation();
         if (e.intersections.length > 0 && selectTS) {
           HandleTimeSeries(e.intersections[0]);
         }
       }}>
-        <meshBasicMaterial transparent opacity={0} />
+        <meshBasicMaterial 
+          colorWrite={false}
+          depthWrite={false}
+          transparent 
+        />
       </mesh>
-    </>
   )
 }
+

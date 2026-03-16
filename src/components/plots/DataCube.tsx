@@ -7,6 +7,7 @@ import { useShallow } from 'zustand/shallow';
 import { invalidate, useFrame } from '@react-three/fiber';
 import { deg2rad } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
+import { UVCube } from '@/components/plots'
 
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
@@ -109,10 +110,9 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           .invert();
     })
   return (
-    <>
-    <mesh ref={meshRef} geometry={geometry} scale={[1,flipY ? -1: 1,1]}>
-      <primitive attach="material" object={shaderMaterial} />
-    </mesh>
-    </>
+    <group>
+      <mesh ref={meshRef} geometry={geometry} material={shaderMaterial} scale={[1,flipY ? -1: 1,1]}/>
+      <UVCube />
+    </group>
   )
 }
