@@ -636,6 +636,24 @@ const GlobalOptions = () =>{
   )
 }
 
+function resetViz(){
+  usePlotStore.setState({
+    timeScale: 1,
+    valueRange: [0, 1],
+    xRange: [-1, 1],
+    yRange: [-1, 1],
+    zRange: [-1, 1],
+    transparency: 0,
+    vTransferRange: false,
+    vTransferScale: 1,
+    sphereResolution: 10,
+    displacement: 0,
+    displaceSurface: true,
+    fillValue: undefined, 
+    maskValue: 0,
+  })
+}
+
 
 const AdjustPlot = () => {
     const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
@@ -697,7 +715,15 @@ const AdjustPlot = () => {
               : 'max-h-[70vh]'
           }`}
         >
-
+          <RxReset size={25} 
+            style={{
+              // position:'absolute',
+              top:"10px",
+              left:"10px",
+              cursor:'pointer',
+            }} 
+            onClick={resetViz}
+          />
           {plotType === 'volume' && <VolumeOptions />}
           {plotType === 'point-cloud' && <PointOptions />}
           {plotType === 'sphere' && <SphereOptions/>}

@@ -66,7 +66,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       maskValue: state.maskValue,
     })))
     
-    const [pointsObj, setPointsObj] = useState<Record<string, number>>({})
+    const [pointsObj, setPointsObj] = useState<Record<string, number>>({}) //This logic is now useless. But will remove when udpate timeSEries indicators
     const [pointIDs, setPointIDs] = useState<number[]>(new Array(10).fill(-1))
     const [stride, setStride] = useState<number>(1)
     const [dimWidth, setDimWidth] = useState<number>(0);
@@ -171,11 +171,9 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
   }, [pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, pointIDs, stride, selectTS, animProg, timeScale, xRange, yRange, fillValue, zRange, maskValue, lonBounds, latBounds]);
 
     return (
-      <>
-      <mesh scale={[1,flipY ? -1:1, 1]} >
+      <group scale={[1,flipY ? -1:1, 1]}>
         <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
-      </mesh>
-      <MappingCube/>
-      </>
+        <MappingCube/>
+      </group>
     );
   }
