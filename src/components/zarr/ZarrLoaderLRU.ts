@@ -43,7 +43,7 @@ export function ToFloat16(array : Float32Array, scalingFactor: number | null) : 
 	for (let i = 0; i < array.length; i++) {
 		newArray[i] = array[i] * multiplier;
 	}
-	return [newArray, newScalingFactor]
+	return [newArray, newScalingFactor != 0 ? newScalingFactor : null]
 }
 
 export function testToFloat16(){
@@ -67,8 +67,9 @@ export function testToFloat16(){
 
 
 export function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales built array when new chunk has higher scalingFactor
+	const multipler = 1/Math.pow(10,scalingFactor)
 	for (let i = 0; i < array.length; i++) {
-		array[i] /= Math.pow(10,scalingFactor);
+		array[i] *= multipler;
 	}
 }
 

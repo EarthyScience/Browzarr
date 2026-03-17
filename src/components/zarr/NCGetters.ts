@@ -221,22 +221,20 @@ export async function GetNCArray(variable: string){
                         chunkStride = calculateStrides(thisShape)
                     }
                     if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
-                        if (scalingFactor == null || newScalingFactor > scalingFactor){ 
-                            const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
-                            RescaleArray(typedArray, thisScaling)
-                            scalingFactor = newScalingFactor
-                            for (const id of rescaleIDs){ // Set new scalingFactor on the chunks
-                                const tempName = `${cacheBase}_chunk_${id}`
-                                const tempChunk = cache.get(tempName)
-                                tempChunk.scaling = scalingFactor
-                                RescaleArray(tempChunk.data, thisScaling)
-                                cache.set(tempName, tempChunk)
-                            }
+                        const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
+                        RescaleArray(typedArray, thisScaling)
+                        scalingFactor = newScalingFactor
+                        for (const id of rescaleIDs){ // Set new scalingFactor on the chunks
+                            const tempName = `${cacheBase}_chunk_${id}`
+                            const tempChunk = cache.get(tempName)
+                            tempChunk.scaling = scalingFactor
+                            RescaleArray(tempChunk.data, thisScaling)
+                            cache.set(tempName, tempChunk)
                         }
                     }
                     if (hasZ)copyChunkToArray(
                         chunkF16,
-                        thisShape,
+                        chunkShape,
                         chunkStride as [number, number, number],
                         typedArray,
                         outputShape,
@@ -246,7 +244,7 @@ export async function GetNCArray(variable: string){
                     )
                     else copyChunkToArray2D(
                         chunkF16,
-                        thisShape,
+                        chunkShape,
                         chunkStride as [number, number],
                         typedArray,
                         outputShape,
