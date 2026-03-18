@@ -235,8 +235,8 @@ export async function GetNCArray(variable: string){
                     }
                     if (hasZ)copyChunkToArray(
                         chunkF16,
-                        chunkShape,
-                        chunkStride as [number, number, number],
+                        chunkShape.slice(-3),
+                        chunkStride.slice(-3) as [number, number, number],
                         typedArray,
                         outputShape,
                         destStride as [number, number, number],
