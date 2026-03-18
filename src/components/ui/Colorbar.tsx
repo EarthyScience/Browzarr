@@ -80,8 +80,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     const [tickCount, setTickCount] = useState<number>(5)
     const [newMin, setNewMin] = useState(origMin)
     const [newMax, setNewMax] = useState(origMax)
-    const [displayMin, setDisplayMin] = useState(Num2String(origMin*(scalingFactor ? Math.pow(10, scalingFactor) : 1)))
-    const [displayMax, setDisplayMax] = useState(Num2String(origMax*(scalingFactor ? Math.pow(10, scalingFactor) : 1)))
+    const [displayMin, setDisplayMin] = useState(Num2String(origMin*Math.pow(10, scalingFactor??0)))
+    const [displayMax, setDisplayMax] = useState(Num2String(origMax*Math.pow(10, scalingFactor??0)))
     const prevVals = useRef<{ min: number | null; max: number | null }>({ min: null, max: null });
     
     const colors = useMemo(()=>{
@@ -162,8 +162,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     },[newMin, newMax])
 
     useEffect(()=>{ // Update internal vals when global vals change
-        setDisplayMin(Num2String(origMin*(scalingFactor ? Math.pow(10, scalingFactor) : 1)))
-        setDisplayMax(Num2String(origMax*(scalingFactor ? Math.pow(10, scalingFactor) : 1)))
+        setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)))
+        setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0)))
         setNewMin(origMin)
         setNewMax(origMax)
     },[origMax, origMin, scalingFactor])
