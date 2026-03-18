@@ -34,7 +34,7 @@ const Variables = ({
   setOpenVariables,
 }: {
   openVariables: boolean;
-  setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpenVariables: (open: boolean) => void;
 }) => {
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
   const [openMetaPopover, setOpenMetaPopover] = useState(false);

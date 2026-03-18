@@ -13,7 +13,7 @@ import { isMobile } from '../MobileUIHider';
 
 interface LocalNCType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
-  setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpenVariables: (open: boolean) => void;
 }
 
 const NETCDF_EXT_REGEX = /\.(nc|netcdf|nc3|nc4)$/i;

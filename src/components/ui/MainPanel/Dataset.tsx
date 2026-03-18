@@ -32,7 +32,7 @@ const DescriptionContent = ({
   setOpenVariables,
   onCloseDialog,
 }: {
-  setOpenVariables: React.Dispatch<SetStateAction<boolean>>;
+  setOpenVariables: (open: boolean) => void;
   onCloseDialog: () => void;
 }) => {
   const {titleDescription} = useGlobalStore(useShallow(state => ({
@@ -89,7 +89,7 @@ const DatasetOption = ({
 };
 
 
-const Dataset = ({setOpenVariables} : {setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>}) => {
+const Dataset = ({setOpenVariables} : {setOpenVariables: (open: boolean) => void}) => {
   const [showStoreInput, setShowStoreInput] = useState(false);
   const [showLocalInput, setShowLocalInput] = useState(false);
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
