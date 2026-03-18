@@ -167,7 +167,7 @@ export async function GetNCArray(variable: string){
                     const getStartsAndCounts = () => {
                         const starts = new Array(rank).fill(0);
                         const counts = new Array(rank).fill(1);
-                        if (rank > 3) { //When rank is 4 or 5. The first will always be depth. In the case of 5 that will only be if last dimension is vector variable
+                        if (rank > 3) { //When rank is 4 or 5. The first will always be depth. In the case of 5 that will only be if last dimension is vector variable. This case not handled yet
                             starts[0] = idx4D; 
                             counts[0] = 1;
                         }
@@ -220,7 +220,8 @@ export async function GetNCArray(variable: string){
                         chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as [number, number, number], kernelSize, kernelDepth, newSize)
                         chunkStride = calculateStrides(thisShape)
                     }
-                    if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
+                    if (newScalingFactor != null 
+                        && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array. Not worried about shrinking values at the moment. 
                         const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
                         RescaleArray(typedArray, thisScaling)
                         scalingFactor = newScalingFactor
