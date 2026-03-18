@@ -58,7 +58,7 @@ export function parseTimeUnit(units: string | undefined): [number, number] {
     let baseDate;
     if (referenceDate.length <= 10){
       const [year, month, day] = referenceDate.split('-');
-      baseDate = new Date(Date.UTC(parseInt(year),parseInt(month),parseInt(day)))
+      baseDate = new Date(Date.UTC(parseInt(year),parseInt(month)-1,parseInt(day)))
     } else {
      baseDate = referenceDate ? new Date(referenceDate) : new Date();
     }

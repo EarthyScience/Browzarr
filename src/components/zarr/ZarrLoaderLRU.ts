@@ -32,8 +32,9 @@ export function ToFloat16(array : Float32Array, scalingFactor: number | null) : 
 	const additionalScaling = Math.ceil(Math.log10(maxVal/65504))
 	const needsRescale =
 		additionalScaling > 0 ||
-		additionalScaling <= -6 ||
-		(scalingFactor && scalingFactor <= -6 && additionalScaling < 0)
+		additionalScaling <= -6
+		//I think this is complicating things. Because if it was already scaled then there should already by enough variance in the data it doesn't need to go further
+		// (scalingFactor && scalingFactor <= -6 && additionalScaling < 0) 
 	const newScalingFactor = needsRescale ?
 		additionalScaling + initialScale :
 		initialScale
@@ -43,7 +44,7 @@ export function ToFloat16(array : Float32Array, scalingFactor: number | null) : 
 	for (let i = 0; i < array.length; i++) {
 		newArray[i] = array[i] * multiplier;
 	}
-	return [newArray, newScalingFactor]
+	return [newArray, newScalingFactor != 0 ? newScalingFactor : null]
 }
 
 export function testToFloat16(){
@@ -67,8 +68,9 @@ export function testToFloat16(){
 
 
 export function RescaleArray(array: Float16Array, scalingFactor: number){ // Rescales built array when new chunk has higher scalingFactor
+	const multipler = 1/Math.pow(10,scalingFactor)
 	for (let i = 0; i < array.length; i++) {
-		array[i] /= Math.pow(10,scalingFactor);
+		array[i] *= multipler;
 	}
 }
 
