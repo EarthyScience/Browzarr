@@ -135,7 +135,6 @@ export async function GetNCArray(variable: string){
 
     setStatus("Downloading...");
     setProgress(0);
-    console.log(outputShape)
     for (let z= zDim.start ; z < zDim.end ; z++){ // Iterate through chunks we need 
         for (let y= yDim.start ; y < yDim.end ; y++){
             for (let x= xDim.start ; x < xDim.end ; x++){
@@ -185,7 +184,6 @@ export async function GetNCArray(variable: string){
                         return {starts, counts}
                     }
                     const { starts, counts } = getStartsAndCounts();
-                    console.log(starts,counts)
                     let chunkArray = await ncModule.getSlicedVariableArray(variable, starts, counts)
                     const chunkType = chunkArray.constructor.name
                     const isInt = chunkType.includes("int") 
