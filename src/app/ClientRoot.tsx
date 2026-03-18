@@ -8,6 +8,7 @@ import HomeButton from "@/components/ui/Elements/HomeButton";
 import MobileUIHider from "@/components/ui/MobileUIHider";
 import ThemeSwitch from "@/components/ui/Elements/ThemeSwitch";
 import { BrowZarrPopover } from "./BrowZarrPopover";
+import { StoreInitializer } from "@/components/StoreInitializer";
 
 export default function ClientRoot({
 	children,
@@ -21,6 +22,7 @@ export default function ClientRoot({
 			defaultTheme="system"
 			disableTransitionOnChange
 		>
+			<StoreInitializer />
 			<MobileUIHider />
 			{/* left menu */}
 			<div className="fixed top-2 left-2 z-50 flex items-center gap-2">
