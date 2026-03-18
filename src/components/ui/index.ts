@@ -62,7 +62,7 @@ export {
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./accordion";
 export { Alert, AlertTitle, AlertDescription } from "./alert";
 export { Badge, badgeVariants } from "./badge";
-export { Button, buttonVariants } from "./button";
+export { Button, buttonVariants } from "./button-enhanced";
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card";
 export { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./collapsible";
 export {

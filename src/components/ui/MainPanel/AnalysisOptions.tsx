@@ -9,7 +9,7 @@ import '../css/MainPanel.css';
 import { PiMathOperationsBold } from "react-icons/pi";
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from '../input';
-import { Button } from '../button';
+import { Button } from '../button-enhanced';
 import { CiUndo } from "react-icons/ci";
 import {KernelVisualizer} from "@/components/ui";
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';

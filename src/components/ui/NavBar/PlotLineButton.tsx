@@ -7,7 +7,7 @@ import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useShallow } from 'zustand/shallow';
 import '../css/PlotLineButton.css'
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button-enhanced"
 
 const PlotLineButton = () => {
     const {selectTS, resetAnim, animate, plotType, displaceSurface, setSelectTS, setResetAnim} = usePlotStore(useShallow(state => ({
