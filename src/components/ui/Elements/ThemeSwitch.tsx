@@ -3,7 +3,7 @@
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { BsMoonStarsFill, BsSunFill } from "react-icons/bs";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button-enhanced";
 import {
 	Tooltip,
 	TooltipContent,

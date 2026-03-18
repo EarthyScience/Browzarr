@@ -1,5 +1,5 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button-enhanced"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
 import Image from "next/image"

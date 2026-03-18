@@ -9,7 +9,7 @@ import MetaDataInfo from "./MetaDataInfo";
 import { GetDimInfo } from "@/utils/HelperFuncs";
 import { GetAttributes } from "@/components/zarr/ZarrLoaderLRU";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button-enhanced";
 import { Input } from "../input";
 import {
   Tooltip,
