@@ -55,7 +55,7 @@ export function LandingHome() {
   useEffect(() => {
     resetSlices();
     if (initStore.startsWith('local:')) {
-      const path = initStore.replace('local:', '');
+      const path = initStore.replace('local:npm', '');
       if (!NETCDF_EXT_REGEX.test(path)) return; // TODO:  handled zarr
       const filename = path.split('/').pop() ?? 'file.nc';
       fetch(`/file?path=${encodeURIComponent(path)}`)
@@ -64,7 +64,9 @@ export function LandingHome() {
           return res.blob();
         })
         .then(blob => {
-          return loadNetCDF(blob, filename, useGlobalStore.getState().setOpenVariables);
+          loadNetCDF(blob, filename);
+          useGlobalStore.setState({openVariables: true})
+          return
         })
         .catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
       return;

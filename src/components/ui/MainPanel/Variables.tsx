@@ -29,26 +29,20 @@ import {
 } from "@/components/ui/accordion";
 
 
-const Variables = ({
-  openVariables,
-  setOpenVariables,
-}: {
-  openVariables: boolean;
-  setOpenVariables: (open: boolean) => void;
-}) => {
+const Variables = () => {
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
   const [openMetaPopover, setOpenMetaPopover] = useState(false);
 
   const [showMeta, setShowMeta] = useState(false);
-  const { variables, zMeta, metadata, setMetadata, initStore } = useGlobalStore(
+  const { variables, zMeta, metadata,  initStore, openVariables, setMetadata, setOpenVariables } = useGlobalStore(
     useShallow((state) => ({
       variables: state.variables,
       zMeta: state.zMeta,
       metadata: state.metadata,
-      dimNames:state.dimNames,
+      initStore: state.initStore,
+      openVariables: state.openVariables,
       setMetadata: state.setMetadata,
-      setDimNames:state.setDimNames,
-      initStore: state.initStore
+      setOpenVariables: state.setOpenVariables
     }))
   );
 

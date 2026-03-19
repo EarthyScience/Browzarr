@@ -9,15 +9,11 @@ import { Card } from "@/components/ui/card"
 
 
 const MainPanel = () => {
-  const { openVariables, setOpenVariables } = useGlobalStore(useShallow(s => ({
-    openVariables: s.openVariables,
-    setOpenVariables: s.setOpenVariables,
-  })));
 
   return (
     <Card className="panel-container">
-      <Dataset  setOpenVariables={setOpenVariables} />
-      <Variables openVariables={openVariables} setOpenVariables={setOpenVariables} />
+      <Dataset />
+      <Variables />
       <PlotType />
       <Colormaps />
       <AdjustPlot  />
