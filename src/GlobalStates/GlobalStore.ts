@@ -33,6 +33,7 @@ type StoreState = {
   initStore:string;
   variable: string;
   variables: string[];
+  openVariables: boolean;
   plotOn: boolean;
   isFlat: boolean;
   status: string | null;
@@ -66,6 +67,7 @@ type StoreState = {
   setInitStore: (initStore:string ) => void;
   setVariable: (variable: string) => void;
   setVariables: (variables: string[]) => void;
+  setOpenVariables: (openVariables: boolean) => void;
   setPlotOn: (plotOn: boolean) => void;
   setIsFlat: (isFlat: boolean) => void;
   setProgress: (progress: number) => void;
@@ -98,6 +100,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   initStore: ESDC,
   variable: 'Default',
   variables: [],
+  openVariables: false,
   plotOn: false,
   isFlat:false,
   progress: 0,
@@ -150,6 +153,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setInitStore: (initStore) => set({ initStore }),
   setVariable: (variable) => set({ variable }),
   setVariables: (variables) => set({ variables }),
+  setOpenVariables: (openVariables) => set({ openVariables }),
   setPlotOn: (plotOn) => set({ plotOn }),
   setIsFlat: (isFlat) => set({ isFlat }),
   setProgress: (progress) => set({ progress }),
