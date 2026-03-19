@@ -64,10 +64,9 @@ export function LandingHome() {
           return res.blob();
         })
         .then(blob => {
-          const file = new File([blob], filename, { type: 'application/x-netcdf' });
-          return loadNetCDF(file, filename, useGlobalStore.getState().setOpenVariables);
+          return loadNetCDF(blob, filename, useGlobalStore.getState().setOpenVariables);
         })
-        .catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e}`));
+        .catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
       return;
     }
     if (initStore.startsWith('local')) return; // local_ set by LocalNetCDF/LocalZarr after load

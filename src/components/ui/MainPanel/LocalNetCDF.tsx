@@ -2,8 +2,6 @@
 import React, {ChangeEvent, useState} from 'react'
 import { Input } from '../input'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
 import { loadNetCDF, NETCDF_EXT_REGEX } from '@/utils/loadNetCDF';
 
 import {
@@ -17,8 +15,6 @@ interface LocalNCType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
   setOpenVariables: (open: boolean) => void;
 }
-
-// const NETCDF_EXT_REGEX = /\.(nc|netcdf|nc3|nc4)$/i;
 
 const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
     const {setStatus } = useGlobalStore.getState()
@@ -34,7 +30,11 @@ const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
       setError('Please select a valid NetCDF (.nc, .netcdf, .nc3, .nc4) file.');
       return;
     }
-    await loadNetCDF(file, file.name, setOpenVariables);
+    try {
+      await loadNetCDF(file, file.name, setOpenVariables);
+    } catch (e) {
+      setError(`Failed to load file: ${e instanceof Error ? e.message : String(e)}`);
+    }
   };
 
   return (

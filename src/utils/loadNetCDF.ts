@@ -10,22 +10,27 @@ export async function loadNetCDF(file: Blob, filename: string, setOpenVariables:
   const { ncModule } = useZarrStore.getState();
   if (ncModule) ncModule.close();
   setStatus("Loading...");
-  const data = await NetCDF4.fromBlobLazy(file);
-  const [variables, attrs, metadata] = await Promise.all([
-    data.getVariables(),
-    data.getGlobalAttributes(),
-    data.getFullMetadata(),
-  ]);
-  useGlobalStore.setState({ variables: Object.keys(variables), zMeta: metadata, initStore: `local_${filename}` });
-  useZarrStore.setState({ useNC: true, ncModule: data });
-  useGlobalStore.setState({
-    titleDescription: {
-      title: attrs.title ?? filename,
-      description: attrs.history ?? '',
-    }
-  });
-  setOpenVariables(true);
-  setStatus(null);
+  try {
+    const data = await NetCDF4.fromBlobLazy(file);
+    const [variables, attrs, metadata] = await Promise.all([
+      data.getVariables(),
+      data.getGlobalAttributes(),
+      data.getFullMetadata(),
+    ]);
+    useGlobalStore.setState({
+      variables: Object.keys(variables),
+      zMeta: metadata,
+      initStore: `local_${filename}`,
+      titleDescription: {
+        title: attrs.title ?? filename,
+        description: attrs.history ?? '',
+      },
+    });
+    useZarrStore.setState({ useNC: true, ncModule: data });
+    setOpenVariables(true);
+  } finally {
+    setStatus(null);
+  }
 }
 
 export { NETCDF_EXT_REGEX };
