@@ -89,7 +89,7 @@ const DatasetOption = ({
 };
 
 
-const Dataset = ({setOpenVariables} : {setOpenVariables: (open: boolean) => void}) => {
+const Dataset = () => {
   const [showStoreInput, setShowStoreInput] = useState(false);
   const [showLocalInput, setShowLocalInput] = useState(false);
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
@@ -101,9 +101,10 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: (open: boolean) => void
     useNC:state.fetchNC
   })))
   
-  const { initStore, setInitStore } = useGlobalStore(
+  const { initStore, setInitStore, setOpenVariables } = useGlobalStore(
     useShallow((state) => ({
       setInitStore: state.setInitStore,
+      setOpenVariables: state.setOpenVariables,
       initStore: state.initStore,
     }))
   );
