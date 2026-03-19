@@ -101,7 +101,7 @@
     "@vitejs/plugin-react": "^4.4.1",
     "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9",
-    "eslint-config-next": "^16.1.6",
+    "eslint-config-next": "^16.2.0",
     "eslint-plugin-next": "^0.0.0",
     "jsdom": "^26.1.0",
     "raw-loader": "^4.0.2",
