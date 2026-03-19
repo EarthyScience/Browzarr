@@ -64,7 +64,7 @@ export function LandingHome() {
           return res.blob();
         })
         .then(blob => {
-          return loadNetCDF(blob, filename, useGlobalStore.getState().setOpenVariables);
+          return loadNetCDF(blob, filename);
         })
         .catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
       return;

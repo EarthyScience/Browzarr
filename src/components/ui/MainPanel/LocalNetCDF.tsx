@@ -31,7 +31,7 @@ const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
       return;
     }
     try {
-      await loadNetCDF(file, file.name, setOpenVariables);
+      await loadNetCDF(file, file.name);
     } catch (e) {
       setError(`Failed to load file: ${e instanceof Error ? e.message : String(e)}`);
     }
