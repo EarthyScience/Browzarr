@@ -5,7 +5,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 
 const NETCDF_EXT_REGEX = /\.(nc|netcdf|nc3|nc4)$/i;
 
-export async function loadNetCDF(file: Blob, filename: string, setOpenVariables: (v: boolean) => void) {
+export async function loadNetCDF(file: Blob, filename: string) {
   const { setStatus } = useGlobalStore.getState();
   const { ncModule } = useZarrStore.getState();
   if (ncModule) ncModule.close();
@@ -27,7 +27,6 @@ export async function loadNetCDF(file: Blob, filename: string, setOpenVariables:
       },
     });
     useZarrStore.setState({ useNC: true, ncModule: data });
-    setOpenVariables(true);
   } finally {
     setStatus(null);
   }

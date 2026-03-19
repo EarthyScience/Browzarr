@@ -12,7 +12,6 @@ import {
 import { isMobile } from '../MobileUIHider';
 
 interface LocalNCType {
-  setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
   setOpenVariables: (open: boolean) => void;
 }
 
@@ -31,7 +30,9 @@ const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
       return;
     }
     try {
-      await loadNetCDF(file, file.name, setOpenVariables);
+      await loadNetCDF(file, file.name);
+      setOpenVariables(true)
+
     } catch (e) {
       setError(`Failed to load file: ${e instanceof Error ? e.message : String(e)}`);
     }

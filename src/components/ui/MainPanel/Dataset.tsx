@@ -89,7 +89,7 @@ const DatasetOption = ({
 };
 
 
-const Dataset = ({setOpenVariables} : {setOpenVariables: (open: boolean) => void}) => {
+const Dataset = () => {
   const [showStoreInput, setShowStoreInput] = useState(false);
   const [showLocalInput, setShowLocalInput] = useState(false);
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
@@ -101,9 +101,10 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: (open: boolean) => void
     useNC:state.fetchNC
   })))
   
-  const { initStore, setInitStore } = useGlobalStore(
+  const { initStore, setInitStore, setOpenVariables } = useGlobalStore(
     useShallow((state) => ({
       setInitStore: state.setInitStore,
+      setOpenVariables: state.setOpenVariables,
       initStore: state.initStore,
     }))
   );
@@ -259,7 +260,7 @@ const Dataset = ({setOpenVariables} : {setOpenVariables: (open: boolean) => void
                   <Switcher leftText='Zarr' rightText='NetCDF' state={!useNC} onClick={()=>useZarrStore.setState({fetchNC:!useNC})} />
                   {
                     useNC ? 
-                    <LocalNetCDF setShowLocal={setShowLocalInput} setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} />
+                    <LocalNetCDF setOpenVariables={popoverSide === 'top' ? setShowDescriptionDialog : setOpenDescriptionPopover} />
                     : isSafari ? 
                       <div className="p-3 rounded-md border border-yellow-600 text-tiny max-w-[300px]">
                         <strong>Local folder upload is not supported in Safari.</strong> Please use Chrome, Firefox, or Edge instead.
