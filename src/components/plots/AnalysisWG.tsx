@@ -69,14 +69,12 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
         xSlice: state.xSlice
     })));
     const isMounted = useRef(false)
-
     useEffect(() => {
         if (!plotOn){
             return
         }
-        const dataArray = GetCurrentArray(analysisStore);
         // Guard clauses: exit if not triggered, no operation is selected, or data is invalid.
-        if (!operation || dataArray.length <= 1) {
+        if (!operation) {
             return;
         }
         const executeAnalysis = async () => {
@@ -100,7 +98,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             }
 
             // --- 2. Dispatch GPU computation based on the operation ---
-            const inputArray = analysisMode ? analysisArray : dataArray;
+            const inputArray = GetCurrentArray(analysisStore)
             const shapeInfo = { shape: dataShape, strides};
             const kernelParams = { kernelDepth, kernelSize };
             // [1538316, 1481, 1]
