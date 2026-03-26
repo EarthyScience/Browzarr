@@ -107,7 +107,6 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       fragmentShader:pointFrag,
       depthWrite: true,
       depthTest: true,
-      depthFunc:THREE.LessEqualDepth,
       blending:THREE.NoBlending,
     })
     ),[]);
