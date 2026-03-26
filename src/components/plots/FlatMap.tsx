@@ -22,7 +22,7 @@ interface InfoSettersProps{
   coords: React.RefObject<number[]>;
 }
 
-const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
+const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, colormap, valueScales, dimArrays, dimNames, dimUnits, 
       isFlat, dataShape, textureArrayDepths, strides,
@@ -168,7 +168,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
             uniforms:{
               cScale: {value: cScale},
               cOffset: {value: cOffset},
-              map : {value: textures},
+              map : {value: Array.from({ length: 14 }, (_, idx) => textures?.[idx])},
               maskTexture: {value: maskTexture},
               maskValue: {value: maskValue},
               latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
@@ -180,8 +180,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
               nanAlpha: {value: 1 - nanTransparency},
             },
             vertexShader: vertShader,
-            // fragmentShader: GetFrag("flatFrag", isFlat),
-            fragmentShader: flatFrag,
+            fragmentShader: GetFrag("flatFrag", isFlat),
             side: THREE.DoubleSide,
         }),[isFlat, textures])
     
@@ -189,7 +188,6 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
       if(shaderMaterial){
         const uniforms = shaderMaterial.uniforms
         uniforms.cOffset.value = cOffset;
-        uniforms.map.value = textures;
         uniforms.cmap. value = colormap;
         uniforms.animateProg.value =animProg;
         uniforms.nanColor.value = new THREE.Color(nanColor);
@@ -199,7 +197,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
         uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
         uniforms.maskValue.value = maskValue
       }
-    },[cScale, cOffset, textures, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, maskValue])
+    },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, maskValue])
 
   return (
     <>

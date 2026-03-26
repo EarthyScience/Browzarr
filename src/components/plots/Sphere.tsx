@@ -74,7 +74,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
-                map: { value: textures },
+                map: { value: Array.from({ length: 14 }, (_, idx) => textures?.[idx]) },
                 maskTexture: { value: maskTexture},
                 maskValue: { value: maskValue },
                 textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
@@ -108,7 +108,6 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
 
     const updateMaterial = (material: THREE.ShaderMaterial) =>{
       const uniforms = material.uniforms;
-      uniforms.map.value =  textures 
       uniforms.cmap.value =  colormap
       uniforms.maskValue.value = maskValue
       uniforms.cOffset.value =  cOffset
@@ -130,7 +129,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
       if (backMaterial){
         updateMaterial(backMaterial)
       }
-    },[textures, animProg, colormap, cOffset, cScale, animate, selectTS, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, fillValue, maskValue, valueScales])
+    },[animProg, colormap, cOffset, cScale, animate, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, fillValue, maskValue, valueScales])
     
     
     function HandleTimeSeries(event: THREE.Intersection){
