@@ -167,7 +167,7 @@ export async function GetNCArray(variable: string){
                     const getStartsAndCounts = () => {
                         const starts = new Array(rank).fill(0);
                         const counts = new Array(rank).fill(1);
-                        if (rank > 3) { //When rank is 4 or 5. The first will always be depth. In the case of 5 that will only be if last dimension is vector variable
+                        if (rank > 3) { //When rank is 4 or 5. The first will always be depth. In the case of 5 that will only be if last dimension is vector variable. This case not handled yet
                             starts[0] = idx4D; 
                             counts[0] = 1;
                         }
@@ -220,24 +220,23 @@ export async function GetNCArray(variable: string){
                         chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as [number, number, number], kernelSize, kernelDepth, newSize)
                         chunkStride = calculateStrides(thisShape)
                     }
-                    if (newScalingFactor != null && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array
-                        if (scalingFactor == null || newScalingFactor > scalingFactor){ 
-                            const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
-                            RescaleArray(typedArray, thisScaling)
-                            scalingFactor = newScalingFactor
-                            for (const id of rescaleIDs){ // Set new scalingFactor on the chunks
-                                const tempName = `${cacheBase}_chunk_${id}`
-                                const tempChunk = cache.get(tempName)
-                                tempChunk.scaling = scalingFactor
-                                RescaleArray(tempChunk.data, thisScaling)
-                                cache.set(tempName, tempChunk)
-                            }
+                    if (newScalingFactor != null 
+                        && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array. Not worried about shrinking values at the moment. 
+                        const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
+                        RescaleArray(typedArray, thisScaling)
+                        scalingFactor = newScalingFactor
+                        for (const id of rescaleIDs){ // Set new scalingFactor on the chunks
+                            const tempName = `${cacheBase}_chunk_${id}`
+                            const tempChunk = cache.get(tempName)
+                            tempChunk.scaling = scalingFactor
+                            RescaleArray(tempChunk.data, thisScaling)
+                            cache.set(tempName, tempChunk)
                         }
                     }
                     if (hasZ)copyChunkToArray(
                         chunkF16,
-                        thisShape,
-                        chunkStride as [number, number, number],
+                        chunkShape.slice(-3),
+                        chunkStride.slice(-3) as [number, number, number],
                         typedArray,
                         outputShape,
                         destStride as [number, number, number],
@@ -246,7 +245,7 @@ export async function GetNCArray(variable: string){
                     )
                     else copyChunkToArray2D(
                         chunkF16,
-                        thisShape,
+                        chunkShape,
                         chunkStride as [number, number],
                         typedArray,
                         outputShape,

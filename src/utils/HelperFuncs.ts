@@ -58,7 +58,7 @@ export function parseTimeUnit(units: string | undefined): [number, number] {
     let baseDate;
     if (referenceDate.length <= 10){
       const [year, month, day] = referenceDate.split('-');
-      baseDate = new Date(Date.UTC(parseInt(year),parseInt(month),parseInt(day)))
+      baseDate = new Date(Date.UTC(parseInt(year),parseInt(month)-1,parseInt(day)))
     } else {
      baseDate = referenceDate ? new Date(referenceDate) : new Date();
     }
@@ -275,8 +275,7 @@ export function GetCurrentArray(overrideStore?:string){
     const [xStartIdx, xEndIdx] = currentChunks.x
     const [yStartIdx, yEndIdx] = currentChunks.y
     const [zStartIdx, zEndIdx] = currentChunks.z
-    let chunkShape;
-    let chunkStride;
+
     for (let z = zStartIdx; z < zEndIdx; z++) {
       for (let y = yStartIdx; y < yEndIdx; y++) {
         for (let x = xStartIdx; x < xEndIdx; x++) {
@@ -285,14 +284,10 @@ export function GetCurrentArray(overrideStore?:string){
           const chunk = cache.get(cacheName)
           const compressed = chunk.compressed
           const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
-          if (!chunkShape) {
-            chunkShape = chunk.shape
-            chunkStride = chunk.stride
-          }
           copyChunkToArray(
             thisData,
-            chunkShape,
-            chunkStride,
+            chunk.shape,
+            chunk.stride,
             typedArray,
             dataShape,
             strides as [number, number, number], 

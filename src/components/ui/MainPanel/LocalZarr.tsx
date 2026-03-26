@@ -8,7 +8,7 @@ import ZarrParser from '@/components/zarr/ZarrParser';
 
 interface LocalZarrType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
-  setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpenVariables: (open: boolean) => void;
   setInitStore: (store: string) => void;
 }
 

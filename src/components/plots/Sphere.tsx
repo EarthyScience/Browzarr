@@ -9,17 +9,6 @@ import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { GetFrag, GetVert } from '../textures';
 
-function XYZtoUV(xyz : THREE.Vector3, width: number, height : number){
-    const lon = Math.atan2(xyz.z,xyz.x)
-    const lat = Math.asin(xyz.y);
-    let u = (lon + Math.PI) / (2 * Math.PI);
-    u = 1 - u;
-    let v = (lat + Math.PI / 2) / Math.PI;
-    u = Math.round(u*width-.5)/width
-    v = Math.round(v*height-.5)/height
-    return new THREE.Vector2(u,v)
-}
-
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -39,14 +28,13 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
       analysisArray: state.analysisArray
     })))
     const {colormap, isFlat, dimArrays, dimNames, dimUnits, valueScales, 
-          timeSeries, dataShape, strides, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
+          dataShape, strides, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,
         isFlat: state.isFlat,  
         dimArrays:state.dimArrays,
         dimNames:state.dimNames,
         dimUnits:state.dimUnits,
         valueScales: state.valueScales,
-        timeSeries: state.timeSeries,
         dataShape: state.dataShape,
         strides: state.strides,
         flipY: state.flipY,
@@ -78,47 +66,18 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
       dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
       dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
     ]
-    const [boundsObj, setBoundsObj] = useState<Record<string, THREE.Vector4>>({})
-    const [bounds, setBounds] = useState<THREE.Vector4[]>(new Array(10).fill(new THREE.Vector4(-1 , -1, -1, -1)))
-    const [height, width] = useMemo(()=>isFlat ? dataShape : [dataShape[1], dataShape[2]], [dataShape])
-    useEffect(()=>{ //This goes through the list of highlighted squares and removes those that aren't included in the timeseries object.
-      let boundIDs = Object.keys(boundsObj)
-      const tsIDs = Object.keys(timeSeries)
-      boundIDs = boundIDs.filter((val) => tsIDs.includes(val))
-      const pointValues = boundIDs.map(id => boundsObj[id]);
-      const paddedArray = [
-        ...pointValues,
-        ...Array(Math.max(0, 10 - pointValues.length)).fill(new THREE.Vector4(-1 , -1, -1, -1))
-      ];
-      setBounds(paddedArray)
-    },[boundsObj, timeSeries])
-
-    function addBounds(uv : THREE.Vector2, tsID: string){ //This adds the bounds in UV space of a selected square on the sphere. 
-      const widthID = Math.floor(uv.x*(width))+.5;
-      const heightID = Math.ceil(uv.y*height)-.5 ;
-      const delX = 1/width;
-      const delY = 1/height;
-      const xBounds = [widthID/width-delX/2,widthID/width+delX/2]
-      const yBounds = [heightID/height-delY/2,heightID/height+delY/2]
-      const bounds = new THREE.Vector4(...xBounds, ...yBounds)
-      const newBoundObj = {[tsID] : bounds}
-      setBoundsObj(prev=>{ return {...newBoundObj, ...prev}})
-    }
 
     const {lonBounds, latBounds} = useCoordBounds()
-
 
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
-                map: { value: textures },
+                map: { value: Array.from({ length: 14 }, (_, idx) => textures?.[idx]) },
                 maskTexture: { value: maskTexture},
                 maskValue: { value: maskValue },
                 textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
-                selectTS: {value: selectTS},
-                selectBounds: {value: bounds},
                 cmap:{value: colormap},
                 cOffset:{value: cOffset},
                 cScale: {value: cScale},
@@ -149,9 +108,6 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
 
     const updateMaterial = (material: THREE.ShaderMaterial) =>{
       const uniforms = material.uniforms;
-      uniforms.map.value =  textures 
-      uniforms.selectTS.value =  selectTS
-      uniforms.selectBounds.value =  bounds
       uniforms.cmap.value =  colormap
       uniforms.maskValue.value = maskValue
       uniforms.cOffset.value =  cOffset
@@ -173,7 +129,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
       if (backMaterial){
         updateMaterial(backMaterial)
       }
-    },[textures, animProg, colormap, cOffset, cScale, animate, bounds, selectTS, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, fillValue, maskValue, valueScales])
+    },[animProg, colormap, cOffset, cScale, animate, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, fillValue, maskValue, valueScales])
     
     
     function HandleTimeSeries(event: THREE.Intersection){
@@ -214,7 +170,6 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
           }
         }
         updateDimCoords({[tsID] : dimObj})
-        addBounds(uv, tsID);
       }
 
   return (

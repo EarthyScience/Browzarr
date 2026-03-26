@@ -42,12 +42,11 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
     const aspectRatio = shape.y/shape.x
     const timeRatio = shape.z/shape.x;
     const {lonBounds, latBounds} = useCoordBounds()
-    
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
           modelViewMatrixInverse: { value: new THREE.Matrix4() }, // Used for Orthographic RayMarcher
-          map: { value: volTexture },
+          map: { value: Array.from({ length: 14 }, (_, idx) => volTexture?.[idx])},
           maskTexture: { value: maskTexture },
           maskValue: {value: maskValue },
           textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},

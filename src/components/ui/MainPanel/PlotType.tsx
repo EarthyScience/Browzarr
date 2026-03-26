@@ -10,7 +10,7 @@ import { CgMenuGridO } from "react-icons/cg";
 import { PiCubeLight } from "react-icons/pi";
 import { MdOutlineSquare } from "react-icons/md";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button-enhanced"
 import {
   Tooltip,
   TooltipContent,

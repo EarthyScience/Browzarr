@@ -2,8 +2,8 @@
 import React, {ChangeEvent, useState} from 'react'
 import { Input } from '../input'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
+import { loadNetCDF, NETCDF_EXT_REGEX } from '@/utils/loadNetCDF';
+
 import {
   Alert,
   AlertDescription,
@@ -12,51 +12,31 @@ import {
 import { isMobile } from '../MobileUIHider';
 
 interface LocalNCType {
-  setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
-  setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpenVariables: (open: boolean) => void;
 }
-
-const NETCDF_EXT_REGEX = /\.(nc|netcdf|nc3|nc4)$/i;
 
 const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
     const {setStatus } = useGlobalStore.getState()
-    const {ncModule} = useZarrStore.getState()
+    // const {ncModule} = useZarrStore.getState()
     const [ncError, setError] = useState<string | null>(null);
 
     const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
-        setError(null);
-        const files = event.target.files;
-        if (!files || files.length === 0) {
-        setStatus(null)
-        return;
-        }
-        const file = files[0]
-        // Manual validation (iOS-safe)
-        if (!NETCDF_EXT_REGEX.test(file.name)) {
-          setError('Please select a valid NetCDF (.nc, .netcdf, .nc3, .nc4) file.');
-          return;
-        }
+    setError(null);
+    const files = event.target.files;
+    if (!files || files.length === 0) { setStatus(null); return; }
+    const file = files[0];
+    if (!NETCDF_EXT_REGEX.test(file.name)) {
+      setError('Please select a valid NetCDF (.nc, .netcdf, .nc3, .nc4) file.');
+      return;
+    }
+    try {
+      await loadNetCDF(file, file.name);
+      setOpenVariables(true)
 
-        if (ncModule) ncModule.close();
-        setStatus("Loading...")
-        const data = await NetCDF4.fromBlobLazy(file)
-        const [variables, attrs, metadata] = await Promise.all([
-          data.getVariables(),
-          data.getGlobalAttributes(),
-          data.getFullMetadata()
-        ])
-        useGlobalStore.setState({variables: Object.keys(variables), zMeta: metadata, initStore:`local_${file.name}`})
-        useZarrStore.setState({ useNC: true, ncModule: data})
-        const titleDescription = {
-          title: attrs.title?? file.name,
-          description: attrs.history?? ''
-        }
-        useGlobalStore.setState({titleDescription})
-        
-        setOpenVariables(true)
-        // setShowLocal(false)
-        setStatus(null)
-    };
+    } catch (e) {
+      setError(`Failed to load file: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
 
   return (
     <div className='w-[100%]'>
