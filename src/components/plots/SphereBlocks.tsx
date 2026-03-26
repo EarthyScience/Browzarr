@@ -96,9 +96,9 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             },
             vertexShader: GetVert("sphereBlocksVert", isFlat),
             fragmentShader: sphereBlocksFrag,
-            blending: THREE.NormalBlending,
-            side:THREE.DoubleSide,
+            blending:THREE.NoBlending,
             depthWrite:true,
+            depthTest:true,
         })
         return shader
     },[count, isFlat])
