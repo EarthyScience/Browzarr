@@ -99,9 +99,9 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             },
             vertexShader: GetVert("flatBlocksVert", isFlat),
             fragmentShader: sphereBlocksFrag,
-            blending: THREE.NormalBlending,
-            side:THREE.DoubleSide,
+            blending: THREE.NoBlending,
             depthWrite:true,
+            depthTest:true,
         })
         return shader
     },[width, height, isFlat])

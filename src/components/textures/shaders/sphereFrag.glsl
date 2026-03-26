@@ -16,8 +16,6 @@ uniform vec3 textureDepths;
 uniform float cOffset;
 uniform float cScale;
 uniform float animateProg;
-uniform vec4[10] selectBounds; 
-uniform bool selectTS;
 uniform vec2 latBounds;
 uniform vec2 lonBounds;
 uniform vec3 nanColor;
@@ -48,21 +46,6 @@ vec2 giveMaskUV(vec3 position){
     float u = longitude + 0.5;
     float v = latitude + 0.5;
     return vec2(u, v);
-}
-
-
-bool isValid(vec2 sampleCoord){
-    for (int i = 0; i < 10; i++){
-        vec4 thisBound = selectBounds[i];
-        if (thisBound.x == -1.){
-            return false;
-        }
-        bool cond = (sampleCoord.x < thisBound.r || sampleCoord.x > thisBound.g || sampleCoord.y < thisBound.b ||  sampleCoord.y > thisBound.a);
-        if (!cond){
-            return true;
-        }
-    }
-    return false;
 }
 
 float sample1( 
@@ -123,12 +106,6 @@ void main(){
         if (!isNaN){
             color.a = 1.;
         }
-        #ifndef IS_FLAT
-            if (selectTS){
-                bool cond = isValid(sampleCoord);
-                color.rgb *= cond ? 1. : 0.65;
-            }
-        #endif
         if (maskValue != 0){
             vec2 maskUV = giveMaskUV(aPosition);
             float mask = texture(maskTexture, maskUV).r;

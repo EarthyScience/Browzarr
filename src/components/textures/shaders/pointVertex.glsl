@@ -2,17 +2,12 @@ attribute float value;
 
 out float vValue;
 
-flat out int highlight;
 uniform sampler2D maskTexture;
 
 uniform float pointSize;
 uniform bool scalePoints;
 uniform float scaleIntensity;
 uniform vec2 valueRange;
-uniform int[10] startIDs;
-uniform int stride;
-uniform int dimWidth;
-uniform bool showTransect;
 uniform float timeScale;
 uniform float animateProg;
 uniform vec4 flatBounds;
@@ -25,21 +20,6 @@ uniform int maskValue;
 
 #define PI 3.1415925
 
-bool isValidPoint(){
-    for (int i = 0; i < 10; i++){
-        if (startIDs[i] == -1){
-            return false;
-        }
-        int rePos = gl_VertexID - startIDs[i];
-        bool isValid = rePos % stride == 0;
-        bool secondary = gl_VertexID < (startIDs[i] + dimWidth*stride) && gl_VertexID > startIDs[i];
-        isValid = isValid && secondary;
-        if (isValid){
-            return true;
-        }
-    }
-    return false;
-}
 vec3 computePosition(int vertexID) {
     int depth = int(shape.x);
     int height = int(shape.y);
@@ -106,9 +86,6 @@ void main() {
 
     float pointScale = pointSize/gl_Position.w;
     pointScale = scalePoints ? pointScale*pow(vValue,scaleIntensity) : pointScale;
-
-    bool isValid = isValidPoint();
-    highlight = isValid ? 1 : 0;
     
     if (value == 255. || (pointScale*gl_Position.w < 0.75 && scalePoints)){ //Hide points that are invisible or get too small when scalled
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
@@ -135,11 +112,7 @@ void main() {
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     }
     
-    if (showTransect){
-        gl_PointSize = isValid ? pointScale*5. : pointScale;
-    }
-    else{
-        gl_PointSize =  pointScale;
-    }
+    gl_PointSize =  pointScale;
+    
 
 }
