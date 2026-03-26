@@ -13,6 +13,7 @@ import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2ra
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { GetFrag } from '../textures';
+import flatFrag from '../textures/shaders/flatFrag.glsl'
 
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
@@ -21,22 +22,17 @@ interface InfoSettersProps{
   coords: React.RefObject<number[]>;
 }
 
-function Rescale(value: number, scales: {minVal: number, maxVal: number}){
-  const range = scales.maxVal-scales.minVal
-  return value * range + scales.minVal
-}
-
 const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, colormap, valueScales, dimArrays, dimNames, dimUnits, 
-      isFlat, dataShape, textureArrayDepths, strides, timeSeries,
+      isFlat, dataShape, textureArrayDepths, strides,
       setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(state => ({
       flipY: state.flipY, colormap: state.colormap, 
       valueScales: state.valueScales, dimArrays: state.dimArrays,
       dimNames:state.dimNames, dimUnits: state.dimUnits,
       isFlat: state.isFlat, dataShape: state.dataShape,
       textureArrayDepths: state.textureArrayDepths,
-      strides: state.strides, timeSeries: state.timeSeries,
+      strides: state.strides, 
       setPlotDim:state.setPlotDim, 
       updateDimCoords:state.updateDimCoords,
       updateTimeSeries: state.updateTimeSeries
@@ -128,33 +124,6 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
 
 
     // ----- TIMESERIES ----- //
-    const [boundsObj, setBoundsObj] = useState<Record<string, THREE.Vector4>>({})
-    const [bounds, setBounds] = useState<THREE.Vector4[]>(new Array(10).fill(new THREE.Vector4(-1 , -1, -1, -1)))
-    const [height, width] = [dataShape[dataShape.length-2], dataShape[dataShape.length-1]]
-
-    useEffect(()=>{ //This goes through the list of highlighted squares and removes those that aren't included in the timeseries object.
-          let boundIDs = Object.keys(boundsObj)
-          const tsIDs = Object.keys(timeSeries)
-          boundIDs = boundIDs.filter((val) => tsIDs.includes(val))
-          const pointValues = boundIDs.map(id => boundsObj[id]);
-          const paddedArray = [
-            ...pointValues,
-            ...Array(Math.max(0, 10 - pointValues.length)).fill(new THREE.Vector4(-1 , -1, -1, -1))
-          ];
-          setBounds(paddedArray)
-        },[boundsObj, timeSeries])
-
-    function addBounds(uv : THREE.Vector2, tsID: string){ //This adds the bounds in UV space of a selected square on the sphere. 
-          const widthID = Math.floor(uv.x*(width))+.5;
-          const heightID = Math.ceil(uv.y*height)-.5 ;
-          const delX = 1/width;
-          const delY = 1/height;
-          const xBounds = [widthID/width-delX/2,widthID/width+delX/2]
-          const yBounds = [heightID/height-delY/2,heightID/height+delY/2]
-          const bounds = new THREE.Vector4(...xBounds, ...yBounds)
-          const newBoundObj = {[tsID] : bounds}
-          setBoundsObj(prev=>{ return {...newBoundObj, ...prev}})
-        }
     function HandleTimeSeries(event: THREE.Intersection){
             const uv = event.uv;
             const normal = new THREE.Vector3(0,0,1)
@@ -191,7 +160,6 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
                 }
               }
               updateDimCoords({[tsID] : dimObj})
-              addBounds(uv, tsID);
             }
           }
     // ----- SHADER MATERIAL ----- //
@@ -200,8 +168,6 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
             uniforms:{
               cScale: {value: cScale},
               cOffset: {value: cOffset},
-              selectTS: {value: selectTS},
-              selectBounds: {value: bounds},
               map : {value: textures},
               maskTexture: {value: maskTexture},
               maskValue: {value: maskValue},
@@ -214,7 +180,8 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
               nanAlpha: {value: 1 - nanTransparency},
             },
             vertexShader: vertShader,
-            fragmentShader: GetFrag("flatFrag", isFlat),
+            // fragmentShader: GetFrag("flatFrag", isFlat),
+            fragmentShader: flatFrag,
             side: THREE.DoubleSide,
         }),[isFlat, textures])
     
@@ -230,11 +197,9 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture | THREE
         uniforms.cScale.value = cScale;
         uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
         uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
-        uniforms.selectBounds.value = bounds;
-        uniforms.selectTS.value = selectTS;
         uniforms.maskValue.value = maskValue
       }
-    },[cScale, cOffset, textures, colormap, animProg, nanColor, nanTransparency, bounds, selectTS, latBounds, lonBounds, maskValue])
+    },[cScale, cOffset, textures, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, maskValue])
 
   return (
     <>

@@ -8,18 +8,6 @@ import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { GetFrag, GetVert } from '../textures';
-import sphereFrag from '../textures/shaders/sphereFrag.glsl'
-
-function XYZtoUV(xyz : THREE.Vector3, width: number, height : number){
-    const lon = Math.atan2(xyz.z,xyz.x)
-    const lat = Math.asin(xyz.y);
-    let u = (lon + Math.PI) / (2 * Math.PI);
-    u = 1 - u;
-    let v = (lat + Math.PI / 2) / Math.PI;
-    u = Math.round(u*width-.5)/width
-    v = Math.round(v*height-.5)/height
-    return new THREE.Vector2(u,v)
-}
 
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
