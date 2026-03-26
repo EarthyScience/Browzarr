@@ -13,7 +13,6 @@ import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2ra
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { GetFrag } from '../textures';
-import flatFrag from '../textures/shaders/flatFrag.glsl'
 
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
