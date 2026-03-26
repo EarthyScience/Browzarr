@@ -244,7 +244,7 @@ const Plot = () => {
         }
         <Orbiter isFlat={plotType == "flat"} />
         {plotType == "flat" && show && <>
-          {displaceSurface && <FlatMap textures={textures as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
+          {displaceSurface && <FlatMap textures={textures as THREE.DataTexture[] | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
           {!displaceSurface && <FlatBlocks textures={textures} />}
         </>
         }
