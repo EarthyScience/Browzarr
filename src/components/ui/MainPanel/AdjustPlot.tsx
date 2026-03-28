@@ -19,6 +19,7 @@ import { parseLoc, normalize, denormalize } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
 import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
+import { RiCloseLargeLine } from "react-icons/ri";
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -307,7 +308,7 @@ const PointOptions = () =>{
         /></>
       </Hider>
       <div className='relative'>
-        {timeScale != 1 && <RxReset className='text-lg cursor-pointer absolute top-0 left-0 hover:scale-90 transition-transform duration-100 ease-out' onClick={e=> setTimeScale(1)}/>}
+        {timeScale != 1 && <RxReset className='text-lg cursor-pointer absolute top-0 left-0 hover:scale-90 transition-transform duration-100 ease-out' onClick={()=> setTimeScale(1)}/>}
         <b>Resize Time Dimension</b>
       </div>
       
@@ -499,7 +500,7 @@ const SpatialExtent = () =>{
           originalExtent.toArray().slice(0,2).every((val, idx) => val == lonExtent[idx]) &&
           originalExtent.toArray().slice(2).every((val, idx) => val == latExtent[idx])
         }
-        onClick={e=>{
+        onClick={()=>{
           setLonExtent([originalExtent.x, originalExtent.y])
           setLatExtent([originalExtent.z, originalExtent.w])
         }}
@@ -589,7 +590,7 @@ const GlobalOptions = () =>{
             </SelectTrigger>
             <SelectContent>
               {masks.map((val,idx)=>(
-                <SelectItem value={val}>
+                <SelectItem value={val} key={idx}>
                   {val}
                 </SelectItem>
               ))}
@@ -639,6 +640,7 @@ const GlobalOptions = () =>{
 
 const AdjustPlot = () => {
     const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
+    const [open, setOpen] = useState(false);
 
     const {plotOn} = useGlobalStore(
         useShallow(state=>({
@@ -662,7 +664,7 @@ const AdjustPlot = () => {
   const enableCond = (plotOn)
   return (
     <>
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <div style={enableCond ? {} : { pointerEvents: 'none' } }>
             <Tooltip delayDuration={500} >
@@ -691,19 +693,35 @@ const AdjustPlot = () => {
         </PopoverTrigger>
         <PopoverContent
           side={popoverSide}
-          className={`overflow-y-auto w-[240px] mt-2 mr-1 ${
-            popoverSide === 'top'
-              ? 'max-h-[80vh] mb-1' 
-              : 'max-h-[70vh]'
+          onInteractOutside={(e) => e.preventDefault()}
+          className={`relative w-[240px] mt-2 mr-1 ${
+            popoverSide === 'top' ? 'mb-1' : ''
           }`}
         >
-
-          {plotType === 'volume' && <VolumeOptions />}
-          {plotType === 'point-cloud' && <PointOptions />}
-          {plotType === 'sphere' && <SphereOptions/>}
-          {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
-          {plotType === 'flat' && <FlatOptions />}
-          <GlobalOptions />
+          <Tooltip delayDuration={500}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-0 right-0 z-10 cursor-pointer backdrop-blur-[10px] saturate-[180%] bg-[var(--glass-bg)]"
+                onClick={() => setOpen(false)}
+                aria-label="Close settings"
+              >
+                <RiCloseLargeLine className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Close settings
+            </TooltipContent>
+          </Tooltip>
+          <div className={`overflow-y-auto -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>
+            {plotType === 'volume' && <VolumeOptions />}
+            {plotType === 'point-cloud' && <PointOptions />}
+            {plotType === 'sphere' && <SphereOptions/>}
+            {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
+            {plotType === 'flat' && <FlatOptions />}
+            <GlobalOptions />
+          </div>
         </PopoverContent>
       </Popover>
     </>
