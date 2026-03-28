@@ -694,10 +694,8 @@ const AdjustPlot = () => {
         <PopoverContent
           side={popoverSide}
           onInteractOutside={(e) => e.preventDefault()}
-          className={`overflow-y-auto w-[240px] mt-2 mr-1 ${
-            popoverSide === 'top'
-              ? 'max-h-[80vh] mb-1' 
-              : 'max-h-[70vh]'
+          className={`relative w-[240px] mt-2 mr-1 ${
+            popoverSide === 'top' ? 'mb-1' : ''
           }`}
         >
           <Tooltip delayDuration={500}>
@@ -705,7 +703,7 @@ const AdjustPlot = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="sticky -top-4 float-right -mt-8 -mr-4 cursor-pointer backdrop-blur-[10px] saturate-[180%] bg-[var(--glass-bg)]"
+                className="absolute top-0 right-0 z-10 cursor-pointer backdrop-blur-[10px] saturate-[180%] bg-[var(--glass-bg)]"
                 onClick={() => setOpen(false)}
                 aria-label="Close settings"
               >
@@ -716,13 +714,14 @@ const AdjustPlot = () => {
               Close settings
             </TooltipContent>
           </Tooltip>
-
-          {plotType === 'volume' && <VolumeOptions />}
-          {plotType === 'point-cloud' && <PointOptions />}
-          {plotType === 'sphere' && <SphereOptions/>}
-          {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
-          {plotType === 'flat' && <FlatOptions />}
-          <GlobalOptions />
+          <div className={`overflow-y-auto -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>
+            {plotType === 'volume' && <VolumeOptions />}
+            {plotType === 'point-cloud' && <PointOptions />}
+            {plotType === 'sphere' && <SphereOptions/>}
+            {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
+            {plotType === 'flat' && <FlatOptions />}
+            <GlobalOptions />
+          </div>
         </PopoverContent>
       </Popover>
     </>
