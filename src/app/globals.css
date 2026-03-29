@@ -436,3 +436,21 @@ a[href]:hover::after {
   --sidebar-border: hsl(240 3.7% 15.9%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
+
+@keyframes glow-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px rgba(236, 72, 153, 0.5))
+            drop-shadow(0 0 3px rgba(249, 115, 22, 0.3))
+            drop-shadow(0 0 5px rgba(234, 179, 8, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 5px rgba(236, 72, 153, 0.8))
+            drop-shadow(0 0 7px rgba(249, 115, 22, 0.6))
+            drop-shadow(0 0 12px rgba(234, 179, 8, 0.4));
+  }
+}
+
+.glow-effect {
+  animation: glow-pulse 2s ease-in-out infinite;
+  border-radius: 0.275rem;
+}

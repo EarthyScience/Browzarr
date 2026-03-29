@@ -39,13 +39,14 @@ const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
   };
 
   return (
-    <div className='w-[100%]'>
-        <Input type="file" id="filepicker"
-          className='hover:drop-shadow-md hover:scale-[102%]'
-          style={{width:'200px', cursor:'pointer'}}
-          accept={isMobile() ? '' : '.nc,.netcdf,.nc3,.nc4'}
-          onChange={handleFileSelect}
-        />
+    <div className="w-full">
+      <Input
+        type="file"
+        id="filepicker"
+        className="w-full hover:drop-shadow-md hover:scale-[102%] cursor-pointer transition-all duration-100 ease-out"
+        accept={isMobile() ? '' : '.nc,.netcdf,.nc3,.nc4'}
+        onChange={handleFileSelect}
+      />
         {ncError && (
         <Alert variant="destructive" className='border-0 mt-1'>
           <AlertTitle>Hey!</AlertTitle>
