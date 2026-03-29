@@ -44,9 +44,16 @@ export const DescriptionContent = ({
   );
   const { title, description } = titleDescription;
   const [openCard, setOpenCard] = React.useState(false);
+  const [glow, setGlow] = React.useState(true);
+
+  React.useEffect(() => {
+    setGlow(true);
+    const timer = setTimeout(() => setGlow(false), 2000);
+    return () => clearTimeout(timer);
+  }, [titleDescription]);
 
   return (
-    <div className={`flex gap-2 ${stack ? "flex-col" : "flex-row items-center mt-3"}`}>
+    <div className={`flex gap-2 ${glow ? 'glow-effect' : ''} ${stack ? "flex-col" : "flex-row items-center mt-3"}`}>
       <Button
         variant="outline"
         className={`cursor-pointer gap-1.5 ${stack ? "w-full justify-center" : "shrink-0"}`}
@@ -55,23 +62,19 @@ export const DescriptionContent = ({
         <TbInfoCircle className="size-4" />
         About dataset
       </Button>
-
       <Dialog open={openCard} onOpenChange={setOpenCard}>
         <DialogContent className="max-w-md md:max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-sm break-all leading-snug py-4">
               {title || "Store"}
             </DialogTitle>
-            <DialogDescription>
-              {""}
-            </DialogDescription>
+            <DialogDescription>{""}</DialogDescription>
           </DialogHeader>
           <p className="text-xs text-muted-foreground whitespace-pre-wrap break-words leading-snug -mt-8">
             {description || "No description available."}
           </p>
         </DialogContent>
       </Dialog>
-
       <Button
         variant="default"
         className={`cursor-pointer ${stack ? "w-full" : "flex-1"}`}
