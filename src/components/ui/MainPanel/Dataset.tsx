@@ -5,7 +5,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
 import { Button } from '@/components/ui/button-enhanced';
 import { TbDatabasePlus } from "react-icons/tb";
-import { BsBoxArrowLeft } from "react-icons/bs";
+import { BsBoxArrowLeft, BsBoxArrowRight } from 'react-icons/bs';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   Tooltip,
@@ -99,11 +99,12 @@ const Dataset = () => {
           <div className="flex flex-col items-start max-w-[220px] p-3 gap-1 w-auto">
             <Button
               variant="outline"
-              className="cursor-pointer w-full justify-start gap-2 mb-1"
+              className="cursor-pointer w-full justify-between gap-2 mb-1"
               onClick={() => setOpenDatasetsModal(true)}
             >
-              <BsBoxArrowLeft className="size-4" />
+            {popoverSide !== 'top' && <BsBoxArrowLeft className="size-4" />}
               Explore Datasets
+            {popoverSide === 'top' && <BsBoxArrowRight className="size-4" />}
             </Button>
 
             <div className="w-full h-px bg-border my-1" />
