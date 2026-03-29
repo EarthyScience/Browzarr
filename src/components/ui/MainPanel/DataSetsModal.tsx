@@ -8,7 +8,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DescriptionContent } from './Shared';
+import { DescriptionContent } from './DescriptionContent';
 import CuratedDatasets from './CuratedDatasets';
 import RemoteZarr from './RemoteZarr';
 import LocalContent from './LocalContent';
@@ -67,8 +67,7 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
           </div>
         </div>
 
-        {/* Body */}
-        <div className="p-4 flex flex-col gap-1 mt-0">
+        <div className="p-4 flex flex-col gap-1 -mt-3">
           {activeTab === 'curated' && (
             <CuratedDatasets
               activeOption={activeOption}
@@ -94,17 +93,14 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
             />
           )}
 
-          {/* Inline description panel */}
           {showDescription && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <DescriptionContent
-                setOpenVariables={setOpenVariables}
-                onCloseDialog={() => {
-                  setShowDescription(false);
-                  onOpenChange(false);
-                }}
-              />
-            </div>
+            <DescriptionContent
+              setOpenVariables={setOpenVariables}
+              onCloseDialog={() => {
+                setShowDescription(false);
+                onOpenChange(false);
+              }}
+            />
           )}
         </div>
       </DialogContent>

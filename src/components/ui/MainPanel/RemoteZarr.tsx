@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { Input } from '../input';
-import { Button } from '../button';
+import { Input } from '@/components/ui/';
+import { Button } from '@/components/ui/button-enhanced';
 
 type Props = {
   initStore: string;

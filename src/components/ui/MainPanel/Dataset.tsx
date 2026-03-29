@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
-import { Button } from '../button';
+import { Button } from '@/components/ui/button-enhanced';
 import { TbDatabasePlus } from "react-icons/tb";
 import { BsBoxArrowLeft } from "react-icons/bs";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -12,12 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { DatasetOption, DescriptionContent } from './Shared';
+import { DatasetOption, DescriptionContent } from './DescriptionContent';
 import RemoteZarr from './RemoteZarr';
 import LocalContent from './LocalContent';
 import DatasetsModal from './DataSetsModal';
@@ -27,8 +22,8 @@ const Dataset = () => {
   const [showLocalInput, setShowLocalInput] = useState(false);
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
   const [activeOption, setActiveOption] = useState<string>('');
-  const [showDescriptionDialog, setShowDescriptionDialog] = useState<boolean>(false);
-  const [openDescriptionPopover, setOpenDescriptionPopover] = useState<boolean>(false);
+  const [showDescription, setShowDescription] = useState<boolean>(false);
+  const [popoverOpen, setPopoverOpen] = useState<boolean>(false);
   const [isSafari, setIsSafari] = useState<boolean>(false);
   const [openDatasetsModal, setOpenDatasetsModal] = useState<boolean>(false);
 
@@ -62,17 +57,9 @@ const Dataset = () => {
     }
   }, []);
 
-  const onOpenDescription = () => {
-    if (popoverSide === 'top') {
-      setShowDescriptionDialog(true);
-    } else {
-      setOpenDescriptionPopover(true);
-    }
-  };
-
   return (
     <>
-      <Popover>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
           <div>
             <Tooltip delayDuration={500}>
@@ -110,20 +97,17 @@ const Dataset = () => {
           }}
         >
           <div className="flex flex-col items-start max-w-[220px] p-3 gap-1 w-auto">
-
-            {/* ── Open Datasets button ── */}
             <Button
               variant="outline"
               className="cursor-pointer w-full justify-start gap-2 mb-1"
               onClick={() => setOpenDatasetsModal(true)}
             >
               <BsBoxArrowLeft className="size-4" />
-              Open Datasets
+              Explore Datasets
             </Button>
 
             <div className="w-full h-px bg-border my-1" />
 
-            {/* ── Remote Zarr ── */}
             <div className="w-full">
               <DatasetOption
                 active={activeOption === 'remote'}
@@ -131,6 +115,7 @@ const Dataset = () => {
                   setShowStoreInput(prev => !prev);
                   setShowLocalInput(false);
                   setActiveOption('remote');
+                  setShowDescription(false);
                 }}
               >
                 Remote Zarr
@@ -140,13 +125,12 @@ const Dataset = () => {
                   <RemoteZarr
                     initStore={initStore}
                     setInitStore={setInitStore}
-                    onOpenDescription={onOpenDescription}
+                    onOpenDescription={() => setShowDescription(true)}
                   />
                 </div>
               )}
             </div>
 
-            {/* ── Local ── */}
             <div className="w-full">
               <DatasetOption
                 active={activeOption === 'local'}
@@ -154,6 +138,7 @@ const Dataset = () => {
                   setShowLocalInput(prev => !prev);
                   setShowStoreInput(false);
                   setActiveOption('local');
+                  setShowDescription(false);
                 }}
               >
                 Local
@@ -162,55 +147,28 @@ const Dataset = () => {
                 <LocalContent
                   setShowLocal={setShowLocalInput}
                   setInitStore={setInitStore}
-                  onOpenDescription={onOpenDescription}
+                  onOpenDescription={() => setShowDescription(true)}
                   isSafari={isSafari}
                 />
               )}
             </div>
 
+            {showDescription && (
+              <div className="mt-3 pt-3 border-t border-border w-full">
+                <DescriptionContent
+                  setOpenVariables={setOpenVariables}
+                  onCloseDialog={() => {
+                    setShowDescription(false);
+                    setPopoverOpen(false);
+                  }}
+                  stack={true}
+                />
+              </div>
+            )}
+
           </div>
         </PopoverContent>
       </Popover>
-
-      {/* ── Description popover (desktop) ── */}
-      {popoverSide === 'left' && (
-        <Popover open={openDescriptionPopover} onOpenChange={setOpenDescriptionPopover}>
-          <PopoverTrigger asChild>
-            <div
-              className="absolute -top-8"
-              style={{
-                left: ['local', 'remote'].includes(activeOption) ? -215 : -130,
-              }}
-            />
-          </PopoverTrigger>
-          <PopoverContent
-            data-meta-popover
-            side="left"
-            align="start"
-            className="max-h-[80vh] overflow-y-auto w-[300px]"
-          >
-            <DescriptionContent
-              setOpenVariables={setOpenVariables}
-              onCloseDialog={() => setOpenDescriptionPopover(false)}
-            />
-          </PopoverContent>
-        </Popover>
-      )}
-
-      {popoverSide === 'top' && (
-        <Dialog open={showDescriptionDialog} onOpenChange={setShowDescriptionDialog}>
-          <DialogContent
-            data-meta-popover
-            className="max-w-[85%] md:max-w-md max-h-[80vh] overflow-y-auto"
-          >
-            <DialogTitle className='sr-only'>Dataset Description</DialogTitle>
-            <DescriptionContent
-              setOpenVariables={setOpenVariables}
-              onCloseDialog={() => setShowDescriptionDialog(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
 
       <DatasetsModal
         open={openDatasetsModal}

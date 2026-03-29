@@ -33,7 +33,7 @@ const LocalContent = ({
       {useNC ? (
         <LocalNetCDF setOpenVariables={onOpenDescription} />
       ) : isSafari ? (
-        <div className="p-3 rounded-md border border-yellow-600 text-tiny max-w-[300px]">
+        <div className="p-3 rounded-md border border-yellow-600 text-tiny">
           <strong>Local folder upload is not supported in Safari.</strong> Please use Chrome, Firefox, or Edge instead.
         </div>
       ) : (
