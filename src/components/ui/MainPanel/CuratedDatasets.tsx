@@ -49,7 +49,7 @@ const CuratedDatasets = ({
           setShowAll(false);
         }}
       />
-      <CommandList>
+      <CommandList className='py-2'>
         <CommandEmpty>No datasets found.</CommandEmpty>
         <CommandGroup>
           {visible.map(ds => (
@@ -61,12 +61,12 @@ const CuratedDatasets = ({
                 setInitStore(ds.store);
                 onOpenDescription();
               }}
-              className={`flex flex-col items-start gap-0.5 cursor-pointer ${
+              className={`flex flex-col items-start gap-0.5 mb-2 cursor-pointer ${
                 activeOption === ds.key ? 'bg-accent' : ''
               }`}
             >
               <span className="font-medium text-sm">{ds.label}</span>
-              <span className="text-xs text-muted-foreground leading-snug">
+              <span className="text-xs text-muted-foreground leading-snug ">
                 {ds.subtitle}
               </span>
             </CommandItem>

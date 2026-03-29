@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState } from 'react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
@@ -8,12 +7,22 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  ButtonGroup,
+} from "@/components/ui/button-group";
+import { Button } from "@/components/ui/button-enhanced";
 import { DescriptionContent } from './DescriptionContent';
 import CuratedDatasets from './CuratedDatasets';
 import RemoteZarr from './RemoteZarr';
 import LocalContent from './LocalContent';
 
 type Tab = 'curated' | 'remote' | 'local';
+
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'curated', label: 'Curated' },
+  { value: 'remote',  label: 'Remote Zarr' },
+  { value: 'local',   label: 'Local' },
+];
 
 type Props = {
   open: boolean;
@@ -36,6 +45,11 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
 
   const openDescription = () => setShowDescription(true);
 
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+    setShowDescription(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto p-0">
@@ -46,25 +60,19 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
           <p className="text-xs font-medium mb-2 uppercase tracking-wide">
             Open dataset
           </p>
-          {/* Tab strip */}
-          <div className="flex gap-1">
-            {(['curated', 'remote', 'local'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => {
-                  setActiveTab(tab);
-                  setShowDescription(false);
-                }}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  activeTab === tab
-                    ? 'bg-secondary font-medium'
-                    : 'hover:text-foreground hover:bg-secondary/50'
-                }`}
+          <ButtonGroup className="justify-between border-1 rounded-md">
+            {TABS.map(({ value, label }) => (
+              <Button
+                key={value}
+                className='cursor-pointer'
+                variant={activeTab === value ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => handleTabChange(value)}
               >
-                {tab === 'remote' ? 'Remote Zarr' : tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
+                {label}
+              </Button>
             ))}
-          </div>
+          </ButtonGroup>
         </div>
 
         <div className="p-4 flex flex-col gap-1 -mt-3">
@@ -76,7 +84,6 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
               onOpenDescription={openDescription}
             />
           )}
-
           {activeTab === 'remote' && (
             <RemoteZarr
               initStore={initStore}
@@ -84,7 +91,6 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
               onOpenDescription={openDescription}
             />
           )}
-
           {activeTab === 'local' && (
             <LocalContent
               setInitStore={setInitStore}
@@ -92,7 +98,6 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
               isSafari={isSafari}
             />
           )}
-
           {showDescription && (
             <DescriptionContent
               setOpenVariables={setOpenVariables}
