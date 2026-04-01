@@ -5,7 +5,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { decompressSync } from 'fflate';
-import { copyChunkToArray } from '@/components/zarr/ZarrLoaderLRU';
+import { copyChunkToArray } from '@/components/zarr/utils';
 import { GetNCDims } from '@/components/zarr/NCGetters';
 import { GetZarrDims } from '@/components/zarr/ZarrGetters';
 

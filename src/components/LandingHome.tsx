@@ -1,7 +1,8 @@
 'use client';
 import * as THREE from 'three'
 THREE.Cache.enabled = true;
-import { GetZarrMetadata, GetVariableNames, GetTitleDescription } from '@/components/zarr/GetMetadata';
+import { GetZarrMetadata, GetTitleDescription } from '@/components/zarr/ZarrLoaderLRU';
+import { GetVariableNames } from './zarr/utils';
 import { GetStore } from '@/components/zarr/ZarrLoaderLRU';
 import { useEffect } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
@@ -73,8 +74,16 @@ export function LandingHome() {
     }
     if (initStore.startsWith('local')) return; // local_ set by LocalNetCDF/LocalZarr after load
     setUseNC(false)
-    const newStore = GetStore(initStore)
-    setCurrentStore(newStore)
+    const { icechunkOptions, fetchOptions } = useGlobalStore.getState();
+    const newStore = GetStore(
+      initStore,
+      fetchOptions   ?? undefined,
+      icechunkOptions ?? undefined
+    );
+    setCurrentStore(newStore);
+    // Clear after use
+    useGlobalStore.getState().setIcechunkOptions(null);
+    useGlobalStore.getState().setFetchOptions(null);
   }, [initStore, setCurrentStore])
 
   useEffect(() => {

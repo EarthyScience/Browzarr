@@ -1,64 +1,98 @@
 "use client";
 import React, { useState } from 'react';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { Input } from '@/components/ui/';
 import { Button } from '@/components/ui/button-enhanced';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
+type RefType   = 'branch' | 'tag' | 'snapshot';
 type HeaderRow = { key: string; value: string };
 
+const REF_TABS: { value: RefType; label: string }[] = [
+  { value: 'branch',   label: 'Branch'   },
+  { value: 'tag',      label: 'Tag'      },
+  { value: 'snapshot', label: 'Snapshot' },
+];
+
 type Props = {
-  initStore: string;
   setInitStore: (v: string) => void;
   onOpenDescription: () => void;
 };
 
-const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
-  const [headers, setHeaders]           = useState<HeaderRow[]>([{ key: '', value: '' }]);
-  const [showAuth, setShowAuth]         = useState(false);
+const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
+  const [url, setUrl] = useState('');
+  const [refType, setRefType] = useState<RefType>('branch');
+  const [refValue, setRefValue] = useState('main');
+  const [headers, setHeaders] = useState<HeaderRow[]>([{ key: '', value: '' }]);
+  const [showAuth, setShowAuth] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [maxRetries, setMaxRetries]     = useState(3);
-  const [retryDelay, setRetryDelay]     = useState(500);
+  const [maxRetries, setMaxRetries] = useState(10);
+  const [retryDelay, setRetryDelay] = useState(500);
 
-  const addHeaderRow    = () => setHeaders(h => [...h, { key: '', value: '' }]);
+  const addHeaderRow = () => setHeaders(h => [...h, { key: '', value: '' }]);
   const removeHeaderRow = (i: number) => setHeaders(h => h.filter((_, idx) => idx !== i));
-  const updateHeader    = (i: number, field: 'key' | 'value', val: string) =>
+  const updateHeader = (i: number, field: 'key' | 'value', val: string) =>
     setHeaders(h => h.map((row, idx) => idx === i ? { ...row, [field]: val } : row));
 
+  const handleFetch = () => {
+    if (!url) return;
+    const builtHeaders = Object.fromEntries(
+      headers.filter(r => r.key.trim()).map(r => [r.key.trim(), r.value.trim()])
+    );
+    useGlobalStore.getState().setFetchOptions(null);  // clear fetch
+    useGlobalStore.getState().setIcechunkOptions({
+      [refType]: refValue,
+      ...(Object.keys(builtHeaders).length > 0 && { headers: builtHeaders }),
+      maxRetries,
+      retryDelay,
+    });
+    useGlobalStore.getState().setStatus('Fetching...');
+    setInitStore(url);
+    onOpenDescription();
+  };
+
   return (
-    <form
-      className="flex flex-col gap-3"
-      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const input = e.currentTarget.elements[0] as HTMLInputElement;
-        const url   = input.value;
-        if (!url) return;
+    <div className="flex flex-col gap-3">
 
-        const builtHeaders = Object.fromEntries(
-          headers.filter(r => r.key.trim()).map(r => [r.key.trim(), r.value.trim()])
-        );
-
-        const fetchOptions = {
-          ...(Object.keys(builtHeaders).length > 0 && { overrides: { headers: builtHeaders } }),
-          maxRetries,
-          retryDelay,
-        };
-
-        useGlobalStore.getState().setIcechunkOptions(null);
-        useGlobalStore.getState().setFetchOptions(fetchOptions);
-        useGlobalStore.getState().setStatus('Fetching...');
-
-        if (initStore !== url) setInitStore(url);
-        else useGlobalStore.getState().setStatus(null);
-        if (url) onOpenDescription();
-      }}
-    >
       {/* URL + Fetch */}
       <div className="flex items-center gap-2">
-        <Input className="w-full" placeholder="Store URL" />
-        <Button type="submit" variant="outline" className="cursor-pointer">
+        <Input
+          className="w-full"
+          placeholder="Store URL"
+          value={url}
+          onChange={e => setUrl(e.target.value)}
+        />
+        <Button
+          variant="outline"
+          className="cursor-pointer"
+          onClick={handleFetch}
+        >
           Fetch
         </Button>
+      </div>
+
+      {/* Branch / Tag / Snapshot */}
+      <div className="flex items-center gap-2">
+        <ButtonGroup className="border-1 rounded-md shrink-0">
+          {REF_TABS.map(({ value, label }) => (
+            <Button
+              key={value}
+              variant={refType === value ? 'secondary' : 'ghost'}
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => setRefType(value)}
+            >
+              {label}
+            </Button>
+          ))}
+        </ButtonGroup>
+        <Input
+          className="w-full"
+          placeholder={refType === 'branch' ? 'main' : refType}
+          value={refValue}
+          onChange={e => setRefValue(e.target.value)}
+        />
       </div>
 
       {/* Auth Headers */}
@@ -142,8 +176,8 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
         )}
       </div>
 
-    </form>
+    </div>
   );
 };
 
-export default RemoteZarr;
+export default RemoteIcechunk;

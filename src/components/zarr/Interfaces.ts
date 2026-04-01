@@ -1,3 +1,22 @@
+import type { FetchClient } from "icechunk-js";
+
+export interface FetchStoreOptions {
+  overrides?: RequestInit;
+  signal?: AbortSignal;
+  maxRetries?: number;
+  retryDelay?: number;
+}
+
+export interface IcechunkStoreOptions {
+  branch?: string;
+  tag?: string;
+  snapshot?: string;
+  fetchClient?: FetchClient;
+  headers?: Record<string, string>;
+  maxRetries?: number;
+  retryDelay?: number;
+}
+
 export interface ZarrMetadata {
     name: string;
     shape: number[];

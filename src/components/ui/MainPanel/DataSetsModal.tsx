@@ -15,12 +15,14 @@ import { DescriptionContent } from './DescriptionContent';
 import CuratedDatasets from './CuratedDatasets';
 import RemoteZarr from './RemoteZarr';
 import LocalContent from './LocalContent';
+import RemoteIcechunk from './RemoteIcechunk';
 
-type Tab = 'curated' | 'remote' | 'local';
+type Tab = 'curated' | 'remote' | 'local' | 'icechunk';
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'curated', label: 'Curated' },
   { value: 'remote',  label: 'Remote Zarr' },
+  { value: 'icechunk', label: 'Icechunk' },
   { value: 'local',   label: 'Local' },
 ];
 
@@ -96,6 +98,12 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
               setInitStore={setInitStore}
               onOpenDescription={openDescription}
               isSafari={isSafari}
+            />
+          )}
+          {activeTab === 'icechunk' && (
+            <RemoteIcechunk
+              setInitStore={setInitStore}
+              onOpenDescription={openDescription}
             />
           )}
           {showDescription && (
