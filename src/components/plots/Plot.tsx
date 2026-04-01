@@ -18,7 +18,6 @@ import { useDataFetcher } from '@/hooks/useDataFetcher';
 
 const TransectNotice = () =>{
   const {selectTS} = usePlotStore(useShallow(state => ({selectTS: state.selectTS})))
-
   return (
     <>
     {selectTS && <div className="transect-notice">
@@ -52,8 +51,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       const duration = 1000; 
       const startTime = performance.now();
       const startPos = controls.object.position.clone();
-      const endPos = isFlat ? new THREE.Vector3(0, 0, 5) : controls.position0.clone()
-
+      const endPos = isFlat ? new THREE.Vector3(0, 0, 5) : new THREE.Vector3(-4.5, 3, 4.5)
       const startTarget = controls.target.clone();
       const endTarget = controls.target0.clone()
 
@@ -82,6 +80,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       return () => cancelAnimationFrame(frameId);
     }
   },[resetCamera, isFlat])
+
   useEffect(()=>{
     if (hasMounted.current){
       let newCamera;
