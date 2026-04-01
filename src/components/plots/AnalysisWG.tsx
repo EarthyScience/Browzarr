@@ -98,7 +98,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             }
 
             // --- 2. Dispatch GPU computation based on the operation ---
-            const inputArray = GetCurrentArray(analysisStore)
+            const inputArray = analysisMode ? analysisArray : GetCurrentArray(analysisStore)
             const shapeInfo = { shape: dataShape, strides};
             const kernelParams = { kernelDepth, kernelSize };
             // [1538316, 1481, 1]
@@ -204,7 +204,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
 
         const is2D = outputShape.length === 2
         async function Analyze(){
-            const dataArray = GetCurrentArray(analysisStore);
+            const dataArray = analysisMode ? analysisArray : GetCurrentArray(analysisStore)
             const newArray = await CustomShader(dataArray, shapeInfo, kernelParams, axis, customShader?? "") as Float16Array
             const {minVal, maxVal} = valueScales
             const textureData = new Uint8Array(newArray.length)
