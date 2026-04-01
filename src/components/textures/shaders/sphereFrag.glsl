@@ -18,6 +18,7 @@ uniform float cScale;
 uniform float animateProg;
 uniform vec2 latBounds;
 uniform vec2 lonBounds;
+uniform vec2 threshold;
 uniform vec3 nanColor;
 uniform float nanAlpha;
 uniform float fillValue;
@@ -99,6 +100,11 @@ void main(){
         #endif
         localCoord = fract(localCoord);
         float strength = sample1(localCoord, textureIdx);
+        bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
+        if (!valid){
+            color = vec4(0.);
+            return;
+        }
         bool isNaN = strength == 1. || abs(strength - fillValue) < 0.005;
         strength = isNaN ? strength : (strength)*cScale;
         strength = isNaN ? strength : min(strength+cOffset,0.99);

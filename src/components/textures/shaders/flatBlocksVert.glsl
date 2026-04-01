@@ -16,9 +16,11 @@ uniform float aspect;
 uniform float displaceZero;
 uniform float displacement;
 uniform float animateProg;
+uniform float fillValue;
 uniform int maskValue;
 uniform vec2 latBounds;
 uniform vec2 lonBounds;
+uniform vec2 threshold;
 
 
 #define PI 3.1415926535
@@ -91,8 +93,8 @@ void main() {
     localCoord = fract(localCoord);
 
     float dispStrength = sample1(localCoord, textureIdx);
-
-    if (dispStrength == 1.0){ // Invalid value. Just hide it
+    bool valid = (dispStrength >= threshold.x) && (dispStrength <= threshold.y); 
+    if (!valid || dispStrength == 1.0 || abs(dispStrength - fillValue) < 0.005){ // Invalid value. Just hide it
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     } else {
         vec2 centeredUV = (instanceUV - vec2(0.5, 0.5)); 

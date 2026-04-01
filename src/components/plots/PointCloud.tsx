@@ -45,7 +45,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
     })))
     const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, 
       timeScale, xRange, yRange, zRange, fillValue,
-      maskTexture, maskValue } = usePlotStore(useShallow(state => ({
+      maskTexture, maskValue, disablePointScale} = usePlotStore(useShallow(state => ({
       scalePoints: state.scalePoints,
       scaleIntensity: state.scaleIntensity,
       pointSize: state.pointSize,
@@ -60,6 +60,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       fillValue:state.fillValue,
       maskTexture: state.maskTexture,
       maskValue: state.maskValue,
+      disablePointScale: state.disablePointScale
     })))
 
     //Extract data and shape from Data3DTexture
@@ -101,15 +102,15 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         shape: {value: new THREE.Vector3(depth, height, width)},
         flatBounds:{value: new THREE.Vector4(xRange[0], xRange[1], zRange[0], zRange[1])},
         vertBounds:{value: new THREE.Vector2(yRange[0], yRange[1])},
-        fillValue: {value: NaN}
+        fillValue: {value: fillValue?? NaN}
       },
-      vertexShader:pointVert,
+      vertexShader:disablePointScale ? "#define NO_SCALE\n"+pointVert : pointVert,
       fragmentShader:pointFrag,
       depthWrite: true,
       depthTest: true,
       blending:THREE.NoBlending,
     })
-    ),[]);
+    ),[disablePointScale]);
   
    useEffect(() => {
     if (shaderMaterial) {
@@ -137,11 +138,9 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
     }
   }, [pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, timeScale, xRange, yRange, fillValue, zRange, maskValue, lonBounds, latBounds]);
     return (
-      <>
-      <mesh scale={[1,flipY ? -1:1, 1]} >
+      <group scale={[1,flipY ? -1:1, 1]}>
         <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
-      </mesh>
-      <MappingCube/>
-      </>
+        <MappingCube/>
+      </group>
     );
   }

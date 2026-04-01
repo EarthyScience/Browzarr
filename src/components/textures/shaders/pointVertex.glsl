@@ -84,17 +84,21 @@ void main() {
     scaledPos.z *= timeScale;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(scaledPos, 1.0);
 
-    float pointScale = pointSize/gl_Position.w;
-    pointScale = scalePoints ? pointScale*pow(vValue,scaleIntensity) : pointScale;
-    
-    if (value == 255. || (pointScale*gl_Position.w < 0.75 && scalePoints)){ //Hide points that are invisible or get too small when scalled
-        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-    }
-
+    #ifndef NO_SCALE
+        float pointScale = pointSize/gl_Position.w;
+        pointScale = scalePoints ? pointScale*pow(vValue,scaleIntensity) : pointScale;
+        
+        if (value == 255. || (pointScale*gl_Position.w < 0.75 && scalePoints)){ //Hide points that are invisible or get too small when scalled
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+        }
+        gl_PointSize =  pointScale;
+    #else
+        gl_PointSize =  1.;
+    #endif
     if (vValue < valueRange.x || vValue > valueRange.y){ //Hide points that are outside of value range
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     }
-
+    
     float scaleX = float(shape.z) / 500.0; //width scaling
     float scaleY = float(shape.y) / 500.0; //height scaling
     float scaleZ = float(shape.x) / 500.0; //depth scaling
@@ -112,7 +116,7 @@ void main() {
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     }
     
-    gl_PointSize =  pointScale;
+    
     
 
 }

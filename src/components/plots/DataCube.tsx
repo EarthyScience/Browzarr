@@ -66,7 +66,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           useClipScale: {value: vTransferRange},
           nanAlpha: {value: 1-nanTransparency},
           nanColor: {value: new THREE.Color(nanColor)},
-          fillValue: {value: NaN}
+          fillValue: {value: fillValue?? NaN}
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
       fragmentShader: useFragOpt ?  fragOpt : fragmentShader,
@@ -109,8 +109,8 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           .invert();
     })
   return (
-    <group>
-      <mesh ref={meshRef} geometry={geometry} material={shaderMaterial} scale={[1,flipY ? -1: 1,1]}/>
+    <group scale={[1,flipY ? -1: 1,1]}>
+      <mesh ref={meshRef} geometry={geometry} material={shaderMaterial} />
       <UVCube />
     </group>
   )

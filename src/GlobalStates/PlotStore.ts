@@ -63,6 +63,7 @@ type PlotState ={
   useBorderTexture: boolean;
   maskValue: number;
   cameraPosition: THREE.Vector3;
+  disablePointScale: boolean;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -132,7 +133,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   yRange: [-1, 1],
   zRange: [-1, 1],
   selectTS: false,
-  showPoints: false,
+  showPoints: true,
   linePointSize: 2,
   lineWidth: 1.25,
   lineColor: "#111111",
@@ -173,16 +174,17 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   interpPixels: false,
   useOrtho: false,
   rotateFlat: false,
-  fillValue: undefined,
+  fillValue: undefined, // This is the value for masking out. 
   coarsen: false,
   kernel:{kernelDepth:1, kernelSize:1},
   is360Deg:false,
   maskTexture:undefined,
   borderTexture: undefined,
   useBorderTexture: false,
-  maskValue: 0,
+  maskValue: 0, // This value is for which feature to mask. Not what value to mask out. 
   borderWidth: 0.05,
   cameraPosition: new THREE.Vector3(0, 0, 5),
+  disablePointScale: false,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),

@@ -21,13 +21,13 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
         dataShape: state.dataShape,
         textureArrayDepths: state.textureArrayDepths
     })))
-    const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, offsetNegatives, rotateFlat, maskTexture, maskValue,
+    const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, fillValue, valueRange, offsetNegatives, rotateFlat, maskTexture, maskValue,
         } = usePlotStore(useShallow(state=> ({
         animate: state.animate, animProg: state.animProg, cOffset: state.cOffset,
         cScale: state.cScale, nanColor: state.nanColor, nanTransparency: state.nanTransparency,
-        displacement: state.displacement, sphereResolution: state.sphereResolution,
+        displacement: state.displacement, valueRange:state.valueRange, sphereResolution: state.sphereResolution,
         offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat,
-        maskTexture:state.maskTexture, maskValue:state.maskValue,
+        maskTexture:state.maskTexture, maskValue:state.maskValue, fillValue:state.fillValue,
     })))
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
         analysisMode: state.analysisMode, axis:state.axis
@@ -84,6 +84,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
                 map: { value: textures },
                 maskTexture: {value: maskTexture},
                 maskValue: {value: maskValue},
+                threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
                 latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
                 lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
                 aspect: {value: width/height},
@@ -95,7 +96,8 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
                 nanColor: {value: new THREE.Color(nanColor)},
                 nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal)) },
-                displacement: {value: displacement}
+                displacement: {value: displacement},
+                fillValue: {value: fillValue?? NaN},
             },
             vertexShader: GetVert("flatBlocksVert", isFlat),
             fragmentShader: sphereBlocksFrag,
@@ -116,14 +118,16 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             uniforms.cmap.value =  colormap
             uniforms.cOffset.value = cOffset
             uniforms.cScale.value = cScale
+            uniforms.threshold.value.set(valueRange[0], valueRange[1])
             uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
             uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
             uniforms.aspect.value = width/height;
-            uniforms.maskValue.value = maskValue
+            uniforms.maskValue.value = maskValue;
+            uniforms.fillValue.value = fillValue?? NaN;
         }
         invalidate();
-    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, textures, analysisMode, axis, width, height, latBounds, lonBounds, maskValue])
+    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, valueRange, textures, fillValue, analysisMode, axis, width, height, latBounds, lonBounds, maskValue])
 
   return (
 
