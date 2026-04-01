@@ -161,7 +161,6 @@ const DimSlicer = () =>{
         </div>
       </div>
     </div>
-    <div className="border-t border-gray-300 w-full my-4" />
     </>
   )
 }
@@ -262,17 +261,17 @@ const PointOptions = () =>{
               setTimeScale: state.setTimeScale,
           }))))
   
-      const {scalePoints, scaleIntensity, pointSize, timeScale} = usePlotStore(useShallow(state => ({
+      const {scalePoints, scaleIntensity, pointSize, timeScale, disablePointScale} = usePlotStore(useShallow(state => ({
         scalePoints: state.scalePoints,
         scaleIntensity: state.scaleIntensity,
         pointSize: state.pointSize,
-        timeScale: state.timeScale,
+        timeScale: state.timeScale, disablePointScale: state.disablePointScale,
       })))
 
   return(
     <>
     
-    <div className='flex-column items-center w-50 text-center'>
+    <div className='flex-column items-center w-50 text-center mb-8'>
           <b>Point Size</b>
           <UISlider
               className='w-full mb-4 mt-2'
@@ -280,9 +279,16 @@ const PointOptions = () =>{
               max={50}
               step={1}
               value={[pointSize]}
+              disabled={disablePointScale}
           onValueChange={(vals:number[]) => setPointSize(vals[0])}
           />
-      <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => setScalePoints(!scalePoints)}>{scalePoints ? "Remove Scaling" : "Scale By Value" }</Button>
+      <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" disabled={disablePointScale} onClick={() => setScalePoints(!scalePoints)}>
+        {scalePoints ? "Remove Scaling" : "Scale By Value" }
+      </Button>
+
+      <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => usePlotStore.setState({disablePointScale: !disablePointScale})}>
+        {disablePointScale ? "Enable Scaling" : "Disable Scaling" }
+      </Button>
       <Hider show={scalePoints}>
         <><b>Scale Intensity</b>
         <UISlider
@@ -298,15 +304,14 @@ const PointOptions = () =>{
         {timeScale != 1 && <RxReset className='text-lg cursor-pointer absolute top-0 left-0 hover:scale-90 transition-transform duration-100 ease-out' onClick={()=> setTimeScale(1)}/>}
         <b>Resize Time Dimension</b>
       </div>
-      
-        <UISlider
-            className='w-full mb-2 mt-2'
-            min={0.05}
-            max={5}
-            step={0.05}
-            value={[timeScale]}
-        onValueChange={(vals:number[]) => setTimeScale(vals[0])}
-        />
+      <UISlider
+          className='w-full mb-2 mt-2'
+          min={0.05}
+          max={5}
+          step={0.05}
+          value={[timeScale]}
+      onValueChange={(vals:number[]) => setTimeScale(vals[0])}
+      />
     </div>
     </>
   )

@@ -45,7 +45,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
     })))
     const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, 
       timeScale, xRange, yRange, zRange, fillValue,
-      maskTexture, maskValue } = usePlotStore(useShallow(state => ({
+      maskTexture, maskValue, disablePointScale} = usePlotStore(useShallow(state => ({
       scalePoints: state.scalePoints,
       scaleIntensity: state.scaleIntensity,
       pointSize: state.pointSize,
@@ -60,6 +60,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       fillValue:state.fillValue,
       maskTexture: state.maskTexture,
       maskValue: state.maskValue,
+      disablePointScale: state.disablePointScale
     })))
 
     //Extract data and shape from Data3DTexture
@@ -103,13 +104,13 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         vertBounds:{value: new THREE.Vector2(yRange[0], yRange[1])},
         fillValue: {value: NaN}
       },
-      vertexShader:pointVert,
+      vertexShader:disablePointScale ? "#define NO_SCALE\n"+pointVert : pointVert,
       fragmentShader:pointFrag,
       depthWrite: true,
       depthTest: true,
       blending:THREE.NoBlending,
     })
-    ),[]);
+    ),[disablePointScale]);
   
    useEffect(() => {
     if (shaderMaterial) {

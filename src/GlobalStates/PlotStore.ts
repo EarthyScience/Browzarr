@@ -63,6 +63,7 @@ type PlotState ={
   useBorderTexture: boolean;
   maskValue: number;
   cameraPosition: THREE.Vector3;
+  disablePointScale: boolean;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -183,6 +184,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   maskValue: 0, // This value is for which feature to mask. Not what value to mask out. 
   borderWidth: 0.05,
   cameraPosition: new THREE.Vector3(0, 0, 5),
+  disablePointScale: false,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
