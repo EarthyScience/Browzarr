@@ -102,7 +102,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         shape: {value: new THREE.Vector3(depth, height, width)},
         flatBounds:{value: new THREE.Vector4(xRange[0], xRange[1], zRange[0], zRange[1])},
         vertBounds:{value: new THREE.Vector2(yRange[0], yRange[1])},
-        fillValue: {value: NaN}
+        fillValue: {value: fillValue?? NaN}
       },
       vertexShader:disablePointScale ? "#define NO_SCALE\n"+pointVert : pointVert,
       fragmentShader:pointFrag,

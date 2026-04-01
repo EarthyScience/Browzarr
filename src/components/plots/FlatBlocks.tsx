@@ -97,7 +97,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
                 nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal)) },
                 displacement: {value: displacement},
-                fillValue: {value: fillValue},
+                fillValue: {value: fillValue?? NaN},
             },
             vertexShader: GetVert("flatBlocksVert", isFlat),
             fragmentShader: sphereBlocksFrag,
@@ -124,7 +124,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
             uniforms.aspect.value = width/height;
             uniforms.maskValue.value = maskValue;
-            uniforms.fillValue.value = fillValue;
+            uniforms.fillValue.value = fillValue?? NaN;
         }
         invalidate();
     },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, valueRange, textures, fillValue, analysisMode, axis, width, height, latBounds, lonBounds, maskValue])

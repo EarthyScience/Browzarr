@@ -37,7 +37,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
     })))
 
     const {cScale, cOffset, animProg, nanTransparency, nanColor, 
-      zSlice, ySlice, xSlice, selectTS, coarsen, maskTexture, maskValue, valueRange,
+      zSlice, ySlice, xSlice, selectTS, fillValue, coarsen, maskTexture, maskValue, valueRange,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
       cOffset: state.cOffset, cScale: state.cScale,
       resetAnim: state.resetAnim, animate: state.animate,
@@ -45,7 +45,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
       nanColor: state.nanColor, zSlice: state.zSlice,
       ySlice: state.ySlice, xSlice: state.xSlice, valueRange:state.valueRange,
       selectTS: state.selectTS, coarsen: state.coarsen,
-      maskTexture:state.maskTexture, maskValue:state.maskValue,
+      maskTexture:state.maskTexture, maskValue:state.maskValue, fillValue: state.fillValue,
       getColorIdx: state.getColorIdx,
       incrementColorIdx: state.incrementColorIdx
     })))
@@ -177,6 +177,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
               animateProg: {value:animProg},
               nanColor: {value : new THREE.Color(nanColor)},
               nanAlpha: {value: 1 - nanTransparency},
+              fillValue: {value: fillValue?? NaN},
             },
             vertexShader: vertShader,
             fragmentShader: GetFrag("flatFrag", isFlat),
@@ -188,16 +189,17 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
         const uniforms = shaderMaterial.uniforms
         uniforms.cOffset.value = cOffset;
         uniforms.cmap. value = colormap;
-        uniforms.animateProg.value =animProg;
+        uniforms.animateProg.value = animProg;
         uniforms.nanColor.value = new THREE.Color(nanColor);
         uniforms.nanAlpha.value = 1 - nanTransparency;
         uniforms.cScale.value = cScale;
         uniforms.threshold.value.set(valueRange[0], valueRange[1]);
         uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
         uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
-        uniforms.maskValue.value = maskValue
+        uniforms.maskValue.value = maskValue;
+        uniforms.fillValue.value = fillValue?? NaN
       }
-    },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, maskValue, valueRange])
+    },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange])
 
   return (
     <>

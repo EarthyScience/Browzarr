@@ -94,7 +94,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
                 nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))},
                 displacement: {value: sphereDisplacement},
-                fillValue: {value: fillValue},
+                fillValue: {value: fillValue?? NaN},
             },
             vertexShader: GetVert("sphereBlocksVert", isFlat),
             fragmentShader: sphereBlocksFrag,
@@ -119,7 +119,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
             uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
-            uniforms.fillValue.value = fillValue
+            uniforms.fillValue.value = fillValue?? NaN
             uniforms.maskValue.value = maskValue
         }
         invalidate();
