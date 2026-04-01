@@ -17,6 +17,7 @@ uniform float nanAlpha;
 uniform vec3 nanColor;
 uniform vec2 latBounds;
 uniform vec2 lonBounds;
+uniform vec2 threshold;
 uniform int maskValue;
 
 varying vec2 vUv;
@@ -90,7 +91,11 @@ void main() {
     localCoord = fract(localCoord);
 
     float strength = sample1(localCoord, textureIdx);
-
+    bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
+    if (!valid){
+        Color = vec4(0.);
+        return;
+    }
     bool isNaN = strength == 1.;
     float sampLoc = isNaN ? strength: (strength)*cScale;
     sampLoc = isNaN ? strength : min(sampLoc+cOffset,0.995);

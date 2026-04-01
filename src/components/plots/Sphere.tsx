@@ -41,13 +41,14 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         textureArrayDepths: state.textureArrayDepths
     })))
     
-    const {animate, animProg, cOffset, cScale, selectTS, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
+    const {animate, animProg, cOffset, cScale, valueRange, selectTS, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
       zSlice, ySlice, xSlice, fillValue, borderTexture, maskTexture, maskValue,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
         animate: state.animate,
         animProg: state.animProg,
         cOffset: state.cOffset,
         cScale: state.cScale,
+        valueRange: state.valueRange,
         selectTS: state.selectTS,
         nanColor: state.nanColor,
         nanTransparency: state.nanTransparency,
@@ -77,6 +78,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
                 map: { value: Array.from({ length: 14 }, (_, idx) => textures?.[idx]) },
                 maskTexture: { value: maskTexture},
                 maskValue: { value: maskValue },
+                threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
                 textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
                 cmap:{value: colormap},
                 cOffset:{value: cOffset},
@@ -113,6 +115,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
       uniforms.cOffset.value =  cOffset
       uniforms.cScale.value =  cScale
       uniforms.animateProg.value =  animProg
+      uniforms.threshold.value.set(valueRange[0], valueRange[1])
       uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
       uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
       uniforms.nanColor.value =  new THREE.Color(nanColor)
@@ -129,7 +132,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
       if (backMaterial){
         updateMaterial(backMaterial)
       }
-    },[animProg, colormap, cOffset, cScale, animate, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement, fillValue, maskValue, valueScales])
+    },[animProg, colormap, cOffset, cScale, animate, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement,valueRange, fillValue, maskValue, valueScales])
     
     
     function HandleTimeSeries(event: THREE.Intersection){
