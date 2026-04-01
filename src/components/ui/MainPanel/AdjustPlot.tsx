@@ -654,6 +654,7 @@ function resetViz(){
     displaceSurface: true,
     fillValue: undefined, 
     maskValue: 0,
+    disablePointScale: false,
   })
 }
 
