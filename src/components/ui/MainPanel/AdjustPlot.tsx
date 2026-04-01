@@ -731,15 +731,16 @@ const AdjustPlot = () => {
             Close settings
           </TooltipContent>
         </Tooltip>
-        <div className={`overflow-y-auto -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          <RxReset size={25} 
-          style={{
-            // position:'absolute',
-            top:"10px",
-            left:"10px",
-            cursor:'pointer',
-          }} 
-          onClick={resetViz}
-        />
+        <div className={`overflow-y-auto -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          
+          <RxReset size={25} 
+            style={{
+              // position:'absolute',
+              top:"10px",
+              left:"10px",
+              cursor:'pointer',
+            }} 
+            onClick={resetViz}
+          />
           {plotType === 'volume' && <VolumeOptions />}
           {plotType === 'point-cloud' && <PointOptions />}
           {plotType === 'sphere' && <SphereOptions/>}
