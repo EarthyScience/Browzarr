@@ -678,76 +678,77 @@ const AdjustPlot = () => {
 
   const enableCond = (plotOn)
   return (
-    <>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <div style={enableCond ? {} : { pointerEvents: 'none' } }>
-            <Tooltip delayDuration={500} >
-              <TooltipTrigger asChild>
-                <div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
-                    style={{
-                      color: enableCond ? '' : 'var(--text-disabled)'
-                    }}
-                  >
-                    <LuSettings className="size-8" />
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent
-                side={popoverSide === "left" ? "left" : "top"}
-                align={popoverSide === "left" ? "start" : "center"}
-              >
-                <span>Plot Settings</span>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent
-          side={popoverSide}
-          onInteractOutside={(e) => e.preventDefault()}
-          className={`relative w-[240px] mt-2 mr-1 ${
-            popoverSide === 'top' ? 'mb-1' : ''
-          }`}
-        >
-          <Tooltip delayDuration={500}>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div style={enableCond ? {} : { pointerEvents: 'none' } }>
+          <Tooltip delayDuration={500} >
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-0 right-1 z-10 cursor-pointer saturate-[180%]"
-                onClick={() => setOpen(false)}
-                aria-label="Close settings"
-              >
-                <RiCloseLargeLine className="size-4" />
-              </Button>
+              <div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
+                  style={{
+                    color: enableCond ? '' : 'var(--text-disabled)'
+                  }}
+                >
+                  <LuSettings className="size-8" />
+                </Button>
+              </div>
             </TooltipTrigger>
-            <TooltipContent>
-              Close settings
+            <TooltipContent
+              side={popoverSide === "left" ? "left" : "top"}
+              align={popoverSide === "left" ? "start" : "center"}
+            >
+              <span>Plot Settings</span>
             </TooltipContent>
           </Tooltip>
-          <div className={`overflow-y-auto -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          <RxReset size={25} 
-            style={{
-              // position:'absolute',
-              top:"10px",
-              left:"10px",
-              cursor:'pointer',
-            }} 
-            onClick={resetViz}
-          />
-            {plotType === 'volume' && <VolumeOptions />}
-            {plotType === 'point-cloud' && <PointOptions />}
-            {plotType === 'sphere' && <SphereOptions/>}
-            {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
-            {plotType === 'flat' && <FlatOptions />}
-            <GlobalOptions />
-          </div>
-        </PopoverContent>
-      </Popover>
-    </>
+        </div>
+      </PopoverTrigger>
+      <PopoverContent
+        side={popoverSide}
+        onInteractOutside={(e) => e.preventDefault()}
+        onOpenAutoFocus={(e) => { //Prevents tooltip from opening automatically
+          e.preventDefault();
+        }}
+        className={`relative w-[240px] mt-2 mr-1 ${
+          popoverSide === 'top' ? 'mb-1' : ''
+        }`}
+      >
+        <Tooltip delayDuration={500}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-0 right-1 z-10 cursor-pointer saturate-[180%]"
+              onClick={() => setOpen(false)}
+              aria-label="Close settings"
+            >
+              <RiCloseLargeLine className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Close settings
+          </TooltipContent>
+        </Tooltip>
+        <div className={`overflow-y-auto -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          <RxReset size={25} 
+          style={{
+            // position:'absolute',
+            top:"10px",
+            left:"10px",
+            cursor:'pointer',
+          }} 
+          onClick={resetViz}
+        />
+          {plotType === 'volume' && <VolumeOptions />}
+          {plotType === 'point-cloud' && <PointOptions />}
+          {plotType === 'sphere' && <SphereOptions/>}
+          {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
+          {plotType === 'flat' && <FlatOptions />}
+          <GlobalOptions />
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 

@@ -6,7 +6,7 @@ import { GetStore } from '@/components/zarr/ZarrLoaderLRU';
 import { useEffect } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
 import { MainPanel } from '@/components/ui';
-import { Loading, Navbar, Error as ErrorComponent } from '@/components/ui';
+import { Loading, Error as ErrorComponent } from '@/components/ui';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
@@ -104,9 +104,7 @@ export function LandingHome() {
     <MainPanel/> 
     {variable == 'Default' && <LandingShapes />}
     <ErrorComponent />
-    {!plotOn && <Navbar />}
     <Loading />
-    
     {/* {variable === "Default" && <ScrollableLinksTable />} */}
     {variable != "Default" && <Plot />}
     {Object.keys(timeSeries).length >= 1 && <PlotArea />}
