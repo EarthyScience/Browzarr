@@ -9,7 +9,6 @@ import { ZarrMetadata, ZarrTitleDescription } from "./Interfaces";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { getDtypeSize, calculateTotalElements, calculateChunkCount, formatBytes } from "./utils";
 import { IcechunkStoreOptions } from "./Interfaces";
-import { _ } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
 
 export function getIcechunkNodes(store: IcechunkStore): NodeSnapshot[] {
   if (!(store as any)._cachedNodes) {
