@@ -197,7 +197,11 @@ export async function getIcechunkDims(
   const shape = nodeData.shape.map(s => s.arrayLength);
   const dimNames = nodeData.dimensionNames?.length > 0 ? nodeData.dimensionNames : undefined;
 
-  cache.set(`${initStore}_${variable}_meta`, { ...userDataJson.attributes, shape });
+  cache.set(`${initStore}_${variable}_meta`, { 
+    ...userDataJson.attributes,
+    shape,
+    dimensionNames: dimNames ?? [], 
+  });
 
   if (dimNames) {
     for (const dim of dimNames) {

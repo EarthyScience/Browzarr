@@ -49,6 +49,7 @@ type StoreState = {
   clampExtremes: boolean; // Values to reprocess the texture by trimming extremes
   icechunkOptions: IcechunkStoreOptions | null;
   fetchOptions: FetchStoreOptions | null;
+  abortController: AbortController | null;
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -85,6 +86,7 @@ type StoreState = {
   setClampExtremes: (clampExtremes: boolean) => void;
   setIcechunkOptions: (options: IcechunkStoreOptions | null) => void;
   setFetchOptions: (options: FetchStoreOptions | null) => void;
+  setAbortController: (controller: AbortController | null) => void;
 };
 
 export const useGlobalStore = create<StoreState>((set, get) => ({
@@ -120,6 +122,8 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   clampExtremes: false,
   icechunkOptions: null,
   fetchOptions: null,
+  abortController: null,
+  // setters
 
   setDataShape: (dataShape) => set({ dataShape }),
   setShape: (shape) => set({ shape }),
@@ -174,6 +178,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setClampExtremes: (clampExtremes) => set({ clampExtremes }),
   setIcechunkOptions: (options) => set({ icechunkOptions: options }),
   setFetchOptions: (options) => set({ fetchOptions: options }),
+  setAbortController: (controller) => set({ abortController: controller }),
 }));
 
 
