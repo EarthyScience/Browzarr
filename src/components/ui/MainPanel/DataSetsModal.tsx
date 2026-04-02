@@ -34,22 +34,25 @@ type Props = {
 
 const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
   const [activeOption, setActiveOption] = useState<string>('');
-  const [showDescription, setShowDescription] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('curated');
 
-  const { initStore, setInitStore, setOpenVariables } = useGlobalStore(
+  const { initStore, setInitStore, setOpenVariables, status } = useGlobalStore(
     useShallow(state => ({
       setInitStore: state.setInitStore,
       setOpenVariables: state.setOpenVariables,
       initStore: state.initStore,
+      status: state.status,
     }))
   );
 
-  const openDescription = () => setShowDescription(true);
+  const showDescription = hasFetched && status === null;
+
+  const openDescription = () => setHasFetched(true);
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
-    setShowDescription(false);
+    setHasFetched(false);
   };
 
   return (
@@ -66,7 +69,8 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
             {TABS.map(({ value, label }) => (
               <Button
                 key={value}
-                className='cursor-pointer'
+                type="button"
+                className="cursor-pointer"
                 variant={activeTab === value ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => handleTabChange(value)}
@@ -110,7 +114,7 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
             <DescriptionContent
               setOpenVariables={setOpenVariables}
               onCloseDialog={() => {
-                setShowDescription(false);
+                setHasFetched(false);
                 onOpenChange(false);
               }}
             />
