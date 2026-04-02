@@ -5,6 +5,7 @@ import { useErrorStore, ZarrError } from "@/GlobalStates/ErrorStore";
 import { IcechunkStore } from "icechunk-js";
 import type { NodeSnapshot } from "icechunk-js";
 import type { FetchClient } from "icechunk-js";
+import { Repository, HttpStorage } from "icechunk-js";
 import { ZarrMetadata, ZarrTitleDescription } from "./Interfaces";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { getDtypeSize, calculateTotalElements, calculateChunkCount, formatBytes } from "./utils";
@@ -30,6 +31,8 @@ export async function getIcechunkStore(
     ?? (options?.headers
       ? {
           async fetch(url, init) {
+            // const signedUrl = await presign(url); // TODO: If you have a function to get a signed URL, use it here. Otherwise, just use the original URL.
+            // return globalThis.fetch(signedUrl, {
             return globalThis.fetch(url, {
               ...init,
               headers: { ...init?.headers, ...options.headers },
@@ -47,6 +50,15 @@ export async function getIcechunkStore(
         ...(options?.snapshot && { snapshot: options.snapshot }),
         ...(fetchClient       && { fetchClient }),
       });
+      console.log(icechunkStore);
+      const storage = new HttpStorage(storePath);
+      console.log('Storage initialized:', storage);
+      const repo = await Repository.open({ storage });
+      console.log('Repository opened:', repo);
+      // const branches = await repo.listBranches();
+      // const tags = await repo.listTags(); 
+      // console.log('Branches:', branches);
+      // console.log('Tags:', tags);
 
       // Prime the node cache immediately after opening
       (icechunkStore as any)._cachedNodes = icechunkStore.listNodes();
