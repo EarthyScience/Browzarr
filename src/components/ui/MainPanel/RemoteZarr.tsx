@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { Input } from '@/components/ui/';
 import { Button } from '@/components/ui/button-enhanced';
+
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 
 type HeaderRow  = { key: string; value: string };
@@ -87,9 +88,11 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
         );
         useGlobalStore.getState().setStatus('Fetching...');
 
-        if (initStore !== url) setInitStore(url);
+        if (initStore !== url) {
+          setInitStore(url);
+          onOpenDescription();
+        }
         else useGlobalStore.getState().setStatus(null);
-        if (url) onOpenDescription();
       }}
     >
       {/* URL + Fetch */}
@@ -102,34 +105,32 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
 
       {/* Overrides */}
       <div>
-        <button
+        <Button
           type="button"
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          variant="ghost"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           onClick={() => setShowOverrides(v => !v)}
         >
           {showOverrides ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           Overrides
-        </button>
+        </Button>
 
         {showOverrides && (
           <div className="flex flex-col gap-3 mt-2">
 
             {/* Auth preset selector */}
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1 shrink-0">
+            <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1">
                 {PRESETS.map(({ value, label }) => (
-                  <button
+                  <Button
                     key={value}
-                    type="button"
-                    className={`px-2 py-1 rounded text-xs border transition-colors cursor-pointer ${
-                      preset === value
-                        ? 'bg-secondary text-secondary-foreground border-secondary'
-                        : 'text-muted-foreground border-border hover:text-foreground'
-                    }`}
+                    variant={preset === value ? 'secondary' : 'ghost'}
+                    className='cursor-pointer'
+                    size="sm"
                     onClick={() => { setPreset(value); setPresetValue(''); }}
                   >
                     {label}
-                  </button>
+                  </Button>
                 ))}
               </div>
               {preset !== 'none' && (
@@ -149,14 +150,15 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
 
             {/* Custom headers */}
             <div>
-              <button
+              <Button
                 type="button"
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                variant={'ghost'}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 onClick={() => setShowCustom(v => !v)}
               >
                 {showCustom ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 Custom headers
-              </button>
+              </Button>
               {showCustom && (
                 <div className="flex flex-col gap-1 mt-2">
                   {headers.map((row, i) => (
@@ -174,23 +176,25 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
                         value={row.value}
                         onChange={e => updateHeader(i, 'value', e.target.value)}
                       />
-                      <button
+                      <Button
                         type="button"
-                        className="text-muted-foreground hover:text-destructive transition-colors"
+                        variant="ghost"
+                        className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                         onClick={() => removeHeaderRow(i)}
                         disabled={headers.length === 1}
                       >
                         <Trash2 size={14} />
-                      </button>
+                      </Button>
                     </div>
                   ))}
-                  <button
+                  <Button
                     type="button"
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1"
+                    variant="ghost"
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 cursor-pointer"
                     onClick={addHeaderRow}
                   >
                     <Plus size={12} /> Add header
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
