@@ -11,7 +11,6 @@ export interface IcechunkStoreOptions {
   tag?: string;
   snapshot?: string;
   fetchClient?: FetchClient;
-  headers?: Record<string, string>;
   maxRetries?: number;
   retryDelay?: number;
 }

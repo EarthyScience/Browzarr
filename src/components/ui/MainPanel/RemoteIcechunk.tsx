@@ -5,14 +5,83 @@ import { Button } from '@/components/ui/button-enhanced';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
-type RefType   = 'branch' | 'tag' | 'snapshot';
-type HeaderRow = { key: string; value: string };
+type RefType     = 'branch' | 'tag' | 'snapshot';
+type HeaderRow   = { key: string; value: string };
+type Credentials = 'omit' | 'same-origin' | 'include';
+type Cache       = 'default' | 'no-store' | 'reload' | 'no-cache' | 'force-cache';
 
 const REF_TABS: { value: RefType; label: string }[] = [
   { value: 'branch',   label: 'Branch'   },
   { value: 'tag',      label: 'Tag'      },
   { value: 'snapshot', label: 'Snapshot' },
 ];
+
+const CREDENTIALS_OPTIONS: { value: Credentials; label: string }[] = [
+  { value: 'omit',        label: 'Omit'        },
+  { value: 'same-origin', label: 'Same origin' },
+  { value: 'include',     label: 'Include'     },
+];
+
+const CACHE_OPTIONS: { value: Cache; label: string }[] = [
+  { value: 'default',     label: 'Default'     },
+  { value: 'no-store',    label: 'No store'    },
+  { value: 'reload',      label: 'Reload'      },
+  { value: 'no-cache',    label: 'No cache'    },
+  { value: 'force-cache', label: 'Force cache' },
+];
+
+const SELECT_CLASS = "w-full text-xs bg-background border border-input rounded-md px-2 py-1.5 text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring";
+
+type HeaderRowsProps = {
+  rows: HeaderRow[];
+  set: React.Dispatch<React.SetStateAction<HeaderRow[]>>;
+};
+
+const HeaderRows = ({ rows, set }: HeaderRowsProps) => {
+  const addRow    = () => set(h => [...h, { key: '', value: '' }]);
+  const removeRow = (i: number) => set(h => h.filter((_, idx) => idx !== i));
+  const updateRow = (i: number, field: 'key' | 'value', val: string) =>
+    set(h => h.map((row, idx) => idx === i ? { ...row, [field]: val } : row));
+
+  return (
+    <div className="flex flex-col gap-1 mt-2">
+      {rows.map((row, i) => (
+        <div key={i} className="flex items-center gap-1">
+          <Input
+            className="w-1/2"
+            placeholder="Header name"
+            value={row.key}
+            onChange={e => updateRow(i, 'key', e.target.value)}
+          />
+          <Input
+            className="w-1/2"
+            placeholder="Value"
+            type="password"
+            value={row.value}
+            onChange={e => updateRow(i, 'value', e.target.value)}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer h-auto p-1"
+            onClick={() => removeRow(i)}
+            disabled={rows.length === 1}
+          >
+            <Trash2 size={14} />
+          </Button>
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="ghost"
+        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0 mt-1"
+        onClick={addRow}
+      >
+        <Plus size={12} /> Add header
+      </Button>
+    </div>
+  );
+};
 
 type Props = {
   setInitStore: (v: string) => void;
@@ -23,26 +92,49 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
   const [url, setUrl] = useState('');
   const [refType, setRefType] = useState<RefType>('branch');
   const [refValue, setRefValue] = useState('main');
-  const [headers, setHeaders] = useState<HeaderRow[]>([{ key: '', value: '' }]);
-  const [showAuth, setShowAuth] = useState(false);
+
+  // Storage options
+  const [showStorage, setShowStorage] = useState(false);
+  const [storageHeaders, setStorageHeaders] = useState<HeaderRow[]>([{ key: '', value: '' }]);
+  const [credentials, setCredentials] = useState<Credentials | ''>('');
+  const [cache, setCache] = useState<Cache | ''>('');
+
+  // fetchClient headers (virtual chunks)
+  const [showFetchClientHeaders, setShowFetchClientHeaders] = useState(false);
+  const [fetchClientHeaders, setFetchClientHeaders] = useState<HeaderRow[]>([{ key: '', value: '' }]);
+
+  // Advanced
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [maxRetries, setMaxRetries] = useState(10);
   const [retryDelay, setRetryDelay] = useState(500);
 
-  const addHeaderRow = () => setHeaders(h => [...h, { key: '', value: '' }]);
-  const removeHeaderRow = (i: number) => setHeaders(h => h.filter((_, idx) => idx !== i));
-  const updateHeader = (i: number, field: 'key' | 'value', val: string) =>
-    setHeaders(h => h.map((row, idx) => idx === i ? { ...row, [field]: val } : row));
+  const buildHeaders = (rows: HeaderRow[]) =>
+    Object.fromEntries(rows.filter(r => r.key.trim()).map(r => [r.key.trim(), r.value.trim()]));
 
   const handleFetch = () => {
     if (!url) return;
-    const builtHeaders = Object.fromEntries(
-      headers.filter(r => r.key.trim()).map(r => [r.key.trim(), r.value.trim()])
-    );
+
+    const builtStorageHeaders     = buildHeaders(storageHeaders);
+    const builtFetchClientHeaders = buildHeaders(fetchClientHeaders);
+
     useGlobalStore.getState().setFetchOptions(null);
     useGlobalStore.getState().setIcechunkOptions({
       [refType]: refValue,
-      ...(Object.keys(builtHeaders).length > 0 && { headers: builtHeaders }),
+      ...(Object.keys(builtStorageHeaders).length > 0     && { headers: builtStorageHeaders }),
+      ...(credentials                                     && { credentials }),
+      ...(cache                                           && { cache }),
+      ...(Object.keys(builtFetchClientHeaders).length > 0 && {
+        fetchClient: {
+          // Not tested! we need a real endpoint that requires custom fetchClient headers to verify this works as expected
+          async fetch(url: string, init?: RequestInit) {
+            // const signedUrl = await presign(url); // TODO: If you have a function to get a signed URL, use it here. Otherwise, just use the original URL.
+            return globalThis.fetch(url, {
+              ...init,
+              headers: { ...init?.headers, ...builtFetchClientHeaders },
+            });
+          },
+        },
+      }),
       maxRetries,
       retryDelay,
     });
@@ -72,7 +164,7 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
         </Button>
       </div>
 
-      {/* Branch / Tag / Snapshot + ref value */}
+      {/* Branch / Tag / Snapshot */}
       <div className="flex flex-wrap gap-2">
         <div className="flex flex-1 gap-1">
           {REF_TABS.map(({ value, label }) => (
@@ -96,54 +188,65 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
         />
       </div>
 
-      {/* Auth Headers */}
+      {/* Storage options */}
       <div>
         <Button
           type="button"
           variant="ghost"
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0"
-          onClick={() => setShowAuth(v => !v)}
+          onClick={() => setShowStorage(v => !v)}
         >
-          {showAuth ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          Auth headers
+          {showStorage ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          Storage options
         </Button>
-        {showAuth && (
-          <div className="flex flex-col gap-1 mt-2">
-            {headers.map((row, i) => (
-              <div key={i} className="flex items-center gap-1">
-                <Input
-                  className="w-1/2"
-                  placeholder="Header name"
-                  value={row.key}
-                  onChange={e => updateHeader(i, 'key', e.target.value)}
-                />
-                <Input
-                  className="w-1/2"
-                  placeholder="Value"
-                  type="password"
-                  value={row.value}
-                  onChange={e => updateHeader(i, 'value', e.target.value)}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer h-auto p-1"
-                  onClick={() => removeHeaderRow(i)}
-                  disabled={headers.length === 1}
+        {showStorage && (
+          <div className="flex flex-col gap-2 mt-2">
+            <div className="flex gap-2">
+              <div className="flex flex-col gap-1 flex-1 text-xs">
+                <span className="text-muted-foreground">Credentials</span>
+                <select
+                  className={SELECT_CLASS}
+                  value={credentials}
+                  onChange={e => setCredentials(e.target.value as Credentials | '')}
                 >
-                  <Trash2 size={14} />
-                </Button>
+                  <option value="">Default</option>
+                  {CREDENTIALS_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
               </div>
-            ))}
-            <Button
-              type="button"
-              variant="ghost"
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0 mt-1"
-              onClick={addHeaderRow}
-            >
-              <Plus size={12} /> Add header
-            </Button>
+              <div className="flex flex-col gap-1 flex-1 text-xs">
+                <span className="text-muted-foreground">Cache</span>
+                <select
+                  className={SELECT_CLASS}
+                  value={cache}
+                  onChange={e => setCache(e.target.value as Cache | '')}
+                >
+                  <option value="">Default</option>
+                  {CACHE_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <HeaderRows rows={storageHeaders} set={setStorageHeaders} />
           </div>
+        )}
+      </div>
+
+      {/* fetchClient headers (virtual chunks: S3, GCS, Azure) */}
+      <div>
+        <Button
+          type="button"
+          variant="ghost"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0"
+          onClick={() => setShowFetchClientHeaders(v => !v)}
+        >
+          {showFetchClientHeaders ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          fetchClient headers
+        </Button>
+        {showFetchClientHeaders && (
+          <HeaderRows rows={fetchClientHeaders} set={setFetchClientHeaders} />
         )}
       </div>
 

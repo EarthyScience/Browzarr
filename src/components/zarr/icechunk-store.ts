@@ -4,7 +4,6 @@ import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 import { useErrorStore, ZarrError } from "@/GlobalStates/ErrorStore";
 import { IcechunkStore } from "icechunk-js";
 import type { NodeSnapshot } from "icechunk-js";
-import type { FetchClient } from "icechunk-js";
 import { Repository, HttpStorage } from "icechunk-js";
 import { ZarrMetadata, ZarrTitleDescription } from "./Interfaces";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
@@ -26,21 +25,8 @@ export async function getIcechunkStore(
 ): Promise<zarr.Group<IcechunkStore> | undefined> {
   const maxRetries = options?.maxRetries ?? 10;
   const retryDelay = options?.retryDelay ?? 500;
-
-  const fetchClient: FetchClient | undefined = options?.fetchClient
-    ?? (options?.headers
-      ? {
-          async fetch(url, init) {
-            // const signedUrl = await presign(url); // TODO: If you have a function to get a signed URL, use it here. Otherwise, just use the original URL.
-            // return globalThis.fetch(signedUrl, {
-            return globalThis.fetch(url, {
-              ...init,
-              headers: { ...init?.headers, ...options.headers },
-            });
-          },
-        }
-      : undefined);
-
+  const fetchClient = options?.fetchClient;
+ 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const icechunkStore = await IcechunkStore.open(storePath, {
