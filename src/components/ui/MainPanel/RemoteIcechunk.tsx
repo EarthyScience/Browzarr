@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { Input } from '@/components/ui/';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button-enhanced';
 import {
   Select,
@@ -99,17 +99,14 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
   const [refType, setRefType] = useState<RefType>('branch');
   const [refValue, setRefValue] = useState('main');
 
-  // Storage options
   const [showStorage, setShowStorage] = useState(false);
   const [storageHeaders, setStorageHeaders] = useState<HeaderRow[]>([{ key: '', value: '' }]);
   const [credentials, setCredentials] = useState<Credentials | ''>('');
-  const [cache, setCache] = useState<Cache | ''>('');
+  const [cache, setCache] = useState<Cache>('default');
 
-  // fetchClient headers (virtual chunks)
   const [showFetchClientHeaders, setShowFetchClientHeaders] = useState(false);
   const [fetchClientHeaders, setFetchClientHeaders] = useState<HeaderRow[]>([{ key: '', value: '' }]);
 
-  // Advanced
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [maxRetries, setMaxRetries] = useState(10);
   const [retryDelay, setRetryDelay] = useState(500);
@@ -128,7 +125,7 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
       [refType]: refValue,
       ...(Object.keys(builtStorageHeaders).length > 0     && { headers: builtStorageHeaders }),
       ...(credentials                                     && { credentials }),
-      ...(cache                                           && { cache }),
+      ...(cache !== 'default'                             && { cache }),
       ...(Object.keys(builtFetchClientHeaders).length > 0 && {
         fetchClient: {
           // Not tested! we need a real endpoint that requires custom fetchClient headers to verify this works as expected
@@ -235,11 +232,11 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
               <div className="flex flex-col gap-1 flex-1 text-xs">
                 <span className="text-muted-foreground">Cache</span>
                 <Select
-                  value={cache || '__default__'}
-                  onValueChange={v => setCache(v === '__default__' ? '' : v as Cache)}
+                  value={cache}
+                  onValueChange={v => setCache(v as Cache)}
                 >
                   <SelectTrigger className="w-full text-xs h-8">
-                    <SelectValue placeholder="Default" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
