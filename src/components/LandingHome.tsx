@@ -25,16 +25,16 @@ async function sendPing() {
 
 export function LandingHome() {
   const {
-    initStore, timeSeries, variable, plotOn,
-    setZMeta, setVariables, setPlotOn, setTitleDescription,
+    initStore, fetchKey, timeSeries, variable, plotOn,
+    setZMeta, setVariables, setTitleDescription,
   } = useGlobalStore(useShallow(state => ({
     initStore: state.initStore,
+    fetchKey: state.fetchKey,
     timeSeries: state.timeSeries,
     variable: state.variable,
     plotOn: state.plotOn,
     setZMeta: state.setZMeta,
     setVariables: state.setVariables,
-    setPlotOn: state.setPlotOn,
     setTitleDescription: state.setTitleDescription,
   })))
 
@@ -84,7 +84,7 @@ export function LandingHome() {
     // Clear after use
     useGlobalStore.getState().setIcechunkOptions(null);
     useGlobalStore.getState().setFetchOptions(null);
-  }, [initStore, setCurrentStore])
+  }, [initStore, fetchKey, setCurrentStore])
 
   useEffect(() => {
     let isMounted = true;

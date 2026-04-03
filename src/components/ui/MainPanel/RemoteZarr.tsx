@@ -88,11 +88,9 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
         );
         useGlobalStore.getState().setStatus('Fetching...');
 
-        if (initStore !== url) {
-          setInitStore(url);
-          onOpenDescription();
-        }
-        else useGlobalStore.getState().setStatus(null);
+        useGlobalStore.getState().bumpFetchKey();
+        setInitStore(url);
+        onOpenDescription();
       }}
     >
       {/* URL + Fetch */}

@@ -32,6 +32,7 @@ type StoreState = {
   plotDim: number;
   flipY:boolean;
   initStore:string;
+  fetchKey: number;
   variable: string;
   variables: string[];
   openVariables: boolean;
@@ -46,7 +47,7 @@ type StoreState = {
   titleDescription: { title: string | null; description: string | null };
   textureArrayDepths: number[];
   textureData: Uint8Array;
-  clampExtremes: boolean; // Values to reprocess the texture by trimming extremes
+  clampExtremes: boolean;
   icechunkOptions: IcechunkStoreOptions | null;
   fetchOptions: FetchStoreOptions | null;
   abortController: AbortController | null;
@@ -68,7 +69,8 @@ type StoreState = {
   updateDimCoords: (newDims: Record<string, DimCoords>) => void;
   setPlotDim: (plotDim: number) => void;
   setFlipY: (flipY:boolean) => void;
-  setInitStore: (initStore:string ) => void;
+  setInitStore: (initStore:string) => void;
+  bumpFetchKey: () => void;
   setVariable: (variable: string) => void;
   setVariables: (variables: string[]) => void;
   setOpenVariables: (openVariables: boolean) => void;
@@ -105,16 +107,17 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   plotDim: 0,
   flipY: false,
   initStore: ESDC,
+  fetchKey: 0,
   variable: 'Default',
   variables: [],
   openVariables: false,
   plotOn: false,
-  isFlat:false,
+  isFlat: false,
   progress: 0,
   status: null,
   is4D: false,
   idx4D: null,
-  titleDescription: {title:null, description: null},
+  titleDescription: { title: null, description: null },
   textureArrayDepths: [1,1,1], 
   textureData: new Uint8Array(1),
   DPR: 1,
@@ -162,6 +165,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setPlotDim: (plotDim) => set({ plotDim }),
   setFlipY: (flipY) => set({ flipY }),
   setInitStore: (initStore) => set({ initStore }),
+  bumpFetchKey: () => set(s => ({ fetchKey: s.fetchKey + 1 })),
   setVariable: (variable) => set({ variable }),
   setVariables: (variables) => set({ variables }),
   setOpenVariables: (openVariables) => set({ openVariables }),
@@ -180,8 +184,3 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setFetchOptions: (options) => set({ fetchOptions: options }),
   setAbortController: (controller) => set({ abortController: controller }),
 }));
-
-
-
-
-

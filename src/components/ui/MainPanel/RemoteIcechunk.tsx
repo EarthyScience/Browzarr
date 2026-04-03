@@ -139,6 +139,7 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
       retryDelay,
     });
     useGlobalStore.getState().setStatus('Fetching...');
+    useGlobalStore.getState().bumpFetchKey();
     setInitStore(url);
     onOpenDescription();
   };
