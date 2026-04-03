@@ -3,8 +3,9 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useCacheStore } from '@/GlobalStates/CacheStore';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import * as zarr from 'zarrita';
-import { CompressArray, DecompressArray, ZarrError, RescaleArray, ToFloat16, copyChunkToArray } from "./ZarrLoaderLRU";
-import { GetSize } from "./GetMetadata";
+import { CompressArray, DecompressArray, RescaleArray, ToFloat16, copyChunkToArray } from "./utils";
+import { ZarrError } from '@/GlobalStates/ErrorStore';
+import { GetSize } from "./utils";
 import { Convolve, Convolve2D } from "../computation/webGPU";
 import { coarsen3DArray, calculateStrides } from "@/utils/HelperFuncs";
 

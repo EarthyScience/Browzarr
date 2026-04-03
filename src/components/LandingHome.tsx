@@ -1,7 +1,8 @@
 'use client';
 import * as THREE from 'three'
 THREE.Cache.enabled = true;
-import { GetZarrMetadata, GetVariableNames, GetTitleDescription } from '@/components/zarr/GetMetadata';
+import { GetZarrMetadata, GetTitleDescription } from '@/components/zarr/ZarrLoaderLRU';
+import { GetVariableNames } from './zarr/utils';
 import { GetStore } from '@/components/zarr/ZarrLoaderLRU';
 import { useEffect } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
@@ -25,7 +26,7 @@ async function sendPing() {
 export function LandingHome() {
   const {
     initStore, timeSeries, variable, plotOn,
-    setZMeta, setVariables, setPlotOn, setTitleDescription,
+    setZMeta, setVariables, setTitleDescription,
   } = useGlobalStore(useShallow(state => ({
     initStore: state.initStore,
     timeSeries: state.timeSeries,
@@ -33,12 +34,14 @@ export function LandingHome() {
     plotOn: state.plotOn,
     setZMeta: state.setZMeta,
     setVariables: state.setVariables,
-    setPlotOn: state.setPlotOn,
     setTitleDescription: state.setTitleDescription,
   })))
 
-  const { currentStore, setCurrentStore, setZSlice, setYSlice, setXSlice, setUseNC } = useZarrStore(useShallow(state => ({
+  const { currentStore, fetchKey,
+    setCurrentStore, setZSlice, setYSlice, setXSlice, setUseNC 
+  } = useZarrStore(useShallow(state => ({
     currentStore: state.currentStore,
+    fetchKey: state.fetchKey,
     setCurrentStore: state.setCurrentStore,
     setZSlice: state.setZSlice,
     setYSlice: state.setYSlice,
@@ -73,9 +76,17 @@ export function LandingHome() {
     }
     if (initStore.startsWith('local')) return; // local_ set by LocalNetCDF/LocalZarr after load
     setUseNC(false)
-    const newStore = GetStore(initStore)
-    setCurrentStore(newStore)
-  }, [initStore, setCurrentStore])
+    const { icechunkOptions, fetchOptions } = useZarrStore.getState();
+    const newStore = GetStore(
+      initStore,
+      fetchOptions   ?? undefined,
+      icechunkOptions ?? undefined
+    );
+    setCurrentStore(newStore);
+    // Clear after use
+    useZarrStore.getState().setIcechunkOptions(null);
+    useZarrStore.getState().setFetchOptions(null);
+  }, [initStore, fetchKey, setCurrentStore])
 
   useEffect(() => {
     let isMounted = true;

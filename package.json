@@ -66,6 +66,7 @@
     "embla-carousel-react": "^8.6.0",
     "fflate": "^0.8.2",
     "gsap": "^3.13.0",
+    "icechunk-js": "^0.3.1",
     "input-otp": "^1.4.2",
     "js-colormaps-es": "^0.0.5",
     "lucide-react": "^0.562.0",
@@ -85,7 +86,7 @@
     "three-stdlib": "^2.36.0",
     "vaul": "^1.1.2",
     "webgpu-utils": "^1.11.0",
-    "zarrita": "^0.6.1",
+    "zarrita": "^0.6.2",
     "zod": "^4.3.6",
     "zustand": "^5.0.8"
   },
