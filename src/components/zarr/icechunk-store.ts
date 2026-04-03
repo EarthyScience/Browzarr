@@ -85,11 +85,12 @@ export async function getIcechunkMetadata(
       shape: { arrayLength: number; chunkLength: number }[];
       dimensionNames: string[];
     };
-
-    const userDataJson = JSON.parse(new TextDecoder().decode(node.userData)) as {
+    const userDataJson = node.userData.length > 0
+    ? JSON.parse(new TextDecoder().decode(node.userData)) as {
       data_type?: string;
       attributes?: Record<string, unknown>;
-    };
+    }
+    : {};
 
     const shape  = nodeData.shape.map(s => s.arrayLength);
     const chunks = nodeData.shape.map(s => s.chunkLength);
@@ -208,7 +209,8 @@ export async function getIcechunkDims(
         : dim;
       const dimArray = await zarr.open(group.resolve(dimPath), { kind: 'array' })
         .then(result => zarr.get(result));
-      const dimNode = allNodes.find(n => n.path === `/${dimPath}`);
+      const normalizedDimPath = dimPath.startsWith('/') ? dimPath : `/${dimPath}`;
+      const dimNode = allNodes.find(n => n.path === normalizedDimPath);
       const dimMeta = dimNode
         ? (JSON.parse(new TextDecoder().decode(dimNode.userData)) as { attributes?: Record<string, unknown> }).attributes ?? {}
         : {};
