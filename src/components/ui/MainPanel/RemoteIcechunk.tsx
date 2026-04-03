@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/';
 import { Button } from '@/components/ui/button-enhanced';
-import { ButtonGroup } from '@/components/ui/button-group';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
@@ -40,7 +39,7 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
     const builtHeaders = Object.fromEntries(
       headers.filter(r => r.key.trim()).map(r => [r.key.trim(), r.value.trim()])
     );
-    useGlobalStore.getState().setFetchOptions(null);  // clear fetch
+    useGlobalStore.getState().setFetchOptions(null);
     useGlobalStore.getState().setIcechunkOptions({
       [refType]: refValue,
       ...(Object.keys(builtHeaders).length > 0 && { headers: builtHeaders }),
@@ -64,6 +63,7 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
           onChange={e => setUrl(e.target.value)}
         />
         <Button
+          type="button"
           variant="outline"
           className="cursor-pointer"
           onClick={handleFetch}
@@ -72,21 +72,22 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
         </Button>
       </div>
 
-      {/* Branch / Tag / Snapshot */}
-      <div className="flex items-center gap-2">
-        <ButtonGroup className="border-1 rounded-md shrink-0">
+      {/* Branch / Tag / Snapshot + ref value */}
+      <div className="flex flex-wrap gap-2">
+        <div className="flex flex-1 gap-1">
           {REF_TABS.map(({ value, label }) => (
             <Button
               key={value}
+              type="button"
               variant={refType === value ? 'secondary' : 'ghost'}
               size="sm"
-              className="cursor-pointer"
+              className={`cursor-pointer flex-1 ${refType !== value ? 'text-muted-foreground' : ''}`}
               onClick={() => setRefType(value)}
             >
               {label}
             </Button>
           ))}
-        </ButtonGroup>
+        </div>
         <Input
           className="w-full"
           placeholder={refType === 'branch' ? 'main' : refType}
@@ -97,14 +98,15 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
 
       {/* Auth Headers */}
       <div>
-        <button
+        <Button
           type="button"
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          variant="ghost"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0"
           onClick={() => setShowAuth(v => !v)}
         >
           {showAuth ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           Auth headers
-        </button>
+        </Button>
         {showAuth && (
           <div className="flex flex-col gap-1 mt-2">
             {headers.map((row, i) => (
@@ -118,40 +120,44 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
                 <Input
                   className="w-1/2"
                   placeholder="Value"
+                  type="password"
                   value={row.value}
                   onChange={e => updateHeader(i, 'value', e.target.value)}
                 />
-                <button
+                <Button
                   type="button"
-                  className="text-muted-foreground hover:text-destructive transition-colors"
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer h-auto p-1"
                   onClick={() => removeHeaderRow(i)}
                   disabled={headers.length === 1}
                 >
                   <Trash2 size={14} />
-                </button>
+                </Button>
               </div>
             ))}
-            <button
+            <Button
               type="button"
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1"
+              variant="ghost"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0 mt-1"
               onClick={addHeaderRow}
             >
               <Plus size={12} /> Add header
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
       {/* Advanced */}
       <div>
-        <button
+        <Button
           type="button"
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          variant="ghost"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0"
           onClick={() => setShowAdvanced(v => !v)}
         >
           {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           Advanced
-        </button>
+        </Button>
         {showAdvanced && (
           <div className="flex items-center gap-3 mt-2">
             <div className="flex items-center gap-2 text-xs">
