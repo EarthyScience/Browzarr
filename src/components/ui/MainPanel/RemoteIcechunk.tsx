@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 
 type RefType     = 'branch' | 'tag' | 'snapshot';
 type HeaderRow   = { key: string; value: string };
@@ -120,8 +121,8 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
     const builtStorageHeaders     = buildHeaders(storageHeaders);
     const builtFetchClientHeaders = buildHeaders(fetchClientHeaders);
 
-    useGlobalStore.getState().setFetchOptions(null);
-    useGlobalStore.getState().setIcechunkOptions({
+    useZarrStore.getState().setFetchOptions(null);
+    useZarrStore.getState().setIcechunkOptions({
       [refType]: refValue,
       ...(Object.keys(builtStorageHeaders).length > 0     && { headers: builtStorageHeaders }),
       ...(credentials                                     && { credentials }),
@@ -142,7 +143,7 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
       retryDelay,
     });
     useGlobalStore.getState().setStatus('Fetching...');
-    useGlobalStore.getState().bumpFetchKey();
+    useZarrStore.getState().bumpFetchKey();
     setInitStore(url);
     onOpenDescription();
   };

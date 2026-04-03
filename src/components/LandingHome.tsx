@@ -25,11 +25,10 @@ async function sendPing() {
 
 export function LandingHome() {
   const {
-    initStore, fetchKey, timeSeries, variable, plotOn,
+    initStore, timeSeries, variable, plotOn,
     setZMeta, setVariables, setTitleDescription,
   } = useGlobalStore(useShallow(state => ({
     initStore: state.initStore,
-    fetchKey: state.fetchKey,
     timeSeries: state.timeSeries,
     variable: state.variable,
     plotOn: state.plotOn,
@@ -38,8 +37,11 @@ export function LandingHome() {
     setTitleDescription: state.setTitleDescription,
   })))
 
-  const { currentStore, setCurrentStore, setZSlice, setYSlice, setXSlice, setUseNC } = useZarrStore(useShallow(state => ({
+  const { currentStore, fetchKey,
+    setCurrentStore, setZSlice, setYSlice, setXSlice, setUseNC 
+  } = useZarrStore(useShallow(state => ({
     currentStore: state.currentStore,
+    fetchKey: state.fetchKey,
     setCurrentStore: state.setCurrentStore,
     setZSlice: state.setZSlice,
     setYSlice: state.setYSlice,
@@ -74,7 +76,7 @@ export function LandingHome() {
     }
     if (initStore.startsWith('local')) return; // local_ set by LocalNetCDF/LocalZarr after load
     setUseNC(false)
-    const { icechunkOptions, fetchOptions } = useGlobalStore.getState();
+    const { icechunkOptions, fetchOptions } = useZarrStore.getState();
     const newStore = GetStore(
       initStore,
       fetchOptions   ?? undefined,
@@ -82,8 +84,8 @@ export function LandingHome() {
     );
     setCurrentStore(newStore);
     // Clear after use
-    useGlobalStore.getState().setIcechunkOptions(null);
-    useGlobalStore.getState().setFetchOptions(null);
+    useZarrStore.getState().setIcechunkOptions(null);
+    useZarrStore.getState().setFetchOptions(null);
   }, [initStore, fetchKey, setCurrentStore])
 
   useEffect(() => {

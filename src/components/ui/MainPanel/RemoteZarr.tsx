@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/';
 import { Button } from '@/components/ui/button-enhanced';
 
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 
 type HeaderRow  = { key: string; value: string };
 type AuthPreset = 'none' | 'bearer' | 'basic' | 'apikey';
@@ -82,13 +83,13 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
           ...(overrides && { overrides }),
         };
 
-        useGlobalStore.getState().setIcechunkOptions(null);
-        useGlobalStore.getState().setFetchOptions(
+        useZarrStore.getState().setIcechunkOptions(null);
+        useZarrStore.getState().setFetchOptions(
           Object.keys(fetchOptions).length > 0 ? fetchOptions : null
         );
         useGlobalStore.getState().setStatus('Fetching...');
 
-        useGlobalStore.getState().bumpFetchKey();
+        useZarrStore.getState().bumpFetchKey();
         setInitStore(url);
         onOpenDescription();
       }}

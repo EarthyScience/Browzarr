@@ -4,7 +4,7 @@ import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 import { useErrorStore, ZarrError } from "@/GlobalStates/ErrorStore";
 import { IcechunkStore } from "icechunk-js";
 import type { NodeSnapshot } from "icechunk-js";
-import { Repository, HttpStorage } from "icechunk-js";
+// import { Repository, HttpStorage } from "icechunk-js";
 import { ZarrMetadata, ZarrTitleDescription } from "./Interfaces";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { getDtypeSize, calculateTotalElements, calculateChunkCount, formatBytes } from "./utils";
@@ -16,8 +16,6 @@ export async function getIcechunkNodes(store: IcechunkStore): Promise<NodeSnapsh
   }
   return await (store as any)._cachedNodes;
 }
-// For testing purposes only.
-// https://carbonplan-share.s3.us-west-2.amazonaws.com/zarr-layer-examples/pipeline/multi_level_virtual_hybrid_icechunk.icechunk
 
 export async function getIcechunkStore(
   storePath: string,
@@ -36,11 +34,11 @@ export async function getIcechunkStore(
         ...(options?.snapshot && { snapshot: options.snapshot }),
         ...(fetchClient       && { fetchClient }),
       });
-      console.log(icechunkStore);
-      const storage = new HttpStorage(storePath);
-      console.log('Storage initialized:', storage);
-      const repo = await Repository.open({ storage });
-      console.log('Repository opened:', repo);
+      // console.log(icechunkStore);
+      // const storage = new HttpStorage(storePath);
+      // console.log('Storage initialized:', storage);
+      // const repo = await Repository.open({ storage });
+      // console.log('Repository opened:', repo);
       // const branches = await repo.listBranches();
       // const tags = await repo.listTags(); 
       // console.log('Branches:', branches);
@@ -73,11 +71,9 @@ export async function getIcechunkMetadata(
   const variables: ZarrMetadata[] = [];
 
   const allNodes   = await getIcechunkNodes(icechunkStore);
-  console.log('All icechunk nodes:', allNodes);
   const arrayNodes = allNodes.filter(node =>
     (node.nodeData as { type: string }).type === 'array'
   );
-  console.log('Array nodes:', arrayNodes);
 
   for (const node of arrayNodes) {
     const nodeData = node.nodeData as {
@@ -122,7 +118,6 @@ export async function getIcechunkMetadata(
       groupPath,
     });
   }
-  console.log('Icechunk variables:', variables);
   return variables;
 }
 
@@ -175,7 +170,6 @@ export async function getIcechunkDims(
 ) {
   const { cache } = useCacheStore.getState();
   const allNodes = await getIcechunkNodes(group.store as IcechunkStore);
-  console.log('All icechunk nodes:', allNodes);
   const normalizedVariable = variable.startsWith('/') ? variable : `/${variable}`;
   const node = allNodes.find(n => n.path === normalizedVariable);
   const dimArrays: unknown[] = [];

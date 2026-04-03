@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import * as THREE from 'three';
 import { GetColorMapTexture } from "@/components/textures";
-import { IcechunkStoreOptions, FetchStoreOptions } from "@/components/zarr/Interfaces";
 
 const ESDC = 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr'
 
@@ -32,7 +31,6 @@ type StoreState = {
   plotDim: number;
   flipY:boolean;
   initStore:string;
-  fetchKey: number;
   variable: string;
   variables: string[];
   openVariables: boolean;
@@ -48,9 +46,6 @@ type StoreState = {
   textureArrayDepths: number[];
   textureData: Uint8Array;
   clampExtremes: boolean;
-  icechunkOptions: IcechunkStoreOptions | null;
-  fetchOptions: FetchStoreOptions | null;
-  abortController: AbortController | null;
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -70,7 +65,6 @@ type StoreState = {
   setPlotDim: (plotDim: number) => void;
   setFlipY: (flipY:boolean) => void;
   setInitStore: (initStore:string) => void;
-  bumpFetchKey: () => void;
   setVariable: (variable: string) => void;
   setVariables: (variables: string[]) => void;
   setOpenVariables: (openVariables: boolean) => void;
@@ -86,9 +80,6 @@ type StoreState = {
   setDPR: (DPR: number) => void;
   setScalingFactor: (scalingFactor: number | null) => void;
   setClampExtremes: (clampExtremes: boolean) => void;
-  setIcechunkOptions: (options: IcechunkStoreOptions | null) => void;
-  setFetchOptions: (options: FetchStoreOptions | null) => void;
-  setAbortController: (controller: AbortController | null) => void;
 };
 
 export const useGlobalStore = create<StoreState>((set, get) => ({
@@ -107,7 +98,6 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   plotDim: 0,
   flipY: false,
   initStore: ESDC,
-  fetchKey: 0,
   variable: 'Default',
   variables: [],
   openVariables: false,
@@ -123,9 +113,6 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   DPR: 1,
   scalingFactor: null,
   clampExtremes: false,
-  icechunkOptions: null,
-  fetchOptions: null,
-  abortController: null,
   // setters
 
   setDataShape: (dataShape) => set({ dataShape }),
@@ -165,7 +152,6 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setPlotDim: (plotDim) => set({ plotDim }),
   setFlipY: (flipY) => set({ flipY }),
   setInitStore: (initStore) => set({ initStore }),
-  bumpFetchKey: () => set(s => ({ fetchKey: s.fetchKey + 1 })),
   setVariable: (variable) => set({ variable }),
   setVariables: (variables) => set({ variables }),
   setOpenVariables: (openVariables) => set({ openVariables }),
@@ -180,7 +166,4 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setDPR: (DPR) => set({ DPR }),
   setScalingFactor: (scalingFactor) => set({ scalingFactor }),
   setClampExtremes: (clampExtremes) => set({ clampExtremes }),
-  setIcechunkOptions: (options) => set({ icechunkOptions: options }),
-  setFetchOptions: (options) => set({ fetchOptions: options }),
-  setAbortController: (controller) => set({ abortController: controller }),
 }));
