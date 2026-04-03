@@ -2,6 +2,14 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/';
 import { Button } from '@/components/ui/button-enhanced';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
@@ -29,8 +37,6 @@ const CACHE_OPTIONS: { value: Cache; label: string }[] = [
   { value: 'no-cache',    label: 'No cache'    },
   { value: 'force-cache', label: 'Force cache' },
 ];
-
-const SELECT_CLASS = "w-full text-xs bg-background border border-input rounded-md px-2 py-1.5 text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring";
 
 type HeaderRowsProps = {
   rows: HeaderRow[];
@@ -203,39 +209,55 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
         {showStorage && (
           <div className="flex flex-col gap-2 mt-2">
             <div className="flex gap-2">
+
+              {/* Credentials Select */}
               <div className="flex flex-col gap-1 flex-1 text-xs">
                 <span className="text-muted-foreground">Credentials</span>
-                <select
-                  className={SELECT_CLASS}
-                  value={credentials}
-                  onChange={e => setCredentials(e.target.value as Credentials | '')}
+                <Select
+                  value={credentials || '__default__'}
+                  onValueChange={v => setCredentials(v === '__default__' ? '' : v as Credentials)}
                 >
-                  <option value="">Default</option>
-                  {CREDENTIALS_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full text-xs h-8">
+                    <SelectValue placeholder="Default" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="__default__">Default</SelectItem>
+                      {CREDENTIALS_OPTIONS.map(o => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
+
+              {/* Cache Select */}
               <div className="flex flex-col gap-1 flex-1 text-xs">
                 <span className="text-muted-foreground">Cache</span>
-                <select
-                  className={SELECT_CLASS}
-                  value={cache}
-                  onChange={e => setCache(e.target.value as Cache | '')}
+                <Select
+                  value={cache || '__default__'}
+                  onValueChange={v => setCache(v === '__default__' ? '' : v as Cache)}
                 >
-                  <option value="">Default</option>
-                  {CACHE_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full text-xs h-8">
+                    <SelectValue placeholder="Default" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {CACHE_OPTIONS.map(o => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
+
             </div>
             <HeaderRows rows={storageHeaders} set={setStorageHeaders} />
           </div>
         )}
       </div>
 
-      {/* fetchClient headers (virtual chunks: S3, GCS, Azure) */}
+      {/* fetchClient headers */}
       <div>
         <Button
           type="button"
