@@ -10,11 +10,11 @@ import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { getDtypeSize, calculateTotalElements, calculateChunkCount, formatBytes } from "./utils";
 import { IcechunkStoreOptions } from "./Interfaces";
 
-export function getIcechunkNodes(store: IcechunkStore): NodeSnapshot[] {
+export async function getIcechunkNodes(store: IcechunkStore): Promise<NodeSnapshot[]> {
   if (!(store as any)._cachedNodes) {
     (store as any)._cachedNodes = store.listNodes();
   }
-  return (store as any)._cachedNodes;
+  return await (store as any)._cachedNodes;
 }
 // For testing purposes only.
 // https://carbonplan-share.s3.us-west-2.amazonaws.com/zarr-layer-examples/pipeline/multi_level_virtual_hybrid_icechunk.icechunk
@@ -72,7 +72,7 @@ export async function getIcechunkMetadata(
   const icechunkStore = group.store as IcechunkStore;
   const variables: ZarrMetadata[] = [];
 
-  const allNodes   = getIcechunkNodes(icechunkStore);
+  const allNodes   = await getIcechunkNodes(icechunkStore);
   console.log('All icechunk nodes:', allNodes);
   const arrayNodes = allNodes.filter(node =>
     (node.nodeData as { type: string }).type === 'array'
@@ -130,7 +130,7 @@ export async function getIcechunkTitleDescription(
 ): Promise<ZarrTitleDescription> {
   const fallback = useGlobalStore.getState().initStore;
   try {
-    const allNodes = getIcechunkNodes(group.store as IcechunkStore);
+    const allNodes = await getIcechunkNodes(group.store as IcechunkStore);
     const rootNode = allNodes.find(node => node.path === '/');
     if (!rootNode) return { title: null, description: fallback };
 
@@ -152,7 +152,7 @@ export async function getIcechunkAttributes(
   variable: string,
   cacheName: string
 ) {
-  const allNodes = getIcechunkNodes(group.store as IcechunkStore);
+  const allNodes = await getIcechunkNodes(group.store as IcechunkStore);
   const normalizedVariable = variable.startsWith('/') ? variable : `/${variable}`;
   const node = allNodes.find(n => n.path === normalizedVariable);
 
@@ -173,7 +173,7 @@ export async function getIcechunkDims(
   initStore: string
 ) {
   const { cache } = useCacheStore.getState();
-  const allNodes = getIcechunkNodes(group.store as IcechunkStore);
+  const allNodes = await getIcechunkNodes(group.store as IcechunkStore);
   console.log('All icechunk nodes:', allNodes);
   const normalizedVariable = variable.startsWith('/') ? variable : `/${variable}`;
   const node = allNodes.find(n => n.path === normalizedVariable);
