@@ -93,7 +93,7 @@ void main() {
 
     float strength = sample1(localCoord, textureIdx);
     bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
-    if (!valid || abs(dispStrength - fillValue) < 0.005){
+    if (!valid || abs(strength - fillValue) < 0.005){
         Color = vec4(0.);
         return;
     }
