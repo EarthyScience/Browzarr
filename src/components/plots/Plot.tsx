@@ -2,7 +2,7 @@ import { OrbitControls, useTexture } from '@react-three/drei';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
-import { Canvas, invalidate, useThree, useLoader } from '@react-three/fiber';
+import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { CreateTexture } from '@/components/textures';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';

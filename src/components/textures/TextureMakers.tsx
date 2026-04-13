@@ -9,7 +9,6 @@ interface Array {
 }
 
 function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number}): {minVal: number, maxVal: number}{
-  console.log("storedata called")
     const { clampExtremes, setTextureData} = useGlobalStore.getState()
     const data = array.data;
     const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data )

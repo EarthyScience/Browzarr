@@ -612,7 +612,7 @@ export async function GetZarrArrayWorkers(variable: string){
 
         await new Promise<void>((resolve, reject) => {
             const dispatch = (worker: Worker) => {
-            if (taskIndex >= downloadSteps) return  // this worker is done
+            if (taskIndex >= downloadSteps) return  // No more chunks to download
             const task = downloadTasks[taskIndex++] // Next isntruction set
             worker.onmessage = (e) => {
                 completed++
@@ -621,10 +621,10 @@ export async function GetZarrArrayWorkers(variable: string){
                 const {cacheName, cacheChunk} = e.data;
                 cache.set(cacheName, cacheChunk)
                 if (completed === downloadSteps) {
-                terminateAll()
-                resolve()
+                    terminateAll()
+                    resolve()
                 } else { // More tasks left. Send worker new isntructions
-                dispatch(worker)  
+                    dispatch(worker)  
                 }
             }
             worker.onerror = (e) => {
