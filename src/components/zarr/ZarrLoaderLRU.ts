@@ -18,7 +18,7 @@ import {
     getIcechunkAttributes,
     getIcechunkDims} from "./icechunk-store";
 import { GetNCArray, GetNCMetadata } from "./NCGetters";
-import { GetZarrArray } from "./ZarrGetters";
+import { GetZarrArray, GetZarrArrayWorkers } from "./ZarrGetters";
 import { DecompressArray } from "./utils";
 
 type GroupType = zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore> | IcechunkStore>;
@@ -145,7 +145,7 @@ export async function GetArray(newVariable?: string): Promise<{
         const output = GetNCArray(variable)
         return output
     } else{
-        const output = await GetZarrArray(variable)
+        const output = await GetZarrArrayWorkers(variable)
         return output
     }
 }

@@ -42,6 +42,23 @@ const nextConfig = {
     (config.resolve.alias as { [key: string]: string })['@/components'] = path.resolve(__dirname, 'src/components');
     return config;
   },
+  async headers() { // Needed for SharedArrayBuffer. Security reasons won't let sharedArrayBuffer
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'require-corp',
+          },
+        ],
+      },
+    ]
+  },
 };
 
 console.log('Current NODE_ENV:', process.env.NODE_ENV);
