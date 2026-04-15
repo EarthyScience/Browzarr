@@ -146,17 +146,26 @@ export async function getFetchStoreDims(
 	const dimNames = meta._ARRAY_DIMENSIONS as string[] | undefined;
 
 	if (dimNames) {
-		for (const dim of dimNames) {
-			const dimArray = await zarr
-				.open(group.resolve(dim), { kind: "array" })
-				.then((result) => zarr.get(result));
-			const dimMeta = await zarr
-				.open(group.resolve(dim), { kind: "array" })
-				.then((result) => result.attrs);
-			cache.set(`${initStore}_${dim}`, dimArray.data);
-			cache.set(`${initStore}_${dim}_meta`, dimMeta);
-			dimArrays.push(dimArray.data);
-			dimUnits.push((dimMeta as Record<string, unknown>).units ?? null);
+		const dimResults = await Promise.all(
+			dimNames.map(async (dim) => {
+				const dimPath = variable.includes("/")
+					? `${variable.split("/").slice(0, -1).join("/")}/${dim}`
+					: dim;
+				const res = await zarr.open(group.resolve(dimPath), {
+					kind: "array",
+				});
+				const dimArray = await zarr.get(res);
+				return { dim, data: dimArray.data, meta: res.attrs };
+			}),
+		);
+
+		for (const entry of dimResults) {
+			cache.set(`${initStore}_${entry.dim}`, entry.data);
+			cache.set(`${initStore}_${entry.dim}_meta`, entry.meta);
+			dimArrays.push(entry.data);
+			dimUnits.push(
+				(entry.meta as Record<string, unknown>).units ?? null,
+			);
 		}
 	} else {
 		const defaults = defaultFilledDimsForShape(outVar.shape);

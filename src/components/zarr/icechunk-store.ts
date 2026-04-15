@@ -237,27 +237,37 @@ export async function getIcechunkDims(
 	});
 
 	if (dimNames) {
-		for (const dim of dimNames) {
-			const dimPath = variable.includes("/")
-				? `${variable.split("/").slice(0, -1).join("/")}/${dim}`
-				: dim;
-			const dimArray = await zarr
-				.open(group.resolve(dimPath), { kind: "array" })
-				.then((result) => zarr.get(result));
-			const normalizedDimPath = ensureLeadingSlash(dimPath);
-			const dimNode = allNodes.find((n) => n.path === normalizedDimPath);
-			const dimMeta = dimNode
-				? ((
-						JSON.parse(
-							new TextDecoder().decode(dimNode.userData),
-						) as { attributes?: Record<string, unknown> }
-					).attributes ?? {})
-				: {};
+		const dimResults = await Promise.all(
+			dimNames.map(async (dim) => {
+				const dimPath = variable.includes("/")
+					? `${variable.split("/").slice(0, -1).join("/")}/${dim}`
+					: dim;
+				const dimArray = await zarr
+					.open(group.resolve(dimPath), { kind: "array" })
+					.then((result) => zarr.get(result));
+				const normalizedDimPath = ensureLeadingSlash(dimPath);
+				const dimNode = allNodes.find(
+					(n) => n.path === normalizedDimPath,
+				);
+				const dimMeta =
+					dimNode && dimNode.userData.length > 0
+						? ((
+								JSON.parse(
+									new TextDecoder().decode(dimNode.userData),
+								) as { attributes?: Record<string, unknown> }
+							).attributes ?? {})
+						: {};
+				return { dim, data: dimArray.data, meta: dimMeta };
+			}),
+		);
 
-			cache.set(`${initStore}_${dim}`, dimArray.data);
-			cache.set(`${initStore}_${dim}_meta`, dimMeta);
-			dimArrays.push(dimArray.data);
-			dimUnits.push((dimMeta as Record<string, unknown>).units ?? null);
+		for (const entry of dimResults) {
+			cache.set(`${initStore}_${entry.dim}`, entry.data);
+			cache.set(`${initStore}_${entry.dim}_meta`, entry.meta);
+			dimArrays.push(entry.data);
+			dimUnits.push(
+				(entry.meta as Record<string, unknown>).units ?? null,
+			);
 		}
 	} else {
 		const defaults = defaultFilledDimsForShape(shape);
