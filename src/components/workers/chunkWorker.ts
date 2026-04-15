@@ -20,29 +20,10 @@ self.onmessage = (e) => {
 
   const typedArray = new Float16Array(sharedBuffer)
   const thisData = compressed ? DecompressArray(chunkData) : chunkData
-  if (hasZ) {
-    copyChunkToArray(
-      thisData,
-      chunkShape,
-      chunkStride,
-      typedArray,
-      dataShape,
-      strides,
-      chunkCoord,
-      startCoords,
-    )
-  } else {
-  copyChunkToArray2D(
-      thisData,
-      chunkShape,
-      chunkStride,
-      typedArray,
-      dataShape,
-      strides,
-      chunkCoord,
-      startCoords,
-    )
-  }
+  const inputs = [thisData, chunkShape, chunkStride, typedArray, dataShape, strides, chunkCoord, startCoords] as const
+
+  if (hasZ) copyChunkToArray(...inputs)
+  else copyChunkToArray2D(...inputs)
 
   self.postMessage({ success: true })
 }
