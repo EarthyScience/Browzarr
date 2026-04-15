@@ -227,14 +227,6 @@ export async function getIcechunkDims(
 		nodeData.dimensionNames?.length > 0
 			? nodeData.dimensionNames
 			: undefined;
-	console.log("[icechunk:getIcechunkDims] meta", {
-		variable,
-		normalizedVariable,
-		meta,
-		nodeDimensionNames: nodeData.dimensionNames,
-		resolvedDimNames: dimNames,
-		shape,
-	});
 
 	cache.set(`${initStore}_${variable}_meta`, {
 		...meta,
@@ -259,30 +251,13 @@ export async function getIcechunkDims(
 						) as { attributes?: Record<string, unknown> }
 					).attributes ?? {})
 				: {};
-			console.log("[icechunk:getIcechunkDims] dim lookup", {
-				variable,
-				dim,
-				dimPath,
-				normalizedDimPath,
-				foundDimNode: Boolean(dimNode),
-				dimMeta,
-			});
+
 			cache.set(`${initStore}_${dim}`, dimArray.data);
 			cache.set(`${initStore}_${dim}_meta`, dimMeta);
 			dimArrays.push(dimArray.data);
 			dimUnits.push((dimMeta as Record<string, unknown>).units ?? null);
 		}
 	} else {
-		console.log(
-			"[icechunk:getIcechunkDims] no dimension names found, using defaults",
-			{
-				variable,
-				normalizedVariable,
-				meta,
-				nodeDimensionNames: nodeData.dimensionNames,
-				shape,
-			},
-		);
 		const defaults = defaultFilledDimsForShape(shape);
 		dimArrays.push(...defaults.dimArrays);
 		dimUnits.push(...defaults.dimUnits);
