@@ -12,7 +12,8 @@ export async function GetArray(varOveride?: string) {
     const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
     const { compress, xSlice, ySlice, zSlice, coarsen, kernelSize, kernelDepth, fetchNC, setCurrentChunks, setArraySize } = useZarrStore.getState();
     const { cache } = useCacheStore.getState();
-    const fetcher = fetchNC ? NCFetcher() : zarrFetcher()
+    const useNC = initStore.startsWith("local") && fetchNC // In case a user has NetCDF switched but then goes to a remote
+    const fetcher = useNC ? NCFetcher() : zarrFetcher()
     const targetVariable = varOveride ?? variable;
     const meta = await fetcher.getMetadata(targetVariable);
     const { shape, chunkShape, fillValue, dtype } = meta;
@@ -69,15 +70,26 @@ export async function GetArray(varOveride?: string) {
 
                 if (isCacheValid) {
                     const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice();
-                    copyChunkToArray(
-                        chunkData, 
-                        cachedChunk.shape, 
-                        cachedChunk.stride, 
-                        typedArray, 
-                        outputShape, 
-                        destStride as any, [z, y, x], 
-                        [zDim.start, yDim.start, xDim.start]
-                    );
+                    if (hasZ) {
+                        copyChunkToArray(
+                            chunkData, 
+                            cachedChunk.shape, 
+                            cachedChunk.stride, 
+                            typedArray, 
+                            outputShape, 
+                            destStride as any, [z, y, x], 
+                            [zDim.start, yDim.start, xDim.start]
+                        )
+                    } else {
+                        copyChunkToArray2D(
+                            chunkData, 
+                            cachedChunk.shape, 
+                            cachedChunk.stride, 
+                            typedArray, 
+                            outputShape, 
+                            destStride as any, [y, x], 
+                            [yDim.start, xDim.start])
+                    }
                 } else {
                     const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D });
                     
@@ -124,7 +136,6 @@ export async function GetArray(varOveride?: string) {
             }
             }
     }
-
     setProgress(0);
     return { data: typedArray, shape: outputShape, dtype, scalingFactor };
 }
