@@ -102,7 +102,10 @@ export async function GetZarrDims(variable: string) {
 		const meta = cache.get(cacheName) as Record<string, unknown>;
 		const shape = meta.shape as number[];
 		if (!shape || !Array.isArray(shape)) {
-			console.warn(`Invalid shape in cache for ${cacheName}, treating as cache miss`, meta);
+			console.warn(
+				`Invalid shape in cache for ${cacheName}, treating as cache miss`,
+				meta,
+			);
 		} else {
 			const dimNames = getDimensionNamesFromMeta(meta);
 			const dimArrays: unknown[] = [];

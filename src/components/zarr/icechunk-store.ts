@@ -212,7 +212,9 @@ export async function getIcechunkDims(
 	};
 
 	if (!nodeData.shape || !Array.isArray(nodeData.shape)) {
-		throw new Error(`Invalid shape data for variable ${variable}: ${nodeData.shape}`);
+		throw new Error(
+			`Invalid shape data for variable ${variable}: ${nodeData.shape}`,
+		);
 	}
 
 	const userDataJson = JSON.parse(
