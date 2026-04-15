@@ -385,7 +385,7 @@ export async function GetCurrentArrayWorkers(overrideStore?:string){
         compressed:task.compressed,
         chunkCoord: task.chunkCoord,
         startCoords: [zStartIdx, yStartIdx, xStartIdx],
-      },[task.chunkData.buffer])
+      })
     }
     workers.forEach(dispatch) // Distribute first tasks
   }).catch((e) => {
