@@ -9,7 +9,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { vertShader } from '@/components/computation/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
-import { coarsenFlatArray, GetCurrentArray, GetCurrentArrayWorkers, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { GetFrag } from '../textures';
@@ -90,19 +90,8 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
     const infoRef = useRef<boolean>(false)
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
     const rotateMap = analysisMode && axis == 2;
-    // const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
+    const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
     const analysisDims = useMemo(()=>dimArrays.length > 2 ? dimSlices.filter((_e,idx)=> idx != axis) : dimSlices,[dimSlices,axis])
-    const [sampleArray, setSampleArray] = useState<any | undefined>(undefined) // Moved this to a state as async functions cannot be used in useMemo
-    useEffect(()=>{
-      if (analysisMode){
-        setSampleArray(analysisArray)
-        return
-      } 
-      else {
-        GetCurrentArrayWorkers().then(e=> setSampleArray(e))
-        return
-      }      
-    },[analysisMode, analysisArray, textures])
 
     const {lonBounds, latBounds} = useCoordBounds()
 
@@ -133,44 +122,44 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
 
 
     // ----- TIMESERIES ----- //
-    async function HandleTimeSeries(event: THREE.Intersection){
-      const uv = event.uv;
-      const normal = new THREE.Vector3(0,0,1)
-      if(uv){
-        const tsUV = flipY ? new THREE.Vector2(uv.x, 1-uv.y) : uv
-        const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : await GetCurrentArrayWorkers(), shape:dataShape, stride:strides},{uv:tsUV,normal})
-        setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
-          
-        const coordUV = parseUVCoords({normal:normal,uv:uv})
-        let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length)] : null)
-        const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
-        const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
-        dimCoords = dimCoords.filter(val => val !== null)
-        const tsID = `${dimCoords[0]}_${dimCoords[1]}`
-        const tsObj = {
-          color:evaluate_cmap(getColorIdx()/10,"Paired"),
-          data:tempTS
-        }
-        incrementColorIdx();
-        updateTimeSeries({ [tsID] : tsObj})
-        const dimObj = {
-          first:{
-            name:thisDimNames[0],
-            loc:dimCoords[0] ?? 0,
-            units:thisDimUnits[0]
-          },
-          second:{
-            name:thisDimNames[1],
-            loc:dimCoords[1] ?? 0,
-            units:thisDimUnits[1]
-          },
-          plot:{
-            units:dimUnits[0]
+    function HandleTimeSeries(event: THREE.Intersection){
+            const uv = event.uv;
+            const normal = new THREE.Vector3(0,0,1)
+            if(uv){
+              const tsUV = flipY ? new THREE.Vector2(uv.x, 1-uv.y) : uv
+              const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:tsUV,normal})
+              setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
+                
+              const coordUV = parseUVCoords({normal:normal,uv:uv})
+              let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length)] : null)
+              const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
+              const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
+              dimCoords = dimCoords.filter(val => val !== null)
+              const tsID = `${dimCoords[0]}_${dimCoords[1]}`
+              const tsObj = {
+                color:evaluate_cmap(getColorIdx()/10,"Paired"),
+                data:tempTS
+              }
+              incrementColorIdx();
+              updateTimeSeries({ [tsID] : tsObj})
+              const dimObj = {
+                first:{
+                  name:thisDimNames[0],
+                  loc:dimCoords[0] ?? 0,
+                  units:thisDimUnits[0]
+                },
+                second:{
+                  name:thisDimNames[1],
+                  loc:dimCoords[1] ?? 0,
+                  units:thisDimUnits[1]
+                },
+                plot:{
+                  units:dimUnits[0]
+                }
+              }
+              updateDimCoords({[tsID] : dimObj})
+            }
           }
-        }
-        updateDimCoords({[tsID] : dimObj})
-      }
-    }
     // ----- SHADER MATERIAL ----- //
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
