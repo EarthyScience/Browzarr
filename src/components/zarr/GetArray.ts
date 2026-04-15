@@ -12,8 +12,7 @@ export async function GetArray(varOveride?: string) {
     const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
     const { compress, xSlice, ySlice, zSlice, coarsen, kernelSize, kernelDepth, fetchNC, setCurrentChunks, setArraySize } = useZarrStore.getState();
     const { cache } = useCacheStore.getState();
-    const useNC = initStore.startsWith("local") && fetchNC // In case a user has NetCDF switched but then goes to a remote
-    const fetcher = useNC ? NCFetcher() : zarrFetcher()
+    const fetcher = fetchNC ? NCFetcher() : zarrFetcher()
     const targetVariable = varOveride ?? variable;
     const meta = await fetcher.getMetadata(targetVariable);
     const { shape, chunkShape, fillValue, dtype } = meta;
