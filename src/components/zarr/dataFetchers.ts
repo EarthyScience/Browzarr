@@ -36,7 +36,6 @@ async function fetchWithRetry<T>(
     throw new Error("Unreachable");
 }
 
-
 export function zarrFetcher() {
     const {currentStore} = useZarrStore.getState()
     let outVar: zarr.Array<zarr.DataType, any>;
@@ -102,6 +101,7 @@ export function NCFetcher() {
         async fetchChunk({ rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, variable }: any): Promise<FetchOutput> {
             const starts = new Array(rank).fill(0);
             const counts = new Array(rank).fill(1);
+
             if (rank > 3) { starts[0] = idx4D; counts[0] = 1; }
             starts[xDimIndex] = x * chunkShape[xDimIndex];
             counts[xDimIndex] = Math.min(chunkShape[xDimIndex], shape[xDimIndex] - starts[xDimIndex]);
@@ -117,4 +117,91 @@ export function NCFetcher() {
             return { data, shape: counts as number[], stride: calculateStrides(counts) };
         },
     };
+}
+
+
+//---- Class possiblity
+
+export class ZarrFetcher {
+    private outVar: zarr.Array<zarr.DataType, any> | undefined;
+    private variable: string;
+
+    constructor(variable: string) {
+        this.variable = variable;
+    }
+
+    async init(){
+        const { currentStore } = useZarrStore.getState();
+        const group = await currentStore;
+        const tempOutVar = await zarr.open(group.resolve(this.variable), { kind: "array" });
+        this.outVar = tempOutVar;
+    }
+
+    async getMetadata(): Promise<any> {
+        if (!this.outVar) {
+            await this.init();
+            if (!this.outVar){
+                throw new Error(`Init failed`);
+            }
+        }
+        if (!this.outVar.is("number") && !this.outVar.is("bigint")) {
+            throw new Error(`Unsupported data type: ${this.outVar.dtype}`);
+        }
+
+        const symbols = Object.getOwnPropertySymbols(this.outVar);
+        const contextSymbol = symbols.find(s => s.toString().includes("zarrita.context"));
+        const fillValue = contextSymbol && !Number.isNaN((this.outVar as any)[contextSymbol]?.fill_value)
+                            ? (this.outVar as any)[contextSymbol].fill_value
+                            : NaN;
+        return {
+            shape: this.outVar.shape,
+            chunkShape: GetSize(this.outVar)[2],
+            fillValue,
+            dtype: this.outVar.dtype,
+        };
+    }
+
+    async fetchChunk({
+        rank,
+        chunkShape,
+        x,
+        y,
+        z,
+        xDimIndex,
+        yDimIndex,
+        zDimIndex,
+        idx4D,
+    }: any): Promise<FetchOutput> {
+        if (!this.outVar) {
+            await this.init();
+            if (!this.outVar){
+                throw new Error(`Init failed`);
+            }
+        }
+
+        const chunkSlice = new Array(rank).fill(0);
+        chunkSlice[xDimIndex] = zarr.slice(x * chunkShape[xDimIndex], (x + 1) * chunkShape[xDimIndex]);
+        chunkSlice[yDimIndex] = zarr.slice(y * chunkShape[yDimIndex], (y + 1) * chunkShape[yDimIndex]);
+        if (zDimIndex >= 0) {
+            chunkSlice[zDimIndex] = zarr.slice(z * chunkShape[zDimIndex], (z + 1) * chunkShape[zDimIndex]);
+        }
+        if (rank >= 4) {
+            chunkSlice[0] = idx4D;
+        }
+
+        const chunk = await fetchWithRetry(
+            () => zarr.get(this.outVar!, chunkSlice),
+            `variable ${this.variable}`,
+            useGlobalStore.getState().setStatus
+        );
+
+        if (!chunk || chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
+            throw new Error("BigInt arrays not supported.");
+        }
+        return {
+            data: chunk.data as Float32Array,
+            shape: chunkShape,
+            stride: chunk.stride,
+        };
+    }
 }

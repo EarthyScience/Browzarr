@@ -1,5 +1,5 @@
 "use client";
-import { ArrayMinMax, GetCurrentArray, GetCurrentArrayWorkers } from '@/utils/HelperFuncs';
+import { ArrayMinMax, GetCurrentArray } from '@/utils/HelperFuncs';
 import * as THREE from 'three';
 import React, { useEffect, useRef } from 'react';
 import { DataReduction, Convolve, Multivariate2D, Multivariate3D, CUMSUM3D, Convolve2D, CustomShader } from '../computation/webGPU';
@@ -7,7 +7,7 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
-import { GetArray } from '../zarr/ZarrLoaderLRU';
+import { GetArray } from '../zarr/GetArray';
 import { CreateTexture } from '../textures';
 
 // The new centralized map for all operations
@@ -99,7 +99,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
 
             // --- 2. Dispatch GPU computation based on the operation ---
             console.log("thisone")
-            const inputArray = analysisMode ? analysisArray : await GetCurrentArrayWorkers(analysisStore)
+            const inputArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore)
             const shapeInfo = { shape: dataShape, strides};
             const kernelParams = { kernelDepth, kernelSize };
             // [1538316, 1481, 1]
@@ -205,7 +205,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
 
         const is2D = outputShape.length === 2
         async function Analyze(){
-            const dataArray = analysisMode ? analysisArray : await GetCurrentArrayWorkers(analysisStore)
+            const dataArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore)
             const newArray = await CustomShader(dataArray, shapeInfo, kernelParams, axis, customShader?? "") as Float16Array
             const {minVal, maxVal} = valueScales
             const textureData = new Uint8Array(newArray.length)

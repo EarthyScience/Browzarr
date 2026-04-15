@@ -20,7 +20,7 @@ export async function GetArray(varOveride?: string) {
     const hasZ = rank >= 3;
     const xDimIndex = rank - 1, yDimIndex = rank - 2, zDimIndex = rank - 3;
 
-    const calcDim = (slice: [number, number | null], dimIdx: number) => {
+    const calcDim = (slice: [number, number | null], dimIdx: number) => { // This function provides information for extraction from each dimension of datarray
         if (dimIdx < 0) return { start: 0, end: 1, size: 0, chunkDim: 1 };
         const dimSize = shape[dimIdx];
         const chunkDim = chunkShape[dimIdx];
@@ -44,7 +44,7 @@ export async function GetArray(varOveride?: string) {
     const destStride = calculateStrides(outputShape);
     setStrides(destStride);
     setArraySize(totalElements);
-    setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] });
+    setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); // These are used in GetCurrentArray() function
 
     const typedArray = new Float16Array(totalElements);
 
@@ -69,10 +69,19 @@ export async function GetArray(varOveride?: string) {
 
                 if (isCacheValid) {
                     const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice();
-                    copyChunkToArray(chunkData, cachedChunk.shape, cachedChunk.stride, typedArray, outputShape, destStride as any, [z, y, x], [zDim.start, yDim.start, xDim.start]);
+                    copyChunkToArray(
+                        chunkData, 
+                        cachedChunk.shape, 
+                        cachedChunk.stride, 
+                        typedArray, 
+                        outputShape, 
+                        destStride as any, [z, y, x], 
+                        [zDim.start, yDim.start, xDim.start]
+                    );
                 } else {
-                    const raw = await fetcher.fetchChunk({ variable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, _meta: meta });
-                    const rawData = raw.data.map((v: number) => v === fillValue ? NaN : v);
+                    const raw = await fetcher.fetchChunk({ variable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D });
+                    
+                    const rawData = fillValue ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
 
                     let [chunkF16, newScalingFactor] = ToFloat16(rawData, scalingFactor);
                     let thisShape = raw.shape;
