@@ -13,8 +13,8 @@ export async function GetArray(varOveride?: string) {
     const { compress, xSlice, ySlice, zSlice, coarsen, kernelSize, kernelDepth, fetchNC, setCurrentChunks, setArraySize } = useZarrStore.getState();
     const { cache } = useCacheStore.getState();
     const fetcher = fetchNC ? NCFetcher() : zarrFetcher()
-
-    const meta = await fetcher.getMetadata(varOveride?? variable);
+    const targetVariable = varOveride ?? variable;
+    const meta = await fetcher.getMetadata(targetVariable);
     const { shape, chunkShape, fillValue, dtype } = meta;
     const rank = shape.length;
     const hasZ = rank >= 3;
@@ -60,7 +60,7 @@ export async function GetArray(varOveride?: string) {
         for (let y = yDim.start; y < yDim.end; y++) {
             for (let x = xDim.start; x < xDim.end; x++) {
                 const chunkID = `z${z}_y${y}_x${x}`;
-                const cacheBase = rank > 3 ? `${initStore}_${variable}_${idx4D}` : `${initStore}_${variable}`;
+                const cacheBase = rank > 3 ? `${initStore}_${targetVariable}_${idx4D}` : `${initStore}_${targetVariable}`;
                 const cacheName = `${cacheBase}_chunk_${chunkID}`;
                 const cachedChunk = cache.get(cacheName);
                 const isCacheValid = cachedChunk &&
@@ -79,7 +79,7 @@ export async function GetArray(varOveride?: string) {
                         [zDim.start, yDim.start, xDim.start]
                     );
                 } else {
-                    const raw = await fetcher.fetchChunk({ variable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D });
+                    const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D });
                     
                     const rawData = fillValue ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
 
