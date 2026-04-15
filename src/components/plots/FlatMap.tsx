@@ -9,7 +9,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { vertShader } from '@/components/computation/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
-import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, GetCurrentArray, GetCurrentArrayWorkers, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { GetFrag } from '../textures';
@@ -90,7 +90,16 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
     const infoRef = useRef<boolean>(false)
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
     const rotateMap = analysisMode && axis == 2;
-    const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
+    // const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
+    const sampleArray = useMemo(()=> {
+      if (analysisMode) return analysisArray 
+      else {
+        let output;
+        GetCurrentArrayWorkers().then(e=> output=e)
+        return output
+      }      
+    }
+    ,[analysisMode, analysisArray, textures])
     const analysisDims = useMemo(()=>dimArrays.length > 2 ? dimSlices.filter((_e,idx)=> idx != axis) : dimSlices,[dimSlices,axis])
 
     const {lonBounds, latBounds} = useCoordBounds()
