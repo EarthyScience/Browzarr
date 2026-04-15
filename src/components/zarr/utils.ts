@@ -59,7 +59,9 @@ export function ToFloat16(array : Float32Array, scalingFactor: number | null) : 
 		initialScale
 	denominator = Math.pow(10,newScalingFactor);
 	multiplier = 1/denominator;
-	const newArray = new Float16Array(array.length)
+    // Need SharedArrayBuffer here or else chunks passed to workers will become detached on the main thread. 
+    const buffer = new SharedArrayBuffer(array.length * 2) // 2 for float16
+	const newArray = new Float16Array(buffer)
 	for (let i = 0; i < array.length; i++) {
 		newArray[i] = array[i] * multiplier;
 	}
