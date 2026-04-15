@@ -90,8 +90,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
     const infoRef = useRef<boolean>(false)
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
     const rotateMap = analysisMode && axis == 2;
-    // const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
-    const sampleArray = analysisMode ? analysisArray : GetCurrentArray();
+    const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
     const analysisDims = useMemo(()=>dimArrays.length > 2 ? dimSlices.filter((_e,idx)=> idx != axis) : dimSlices,[dimSlices,axis])
 
     const {lonBounds, latBounds} = useCoordBounds()
