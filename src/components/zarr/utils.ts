@@ -74,6 +74,103 @@ export function calculateChunkCount(shape: number[], chunks: number[]): number {
     return shape.reduce((acc, dim, i) => acc * Math.ceil(dim / chunks[i]), 1);
 }
 
+/** Promise-based delay for retry/backoff loops. */
+export function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Paths that do not start with `local` are treated as remote for error reporting. */
+export function isRemoteZarrStorePath(storePath: string): boolean {
+	return storePath.slice(0, 5) !== "local";
+}
+
+export function resolveStoreRetryDefaults(options?: {
+	maxRetries?: number;
+	retryDelay?: number;
+}): { maxRetries: number; retryDelay: number } {
+	return {
+		maxRetries: options?.maxRetries ?? 10,
+		retryDelay: options?.retryDelay ?? 500,
+	};
+}
+
+export function stripLeadingSlash(path: string): string {
+	return path.startsWith("/") ? path.slice(1) : path;
+}
+
+export function ensureLeadingSlash(path: string): string {
+	return path.startsWith("/") ? path : `/${path}`;
+}
+
+/** `fullPath` is relative to the group root (no leading slash). */
+export function groupPathFromRelativeName(
+	fullPath: string,
+): string | undefined {
+	const pathParts = fullPath.split("/");
+	return pathParts.length > 1 ? pathParts.slice(0, -1).join("/") : undefined;
+}
+
+export function computeZarrSizeSummary(
+	shape: number[],
+	chunks: number[],
+	dtype: string,
+): {
+	totalSize: number;
+	chunkSize: number;
+	chunkCount: number;
+	totalSizeFormatted: string;
+	chunkSizeFormatted: string;
+} {
+	const dtypeSize = getDtypeSize(dtype);
+	const totalElements = calculateTotalElements(shape);
+	const chunkCount = calculateChunkCount(shape, chunks);
+	const chunkElements = calculateTotalElements(chunks);
+	const totalSize = totalElements * dtypeSize;
+	const chunkSize = chunkElements * dtypeSize;
+	return {
+		totalSize,
+		chunkSize,
+		chunkCount,
+		totalSizeFormatted: formatBytes(totalSize),
+		chunkSizeFormatted: formatBytes(chunkSize),
+	};
+}
+
+/** Placeholder coordinate arrays when dimension names are missing. */
+export function defaultFilledDimsForShape(shape: number[]): {
+	dimArrays: unknown[];
+	dimUnits: unknown[];
+} {
+	const dimArrays: unknown[] = [];
+	const dimUnits: unknown[] = [];
+	for (const dimLength of shape) {
+		dimArrays.push(Array(dimLength).fill(0));
+		dimUnits.push("Default");
+	}
+	return { dimArrays, dimUnits };
+}
+
+export function buildDimCoordinateResult(
+	dimNames: string[] | undefined,
+	shape: number[],
+	dimArrays: unknown[],
+	dimUnits: unknown[],
+): { dimNames: string[]; dimArrays: unknown[]; dimUnits: unknown[] } {
+	return {
+		dimNames: dimNames ?? Array(shape.length).fill("Default"),
+		dimArrays,
+		dimUnits,
+	};
+}
+
+/** NetCDF-style `_ARRAY_DIMENSIONS` or icechunk `dimensionNames` on cached meta. */
+export function getDimensionNamesFromMeta(
+	meta: Record<string, unknown>,
+): string[] | undefined {
+	const raw = meta._ARRAY_DIMENSIONS ?? meta.dimensionNames;
+	if (!raw) return undefined;
+	return raw as string[];
+}
 export function CompressArray(array: Float16Array, level: number){
     const uint8View = new Uint8Array(array.buffer);
     const compressed = gzipSync(uint8View, { level: level as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | undefined })

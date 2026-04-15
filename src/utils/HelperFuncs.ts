@@ -7,7 +7,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { decompressSync } from 'fflate';
 import { copyChunkToArray } from '@/components/zarr/utils';
 import { GetNCDims } from '@/components/zarr/NCGetters';
-import { GetZarrDims } from '@/components/zarr/ZarrGetters';
+import { GetZarrDims } from '@/components/zarr/ZarrLoaderLRU';
 
 export type TypedArray =
   | Float32Array | Float64Array
@@ -217,6 +217,7 @@ export function ParseExtent(dimUnits: string[], dimArrays: number[][]){
   }
 }
 
+
 interface TimeSeriesInfo{
   uv:THREE.Vector2,
   normal:THREE.Vector3
@@ -300,7 +301,6 @@ export function GetCurrentArray(overrideStore?:string){
     return typedArray
   }
 }
-
 
 export function TwoDecimals(val: number){
     return Math.round(val * 100)/100
