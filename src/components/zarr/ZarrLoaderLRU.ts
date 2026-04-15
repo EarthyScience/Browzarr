@@ -17,9 +17,7 @@ import {
     getIcechunkTitleDescription,
     getIcechunkAttributes,
     getIcechunkDims} from "./icechunk-store";
-import { GetNCArray, GetNCMetadata } from "./NCGetters";
-import { GetZarrArray } from "./ZarrGetters";
-import { DecompressArray } from "./utils";
+import { GetNCMetadata } from "./NCGetters";
 
 type GroupType = zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore> | IcechunkStore>;
 
@@ -119,35 +117,6 @@ export async function GetZarrDims(variable: string) {
     return getIcechunkDims(group as zarr.Group<IcechunkStore>, variable, initStore);
   }
   return getFetchStoreDims(group, variable, initStore);
-}
-
-export async function GetArray(newVariable?: string): Promise<{
-    data: Float16Array,
-    shape: number[],
-    dtype: string,
-    scalingFactor: number | null
-}>{
-    const {is4D, idx4D, initStore, variable:storedVariable, setStrides} = useGlobalStore.getState();
-    const {useNC} = useZarrStore.getState()
-    const {cache} = useCacheStore.getState();
-    const variable = newVariable ?? storedVariable;
-
-    //---- 1. Global Cache Check ----//
-    if (cache.has(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`)){
-        const thisChunk = cache.get(is4D ? `${initStore}_${idx4D}_${variable}` : `${initStore}_${variable}`)
-        if (thisChunk.compressed){
-            thisChunk.data = DecompressArray(thisChunk.data)
-        }
-        setStrides(thisChunk.stride)
-        return thisChunk;
-    }
-    if (useNC){
-        const output = GetNCArray(variable)
-        return output
-    } else{
-        const output = await GetZarrArray(variable)
-        return output
-    }
 }
 
 export async function GetAttributes(thisVariable? : string){

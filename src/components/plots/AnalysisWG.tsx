@@ -7,7 +7,7 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
-import { GetArray } from '../zarr/ZarrLoaderLRU';
+import { GetArray } from '../zarr/GetArray';
 import { CreateTexture } from '../textures';
 
 // The new centralized map for all operations
@@ -98,7 +98,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             }
 
             // --- 2. Dispatch GPU computation based on the operation ---
-            const inputArray = analysisMode ? analysisArray : GetCurrentArray(analysisStore)
+            const inputArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore)
             const shapeInfo = { shape: dataShape, strides};
             const kernelParams = { kernelDepth, kernelSize };
             // [1538316, 1481, 1]

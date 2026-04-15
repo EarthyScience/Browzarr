@@ -217,7 +217,6 @@ export function ParseExtent(dimUnits: string[], dimArrays: number[][]){
   }
 }
 
-
 interface TimeSeriesInfo{
   uv:THREE.Vector2,
   normal:THREE.Vector3
@@ -301,6 +300,7 @@ export function GetCurrentArray(overrideStore?:string){
     return typedArray
   }
 }
+
 
 export function TwoDecimals(val: number){
     return Math.round(val * 100)/100

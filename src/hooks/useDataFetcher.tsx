@@ -5,7 +5,8 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
 import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
-import { GetArray, GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
+import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
+import { GetArray } from '@/components/zarr/GetArray';
 import { ArrayToTexture } from '@/components/textures';
 
 export const useDataFetcher = () => {
