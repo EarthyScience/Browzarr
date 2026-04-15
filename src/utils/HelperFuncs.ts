@@ -317,7 +317,7 @@ export async function GetCurrentArrayWorkers(overrideStore?:string){
   }
   
   const sharedBuffer = new SharedArrayBuffer(arraySize * Float16Array.BYTES_PER_ELEMENT)
-
+  const hasZ = dataShape.length > 2;
   const [xStartIdx, xEndIdx] = currentChunks.x
   const [yStartIdx, yEndIdx] = currentChunks.y
   const [zStartIdx, zEndIdx] = currentChunks.z
@@ -343,7 +343,7 @@ export async function GetCurrentArrayWorkers(overrideStore?:string){
           chunkShape: chunk.shape,
           chunkStride: chunk.stride,
           chunkCoord: [z, y, x],
-          compressed
+          compressed,
         })
       }
     }
@@ -382,6 +382,7 @@ export async function GetCurrentArrayWorkers(overrideStore?:string){
         chunkStride: task.chunkStride,
         dataShape,
         strides,
+        hasZ,
         compressed:task.compressed,
         chunkCoord: task.chunkCoord,
         startCoords: [zStartIdx, yStartIdx, xStartIdx],
