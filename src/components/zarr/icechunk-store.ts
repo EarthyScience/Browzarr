@@ -186,7 +186,10 @@ export async function getIcechunkAttributes(
 	};
 
 	const meta = userDataJson.attributes ?? {};
-	useCacheStore.getState().cache.set(cacheName, meta);
+
+	const existing = useCacheStore.getState().cache.get(cacheName) ?? {};
+	useCacheStore.getState().cache.set(cacheName, { ...existing, ...meta });
+
 	return meta;
 }
 
