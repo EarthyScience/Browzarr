@@ -7,6 +7,7 @@ import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, RescaleArr
 import { NCFetcher, zarrFetcher } from "./dataFetchers";
 import { Convolve } from "../computation/webGPU";
 import { coarsen3DArray } from "@/utils/HelperFuncs";
+import pLimit from 'p-limit';
 
 export async function GetArray(varOveride?: string) {
     const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
@@ -56,6 +57,8 @@ export async function GetArray(varOveride?: string) {
 
     setStatus("Downloading...");
     setProgress(0);
+    const limit = pLimit(8)
+    const promises: Promise<void>[] = []
 
     for (let z = zDim.start; z < zDim.end; z++) {
         for (let y = yDim.start; y < yDim.end; y++) {
@@ -91,51 +94,60 @@ export async function GetArray(varOveride?: string) {
                             [yDim.start, xDim.start])
                     }
                 } else {
-                    const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D });
-                    
-                    const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
+                    promises.push(
+                        limit(()=>{
+                            return new Promise<void>(async (resolve) =>{
+                                const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D });
+                        
+                                const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
 
-                    let [chunkF16, newScalingFactor] = ToFloat16(rawData, scalingFactor);
-                    let thisShape = raw.shape;
-                    let chunkStride = raw.stride;
+                                let [chunkF16, newScalingFactor] = ToFloat16(rawData, scalingFactor);
+                                let thisShape = raw.shape;
+                                let chunkStride = raw.stride;
 
-                    if (coarsen) {
-                        chunkF16 = await Convolve(chunkF16, { shape: chunkShape, strides: chunkStride }, "Mean3D", { kernelSize, kernelDepth }) as Float16Array;
-                        thisShape = thisShape.map((dim, idx) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)));
-                        chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as any, kernelSize, kernelDepth, thisShape.reduce((a, b) => a * b, 1));
-                        chunkStride = calculateStrides(thisShape);
-                    }
+                                if (coarsen) {
+                                    chunkF16 = await Convolve(chunkF16, { shape: chunkShape, strides: chunkStride }, "Mean3D", { kernelSize, kernelDepth }) as Float16Array;
+                                    thisShape = thisShape.map((dim, idx) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)));
+                                    chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as any, kernelSize, kernelDepth, thisShape.reduce((a, b) => a * b, 1));
+                                    chunkStride = calculateStrides(thisShape);
+                                }
 
-                    if (newScalingFactor != null && newScalingFactor !== scalingFactor) {
-                        const delta = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor;
-                        RescaleArray(typedArray, delta);
-                        scalingFactor = newScalingFactor;
-                        for (const id of rescaleIDs) {
-                            const tempChunk = cache.get(`${cacheBase}_chunk_${id}`);
-                            tempChunk.scaling = scalingFactor;
-                            RescaleArray(tempChunk.data, delta);
-                            cache.set(`${cacheBase}_chunk_${id}`, tempChunk);
-                        }
-                    }
+                                if (newScalingFactor != null && newScalingFactor !== scalingFactor) {
+                                    const delta = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor;
+                                    RescaleArray(typedArray, delta);
+                                    scalingFactor = newScalingFactor;
+                                    for (const id of rescaleIDs) {
+                                        const tempChunk = cache.get(`${cacheBase}_chunk_${id}`);
+                                        tempChunk.scaling = scalingFactor;
+                                        RescaleArray(tempChunk.data, delta);
+                                        cache.set(`${cacheBase}_chunk_${id}`, tempChunk);
+                                    }
+                                }
 
-                    if (hasZ) {
-                        copyChunkToArray(chunkF16, thisShape.slice(-3), chunkStride.slice(-3) as any, typedArray, outputShape, destStride as any, [z, y, x], [zDim.start, yDim.start, xDim.start]);
-                    } else {
-                        copyChunkToArray2D(chunkF16, thisShape, chunkStride as any, typedArray, outputShape, destStride as any, [y, x], [yDim.start, xDim.start]);
-                    }
+                                if (hasZ) {
+                                    copyChunkToArray(chunkF16, thisShape.slice(-3), chunkStride.slice(-3) as any, typedArray, outputShape, destStride as any, [z, y, x], [zDim.start, yDim.start, xDim.start]);
+                                } else {
+                                    copyChunkToArray2D(chunkF16, thisShape, chunkStride as any, typedArray, outputShape, destStride as any, [y, x], [yDim.start, xDim.start]);
+                                }
 
-                    cache.set(cacheName, {
-                        data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-                        shape: chunkShape, stride: chunkStride,
-                        scaling: scalingFactor, compressed: compress, coarsened: coarsen,
-                        kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined }
-                    });
-                    rescaleIDs.push(chunkID);
+                                cache.set(cacheName, {
+                                    data: compress ? CompressArray(chunkF16, 7) : chunkF16,
+                                    shape: chunkShape, stride: chunkStride,
+                                    scaling: scalingFactor, compressed: compress, coarsened: coarsen,
+                                    kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined }
+                                });
+                                rescaleIDs.push(chunkID);
+                            
+                                setProgress(Math.round(iter++ / totalChunks * 100));
+                                resolve()
+                            })
+                        })
+                    )
                 }
-                setProgress(Math.round(iter++ / totalChunks * 100));
             }
-            }
+        }
     }
+    await Promise.all(promises)
     setProgress(0);
     return { data: typedArray, shape: outputShape, dtype, scalingFactor };
 }
