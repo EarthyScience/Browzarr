@@ -37,10 +37,8 @@ export async function GetZarrMetadata(
 ): Promise<ZarrMetadata[]> {
   const group = await groupStore;
   if (group.store instanceof IcechunkStore) {
-    console.log('Fetching metadata from icechunk store');
     return getIcechunkMetadata(group as zarr.Group<IcechunkStore>);
   }
-  console.log('Fetching metadata from fetch store');
   return getFetchStoreMetadata(
     group as zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore>>
   );
@@ -51,10 +49,8 @@ export async function GetTitleDescription(
 ): Promise<ZarrTitleDescription> {
   const group = await groupStore;
   if (group.store instanceof IcechunkStore) {
-    console.log('Fetching title and description from icechunk store');
     return getIcechunkTitleDescription(group as zarr.Group<IcechunkStore>);
   }
-  console.log('Fetching title and description from fetch store');
   return getFetchStoreTitleDescription(
     group as zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore>>
   );
@@ -86,12 +82,10 @@ export async function GetZarrDims(variable: string) {
   const { cache } = useCacheStore.getState();
   const { initStore } = useGlobalStore.getState();
   const cacheName = `${initStore}_${variable}_meta`;
-  console.log(`Getting dimensions for variable "${variable}" with cache key "${cacheName}"`);
   // Cache hit — same for both store types
   if (cache.has(cacheName)) {
     const meta = cache.get(cacheName);
     const dimNames = (meta._ARRAY_DIMENSIONS ?? meta.dimensionNames) as string[] | undefined;
-    console.log('Cache hit for dimensions:', { meta, dimNames });
     const dimArrays: unknown[] = [];
     const dimUnits: unknown[] = [];
 
@@ -113,7 +107,6 @@ export async function GetZarrDims(variable: string) {
   if (!group) throw new Error(`Failed to open store: ${initStore}`);
 
   if (group.store instanceof IcechunkStore) {
-    console.log('Fetching dimensions from icechunk store for variable:', variable);
     return getIcechunkDims(group as zarr.Group<IcechunkStore>, variable, initStore);
   }
   return getFetchStoreDims(group, variable, initStore);
