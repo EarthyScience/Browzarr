@@ -348,9 +348,9 @@ export async function GetCurrentArrayWorkers(overrideStore?:string){
       }
     }
   }
-  const POOL_COUNT = navigator.hardwareConcurrency;
+  const POOL_COUNT = navigator.hardwareConcurrency || 4;
   const workers = Array.from({length: Math.min(POOL_COUNT, tasks.length)}, () => 
-    new Worker(new URL('@/components/workers/chunkWorker.ts', import.meta.url), { type: 'module' })
+    new Worker(new URL('../components/workers/chunkWorker.ts', import.meta.url), { type: 'module' })
   )
 
   const terminateAll = () => workers.forEach(w => w.terminate())
