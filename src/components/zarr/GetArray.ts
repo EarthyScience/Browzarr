@@ -81,7 +81,7 @@ export async function GetArray(varOveride?: string) {
                 } else {
                     const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D });
                     
-                    const rawData = fillValue ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
+                    const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
 
                     let [chunkF16, newScalingFactor] = ToFloat16(rawData, scalingFactor);
                     let thisShape = raw.shape;
