@@ -3,10 +3,9 @@ import { useZarrStore } from "@/GlobalStates/ZarrStore";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { useErrorStore } from "@/GlobalStates/ErrorStore";
 import { calculateStrides } from "@/utils/HelperFuncs";
-import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, RescaleArray, copyChunkToArray2D } from "./utils";
+import { DecompressArray, copyChunkToArray, copyChunkToArray2D } from "./utils";
 import { NCFetcher, zarrFetcher } from "./dataFetchers";
-import { Convolve } from "../computation/webGPU";
-import { coarsen3DArray } from "@/utils/HelperFuncs";
+import { WorkerPool } from "../workers/workerPool";
 import pLimit from 'p-limit';
 
 export async function GetArray(varOveride?: string) {
@@ -53,13 +52,19 @@ export async function GetArray(varOveride?: string) {
     let scalingFactor: number | null = null;
     const totalChunks = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
     let iter = 1;
-    const rescaleIDs: string[] = [];
 
     setStatus("Downloading...");
     setProgress(0);
-    const limit = pLimit(8)
-    const promises: Promise<void>[] = []
 
+    const THREAD_COUNT = navigator.hardwareConcurrency ?? 4; 
+    const limit = pLimit(THREAD_COUNT)
+    const promises: Promise<void>[] = []
+    const pool = new WorkerPool(
+        THREAD_COUNT,
+        () => new Worker(new URL('../workers/fetchWorker.ts', import.meta.url))
+    );
+
+    const scales: Record<string, number> = {} // Need to go through here at the end and apply scaling if needed
     for (let z = zDim.start; z < zDim.end; z++) {
         for (let y = yDim.start; y < yDim.end; y++) {
             for (let x = xDim.start; x < xDim.end; x++) {
@@ -98,48 +103,37 @@ export async function GetArray(varOveride?: string) {
                         limit(()=>{
                             return new Promise<void>(async (resolve) =>{
                                 const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D });
-                        
-                                const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
-
-                                let [chunkF16, newScalingFactor] = ToFloat16(rawData, scalingFactor);
-                                let thisShape = raw.shape;
-                                let chunkStride = raw.stride;
-
-                                if (coarsen) {
-                                    chunkF16 = await Convolve(chunkF16, { shape: chunkShape, strides: chunkStride }, "Mean3D", { kernelSize, kernelDepth }) as Float16Array;
-                                    thisShape = thisShape.map((dim, idx) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)));
-                                    chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as any, kernelSize, kernelDepth, thisShape.reduce((a, b) => a * b, 1));
-                                    chunkStride = calculateStrides(thisShape);
-                                }
-
-                                if (newScalingFactor != null && newScalingFactor !== scalingFactor) {
-                                    const delta = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor;
-                                    RescaleArray(typedArray, delta);
-                                    scalingFactor = newScalingFactor;
-                                    for (const id of rescaleIDs) {
-                                        const tempChunk = cache.get(`${cacheBase}_chunk_${id}`);
-                                        tempChunk.scaling = scalingFactor;
-                                        RescaleArray(tempChunk.data, delta);
-                                        cache.set(`${cacheBase}_chunk_${id}`, tempChunk);
+                                const worker = await pool.acquire();
+                                worker.postMessage({
+                                    raw,
+                                    fillValue,
+                                    compress,
+                                    coarsen,
+                                    chunkShape,
+                                    kernel:{
+                                        kernelDepth, kernelSize
                                     }
-                                }
+                                }, [raw.data.buffer]);
 
-                                if (hasZ) {
-                                    copyChunkToArray(chunkF16, thisShape.slice(-3), chunkStride.slice(-3) as any, typedArray, outputShape, destStride as any, [z, y, x], [zDim.start, yDim.start, xDim.start]);
-                                } else {
-                                    copyChunkToArray2D(chunkF16, thisShape, chunkStride as any, typedArray, outputShape, destStride as any, [y, x], [yDim.start, xDim.start]);
-                                }
-
-                                cache.set(cacheName, {
-                                    data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-                                    shape: chunkShape, stride: chunkStride,
-                                    scaling: scalingFactor, compressed: compress, coarsened: coarsen,
-                                    kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined }
-                                });
-                                rescaleIDs.push(chunkID);
-                            
-                                setProgress(Math.round(iter++ / totalChunks * 100));
-                                resolve()
+                                worker.onmessage = (e) =>{
+                                    const {chunkF16, cacheData, newScalingFactor, shapeInfo} = e.data
+                                    const {thisShape, chunkStride} = shapeInfo
+                                    if (hasZ) {
+                                        copyChunkToArray(chunkF16, thisShape.slice(-3), chunkStride.slice(-3) as any, typedArray, outputShape, destStride as any, [z, y, x], [zDim.start, yDim.start, xDim.start]);
+                                    } else {
+                                        copyChunkToArray2D(chunkF16, thisShape, chunkStride as any, typedArray, outputShape, destStride as any, [y, x], [yDim.start, xDim.start]);
+                                    }
+                                    cache.set(cacheName, {
+                                        data: compress ? cacheData : chunkF16,
+                                        shape: chunkShape, stride: chunkStride,
+                                        scaling: newScalingFactor, compressed: compress, coarsened: coarsen,
+                                        kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined }
+                                    });
+                                    scales[cacheName] = newScalingFactor;
+                                    pool.release(worker);
+                                    setProgress(Math.round(iter++ / totalChunks * 100));
+                                    resolve()
+                                }  
                             })
                         })
                     )
@@ -148,6 +142,7 @@ export async function GetArray(varOveride?: string) {
         }
     }
     await Promise.all(promises)
+    pool.terminate()
     setProgress(0);
     return { data: typedArray, shape: outputShape, dtype, scalingFactor };
 }
