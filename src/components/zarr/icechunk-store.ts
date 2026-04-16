@@ -150,11 +150,12 @@ export async function getIcechunkTitleDescription(
 		const rootNode = allNodes.find((node) => node.path === "/");
 		if (!rootNode) return { title: null, description: fallback };
 
-		const userDataJson = JSON.parse(
-			new TextDecoder().decode(rootNode.userData),
-		) as {
-			attributes?: Record<string, unknown>;
-		};
+		const userDataJson =
+			rootNode.userData.length > 0
+				? (JSON.parse(new TextDecoder().decode(rootNode.userData)) as {
+						attributes?: Record<string, unknown>;
+					})
+				: {};
 		const attrs = userDataJson.attributes ?? {};
 		return {
 			title: attrs.title ? String(attrs.title) : null,
@@ -179,11 +180,12 @@ export async function getIcechunkAttributes(
 	if (!node)
 		throw new Error(`Variable ${variable} not found in icechunk store`);
 
-	const userDataJson = JSON.parse(
-		new TextDecoder().decode(node.userData),
-	) as {
-		attributes?: Record<string, unknown>;
-	};
+	const userDataJson =
+		node.userData.length > 0
+			? (JSON.parse(new TextDecoder().decode(node.userData)) as {
+					attributes?: Record<string, unknown>;
+				})
+			: {};
 
 	const meta = userDataJson.attributes ?? {};
 
@@ -220,11 +222,12 @@ export async function getIcechunkDims(
 		);
 	}
 
-	const userDataJson = JSON.parse(
-		new TextDecoder().decode(node.userData),
-	) as {
-		attributes?: Record<string, unknown>;
-	};
+	const userDataJson =
+		node.userData.length > 0
+			? (JSON.parse(new TextDecoder().decode(node.userData)) as {
+					attributes?: Record<string, unknown>;
+				})
+			: {};
 	const meta = userDataJson.attributes ?? {};
 
 	const shape = nodeData.shape.map((s) => s.arrayLength);
@@ -242,9 +245,8 @@ export async function getIcechunkDims(
 	if (dimNames) {
 		const dimResults = await Promise.all(
 			dimNames.map(async (dim) => {
-				const dimPath = variable.includes("/")
-					? `${variable.split("/").slice(0, -1).join("/")}/${dim}`
-					: dim;
+				const groupPath = groupPathFromRelativeName(variable);
+				const dimPath = groupPath ? `${groupPath}/${dim}` : dim;
 				const dimArray = await zarr
 					.open(group.resolve(dimPath), { kind: "array" })
 					.then((result) => zarr.get(result));
