@@ -8,7 +8,8 @@ import { decompressSync } from 'fflate';
 import { copyChunkToArray } from '@/components/zarr/utils';
 import { GetNCDims } from '@/components/zarr/NCGetters';
 import { GetZarrDims } from '@/components/zarr/ZarrGetters';
-
+import pLimit from 'p-limit';
+import { WorkerPool } from '@/components/workers/workerPool';
 export type TypedArray =
   | Float32Array | Float64Array
   | Int8Array | Uint8Array | Uint8ClampedArray
@@ -255,8 +256,8 @@ function DecompressArray(compressed : Uint8Array){
 	return floatArray
 }
 
-export function GetCurrentArray(overrideStore?:string){
-  const { variable, is4D, idx4D, initStore, strides, dataShape, setStatus }= useGlobalStore.getState()
+export async function GetCurrentArray(overrideStore?:string){
+  const { variable, is4D, idx4D, initStore, strides, dataShape }= useGlobalStore.getState()
   const { arraySize, currentChunks } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
@@ -264,9 +265,7 @@ export function GetCurrentArray(overrideStore?:string){
   if (cache.has(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)){
       const chunk = cache.get(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)
       const compressed = chunk.compressed
-      setStatus(compressed ? "Decompressing data..." : null)
       const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
-      setStatus(null)
 			return thisData
   }
   else{
@@ -275,6 +274,14 @@ export function GetCurrentArray(overrideStore?:string){
     const [yStartIdx, yEndIdx] = currentChunks.y
     const [zStartIdx, zEndIdx] = currentChunks.z
 
+    const THREAD_COUNT = navigator.hardwareConcurrency ?? 4;
+    const limit = pLimit(THREAD_COUNT)
+    const promises: Promise<void>[] = []
+    let pool = new WorkerPool(
+        THREAD_COUNT,
+        () => new Worker(new URL('../components/workers/fetchWorker.ts', import.meta.url))
+    );
+
     for (let z = zStartIdx; z < zEndIdx; z++) {
       for (let y = yStartIdx; y < yEndIdx; y++) {
         for (let x = xStartIdx; x < xEndIdx; x++) {
@@ -282,9 +289,36 @@ export function GetCurrentArray(overrideStore?:string){
           const cacheName = is4D ? `${store}_${variable}_${idx4D}_chunk_${chunkID}` : `${store}_${variable}_chunk_${chunkID}`
           const chunk = cache.get(cacheName)
           const compressed = chunk.compressed
-          const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
+          if (compressed){
+            promises.push(
+            limit(()=>{
+              return new Promise<void>(async (resolve) =>{
+                const worker = await pool.acquire()
+                worker.postMessage({
+                  data:chunk.data
+                },[chunk.data.buffer])
+
+                worker.onmessage = (e) =>{
+                  const {decompressed} = e.data
+                  chunk.data = decompressed
+                  cache.set(cacheName,chunk) // Reattach buffer sent to worker
+                  copyChunkToArray(
+                    decompressed,
+                    chunk.shape,
+                    chunk.stride,
+                    typedArray,
+                    dataShape,
+                    strides as [number, number, number], 
+                    [z, y, x], 
+                    [zStartIdx, yStartIdx, xStartIdx]
+                  )
+                }
+              })
+            })
+            )
+          }
           copyChunkToArray(
-            thisData,
+            chunk.data,
             chunk.shape,
             chunk.stride,
             typedArray,
@@ -296,7 +330,8 @@ export function GetCurrentArray(overrideStore?:string){
         }
       }
     }
-    setStatus(null)
+    await Promise.all(promises)
+    pool.terminate()
     return typedArray
   }
 }

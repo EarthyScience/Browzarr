@@ -93,6 +93,7 @@ export async function GetArray(varOveride?: string) {
                                     compress,
                                     coarsen,
                                     chunkShape,
+                                    scalingFactor,
                                     kernel:{
                                         kernelDepth, kernelSize
                                     }
@@ -100,6 +101,9 @@ export async function GetArray(varOveride?: string) {
 
                                 worker.onmessage = (e) =>{
                                     const {chunkF16, cacheData, newScalingFactor, shapeInfo} = e.data
+                                    if (newScalingFactor != null && newScalingFactor !== scalingFactor) {
+                                        scalingFactor = newScalingFactor;
+                                    }
                                     const { chunkStride} = shapeInfo
                                     cache.set(cacheName, {
                                         data: compress ? cacheData : chunkF16,
@@ -127,8 +131,9 @@ export async function GetArray(varOveride?: string) {
         () => new Worker(new URL('../workers/rescaleWorker.ts', import.meta.url))
     );
     //---- Scaling Function ----//
-    const maxScaling = Object.values(scales).reduce((prev, val) =>Number.isFinite(val) && (val > prev) ? val : prev, -Infinity)
-    if (Number.isFinite(maxScaling)){
+    const wasScaled = Object.values(scales).some((val)=>Number.isFinite(val))
+    if (wasScaled){
+        const maxScaling = Object.values(scales).reduce((prev, val) =>Number.isFinite(val) && (Math.abs(val) > Math.abs(prev)) ? val : prev, 0)
         scalingFactor = maxScaling;
         for (const [key, value] of Object.entries(scales)) {
             console.log(value, value != scalingFactor)
@@ -163,5 +168,6 @@ export async function GetArray(varOveride?: string) {
     }
     pool.terminate()
     setProgress(0);
-    return { data: GetCurrentArray(), shape: outputShape, dtype, scalingFactor };
+    const array = await  GetCurrentArray()
+    return { data: array, shape: outputShape, dtype, scalingFactor };
 }
