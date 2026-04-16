@@ -2,8 +2,7 @@ import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 import { useZarrStore } from "@/GlobalStates/ZarrStore";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { useErrorStore } from "@/GlobalStates/ErrorStore";
-import { calculateStrides } from "@/utils/HelperFuncs";
-import { DecompressArray, copyChunkToArray, copyChunkToArray2D } from "./utils";
+import { ArrayMinMax, calculateStrides, GetCurrentArray } from "@/utils/HelperFuncs";
 import { NCFetcher, zarrFetcher } from "./dataFetchers";
 import { WorkerPool } from "../workers/workerPool";
 import pLimit from 'p-limit';
@@ -47,8 +46,6 @@ export async function GetArray(varOveride?: string) {
     setArraySize(totalElements);
     setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); // These are used in GetCurrentArray() function
 
-    const typedArray = new Float16Array(totalElements);
-
     let scalingFactor: number | null = null;
     const totalChunks = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
     let iter = 1;
@@ -56,10 +53,10 @@ export async function GetArray(varOveride?: string) {
     setStatus("Downloading...");
     setProgress(0);
 
-    const THREAD_COUNT = navigator.hardwareConcurrency ?? 4; 
+    const THREAD_COUNT = useNC ? 4 : navigator.hardwareConcurrency ?? 4; // I cant explain why it makes sense to me to use fewer threads when NC
     const limit = pLimit(THREAD_COUNT)
     const promises: Promise<void>[] = []
-    const pool = new WorkerPool(
+    let pool = new WorkerPool(
         THREAD_COUNT,
         () => new Worker(new URL('../workers/fetchWorker.ts', import.meta.url))
     );
@@ -76,33 +73,19 @@ export async function GetArray(varOveride?: string) {
                                     cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) &&
                                     cachedChunk.kernel.kernelDepth === (coarsen ? kernelDepth : undefined);
 
-                if (isCacheValid) {
-                    const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice();
-                    if (hasZ) {
-                        copyChunkToArray(
-                            chunkData, 
-                            cachedChunk.shape, 
-                            cachedChunk.stride, 
-                            typedArray, 
-                            outputShape, 
-                            destStride as any, [z, y, x], 
-                            [zDim.start, yDim.start, xDim.start]
-                        )
-                    } else {
-                        copyChunkToArray2D(
-                            chunkData, 
-                            cachedChunk.shape, 
-                            cachedChunk.stride, 
-                            typedArray, 
-                            outputShape, 
-                            destStride as any, [y, x], 
-                            [yDim.start, xDim.start])
-                    }
-                } else {
+                if (isCacheValid) continue;
+                else {
+                    let raw:{
+                        data: Float32Array,
+                        shape:number[],
+                        stride:number[]
+                    };
+                    // If netCDF we can't do concurrent fetches. So we want to get the data -> pass it off -> immediately grab next data 
+                    if (useNC) raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D });
                     promises.push(
                         limit(()=>{
                             return new Promise<void>(async (resolve) =>{
-                                const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D });
+                                if (!useNC) raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D });
                                 const worker = await pool.acquire();
                                 worker.postMessage({
                                     raw,
@@ -117,12 +100,7 @@ export async function GetArray(varOveride?: string) {
 
                                 worker.onmessage = (e) =>{
                                     const {chunkF16, cacheData, newScalingFactor, shapeInfo} = e.data
-                                    const {thisShape, chunkStride} = shapeInfo
-                                    if (hasZ) {
-                                        copyChunkToArray(chunkF16, thisShape.slice(-3), chunkStride.slice(-3) as any, typedArray, outputShape, destStride as any, [z, y, x], [zDim.start, yDim.start, xDim.start]);
-                                    } else {
-                                        copyChunkToArray2D(chunkF16, thisShape, chunkStride as any, typedArray, outputShape, destStride as any, [y, x], [yDim.start, xDim.start]);
-                                    }
+                                    const { chunkStride} = shapeInfo
                                     cache.set(cacheName, {
                                         data: compress ? cacheData : chunkF16,
                                         shape: chunkShape, stride: chunkStride,
@@ -142,7 +120,48 @@ export async function GetArray(varOveride?: string) {
         }
     }
     await Promise.all(promises)
+    promises.length = 0; // Clear promise array
+    pool.terminate()
+    pool = new WorkerPool(
+        THREAD_COUNT,
+        () => new Worker(new URL('../workers/rescaleWorker.ts', import.meta.url))
+    );
+    //---- Scaling Function ----//
+    const maxScaling = Object.values(scales).reduce((prev, val) =>Number.isFinite(val) && (val > prev) ? val : prev, -Infinity)
+    if (Number.isFinite(maxScaling)){
+        scalingFactor = maxScaling;
+        for (const [key, value] of Object.entries(scales)) {
+            console.log(value, value != scalingFactor)
+            if (value != scalingFactor){
+                const chunkData = cache.get(key);
+                console.log(ArrayMinMax(chunkData.data))
+                promises.push(
+                    limit(()=>{
+                        return new Promise<void>(async (resolve) =>{
+                            const worker = await pool.acquire();
+                            const targetScale = scalingFactor as number;
+                            const delta = (value !== undefined && value !== null) ? value - targetScale : targetScale;
+                            console.log(`delta ${delta}`)
+                            worker.postMessage({
+                                data: chunkData.data,
+                                newScalingFactor: delta
+                            }, [chunkData.data.buffer]);
+                            worker.onmessage = (e) =>{
+                                const {data} = e.data
+                                console.log(data)
+                                chunkData.data = data
+                                cache.set(key,chunkData)
+                                pool.release(worker);
+                                resolve()
+                            }
+                        })
+                    })
+                )
+            }
+        }
+        await Promise.all(promises)
+    }
     pool.terminate()
     setProgress(0);
-    return { data: typedArray, shape: outputShape, dtype, scalingFactor };
+    return { data: GetCurrentArray(), shape: outputShape, dtype, scalingFactor };
 }
