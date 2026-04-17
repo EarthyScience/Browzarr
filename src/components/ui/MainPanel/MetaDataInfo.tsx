@@ -50,8 +50,11 @@ function ChunkIDs(slices:{xSlice: Slice, ySlice: Slice, zSlice: Slice}, chunkSha
   return ids
 }
 
-function HandleCustomSteps(e: string, chunkSize: number){
+function HandleCustomSteps(e: string, chunkSize: number, unrestricted: boolean = false){
     const newVal = parseInt(e);
+    if (unrestricted) {
+      return newVal;
+    }
     const chunkStep = Math.floor(newVal/chunkSize) * chunkSize
     return chunkStep
   }
@@ -64,7 +67,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     setIs4D: state.setIs4D, setIdx4D: state.setIdx4D, setVariable: state.setVariable,
     setTextureArrayDepths: state.setTextureArrayDepths,
   })))
-  const {maxSize, cache, setMaxSize} = useCacheStore(useShallow(state => ({maxSize: state.maxSize, cache:state.cache, setMaxSize:state.setMaxSize})))
+  const {maxSize, cache, setMaxSize, cacheVersion} = useCacheStore(useShallow(state => ({maxSize: state.maxSize, cache:state.cache, setMaxSize:state.setMaxSize, cacheVersion: state.cacheVersion})))
   const [cacheSize, setCacheSize] = useState(maxSize)
   const { zSlice, ySlice, xSlice, compress, coarsen, kernelSize, kernelDepth, setZSlice, setYSlice, setXSlice, ReFetch, setCompress, setCoarsen, setKernelSize, setKernelDepth } = useZarrStore(useShallow(state => ({
     zSlice: state.zSlice, ySlice: state.ySlice, xSlice: state.xSlice,
@@ -83,6 +86,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const [texCount, setTexCount] = useState(0)
   const [displaySpat, setDisplaySpat] = useState(String(kernelSize))
   const [displayDepth, setDisplayDepth] = useState(String(kernelDepth))
+  const [unrestrictedSliders, setUnrestrictedSliders] = useState(false)
 
   // ---- Meta Info ---- //
   const {dimArrays, dimNames, dimUnits} = meta.dimInfo
@@ -166,16 +170,25 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
       const sizeRatio = totalSteps / (meta.shape[0] * meta.shape[1]);
       return totalSize * sizeRatio;
     } else {
-      const chunkIndices = is4D ? [3, 2, 1] : [2, 1, 0];
-      const xChunksNeeded = Math.ceil(x.steps / meta.chunks[chunkIndices[0]]);
-      const yChunksNeeded = Math.ceil(y.steps / meta.chunks[chunkIndices[1]]);
-      const zChunksNeeded = Math.ceil(z.steps / meta.chunks[chunkIndices[2]]);
+      if (unrestrictedSliders) {
+        // For unrestricted mode, calculate based on actual steps selected, not chunks
+        const elementsPerChunk = meta.chunkSize / (is2D ? 4 : 4); // Assuming 4 bytes per element
+        const totalElements = z.steps * y.steps * x.steps;
+        const size = totalElements * 4; // 4 bytes per float32
+        return size / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1);
+      } else {
+        // Original chunk-based calculation
+        const chunkIndices = is4D ? [3, 2, 1] : [2, 1, 0];
+        const xChunksNeeded = Math.ceil(x.steps / meta.chunks[chunkIndices[0]]);
+        const yChunksNeeded = Math.ceil(y.steps / meta.chunks[chunkIndices[1]]);
+        const zChunksNeeded = Math.ceil(z.steps / meta.chunks[chunkIndices[2]]);
 
-      const size = xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize
-      
-      return size / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1)
+        const size = xChunksNeeded * yChunksNeeded * zChunksNeeded * meta.chunkSize
+        
+        return size / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1)
+      }
     }
-  }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D, coarsen, kernelSize, kernelDepth]);
+  }, [meta, zSlice, xSlice, ySlice, zLength, is3D, is4D, coarsen, kernelSize, kernelDepth, unrestrictedSliders]);
   
   const cachedSize = useMemo(()=>{
     const thisDtype = meta.dtype as string
@@ -223,7 +236,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     } else {
       setCached(false)
     }
-  },[meta, chunkIDs])
+  },[meta, chunkIDs, cacheVersion])
 
   return (
     <> 
@@ -310,6 +323,18 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
             {(hasTimeChunks || hasXChunks || hasYChunks )  && (
               <>
               <span className="block text-center text-xl font-bold">Trim Data</span>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <label htmlFor="unrestricted-sliders" className="text-sm"><b>Allow Fine-Grained Selection</b></label>
+                <Switch id="unrestricted-sliders" checked={unrestrictedSliders} onCheckedChange={e=> setUnrestrictedSliders(e)}/>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <BsFillQuestionCircleFill className="cursor-help"/>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[min(100%,16rem)] break-words whitespace-normal">
+                    Enable to select any value instead of being restricted to chunk boundaries
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <div className="grid gap-4 ">    
                 {hasTimeChunks && <div className="grid gap-1">
                   <div className="flex justify-center">
@@ -319,20 +344,20 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
                     min={0}
                     max={zLength}
                     value={[zSlice[0] ? zSlice[0] : 0, zSlice[1] ? zSlice[1] : zLength]}
-                    step={chunkShape[0]}
+                    step={unrestrictedSliders ? 1 : chunkShape[0]}
                     onValueChange={(values: number[]) => setZSlice([values[0], values[1]] as [number, number | null])}
                   />
                   <div className="grid grid-cols-2">
                     <span >Min: <b>{parseLoc(dimArrays[is4D ? 1 : 0]?.[zSlice[0]]?? null, dimUnits[is4D ? 1 : 0]?? null)}</b>  <br /> Index: 
                       <input className='w-[50px]' type="number" value={zSlice[0]} 
                         onChange={e=>setZSlice([parseInt(e.target.value), zSlice[1]])}
-                        onBlur={e=>setZSlice([HandleCustomSteps(e.target.value,chunkShape[0]), zSlice[1]])}
+                        onBlur={e=>setZSlice([HandleCustomSteps(e.target.value,chunkShape[0], unrestrictedSliders), zSlice[1]])}
                       />
                     </span>
                     <span >Max: <b>{parseLoc(dimArrays[is4D ? 1 : 0]?.[zSlice[1] ? zSlice[1]-1 : zLength-1]?? null, dimUnits[is4D ? 1 : 0]?? null)}</b><br /> Index: 
                       <input className='w-[50px]' type="number" value={zSlice[1] ? zSlice[1] : zLength} 
                         onChange={e=>setZSlice([zSlice[0], parseInt(e.target.value)])}
-                        onBlur={e=>setZSlice([zSlice[0], HandleCustomSteps(e.target.value,chunkShape[0])])}
+                        onBlur={e=>setZSlice([zSlice[0], HandleCustomSteps(e.target.value,chunkShape[0], unrestrictedSliders)])}
                       />
                     </span>
                   </div>
@@ -345,20 +370,20 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
                     min={0}
                     max={yLength}
                     value={[ySlice[0] ? ySlice[0] : 0, ySlice[1] ? ySlice[1] : yLength]}
-                    step={isFlat ? chunkShape[0] : chunkShape[1]}
+                    step={unrestrictedSliders ? 1 : (isFlat ? chunkShape[0] : chunkShape[1])}
                     onValueChange={(values: number[]) => setYSlice([values[0], values[1]] as [number, number | null])}
                   />
                   <div className="grid grid-cols-2">
                     <span >Min: <b>{parseLoc(dimArrays[isFlat ? 0 : shapeLength-2]?.[ySlice[0]]?? null, dimUnits[isFlat ? 0 : shapeLength-2]?? null)}</b>  <br /> Index: 
                       <input className='w-[50px]' type="number" value={ySlice[0]} 
                         onChange={e=>setYSlice([parseInt(e.target.value), ySlice[1]])}
-                        onBlur={e=>setYSlice([HandleCustomSteps(e.target.value,chunkShape[1]), ySlice[1]])}
+                        onBlur={e=>setYSlice([HandleCustomSteps(e.target.value, isFlat ? chunkShape[0] : chunkShape[1], unrestrictedSliders), ySlice[1]])}
                       />
                     </span>
                     <span >Max: <b>{parseLoc(dimArrays[isFlat ? 0 : shapeLength-2]?.[ySlice[1] ? ySlice[1]-1 : yLength-1]?? null, dimUnits[isFlat ? 0 : shapeLength-2]?? null)}</b><br /> Index: 
                       <input className='w-[50px]' type="number" value={ySlice[1] ? ySlice[1] : yLength} 
                         onChange={e=>setYSlice([ySlice[0] , parseInt(e.target.value)])}
-                        onBlur={e=>setYSlice([ySlice[0], HandleCustomSteps(e.target.value,chunkShape[1])])}
+                        onBlur={e=>setYSlice([ySlice[0], HandleCustomSteps(e.target.value, isFlat ? chunkShape[0] : chunkShape[1], unrestrictedSliders)])}
                       />
                     </span>
                   </div>
@@ -371,20 +396,20 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
                     min={0}
                     max={xLength}
                     value={[xSlice[0] ? xSlice[0] : 0, xSlice[1] ? xSlice[1] : xLength]}
-                    step={isFlat ? chunkShape[1] : chunkShape[2]}
+                    step={unrestrictedSliders ? 1 : (isFlat ? chunkShape[1] : chunkShape[2])}
                     onValueChange={(values: number[]) => setXSlice([values[0], values[1]] as [number, number | null])}
                   />
                   <div className="grid grid-cols-2">
                     <span >Min: <b>{parseLoc(dimArrays[isFlat ? 1 : shapeLength-1]?.[xSlice[0]]?? null, dimUnits[isFlat ? 1 : shapeLength-1]?? null)}</b>  <br /> Index: 
                       <input className='w-[50px]' type="number" value={xSlice[0]} 
                         onChange={e=>setXSlice([parseInt(e.target.value), xSlice[1]])}
-                        onBlur={e=>setXSlice([HandleCustomSteps(e.target.value,chunkShape[2]), xSlice[1]])}
+                        onBlur={e=>setXSlice([HandleCustomSteps(e.target.value, isFlat ? chunkShape[1] : chunkShape[2], unrestrictedSliders), xSlice[1]])}
                       />
                     </span>
                     <span >Max: <b>{parseLoc(dimArrays[isFlat ? 1 : shapeLength-1]?.[xSlice[1] ? xSlice[1]-1 : xLength-1]?? null, dimUnits[isFlat ? 1 : shapeLength-1]?? null)}</b><br /> Index: 
                       <input className='w-[50px]' type="number" value={xSlice[1] ? xSlice[1] : xLength} 
                         onChange={e=>setXSlice([xSlice[0] , parseInt(e.target.value)])}
-                        onBlur={e=>setXSlice([xSlice[0], HandleCustomSteps(e.target.value,chunkShape[2])])}
+                        onBlur={e=>setXSlice([xSlice[0], HandleCustomSteps(e.target.value, isFlat ? chunkShape[1] : chunkShape[2], unrestrictedSliders)])}
                       />
                     </span>
                   </div>
