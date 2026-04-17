@@ -132,23 +132,32 @@ export async function GetNCArray(variable: string){
     const totalChunksToLoad = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
     let iter = 1; // For progress bar
     const rescaleIDs: string[] = [] // These are the downloaded chunks that need to be rescaled
+    const cacheBase = rank > 3
+        ? `${initStore}_${variable}_${idx4D}`
+        : `${initStore}_${variable}`
+
+    // Collect all chunks that need fetching
+    const chunksToFetch: Array<{
+        chunkID: string;
+        cacheName: string;
+        coords: { z: number; y: number; x: number };
+    }> = [];
 
     setStatus("Downloading...");
     setProgress(0);
-    for (let z= zDim.start ; z < zDim.end ; z++){ // Iterate through chunks we need 
-        for (let y= yDim.start ; y < yDim.end ; y++){
-            for (let x= xDim.start ; x < xDim.end ; x++){
+
+    // First pass: collect chunks and check cache
+    for (let z = zDim.start; z < zDim.end; z++) {
+        for (let y = yDim.start; y < yDim.end; y++) {
+            for (let x = xDim.start; x < xDim.end; x++) {
                 const chunkID = `z${z}_y${y}_x${x}` // Unique ID for each chunk
-                const cacheBase = rank > 3
-                    ? `${initStore}_${variable}_${idx4D}`
-                    : `${initStore}_${variable}`
                 const cacheName = `${cacheBase}_chunk_${chunkID}`
                 const cachedChunk = cache.get(cacheName);
 
                 const isCacheValid = cachedChunk && 
                                     cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) && // If the data is coarsened. Make sure it's the same as current coarsen. Otherwise refetch
-                                    cachedChunk.kernel.kernelDepth === (coarsen ? kernelSize : undefined) ;
-                if (isCacheValid){
+                                    cachedChunk.kernel.kernelDepth === (coarsen ? kernelSize : undefined);
+                if (isCacheValid) {
                     const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed. Gemini thinks the .slice() helps with garbage collector as it doesn't maintain a reference to the original array
                     copyChunkToArray(
                         chunkData,
@@ -161,118 +170,161 @@ export async function GetNCArray(variable: string){
                         [zDim.start,yDim.start,xDim.start],
                     )
                     setProgress(Math.round(iter/totalChunksToLoad*100)) // Progress Bar
-                    iter ++;
-                }
-                else{
-                    const getStartsAndCounts = () => {
-                        const starts = new Array(rank).fill(0);
-                        const counts = new Array(rank).fill(1);
-                        if (rank > 3) { //When rank is 4 or 5. The first will always be depth. In the case of 5 that will only be if last dimension is vector variable. This case not handled yet
-                            starts[0] = idx4D; 
-                            counts[0] = 1;
-                        }
-                        starts[xDimIndex] = x * chunkShape[xDimIndex];
-                        counts[xDimIndex] = Math.min(chunkShape[xDimIndex], shape[xDimIndex] - starts[xDimIndex]);
-
-                        starts[yDimIndex] = y * chunkShape[yDimIndex];
-                        counts[yDimIndex] = Math.min(chunkShape[yDimIndex], shape[yDimIndex] - starts[yDimIndex]);
-
-                        if (zDimIndex >= 0) {
-                            starts[zDimIndex] = z * chunkShape[zDimIndex];
-                            counts[zDimIndex] = Math.min(chunkShape[zDimIndex], shape[zDimIndex] - starts[zDimIndex]);
-                        }
-                        return {starts, counts}
-                    }
-                    const { starts, counts } = getStartsAndCounts();
-                    let chunkArray = await ncModule.getSlicedVariableArray(variable, starts, counts)
-                    const chunkType = chunkArray.constructor.name
-                    const isInt = chunkType.includes("int") 
-                    let thisShape = counts
-                    let chunkStride = calculateStrides(thisShape)
-                    const filterValues = (array: TypedArray) =>{
-                        for (let i = 0; i < array.length; i++){
-                            if (array[i] === fillValue && !isInt) array[i] = NaN
-                            if (validRange){
-                                if (isInt){
-                                    if (array[i] < validRange.min) array[i] = validRange.min 
-                                    if (array[i] > validRange.max) array[i] = validRange.max
-                                } else{
-                                    if (array[i] < validRange.min || array[i] > validRange.max) array[i] = NaN
-                                }
-
-                            }
-                        }
-                    }
-                    const preScale = (array: TypedArray, scaler: number) =>{
-                        const tempArray = new Float32Array(array.length);
-                        for (let i = 0; i < array.length; i++){
-                            tempArray[i] = array[i] * scaler;
-                        }
-                        return tempArray;
-                    }
-                    filterValues(chunkArray)
-                    if (preScaling) chunkArray = preScale(chunkArray, preScaling)
-                    let [chunkF16, newScalingFactor] = ToFloat16(chunkArray, scalingFactor)
-                    if (coarsen){
-                        chunkF16 = await Convolve(chunkF16, {shape:chunkShape, strides:chunkStride}, "Mean3D", {kernelSize, kernelDepth}) as Float16Array
-                        thisShape = thisShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
-                        const newSize = thisShape.reduce((a: number, b: number) => a*b, 1)
-                        chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as [number, number, number], kernelSize, kernelDepth, newSize)
-                        chunkStride = calculateStrides(thisShape)
-                    }
-                    if (newScalingFactor != null 
-                        && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array. Not worried about shrinking values at the moment. 
-                        const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
-                        RescaleArray(typedArray, thisScaling)
-                        scalingFactor = newScalingFactor
-                        for (const id of rescaleIDs){ // Set new scalingFactor on the chunks
-                            const tempName = `${cacheBase}_chunk_${id}`
-                            const tempChunk = cache.get(tempName)
-                            tempChunk.scaling = scalingFactor
-                            RescaleArray(tempChunk.data, thisScaling)
-                            cache.set(tempName, tempChunk)
-                        }
-                    }
-                    if (hasZ)copyChunkToArray(
-                        chunkF16,
-                        chunkShape.slice(-3),
-                        chunkStride.slice(-3) as [number, number, number],
-                        typedArray,
-                        outputShape,
-                        destStride as [number, number, number],
-                        [z,y,x],
-                        [zDim.start,yDim.start,xDim.start],
-                    )
-                    else copyChunkToArray2D(
-                        chunkF16,
-                        chunkShape,
-                        chunkStride as [number, number],
-                        typedArray,
-                        outputShape,
-                        destStride as [number, number],
-                        [y,x],
-                        [yDim.start,xDim.start],
-                    )
-                    const cacheChunk = {
-                        data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-                        shape: chunkShape,
-                        stride: chunkStride,
-                        scaling: scalingFactor,
-                        compressed: compress,
-                        coarsened: coarsen,
-                        kernel: {
-                            kernelDepth: coarsen ? kernelDepth : undefined,
-                            kernelSize: coarsen ? kernelSize : undefined
-                        }
-                    }
-                    cache.set(cacheName,cacheChunk)
-                    setProgress(Math.round(iter/totalChunksToLoad*100)) // Progress Bar
-                    iter ++;
-                    rescaleIDs.push(chunkID)
+                    iter++;
+                } else {
+                    // Mark for fetching
+                    chunksToFetch.push({
+                        chunkID,
+                        cacheName,
+                        coords: { z, y, x }
+                    });
                 }
             }
         }
     }
+
+    // Batch fetch chunks in parallel
+    const batchSize = 10; // Adjust based on network conditions
+    for (let i = 0; i < chunksToFetch.length; i += batchSize) {
+        const batch = chunksToFetch.slice(i, i + batchSize);
+        
+        // Start all fetches in this batch
+        const fetchPromises = batch.map(chunk => {
+            const { z, y, x } = chunk.coords;
+            const starts = new Array(rank).fill(0);
+            const counts = new Array(rank).fill(1);
+            if (rank > 3) { //When rank is 4 or 5. The first will always be depth. In the case of 5 that will only be if last dimension is vector variable. This case not handled yet
+                starts[0] = idx4D; 
+                counts[0] = 1;
+            }
+            starts[xDimIndex] = x * chunkShape[xDimIndex];
+            counts[xDimIndex] = Math.min(chunkShape[xDimIndex], shape[xDimIndex] - starts[xDimIndex]);
+
+            starts[yDimIndex] = y * chunkShape[yDimIndex];
+            counts[yDimIndex] = Math.min(chunkShape[yDimIndex], shape[yDimIndex] - starts[yDimIndex]);
+
+            if (zDimIndex >= 0) {
+                starts[zDimIndex] = z * chunkShape[zDimIndex];
+                counts[zDimIndex] = Math.min(chunkShape[zDimIndex], shape[zDimIndex] - starts[zDimIndex]);
+            }
+            return ncModule.getSlicedVariableArray(variable, starts, counts);
+        });
+
+        // Wait for all in batch to complete
+        const results = await Promise.all(fetchPromises);
+
+        // Process results in order
+        for (let j = 0; j < batch.length; j++) {
+            const chunk = batch[j];
+            const { z, y, x } = chunk.coords;
+            let chunkArray = results[j];
+            
+            const chunkType = chunkArray.constructor.name
+            const isInt = chunkType.includes("int") 
+            let thisShape = [1, 1, 1]; // Will be set properly below
+            let chunkStride = calculateStrides(thisShape)
+            
+            // Recalculate shape for this specific chunk
+            const starts = new Array(rank).fill(0);
+            const counts = new Array(rank).fill(1);
+            if (rank > 3) {
+                starts[0] = idx4D; 
+                counts[0] = 1;
+            }
+            starts[xDimIndex] = x * chunkShape[xDimIndex];
+            counts[xDimIndex] = Math.min(chunkShape[xDimIndex], shape[xDimIndex] - starts[xDimIndex]);
+            starts[yDimIndex] = y * chunkShape[yDimIndex];
+            counts[yDimIndex] = Math.min(chunkShape[yDimIndex], shape[yDimIndex] - starts[yDimIndex]);
+            if (zDimIndex >= 0) {
+                starts[zDimIndex] = z * chunkShape[zDimIndex];
+                counts[zDimIndex] = Math.min(chunkShape[zDimIndex], shape[zDimIndex] - starts[zDimIndex]);
+            }
+            thisShape = counts;
+            chunkStride = calculateStrides(thisShape);
+
+            const filterValues = (array: TypedArray) =>{
+                for (let i = 0; i < array.length; i++){
+                    if (array[i] === fillValue && !isInt) array[i] = NaN
+                    if (validRange){
+                        if (isInt){
+                            if (array[i] < validRange.min) array[i] = validRange.min 
+                            if (array[i] > validRange.max) array[i] = validRange.max
+                        } else{
+                            if (array[i] < validRange.min || array[i] > validRange.max) array[i] = NaN
+                        }
+
+                    }
+                }
+            }
+            const preScale = (array: TypedArray, scaler: number) =>{
+                const tempArray = new Float32Array(array.length);
+                for (let i = 0; i < array.length; i++){
+                    tempArray[i] = array[i] * scaler;
+                }
+                return tempArray;
+            }
+            filterValues(chunkArray)
+            if (preScaling) chunkArray = preScale(chunkArray, preScaling)
+            let [chunkF16, newScalingFactor] = ToFloat16(chunkArray, scalingFactor)
+            if (coarsen){
+                chunkF16 = await Convolve(chunkF16, {shape:chunkShape, strides:chunkStride}, "Mean3D", {kernelSize, kernelDepth}) as Float16Array
+                thisShape = thisShape.map((dim: number, idx: number) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)))
+                const newSize = thisShape.reduce((a: number, b: number) => a*b, 1)
+                chunkF16 = coarsen3DArray(chunkF16, chunkShape, chunkStride as [number, number, number], kernelSize, kernelDepth, newSize)
+                chunkStride = calculateStrides(thisShape)
+            }
+            if (newScalingFactor != null 
+                && newScalingFactor != scalingFactor){ // If the scalingFactor has changed, need to rescale main array. Not worried about shrinking values at the moment. 
+                const thisScaling = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor
+                RescaleArray(typedArray, thisScaling)
+                scalingFactor = newScalingFactor
+                for (const id of rescaleIDs){ // Set new scalingFactor on the chunks
+                    const tempName = `${cacheBase}_chunk_${id}`
+                    const tempChunk = cache.get(tempName)
+                    tempChunk.scaling = scalingFactor
+                    RescaleArray(tempChunk.data, thisScaling)
+                    cache.set(tempName, tempChunk)
+                }
+            }
+            if (hasZ)copyChunkToArray(
+                chunkF16,
+                chunkShape.slice(-3),
+                chunkStride.slice(-3) as [number, number, number],
+                typedArray,
+                outputShape,
+                destStride as [number, number, number],
+                [z,y,x],
+                [zDim.start,yDim.start,xDim.start],
+            )
+            else copyChunkToArray2D(
+                chunkF16,
+                chunkShape,
+                chunkStride as [number, number],
+                typedArray,
+                outputShape,
+                destStride as [number, number],
+                [y,x],
+                [yDim.start,xDim.start],
+            )
+            const cacheChunk = {
+                data: compress ? CompressArray(chunkF16, 7) : chunkF16,
+                shape: chunkShape,
+                stride: chunkStride,
+                scaling: scalingFactor,
+                compressed: compress,
+                coarsened: coarsen,
+                kernel: {
+                    kernelDepth: coarsen ? kernelDepth : undefined,
+                    kernelSize: coarsen ? kernelSize : undefined
+                }
+            }
+            cache.set(chunk.cacheName, cacheChunk)
+            setProgress(Math.round(iter/totalChunksToLoad*100)) // Progress Bar
+            iter++;
+            rescaleIDs.push(chunk.chunkID)
+        }
+    }
+
     return {
         data: typedArray,
         shape: outputShape,
