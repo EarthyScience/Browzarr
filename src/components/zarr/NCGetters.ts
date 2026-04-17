@@ -119,18 +119,15 @@ export async function GetNCArray(variable: string){
         const yOverlap = calculateChunkOverlap(y, yDimIndex, yDim.sliceStart ?? 0, yDim.sliceEnd ?? yDim.chunkDim, yDim.chunkDim);
         const zOverlap = hasZ ? calculateChunkOverlap(z, zDimIndex, zDim.sliceStart ?? 0, zDim.sliceEnd ?? zDim.chunkDim, zDim.chunkDim) : 1;
 
-        // Priority based on data density (fraction of chunk that contains requested data)
-        const xDensity = xOverlap / xDim.chunkDim;
-        const yDensity = yOverlap / yDim.chunkDim;
-        const zDensity = hasZ ? zOverlap / zDim.chunkDim : 1;
+        // Priority based on total useful data volume (not density)
+        // This avoids penalizing chunks in sparse dimensions
+        const totalUsefulData = xOverlap * yOverlap * zOverlap;
 
-        const dataDensity = xDensity * yDensity * zDensity;
-
-        // Also consider chunk size (smaller chunks download faster)
+        // Also consider chunk size (smaller chunks may download faster)
         const chunkSize = xDim.chunkDim * yDim.chunkDim * (hasZ ? zDim.chunkDim : 1);
 
-        // Combine factors: prioritize high data density, then smaller chunks
-        return dataDensity * 1000 + (1 / chunkSize) * 100;
+        // Combine factors: prioritize high data volume, then smaller chunks for faster downloads
+        return totalUsefulData * 1000 + (1 / chunkSize) * 100;
     };
 
     // Setup Output Array
@@ -162,7 +159,7 @@ export async function GetNCArray(variable: string){
     // State for the loop
     let scalingFactor: number | null = null;
     const totalChunksToLoad = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
-    let iter = 1; // For progress bar
+    let processedChunks = 0;
     const rescaleIDs: string[] = [] // These are the downloaded chunks that need to be rescaled
     const cacheBase = rank > 3
         ? `${initStore}_${variable}_${idx4D}`
@@ -197,7 +194,21 @@ export async function GetNCArray(variable: string){
                 const isCacheValid = cachedChunk &&
                                     cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) && // If the data is coarsened. Make sure it's the same as current coarsen. Otherwise refetch
                                     cachedChunk.kernel.kernelDepth === (coarsen ? kernelSize : undefined);
-                if (!isCacheValid) {
+                if (isCacheValid) {
+                    const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice();
+                    copyChunkToArray(
+                        chunkData,
+                        cachedChunk.shape,
+                        cachedChunk.stride,
+                        typedArray,
+                        outputShape,
+                        destStride as [number, number, number],
+                        [z, y, x],
+                        [zDim.start, yDim.start, xDim.start],
+                    );
+                    processedChunks += 1;
+                    setProgress(Math.round(processedChunks / totalChunksToLoad * 100));
+                } else {
                     const priority = calculateChunkPriority(z, y, x);
                     const dataDensity = (xOverlap / xDim.chunkDim) * (yOverlap / yDim.chunkDim) * (hasZ ? zOverlap / zDim.chunkDim : 1);
 
@@ -213,18 +224,31 @@ export async function GetNCArray(variable: string){
         }
     }
 
-    // Sort chunks by priority (highest first) for optimal fetching order
-    chunksToFetch.sort((a, b) => b.priority - a.priority);
+    // Sort chunks by priority, then preserve contiguous disk order when priorities tie
+    chunksToFetch.sort((a, b) => {
+        const priorityDiff = b.priority - a.priority;
+        if (priorityDiff !== 0) return priorityDiff;
+        if (a.coords.z !== b.coords.z) return a.coords.z - b.coords.z;
+        if (a.coords.y !== b.coords.y) return a.coords.y - b.coords.y;
+        return a.coords.x - b.coords.x;
+    });
 
-    console.log(`Fetching ${chunksToFetch.length} NetCDF chunks (skipped ${totalChunksToLoad - chunksToFetch.length} cached/empty chunks)`);
+    const totalFetchChunks = chunksToFetch.length;
+    console.log(`Fetching ${totalFetchChunks} NetCDF chunks (skipped ${totalChunksToLoad - totalFetchChunks} cached/empty chunks)`);
+    if (totalFetchChunks > 0) {
+        console.log(`Priority range: ${chunksToFetch[0].priority.toFixed(2)} - ${chunksToFetch[totalFetchChunks - 1].priority.toFixed(2)}`);
+        console.log(`Top 3 fetch order: ${chunksToFetch.slice(0, 3).map(c => c.chunkID).join(', ')}`);
+    }
 
-    // Batch fetch chunks in parallel with dynamic batch sizing
-    const baseBatchSize = 10;
-    let currentBatchSize = baseBatchSize;
+    setProgress(0);
 
-    for (let i = 0; i < chunksToFetch.length; i += currentBatchSize) {
-        // Adjust batch size based on remaining chunks and priority
-        const remainingChunks = chunksToFetch.length - i;
+    // Use a bounded batch size to balance parallelism and contiguous chunk reads
+    const baseBatchSize = Math.min(10, totalFetchChunks || 10);
+    let currentBatchSize = Math.min(baseBatchSize, totalFetchChunks);
+
+    for (let i = 0; i < totalFetchChunks; i += currentBatchSize) {
+        // Adjust batch size based on remaining chunks
+        const remainingChunks = totalFetchChunks - i;
         currentBatchSize = Math.min(baseBatchSize, remainingChunks);
 
         // For high-priority chunks (first 20%), use smaller batches for better responsiveness
@@ -343,8 +367,7 @@ export async function GetNCArray(variable: string){
                 [zDim.start,yDim.start,xDim.start],
             )
             else copyChunkToArray2D(
-                chunkF16,
-                chunkShape,
+                chunkF16,                chunkShape,
                 chunkStride as [number, number],
                 typedArray,
                 outputShape,
@@ -365,8 +388,8 @@ export async function GetNCArray(variable: string){
                 }
             }
             cache.set(chunk.cacheName, cacheChunk)
-            setProgress(Math.round(iter/totalChunksToLoad*100)) // Progress Bar
-            iter++;
+            processedChunks += 1;
+            setProgress(Math.round(processedChunks / totalChunksToLoad * 100));
             rescaleIDs.push(chunk.chunkID)
         }
     }

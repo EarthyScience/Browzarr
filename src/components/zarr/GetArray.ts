@@ -63,18 +63,15 @@ export async function GetArray(varOveride?: string) {
         const yOverlap = calculateChunkOverlap(y, yDimIndex, yDim.sliceStart ?? 0, yDim.sliceEnd ?? yDim.chunkDim, yDim.chunkDim);
         const zOverlap = hasZ ? calculateChunkOverlap(z, zDimIndex, zDim.sliceStart ?? 0, zDim.sliceEnd ?? zDim.chunkDim, zDim.chunkDim) : 1;
 
-        // Priority based on data density (fraction of chunk that contains requested data)
-        const xDensity = xOverlap / xDim.chunkDim;
-        const yDensity = yOverlap / yDim.chunkDim;
-        const zDensity = hasZ ? zOverlap / zDim.chunkDim : 1;
+        // Priority based on total useful data volume (not density)
+        // This avoids penalizing chunks in sparse dimensions
+        const totalUsefulData = xOverlap * yOverlap * zOverlap;
 
-        const dataDensity = xDensity * yDensity * zDensity;
-
-        // Also consider chunk size (smaller chunks download faster)
+        // Also consider chunk size (smaller chunks may download faster)
         const chunkSize = xDim.chunkDim * yDim.chunkDim * (hasZ ? zDim.chunkDim : 1);
 
-        // Combine factors: prioritize high data density, then smaller chunks
-        return dataDensity * 1000 + (1 / chunkSize) * 100;
+        // Combine factors: prioritize high data volume, then smaller chunks for faster downloads
+        return totalUsefulData * 1000 + (1 / chunkSize) * 100;
     };
 
     let outputShape = hasZ ? [zDim.size, yDim.size, xDim.size] : [yDim.size, xDim.size];
@@ -94,7 +91,7 @@ export async function GetArray(varOveride?: string) {
 
     let scalingFactor: number | null = null;
     const totalChunks = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
-    let iter = 1;
+    let processedChunks = 0;
     const rescaleIDs: string[] = [];
     const cacheBase = rank > 3 ? `${initStore}_${targetVariable}_${idx4D}` : `${initStore}_${targetVariable}`;
 
@@ -143,25 +140,32 @@ export async function GetArray(varOveride?: string) {
         }
     }
 
-    // Sort chunks by priority (highest first) for optimal fetching order
-    chunksToFetch.sort((a, b) => b.priority - a.priority);
+    // Sort chunks by priority, but preserve natural disk-local chunk order when priorities are equal
+    chunksToFetch.sort((a, b) => {
+        const priorityDiff = b.priority - a.priority;
+        if (priorityDiff !== 0) return priorityDiff;
+        if (a.coords.z !== b.coords.z) return a.coords.z - b.coords.z;
+        if (a.coords.y !== b.coords.y) return a.coords.y - b.coords.y;
+        return a.coords.x - b.coords.x;
+    });
 
-    // Batch fetch chunks in parallel with dynamic batch sizing
-    // Use smaller batches for high-priority chunks, larger for lower priority
-    const baseBatchSize = 10;
-    let currentBatchSize = baseBatchSize;
+    const totalFetchChunks = chunksToFetch.length;
 
-    console.log(`Fetching ${chunksToFetch.length} chunks (skipped ${totalChunks - chunksToFetch.length} cached/empty chunks)`);
+    console.log(`Fetching ${totalFetchChunks} chunks (skipped ${totalChunks - totalFetchChunks} cached/empty chunks)`);
+    if (totalFetchChunks > 0) {
+        console.log(`Priority range: ${chunksToFetch[0].priority.toFixed(2)} - ${chunksToFetch[totalFetchChunks - 1].priority.toFixed(2)}`);
+        console.log(`Top 3 fetch order: ${chunksToFetch.slice(0, 3).map(c => c.chunkID).join(', ')}`);
+    }
 
-    for (let i = 0; i < chunksToFetch.length; i += currentBatchSize) {
-        // Adjust batch size based on remaining chunks and priority
-        const remainingChunks = chunksToFetch.length - i;
+    setProgress(0);
+
+    // Use a bounded batch size to balance parallelism and disk-local chunk reads
+    const baseBatchSize = Math.min(10, totalFetchChunks || 10);
+    let currentBatchSize = Math.min(baseBatchSize, totalFetchChunks);
+
+    for (let i = 0; i < totalFetchChunks; i += currentBatchSize) {
+        const remainingChunks = totalFetchChunks - i;
         currentBatchSize = Math.min(baseBatchSize, remainingChunks);
-
-        // For high-priority chunks (first 20%), use smaller batches for better responsiveness
-        if (i < chunksToFetch.length * 0.2) {
-            currentBatchSize = Math.min(5, currentBatchSize);
-        }
 
         const batch = chunksToFetch.slice(i, i + currentBatchSize);
 
@@ -220,10 +224,11 @@ export async function GetArray(varOveride?: string) {
             });
             rescaleIDs.push(chunk.chunkID);
             
-            setProgress(Math.round(iter++ / totalChunks * 100));
+            processedChunks += 1;
+            setProgress(Math.round(processedChunks / totalChunks * 100));
         }
     }
 
-    setProgress(0);
+    setProgress(100);
     return { data: typedArray, shape: outputShape, dtype, scalingFactor };
 }
