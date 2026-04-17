@@ -9,7 +9,7 @@ import { Convolve } from "../computation/webGPU";
 import { coarsen3DArray } from "@/utils/HelperFuncs";
 
 export async function GetArray(varOveride?: string) {
-    const { idx4D, initStore, variable, setProgress, setStrides } = useGlobalStore.getState();
+    const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
     const { compress, xSlice, ySlice, zSlice, coarsen, kernelSize, kernelDepth, fetchNC, setCurrentChunks, setArraySize } = useZarrStore.getState();
     const { cache } = useCacheStore.getState();
     const useNC = initStore.startsWith("local") && fetchNC // In case a user has NetCDF switched but then goes to a remote
@@ -87,6 +87,9 @@ export async function GetArray(varOveride?: string) {
     setArraySize(totalElements);
     setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); // These are used in GetCurrentArray() function
 
+    setStatus("Downloading...");
+    setProgress(0);
+
     const typedArray = new Float16Array(totalElements);
 
     let scalingFactor: number | null = null;
@@ -150,12 +153,6 @@ export async function GetArray(varOveride?: string) {
     });
 
     const totalFetchChunks = chunksToFetch.length;
-
-    console.log(`Fetching ${totalFetchChunks} chunks (skipped ${totalChunks - totalFetchChunks} cached/empty chunks)`);
-    if (totalFetchChunks > 0) {
-        console.log(`Priority range: ${chunksToFetch[0].priority.toFixed(2)} - ${chunksToFetch[totalFetchChunks - 1].priority.toFixed(2)}`);
-        console.log(`Top 3 fetch order: ${chunksToFetch.slice(0, 3).map(c => c.chunkID).join(', ')}`);
-    }
 
     setProgress(0);
 
@@ -230,5 +227,6 @@ export async function GetArray(varOveride?: string) {
     }
 
     setProgress(100);
+    setStatus(null);
     return { data: typedArray, shape: outputShape, dtype, scalingFactor };
 }

@@ -234,12 +234,6 @@ export async function GetNCArray(variable: string){
     });
 
     const totalFetchChunks = chunksToFetch.length;
-    console.log(`Fetching ${totalFetchChunks} NetCDF chunks (skipped ${totalChunksToLoad - totalFetchChunks} cached/empty chunks)`);
-    if (totalFetchChunks > 0) {
-        console.log(`Priority range: ${chunksToFetch[0].priority.toFixed(2)} - ${chunksToFetch[totalFetchChunks - 1].priority.toFixed(2)}`);
-        console.log(`Top 3 fetch order: ${chunksToFetch.slice(0, 3).map(c => c.chunkID).join(', ')}`);
-    }
-
     setProgress(0);
 
     // Use a bounded batch size to balance parallelism and contiguous chunk reads
