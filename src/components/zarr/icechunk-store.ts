@@ -1,228 +1,284 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: <explanation> */
-import * as zarr from "zarrita";
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
-import { useErrorStore, ZarrError } from "@/GlobalStates/ErrorStore";
-import { IcechunkStore } from "icechunk-js";
-import type { NodeSnapshot } from "icechunk-js";
-// import { Repository, HttpStorage } from "icechunk-js";
-import { ZarrMetadata, ZarrTitleDescription } from "./Interfaces";
-import { useCacheStore } from "@/GlobalStates/CacheStore";
-import { getDtypeSize, calculateTotalElements, calculateChunkCount, formatBytes } from "./utils";
-import { IcechunkStoreOptions } from "./Interfaces";
 
-export async function getIcechunkNodes(store: IcechunkStore): Promise<NodeSnapshot[]> {
-  if (!(store as any)._cachedNodes) {
-    (store as any)._cachedNodes = store.listNodes();
-  }
-  return await (store as any)._cachedNodes;
+import type { NodeSnapshot } from "icechunk-js";
+import { IcechunkStore } from "icechunk-js";
+import * as zarr from "zarrita";
+import { useCacheStore } from "@/GlobalStates/CacheStore";
+import { useErrorStore, ZarrError } from "@/GlobalStates/ErrorStore";
+import { useGlobalStore } from "@/GlobalStates/GlobalStore";
+// import { Repository, HttpStorage } from "icechunk-js";
+import {
+	IcechunkStoreOptions,
+	ZarrMetadata,
+	ZarrTitleDescription,
+} from "./Interfaces";
+import {
+	buildDimCoordinateResult,
+	computeZarrSizeSummary,
+	defaultFilledDimsForShape,
+	ensureLeadingSlash,
+	groupPathFromRelativeName,
+	isRemoteZarrStorePath,
+	resolveStoreRetryDefaults,
+	sleep,
+	stripLeadingSlash,
+} from "./utils";
+
+export async function getIcechunkNodes(
+	store: IcechunkStore,
+): Promise<NodeSnapshot[]> {
+	if (!(store as any)._cachedNodes) {
+		(store as any)._cachedNodes = store.listNodes();
+	}
+	return await (store as any)._cachedNodes;
 }
 
 export async function getIcechunkStore(
-  storePath: string,
-  options?: IcechunkStoreOptions
+	storePath: string,
+	options?: IcechunkStoreOptions,
 ): Promise<zarr.Group<IcechunkStore> | undefined> {
-  const maxRetries = options?.maxRetries ?? 10;
-  const retryDelay = options?.retryDelay ?? 500;
-  const fetchClient = options?.fetchClient;
- 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const icechunkStore = await IcechunkStore.open(storePath, {
-        branch: options?.branch ?? 'main',
-        formatVersion: 'v1',
-        ...(options?.tag      && { tag: options.tag }),
-        ...(options?.snapshot && { snapshot: options.snapshot }),
-        ...(fetchClient       && { fetchClient }),
-      });
-      // console.log(icechunkStore);
-      // const storage = new HttpStorage(storePath);
-      // console.log('Storage initialized:', storage);
-      // const repo = await Repository.open({ storage });
-      // console.log('Repository opened:', repo);
-      // const branches = await repo.listBranches();
-      // const tags = await repo.listTags(); 
-      // console.log('Branches:', branches);
-      // console.log('Tags:', tags);
+	const { maxRetries, retryDelay } = resolveStoreRetryDefaults(options);
+	const fetchClient = options?.fetchClient;
 
-      // Prime the node cache immediately after opening
-      (icechunkStore as any)._cachedNodes = icechunkStore.listNodes();
-      // console.log('icechunk nodes:', (icechunkStore as any)._cachedNodes);
-      const gs = await zarr.open(icechunkStore, { kind: 'group' });
-      useGlobalStore.setState({ status: null });
-      
-      return gs;
-    } catch (error) {
-      if (attempt === maxRetries) {
-        if (storePath.slice(0, 5) !== 'local') {
-          useErrorStore.getState().setError('zarrFetch');
-          useGlobalStore.setState({ status: null });
-        }
-        throw new ZarrError(`Failed to initialize store at ${storePath}`, error);
-      }
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
-    }
-  }
+	for (let attempt = 0; attempt <= maxRetries; attempt++) {
+		try {
+			const icechunkStore = await IcechunkStore.open(storePath, {
+				branch: options?.branch ?? "main",
+				formatVersion: "v1",
+				...(options?.tag && { tag: options.tag }),
+				...(options?.snapshot && { snapshot: options.snapshot }),
+				...(fetchClient && { fetchClient }),
+			});
+			// console.log(icechunkStore);
+			// const storage = new HttpStorage(storePath);
+			// console.log('Storage initialized:', storage);
+			// const repo = await Repository.open({ storage });
+			// console.log('Repository opened:', repo);
+			// const branches = await repo.listBranches();
+			// const tags = await repo.listTags();
+			// console.log('Branches:', branches);
+			// console.log('Tags:', tags);
+
+			// Prime the node cache immediately after opening
+			(icechunkStore as any)._cachedNodes = icechunkStore.listNodes();
+			// console.log('icechunk nodes:', (icechunkStore as any)._cachedNodes);
+			const gs = await zarr.open(icechunkStore, { kind: "group" });
+			useGlobalStore.setState({ status: null });
+
+			return gs;
+		} catch (error) {
+			if (attempt === maxRetries) {
+				if (isRemoteZarrStorePath(storePath)) {
+					useErrorStore.getState().setError("zarrFetch");
+					useGlobalStore.setState({ status: null });
+				}
+				throw new ZarrError(
+					`Failed to initialize store at ${storePath}`,
+					error,
+				);
+			}
+			await sleep(retryDelay);
+		}
+	}
 }
 
 export async function getIcechunkMetadata(
-  group: zarr.Group<IcechunkStore>
+	group: zarr.Group<IcechunkStore>,
 ): Promise<ZarrMetadata[]> {
-  const icechunkStore = group.store as IcechunkStore;
-  const variables: ZarrMetadata[] = [];
+	const icechunkStore = group.store as IcechunkStore;
+	const variables: ZarrMetadata[] = [];
 
-  const allNodes   = await getIcechunkNodes(icechunkStore);
-  const arrayNodes = allNodes.filter(node =>
-    (node.nodeData as { type: string }).type === 'array'
-  );
+	const allNodes = await getIcechunkNodes(icechunkStore);
+	const arrayNodes = allNodes.filter(
+		(node) => (node.nodeData as { type: string }).type === "array",
+	);
 
-  for (const node of arrayNodes) {
-    const nodeData = node.nodeData as {
-      type: 'array';
-      shape: { arrayLength: number; chunkLength: number }[];
-      dimensionNames: string[];
-    };
-    const userDataJson = node.userData.length > 0
-    ? JSON.parse(new TextDecoder().decode(node.userData)) as {
-      data_type?: string;
-      attributes?: Record<string, unknown>;
-    }
-    : {};
+	for (const node of arrayNodes) {
+		const nodeData = node.nodeData as {
+			type: "array";
+			shape: { arrayLength: number; chunkLength: number }[];
+			dimensionNames: string[];
+		};
+		const userDataJson =
+			node.userData.length > 0
+				? (JSON.parse(new TextDecoder().decode(node.userData)) as {
+						data_type?: string;
+						attributes?: Record<string, unknown>;
+					})
+				: {};
 
-    const shape  = nodeData.shape.map(s => s.arrayLength);
-    const chunks = nodeData.shape.map(s => s.chunkLength);
-    const dtype  = userDataJson.data_type ?? 'unknown';
+		const shape = nodeData.shape.map((s) => s.arrayLength);
+		const chunks = nodeData.shape.map((s) => s.chunkLength);
+		const dtype = userDataJson.data_type ?? "unknown";
 
-    const dtypeSize = getDtypeSize(dtype);
-    const totalElements = calculateTotalElements(shape);
-    const chunkCount = calculateChunkCount(shape, chunks);
-    const chunkElements = calculateTotalElements(chunks);
-    const totalSize = totalElements * dtypeSize;
-    const chunkSize = chunkElements * dtypeSize;
+		const {
+			totalSize,
+			chunkSize,
+			chunkCount,
+			totalSizeFormatted,
+			chunkSizeFormatted,
+		} = computeZarrSizeSummary(shape, chunks, dtype);
 
-    const fullPath = node.path.startsWith('/') ? node.path.substring(1) : node.path;
-    const pathParts = fullPath.split('/');
-    const groupPath = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : undefined;
+		const fullPath = stripLeadingSlash(node.path);
+		const groupPath = groupPathFromRelativeName(fullPath);
 
-    variables.push({
-      name: fullPath,
-      //@ts-expect-error: It doesn't know this exists
-      long_name: userDataJson.attributes?.long_name as string ?? undefined,
-      shape,
-      chunks,
-      dtype,
-      totalSize,
-      totalSizeFormatted: formatBytes(totalSize),
-      chunkCount,
-      chunkSize,
-      chunkSizeFormatted: formatBytes(chunkSize),
-      groupPath,
-    });
-  }
-  return variables;
+		variables.push({
+			name: fullPath,
+			//@ts-expect-error: It doesn't know this exists
+			long_name:
+				(userDataJson.attributes?.long_name as string) ?? undefined,
+			shape,
+			chunks,
+			dtype,
+			totalSize,
+			totalSizeFormatted,
+			chunkCount,
+			chunkSize,
+			chunkSizeFormatted,
+			groupPath,
+		});
+	}
+	return variables;
 }
 
 export async function getIcechunkTitleDescription(
-  group: zarr.Group<IcechunkStore>
+	group: zarr.Group<IcechunkStore>,
 ): Promise<ZarrTitleDescription> {
-  const fallback = useGlobalStore.getState().initStore;
-  try {
-    const allNodes = await getIcechunkNodes(group.store as IcechunkStore);
-    const rootNode = allNodes.find(node => node.path === '/');
-    if (!rootNode) return { title: null, description: fallback };
+	const fallback = useGlobalStore.getState().initStore;
+	try {
+		const allNodes = await getIcechunkNodes(group.store as IcechunkStore);
+		const rootNode = allNodes.find((node) => node.path === "/");
+		if (!rootNode) return { title: null, description: fallback };
 
-    const userDataJson = JSON.parse(new TextDecoder().decode(rootNode.userData)) as {
-      attributes?: Record<string, unknown>;
-    };
-    const attrs = userDataJson.attributes ?? {};
-    return {
-      title: attrs.title ? String(attrs.title) : null,
-      description: attrs.description ? String(attrs.description) : fallback,
-    };
-  } catch {
-    return { title: null, description: fallback };
-  }
+		const userDataJson =
+			rootNode.userData.length > 0
+				? (JSON.parse(new TextDecoder().decode(rootNode.userData)) as {
+						attributes?: Record<string, unknown>;
+					})
+				: {};
+		const attrs = userDataJson.attributes ?? {};
+		return {
+			title: attrs.title ? String(attrs.title) : null,
+			description: attrs.description
+				? String(attrs.description)
+				: fallback,
+		};
+	} catch {
+		return { title: null, description: fallback };
+	}
 }
 
 export async function getIcechunkAttributes(
-  group: zarr.Group<IcechunkStore>,
-  variable: string,
-  cacheName: string
+	group: zarr.Group<IcechunkStore>,
+	variable: string,
+	cacheName: string,
 ) {
-  const allNodes = await getIcechunkNodes(group.store as IcechunkStore);
-  const normalizedVariable = variable.startsWith('/') ? variable : `/${variable}`;
-  const node = allNodes.find(n => n.path === normalizedVariable);
+	const allNodes = await getIcechunkNodes(group.store as IcechunkStore);
+	const normalizedVariable = ensureLeadingSlash(variable);
+	const node = allNodes.find((n) => n.path === normalizedVariable);
 
-  if (!node) throw new Error(`Variable ${variable} not found in icechunk store`);
+	if (!node)
+		throw new Error(`Variable ${variable} not found in icechunk store`);
 
-  const userDataJson = JSON.parse(new TextDecoder().decode(node.userData)) as {
-    attributes?: Record<string, unknown>;
-  };
+	const userDataJson =
+		node.userData.length > 0
+			? (JSON.parse(new TextDecoder().decode(node.userData)) as {
+					attributes?: Record<string, unknown>;
+				})
+			: {};
 
-  const meta = userDataJson.attributes ?? {};
-  useCacheStore.getState().cache.set(cacheName, meta);
-  return meta;
+	const meta = userDataJson.attributes ?? {};
+
+	const existing = useCacheStore.getState().cache.get(cacheName) ?? {};
+	useCacheStore.getState().cache.set(cacheName, { ...existing, ...meta });
+
+	return meta;
 }
 
 export async function getIcechunkDims(
-  group: zarr.Group<IcechunkStore>,
-  variable: string,
-  initStore: string
+	group: zarr.Group<IcechunkStore>,
+	variable: string,
+	initStore: string,
 ) {
-  const { cache } = useCacheStore.getState();
-  const allNodes = await getIcechunkNodes(group.store as IcechunkStore);
-  const normalizedVariable = variable.startsWith('/') ? variable : `/${variable}`;
-  const node = allNodes.find(n => n.path === normalizedVariable);
-  const dimArrays: unknown[] = [];
-  const dimUnits: unknown[] = [];
+	const { cache } = useCacheStore.getState();
+	const allNodes = await getIcechunkNodes(group.store as IcechunkStore);
+	const normalizedVariable = ensureLeadingSlash(variable);
+	const node = allNodes.find((n) => n.path === normalizedVariable);
+	const dimArrays: unknown[] = [];
+	const dimUnits: unknown[] = [];
 
-  if (!node) throw new Error(`Variable ${variable} not found in icechunk store`);
+	if (!node)
+		throw new Error(`Variable ${variable} not found in icechunk store`);
 
-  const nodeData = node.nodeData as {
-    type: 'array';
-    shape: { arrayLength: number; chunkLength: number }[];
-    dimensionNames: string[];
-  };
+	const nodeData = node.nodeData as {
+		type: "array";
+		shape: { arrayLength: number; chunkLength: number }[];
+		dimensionNames: string[];
+	};
 
-  const userDataJson = JSON.parse(new TextDecoder().decode(node.userData)) as {
-    attributes?: Record<string, unknown>;
-  };
+	if (!nodeData.shape || !Array.isArray(nodeData.shape)) {
+		throw new Error(
+			`Invalid shape data for variable ${variable}: ${nodeData.shape}`,
+		);
+	}
 
-  const shape = nodeData.shape.map(s => s.arrayLength);
-  const dimNames = nodeData.dimensionNames?.length > 0 ? nodeData.dimensionNames : undefined;
+	const userDataJson =
+		node.userData.length > 0
+			? (JSON.parse(new TextDecoder().decode(node.userData)) as {
+					attributes?: Record<string, unknown>;
+				})
+			: {};
+	const meta = userDataJson.attributes ?? {};
 
-  cache.set(`${initStore}_${variable}_meta`, { 
-    ...userDataJson.attributes,
-    shape,
-    dimensionNames: dimNames ?? [], 
-  });
+	const shape = nodeData.shape.map((s) => s.arrayLength);
+	const dimNames =
+		nodeData.dimensionNames?.length > 0
+			? nodeData.dimensionNames
+			: undefined;
 
-  if (dimNames) {
-    for (const dim of dimNames) {
-      const dimPath = variable.includes('/')
-        ? `${variable.split('/').slice(0, -1).join('/')}/${dim}`
-        : dim;
-      const dimArray = await zarr.open(group.resolve(dimPath), { kind: 'array' })
-        .then(result => zarr.get(result));
-      const normalizedDimPath = dimPath.startsWith('/') ? dimPath : `/${dimPath}`;
-      const dimNode = allNodes.find(n => n.path === normalizedDimPath);
-      const dimMeta = dimNode
-        ? (JSON.parse(new TextDecoder().decode(dimNode.userData)) as { attributes?: Record<string, unknown> }).attributes ?? {}
-        : {};
-      cache.set(`${initStore}_${dim}`, dimArray.data);
-      cache.set(`${initStore}_${dim}_meta`, dimMeta);
-      dimArrays.push(dimArray.data);
-      dimUnits.push((dimMeta as Record<string, unknown>).units ?? null);
-    }
-  } else {
-    for (const dimLength of shape) {
-      dimArrays.push(Array(dimLength).fill(0));
-      dimUnits.push('Default');
-    }
-  }
+	cache.set(`${initStore}_${variable}_meta`, {
+		...meta,
+		shape,
+		dimensionNames: dimNames ?? [],
+	});
 
-  return {
-    dimNames: dimNames ?? Array(shape.length).fill('Default'),
-    dimArrays,
-    dimUnits,
-  };
+	if (dimNames) {
+		const dimResults = await Promise.all(
+			dimNames.map(async (dim) => {
+				const groupPath = groupPathFromRelativeName(variable);
+				const dimPath = groupPath ? `${groupPath}/${dim}` : dim;
+				const dimArray = await zarr
+					.open(group.resolve(dimPath), { kind: "array" })
+					.then((result) => zarr.get(result));
+				const normalizedDimPath = ensureLeadingSlash(dimPath);
+				const dimNode = allNodes.find(
+					(n) => n.path === normalizedDimPath,
+				);
+				const dimMeta =
+					dimNode && dimNode.userData.length > 0
+						? ((
+								JSON.parse(
+									new TextDecoder().decode(dimNode.userData),
+								) as { attributes?: Record<string, unknown> }
+							).attributes ?? {})
+						: {};
+				return { dim, data: dimArray.data, meta: dimMeta };
+			}),
+		);
+
+		for (const entry of dimResults) {
+			cache.set(`${initStore}_${entry.dim}`, entry.data);
+			cache.set(`${initStore}_${entry.dim}_meta`, entry.meta);
+			dimArrays.push(entry.data);
+			dimUnits.push(
+				(entry.meta as Record<string, unknown>).units ?? null,
+			);
+		}
+	} else {
+		const defaults = defaultFilledDimsForShape(shape);
+		dimArrays.push(...defaults.dimArrays);
+		dimUnits.push(...defaults.dimUnits);
+	}
+
+	return buildDimCoordinateResult(dimNames, shape, dimArrays, dimUnits);
 }

@@ -7,7 +7,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { decompressSync } from 'fflate';
 import { copyChunkToArray } from '@/components/zarr/utils';
 import { GetNCDims } from '@/components/zarr/NCGetters';
-import { GetZarrDims } from '@/components/zarr/ZarrGetters';
+import { GetZarrDims } from '@/components/zarr/ZarrLoaderLRU';
 import pLimit from 'p-limit';
 import { WorkerPool } from '@/components/workers/workerPool';
 export type TypedArray =
