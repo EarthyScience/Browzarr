@@ -67,7 +67,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     setIs4D: state.setIs4D, setIdx4D: state.setIdx4D, setVariable: state.setVariable,
     setTextureArrayDepths: state.setTextureArrayDepths,
   })))
-  const {maxSize, cache, setMaxSize} = useCacheStore(useShallow(state => ({maxSize: state.maxSize, cache:state.cache, setMaxSize:state.setMaxSize})))
+  const {maxSize, cache, setMaxSize, cacheVersion} = useCacheStore(useShallow(state => ({maxSize: state.maxSize, cache:state.cache, setMaxSize:state.setMaxSize, cacheVersion: state.cacheVersion})))
   const [cacheSize, setCacheSize] = useState(maxSize)
   const { zSlice, ySlice, xSlice, compress, coarsen, kernelSize, kernelDepth, setZSlice, setYSlice, setXSlice, ReFetch, setCompress, setCoarsen, setKernelSize, setKernelDepth } = useZarrStore(useShallow(state => ({
     zSlice: state.zSlice, ySlice: state.ySlice, xSlice: state.xSlice,
@@ -236,7 +236,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     } else {
       setCached(false)
     }
-  },[meta, chunkIDs])
+  },[meta, chunkIDs, cacheVersion])
 
   return (
     <> 
