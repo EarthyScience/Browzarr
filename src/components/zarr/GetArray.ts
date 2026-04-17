@@ -130,13 +130,13 @@ export async function GetArray(varOveride?: string) {
         THREAD_COUNT,
         () => new Worker(new URL('../workers/rescaleWorker.ts', import.meta.url))
     );
+
     //---- Scaling Function ----//
     const wasScaled = Object.values(scales).some((val)=>Number.isFinite(val))
     if (wasScaled){
-        const maxScaling = Object.values(scales).reduce((prev, val) =>Number.isFinite(val) && (Math.abs(val) > Math.abs(prev)) ? val : prev, 0)
+        const maxScaling = Object.values(scales).reduce((prev, val) => !Number.isFinite(val) ? 0 : (val > prev) ? val : prev, -Infinity)
         scalingFactor = maxScaling;
         for (const [key, value] of Object.entries(scales)) {
-            console.log(value, value != scalingFactor)
             if (value != scalingFactor){
                 const chunkData = cache.get(key);
                 console.log(ArrayMinMax(chunkData.data))
@@ -145,7 +145,8 @@ export async function GetArray(varOveride?: string) {
                         return new Promise<void>(async (resolve) =>{
                             const worker = await pool.acquire();
                             const targetScale = scalingFactor as number;
-                            const delta = (value !== undefined && value !== null) ? value - targetScale : targetScale;
+                            console.log(value, targetScale)
+                            const delta = targetScale - value 
                             console.log(`delta ${delta}`)
                             worker.postMessage({
                                 data: chunkData.data,
@@ -153,8 +154,9 @@ export async function GetArray(varOveride?: string) {
                             }, [chunkData.data.buffer]);
                             worker.onmessage = (e) =>{
                                 const {data} = e.data
-                                console.log(data)
+                                console.log(ArrayMinMax(data))
                                 chunkData.data = data
+                                chunkData.scalingFactor = targetScale
                                 cache.set(key,chunkData)
                                 pool.release(worker);
                                 resolve()
@@ -164,10 +166,11 @@ export async function GetArray(varOveride?: string) {
                 )
             }
         }
-        await Promise.all(promises)
     }
+    await Promise.all(promises)
     pool.terminate()
     setProgress(0);
     const array = await  GetCurrentArray()
+    console.log(ArrayMinMax(array))
     return { data: array, shape: outputShape, dtype, scalingFactor };
 }
