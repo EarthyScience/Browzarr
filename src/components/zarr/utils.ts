@@ -37,60 +37,60 @@ export function RescaleArray(array: Float16Array, scalingFactor: number){ // Res
 	}
 }
 
-// export function ToFloat16(array : Float32Array, scalingFactor?: number) : [Float16Array, number | null]{ 
-// 	const initialScale = scalingFactor ?? 0
-// 	let denominator =  Math.pow(10,initialScale); 
-// 	let multiplier = 1/denominator;
-// 	let maxVal = 0;
-// 	for (let i = 0; i < array.length; i++) {
-// 		const val = Math.abs(array[i] * multiplier);
-// 		if (val > maxVal && isFinite(val)) {
-//             maxVal = val;
-//         }
-// 	}
-// 	const additionalScaling = Math.ceil(Math.log10(maxVal/65504))
-// 	const needsRescale =
-// 		additionalScaling > 0 ||
-// 		additionalScaling <= -6
-// 		//I think this is complicating things. Because if it was already scaled then there should already by enough variance in the data it doesn't need to go further
-// 		// (scalingFactor && scalingFactor <= -6 && additionalScaling < 0) 
-// 	const newScalingFactor = needsRescale ?
-// 		additionalScaling + initialScale :
-// 		initialScale
-// 	denominator = Math.pow(10,newScalingFactor);
-// 	multiplier = 1/denominator;
-// 	const newArray = new Float16Array(array.length)
-// 	for (let i = 0; i < array.length; i++) {
-// 		newArray[i] = array[i] * multiplier;
-// 	}
-// 	return [newArray, newScalingFactor != 0 ? newScalingFactor : null]
-// }
-
-export function ToFloat16(array : Float32Array) : [Float16Array, number | null]{ 
-    let scalingFactor = 0;
+export function ToFloat16(array : Float32Array, scalingFactor?: number) : [Float16Array, number | null]{ 
+	const initialScale = scalingFactor ?? 0
+	let denominator =  Math.pow(10,initialScale); 
+	let multiplier = 1/denominator;
 	let maxVal = 0;
 	for (let i = 0; i < array.length; i++) {
-		const val = Math.abs(array[i]);
+		const val = Math.abs(array[i] * multiplier);
 		if (val > maxVal && isFinite(val)) {
             maxVal = val;
         }
 	}
-    const scaleCheck = Math.ceil(Math.log10(maxVal/65504))
-	if (scaleCheck > 0 || scaleCheck <= -6){
-        const newArray = new Float16Array(array.length)
-        scalingFactor = scaleCheck
-        const denominator = Math.pow(10,scalingFactor);
-        const multiplier = 1/denominator;
-        for (let i = 0; i < array.length; i++) {
-            newArray[i] = array[i] * multiplier;
-        }
-        return [newArray, scalingFactor]
-    } else {
-        const newArray = new Float16Array(array)
-        return [newArray, scalingFactor]
-    }
-	
+	const additionalScaling = Math.ceil(Math.log10(maxVal/65504))
+	const needsRescale =
+		additionalScaling > 0 ||
+		additionalScaling <= -6
+		//I think this is complicating things. Because if it was already scaled then there should already by enough variance in the data it doesn't need to go further
+		// (scalingFactor && scalingFactor <= -6 && additionalScaling < 0) 
+	const newScalingFactor = needsRescale ?
+		additionalScaling + initialScale :
+		initialScale
+	denominator = Math.pow(10,newScalingFactor);
+	multiplier = 1/denominator;
+	const newArray = new Float16Array(array.length)
+	for (let i = 0; i < array.length; i++) {
+		newArray[i] = array[i] * multiplier;
+	}
+	return [newArray, newScalingFactor != 0 ? newScalingFactor : null]
 }
+
+// export function ToFloat16(array : Float32Array) : [Float16Array, number | null]{ 
+//     let scalingFactor = 0;
+// 	let maxVal = 0;
+// 	for (let i = 0; i < array.length; i++) {
+// 		const val = Math.abs(array[i]);
+// 		if (val > maxVal && isFinite(val)) {
+//             maxVal = val;
+//         }
+// 	}
+//     const scaleCheck = Math.ceil(Math.log10(maxVal/65504))
+// 	if (scaleCheck > 0 || scaleCheck <= -6){
+//         const newArray = new Float16Array(array.length)
+//         scalingFactor = scaleCheck
+//         const denominator = Math.pow(10,scalingFactor);
+//         const multiplier = 1/denominator;
+//         for (let i = 0; i < array.length; i++) {
+//             newArray[i] = array[i] * multiplier;
+//         }
+//         return [newArray, scalingFactor]
+//     } else {
+//         const newArray = new Float16Array(array)
+//         return [newArray, scalingFactor]
+//     }
+	
+// }
 
 export function calculateTotalElements(shape: number[]): number {
     return shape.reduce((acc, val) => acc * val, 1);

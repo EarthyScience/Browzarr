@@ -48,15 +48,16 @@ function Num2String(value: number){
     }
 }
 
-const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Record<string, any>, valueScales: {maxVal: number, minVal:number}}) => {
-    const {colormap, variable, scalingFactor} = useGlobalStore(useShallow(state => ({
+const Colorbar = () => {
+    const {colormap, variable, scalingFactor, valueScales} = useGlobalStore(useShallow(state => ({
         colormap: state.colormap,
         variable: state.variable,
-        scalingFactor: state.scalingFactor
+        scalingFactor: state.scalingFactor, valueScales: state.valueScales
     })))
-    const {cScale, cOffset, setCScale, setCOffset} = usePlotStore(useShallow(state => ({ 
+    const {cScale, cOffset, stableMetadata:metadata, setCScale, setCOffset} = usePlotStore(useShallow(state => ({ 
         cScale: state.cScale,
         cOffset: state.cOffset,
+        stableMetadata: state.stableMetadata,
         setCScale: state.setCScale,
         setCOffset: state.setCOffset
     })))
@@ -67,7 +68,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         kernelOperation: state.kernelOperation,
         execute: state.execute
     })))
-
+    const units = metadata?.units
+    
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const scaling = useRef<boolean>(false)
     const prevPos = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/tooltip";
 import {Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover"
 import { Badge, Hider, Switch, Input, Button } from "@/components/ui"
+import DataFetcher from "@/components/zarr/DataFetcher";
 
 const formatArray = (value: string | number[]): string => {
   if (typeof value === 'string') return value
@@ -486,12 +487,12 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
           disabled={((is4D && idx4D == null) || smallCache)}
           onClick={() => {
             if (variable == meta.name){
-              ReFetch();
+              DataFetcher();
             }
             else{
               setMaxSize(cacheSize)
               setVariable(meta.name)
-              ReFetch();
+              DataFetcher();
             }
             setShowMeta(false)
             setOpenVariables(false)

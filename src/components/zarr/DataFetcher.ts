@@ -10,7 +10,7 @@ const DataFetcher = async () => {
     const {variable, is4D,  setIsFlat,
     setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
     setDimNames, setDimUnits, setPlotOn, setStatus} = useGlobalStore.getState()
-    const {plotType, setPlotType} = usePlotStore.getState()
+    const {plotType, textures, setPlotType} = usePlotStore.getState()
     const {zSlice, ySlice, xSlice} = useZarrStore.getState()
 
     if (variable == "Default") {
@@ -20,24 +20,26 @@ const DataFetcher = async () => {
 
     try {
         //---- Texture Cleanup ----//
+        if (textures.length) {
+            textures.forEach((tex) => {
+                tex.dispose();
+                if (tex.source) (tex.source as any).data = null;
+            });
+        }
         //----- TS Cleanup ----//
         useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
         //---- Set Plot Slicez ----//
-        const { setZSlice, setYSlice, setXSlice } = usePlotStore.getState();
-        setZSlice(zSlice);
-        setYSlice(ySlice);
-        setXSlice(xSlice);
-
+        usePlotStore.setState({zSlice, ySlice, xSlice});
         //---- Main Fetch ----//
         const result = await GetArray()
         const shape = result.shape.filter((val) => val != 1);
-        const [tempTexture, scaling] = ArrayToTexture({
+        const [tempTextures, scaling] = ArrayToTexture({
             data: result.data,
             shape
         });
-
+        usePlotStore.setState({textures:tempTextures})
         setValueScales(scaling as { maxVal: number; minVal: number });
-        useGlobalStore.getState().setScalingFactor(result.scalingFactor);
+        useGlobalStore.setState({scalingFactor:result.scalingFactor});
 
         const shapeLength = shape.length;
 

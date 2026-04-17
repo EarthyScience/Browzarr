@@ -2,6 +2,7 @@ import { create } from "zustand";
 import * as THREE from "three";
 
 type PlotState ={
+  textures: THREE.Data3DTexture[] | THREE.DataTexture[]
   plotType: string;
   pointSize: number;
   scalePoints: boolean;
@@ -64,8 +65,9 @@ type PlotState ={
   maskValue: number;
   cameraPosition: THREE.Vector3;
   disablePointScale: boolean;
-  stableMetadata: Record<string, any> | undefined;
+  stableMetadata: Record<string, any>;
 
+  setTextures: (textures: THREE.Data3DTexture[] | THREE.DataTexture[] ) => void;
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
   setValueRange: (valueRange: number[]) => void;
@@ -123,6 +125,7 @@ type PlotState ={
 }
 
 export const usePlotStore = create<PlotState>((set, get) => ({
+  textures:[],
   plotType: "volume", 
   pointSize: 5,
   scalePoints: false,
@@ -186,8 +189,9 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   borderWidth: 0.05,
   cameraPosition: new THREE.Vector3(0, 0, 5),
   disablePointScale: false,
-  stableMetadata: undefined,
+  stableMetadata: {},
 
+  setTextures: (textures) => set({textures}),
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
   setQuality: (quality) => set({ quality }),

@@ -149,30 +149,34 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 }
 
 const Plot = () => {
-  const {colormap, isFlat, DPR, valueScales, setIsFlat} = useGlobalStore(useShallow(state=>({
+  const {colormap, isFlat, DPR, setIsFlat} = useGlobalStore(useShallow(state=>({
     colormap: state.colormap, 
     isFlat: state.isFlat, 
     DPR: state.DPR, 
-    valueScales: state.valueScales,
     setIsFlat: state.setIsFlat, 
   })))
   const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
-  const {plotType, displaceSurface} = usePlotStore(useShallow(state => ({
+  const {plotType, displaceSurface, textures, setTextures} = usePlotStore(useShallow(state => ({
     plotType: state.plotType,
     displaceSurface: state.displaceSurface,
+    textures: state.textures, setTextures: state.setTextures
   })))
   const {analysisMode, useEditor} = useAnalysisStore(useShallow(state => ({
     analysisMode: state.analysisMode,
     useEditor: state.useEditor
   })))
+  const [show, setShow] = useState(false)
   const coords = useRef<number[]>([0,0])
   const val = useRef<number>(0)
 
   const [showInfo, setShowInfo] = useState<boolean>(false)
   const [loc, setLoc] = useState<number[]>([0,0])
   
-  //DATA LOADING
-  const {textures, show, stableMetadata, setTextures} = useDataFetcher()
+  useEffect(()=>{
+    if (textures.length > 0){
+      setShow(true)
+    }
+  },[textures])
   
   useEffect(()=>{ // Reset after analysis mode
     if(!analysisMode && show){
@@ -215,7 +219,7 @@ const Plot = () => {
       {keyFrameEditor && <KeyFrames />}
       <TransectNotice />
       <AnalysisWG setTexture={setTextures} />
-      {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
+      {show && <Colorbar />}
       <Nav />
       {(isFlat || plotType == "flat") && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }
       <ShaderEditor visible={useEditor}/>

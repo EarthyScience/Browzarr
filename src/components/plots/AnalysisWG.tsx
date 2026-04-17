@@ -42,7 +42,7 @@ const ShaderMap = {
 // Define a type for our operations based on the ShaderMap keys
 type Operation = keyof typeof ShaderMap;
 
-const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture[] | THREE.DataTexture[] | null>> }) => {
+const AnalysisWG = ({ setTexture, }: { setTexture: (texturestextures: THREE.Data3DTexture[] | THREE.DataTexture[]) => void }) => {
 
     // Global state hooks remain the same
     const { strides, dataShape, valueScales, isFlat, plotOn, setIsFlat, setStatus, setValueScales } = useGlobalStore(useShallow(state => ({
@@ -62,7 +62,6 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             executeCustom: state.executeCustom, setValueScalesOrig: state.setValueScalesOrig,
             setAnalysisArray: state.setAnalysisArray, setAnalysisMode: state.setAnalysisMode, customShader: state.customShader
         })));
-
     const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
         zSlice: state.zSlice,
         ySlice: state.ySlice,
