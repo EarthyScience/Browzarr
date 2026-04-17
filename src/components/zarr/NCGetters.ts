@@ -47,7 +47,7 @@ export async function GetNCMetadata(thisVariable? : string){
 }
 
 export async function GetNCArray(variable: string){
-    const {idx4D, initStore, setProgress, setStrides, setStatus} = useGlobalStore.getState();
+    const {idx4D, initStore, setProgress, setStrides} = useGlobalStore.getState();
 	const {compress, xSlice, ySlice, zSlice, ncModule, coarsen, kernelDepth, kernelSize, setCurrentChunks, setArraySize} = useZarrStore.getState()
 	const {cache} = useCacheStore.getState();
     const varInfo = await ncModule.getVariableInfo(variable)
@@ -86,20 +86,52 @@ export async function GetNCArray(variable: string){
     //---- Dimension Indices to Grab ----//
     const calcDim = (slice: [number, number | null], dimIdx: number) => {
         // Return an empty array if no zIdx
-        if (dimIdx < 0) return { start: 0, end: 1, size: 0, chunkDim: 1 };
+        if (dimIdx < 0) return { start: 0, end: 1, size: 0, chunkDim: 1, sliceStart: 0, sliceEnd: 1 };
         const dimSize = shape[dimIdx];
         const chunkDim = chunkShape[dimIdx];
-        const start = Math.floor(slice[0] / chunkDim);
-        const sliceEnd = slice[1] ?? dimSize; 
+        const sliceStart = slice[0];
+        const sliceEnd = slice[1] ?? dimSize;
+        const start = Math.floor(sliceStart / chunkDim);
         const end = Math.ceil(sliceEnd / chunkDim);
-        const size = sliceEnd - slice[0];
+        const size = sliceEnd - sliceStart;
         //Chunkdim is the shape of the chunk at that index
-        return { start, end, size, chunkDim };
+        return { start, end, size, chunkDim, sliceStart, sliceEnd };
     };
 
     const xDim = calcDim(xSlice, xDimIndex);
     const yDim = calcDim(ySlice, yDimIndex);
     const zDim = calcDim(zSlice, zDimIndex);
+
+    // Calculate actual data overlap for each chunk
+    const calculateChunkOverlap = (chunkCoord: number, dimIdx: number, sliceStart: number, sliceEnd: number, chunkDim: number) => {
+        const chunkStart = chunkCoord * chunkDim;
+        const chunkEnd = Math.min((chunkCoord + 1) * chunkDim, shape[dimIdx]);
+
+        const overlapStart = Math.max(chunkStart, sliceStart);
+        const overlapEnd = Math.min(chunkEnd, sliceEnd);
+
+        return Math.max(0, overlapEnd - overlapStart);
+    };
+
+    // Calculate priority score for chunk ordering (higher = more important)
+    const calculateChunkPriority = (z: number, y: number, x: number) => {
+        const xOverlap = calculateChunkOverlap(x, xDimIndex, xDim.sliceStart ?? 0, xDim.sliceEnd ?? xDim.chunkDim, xDim.chunkDim);
+        const yOverlap = calculateChunkOverlap(y, yDimIndex, yDim.sliceStart ?? 0, yDim.sliceEnd ?? yDim.chunkDim, yDim.chunkDim);
+        const zOverlap = hasZ ? calculateChunkOverlap(z, zDimIndex, zDim.sliceStart ?? 0, zDim.sliceEnd ?? zDim.chunkDim, zDim.chunkDim) : 1;
+
+        // Priority based on data density (fraction of chunk that contains requested data)
+        const xDensity = xOverlap / xDim.chunkDim;
+        const yDensity = yOverlap / yDim.chunkDim;
+        const zDensity = hasZ ? zOverlap / zDim.chunkDim : 1;
+
+        const dataDensity = xDensity * yDensity * zDensity;
+
+        // Also consider chunk size (smaller chunks download faster)
+        const chunkSize = xDim.chunkDim * yDim.chunkDim * (hasZ ? zDim.chunkDim : 1);
+
+        // Combine factors: prioritize high data density, then smaller chunks
+        return dataDensity * 1000 + (1 / chunkSize) * 100;
+    };
 
     // Setup Output Array
     let outputShape = hasZ 
@@ -136,57 +168,71 @@ export async function GetNCArray(variable: string){
         ? `${initStore}_${variable}_${idx4D}`
         : `${initStore}_${variable}`
 
-    // Collect all chunks that need fetching
+    // Collect all chunks that need fetching, sorted by priority
     const chunksToFetch: Array<{
         chunkID: string;
         cacheName: string;
         coords: { z: number; y: number; x: number };
+        priority: number;
+        dataDensity: number;
     }> = [];
-
-    setStatus("Downloading...");
-    setProgress(0);
 
     // First pass: collect chunks and check cache
     for (let z = zDim.start; z < zDim.end; z++) {
         for (let y = yDim.start; y < yDim.end; y++) {
             for (let x = xDim.start; x < xDim.end; x++) {
+                // Skip chunks with zero data overlap
+                const xOverlap = calculateChunkOverlap(x, xDimIndex, xDim.sliceStart, xDim.sliceEnd, xDim.chunkDim);
+                const yOverlap = calculateChunkOverlap(y, yDimIndex, yDim.sliceStart, yDim.sliceEnd, yDim.chunkDim);
+                const zOverlap = hasZ ? calculateChunkOverlap(z, zDimIndex, zDim.sliceStart, zDim.sliceEnd, zDim.chunkDim) : xDim.chunkDim;
+
+                if (xOverlap === 0 || yOverlap === 0 || zOverlap === 0) {
+                    continue; // Skip chunks that don't contain any requested data
+                }
+
                 const chunkID = `z${z}_y${y}_x${x}` // Unique ID for each chunk
                 const cacheName = `${cacheBase}_chunk_${chunkID}`
                 const cachedChunk = cache.get(cacheName);
 
-                const isCacheValid = cachedChunk && 
+                const isCacheValid = cachedChunk &&
                                     cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) && // If the data is coarsened. Make sure it's the same as current coarsen. Otherwise refetch
                                     cachedChunk.kernel.kernelDepth === (coarsen ? kernelSize : undefined);
-                if (isCacheValid) {
-                    const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice() // Decompress if needed. Gemini thinks the .slice() helps with garbage collector as it doesn't maintain a reference to the original array
-                    copyChunkToArray(
-                        chunkData,
-                        cachedChunk.shape,
-                        cachedChunk.stride,
-                        typedArray,
-                        outputShape,
-                        destStride as [number, number, number],
-                        [z,y,x],
-                        [zDim.start,yDim.start,xDim.start],
-                    )
-                    setProgress(Math.round(iter/totalChunksToLoad*100)) // Progress Bar
-                    iter++;
-                } else {
-                    // Mark for fetching
+                if (!isCacheValid) {
+                    const priority = calculateChunkPriority(z, y, x);
+                    const dataDensity = (xOverlap / xDim.chunkDim) * (yOverlap / yDim.chunkDim) * (hasZ ? zOverlap / zDim.chunkDim : 1);
+
                     chunksToFetch.push({
                         chunkID,
                         cacheName,
-                        coords: { z, y, x }
+                        coords: { z, y, x },
+                        priority,
+                        dataDensity
                     });
                 }
             }
         }
     }
 
-    // Batch fetch chunks in parallel
-    const batchSize = 10; // Adjust based on network conditions
-    for (let i = 0; i < chunksToFetch.length; i += batchSize) {
-        const batch = chunksToFetch.slice(i, i + batchSize);
+    // Sort chunks by priority (highest first) for optimal fetching order
+    chunksToFetch.sort((a, b) => b.priority - a.priority);
+
+    console.log(`Fetching ${chunksToFetch.length} NetCDF chunks (skipped ${totalChunksToLoad - chunksToFetch.length} cached/empty chunks)`);
+
+    // Batch fetch chunks in parallel with dynamic batch sizing
+    const baseBatchSize = 10;
+    let currentBatchSize = baseBatchSize;
+
+    for (let i = 0; i < chunksToFetch.length; i += currentBatchSize) {
+        // Adjust batch size based on remaining chunks and priority
+        const remainingChunks = chunksToFetch.length - i;
+        currentBatchSize = Math.min(baseBatchSize, remainingChunks);
+
+        // For high-priority chunks (first 20%), use smaller batches for better responsiveness
+        if (i < chunksToFetch.length * 0.2) {
+            currentBatchSize = Math.min(5, currentBatchSize);
+        }
+
+        const batch = chunksToFetch.slice(i, i + currentBatchSize);
         
         // Start all fetches in this batch
         const fetchPromises = batch.map(chunk => {
