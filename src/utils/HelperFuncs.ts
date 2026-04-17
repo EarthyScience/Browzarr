@@ -274,7 +274,7 @@ export async function GetCurrentArray(overrideStore?:string){
     const [yStartIdx, yEndIdx] = currentChunks.y
     const [zStartIdx, zEndIdx] = currentChunks.z
 
-    const THREAD_COUNT = navigator.hardwareConcurrency ?? 4;
+    const THREAD_COUNT = navigator.hardwareConcurrency ? navigator.hardwareConcurrency - 1 : 4;
     const limit = pLimit(THREAD_COUNT)
     const promises: Promise<void>[] = []
     let pool = new WorkerPool(

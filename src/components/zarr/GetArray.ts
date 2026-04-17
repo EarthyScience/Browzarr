@@ -8,6 +8,7 @@ import { WorkerPool } from "../workers/workerPool";
 import pLimit from 'p-limit';
 
 export async function GetArray(varOveride?: string) {
+    console.log("Top Level Call")
     const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
     const { compress, xSlice, ySlice, zSlice, coarsen, kernelSize, kernelDepth, fetchNC, setCurrentChunks, setArraySize } = useZarrStore.getState();
     const { cache } = useCacheStore.getState();
@@ -73,7 +74,10 @@ export async function GetArray(varOveride?: string) {
                                     cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) &&
                                     cachedChunk.kernel.kernelDepth === (coarsen ? kernelDepth : undefined);
 
-                if (isCacheValid) continue;
+                if (isCacheValid){
+                    scales[cacheName] = cachedChunk.scaling; 
+                    continue;
+                } 
                 else {
                     let raw:{
                         data: Float32Array,
@@ -101,9 +105,6 @@ export async function GetArray(varOveride?: string) {
 
                                 worker.onmessage = (e) =>{
                                     const {chunkF16, cacheData, newScalingFactor, shapeInfo} = e.data
-                                    if (newScalingFactor != null && newScalingFactor !== scalingFactor) {
-                                        scalingFactor = newScalingFactor;
-                                    }
                                     const { chunkStride} = shapeInfo
                                     cache.set(cacheName, {
                                         data: compress ? cacheData : chunkF16,
@@ -124,40 +125,38 @@ export async function GetArray(varOveride?: string) {
         }
     }
     await Promise.all(promises)
-    promises.length = 0; // Clear promise array
     pool.terminate()
     pool = new WorkerPool(
         THREAD_COUNT,
         () => new Worker(new URL('../workers/rescaleWorker.ts', import.meta.url))
     );
-
-    //---- Scaling Function ----//
-    const wasScaled = Object.values(scales).some((val)=>Number.isFinite(val))
+    const scalePromises: Promise<void>[] = []
+    // //---- Scaling Function ----//
+    const wasScaled = Object.values(scales).some((val)=>Math.abs(val) > 0)
     if (wasScaled){
-        const maxScaling = Object.values(scales).reduce((prev, val) => !Number.isFinite(val) ? 0 : (val > prev) ? val : prev, -Infinity)
+        const maxScaling = Object.values(scales).reduce((prev, val) => (val > prev) ? val : prev, -Infinity)
         scalingFactor = maxScaling;
         for (const [key, value] of Object.entries(scales)) {
             if (value != scalingFactor){
                 const chunkData = cache.get(key);
                 console.log(ArrayMinMax(chunkData.data))
-                promises.push(
+                scalePromises.push(
                     limit(()=>{
                         return new Promise<void>(async (resolve) =>{
                             const worker = await pool.acquire();
                             const targetScale = scalingFactor as number;
-                            console.log(value, targetScale)
                             const delta = targetScale - value 
-                            console.log(`delta ${delta}`)
                             worker.postMessage({
                                 data: chunkData.data,
                                 newScalingFactor: delta
                             }, [chunkData.data.buffer]);
                             worker.onmessage = (e) =>{
                                 const {data} = e.data
-                                console.log(ArrayMinMax(data))
+                                console.log(data)
                                 chunkData.data = data
                                 chunkData.scalingFactor = targetScale
                                 cache.set(key,chunkData)
+                                scales[key] = targetScale
                                 pool.release(worker);
                                 resolve()
                             }
@@ -167,7 +166,7 @@ export async function GetArray(varOveride?: string) {
             }
         }
     }
-    await Promise.all(promises)
+    await Promise.all(scalePromises)
     pool.terminate()
     setProgress(0);
     const array = await  GetCurrentArray()

@@ -32,7 +32,7 @@ self.onmessage = async (e: MessageEvent<InputData>) => {
     } = e.data
     const {kernelSize, kernelDepth} = kernel
     const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
-    let [chunkF16, newScalingFactor] = ToFloat16(rawData, scalingFactor);
+    let [chunkF16, newScalingFactor] = ToFloat16(rawData);
     let thisShape = raw.shape;
     let chunkStride = raw.stride;
     if (coarsen) {

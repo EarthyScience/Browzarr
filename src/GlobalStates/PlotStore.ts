@@ -64,6 +64,7 @@ type PlotState ={
   maskValue: number;
   cameraPosition: THREE.Vector3;
   disablePointScale: boolean;
+  stableMetadata: Record<string, any> | undefined;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -185,6 +186,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   borderWidth: 0.05,
   cameraPosition: new THREE.Vector3(0, 0, 5),
   disablePointScale: false,
+  stableMetadata: undefined,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
