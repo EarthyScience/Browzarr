@@ -13,7 +13,7 @@ import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2ra
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { GetFrag } from '../textures';
-
+import { SquareMeshes } from './TransectMeshes';
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
   setShowInfo: React.Dispatch<React.SetStateAction<boolean>>;
@@ -138,7 +138,9 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
               const tsID = `${dimCoords[0]}_${dimCoords[1]}`
               const tsObj = {
                 color:evaluate_cmap(getColorIdx()/10,"Paired"),
-                data:tempTS
+                data:tempTS,
+                normal,
+                uv: tsUV,
               }
               incrementColorIdx();
               updateTimeSeries({ [tsID] : tsObj})
@@ -203,6 +205,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
 
   return (
     <>
+    <SquareMeshes />
     <mesh 
       material={shaderMaterial} 
       geometry={geometry} 

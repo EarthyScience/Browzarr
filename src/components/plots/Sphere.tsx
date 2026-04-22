@@ -8,7 +8,7 @@ import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { GetFrag, GetVert } from '../textures';
-
+import { SquareMeshes } from './TransectMeshes';
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -153,7 +153,9 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         const tsID = `${dimCoords[0]}_${dimCoords[1]}`
         const tsObj = {
           color:evaluate_cmap(getColorIdx()/10,"Paired"),
-          data:tempTS
+          data:tempTS,
+          normal,
+          uv: tsUV,
         }
         incrementColorIdx();
         updateTimeSeries({ [tsID] : tsObj})
@@ -177,6 +179,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
 
   return (
     <>
+    <SquareMeshes />
     <mesh renderOrder={1} geometry={geometry} material={shaderMaterial} onClick={e=>selectTS && HandleTimeSeries(e)}/>
     <mesh renderOrder={0} geometry={geometry} material={backMaterial} />
     </>
