@@ -492,6 +492,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
 
+        ${isNaNFunc}
         @compute @workgroup_size(16, 16, 1)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
@@ -615,6 +616,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
 
+        ${isNaNFunc}
         @compute @workgroup_size(16, 16, 1)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
@@ -696,6 +698,8 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(1) var<storage, read> secondData: array<${precision}>;
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
+
+        ${isNaNFunc}
 
         @compute @workgroup_size(16, 16, 1)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -950,6 +954,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
 
+        ${isNaNFunc}
         @compute @workgroup_size(4, 4, 4)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
@@ -1055,7 +1060,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(1) var<storage, read> secondData: array<${precision}>;
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
-
+        ${isNaNFunc}
         @compute @workgroup_size(4, 4, 4)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
@@ -1169,7 +1174,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(1) var<storage, read> secondData: array<${precision}>;
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
-
+        ${isNaNFunc}
         @compute @workgroup_size(4, 4, 4)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
@@ -1411,7 +1416,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(0) var<storage, read> inputData: array<${precision}>;
         @group(0) @binding(1) var<storage, read_write> outputData: array<f32>;
         @group(0) @binding(2) var<uniform> params: Params;
-
+        ${isNaNFunc}
         @compute @workgroup_size(4, 4, 4)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
