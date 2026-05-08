@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react'
+import React, {useEffect, useMemo} from 'react'
 import * as THREE from 'three'
 import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
@@ -39,14 +39,14 @@ export const SquareMeshes = () => {
 		const yScale = circum/2/ySteps * normedYExtent;
 		const isSphere = plotType == "sphere";
 		let xScale = circum/xSteps * normedXExtent;
-		const aspect = shape.x/shape.y;
+		const aspect = shape.y/shape.x;
 
 		for (const [tsID, tsObj] of Object.entries(timeSeries)){
 			const {normal, uv, color} = tsObj
-			if (normal.z != 1) break; // Flat versions only do time. Skip all of these.
+			if (normal.z != 1) break; // It should never be, but just in case, flat versions only do time. Skip all of these.
 			let geometry = new THREE.PlaneGeometry(xScale, yScale)
 			// Color from 0-255 to 0-1 range
-			const thisColor = color.map((c: number) => Math.pow((c/255), 2.2)) // Gamma correct the color for better visibility
+			const thisColor = color.map((c: number) => Math.pow((c/255), 2.2)) // Gamma correct the color
 			const material = new THREE.MeshBasicMaterial({color: new THREE.Color(...thisColor)})
 			const mesh = new THREE.Mesh(geometry, material)
 			let position: THREE.Vector3;
@@ -61,7 +61,7 @@ export const SquareMeshes = () => {
 			}
 			else{
 				const posX = (uvX-0.5)*2;
-				const posY = (uvY-0.5)*aspect/2;
+				const posY = (uvY-0.5)*aspect;
 				position = new THREE.Vector3(posX, posY, 0.1)
 				geometry.scale(0.25,0.25,1)
 			}
@@ -72,14 +72,45 @@ export const SquareMeshes = () => {
 	}, [timeSeries, plotType, latBounds, lonBounds])
 
 	return (
-		<>
-			{meshes.map((mesh, idx) => <primitive key={idx} object={mesh}/>)}
-		</>
+	<>
+		{meshes.map((mesh, idx) => <primitive key={idx} object={mesh}/>)}
+	</>
 	)
 }
 
 export const ColumnMeshes = () => {
+	const {timeSeries, dataShape, shape} = useGlobalStore(useShallow(state=>({
+		timeSeries:state.timeSeries,
+		dataShape: state.dataShape,
+		shape: state.shape
+	})))
+	const {plotType} = usePlotStore(useShallow(state=>({
+		plotType: state.plotType
+	})))
+	
+	const meshes: THREE.Mesh[] = useMemo(()=>{
+		const meshes: THREE.Mesh[] = []
+		const dataLen = dataShape.length;
+		const xSteps = dataShape[dataLen-1];
+		const ySteps = dataShape[dataLen-2];
+		for (const [tsID, tsObj] of Object.entries(timeSeries)){
+			const {normal, uv, color} = tsObj
+			const uvX = (Math.floor(uv.x * xSteps)+0.5)/xSteps;
+			const uvY = (Math.floor(uv.y * ySteps)+0.5)/ySteps;
+			let geometry = new THREE.BoxGeometry()
+
+		}
+		return meshes
+
+	},[timeSeries, plotType])
+
+	useEffect(() =>{
+		const aspect = shape.y/shape.x;
+		const depth = shape.z/shape.x;
+	},[meshes])
   return (
-    <div>TransectMeshes</div>
+	<>
+		{meshes.map((mesh, idx) => <primitive key={idx} object={mesh}/>)}
+	</>
   )
 }
