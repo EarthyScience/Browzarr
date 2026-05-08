@@ -1,11 +1,15 @@
 {
   "name": "browzarr",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "A browser-based visualization toolkit for exploring and analyzing Zarr data stores.",
+  "type": "module",
   "keywords": [
     "zarr",
+    "netcdf",
+    "icechunk",
     "3d",
     "graphics",
+    "visualization",
     "threejs",
     "rendering",
     "geometry",
@@ -31,8 +35,12 @@
   "bugs": {
     "url": "https://github.com/EarthyScience/Browzarr/issues/"
   },
-  "private": true,
   "packageManager": "pnpm@10.11.1",
+  "files": [
+    "out/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "postinstall": "node src/hooks/copy-wasm.mjs",
     "prBuild": "pnpm buildRepo",
@@ -42,6 +50,7 @@
     "rmBuild": "pnpm -r exec rm -rf out",
     "build": "next build",
     "start": "next start",
+    "prepublishOnly": "pnpm run rmBuild && pnpm run build",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --max-warnings=100"
