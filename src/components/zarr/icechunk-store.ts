@@ -44,7 +44,7 @@ export async function getIcechunkStore(
 		try {
 			const icechunkStore = await IcechunkStore.open(storePath, {
 				branch: options?.branch ?? "main",
-				formatVersion: "v1",
+				// formatVersion: "v1",
 				...(options?.tag && { tag: options.tag }),
 				...(options?.snapshot && { snapshot: options.snapshot }),
 				...(fetchClient && { fetchClient }),
