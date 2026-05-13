@@ -58,7 +58,7 @@ export function LandingHome() {
   useEffect(() => {
     resetSlices();
     if (initStore.startsWith('local:')) {
-      const path = initStore.replace('local:npm', '');
+      const path = initStore.replace('local:', '');
       if (!NETCDF_EXT_REGEX.test(path)) return; // TODO:  handled zarr
       const filename = path.split('/').pop() ?? 'file.nc';
       fetch(`/file?path=${encodeURIComponent(path)}`)
