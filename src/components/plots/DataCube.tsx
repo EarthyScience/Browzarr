@@ -8,6 +8,7 @@ import { invalidate, useFrame } from '@react-three/fiber';
 import { deg2rad } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from '@/components/plots'
+import { ColumnMeshes } from './TransectMeshes';
 
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
@@ -110,6 +111,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
     })
   return (
     <group scale={[1,flipY ? -1: 1,1]}>
+      <ColumnMeshes />
       <mesh ref={meshRef} geometry={geometry} material={shaderMaterial} />
       <UVCube />
     </group>

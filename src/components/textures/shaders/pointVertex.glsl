@@ -33,7 +33,7 @@ vec3 computePosition(int vertexID) {
 
     float px = (float(x) - (float(width)/2.)) / 500.;
     float py = (float(y) - (float(height)/2.)) / 500.;
-    float pz = (float(z) - (float(depth )/2.)) /500.;
+    float pz = (float(z) - (float(depth)/2.)) /500.;
 
     return vec3(px * 2.0, py * 2.0, pz * 2.0);
 }
@@ -62,12 +62,11 @@ vec2 realCoords(vec2 uv){
 }
 
 void main() {
-    vec2 testV = giveUV(gl_VertexID);
-    if (maskValue != 0 ){
+    if (maskValue != 0 ){ // If using a mask, quick check if vertex is masked out before doing additional rendering
         vec2 newV = realCoords(giveUV(gl_VertexID));
         float mask = texture(maskTexture, newV).r;
         bool cond = maskValue == 1 ? mask< 0.5 : mask>=0.5;
-        if (cond){
+        if (cond){ // Masked out. Move off screen
             gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
             return;
         }
@@ -115,8 +114,5 @@ void main() {
     if (xCheck || zCheck || yCheck || fillCheck){ //Hide points that are clipped
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     }
-    
-    
-    
 
 }

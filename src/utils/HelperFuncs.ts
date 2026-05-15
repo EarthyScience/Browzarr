@@ -130,6 +130,8 @@ export function parseUVCoords({normal,uv}:{normal:THREE.Vector3,uv:THREE.Vector2
       return [uv.x, flipY ? 1-uv.y : uv.y, null]
     case normal.y === 1:
       return [1-uv.y, null, uv.x]
+    case normal.y === -1:
+      return [uv.y, null, uv.x]
     default:
       return [0,0,0]
   }

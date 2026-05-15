@@ -122,6 +122,8 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     const tsID = `${dimCoords[0]}_${dimCoords[1]}`
     const tsObj = {
       color:evaluate_cmap(getColorIdx()/10,"Paired"),
+      normal,
+      uv,
       data:tempTS
     }
     updateTimeSeries({ [tsID] : tsObj})

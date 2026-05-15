@@ -12,8 +12,6 @@ import { lerp } from 'three/src/math/MathUtils.js';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { deg2rad } from './HelperFuncs';
 
-
-
 const DrawText = (
     //Context and cbarlocs
     ctx: CanvasRenderingContext2D,
