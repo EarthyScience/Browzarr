@@ -89,6 +89,8 @@ export const SquareMeshes = () => {
 			// Color from 0-255 to 0-1 range
 			const thisColor = color.map((c: number) => Math.pow((c/255), 2.2)) // Gamma correct the color
 			const material = new THREE.MeshBasicMaterial({color: new THREE.Color(...thisColor)})
+			material.side = THREE.DoubleSide; // For flipY or to see it on otherside of sphere after clipping values
+			material.needsUpdate = true;
 			const mesh = new THREE.Mesh(geometry, material)
 			let position: THREE.Vector3;
 			const uvX = (Math.floor(uv.x * xSteps)+0.5)/xSteps;
@@ -98,14 +100,10 @@ export const SquareMeshes = () => {
 				const xScale = circum/xSteps * normedXExtent;
 				const yScale = circum/2/ySteps * normedYExtent;
 				const xScaler = Math.cos((uvY - 0.5) * Math.PI);
-				position = remapToXYZ(new THREE.Vector2(uvX, flipY ? 1-uvY : uvY), latBounds, lonBounds)	
+				position = remapToXYZ(new THREE.Vector2(uvX, uvY), latBounds, lonBounds)	
 				// Rotate the plane where position is also normal vector
 				mesh.lookAt(position.x, position.y, position.z)
-				if (flipY) { // The fliping of the Y uv makes it think its looking backwards. So need to flip it back
-					geometry.scale(1, -1, 1)
-				}
 				geometry.scale(xScale*xScaler, yScale, 1)
-				console.log(position)
 			}
 			else{
 				const sqScale = 2/xSteps

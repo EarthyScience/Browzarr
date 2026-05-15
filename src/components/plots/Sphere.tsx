@@ -179,7 +179,9 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
 
   return (
     <>
-    <SquareMeshes />
+    <group scale={[1, flipY ? -1 : 1, 1]}>
+      <SquareMeshes />
+    </group>
     <mesh renderOrder={1} geometry={geometry} material={shaderMaterial} onClick={e=>selectTS && HandleTimeSeries(e)}/>
     <mesh renderOrder={0} geometry={geometry} material={backMaterial} />
     </>
