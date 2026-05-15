@@ -88,7 +88,7 @@ export const SquareMeshes = () => {
 			let geometry = new THREE.PlaneGeometry(1, 1)
 			// Color from 0-255 to 0-1 range
 			const thisColor = color.map((c: number) => Math.pow((c/255), 2.2)) // Gamma correct the color
-			const material = new THREE.MeshBasicMaterial({color: new THREE.Color(...thisColor)})
+			const material = new THREE.MeshBasicMaterial({color: new THREE.Color(...thisColor)});
 			material.side = THREE.DoubleSide; // For flipY or to see it on otherside of sphere after clipping values
 			material.needsUpdate = true;
 			const mesh = new THREE.Mesh(geometry, material)
@@ -117,6 +117,15 @@ export const SquareMeshes = () => {
 		}
 		return meshes
 	}, [timeSeries, plotType, latBounds, lonBounds])
+	useEffect(() => {
+		return () => {
+			meshes.forEach(mesh => {
+				mesh.geometry.dispose()
+				//@ts-ignore TS thiunks this is a different material type
+				mesh.material.dispose()
+			});
+		};}, [meshes]
+	);
 	return (
 	<>
 		{meshes.map((mesh, idx) => <primitive key={idx} object={mesh}/>)}
@@ -157,7 +166,15 @@ export const ColumnMeshes = () => {
 		return meshes
 
 	},[timeSeries, plotType])
-
+	useEffect(() => {
+		return () => {
+			meshes.forEach(mesh => {
+				mesh.geometry.dispose()
+				//@ts-ignore TS thiunks this is a different material type
+				mesh.material.dispose()
+			});
+		};}, [meshes]
+	);
   return (
 	<>
 		{meshes.map((mesh, idx) => <primitive key={idx} object={mesh}/>)}
