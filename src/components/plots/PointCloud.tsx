@@ -140,14 +140,13 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
   }, [pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, timeScale, xRange, yRange, fillValue, zRange, maskValue, lonBounds, latBounds]);
   const tsScale = dataShape[2]/500
   return (
-    <>
-    <group scale={[tsScale,tsScale,tsScale]}>
-      <ColumnMeshes />
-    </group>
     <group scale={[1,flipY ? -1:1, 1]}>
+      <group scale={[tsScale,tsScale,tsScale]}>
+        <ColumnMeshes />
+      </group>
       <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
       <MappingCube/>
     </group>
-    </>
+
   );
   }
