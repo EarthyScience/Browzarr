@@ -18,6 +18,51 @@ function remapToXYZ(uv: THREE.Vector2, latBounds: number[], lonBounds: number[])
 	);
 }
 
+function normalToPos(uv: THREE.Vector2, normal:THREE.Vector3, ratios:{depthRatio:number, aspectRatio:number}): THREE.Vector3{
+	let posZ, posY, posX: number;
+	const {aspectRatio, depthRatio} = ratios;
+	if (Math.abs(normal.z) == 1){
+		const flip = normal.z < 0;
+		const x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
+		posX = x*2;
+		posY = (uv.y-0.5)*2*aspectRatio;
+		posZ = 0;
+	} else if (Math.abs(normal.y) == 1){
+		const flip = normal.y > 0;
+		const y = flip ? (1-uv.y)-0.5: (uv.y-0.5)
+		posX = (uv.x-0.5)*2;
+		posY = 0;
+		posZ = y*Math.max(depthRatio,2);
+	} else {
+		const flip = normal.x > 0;
+		const x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
+		posX = 0;
+		posY = (uv.y-0.5)*2*aspectRatio;
+		posZ = x*Math.max(depthRatio,2);
+	}
+	return new THREE.Vector3(posX, posY, posZ)
+}
+
+function normalToScale(normal:THREE.Vector3, ratios:{depthRatio:number, aspectRatio:number}, steps:{xSteps:number, ySteps:number, zSteps:number}){
+	let scaleZ, scaleY, scaleX: number;
+	const {xSteps,ySteps,zSteps} = steps;
+	const {aspectRatio, depthRatio} = ratios;
+	if (Math.abs(normal.z) == 1){
+		scaleX = 2/xSteps;
+		scaleY = 2*aspectRatio/ySteps;
+		scaleZ = Math.max(depthRatio,2);
+	} else if (Math.abs(normal.y) == 1){
+		scaleX = 2/xSteps;
+		scaleY = 2*aspectRatio;
+		scaleZ = 2*Math.max(depthRatio,2)/zSteps;
+	} else{
+		scaleX = 2;
+		scaleY = 2*aspectRatio/ySteps;
+		scaleZ = 2*Math.max(depthRatio,2)/zSteps;
+	}
+	return new THREE.Vector3(scaleX, scaleY, scaleZ);
+}
+
 export const SquareMeshes = () => {
 	const {timeSeries, dataShape, shape} = useGlobalStore(useShallow(state=>({
 		timeSeries:state.timeSeries,
@@ -86,32 +131,31 @@ export const ColumnMeshes = () => {
 	const {plotType} = usePlotStore(useShallow(state=>({
 		plotType: state.plotType
 	})))
-	
+
 	const meshes: THREE.Mesh[] = useMemo(()=>{
 		const meshes: THREE.Mesh[] = []
 		const dataLen = dataShape.length;
 		const xSteps = dataShape[dataLen-1];
 		const ySteps = dataShape[dataLen-2];
 		const zSteps = dataShape[dataLen-3];
+		const aspectRatio = dataShape[dataLen-2]/dataShape[dataLen-1]
+		const depthRatio = dataShape[dataLen-3]/dataShape[dataLen-1]
 		for (const [tsID, tsObj] of Object.entries(timeSeries)){
 			const {normal, uv, color} = tsObj
-			
-			if (Math.abs(normal.z) == 1) {
-				const newX = (Math.floor(newV.x * xSteps)+0.5)/xSteps;
-				const newY = (Math.floor(newV.y * ySteps)+0.5)/ySteps;
-			}
-			
-			let geometry = new THREE.BoxGeometry()
-
+			const position = normalToPos(uv, normal, {aspectRatio,depthRatio})
+			const meshScale = normalToScale(normal, {aspectRatio, depthRatio}, {xSteps, ySteps, zSteps})
+			const thisColor = color.map((c: number) => Math.pow((c/255), 2.2)) // Gamma correct the color
+			const material = new THREE.MeshBasicMaterial({color: new THREE.Color(...thisColor)})
+			let geometry = new THREE.BoxGeometry(1,1,1)
+			geometry.scale(...meshScale.toArray())
+			const mesh = new THREE.Mesh(geometry, material)
+			mesh.position.copy(position)
+			meshes.push(mesh)
 		}
 		return meshes
 
 	},[timeSeries, plotType])
 
-	useEffect(() =>{
-		const aspect = shape.y/shape.x;
-		const depth = shape.z/shape.x;
-	},[meshes])
   return (
 	<>
 		{meshes.map((mesh, idx) => <primitive key={idx} object={mesh}/>)}

@@ -7,6 +7,7 @@ import { useShallow } from 'zustand/shallow';
 import { deg2rad } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from './UVCube';
+import { ColumnMeshes } from './TransectMeshes';
 
 interface PCProps {
   texture: THREE.Data3DTexture[] | null,
@@ -137,10 +138,16 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       uniforms.maskValue.value = maskValue
     }
   }, [pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, timeScale, xRange, yRange, fillValue, zRange, maskValue, lonBounds, latBounds]);
-    return (
-      <group scale={[1,flipY ? -1:1, 1]}>
-        <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
-        <MappingCube/>
-      </group>
-    );
+  const tsScale = dataShape[2]/500
+  return (
+    <>
+    <group scale={[tsScale,tsScale,tsScale]}>
+      <ColumnMeshes />
+    </group>
+    <group scale={[1,flipY ? -1:1, 1]}>
+      <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
+      <MappingCube/>
+    </group>
+    </>
+  );
   }
