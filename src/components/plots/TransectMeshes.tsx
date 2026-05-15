@@ -64,10 +64,10 @@ function normalToScale(normal:THREE.Vector3, ratios:{depthRatio:number, aspectRa
 }
 
 export const SquareMeshes = () => {
-	const {timeSeries, dataShape, shape} = useGlobalStore(useShallow(state=>({
+	const {timeSeries, dataShape, shape, flipY} = useGlobalStore(useShallow(state=>({
 		timeSeries:state.timeSeries,
 		dataShape: state.dataShape,
-		shape: state.shape
+		shape: state.shape, flipY:state.flipY
 	})))
 	const {plotType} = usePlotStore(useShallow(state=>({
 		plotType: state.plotType
@@ -98,10 +98,14 @@ export const SquareMeshes = () => {
 				const xScale = circum/xSteps * normedXExtent;
 				const yScale = circum/2/ySteps * normedYExtent;
 				const xScaler = Math.cos((uvY - 0.5) * Math.PI);
-				position = remapToXYZ(new THREE.Vector2(uvX, uvY), latBounds, lonBounds)	
+				position = remapToXYZ(new THREE.Vector2(uvX, flipY ? 1-uvY : uvY), latBounds, lonBounds)	
 				// Rotate the plane where position is also normal vector
-				mesh.lookAt(position.x*2, position.y*2, position.z*2)
+				mesh.lookAt(position.x, position.y, position.z)
+				if (flipY) { // The fliping of the Y uv makes it think its looking backwards. So need to flip it back
+					geometry.scale(1, -1, 1)
+				}
 				geometry.scale(xScale*xScaler, yScale, 1)
+				console.log(position)
 			}
 			else{
 				const sqScale = 2/xSteps
