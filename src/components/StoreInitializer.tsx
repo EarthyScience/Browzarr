@@ -9,6 +9,7 @@ import { isRemoteStore } from '@/utils/isRemoteStore';
 function StoreInitializerInner() {
   const searchParams = useSearchParams();
   const setInitStore = useGlobalStore(s => s.setInitStore);
+  const setStoreFromURL = useGlobalStore(s => s.setStoreFromURL);
   const { setUseNC, setFetchNC } = useZarrStore(useShallow(s => ({
     setUseNC: s.setUseNC,
     setFetchNC: s.setFetchNC,
@@ -16,13 +17,20 @@ function StoreInitializerInner() {
 
   useEffect(() => {
     const store = searchParams.get("store");
-    if (!store) return;
+    if (!store) {
+      setStoreFromURL(false);
+      return;
+    }
 
     const isNC = searchParams.get("format") === "nc";
     setUseNC(isNC);
     setFetchNC(isNC);
-    setInitStore(isRemoteStore(store) ? store : `local:${store}`);
-  }, []);
+    const initValue = isRemoteStore(store) ? store : `local:${store}`;
+    setInitStore(initValue);
+    // mark that a store was provided in the URL; LandingHome will open variables once
+    // the custom store is actually loaded.
+    setStoreFromURL(true);
+  }, [searchParams, setUseNC, setFetchNC, setInitStore, setStoreFromURL]);
 
   return null;
 }

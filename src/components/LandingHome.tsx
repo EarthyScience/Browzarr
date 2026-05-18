@@ -25,16 +25,18 @@ async function sendPing() {
 
 export function LandingHome() {
   const {
-    initStore, timeSeries, variable, plotOn,
-    setZMeta, setVariables, setTitleDescription,
+    initStore, timeSeries, variable, storeFromURL,
+    setZMeta, setVariables, setTitleDescription, setOpenVariables, setStoreFromURL,
   } = useGlobalStore(useShallow(state => ({
     initStore: state.initStore,
     timeSeries: state.timeSeries,
     variable: state.variable,
-    plotOn: state.plotOn,
+    storeFromURL: state.storeFromURL,
     setZMeta: state.setZMeta,
     setVariables: state.setVariables,
     setTitleDescription: state.setTitleDescription,
+    setOpenVariables: state.setOpenVariables,
+    setStoreFromURL: state.setStoreFromURL,
   })))
 
   const { currentStore, fetchKey,
@@ -49,27 +51,27 @@ export function LandingHome() {
     setUseNC: state.setUseNC
   })))
 
-  function resetSlices() {
-    setZSlice([0, null])
-    setYSlice([0, null])
-    setXSlice([0, null])
-  }
-
   useEffect(() => {
-    resetSlices();
+    void fetchKey;
+    setZSlice([0, null]);
+    setYSlice([0, null]);
+    setXSlice([0, null]);
     if (initStore.startsWith('local:')) {
       const path = initStore.replace('local:', '');
-      if (!NETCDF_EXT_REGEX.test(path)) return; // TODO:  handled zarr
+      if (!NETCDF_EXT_REGEX.test(path)) return;
       const filename = path.split('/').pop() ?? 'file.nc';
       fetch(`/file?path=${encodeURIComponent(path)}`)
         .then(res => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.blob();
         })
-        .then(blob => {
-          loadNetCDF(blob, filename);
-          useGlobalStore.setState({openVariables: true})
-          return
+        .then(async blob => {
+          await loadNetCDF(blob, filename);
+          if (storeFromURL) {
+            setOpenVariables(true);
+            setStoreFromURL(false);
+          }
+          return;
         })
         .catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
       return;
@@ -86,23 +88,40 @@ export function LandingHome() {
     // Clear after use
     useZarrStore.getState().setIcechunkOptions(null);
     useZarrStore.getState().setFetchOptions(null);
-  }, [initStore, fetchKey, setCurrentStore])
+  }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice, storeFromURL, setOpenVariables, setStoreFromURL]);
 
   useEffect(() => {
-    let isMounted = true;
+    const { initStore } = useGlobalStore.getState();
+    if (initStore.startsWith('local')) return;
 
-    GetTitleDescription(currentStore).then((result) => {
-      if (isMounted) setTitleDescription(result);
+    let isMounted = true;
+    const activeStore = currentStore;
+
+    GetTitleDescription(activeStore).then((result) => {
+      if (isMounted && currentStore === activeStore) setTitleDescription(result);
     });
 
-    const fullmetadata = GetZarrMetadata(currentStore);
+    const fullmetadata = GetZarrMetadata(activeStore);
     const variables = GetVariableNames(fullmetadata);
 
-    fullmetadata.then(e => setZMeta(e))
-    variables.then(e => setVariables(e))
+    fullmetadata.then((e) => {
+      if (isMounted && currentStore === activeStore) setZMeta(e);
+    });
+    variables.then((e) => {
+      if (isMounted && currentStore === activeStore) {
+        setVariables(e);
+        const { storeFromURL } = useGlobalStore.getState();
+        if (storeFromURL) {
+          setOpenVariables(true);
+          setStoreFromURL(false);
+        }
+      }
+    });
 
-    return () => { isMounted = false; };
-  }, [currentStore, setZMeta, setVariables, setTitleDescription])
+    return () => {
+      isMounted = false;
+    };
+  }, [currentStore, setZMeta, setVariables, setTitleDescription, setOpenVariables, setStoreFromURL]);
 
   useEffect(()=>{
     if (process.env.NODE_ENV !== "development") {

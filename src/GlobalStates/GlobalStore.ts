@@ -31,6 +31,7 @@ type StoreState = {
   plotDim: number;
   flipY:boolean;
   initStore:string;
+  storeFromURL: boolean;
   variable: string;
   variables: string[];
   openVariables: boolean;
@@ -65,6 +66,7 @@ type StoreState = {
   setPlotDim: (plotDim: number) => void;
   setFlipY: (flipY:boolean) => void;
   setInitStore: (initStore:string) => void;
+  setStoreFromURL: (storeFromURL: boolean) => void;
   setVariable: (variable: string) => void;
   setVariables: (variables: string[]) => void;
   setOpenVariables: (openVariables: boolean) => void;
@@ -98,6 +100,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   plotDim: 0,
   flipY: false,
   initStore: ESDC,
+  storeFromURL: false,
   variable: 'Default',
   variables: [],
   openVariables: false,
@@ -152,6 +155,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setPlotDim: (plotDim) => set({ plotDim }),
   setFlipY: (flipY) => set({ flipY }),
   setInitStore: (initStore) => set({ initStore }),
+  setStoreFromURL: (storeFromURL) => set({ storeFromURL }),
   setVariable: (variable) => set({ variable }),
   setVariables: (variables) => set({ variables }),
   setOpenVariables: (openVariables) => set({ openVariables }),
