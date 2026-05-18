@@ -26,7 +26,7 @@ async function sendPing() {
 export function LandingHome() {
   const {
     initStore, timeSeries, variable, storeFromURL,
-    setZMeta, setVariables, setTitleDescription, setOpenVariables,
+    setZMeta, setVariables, setTitleDescription, setOpenVariables, setStoreFromURL,
   } = useGlobalStore(useShallow(state => ({
     initStore: state.initStore,
     timeSeries: state.timeSeries,
@@ -36,6 +36,7 @@ export function LandingHome() {
     setVariables: state.setVariables,
     setTitleDescription: state.setTitleDescription,
     setOpenVariables: state.setOpenVariables,
+    setStoreFromURL: state.setStoreFromURL,
   })))
 
   const { currentStore, fetchKey,
@@ -57,7 +58,7 @@ export function LandingHome() {
     setXSlice([0, null]);
     if (initStore.startsWith('local:')) {
       const path = initStore.replace('local:', '');
-      if (!NETCDF_EXT_REGEX.test(path)) return; // TODO:  handled zarr
+      if (!NETCDF_EXT_REGEX.test(path)) return;
       const filename = path.split('/').pop() ?? 'file.nc';
       fetch(`/file?path=${encodeURIComponent(path)}`)
         .then(res => {
@@ -66,8 +67,11 @@ export function LandingHome() {
         })
         .then(async blob => {
           await loadNetCDF(blob, filename);
-          if (storeFromURL) setOpenVariables(true);
-          return
+          if (storeFromURL) {
+            setOpenVariables(true);
+            setStoreFromURL(false);
+          }
+          return;
         })
         .catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
       return;
@@ -84,11 +88,11 @@ export function LandingHome() {
     // Clear after use
     useZarrStore.getState().setIcechunkOptions(null);
     useZarrStore.getState().setFetchOptions(null);
-  }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice, storeFromURL, setOpenVariables])
+  }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice, storeFromURL, setOpenVariables, setStoreFromURL]);
 
   useEffect(() => {
     const { initStore } = useGlobalStore.getState();
-    if (initStore.startsWith('local:')) return;
+    if (initStore.startsWith('local')) return;
 
     let isMounted = true;
     const activeStore = currentStore;
@@ -107,14 +111,17 @@ export function LandingHome() {
       if (isMounted && currentStore === activeStore) {
         setVariables(e);
         const { storeFromURL } = useGlobalStore.getState();
-        if (storeFromURL) setOpenVariables(true);
+        if (storeFromURL) {
+          setOpenVariables(true);
+          setStoreFromURL(false);
+        }
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, [currentStore, setZMeta, setVariables, setTitleDescription, setOpenVariables]);
+  }, [currentStore, setZMeta, setVariables, setTitleDescription, setOpenVariables, setStoreFromURL]);
 
   useEffect(()=>{
     if (process.env.NODE_ENV !== "development") {
