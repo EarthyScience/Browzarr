@@ -25,16 +25,19 @@ async function sendPing() {
 
 export function LandingHome() {
   const {
-    initStore, timeSeries, variable, plotOn,
+    initStore, timeSeries, variable,
     setZMeta, setVariables, setTitleDescription,
+    shouldOpenVariablesAfterInit, setOpenVariables, setShouldOpenVariablesAfterInit,
   } = useGlobalStore(useShallow(state => ({
     initStore: state.initStore,
     timeSeries: state.timeSeries,
     variable: state.variable,
-    plotOn: state.plotOn,
     setZMeta: state.setZMeta,
     setVariables: state.setVariables,
     setTitleDescription: state.setTitleDescription,
+    shouldOpenVariablesAfterInit: state.shouldOpenVariablesAfterInit,
+    setOpenVariables: state.setOpenVariables,
+    setShouldOpenVariablesAfterInit: state.setShouldOpenVariablesAfterInit,
   })))
 
   const { currentStore, fetchKey,
@@ -49,14 +52,11 @@ export function LandingHome() {
     setUseNC: state.setUseNC
   })))
 
-  function resetSlices() {
-    setZSlice([0, null])
-    setYSlice([0, null])
-    setXSlice([0, null])
-  }
-
   useEffect(() => {
-    resetSlices();
+    void fetchKey;
+    setZSlice([0, null]);
+    setYSlice([0, null]);
+    setXSlice([0, null]);
     if (initStore.startsWith('local:')) {
       const path = initStore.replace('local:', '');
       if (!NETCDF_EXT_REGEX.test(path)) return; // TODO:  handled zarr
@@ -86,23 +86,40 @@ export function LandingHome() {
     // Clear after use
     useZarrStore.getState().setIcechunkOptions(null);
     useZarrStore.getState().setFetchOptions(null);
-  }, [initStore, fetchKey, setCurrentStore])
+  }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice])
 
   useEffect(() => {
     let isMounted = true;
+    const activeStore = currentStore;
 
-    GetTitleDescription(currentStore).then((result) => {
-      if (isMounted) setTitleDescription(result);
+    GetTitleDescription(activeStore).then((result) => {
+      if (isMounted && currentStore === activeStore) setTitleDescription(result);
     });
 
-    const fullmetadata = GetZarrMetadata(currentStore);
+    const fullmetadata = GetZarrMetadata(activeStore);
     const variables = GetVariableNames(fullmetadata);
 
-    fullmetadata.then(e => setZMeta(e))
-    variables.then(e => setVariables(e))
+    fullmetadata.then((e) => {
+      if (isMounted && currentStore === activeStore) setZMeta(e);
+    });
+    variables.then((e) => {
+      if (isMounted && currentStore === activeStore) {
+        setVariables(e);
+        if (shouldOpenVariablesAfterInit) {
+          setOpenVariables(true);
+          setShouldOpenVariablesAfterInit(false);
+        }
+      }
+    }).catch(() => {
+      if (isMounted && currentStore === activeStore) {
+        setShouldOpenVariablesAfterInit(false);
+      }
+    });
 
-    return () => { isMounted = false; };
-  }, [currentStore, setZMeta, setVariables, setTitleDescription])
+    return () => {
+      isMounted = false;
+    };
+  }, [currentStore, setZMeta, setVariables, setTitleDescription, shouldOpenVariablesAfterInit, setOpenVariables, setShouldOpenVariablesAfterInit]);
 
   useEffect(()=>{
     if (process.env.NODE_ENV !== "development") {

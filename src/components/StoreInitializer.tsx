@@ -9,6 +9,7 @@ import { isRemoteStore } from '@/utils/isRemoteStore';
 function StoreInitializerInner() {
   const searchParams = useSearchParams();
   const setInitStore = useGlobalStore(s => s.setInitStore);
+  const setShouldOpenVariablesAfterInit = useGlobalStore(s => s.setShouldOpenVariablesAfterInit);
   const { setUseNC, setFetchNC } = useZarrStore(useShallow(s => ({
     setUseNC: s.setUseNC,
     setFetchNC: s.setFetchNC,
@@ -21,8 +22,12 @@ function StoreInitializerInner() {
     const isNC = searchParams.get("format") === "nc";
     setUseNC(isNC);
     setFetchNC(isNC);
-    setInitStore(isRemoteStore(store) ? store : `local:${store}`);
-  }, []);
+    const initValue = isRemoteStore(store) ? store : `local:${store}`;
+    setInitStore(initValue);
+    if (isRemoteStore(store)) {
+      setShouldOpenVariablesAfterInit(true);
+    }
+  }, [searchParams, setUseNC, setFetchNC, setInitStore, setShouldOpenVariablesAfterInit]);
 
   return null;
 }
