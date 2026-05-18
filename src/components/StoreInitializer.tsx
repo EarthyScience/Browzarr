@@ -9,7 +9,7 @@ import { isRemoteStore } from '@/utils/isRemoteStore';
 function StoreInitializerInner() {
   const searchParams = useSearchParams();
   const setInitStore = useGlobalStore(s => s.setInitStore);
-  const setShouldOpenVariablesAfterInit = useGlobalStore(s => s.setShouldOpenVariablesAfterInit);
+  const setOpenVariables = useGlobalStore(s => s.setOpenVariables);
   const { setUseNC, setFetchNC } = useZarrStore(useShallow(s => ({
     setUseNC: s.setUseNC,
     setFetchNC: s.setFetchNC,
@@ -25,9 +25,9 @@ function StoreInitializerInner() {
     const initValue = isRemoteStore(store) ? store : `local:${store}`;
     setInitStore(initValue);
     if (isRemoteStore(store)) {
-      setShouldOpenVariablesAfterInit(true);
+      setOpenVariables(true);
     }
-  }, [searchParams, setUseNC, setFetchNC, setInitStore, setShouldOpenVariablesAfterInit]);
+  }, [searchParams, setUseNC, setFetchNC, setInitStore, setOpenVariables]);
 
   return null;
 }

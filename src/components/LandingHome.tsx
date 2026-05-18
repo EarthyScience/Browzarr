@@ -27,7 +27,6 @@ export function LandingHome() {
   const {
     initStore, timeSeries, variable,
     setZMeta, setVariables, setTitleDescription,
-    shouldOpenVariablesAfterInit, setOpenVariables, setShouldOpenVariablesAfterInit,
   } = useGlobalStore(useShallow(state => ({
     initStore: state.initStore,
     timeSeries: state.timeSeries,
@@ -35,9 +34,7 @@ export function LandingHome() {
     setZMeta: state.setZMeta,
     setVariables: state.setVariables,
     setTitleDescription: state.setTitleDescription,
-    shouldOpenVariablesAfterInit: state.shouldOpenVariablesAfterInit,
     setOpenVariables: state.setOpenVariables,
-    setShouldOpenVariablesAfterInit: state.setShouldOpenVariablesAfterInit,
   })))
 
   const { currentStore, fetchKey,
@@ -105,21 +102,13 @@ export function LandingHome() {
     variables.then((e) => {
       if (isMounted && currentStore === activeStore) {
         setVariables(e);
-        if (shouldOpenVariablesAfterInit) {
-          setOpenVariables(true);
-          setShouldOpenVariablesAfterInit(false);
-        }
-      }
-    }).catch(() => {
-      if (isMounted && currentStore === activeStore) {
-        setShouldOpenVariablesAfterInit(false);
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, [currentStore, setZMeta, setVariables, setTitleDescription, shouldOpenVariablesAfterInit, setOpenVariables, setShouldOpenVariablesAfterInit]);
+  }, [currentStore, setZMeta, setVariables, setTitleDescription]);
 
   useEffect(()=>{
     if (process.env.NODE_ENV !== "development") {
