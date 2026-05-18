@@ -25,12 +25,13 @@ async function sendPing() {
 
 export function LandingHome() {
   const {
-    initStore, timeSeries, variable,
-    setZMeta, setVariables, setTitleDescription,
+    initStore, timeSeries, variable, storeFromURL,
+    setZMeta, setVariables, setTitleDescription, setOpenVariables,
   } = useGlobalStore(useShallow(state => ({
     initStore: state.initStore,
     timeSeries: state.timeSeries,
     variable: state.variable,
+    storeFromURL: state.storeFromURL,
     setZMeta: state.setZMeta,
     setVariables: state.setVariables,
     setTitleDescription: state.setTitleDescription,
@@ -63,9 +64,9 @@ export function LandingHome() {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.blob();
         })
-        .then(blob => {
-          loadNetCDF(blob, filename);
-          useGlobalStore.setState({openVariables: true})
+        .then(async blob => {
+          await loadNetCDF(blob, filename);
+          if (storeFromURL) setOpenVariables(true);
           return
         })
         .catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
@@ -83,11 +84,14 @@ export function LandingHome() {
     // Clear after use
     useZarrStore.getState().setIcechunkOptions(null);
     useZarrStore.getState().setFetchOptions(null);
-  }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice])
+  }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice, storeFromURL, setOpenVariables])
 
   useEffect(() => {
     let isMounted = true;
     const activeStore = currentStore;
+
+    const { initStore } = useGlobalStore.getState();
+    if (initStore.startsWith('local:') && NETCDF_EXT_REGEX.test(initStore.replace('local:', ''))) return;
 
     GetTitleDescription(activeStore).then((result) => {
       if (isMounted && currentStore === activeStore) setTitleDescription(result);
@@ -102,13 +106,15 @@ export function LandingHome() {
     variables.then((e) => {
       if (isMounted && currentStore === activeStore) {
         setVariables(e);
+      const { initStore, storeFromURL } = useGlobalStore.getState();
+      if (storeFromURL && !initStore.startsWith('local:')) setOpenVariables(true);
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, [currentStore, setZMeta, setVariables, setTitleDescription]);
+  }, [currentStore, setZMeta, setVariables, setTitleDescription, setOpenVariables]);
 
   useEffect(()=>{
     if (process.env.NODE_ENV !== "development") {
