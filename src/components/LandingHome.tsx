@@ -87,11 +87,11 @@ export function LandingHome() {
   }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice, storeFromURL, setOpenVariables])
 
   useEffect(() => {
+    const { initStore } = useGlobalStore.getState();
+    if (initStore.startsWith('local:')) return;
+
     let isMounted = true;
     const activeStore = currentStore;
-
-    const { initStore } = useGlobalStore.getState();
-    if (initStore.startsWith('local:') && NETCDF_EXT_REGEX.test(initStore.replace('local:', ''))) return;
 
     GetTitleDescription(activeStore).then((result) => {
       if (isMounted && currentStore === activeStore) setTitleDescription(result);
@@ -106,8 +106,8 @@ export function LandingHome() {
     variables.then((e) => {
       if (isMounted && currentStore === activeStore) {
         setVariables(e);
-      const { initStore, storeFromURL } = useGlobalStore.getState();
-      if (storeFromURL && !initStore.startsWith('local:')) setOpenVariables(true);
+        const { storeFromURL } = useGlobalStore.getState();
+        if (storeFromURL) setOpenVariables(true);
       }
     });
 
