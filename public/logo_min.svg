@@ -1,0 +1,38 @@
+<svg viewBox="-51 -47 102 96" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0A7EA4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#008B8B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00B5E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#005A9C;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E03C31;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#990000;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e34b75;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c23862;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#654FF0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5141c4;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="whiteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F9F9F9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ECECEC;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <g>
+    <rect x="-39" y="-39" width="51" height="24" rx="2" fill="url(#pinkGrad)"/>
+    <rect x="15" y="-39" width="24" height="24" rx="2" fill="url(#whiteGrad)"/>
+    <rect x="-39" y="-12" width="24" height="24" rx="2" fill="url(#whiteGrad)"/>
+    <rect x="-12" y="-12" width="51" height="24" rx="2" fill="url(#tealGrad)"/>
+    <rect x="-39" y="15" width="24" height="24" rx="2" fill="url(#blueGrad)"/>
+    <rect x="-12" y="15" width="24" height="24" rx="2" fill="url(#redGrad)"/>
+    <rect x="15" y="15" width="24" height="24" rx="2" fill="url(#purpleGrad)"/>
+    <circle cx="27" cy="15.5" r="3" fill="white"/>
+  </g>
+</svg>
