@@ -92,7 +92,7 @@ export function LandingHome() {
 
   useEffect(() => {
     const { initStore } = useGlobalStore.getState();
-    if (initStore.startsWith('local')) return;
+    if (initStore.startsWith('local:')) return;
 
     let isMounted = true;
     const activeStore = currentStore;
