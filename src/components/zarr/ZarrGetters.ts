@@ -100,7 +100,7 @@ export async function GetStore(storePath: string): Promise<zarr.Group<zarr.Fetch
         const {setStatus} = useGlobalStore.getState();
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
-                const d_store = zarr.tryWithConsolidated(
+                const d_store = zarr.withMaybeConsolidatedMetadata(
                     new zarr.FetchStore(storePath)
                 );
                 const gs = await d_store.then(store => zarr.open(store, {kind: 'group'}));

@@ -37,8 +37,8 @@ const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType)
     }
 
     // Create a custom zarrita store from the Map
-    const customStore: zarr.AsyncReadable<any> = {
-      async get(key: string) {
+    const customStore: zarr.AsyncReadable = {
+      async get(key: string): Promise<Uint8Array | undefined> {
         const file = fileMap.get(key)
         const buffer = await file?.arrayBuffer();
         return buffer ? new Uint8Array(buffer) : undefined;
@@ -46,7 +46,7 @@ const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType)
     };
     try {
       // Open the Zarr store using the custom store
-      let store = await zarr.tryWithConsolidated(customStore);
+      let store = await zarr.withMaybeConsolidatedMetadata(customStore);
       if (!('contents' in store)){
         // Metadata is missing. We will need to parse variables here. 
         store = await ZarrParser(files, customStore)
