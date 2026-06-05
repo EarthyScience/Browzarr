@@ -15,7 +15,7 @@ export async function getFetchStore(
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const d_store = zarr.withMaybeConsolidatedMetadata(
-        new zarr.FetchStore(storePath)
+        new zarr.FetchStore(storePath, { fetch: fetchOptions?.fetch })
       );
       const gs = await d_store.then(store => zarr.open(store, { kind: 'group' }));
       useGlobalStore.setState({ status: null });
@@ -115,7 +115,7 @@ export async function getFetchStoreDims(
   cache.set(`${initStore}_${variable}_meta`, meta);
 
   const dimNames = (meta._ARRAY_DIMENSIONS as string[] | undefined)
-    ?? ((outVar as any).dimensionNames as string[] | undefined);
+    ?? (outVar.dimensionNames as string[] | undefined);
   
   if (dimNames) {
     for (const dim of dimNames) {

@@ -1,7 +1,7 @@
 import type { FetchClient } from "icechunk-js";
 
 export interface FetchStoreOptions {
-  overrides?: RequestInit;
+  fetch?: (request: Request) => Promise<Response>;
   maxRetries?: number;
   retryDelay?: number;
 }

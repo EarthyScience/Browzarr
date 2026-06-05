@@ -36,7 +36,7 @@ type Props = {
 };
 
 const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
-  const [showOverrides, setShowOverrides] = useState(false);
+  const [showFetchOptions, setShowFetchOptions] = useState(false);
   const [preset, setPreset] = useState<AuthPreset>('none');
   const [presetValue, setPresetValue] = useState('');
   const [headers, setHeaders] = useState<HeaderRow[]>([{ key: '', value: '' }]);
@@ -47,7 +47,7 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
   const updateHeader = (i: number, field: 'key' | 'value', val: string) =>
     setHeaders(h => h.map((row, idx) => idx === i ? { ...row, [field]: val } : row));
 
-  const buildOverrides = (): RequestInit | undefined => {
+  const buildFetchHandler = (): ((request: Request) => Promise<Response>) | undefined => {
     const builtHeaders: Record<string, string> = {};
 
     // Preset auth header
@@ -60,9 +60,12 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
       .filter(r => r.key.trim())
       .forEach(r => { builtHeaders[r.key.trim()] = r.value.trim(); });
 
-    return Object.keys(builtHeaders).length > 0
-      ? { headers: builtHeaders }
-      : undefined;
+    if (Object.keys(builtHeaders).length === 0) return undefined;
+
+    return (request: Request) => {
+      Object.entries(builtHeaders).forEach(([k, v]) => request.headers.set(k, v));
+      return fetch(request);
+    };
   };
 
   return (
@@ -74,18 +77,18 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
         const url = input.value;
         if (!url) return;
 
-        const overrides = buildOverrides();
-        if (overrides && url.startsWith('http://')) {
+        const fetchHandler = buildFetchHandler();
+        if (fetchHandler && url.startsWith('http://')) {
           useGlobalStore.getState().setStatus('Error: Cannot send auth headers over plain HTTP — use HTTPS.');
           return;
         }
         const fetchOptions = {
-          ...(overrides && { overrides }),
+          ...(fetchHandler && { fetch: fetchHandler}),
         };
 
         useZarrStore.getState().setIcechunkOptions(null);
         useZarrStore.getState().setFetchOptions(
-          Object.keys(fetchOptions).length > 0 ? fetchOptions : null
+          fetchOptions.fetch !== undefined ? fetchOptions : null
         );
         useGlobalStore.getState().setStatus('Fetching...');
 
@@ -102,19 +105,19 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
         </Button>
       </div>
 
-      {/* Overrides */}
+      {/* FetchOptions */}
       <div>
         <Button
           type="button"
           variant="ghost"
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-          onClick={() => setShowOverrides(v => !v)}
+          onClick={() => setShowFetchOptions(v => !v)}
         >
-          {showOverrides ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          Overrides
+          {showFetchOptions ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          fetchOptions
         </Button>
 
-        {showOverrides && (
+        {showFetchOptions && (
           <div className="flex flex-col gap-3 mt-2">
 
             {/* Auth preset selector */}
