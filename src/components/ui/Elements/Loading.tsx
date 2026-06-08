@@ -12,8 +12,8 @@ export function Loading() {
   if (!status) return null
 
   return (
-    <div className="fixed top-32 sm:top-12 right-4 z-50">
-      <Field className="w-full max-w-md">
+    <div className="fixed top-32 sm:top-12 right-4 z-50 w-48 sm:w-72">
+      <Field className="w-full">
         <FieldLabel htmlFor="progress-loading">
           <span>{status}</span>
           <span className="ml-auto">{progress}%</span>
