@@ -1,6 +1,6 @@
 {
   "name": "browzarr",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "A browser-based visualization toolkit for exploring and analyzing Zarr data stores.",
   "type": "module",
   "keywords": [
@@ -46,13 +46,12 @@
     "browzarr": "./cli.mjs"
   },
   "scripts": {
-    "postinstall": "node src/hooks/copy-wasm.mjs",
     "prBuild": "pnpm buildRepo",
     "prLint": "pnpm lint",
-    "dev": "next dev",
+    "dev": "node src/hooks/copy-wasm.mjs && next dev",
     "buildRepo": "pnpm rmBuild && pnpm build",
     "rmBuild": "pnpm -r exec rm -rf out",
-    "build": "next build",
+    "build": "node src/hooks/copy-wasm.mjs && next build",
     "start": "next start",
     "prepublishOnly": "pnpm run rmBuild && pnpm run build",
     "test": "vitest",
