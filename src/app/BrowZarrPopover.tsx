@@ -32,24 +32,20 @@ export function BrowZarrPopover() {
        <div className="grid grid-cols-1 gap-6 my-3">
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Browzarr is a powerful, browser-native framework for visualizing, exploring and analyzing <a className="font-bold text-orange-600">Zarr</a> stores and <a className="font-bold text-teal-600">NetCDF</a> datasets.
+              Browzarr is a powerful, browser-native framework for visualizing, exploring and analyzing <strong className="font-bold text-orange-600">Zarr</strong> stores and <strong className="font-bold text-teal-600">NetCDF</strong> datasets.
             </p>
           </div>
 
           <div className="space-y-4">
-            <Link
-              href="https://github.com/EarthyScience/Browzarr"
-              target="_blank"
-              className="w-full"
-            >
-              <Button className="w-full cursor-pointer" variant={"pink"}>
-                <span className="flex items-center justify-center gap-2">
+            <Button className="w-full cursor-pointer" variant="pink">
+              <Link href="https://github.com/EarthyScience/Browzarr" target="_blank">
+                <span className="flex items-center justify-center gap-2 text-white">
                   <FaGithub className="h-4 w-4" />
+                    Star us!
                   <FaStar className="h-4 w-4" /> 
-                  Star us!
                 </span>
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
 
