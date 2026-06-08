@@ -38,9 +38,13 @@
   "packageManager": "pnpm@10.11.1",
   "files": [
     "out/",
+    "cli.mjs",
     "README.md",
     "LICENSE"
   ],
+  "bin": {
+    "browzarr": "./cli.mjs"
+  },
   "scripts": {
     "postinstall": "node src/hooks/copy-wasm.mjs",
     "prBuild": "pnpm buildRepo",
