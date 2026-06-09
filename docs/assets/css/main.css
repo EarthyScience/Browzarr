@@ -88,3 +88,7 @@
     transform: rotate(0deg) scale(1);
   }
 }
+
+.text-cta {
+  @apply bg-linear-to-r from-pink-500 to-yellow-500 text-transparent bg-clip-text font-semibold;
+}
