@@ -1,8 +1,8 @@
 # Introduction
 
-> Welcome to Browzarr's documentation.
+> What is Browzarr?
 
-Welcome to **Browzarr**'s documentation. Although, `browzarr.io` user's interface is pretty intuitive, there are plenty of features that deserve some dedicated space for a longer explanation. But first,
+Although the `browzarr.io` user interface is pretty intuitive, there are plenty of features that deserve some dedicated space for a longer explanation. But first,
 
 ## What is Browzarr?
 
