@@ -38,13 +38,13 @@ Load multi-dimensional datasets directly in the browser, interactively slice and
 
 ### 🌐 Online
 
-Visit **[browzarr.io](https://browzarr.io)** — no installation required.
+Visit **[browzarr.io](https://browzarr.io)** - no installation required.
 
 ---
 
-### 📦 npm (Offline-friendly)
+### 📦 [npm](https://nodejs.org/en/download) (Offline)
 
-Install once, run anytime — no internet required after install:
+Install once, run anytime - no internet required after install:
 
 ```bash
 npm install -g browzarr
@@ -72,7 +72,7 @@ By default, Browzarr starts on port `3000`. If that port is already in use, it w
 
 ---
 
-### Julia — [Browzarr.jl](https://github.com/EarthyScience/Browzarr.jl)
+### [Julia](https://julialang.org/downloads/) - [Browzarr.jl](https://github.com/EarthyScience/Browzarr.jl)  (Offline)
 
 **Installation**
 
