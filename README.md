@@ -65,7 +65,7 @@ PORT=8080 browzarr
 # Windows PowerShell
 $env:PORT=8080; browzarr
 # Windows CMD
-set PORT=8080 && browzarr
+set "PORT=8080" && browzarr
 ```
 
 By default, Browzarr starts on port `3000`. If that port is already in use, it will automatically try the next available one.
