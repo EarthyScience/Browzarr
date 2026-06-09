@@ -90,7 +90,7 @@ Use Browzarr online with no setup, or run it fully [offline]{.text-primary} via 
   class: "ring-1 ring-gray-200 dark:ring-gray-800 rounded-xl p-4 hover:ring-gray-300 dark:hover:ring-gray-600 transition-all duration-200"
   ---
   #title
-  [ Browzarr.jl] — [ Offline ]
+  [ Browzarr.jl]{.text-primary} — [ Offline ]
   #description
   `Pkg.add("Browzarr")` then `using Browzarr` and call `browzarr()` with a local path or remote store URL.
   :::
