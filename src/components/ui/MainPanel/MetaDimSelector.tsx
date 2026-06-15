@@ -88,7 +88,6 @@ export default function MetaDimSelector({ meta, onApply }: Props) {
       }),
     [dimArrays, dimNames, dimUnits]
   );
-    console.log(dimArrays, dimNames, dimUnits)
 
   const [sels, setSels] = useState<SliceSelectionState[]>(() =>
     DIMS.map((d: typeof DIMS[0], i: number) => defaultSelectionForIndex(i, d.size))
