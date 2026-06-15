@@ -1,7 +1,5 @@
 'use client';
-
 import { useState } from 'react';
-
 import {
   Axis,
   canUseSliceMode,
@@ -10,7 +8,6 @@ import {
   SliceSelectionState,
 } from '@/components/ui/DimSlicer';
 import { Button } from '@/components/ui/button';
-
 import { DimConfigEntry } from './DimConfigEntry';
 
 export interface DimConfigBarProps {
@@ -26,14 +23,9 @@ const formatConfigToken = (selection: SliceSelectionState) => {
   if (selection.mode === 'scalar') {
     return selection.scalar || '0';
   }
-
   const start = selection.start || '0';
   const stop = selection.stop || '';
-
-  if (start === '0' && stop === '') {
-    return ':';
-  }
-
+  if (start === '0' && stop === '') return ':';
   return `${start}:${stop}`;
 };
 
@@ -63,13 +55,13 @@ export function DimConfigBar({
               <span className="text-foreground">{variableName}</span>
               <span className="text-muted-foreground">[</span>
               {sels.map((selection, index) => {
+                if (!dims[index]) return null;
                 const tokenClass =
                   selection.mode === 'scalar'
                     ? 'text-slate-500'
                     : AXIS_COLOR[axes[index]];
-
                 return (
-                  <span key={dims[index].name} className={tokenClass}>
+                  <span key={index} className={tokenClass}>
                     {formatConfigToken(selection)}
                     {index < sels.length - 1 ? ', ' : ''}
                   </span>
@@ -77,9 +69,7 @@ export function DimConfigBar({
               })}
               <span className="text-muted-foreground">]</span>
             </div>
-            <div className="text-muted-foreground">
-              Current slicing expression
-            </div>
+            <div className="text-muted-foreground">Current slicing expression</div>
           </div>
 
           <Button
@@ -98,7 +88,7 @@ export function DimConfigBar({
           <div className="space-y-2">
             {dims.map((dim, i) => (
               <DimConfigEntry
-                key={dim.name}
+                key={i}
                 dimName={dim.name}
                 selection={sels[i]}
                 axis={axes[i]}
