@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState } from 'react'
 import {
   Combobox,
@@ -31,13 +30,13 @@ export default function TimeCombobox({
   formattedValue,
   includeEnd = false,
 }: TimeComboboxProps) {
-  const selectedLabel = includeEnd && currentIndex === effectiveDimSize ? formattedValue(Math.max(effectiveDimSize - 1, 0)) : formattedValue(currentIndex)
+  const selectedLabel =
+    includeEnd && currentIndex === effectiveDimSize
+      ? formattedValue(Math.max(effectiveDimSize - 1, 0))
+      : formattedValue(currentIndex)
+
   const [inputQuery, setInputQuery] = useState('')
   const inputValue = inputQuery === '' ? selectedLabel : inputQuery
-
-  const getIndexFromLabel = (label: string) => {
-    return values.findIndex((_, index) => formattedValue(index) === label)
-  }
 
   const handleValueChange = (value: unknown) => {
     const label = typeof value === 'string' ? value : ''
@@ -46,24 +45,35 @@ export default function TimeCombobox({
       onIndexChange(includeEnd ? effectiveDimSize : 0)
       return
     }
-    const nextIndex = getIndexFromLabel(label)
-    if (nextIndex !== -1) {
+    const item = labeledValues.find(({ label: l }) => l === label)
+    if (item) {
       setInputQuery('')
-      onIndexChange(nextIndex)
+      onIndexChange(item.index)
     }
   }
 
-  const labels = values.map((_, i) => formattedValue(i))
+  const labeledValues = values.map((_, i) => ({ label: formattedValue(i), index: i }))
+
   const normalizedInput = inputValue.trim().toLowerCase()
   const selectedQuery = selectedLabel.trim().toLowerCase()
-  const filtered = normalizedInput === '' || normalizedInput === selectedQuery ? labels : labels.filter(l => l.toLowerCase().includes(normalizedInput))
-  const targetWidth = Math.min(Math.max(Math.max(selectedLabel.length, placeholder.length) + 2, 12), 20)
+
+  const filtered =
+    normalizedInput === '' || normalizedInput === selectedQuery
+      ? labeledValues
+      : labeledValues.filter(({ label }) => label.toLowerCase().includes(normalizedInput))
+
+  const targetWidth = Math.min(
+    Math.max(Math.max(selectedLabel.length, placeholder.length) + 2, 12),
+    20
+  )
 
   return (
     <Combobox
       value={selectedLabel}
       onValueChange={handleValueChange}
-      onInputValueChange={value => setInputQuery(typeof value === 'string' ? value : String(value))}
+      onInputValueChange={value =>
+        setInputQuery(typeof value === 'string' ? value : String(value))
+      }
       autoHighlight
     >
       <ComboboxInput
@@ -76,8 +86,8 @@ export default function TimeCombobox({
       <ComboboxContent>
         {filtered.length === 0 ? <ComboboxEmpty>No items found.</ComboboxEmpty> : null}
         <ComboboxList>
-          {filtered.map(label => (
-            <ComboboxItem key={label} value={label}>
+          {filtered.map(({ label, index }) => (
+            <ComboboxItem key={index} value={label}>
               {label}
             </ComboboxItem>
           ))}

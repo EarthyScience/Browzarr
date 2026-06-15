@@ -155,7 +155,7 @@ export default function MetaDimSelector({ meta, onApply }: Props) {
             {showSliders && (
               <div className="space-y-2">
                 {DIMS.map((dim: typeof DIMS[0], i: number) => (
-                  <div key={dim.name} className="rounded-lg bg-muted/20 p-2">
+                  <div key={dimNames[i]} className="rounded-lg bg-muted/20 p-2">
                     <DimSlicer dimName={dim.name} dimSize={dim.size} axis={axes[i]} selection={sels[i]} onChange={next => updateSelection(i, next)} values={dim.values} formatValue={dim.formatValue} />
                   </div>
                 ))}
