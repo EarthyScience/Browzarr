@@ -5,7 +5,7 @@ import { TbVariable } from "react-icons/tb";
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
-import MetaDataInfo from "./MetaDataInfo";
+import MetaDimSelector from "./MetaDimSelector";
 import { GetDimInfo } from "@/utils/HelperFuncs";
 import { GetAttributes } from "@/components/zarr/ZarrLoaderLRU";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -318,12 +318,15 @@ const Variables = () => {
             className="max-h-[80vh] overflow-y-auto w-[300px]"
           >
             {meta && (
-              <MetaDataInfo
+              <MetaDimSelector
                 meta={meta}
-                metadata={metadata ?? {}}
-                setShowMeta={setOpenMetaPopover}
-                setOpenVariables={setOpenVariables}
-                popoverSide={"left"}
+                onApply={(sels, axes) => {
+                  // close UI after applying selections
+                  setOpenMetaPopover(false);
+                  setOpenVariables(false);
+                  // future: persist sels/axes to store
+                  console.log('Applied slices', sels, axes);
+                }}
               />
             )}
           </PopoverContent>
@@ -335,12 +338,13 @@ const Variables = () => {
             <DialogTitle>{}</DialogTitle>
             <div className="-mt-4">
               {meta && (
-                <MetaDataInfo
+                <MetaDimSelector
                   meta={meta}
-                  metadata={metadata ?? {}}
-                  setShowMeta={setShowMeta}
-                  setOpenVariables={setOpenVariables}
-                  popoverSide={"top"}
+                  onApply={(sels, axes) => {
+                    setShowMeta(false);
+                    setOpenVariables(false);
+                    console.log('Applied slices', sels, axes);
+                  }}
                 />
               )}
             </div>
