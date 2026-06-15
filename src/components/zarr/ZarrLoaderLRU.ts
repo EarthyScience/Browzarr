@@ -100,6 +100,24 @@ export async function GetZarrDims(variable: string) {
 		const dimUnits: unknown[] = [];
 
 		if (dimNames) {
+			// Check if all dimension data is cached
+			const allDimsCached = dimNames.every(dim => cache.has(`${initStore}_${dim}`));
+			
+			if (!allDimsCached) {
+				// Dimension data not cached yet, fetch it
+				const group = await useZarrStore.getState().currentStore;
+				if (!group) throw new Error(`Failed to open store: ${initStore}`);
+
+				if (group.store instanceof IcechunkStore) {
+					return getIcechunkDims(
+						group as zarr.Group<IcechunkStore>,
+						variable,
+						initStore,
+					);
+				}
+				return getFetchStoreDims(group, variable, initStore);
+			}
+
 			for (const dim of dimNames) {
 				dimArrays.push(cache.get(`${initStore}_${dim}`) ?? [0]);
 				dimUnits.push(

@@ -12,6 +12,8 @@ import DimSlicer, {
   SliceSelectionState,
 } from '@/components/ui/DimSlicer';
 import { Button } from '@/components/ui/button';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useShallow } from 'zustand/shallow';
 
 import {
   Card,
@@ -23,41 +25,81 @@ import {
 
 import { parseLoc } from '@/utils/HelperFuncs';
 
+interface DimInfo {
+  dimArrays: ArrayLike<number>[];
+  dimNames: string[];
+  dimUnits: (string | null)[];
+}
+
 type Props = {
-  meta: any;
-  metadata?: Record<string, any>;
+  meta: {
+    name?: string;
+    shape?: number[];
+    dimInfo?: DimInfo;
+    [key: string]: unknown;
+  };
+  metadata?: Record<string, unknown>;
   onApply?: (sels: SliceSelectionState[], axes: Axis[]) => void;
 };
 
 export default function MetaDimSelector({ meta, onApply }: Props) {
   const { dimArrays = [], dimNames = [], dimUnits = [] } = meta?.dimInfo ?? {};
+  const shape = meta?.shape ?? [];
+  const shapeLength = shape.length;
+
+  const { setDimArrays, setDimNames, setDimUnits } = useGlobalStore(
+    useShallow((state) => ({
+      setDimArrays: state.setDimArrays,
+      setDimNames: state.setDimNames,
+      setDimUnits: state.setDimUnits,
+    }))
+  );
+
+  // Map dimensions to axes based on shape and dimension position
+  const getAxisForDimIndex = (idx: number): Axis => {
+    if (shapeLength <= 1) return 'c'; // scalar or single dim
+    if (shapeLength === 2) {
+      return idx === 0 ? 'y' : 'x';
+    }
+    if (shapeLength === 3) {
+      return idx === 0 ? 'z' : idx === 1 ? 'y' : 'x';
+    }
+    // 4D: first is time/other, last 3 are z, y, x
+    if (shapeLength === 4) {
+      return idx === 0 ? 'c' : idx === 1 ? 'z' : idx === 2 ? 'y' : 'x';
+    }
+    return 'c';
+  };
 
   const DIMS = useMemo(
     () =>
-      dimArrays.map((arr: any, idx: number) => {
-        const values = Array.isArray(arr) ? arr : [];
+      dimArrays.map((arr: ArrayLike<number>, idx: number) => {
+        const values = Array.from(arr ?? []);
         const size = values.length;
         return {
           name: dimNames?.[idx] ?? `dim${idx}`,
           size,
           values,
-          formatValue: (i: number) => parseLoc(values?.[i] ?? i, dimUnits?.[idx] ?? null),
+          formatValue: (i: number): string => {
+            const val = parseLoc(values?.[i] ?? i, (dimUnits?.[idx] ?? undefined) as string | undefined);
+            return String(val);
+          },
         };
       }),
     [dimArrays, dimNames, dimUnits]
   );
+    console.log(dimArrays, dimNames, dimUnits)
 
   const [sels, setSels] = useState<SliceSelectionState[]>(() =>
-    DIMS.map((d, i) => defaultSelectionForIndex(i, d.size))
+    DIMS.map((d: typeof DIMS[0], i: number) => defaultSelectionForIndex(i, d.size))
   );
-  const [axes, setAxes] = useState<Axis[]>(() => DIMS.map((_, i) => defaultAxisForIndex(i)));
-  const [showSliders, setShowSliders] = useState(true);
+  const [axes, setAxes] = useState<Axis[]>(() => DIMS.map((_: typeof DIMS[0], i: number) => getAxisForDimIndex(i)));
 
   useEffect(() => {
-    // reset selections/axes when meta dims change
-    setSels(DIMS.map((d, i) => defaultSelectionForIndex(i, d.size)));
-    setAxes(DIMS.map((_, i) => defaultAxisForIndex(i)));
-  }, [DIMS.length]);
+    setSels(DIMS.map((d: typeof DIMS[0], i: number) => defaultSelectionForIndex(i, d.size)));
+    setAxes(DIMS.map((_: typeof DIMS[0], i: number) => getAxisForDimIndex(i)));
+  }, [DIMS, shapeLength]);
+  const [showSliders, setShowSliders] = useState(true);
 
   const updateSelection = (i: number, next: SliceSelectionState) => {
     setSels(prev => prev.map((s, idx) => (idx === i ? next : s)));
@@ -84,6 +126,12 @@ export default function MetaDimSelector({ meta, onApply }: Props) {
     }
   };
 
+  useEffect(() => {
+    setDimArrays(dimArrays);
+    setDimNames(dimNames);
+    setDimUnits(dimUnits);
+  }, [dimArrays, dimNames, dimUnits, setDimArrays, setDimNames, setDimUnits]);
+
   return (
     <div className="min-h-0">
       <Card className="w-full">
@@ -106,7 +154,7 @@ export default function MetaDimSelector({ meta, onApply }: Props) {
 
             {showSliders && (
               <div className="space-y-2">
-                {DIMS.map((dim, i) => (
+                {DIMS.map((dim: typeof DIMS[0], i: number) => (
                   <div key={dim.name} className="rounded-lg bg-muted/20 p-2">
                     <DimSlicer dimName={dim.name} dimSize={dim.size} axis={axes[i]} selection={sels[i]} onChange={next => updateSelection(i, next)} values={dim.values} formatValue={dim.formatValue} />
                   </div>
