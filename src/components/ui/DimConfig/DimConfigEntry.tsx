@@ -4,7 +4,7 @@ import {
   Axis,
   SelectionMode,
   SliceSelectionState,
-} from '@/components/DimSlicer';
+} from '@/components/ui/DimSlicer';
 import { Button } from '@/components/ui/button';
 import {
   ButtonGroup,
@@ -16,12 +16,12 @@ import { cn } from '@/lib/utils';
 
 const AXIS_OPTIONS: Axis[] = ['x', 'y', 'z', 'c'];
 
-const AXIS_COLOR: Record<Axis, string> = {
-  x: 'text-pink-500',
-  y: 'text-green-600',
-  z: 'text-blue-500',
-  c: 'text-yellow-600',
-};
+// const AXIS_COLOR: Record<Axis, string> = {
+//   x: 'text-pink-500',
+//   y: 'text-green-600',
+//   z: 'text-blue-500',
+//   c: 'text-yellow-600',
+// };
 
 const SELECTED_AXIS_BUTTON_CLASSES: Record<Axis, string> = {
   x: 'text-white bg-pink-500 border-pink-500 hover:bg-pink-600',
@@ -88,7 +88,7 @@ export function DimConfigEntry({
         aria-pressed={!isSlice}
         aria-label={`Scalar mode for ${dimName}`}
       >
-        scalar
+        index
       </Button>
 
       {isSlice ? (
