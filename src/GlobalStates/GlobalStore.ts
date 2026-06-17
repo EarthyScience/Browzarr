@@ -47,6 +47,7 @@ type StoreState = {
   textureArrayDepths: number[];
   textureData: Uint8Array;
   clampExtremes: boolean;
+  permute: number[];
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -116,6 +117,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   DPR: 1,
   scalingFactor: null,
   clampExtremes: false,
+  permute: [0, 1, 2], //Dim permutations 
   // setters
 
   setDataShape: (dataShape) => set({ dataShape }),

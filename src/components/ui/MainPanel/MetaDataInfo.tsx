@@ -8,6 +8,7 @@ import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs"
 import Metadata, { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { parseLoc, HandleCoarselNums } from "@/utils/HelperFuncs"
+import { DimensionOrder } from "../Elements/DimensionOrder";
 import {
   Tooltip,
   TooltipContent,
@@ -58,9 +59,9 @@ function HandleCustomSteps(e: string, chunkSize: number){
 
 
 const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSide }: { meta: any, metadata: Record<string, any>, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: (open: boolean) => void, popoverSide: string  }) => {
-  const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(state => ({
+  const {is4D, idx4D, variable, initStore, permute, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(state => ({
     is4D: state.is4D, idx4D: state.idx4D, variable: state.variable,
-    initStore: state.initStore,
+    initStore: state.initStore, permute:state.permute,
     setIs4D: state.setIs4D, setIdx4D: state.setIdx4D, setVariable: state.setVariable,
     setTextureArrayDepths: state.setTextureArrayDepths,
   })))
@@ -83,6 +84,11 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const [texCount, setTexCount] = useState(0)
   const [displaySpat, setDisplaySpat] = useState(String(kernelSize))
   const [displayDepth, setDisplayDepth] = useState(String(kernelDepth))
+
+  function permuteArr(arr: number[]) {
+    return permute.map(i => arr[i]);
+  }
+
 
   // ---- Meta Info ---- //
   const {dimArrays, dimNames, dimUnits} = meta.dimInfo
@@ -190,7 +196,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     }
   },[currentSize, meta])
 
-  const smallCache = cachedSize > cacheSize
+  const smallCache = cachedSize > cacheSize // If the current cache is too small
 
   useEffect(()=>{
     const this4D = meta.shape.length == 4;
@@ -246,15 +252,16 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
           <div> <Metadata data={metadata} variable ={'Attributes'} /> </div>
           }
         <br/>
+        <DimensionOrder dimNames={dimNames}/>
         <br/>
         <div className="grid grid-cols-[40%_40%_20%]">
           <div className="flex flex-col">
             <b>Data Shape</b>
-          {`[${formatArray(dataShape)}]`}
+          {`[${formatArray(permuteArr(dataShape))}]`}
           </div>
           <div className="flex flex-col">
             <b>Chunk Shape</b>
-          {`[${formatArray(chunkShape)}]`}
+          {`[${formatArray(permuteArr(chunkShape))}]`}
           </div>
           <div className="flex flex-col items-center">
             <label htmlFor="coarsen"><b>Coarsen</b></label>
