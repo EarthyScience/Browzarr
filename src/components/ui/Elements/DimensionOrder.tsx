@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react'
+import React, {useRef, useState, useMemo, useEffect} from 'react'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 import {
     Select,
@@ -9,26 +9,30 @@ import {
 } from "@/components/ui/select";
 
 export const DimensionOrder = ({dimNames}: {dimNames: string[]}) => {
-    const slotCount = Math.min(3, dimNames.length);
+    const {permute} = useGlobalStore.getState() // Just need the value on mount to set initial <select> values
+    const slotCount = Math.min(3, dimNames.length); 
     const permuteRef = useRef<number[]>(
         Array.from({ length: slotCount }, (_, i) => i)
-    );
+    )
     const [warnDuplicates, setWarnDuplicates] = useState(false);
-
     const handleChange = (slotIdx: number, dimIdx: number) => {
         permuteRef.current[slotIdx] = dimIdx;
         useGlobalStore.setState({ permute: [...permuteRef.current] });
         const permuteArray = permuteRef.current;
         setWarnDuplicates(permuteArray.length != new Set(permuteArray).size)
     };
-    
+
+    useEffect(()=>{ //The first render didn't have dimNames and used default value. UseEffect updates after fetch
+        console.log("Updated")
+        permuteRef.current = Array.from({ length: slotCount }, (_, i) => i)
+    },[slotCount])
     return (
         <>
         <div className="flex gap-2">
             {Array.from({ length: slotCount }).map((_, slotIdx) => (
                 <Select
                     key={slotIdx}
-                    defaultValue={String(slotIdx)}
+                    defaultValue={String(permute[slotIdx])}
                     onValueChange={(v) => handleChange(slotIdx, Number(v))}
                 >
                     <SelectTrigger>

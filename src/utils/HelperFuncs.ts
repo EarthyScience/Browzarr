@@ -257,8 +257,63 @@ function DecompressArray(compressed : Uint8Array){
 	return floatArray
 }
 
+function permuteArray(
+  array: Float16Array,
+  shape: number[],
+  order: number[]
+): { data: number[]; shape: number[] } {
+  const ndim = shape.length;
+
+  if (order.length !== ndim) {
+    throw new Error(`order length (${order.length}) must match number of dimensions (${ndim})`);
+  }
+  if ([...order].sort((a, b) => a - b).some((v, i) => v !== i)) {
+    throw new Error(`order must be a permutation of [0, ..., ${ndim - 1}]`);
+  }
+
+  const newShape = order.map((ax) => shape[ax]);
+  const totalElements = array.length;
+  const result = new Array<number>(totalElements);
+
+  // Precompute strides for the original shape (row-major)
+  const srcStrides = new Array<number>(ndim);
+  srcStrides[ndim - 1] = 1;
+  for (let i = ndim - 2; i >= 0; i--) {
+    srcStrides[i] = srcStrides[i + 1] * shape[i + 1];
+  }
+
+  // Precompute strides for the new (permuted) shape (row-major)
+  const dstStrides = new Array<number>(ndim);
+  dstStrides[ndim - 1] = 1;
+  for (let i = ndim - 2; i >= 0; i--) {
+    dstStrides[i] = dstStrides[i + 1] * newShape[i + 1];
+  }
+
+  // Iterate over all elements by their multi-index in the new shape
+  const multiIdx = new Array<number>(ndim).fill(0);
+
+  for (let dstFlat = 0; dstFlat < totalElements; dstFlat++) {
+    // Compute source flat index: new axis i corresponds to old axis order[i]
+    let srcFlat = 0;
+    for (let i = 0; i < ndim; i++) {
+      srcFlat += multiIdx[i] * srcStrides[order[i]];
+    }
+
+    result[dstFlat] = array[srcFlat];
+
+    // Increment multi-index (rightmost axis first)
+    for (let i = ndim - 1; i >= 0; i--) {
+      multiIdx[i]++;
+      if (multiIdx[i] < newShape[i]) break;
+      multiIdx[i] = 0;
+    }
+  }
+
+  return { data: result, shape: newShape };
+}
+
 export function GetCurrentArray(overrideStore?:string){
-  const { variable, is4D, idx4D, initStore, strides, dataShape, setStatus }= useGlobalStore.getState()
+  const { variable, is4D, idx4D, initStore, strides, dataShape, permute, setStatus }= useGlobalStore.getState()
   const { arraySize, currentChunks } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
@@ -298,8 +353,9 @@ export function GetCurrentArray(overrideStore?:string){
         }
       }
     }
+    const doPermute = permute.some((v, i) => i > 0 && v < permute[i - 1]);
     setStatus(null)
-    return typedArray
+    return doPermute ? permuteArray(typedArray, dataShape, permute).data : typedArray
   }
 }
 
@@ -403,3 +459,7 @@ export function calculateStrides(
   })
   return newStrides
 }
+
+export function permuteArr(arr: number[], permute:number[]) {
+    return permute.map(i => arr[i]);
+  }

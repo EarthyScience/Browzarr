@@ -7,7 +7,7 @@ import { useShallow } from 'zustand/shallow'
 import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs"
 import Metadata, { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { parseLoc, HandleCoarselNums } from "@/utils/HelperFuncs"
+import { parseLoc, permuteArr } from "@/utils/HelperFuncs"
 import { DimensionOrder } from "../Elements/DimensionOrder";
 import {
   Tooltip,
@@ -84,10 +84,6 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const [texCount, setTexCount] = useState(0)
   const [displaySpat, setDisplaySpat] = useState(String(kernelSize))
   const [displayDepth, setDisplayDepth] = useState(String(kernelDepth))
-
-  function permuteArr(arr: number[]) {
-    return permute.map(i => arr[i]);
-  }
 
 
   // ---- Meta Info ---- //
@@ -257,11 +253,11 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
         <div className="grid grid-cols-[40%_40%_20%]">
           <div className="flex flex-col">
             <b>Data Shape</b>
-          {`[${formatArray(permuteArr(dataShape))}]`}
+          {`[${formatArray(permuteArr(dataShape, permute))}]`}
           </div>
           <div className="flex flex-col">
             <b>Chunk Shape</b>
-          {`[${formatArray(permuteArr(chunkShape))}]`}
+          {`[${formatArray(permuteArr(chunkShape, permute))}]`}
           </div>
           <div className="flex flex-col items-center">
             <label htmlFor="coarsen"><b>Coarsen</b></label>
