@@ -5,9 +5,9 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { decompressSync } from 'fflate';
-import { copyChunkToArray } from '@/components/zarr/ZarrLoaderLRU';
+import { copyChunkToArray } from '@/components/zarr/utils';
 import { GetNCDims } from '@/components/zarr/NCGetters';
-import { GetZarrDims } from '@/components/zarr/ZarrGetters';
+import { GetZarrDims } from '@/components/zarr/ZarrLoaderLRU';
 
 export type TypedArray =
   | Float32Array | Float64Array
@@ -58,7 +58,7 @@ export function parseTimeUnit(units: string | undefined): [number, number] {
     let baseDate;
     if (referenceDate.length <= 10){
       const [year, month, day] = referenceDate.split('-');
-      baseDate = new Date(Date.UTC(parseInt(year),parseInt(month),parseInt(day)))
+      baseDate = new Date(Date.UTC(parseInt(year),parseInt(month)-1,parseInt(day)))
     } else {
      baseDate = referenceDate ? new Date(referenceDate) : new Date();
     }
@@ -130,6 +130,8 @@ export function parseUVCoords({normal,uv}:{normal:THREE.Vector3,uv:THREE.Vector2
       return [uv.x, flipY ? 1-uv.y : uv.y, null]
     case normal.y === 1:
       return [1-uv.y, null, uv.x]
+    case normal.y === -1:
+      return [uv.y, null, uv.x]
     default:
       return [0,0,0]
   }
@@ -217,7 +219,6 @@ export function ParseExtent(dimUnits: string[], dimArrays: number[][]){
   }
 }
 
-
 interface TimeSeriesInfo{
   uv:THREE.Vector2,
   normal:THREE.Vector3
@@ -275,8 +276,7 @@ export function GetCurrentArray(overrideStore?:string){
     const [xStartIdx, xEndIdx] = currentChunks.x
     const [yStartIdx, yEndIdx] = currentChunks.y
     const [zStartIdx, zEndIdx] = currentChunks.z
-    let chunkShape;
-    let chunkStride;
+
     for (let z = zStartIdx; z < zEndIdx; z++) {
       for (let y = yStartIdx; y < yEndIdx; y++) {
         for (let x = xStartIdx; x < xEndIdx; x++) {
@@ -285,14 +285,10 @@ export function GetCurrentArray(overrideStore?:string){
           const chunk = cache.get(cacheName)
           const compressed = chunk.compressed
           const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
-          if (!chunkShape) {
-            chunkShape = chunk.shape
-            chunkStride = chunk.stride
-          }
           copyChunkToArray(
             thisData,
-            chunkShape,
-            chunkStride,
+            chunk.shape,
+            chunk.stride,
             typedArray,
             dataShape,
             strides as [number, number, number], 
@@ -306,6 +302,7 @@ export function GetCurrentArray(overrideStore?:string){
     return typedArray
   }
 }
+
 
 export function TwoDecimals(val: number){
     return Math.round(val * 100)/100

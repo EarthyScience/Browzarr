@@ -8,7 +8,8 @@ import { useShallow } from 'zustand/shallow';
 import { invalidate, useFrame } from '@react-three/fiber';
 import { deg2rad } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
-import { UVCube } from './UVCube';
+import { UVCube } from '@/components/plots'
+import { ColumnMeshes } from './TransectMeshes';
 
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
@@ -49,12 +50,11 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
     const aspectRatio = shape.y/shape.x
     const timeRatio = shape.z/shape.x;
     const {lonBounds, latBounds} = useCoordBounds()
-    
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
           modelViewMatrixInverse: { value: new THREE.Matrix4() }, // Used for Orthographic RayMarcher
-          map: { value: volTexture },
+          map: { value: Array.from({ length: 14 }, (_, idx) => volTexture?.[idx])},
           maskTexture: { value: maskTexture },
           maskValue: {value: maskValue },
           textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
@@ -74,7 +74,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           useClipScale: {value: vTransferRange},
           nanAlpha: {value: 1-nanTransparency},
           nanColor: {value: new THREE.Color(nanColor)},
-          fillValue: {value: NaN}
+          fillValue: {value: fillValue?? NaN}
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
       fragmentShader: useFragOpt ?  fragOpt : fragmentShader,
@@ -118,19 +118,9 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
     })
     const flipState = flipY ? -1 : 1
   return (
-    <group
-      rotation={[rotateX * Math.PI/2, 0, -rotateZ * Math.PI/2]}
-      scale={[
-        mirrorHorizontal ? -1 : 1,
-        mirrorVertical ? -flipState : flipState,
-        1
-      ]}
-    >
-      <mesh 
-        ref={meshRef} 
-        geometry={geometry} 
-        material={shaderMaterial}
-      />
+    <group scale={[1,flipY ? -1: 1,1]}>
+      <ColumnMeshes />
+      <mesh ref={meshRef} geometry={geometry} material={shaderMaterial} />
       <UVCube />
     </group>
   )

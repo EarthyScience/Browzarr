@@ -10,7 +10,7 @@
     top:15%;
     border-radius: 10px;
     font-size: 32px;
-    background: var(--background-plot);
+    background: var(--transect-bg);
     transform: translateX(-50%);
     filter: drop-shadow(0px 0px 5px var(--notice-shadow));
     z-index: 4;

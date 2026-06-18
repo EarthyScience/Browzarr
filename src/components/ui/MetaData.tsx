@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/tooltip"
 
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button-enhanced"
 
 export const defaultAttributes = [
     "long_name",

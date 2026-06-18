@@ -57,7 +57,7 @@ function HandleCustomSteps(e: string, chunkSize: number){
   }
 
 
-const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSide }: { meta: any, metadata: Record<string, any>, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: React.Dispatch<React.SetStateAction<boolean>>, popoverSide: string  }) => {
+const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSide }: { meta: any, metadata: Record<string, any>, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: (open: boolean) => void, popoverSide: string  }) => {
   const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(state => ({
     is4D: state.is4D, idx4D: state.idx4D, variable: state.variable,
     initStore: state.initStore,

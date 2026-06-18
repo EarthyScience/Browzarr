@@ -37,8 +37,10 @@ type StoreState = {
   plotDim: number;
   flipY:boolean;
   initStore:string;
+  storeFromURL: boolean;
   variable: string;
   variables: string[];
+  openVariables: boolean;
   plotOn: boolean;
   isFlat: boolean;
   status: string | null;
@@ -50,7 +52,7 @@ type StoreState = {
   titleDescription: { title: string | null; description: string | null };
   textureArrayDepths: number[];
   textureData: Uint8Array;
-  clampExtremes: boolean; // Values to reprocess the texture by trimming extremes
+  clampExtremes: boolean;
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -75,9 +77,11 @@ type StoreState = {
   updateDimCoords: (newDims: Record<string, DimCoords>) => void;
   setPlotDim: (plotDim: number) => void;
   setFlipY: (flipY:boolean) => void;
-  setInitStore: (initStore:string ) => void;
+  setInitStore: (initStore:string) => void;
+  setStoreFromURL: (storeFromURL: boolean) => void;
   setVariable: (variable: string) => void;
   setVariables: (variables: string[]) => void;
+  setOpenVariables: (openVariables: boolean) => void;
   setPlotOn: (plotOn: boolean) => void;
   setIsFlat: (isFlat: boolean) => void;
   setProgress: (progress: number) => void;
@@ -89,7 +93,7 @@ type StoreState = {
   setTextureData: (textureData: Uint8Array ) => void;
   setDPR: (DPR: number) => void;
   setScalingFactor: (scalingFactor: number | null) => void;
-  setClampExtremes: (clampExtremes: boolean) => void
+  setClampExtremes: (clampExtremes: boolean) => void;
 };
 
 export const useGlobalStore = create<StoreState>((set, get) => ({
@@ -114,20 +118,23 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   plotDim: 0,
   flipY: false,
   initStore: ESDC,
+  storeFromURL: false,
   variable: 'Default',
   variables: [],
+  openVariables: false,
   plotOn: false,
-  isFlat:false,
+  isFlat: false,
   progress: 0,
   status: null,
   is4D: false,
   idx4D: null,
-  titleDescription: {title:null, description: null},
+  titleDescription: { title: null, description: null },
   textureArrayDepths: [1,1,1], 
   textureData: new Uint8Array(1),
   DPR: 1,
   scalingFactor: null,
   clampExtremes: false,
+  // setters
 
   setDataShape: (dataShape) => set({ dataShape }),
   setAxisShape: (axisShape) => set({ axisShape }),
@@ -172,8 +179,10 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setPlotDim: (plotDim) => set({ plotDim }),
   setFlipY: (flipY) => set({ flipY }),
   setInitStore: (initStore) => set({ initStore }),
+  setStoreFromURL: (storeFromURL) => set({ storeFromURL }),
   setVariable: (variable) => set({ variable }),
   setVariables: (variables) => set({ variables }),
+  setOpenVariables: (openVariables) => set({ openVariables }),
   setPlotOn: (plotOn) => set({ plotOn }),
   setIsFlat: (isFlat) => set({ isFlat }),
   setProgress: (progress) => set({ progress }),
@@ -186,8 +195,3 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setScalingFactor: (scalingFactor) => set({ scalingFactor }),
   setClampExtremes: (clampExtremes) => set({ clampExtremes }),
 }));
-
-
-
-
-

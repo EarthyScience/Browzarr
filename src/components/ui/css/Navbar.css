@@ -17,6 +17,7 @@
   height: auto;
   padding: 4px;
   gap: 16px;
+  overflow: visible;
   /* box-shadow: 0 4px 6px var(--glass-shadow); */
 }
 

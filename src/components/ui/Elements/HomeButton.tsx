@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import logoHome from "public/logo-light.svg";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button-enhanced";
 import {
 	Tooltip,
 	TooltipContent,

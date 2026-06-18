@@ -1,5 +1,5 @@
 import * as zarr from 'zarrita'
-import { json_decode_object, json_encode_object } from 'node_modules/zarrita/dist/src/util';
+import { jsonDecodeObject, jsonEncodeObject } from 'node_modules/zarrita/dist/src/util';
 
 function is_meta_key(key: string) {
     return (key.endsWith(".zarray") ||
@@ -26,7 +26,7 @@ async function ZarrParser(files: any, store: any){
     }
     for (const variable of vars){
         const decoded = await store.get(variable)
-        metadata[variable.slice(1)] = json_decode_object(decoded)
+        metadata[variable.slice(1)] = jsonDecodeObject(decoded)
     }
     const v2_meta = {metadata, zarr_consolidated_format: 1}
     const known_meta: { [key: string]: any } = {};
@@ -36,11 +36,11 @@ async function ZarrParser(files: any, store: any){
     return {
         async get(key: string, opts?: any): Promise<any> {
             if (known_meta[key]) {
-            return json_encode_object(known_meta[key]);
+            return jsonEncodeObject(known_meta[key]);
             }
             const maybe_bytes = await store.get(key, opts);
             if (is_meta_key(key) && maybe_bytes) {
-            const meta = json_decode_object(maybe_bytes);
+            const meta = jsonDecodeObject(maybe_bytes);
             known_meta[key] = meta;
             }
             return maybe_bytes;

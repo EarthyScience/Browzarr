@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { GetStore } from "@/components/zarr/ZarrLoaderLRU";
+import { FetchStoreOptions, IcechunkStoreOptions } from "@/components/zarr/Interfaces";
 
 const ESDC = 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr'
 
@@ -18,7 +19,11 @@ type ZarrState = {
   coarsen: boolean,
   kernelSize: number,
   kernelDepth: number,
-
+  icechunkOptions: IcechunkStoreOptions | null;
+  fetchOptions: FetchStoreOptions | null;
+  abortController: AbortController | null;
+  fetchKey: number;
+  
   setZSlice: (zSlice: [number , number | null]) => void;
   setYSlice: (ySlice: [number , number | null]) => void;
   setXSlice: (xSlice: [number , number | null]) => void;
@@ -33,6 +38,10 @@ type ZarrState = {
   setCoarsen: (coarsen: boolean) => void;
   setKernelSize: (kernelSize: number) => void;
   setKernelDepth: (kernelDepth: number) => void;
+  setIcechunkOptions: (options: IcechunkStoreOptions | null) => void;
+  setFetchOptions: (options: FetchStoreOptions | null) => void;
+  setAbortController: (controller: AbortController | null) => void;
+  bumpFetchKey: () => void;
 }
 
 export const useZarrStore = create<ZarrState>((set, get) => ({
@@ -50,6 +59,10 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   coarsen: false,
   kernelSize: 2,
   kernelDepth: 2,
+  icechunkOptions: null,
+  fetchOptions: null,
+  abortController: null,
+  fetchKey: 0,
 
   setZSlice: (zSlice) => set({ zSlice }),
   setYSlice: (ySlice) => set({ ySlice }),
@@ -65,4 +78,8 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   setCoarsen: (coarsen) => set({ coarsen }),
   setKernelSize: (kernelSize) => set({ kernelSize }),
   setKernelDepth: (kernelDepth) => set({ kernelDepth }),
+  setIcechunkOptions: (options) => set({ icechunkOptions: options }),
+  setFetchOptions: (options) => set({ fetchOptions: options }),
+  setAbortController: (controller) => set({ abortController: controller }),
+  bumpFetchKey: () => set(s => ({ fetchKey: s.fetchKey + 1 })),
 }))

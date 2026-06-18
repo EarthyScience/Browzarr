@@ -2,7 +2,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 import AboutInfo from "@/components/ui/Elements/AboutInfo";
 import logo from "@/app/logo.png";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button-enhanced";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function LogoDrawer() {

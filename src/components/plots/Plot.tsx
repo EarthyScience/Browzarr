@@ -1,8 +1,8 @@
 import { OrbitControls, useTexture } from '@react-three/drei';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
-import { PointCloud, UVCube, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
-import { Canvas, invalidate, useThree, useLoader } from '@react-three/fiber';
+import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
+import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { CreateTexture } from '@/components/textures';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
@@ -19,7 +19,6 @@ import { useDataFetcher } from '@/hooks/useDataFetcher';
 
 const TransectNotice = () =>{
   const {selectTS} = usePlotStore(useShallow(state => ({selectTS: state.selectTS})))
-
   return (
     <>
     {selectTS && <div className="transect-notice">
@@ -53,8 +52,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       const duration = 1000; 
       const startTime = performance.now();
       const startPos = controls.object.position.clone();
-      const endPos = isFlat ? new THREE.Vector3(0, 0, 5) : controls.position0.clone()
-
+      const endPos = isFlat ? new THREE.Vector3(0, 0, 5) : new THREE.Vector3(-4.5, 3, 4.5)
       const startTarget = controls.target.clone();
       const endTarget = controls.target0.clone()
 
@@ -83,6 +81,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       return () => cancelAnimationFrame(frameId);
     }
   },[resetCamera, isFlat])
+
   useEffect(()=>{
     if (hasMounted.current){
       let newCamera;
@@ -312,9 +311,7 @@ const Plot = () => {
         <ExportCanvas show={show}/>
         {show && <AxisLines />}
         {plotType == "volume" && show && 
-          <>
             <DataCube volTexture={textures}/>
-          </>
         }
         {plotType == "point-cloud" && show &&
           <>
@@ -328,7 +325,7 @@ const Plot = () => {
         }
         <Orbiter isFlat={plotType == "flat"} />
         {plotType == "flat" && show && <>
-          {displaceSurface && <FlatMap textures={textures as THREE.DataTexture | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
+          {displaceSurface && <FlatMap textures={textures as THREE.DataTexture[] | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
           {!displaceSurface && <FlatBlocks textures={textures} />}
         </>
         }
