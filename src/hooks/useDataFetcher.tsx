@@ -4,7 +4,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
-import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
+import { ParseExtent, GetDimInfo, permuteArr } from '@/utils/HelperFuncs';
 import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
 import { GetArray } from '@/components/zarr/GetArray';
 import { ArrayToTexture } from '@/components/textures';
@@ -25,10 +25,11 @@ export const useDataFetcher = () => {
         setPlotOn: state.setPlotOn,
         setStatus: state.setStatus  
     })))
-    const {variable, is4D, setIsFlat} = useGlobalStore(
+    const {variable, is4D, permute, setIsFlat} = useGlobalStore(
         useShallow(state=>({
             variable: state.variable, 
             is4D: state.is4D,
+            permute: state.permute,
             setIsFlat: state.setIsFlat, 
     })))
     const {plotType, interpPixels, setPlotType} = usePlotStore(
@@ -66,7 +67,7 @@ export const useDataFetcher = () => {
                 }
                 //----- TS Cleanup ----//
                 useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
-                //---- Set Plot Slicez ----//
+                //---- Set Plot Slices ----//
                 const { setZSlice, setYSlice, setXSlice } = usePlotStore.getState();
                 setZSlice(zSlice);
                 setYSlice(ySlice);
@@ -74,12 +75,11 @@ export const useDataFetcher = () => {
 
                 //---- Main Fetch ----//
                 GetArray().then((result) => {
-                    const shape = result.shape.filter((val) => val != 1);
+                    const shape = permuteArr(result.shape.filter((val) => val != 1),permute);
                     const [tempTexture, scaling] = ArrayToTexture({
                         data: result.data,
                         shape
                     });
-
                     setTextures(tempTexture);
                     setValueScales(scaling as { maxVal: number; minVal: number });
                     useGlobalStore.getState().setScalingFactor(result.scalingFactor);
@@ -104,6 +104,7 @@ export const useDataFetcher = () => {
                     setShow(true);
                     setPlotOn(true);
                     setStatus(null);
+                    usePlotStore.setState({permute})
                 });
             } catch (error) {
                 console.error(error);
@@ -125,15 +126,19 @@ export const useDataFetcher = () => {
                     dimUnits = dimUnits.slice(1);
                     dimNames = dimNames.slice(1);
                 }
+                if (permute?.some((v, i) => i > 0 && v < permute[i - 1])){
+                    dimArrays = permuteArr(dimArrays, permute);
+                    dimNames = permuteArr(dimNames, permute);
+                    dimUnits = permuteArr(dimUnits, permute)
+                }
                 setDimNames(dimNames);
                 setDimArrays(dimArrays);
 
                 const targetDim = dimArrays.length > 2 ? dimArrays[1] : dimArrays[0];
                 const shouldFlip = targetDim[1] < targetDim[0];
                 setFlipY(shouldFlip);
-
                 setDimUnits(dimUnits);
-                ParseExtent(dimUnits, dimArrays);
+                // ParseExtent(dimUnits, dimArrays);
             });
 
         } else {

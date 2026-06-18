@@ -40,7 +40,6 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         flipY: state.flipY,
         textureArrayDepths: state.textureArrayDepths
     })))
-    
     const {animate, animProg, cOffset, cScale, valueRange, selectTS, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
       zSlice, ySlice, xSlice, fillValue, borderTexture, maskTexture, maskValue,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
@@ -179,11 +178,13 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
 
   return (
     <>
+    {/* Don't really understand why now I have to ALSO flip the sphere in this update. Maybe something about the updated GetCurrentArray */}
     <group scale={[1, flipY ? -1 : 1, 1]}>
       <SquareMeshes />
+      <mesh renderOrder={1} geometry={geometry} material={shaderMaterial} onClick={e=>selectTS && HandleTimeSeries(e)}/>
+      <mesh renderOrder={0} geometry={geometry} material={backMaterial} />
     </group>
-    <mesh renderOrder={1} geometry={geometry} material={shaderMaterial} onClick={e=>selectTS && HandleTimeSeries(e)}/>
-    <mesh renderOrder={0} geometry={geometry} material={backMaterial} />
+    
     </>
   )
 }

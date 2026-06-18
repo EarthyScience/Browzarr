@@ -7,7 +7,8 @@ import { useShallow } from 'zustand/shallow'
 import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs"
 import Metadata, { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { parseLoc, HandleCoarselNums } from "@/utils/HelperFuncs"
+import { parseLoc, permuteArr } from "@/utils/HelperFuncs"
+import { DimensionOrder } from "../Elements/DimensionOrder";
 import {
   Tooltip,
   TooltipContent,
@@ -58,9 +59,9 @@ function HandleCustomSteps(e: string, chunkSize: number){
 
 
 const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSide }: { meta: any, metadata: Record<string, any>, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: (open: boolean) => void, popoverSide: string  }) => {
-  const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(state => ({
+  const {is4D, idx4D, variable, initStore, permute, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(state => ({
     is4D: state.is4D, idx4D: state.idx4D, variable: state.variable,
-    initStore: state.initStore,
+    initStore: state.initStore, permute:state.permute,
     setIs4D: state.setIs4D, setIdx4D: state.setIdx4D, setVariable: state.setVariable,
     setTextureArrayDepths: state.setTextureArrayDepths,
   })))
@@ -78,11 +79,13 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const {maxTextureSize, max3DTextureSize} = usePlotStore(useShallow(state => ({maxTextureSize: state.maxTextureSize, max3DTextureSize: state.max3DTextureSize})))
 
   const [tooBig, setTooBig] = useState(false)
+  const [duplicateDims, setDuplicateDims] = useState(false)
   const [cached, setCached] = useState(false)
   const [cachedChunks, setCachedChunks] = useState<string | null>(null)
   const [texCount, setTexCount] = useState(0)
   const [displaySpat, setDisplaySpat] = useState(String(kernelSize))
   const [displayDepth, setDisplayDepth] = useState(String(kernelDepth))
+
 
   // ---- Meta Info ---- //
   const {dimArrays, dimNames, dimUnits} = meta.dimInfo
@@ -190,7 +193,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
     }
   },[currentSize, meta])
 
-  const smallCache = cachedSize > cacheSize
+  const smallCache = cachedSize > cacheSize // If the current cache is too small
 
   useEffect(()=>{
     const this4D = meta.shape.length == 4;
@@ -224,7 +227,6 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
       setCached(false)
     }
   },[meta, chunkIDs])
-
   return (
     <> 
         <b>{`${meta.long_name} `}</b>
@@ -246,15 +248,17 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
           <div> <Metadata data={metadata} variable ={'Attributes'} /> </div>
           }
         <br/>
+        {/* This doesn't work on more than 3D at the moment. But it's a start */}
+        {shapeLength <= 3 && <DimensionOrder dimNames={dimNames} setDuplicateDims={setDuplicateDims}/> } 
         <br/>
         <div className="grid grid-cols-[40%_40%_20%]">
           <div className="flex flex-col">
             <b>Data Shape</b>
-          {`[${formatArray(dataShape)}]`}
+          {`[${formatArray(permuteArr(dataShape, permute))}]`}
           </div>
           <div className="flex flex-col">
             <b>Chunk Shape</b>
-          {`[${formatArray(chunkShape)}]`}
+          {`[${formatArray(permuteArr(chunkShape, permute))}]`}
           </div>
           <div className="flex flex-col items-center">
             <label htmlFor="coarsen"><b>Coarsen</b></label>
@@ -483,7 +487,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
         {!tooBig && <Button
           variant="pink"        
           className="cursor-pointer hover:scale-[1.05]"
-          disabled={((is4D && idx4D == null) || smallCache)}
+          disabled={((is4D && idx4D == null) || smallCache || duplicateDims)}
           onClick={() => {
             if (variable == meta.name){
               ReFetch();

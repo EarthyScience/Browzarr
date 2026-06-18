@@ -12,7 +12,7 @@ import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineMaterial } from 'three-stdlib';
 import { useFrame } from '@react-three/fiber';
-import { parseLoc, coarsenFlatArray } from '@/utils/HelperFuncs';
+import { parseLoc, coarsenFlatArray, permuteArr } from '@/utils/HelperFuncs';
 import { useCSSVariable } from '../ui';
 import * as THREE from 'three'
 
@@ -41,12 +41,12 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     is4D: state.is4D
   })))
 
-  const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice, coarsen} = usePlotStore(useShallow(state => ({
+  const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice, coarsen, permute} = usePlotStore(useShallow(state => ({
     xRange: state.xRange, yRange: state.yRange,
     zRange: state.zRange, plotType: state.plotType,
     timeScale: state.timeScale, animProg: state.animProg,
     zSlice: state.zSlice, ySlice: state.ySlice,
-    xSlice: state.xSlice, coarsen: state.coarsen,
+    xSlice: state.xSlice, coarsen: state.coarsen, permute:state.permute
   })))
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow( state => ({
     hideAxis: state.hideAxis,
@@ -73,13 +73,15 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const [yResolution, setYResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [zResolution, setZResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
 
+  const permuteShape = useMemo(()=>permuteArr(dataShape,permute),[dataShape, permute])
 
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
-  const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
+  const globalScale = isPC ? permuteShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
+  
 
-  const depthRatio = useMemo(()=>dataShape[0]/dataShape[2]*timeScale,[dataShape, timeScale]);
-  const shapeRatio = useMemo(()=>dataShape[1]/dataShape[2], [dataShape])
-  const timeRatio = Math.max(dataShape[0]/dataShape[2], 2);
+  const depthRatio = useMemo(()=>permuteShape[0]/permuteShape[2]*timeScale,[permuteShape, timeScale]);
+  const shapeRatio = useMemo(()=>permuteShape[1]/permuteShape[2], [permuteShape])
+  const timeRatio = Math.max(permuteShape[0]/permuteShape[2], 2);
 
   const secondaryColor = useCSSVariable('--text-plot') //replace with needed variable
   const colorHex = useMemo(()=>{
