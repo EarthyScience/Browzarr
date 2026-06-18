@@ -1,7 +1,9 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 
+import { DimSlicerAxisToggle } from './DimSlicerAxisToggle';
+import { DimSlicerModeToggle } from './DimSlicerModeToggle';
 import { DimSlicerNumericControl } from './DimSlicerNumericControl';
 import { DimSlicerTimeControl } from './DimSlicerTimeControl';
 
@@ -15,70 +17,21 @@ export interface SliceSelectionState {
   stop: string;
 }
 
-export const SLICE_AXES: Axis[] = ['x', 'y', 'z'];
-
-export function getUsedSliceAxes(
-  sels: SliceSelectionState[],
-  axes: Axis[],
-  excludeIndex?: number
-): Set<Axis> {
-  const used = new Set<Axis>();
-  sels.forEach((sel, i) => {
-    if (i === excludeIndex || sel.mode !== 'slice') return;
-    if (SLICE_AXES.includes(axes[i])) {
-      used.add(axes[i]);
-    }
-  });
-  return used;
-}
-
-export function getAvailableSliceAxes(
-  sels: SliceSelectionState[],
-  axes: Axis[],
-  dimIndex: number
-): Axis[] {
-  const used = getUsedSliceAxes(sels, axes, dimIndex);
-  return SLICE_AXES.filter(a => !used.has(a));
-}
-
-export function canUseSliceMode(
-  sels: SliceSelectionState[],
-  axes: Axis[],
-  dimIndex: number
-): boolean {
-  return getAvailableSliceAxes(sels, axes, dimIndex).length > 0;
-}
-
 export function defaultSelection(dimSize?: number): SliceSelectionState {
   const maxIndex = dimSize ? Math.max(dimSize - 1, 0) : 0;
   return { mode: 'slice', scalar: '0', start: '0', stop: String(maxIndex) };
 }
 
-export function defaultAxisForIndex(index: number): Axis {
-  return SLICE_AXES[index] ?? 'x';
-}
-
-export function defaultSelectionForIndex(
-  index: number,
-  dimSize?: number
-): SliceSelectionState {
-  const base = defaultSelection(dimSize);
-  if (index < SLICE_AXES.length) {
-    return { ...base, mode: 'slice' };
-  }
-  return { ...base, mode: 'scalar' };
-}
-
 const MODE_ACCENT: Record<SelectionMode, string> = {
-  scalar: 'border-l-black-700',
-  slice: 'border-l-pink-400',
+  scalar: 'border-l-teal-700',
+  slice: 'border-l-[#644FF0]',
 };
 
-const AXIS_ACCENT: Record<Axis, string> = {
-  x: 'border-l-pink-500',
-  y: 'border-l-green-600',
-  z: 'border-l-blue-500',
-  c: 'border-l-yellow-600',
+const AXIS_COLOR: Record<Axis, string> = {
+  x: 'text-pink-500',
+  y: 'text-green-500',
+  z: 'text-blue-500',
+  c: 'text-yellow-500',
 };
 
 function dimBadge(selection: SliceSelectionState, dimSize: number, step: number): string {
@@ -97,12 +50,14 @@ export interface DimSlicerProps {
   dimSize: number;
   /** Current selection state */
   selection: SliceSelectionState;
-  /** Assigned axis for this dimension */
-  axis: Axis;
   /** Called whenever the selection changes */
   onChange: (next: SliceSelectionState) => void;
   /** Step size for the slider (optional, defaults to 1) */
   step?: number;
+  /** Selected axis (optional, defaults to 'x') */
+  axis?: Axis;
+  /** Called when axis changes */
+  onAxisChange?: (axis: Axis) => void;
   /** Array of actual values for this dimension (optional, if provided, dimSize should match values.length) */
   values?: number[];
   /** Function to format values for display (optional) */
@@ -113,12 +68,14 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   dimName,
   dimSize,
   selection,
-  axis,
   onChange,
   step = 1,
+  axis: propAxis = 'x',
+  onAxisChange,
   values,
   formatValue,
 }) => {
+  const [currentAxis, setCurrentAxis] = useState<Axis>(propAxis);
   const effectiveDimSize = values ? values.length : dimSize;
   const sel = selection ?? defaultSelection(effectiveDimSize);
 
@@ -190,11 +147,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   const indexLabel = dimBadge(sel, effectiveDimSize, step);
 
   return (
-    <div
-      className={`border rounded-md px-2 py-1.5 space-y-2 transition-colors ${
-        sel.mode === 'scalar' ? MODE_ACCENT.scalar : AXIS_ACCENT[axis]
-      }`}
-    >
+    <div className={`border border-l-2 rounded-md px-2 py-1.5 space-y-2 bg-muted/20 transition-colors ${MODE_ACCENT[sel.mode]}`}>
       {sel.mode === 'slice' && (
         <div className="space-y-2 pb-0.5">
           <Slider
@@ -226,47 +179,69 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
       {isDateDimension ? (
         sel.mode === 'scalar' ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span>
                 {dimName}
-                {showIndexLabel ? (
-                  <span className="ml-1 text-muted-foreground/70">[{indexLabel}]</span>
-                ) : null}
+                <span className={`ml-1 font-bold ${AXIS_COLOR[currentAxis]}`}>
+                  {currentAxis}
+                  {showIndexLabel ? `[${indexLabel}]` : ''}
+                </span>
                 <span className="text-muted-foreground/50"> [{effectiveDimSize}]</span>
               </span>
             </div>
 
-            <DimSlicerTimeControl
-              layout="row"
-              showInput={false}
-              currentIndex={scalarIndex}
-              onIndexChange={(newScalar: number) => updateSelection({ scalar: String(newScalar) })}
-              value={scalarValue}
-              placeholder={formattedValue(0)}
-              ariaLabel="Scalar value"
-              values={values ?? []}
-              effectiveDimSize={effectiveDimSize}
-              formattedValue={formattedValue}
-              onValueChange={value => {
-                const parsed = parseFloat(value);
-                if (!Number.isNaN(parsed)) {
-                  updateSelection({ scalar: String(getIndexFromValue(parsed)) });
-                }
-              }}
-              onIncrement={() => changeScalarBy(+1)}
-              onDecrement={() => changeScalarBy(-1)}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <DimSlicerModeToggle mode={sel.mode} onModeChange={mode => updateSelection({ mode })} />
+              <DimSlicerAxisToggle
+                axis={currentAxis}
+                onAxisChange={axis => {
+                  setCurrentAxis(axis);
+                  onAxisChange?.(axis);
+                }}
+              />
+              <DimSlicerTimeControl
+                layout="row"
+                showInput={false}
+                currentIndex={scalarIndex}
+                onIndexChange={(newScalar: number) => updateSelection({ scalar: String(newScalar) })}
+                value={scalarValue}
+                placeholder={formattedValue(0)}
+                ariaLabel="Scalar value"
+                values={values ?? []}
+                effectiveDimSize={effectiveDimSize}
+                formattedValue={formattedValue}
+                onValueChange={value => {
+                  const parsed = parseFloat(value);
+                  if (!Number.isNaN(parsed)) {
+                    updateSelection({ scalar: String(getIndexFromValue(parsed)) });
+                  }
+                }}
+                onIncrement={() => changeScalarBy(+1)}
+                onDecrement={() => changeScalarBy(-1)}
+              />
+            </div>
           </div>
         ) : (
           <div className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
               <span>
                 {dimName}
-                {showIndexLabel ? (
-                  <span className="ml-1 text-muted-foreground/70">[{indexLabel}]</span>
-                ) : null}
+                <span className={`ml-1 font-bold ${AXIS_COLOR[currentAxis]}`}>
+                  {currentAxis}
+                  {showIndexLabel ? `[${indexLabel}]` : ''}
+                </span>
                 <span className="text-muted-foreground/50"> [{effectiveDimSize}]</span>
               </span>
+              <div className="flex items-center gap-2">
+                <DimSlicerModeToggle mode={sel.mode} onModeChange={mode => updateSelection({ mode })} />
+                <DimSlicerAxisToggle
+                  axis={currentAxis}
+                  onAxisChange={axis => {
+                    setCurrentAxis(axis);
+                    onAxisChange?.(axis);
+                  }}
+                />
+              </div>
             </div>
 
             <div className="grid gap-2 lg:grid-cols-2">
@@ -360,16 +335,35 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
           )}
 
           <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground shrink-0">
+            <span className="text-xs text-muted-foreground shrink-0">
               {dimName}
-              {showIndexLabel ? (
-                <span className="ml-1 text-muted-foreground/70">[{indexLabel}]</span>
-              ) : null}
+              {sel.mode === 'slice' ? (
+                <span className={`ml-1 font-bold ${AXIS_COLOR[currentAxis]}`}>
+                  {currentAxis}
+                  {showIndexLabel ? `[${indexLabel}]` : ''}
+                </span>
+              ) : (
+                showIndexLabel ? (
+                  <span className="ml-1 text-muted-foreground/70">[{indexLabel}]</span>
+                ) : null
+              )}
               <span className="text-muted-foreground/50"> [{effectiveDimSize}]</span>
             </span>
           </div>
 
           <div className="flex items-center gap-2">
+            <DimSlicerModeToggle mode={sel.mode} onModeChange={mode => updateSelection({ mode })} />
+
+            {sel.mode === 'slice' && (
+              <DimSlicerAxisToggle
+                axis={currentAxis}
+                onAxisChange={axis => {
+                  setCurrentAxis(axis);
+                  onAxisChange?.(axis);
+                }}
+              />
+            )}
+
             {sel.mode === 'slice' ? (
               showTimeControls ? (
                 <DimSlicerTimeControl

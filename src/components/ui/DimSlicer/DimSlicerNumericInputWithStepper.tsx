@@ -47,7 +47,7 @@ export const DimSlicerNumericInputWithStepper: React.FC<DimSlicerNumericInputWit
             value={value}
             onChange={e => onValueChange(e.target.value)}
             onClick={() => setExpanded(false)}
-            className="h-7 w-16 text-center appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance:textfield]"
+            className="h-7 text-xs w-16 text-center appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance:textfield]"
             placeholder={placeholder}
             aria-label={ariaLabel}
           />

@@ -315,7 +315,7 @@ const Variables = () => {
             data-meta-popover
             side="left"
             align="start"
-            className="max-h-[80vh] overflow-y-auto w-[300px]"
+            className="max-h-[80vh] overflow-y-auto w-[500px]"
           >
             {meta && (
               <MetaDimSelector
