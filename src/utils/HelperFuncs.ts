@@ -403,3 +403,7 @@ export function calculateStrides(
   })
   return newStrides
 }
+
+export function permuteArr(arr: number[], permute?:number[]) {
+  return permute ? permute.map(i => arr[i]) : arr;
+}

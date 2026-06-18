@@ -235,6 +235,7 @@ const Plot = () => {
       if (axisReversed[newIdx]) arr.reverse()
       return  arr
     })
+
     const transformedDimNames = axisMapping.map(origIdx => dimNames[origIdx])
     const transformedDimUnits = axisMapping.map(origIdx => dimUnits[origIdx])
     const axisShape = axisMapping.map(origIdx => dataShape[origIdx]/dataShape[dataShape.length-1])
@@ -248,7 +249,8 @@ const Plot = () => {
     usePlotStore.setState({
       zSlice:axisSlices[0],
       ySlice:axisSlices[1],
-      xSlice:axisSlices[2]
+      xSlice:axisSlices[2],
+      permute:axisMapping
     })
 
   },[rotateX, rotateZ, mirrorHorizontal, mirrorVertical, dimArrays, dimNames, dimUnits])
