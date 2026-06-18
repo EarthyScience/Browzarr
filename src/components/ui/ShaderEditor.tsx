@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import './css/ShaderEditor.css'
-import { Button } from './button';
+import { Button } from './button-enhanced';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { IoCloseCircleSharp } from "react-icons/io5";

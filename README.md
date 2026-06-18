@@ -1,5 +1,4 @@
 <div align="center">
-
 <div style="justify-content: center;">
   <a href="https://browzarr.io">
     <img src="./public/logo_banner.png" alt="Launch browzarr" height="100">
@@ -10,11 +9,11 @@
 
 [![][docs-dev-img]][docs-dev-url]
 [![Zarr](https://img.shields.io/badge/Zarr-Compatible-e34b75)](https://zarr.dev/)
-[![Zarrita.js](https://img.shields.io/badge/Zarrita.js-0.5.x-0A7EA4)](https://github.com/manzt/zarrita.js)
+[![Zarrita.js](https://img.shields.io/badge/Zarrita.js-0.7.x-0A7EA4)](https://github.com/manzt/zarrita.js)
 [![NetCDF4](https://img.shields.io/badge/NetCDF4-Compatible-008B8B)](https://www.unidata.ucar.edu/software/netcdf/)
-[![netcdf4-wasm](https://img.shields.io/badge/netcdf4--wasm-0.1.3-654FF0)](https://github.com/EarthyScience/netcdf4-wasm)
+[![netcdf4-wasm](https://img.shields.io/badge/netcdf4--wasm-0.2.4-654FF0)](https://github.com/EarthyScience/netcdf4-wasm)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/EarthyScience/Browzarr/blob/1c8d05d1c9ec0f96e599db26808b119839ece749/LICENSE)<br>
-[![Next.js](https://img.shields.io/badge/Next.js-16.1.1-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.2.7-black)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.x-61dafb)](https://react.dev/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-000000)](https://ui.shadcn.com/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-38bdf8)](https://tailwindcss.com/)<br>
@@ -25,7 +24,6 @@
 [![WebGPU](https://img.shields.io/badge/WebGPU-Enabled-purple)](https://github.com/greggman/webgpu-utils)<br>
 [![Zustand](https://img.shields.io/badge/Zustand-5.x-orange)](https://zustand-demo.pmnd.rs/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6)](https://www.typescriptlang.org/)
-
 </div>
 
 [docs-dev-img]: https://img.shields.io/badge/docs-%20tutorial-orange?style=round-square
@@ -36,13 +34,76 @@ Load multi-dimensional datasets directly in the browser, interactively slice and
 
 ---
 
-> [!IMPORTANT]  
-> 🌐 **Try it now at [browzarr.io](https://browzarr.io)**
+## Usage 🚀
 
-Stay tuned - major updates and new visualization features are on the way! 🚀
+### 🌐 Online
+
+Visit **[browzarr.io](https://browzarr.io)** - no installation required.
+
+---
+
+### 📦 [npm](https://nodejs.org/en/download) (Offline)
+
+Install once, run anytime - no internet required after install:
+
+```bash
+npm install -g browzarr
+```
+
+Then launch:
+
+```bash
+browzarr
+```
+
+On a custom port:
+
+```bash
+browzarr --port 8080
+# or via environment variable (macOS/Linux)
+PORT=8080 browzarr
+# Windows PowerShell
+$env:PORT=8080; browzarr
+# Windows CMD
+set "PORT=8080" && browzarr
+```
+
+By default, Browzarr starts on port `3000`. If that port is already in use, it will automatically try the next available one.
+
+---
+
+### [Julia](https://julialang.org/downloads/) - [Browzarr.jl](https://github.com/EarthyScience/Browzarr.jl)  (Offline)
+
+**Installation**
+
+```julia
+using Pkg; Pkg.add("Browzarr")
+```
+
+**Usage**
+
+Launch with a local file, a remote store, or no arguments to get started:
+
+```julia
+using Browzarr
+# default (any available port)
+browzarr()
+# custom port
+browzarr(; port=3000)
+# local NetCDF file
+browzarr(; store="/absolute/path/to/file.nc")
+# local Zarr directory
+browzarr(; store="/absolute/path/to/zarr_file.zarr")
+# remote Zarr store
+browzarr(; store="https://s3.bucket.de:67/misc/out.zarr")
+```
 
 > [!TIP]  
 > 💡 _Have suggestions or feature requests? Feel free to open an issue or submit a PR!_
+
+---
+
+Stay tuned - major updates and new visualization features are on the way! 🚀
 
 # Version 1.0.0 - Progress/Features
 We are still in active development but plan to release a stable 1.0.0 when all of the desired features are in place and a final stability and bug pass has been completed

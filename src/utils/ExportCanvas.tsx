@@ -12,8 +12,6 @@ import { lerp } from 'three/src/math/MathUtils.js';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { deg2rad } from './HelperFuncs';
 
-
-
 const DrawText = (
     //Context and cbarlocs
     ctx: CanvasRenderingContext2D,
@@ -309,6 +307,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         }
         SetCamera(true);
         if (animate){
+            usePlotStore.setState({animate:false}) // Disable animation if currently active
             const {keyFrames} = useImageExportStore.getState()
             const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
             async function Animate(){

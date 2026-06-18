@@ -7,7 +7,7 @@ import { colormaps } from '@/components/textures';
 import { useShallow } from 'zustand/shallow';
 import { MdOutlineSwapVert } from "react-icons/md";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button-enhanced";
 import Image from 'next/image';
 import {
   Tooltip,

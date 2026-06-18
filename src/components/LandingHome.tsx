@@ -1,27 +1,23 @@
 'use client';
 import * as THREE from 'three'
 THREE.Cache.enabled = true;
-import { GetZarrMetadata, GetVariableNames, GetTitleDescription } from '@/components/zarr/GetMetadata';
+import { GetZarrMetadata, GetTitleDescription } from '@/components/zarr/ZarrLoaderLRU';
+import { GetVariableNames } from './zarr/utils';
 import { GetStore } from '@/components/zarr/ZarrLoaderLRU';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
 import { MainPanel } from '@/components/ui';
-import { Loading, Navbar, Error as ErrorComponent } from '@/components/ui';
+import { Loading, Error as ErrorComponent } from '@/components/ui';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
+import { loadNetCDF, NETCDF_EXT_REGEX } from '@/utils/loadNetCDF';
 
 async function sendPing() {
   const url = "https://www.bgc-jena.mpg.de/~jpoehls/browzarr/visitor_logger.php";
-
   try {
-    const response = await fetch(url, {
-      method: "GET",
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
+    const response = await fetch(url, { method: "GET" });
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
   } catch (error) {
     console.error("Request failed:", error);
   }
@@ -29,57 +25,103 @@ async function sendPing() {
 
 export function LandingHome() {
   const {
-    initStore, timeSeries, variable, plotOn,
-    setZMeta, setVariables, setPlotOn, setTitleDescription, 
+    initStore, timeSeries, variable, storeFromURL,
+    setZMeta, setVariables, setTitleDescription, setOpenVariables, setStoreFromURL,
   } = useGlobalStore(useShallow(state => ({
-    initStore: state.initStore, 
+    initStore: state.initStore,
     timeSeries: state.timeSeries,
     variable: state.variable,
-    plotOn: state.plotOn,
+    storeFromURL: state.storeFromURL,
     setZMeta: state.setZMeta,
     setVariables: state.setVariables,
-    setPlotOn: state.setPlotOn,
     setTitleDescription: state.setTitleDescription,
+    setOpenVariables: state.setOpenVariables,
+    setStoreFromURL: state.setStoreFromURL,
   })))
 
-  const { currentStore, setCurrentStore, setZSlice, setYSlice, setXSlice, setUseNC } = useZarrStore(useShallow(state => ({
+  const { currentStore, fetchKey,
+    setCurrentStore, setZSlice, setYSlice, setXSlice, setUseNC 
+  } = useZarrStore(useShallow(state => ({
     currentStore: state.currentStore,
+    fetchKey: state.fetchKey,
     setCurrentStore: state.setCurrentStore,
     setZSlice: state.setZSlice,
     setYSlice: state.setYSlice,
     setXSlice: state.setXSlice,
     setUseNC: state.setUseNC
   })))
-    function resetSlices(){
-      setZSlice([0,null])
-      setYSlice([0,null])
-      setXSlice([0,null])
-    }
-  useEffect(() => { // Update store if URL changes
-    resetSlices();
-    if (initStore.startsWith('local')){ // Don't fetch store if local 
-      return
-    }
-    setUseNC(false)
-    const newStore = GetStore(initStore)
-    setCurrentStore(newStore)
-  }, [initStore, setCurrentStore])
 
   useEffect(() => {
-    let isMounted = true;
+    void fetchKey;
+    setZSlice([0, null]);
+    setYSlice([0, null]);
+    setXSlice([0, null]);
+    if (initStore.startsWith('local:')) {
+      const path = initStore.replace('local:', '');
+      if (!NETCDF_EXT_REGEX.test(path)) return;
+      const filename = path.split('/').pop() ?? 'file.nc';
+      fetch(`/file?path=${encodeURIComponent(path)}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.blob();
+        })
+        .then(async blob => {
+          await loadNetCDF(blob, filename);
+          if (storeFromURL) {
+            setOpenVariables(true);
+            setStoreFromURL(false);
+          }
+          return;
+        })
+        .catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
+      return;
+    }
+    if (initStore.startsWith('local')) return; // local_ set by LocalNetCDF/LocalZarr after load
+    setUseNC(false)
+    const { icechunkOptions, fetchOptions } = useZarrStore.getState();
+    const newStore = GetStore(
+      initStore,
+      fetchOptions   ?? undefined,
+      icechunkOptions ?? undefined
+    );
+    setCurrentStore(newStore);
+    // Clear after use
+    useZarrStore.getState().setIcechunkOptions(null);
+    useZarrStore.getState().setFetchOptions(null);
+  }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice, storeFromURL, setOpenVariables, setStoreFromURL]);
 
-    GetTitleDescription(currentStore).then((result) => {
-      if (isMounted) setTitleDescription(result);
+  useEffect(() => {
+    const { initStore } = useGlobalStore.getState();
+    if (initStore.startsWith('local:')) return;
+
+    let isMounted = true;
+    const activeStore = currentStore;
+
+    GetTitleDescription(activeStore).then((result) => {
+      if (isMounted && currentStore === activeStore) setTitleDescription(result);
     });
 
-    const fullmetadata = GetZarrMetadata(currentStore);
+    const fullmetadata = GetZarrMetadata(activeStore);
     const variables = GetVariableNames(fullmetadata);
 
-    fullmetadata.then(e => setZMeta(e))
-    variables.then(e => setVariables(e))
+    fullmetadata.then((e) => {
+      if (isMounted && currentStore === activeStore) setZMeta(e);
+    });
+    variables.then((e) => {
+      if (isMounted && currentStore === activeStore) {
+        setVariables(e);
+        const { storeFromURL } = useGlobalStore.getState();
+        if (storeFromURL) {
+          setOpenVariables(true);
+          setStoreFromURL(false);
+        }
+      }
+    });
 
-    return () => { isMounted = false; };
-  }, [currentStore, setZMeta, setVariables, setTitleDescription])
+    return () => {
+      isMounted = false;
+    };
+  }, [currentStore, setZMeta, setVariables, setTitleDescription, setOpenVariables, setStoreFromURL]);
 
   useEffect(()=>{
     if (process.env.NODE_ENV !== "development") {
@@ -92,9 +134,7 @@ export function LandingHome() {
     <MainPanel/> 
     {variable == 'Default' && <LandingShapes />}
     <ErrorComponent />
-    {!plotOn && <Navbar />}
     <Loading />
-    
     {/* {variable === "Default" && <ScrollableLinksTable />} */}
     {variable != "Default" && <Plot />}
     {Object.keys(timeSeries).length >= 1 && <PlotArea />}

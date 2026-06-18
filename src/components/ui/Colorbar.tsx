@@ -76,14 +76,14 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         origMax: valueScales.maxVal
     }),[valueScales])
     const range = origMax - origMin
-    const zeroPoint = (0 - origMin) / range; // Used to account for shifting values
+
     const [tickCount, setTickCount] = useState<number>(5)
     const [newMin, setNewMin] = useState(origMin)
     const [newMax, setNewMax] = useState(origMax)
-    const [displayMin, setDisplayMin] = useState(Num2String(origMin))
-    const [displayMax, setDisplayMax] = useState(Num2String(origMax))
+    const [displayMin, setDisplayMin] = useState(Num2String(origMin*Math.pow(10, scalingFactor??0)))
+    const [displayMax, setDisplayMax] = useState(Num2String(origMax*Math.pow(10, scalingFactor??0)))
     const prevVals = useRef<{ min: number | null; max: number | null }>({ min: null, max: null });
-
+    
     const colors = useMemo(()=>{
         const sourceData = colormap.source.data;
         if (!sourceData || !sourceData.data) {
@@ -162,11 +162,11 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     },[newMin, newMax])
 
     useEffect(()=>{ // Update internal vals when global vals change
-        setDisplayMin(Num2String(origMin))
-        setDisplayMax(Num2String(origMax))
+        setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)))
+        setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0)))
         setNewMin(origMin)
         setNewMax(origMax)
-    },[origMax, origMin])
+    },[origMax, origMin, scalingFactor])
 
     useEffect(() => {
         if (canvasRef.current) {
@@ -181,7 +181,6 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         }
     }, [colors]);
     const analysisString = useMemo(()=>{
-        
         if (analysisMode){
             const twoVar = variable2 != "Default";
             const thisOperation = (operation === "Convolution") ? kernelOperation : operation
@@ -192,6 +191,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
             return `[${units}]`
         }
     },[analysisMode, execute])
+
     return (
         <>
         <div className='colorbar' >

@@ -21,7 +21,8 @@ import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
 import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
 import { FaArrowRotateRight } from "react-icons/fa6";
-import { Mirror } from '../Elements/Icons';
+import { Mirror } from '../Elements/Icons';import { RiCloseLargeLine } from "react-icons/ri";
+
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
     return val*range+min;
@@ -78,7 +79,7 @@ const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueSca
 })
 
 const DimSlicer = () =>{
-  const {valueRange, xRange, yRange, zRange, setValueRange, setXRange, setYRange, setZRange} = usePlotStore(useShallow(state => ({
+  const {xRange, yRange, zRange, setXRange, setYRange, setZRange} = usePlotStore(useShallow(state => ({
           valueRange: state.valueRange,
           xRange: state.xRange,
           yRange: state.yRange,
@@ -91,8 +92,7 @@ const DimSlicer = () =>{
 
       const defaultScales = {minVal: 0, maxVal: 0} //This is fed into MinMax as it is required but overwritten if an array is present
   
-      const {valueScales, dimArrays, dimNames, dimUnits, is4D} = useGlobalStore(useShallow(state => ({
-        valueScales : state.valueScales, 
+      const {dimArrays, dimNames, dimUnits, is4D} = useGlobalStore(useShallow(state => ({
         dimArrays : state.dimArrays, 
         dimNames: state.dimNames,
         dimUnits: state.dimUnits,
@@ -108,16 +108,6 @@ const DimSlicer = () =>{
     <>
     
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-center w-[200px] gap-4">
-        <b>Value Cropping</b>
-        <MinMaxSlider 
-          range={valueRange} 
-          setRange={setValueRange} 
-          valueScales={valueScales} 
-          min={0} 
-        />
-      </div>
-
       <div className="flex flex-col w-[200px] -mt-4">
         <button 
           onClick={() => setIsSpatialOpen(!isSpatialOpen)}
@@ -173,7 +163,6 @@ const DimSlicer = () =>{
         </div>
       </div>
     </div>
-    <div className="border-t border-gray-300 w-full my-4" />
     </>
   )
 }
@@ -197,7 +186,7 @@ const VolumeOptions = ()=>{
       })))
   return(
     <>
-    <div className='grid gap-y-[5px] items-center w-50 text-center'>
+    <div className='grid gap-y-[5px] items-center w-50 text-center mb-8'>
       <b>Quality</b>
       <div className='w-full flex justify-between text-xs items-center gap-2'>
           Worse
@@ -261,8 +250,6 @@ const VolumeOptions = ()=>{
       </div>
       
     </div>
-
-    <div className="border-t border-gray-300 w-full my-4" />
     </>
   )
 }
@@ -276,17 +263,17 @@ const PointOptions = () =>{
               setTimeScale: state.setTimeScale,
           }))))
   
-      const {scalePoints, scaleIntensity, pointSize, timeScale} = usePlotStore(useShallow(state => ({
+      const {scalePoints, scaleIntensity, pointSize, timeScale, disablePointScale} = usePlotStore(useShallow(state => ({
         scalePoints: state.scalePoints,
         scaleIntensity: state.scaleIntensity,
         pointSize: state.pointSize,
-        timeScale: state.timeScale,
+        timeScale: state.timeScale, disablePointScale: state.disablePointScale,
       })))
 
   return(
     <>
     
-    <div className='flex-column items-center w-50 text-center'>
+    <div className='flex-column items-center w-50 text-center mb-8'>
           <b>Point Size</b>
           <UISlider
               className='w-full mb-4 mt-2'
@@ -294,9 +281,16 @@ const PointOptions = () =>{
               max={50}
               step={1}
               value={[pointSize]}
+              disabled={disablePointScale}
           onValueChange={(vals:number[]) => setPointSize(vals[0])}
           />
-      <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => setScalePoints(!scalePoints)}>{scalePoints ? "Remove Scaling" : "Scale By Value" }</Button>
+      <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" disabled={disablePointScale} onClick={() => setScalePoints(!scalePoints)}>
+        {scalePoints ? "Remove Scaling" : "Scale By Value" }
+      </Button>
+
+      <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => usePlotStore.setState({disablePointScale: !disablePointScale})}>
+        {disablePointScale ? "Enable Scaling" : "Disable Scaling" }
+      </Button>
       <Hider show={scalePoints}>
         <><b>Scale Intensity</b>
         <UISlider
@@ -309,20 +303,18 @@ const PointOptions = () =>{
         /></>
       </Hider>
       <div className='relative'>
-        {timeScale != 1 && <RxReset className='text-lg cursor-pointer absolute top-0 left-0 hover:scale-90 transition-transform duration-100 ease-out' onClick={e=> setTimeScale(1)}/>}
+        {timeScale != 1 && <RxReset className='text-lg cursor-pointer absolute top-0 left-0 hover:scale-90 transition-transform duration-100 ease-out' onClick={()=> setTimeScale(1)}/>}
         <b>Resize Time Dimension</b>
       </div>
-      
-        <UISlider
-            className='w-full mb-2 mt-2'
-            min={0.05}
-            max={5}
-            step={0.05}
-            value={[timeScale]}
-        onValueChange={(vals:number[]) => setTimeScale(vals[0])}
-        />
+      <UISlider
+          className='w-full mb-2 mt-2'
+          min={0.05}
+          max={5}
+          step={0.05}
+          value={[timeScale]}
+      onValueChange={(vals:number[]) => setTimeScale(vals[0])}
+      />
     </div>
-    <div className="border-t border-gray-300 w-full my-4" />
     </>
   )
 }
@@ -501,7 +493,7 @@ const SpatialExtent = () =>{
           originalExtent.toArray().slice(0,2).every((val, idx) => val == lonExtent[idx]) &&
           originalExtent.toArray().slice(2).every((val, idx) => val == latExtent[idx])
         }
-        onClick={e=>{
+        onClick={()=>{
           setLonExtent([originalExtent.x, originalExtent.y])
           setLatExtent([originalExtent.z, originalExtent.w])
         }}
@@ -511,12 +503,13 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
-    setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(state => ({
+  const {valueRange, showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
+    setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(state => ({
     showBorders: state.showBorders, borderColor: state.borderColor,
     nanColor: state.nanColor, nanTransparency: state.nanTransparency,
     plotType: state.plotType, interpPixels: state.interpPixels,
     fillValue: state.fillValue, useBorderTexture:state.useBorderTexture,
+    valueRange: state.valueRange, setValueRange: state.setValueRange,
     setShowBorders: state.setShowBorders, setBorderColor: state.setBorderColor,
     setNanColor: state.setNanColor, setNanTransparency: state.setNanTransparency,
     setInterpPixels: state.setInterpPixels, setFillValue:state.setFillValue
@@ -642,6 +635,16 @@ const GlobalOptions = () =>{
             </button>
         </div>
       </Hider>
+      <div className="border-t border-gray-300 w-full my-4" />
+      <div className="flex flex-col items-center w-[200px] gap-4">
+        <b>Value Cropping</b>
+        <MinMaxSlider 
+          range={valueRange} 
+          setRange={setValueRange} 
+          valueScales={valueScales} 
+          min={0} 
+        />
+      </div>
       {!isPC &&
         <>
       <b>NaN Transparency</b>
@@ -699,7 +702,7 @@ const GlobalOptions = () =>{
             </SelectTrigger>
             <SelectContent>
               {masks.map((val,idx)=>(
-                <SelectItem value={val}>
+                <SelectItem value={val} key={idx}>
                   {val}
                 </SelectItem>
               ))}
@@ -746,9 +749,29 @@ const GlobalOptions = () =>{
   )
 }
 
+function resetViz(){
+  usePlotStore.setState({
+    timeScale: 1,
+    valueRange: [0, 1],
+    xRange: [-1, 1],
+    yRange: [-1, 1],
+    zRange: [-1, 1],
+    transparency: 0,
+    vTransferRange: false,
+    vTransferScale: 1,
+    sphereResolution: 10,
+    displacement: 0,
+    displaceSurface: true,
+    fillValue: undefined, 
+    maskValue: 0,
+    disablePointScale: false,
+  })
+}
+
 
 const AdjustPlot = () => {
     const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
+    const [open, setOpen] = useState(false);
 
     const {plotOn} = useGlobalStore(
         useShallow(state=>({
@@ -771,52 +794,78 @@ const AdjustPlot = () => {
 
   const enableCond = (plotOn)
   return (
-    <>
-      <Popover>
-        <PopoverTrigger asChild>
-          <div style={enableCond ? {} : { pointerEvents: 'none' } }>
-            <Tooltip delayDuration={500} >
-              <TooltipTrigger asChild>
-                <div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
-                    style={{
-                      color: enableCond ? '' : 'var(--text-disabled)'
-                    }}
-                  >
-                    <LuSettings className="size-8" />
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent
-                side={popoverSide === "left" ? "left" : "top"}
-                align={popoverSide === "left" ? "start" : "center"}
-              >
-                <span>Plot Settings</span>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent
-          side={popoverSide}
-          className={`overflow-y-auto w-[240px] mt-2 mr-1 ${
-            popoverSide === 'top'
-              ? 'max-h-[80vh] mb-1' 
-              : 'max-h-[70vh]'
-          }`}
-        >
-
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div style={enableCond ? {} : { pointerEvents: 'none' } }>
+          <Tooltip delayDuration={500} >
+            <TooltipTrigger asChild>
+              <div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
+                  style={{
+                    color: enableCond ? '' : 'var(--text-disabled)'
+                  }}
+                >
+                  <LuSettings className="size-8" />
+                </Button>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent
+              side={popoverSide === "left" ? "left" : "top"}
+              align={popoverSide === "left" ? "start" : "center"}
+            >
+              <span>Plot Settings</span>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </PopoverTrigger>
+      <PopoverContent
+        side={popoverSide}
+        onInteractOutside={(e) => e.preventDefault()}
+        onOpenAutoFocus={(e) => { //Prevents tooltip from opening automatically
+          e.preventDefault();
+        }}
+        className={`relative w-[240px] mt-2 mr-1 ${
+          popoverSide === 'top' ? 'mb-1' : ''
+        }`}
+      >
+        <Tooltip delayDuration={500}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-0 right-1 z-10 cursor-pointer saturate-[180%]"
+              onClick={() => setOpen(false)}
+              aria-label="Close settings"
+            >
+              <RiCloseLargeLine className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Close settings
+          </TooltipContent>
+        </Tooltip>
+        <div className={`overflow-y-auto -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          
+          <RxReset size={25} 
+            style={{
+              // position:'absolute',
+              top:"10px",
+              left:"10px",
+              cursor:'pointer',
+            }} 
+            onClick={resetViz}
+          />
           {plotType === 'volume' && <VolumeOptions />}
           {plotType === 'point-cloud' && <PointOptions />}
           {plotType === 'sphere' && <SphereOptions/>}
           {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
           {plotType === 'flat' && <FlatOptions />}
           <GlobalOptions />
-        </PopoverContent>
-      </Popover>
-    </>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 

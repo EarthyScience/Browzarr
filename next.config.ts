@@ -42,6 +42,7 @@ const nextConfig = {
     (config.resolve.alias as { [key: string]: string })['@/components'] = path.resolve(__dirname, 'src/components');
     return config;
   },
+  
 };
 
 console.log('Current NODE_ENV:', process.env.NODE_ENV);

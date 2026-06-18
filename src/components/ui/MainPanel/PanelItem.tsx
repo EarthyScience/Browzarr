@@ -5,7 +5,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button-enhanced"
 import { ReactNode } from "react"
 
 export function PanelItem({ children, options }: { children: ReactNode; options: ReactNode }) {

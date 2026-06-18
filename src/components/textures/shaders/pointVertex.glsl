@@ -2,17 +2,12 @@ attribute float value;
 
 out float vValue;
 
-flat out int highlight;
 uniform sampler2D maskTexture;
 
 uniform float pointSize;
 uniform bool scalePoints;
 uniform float scaleIntensity;
 uniform vec2 valueRange;
-uniform int[10] startIDs;
-uniform int stride;
-uniform int dimWidth;
-uniform bool showTransect;
 uniform float timeScale;
 uniform float animateProg;
 uniform vec4 flatBounds;
@@ -25,21 +20,6 @@ uniform int maskValue;
 
 #define PI 3.1415925
 
-bool isValidPoint(){
-    for (int i = 0; i < 10; i++){
-        if (startIDs[i] == -1){
-            return false;
-        }
-        int rePos = gl_VertexID - startIDs[i];
-        bool isValid = rePos % stride == 0;
-        bool secondary = gl_VertexID < (startIDs[i] + dimWidth*stride) && gl_VertexID > startIDs[i];
-        isValid = isValid && secondary;
-        if (isValid){
-            return true;
-        }
-    }
-    return false;
-}
 vec3 computePosition(int vertexID) {
     int depth = int(shape.x);
     int height = int(shape.y);
@@ -53,7 +33,7 @@ vec3 computePosition(int vertexID) {
 
     float px = (float(x) - (float(width)/2.)) / 500.;
     float py = (float(y) - (float(height)/2.)) / 500.;
-    float pz = (float(z) - (float(depth )/2.)) /500.;
+    float pz = (float(z) - (float(depth)/2.)) /500.;
 
     return vec3(px * 2.0, py * 2.0, pz * 2.0);
 }
@@ -82,12 +62,11 @@ vec2 realCoords(vec2 uv){
 }
 
 void main() {
-    vec2 testV = giveUV(gl_VertexID);
-    if (maskValue != 0 ){
+    if (maskValue != 0 ){ // If using a mask, quick check if vertex is masked out before doing additional rendering
         vec2 newV = realCoords(giveUV(gl_VertexID));
         float mask = texture(maskTexture, newV).r;
         bool cond = maskValue == 1 ? mask< 0.5 : mask>=0.5;
-        if (cond){
+        if (cond){ // Masked out. Move off screen
             gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
             return;
         }
@@ -104,20 +83,21 @@ void main() {
     scaledPos.z *= timeScale;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(scaledPos, 1.0);
 
-    float pointScale = pointSize/gl_Position.w;
-    pointScale = scalePoints ? pointScale*pow(vValue,scaleIntensity) : pointScale;
-
-    bool isValid = isValidPoint();
-    highlight = isValid ? 1 : 0;
-    
-    if (value == 255. || (pointScale*gl_Position.w < 0.75 && scalePoints)){ //Hide points that are invisible or get too small when scalled
-        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-    }
-
+    #ifndef NO_SCALE
+        float pointScale = pointSize/gl_Position.w;
+        pointScale = scalePoints ? pointScale*pow(vValue,scaleIntensity) : pointScale;
+        
+        if (value == 255. || (pointScale*gl_Position.w < 0.75 && scalePoints)){ //Hide points that are invisible or get too small when scalled
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+        }
+        gl_PointSize =  pointScale;
+    #else
+        gl_PointSize =  1.;
+    #endif
     if (vValue < valueRange.x || vValue > valueRange.y){ //Hide points that are outside of value range
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     }
-
+    
     float scaleX = float(shape.z) / 500.0; //width scaling
     float scaleY = float(shape.y) / 500.0; //height scaling
     float scaleZ = float(shape.x) / 500.0; //depth scaling
@@ -133,13 +113,6 @@ void main() {
 
     if (xCheck || zCheck || yCheck || fillCheck){ //Hide points that are clipped
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-    }
-    
-    if (showTransect){
-        gl_PointSize = isValid ? pointScale*5. : pointScale;
-    }
-    else{
-        gl_PointSize =  pointScale;
     }
 
 }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import ClientRoot from "./ClientRoot";
 import { Toaster } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -20,10 +21,12 @@ export default function RootLayout({
   return (
     <html suppressHydrationWarning lang="en">
       <body className="antialiased">
-        <ClientRoot>
-          {children}
-          <Toaster richColors expand={true} position="top-center" duration={5000}/>
-        </ClientRoot>
+        <TooltipProvider>
+          <ClientRoot>
+            {children}
+            <Toaster richColors expand={true} position="top-center" duration={5000}/>
+          </ClientRoot>
+        </TooltipProvider>
       </body>
     </html>
   );

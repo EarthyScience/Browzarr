@@ -5,7 +5,7 @@ import { Potato } from '../Elements/Icons';
 import { FaCarSide } from "react-icons/fa6";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button-enhanced"
 
 const icons = {
     "fast": <MdOutlineRocketLaunch className='size-8'/>,

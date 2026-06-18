@@ -70,54 +70,45 @@ const Navbar = React.memo(function Navbar() {
 			<div className={cn("navbar-content", isOpen ? "open" : "closed")}>
 				{/* <LogoDrawer /> */}
 				<div className="navbar-left">
-					{plotOn && (
-						<>
-							<Tooltip delayDuration={500}>
-								<TooltipTrigger asChild>
-									<Button
-										variant="ghost"
-										size="icon"
-										className="size-10 cursor-pointer"
-										tabIndex={0}
-										onClick={() =>
-											setResetCamera(!resetCamera)
-										}
-									>
-										<MdFlipCameraIos className="size-8" />
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="right" align="start">
-									<span>Reset camera view</span>
-								</TooltipContent>
-							</Tooltip>
+					<Tooltip delayDuration={500}>
+						<TooltipTrigger asChild>
 							<Button
 								variant="ghost"
 								size="icon"
-								className="cursor-pointer"
-								onClick={() => setUseOrtho(!useOrtho)}
+								className="size-10 cursor-pointer"
+								tabIndex={0}
+								onClick={() =>
+									setResetCamera(!resetCamera)
+								}
 							>
-								{useOrtho ? (
-									<Orthographic
-										color={iconCol}
-										className="size-8"
-									/>
-								) : (
-									<Perspective
-										color={iconCol}
-										className="size-8"
-									/>
-								)}
+								<MdFlipCameraIos className="size-8" />
 							</Button>
-						</>
-					)}
-
-					{plotOn && !isFlat && <PlotLineButton />}
-					{plotOn && (
-						<>
-							<ExportImageSettings />
-							<PerformanceMode />
-						</>
-					)}
+						</TooltipTrigger>
+						<TooltipContent side="right" align="start">
+							<span>Reset camera view</span>
+						</TooltipContent>
+					</Tooltip>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="cursor-pointer"
+						onClick={() => setUseOrtho(!useOrtho)}
+					>
+						{useOrtho ? (
+							<Orthographic
+								color={iconCol}
+								className="size-8"
+							/>
+						) : (
+							<Perspective
+								color={iconCol}
+								className="size-8"
+							/>
+						)}
+					</Button>
+					<PlotLineButton />
+					<ExportImageSettings />
+					<PerformanceMode />
 				</div>
 			</div>
 			{plotOn && <AxisBars />}

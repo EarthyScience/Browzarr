@@ -11,6 +11,7 @@ import { FaPlay, FaPause, FaForwardStep , FaBackwardStep  } from "react-icons/fa
 import { coarsenFlatArray, parseLoc } from '@/utils/HelperFuncs';
 import { Button, Slider, Card, CardContent } from "@/components/ui";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { RiCloseLargeLine } from "react-icons/ri";
 
 const frameRates = [1, 2, 4, 6, 8, 12, 16, 24, 36, 48, 54, 60, 80, 120]
 
@@ -91,7 +92,7 @@ const ChunkVisualizer = ({zSlice, timeLength, chunkWidth, showNext, showPrev, an
   )
 }
 
-const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: React.Dispatch<React.SetStateAction<boolean>>}) => {
+const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, setKeepOpen: React.Dispatch<React.SetStateAction<boolean>>, setShowSelf: React.Dispatch<React.SetStateAction<boolean>>}) => {
   const {animate, animProg, zSlice, coarsen, kernel, setAnimate, setAnimProg} = usePlotStore(useShallow(state => ({
       animate: state.animate,
       animProg: state.animProg,
@@ -199,7 +200,16 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
       <CardContent className='flex flex-col gap-1 w-full h-full px-1 py-1'>
         
         {/* TOP ROW */}
-        <div className='flex justify-between'>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="absolute top-0 right-0 z-10 cursor-pointer saturate-[180%]"
+          onClick={() => setShowSelf(false)}
+          aria-label="Close settings"
+        >
+          <RiCloseLargeLine className="size-4" />
+        </Button>
+        <div className='flex justify-around'>
           <Button
             variant='secondary'
             size='sm'
@@ -217,8 +227,7 @@ const PlayInterFace = ({visible, setKeepOpen}:{visible : boolean, setKeepOpen: R
           </Button>
 
           <div className='text-xs sm:text-sm text-center'>{currentLabel}</div>
-
-           <Button
+          <Button
             variant='secondary'
             size='sm'
             className={`cursor-pointer ${!zSlice[1] || zSlice[1] === timeLength? "invisible" : null}`}
@@ -422,7 +431,7 @@ const PlayButton = () => {
         </TooltipContent>
 
       </Tooltip>
-      <PlayInterFace visible={(showOptions && enableCond)} setKeepOpen={setKeepOpen}/>
+      <PlayInterFace visible={(showOptions && enableCond)} setKeepOpen={setKeepOpen} setShowSelf={setShowOptions}/>
     </>
   )
 }
