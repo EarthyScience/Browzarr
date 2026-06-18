@@ -136,6 +136,7 @@ export async function GetArray(varOveride?: string) {
             }
             }
     }
+    useGlobalStore.setState({dataShape:outputShape}) // Needed for initial GetCurrentArray call which needs dataShape if needs to be permuted
     setProgress(0);
     return { data: GetCurrentArray(), shape: outputShape, dtype, scalingFactor };
 }

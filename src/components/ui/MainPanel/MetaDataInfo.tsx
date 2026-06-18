@@ -79,6 +79,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const {maxTextureSize, max3DTextureSize} = usePlotStore(useShallow(state => ({maxTextureSize: state.maxTextureSize, max3DTextureSize: state.max3DTextureSize})))
 
   const [tooBig, setTooBig] = useState(false)
+  const [duplicateDims, setDuplicateDims] = useState(false)
   const [cached, setCached] = useState(false)
   const [cachedChunks, setCachedChunks] = useState<string | null>(null)
   const [texCount, setTexCount] = useState(0)
@@ -248,7 +249,8 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
           <div> <Metadata data={metadata} variable ={'Attributes'} /> </div>
           }
         <br/>
-        <DimensionOrder dimNames={dimNames}/>
+        {/* This doesn't work on more than 3D at the moment. But it's a start */}
+        {shapeLength <= 3 && <DimensionOrder dimNames={dimNames} setDuplicateDims={setDuplicateDims}/> } 
         <br/>
         <div className="grid grid-cols-[40%_40%_20%]">
           <div className="flex flex-col">
@@ -486,7 +488,7 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
         {!tooBig && <Button
           variant="pink"        
           className="cursor-pointer hover:scale-[1.05]"
-          disabled={((is4D && idx4D == null) || smallCache)}
+          disabled={((is4D && idx4D == null) || smallCache || duplicateDims)}
           onClick={() => {
             if (variable == meta.name){
               ReFetch();

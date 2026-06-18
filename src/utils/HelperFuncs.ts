@@ -263,7 +263,6 @@ function permuteArray(
   order: number[]
 ): { data: number[]; shape: number[] } {
   const ndim = shape.length;
-
   if (order.length !== ndim) {
     throw new Error(`order length (${order.length}) must match number of dimensions (${ndim})`);
   }
