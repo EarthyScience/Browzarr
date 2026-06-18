@@ -283,7 +283,7 @@ function permuteArray(
   }
 
   // Precompute strides for the new (permuted) shape (row-major)
-  const dstStrides = new Array<number>(ndim);
+  const dstStrides = new Float16Array(ndim);
   dstStrides[ndim - 1] = 1;
   for (let i = ndim - 2; i >= 0; i--) {
     dstStrides[i] = dstStrides[i + 1] * newShape[i + 1];
