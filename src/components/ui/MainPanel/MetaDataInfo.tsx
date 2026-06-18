@@ -227,7 +227,6 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
       setCached(false)
     }
   },[meta, chunkIDs])
-
   return (
     <> 
         <b>{`${meta.long_name} `}</b>

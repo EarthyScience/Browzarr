@@ -270,7 +270,7 @@ function permuteArray(
   if ([...order].sort((a, b) => a - b).some((v, i) => v !== i)) {
     throw new Error(`order must be a permutation of [0, ..., ${ndim - 1}]`);
   }
-
+  console.log(shape, order)
   const newShape = order.map((ax) => shape[ax]);
   const totalElements = array.length;
   const result = new Array<number>(totalElements);
@@ -367,6 +367,7 @@ export function GetCurrentArray(overrideStore?:string){
       }
     }
     const doPermute = permute?.some((v, i) => i > 0 && v < permute[i - 1]);
+    console.log(permute, doPermute)
     setStatus(null)
     return doPermute ? permuteArray(typedArray, dataShape, permute as number[]).data : typedArray
   }
