@@ -38,7 +38,7 @@ export const DimSlicerModeToggle: React.FC<DimSlicerModeToggleProps> = ({ mode, 
               setExpanded(false);
             }}
           >
-            scalar
+            index
           </Button>
           <Button
             variant={mode === 'slice' ? 'default' : 'outline'}
@@ -59,7 +59,7 @@ export const DimSlicerModeToggle: React.FC<DimSlicerModeToggleProps> = ({ mode, 
           className="text-xs px-2 py-1 h-6 cursor-pointer"
           onClick={() => setExpanded(prev => !prev)}
         >
-          {mode}
+          {mode === 'scalar' ? 'index' : 'slice'}
         </Button>
       )}
     </div>

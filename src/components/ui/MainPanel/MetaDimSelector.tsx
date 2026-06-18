@@ -120,7 +120,6 @@ export default function MetaDimSelector({ meta, onApply }: Props) {
         return copy;
       })
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [dimsKey],
   );
 
@@ -132,18 +131,16 @@ export default function MetaDimSelector({ meta, onApply }: Props) {
         return copy;
       })
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [dimsKey],
   );
 
   const summary = useMemo(() => selectionSummary(sels), [sels]);
 
   return (
-    <div className="min-h-0">
-      <Card className="w-full">
+    // <div className="min-h-0">
+      <Card className="border-0 w-full">
         <CardHeader className="pb-2">
-          <CardTitle>{meta?.name ?? 'variable'}</CardTitle>
-
+          {/* <CardTitle>{meta?.name ?? 'variable'}</CardTitle> */}
           {/* e.g. temperature [ 0:364, 0:47, -90:89 ] */}
           <CardDescription className="font-mono text-xs">
             {meta?.name ?? 'variable'} {summary}
@@ -165,7 +162,7 @@ export default function MetaDimSelector({ meta, onApply }: Props) {
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-1.5">
+        <CardContent className="space-y-3">
           {DIMS.map((dim, i) => (
             <DimSlicer
               key={dim.name}
@@ -179,12 +176,12 @@ export default function MetaDimSelector({ meta, onApply }: Props) {
               formatValue={dim.formatValue}
             />
           ))}
-
+          {/* This will be the PLOT action. */}
           <div className="flex justify-end pt-2">
-            <Button onClick={() => onApply?.(sels, axes)}>Apply</Button>
+            <Button onClick={() => onApply?.(sels, axes)}>Pass to plot</Button>
           </div>
         </CardContent>
       </Card>
-    </div>
+    // </div>
   );
 }
