@@ -5,7 +5,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { decompressSync } from 'fflate';
-import { copyChunkToArray } from '@/components/zarr/utils';
+import { copyChunkToArray, copyChunkToArray2D } from '@/components/zarr/utils';
 import { GetNCDims } from '@/components/zarr/NCGetters';
 import { GetZarrDims } from '@/components/zarr/ZarrLoaderLRU';
 
@@ -262,6 +262,7 @@ function permuteArray(
   shape: number[],
   order: number[]
 ): { data: number[]; shape: number[] } {
+  // This function is completely vibecoded
   const ndim = shape.length;
   if (order.length !== ndim) {
     throw new Error(`order length (${order.length}) must match number of dimensions (${ndim})`);
@@ -316,7 +317,6 @@ export function GetCurrentArray(overrideStore?:string){
   const { arraySize, currentChunks } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
-  
   if (cache.has(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)){
       const chunk = cache.get(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)
       const compressed = chunk.compressed
@@ -339,22 +339,36 @@ export function GetCurrentArray(overrideStore?:string){
           const chunk = cache.get(cacheName)
           const compressed = chunk.compressed
           const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
-          copyChunkToArray(
-            thisData,
-            chunk.shape,
-            chunk.stride,
-            typedArray,
-            dataShape,
-            strides as [number, number, number], 
-            [z, y, x], 
-            [zStartIdx, yStartIdx, xStartIdx]
-          )
+          const is2D = chunk.shape.length == 2;
+          if (is2D){
+            copyChunkToArray2D(
+              thisData, 
+              chunk.shape,
+              chunk.stride,
+              typedArray, 
+              dataShape, 
+              strides as [number, number], 
+              [y, x], 
+              [yStartIdx, xStartIdx]
+            )
+          }else{
+            copyChunkToArray(
+              thisData,
+              chunk.shape,
+              chunk.stride,
+              typedArray,
+              dataShape,
+              strides as [number, number, number], 
+              [z, y, x], 
+              [zStartIdx, yStartIdx, xStartIdx]
+            )
+          }
         }
       }
     }
-    const doPermute = permute.some((v, i) => i > 0 && v < permute[i - 1]);
+    const doPermute = permute?.some((v, i) => i > 0 && v < permute[i - 1]);
     setStatus(null)
-    return doPermute ? permuteArray(typedArray, dataShape, permute).data : typedArray
+    return doPermute ? permuteArray(typedArray, dataShape, permute as number[]).data : typedArray
   }
 }
 
@@ -459,6 +473,6 @@ export function calculateStrides(
   return newStrides
 }
 
-export function permuteArr(arr: number[], permute:number[]) {
-    return permute.map(i => arr[i]);
-  }
+export function permuteArr(arr: number[], permute?:number[]) {
+    return permute ? permute.map(i => arr[i]) : arr;
+}

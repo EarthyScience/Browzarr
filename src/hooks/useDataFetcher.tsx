@@ -80,7 +80,6 @@ export const useDataFetcher = () => {
                         data: result.data,
                         shape
                     });
-
                     setTextures(tempTexture);
                     setValueScales(scaling as { maxVal: number; minVal: number });
                     useGlobalStore.getState().setScalingFactor(result.scalingFactor);
@@ -127,7 +126,7 @@ export const useDataFetcher = () => {
                     dimUnits = dimUnits.slice(1);
                     dimNames = dimNames.slice(1);
                 }
-                if (permute.some((v, i) => i > 0 && v < permute[i - 1])){
+                if (permute?.some((v, i) => i > 0 && v < permute[i - 1])){
                     dimArrays = permuteArr(dimArrays, permute);
                     dimNames = permuteArr(dimNames, permute);
                     dimUnits = permuteArr(dimUnits, permute)
@@ -138,7 +137,6 @@ export const useDataFetcher = () => {
                 const targetDim = dimArrays.length > 2 ? dimArrays[1] : dimArrays[0];
                 const shouldFlip = targetDim[1] < targetDim[0];
                 setFlipY(shouldFlip);
-
                 setDimUnits(dimUnits);
                 // ParseExtent(dimUnits, dimArrays);
             });

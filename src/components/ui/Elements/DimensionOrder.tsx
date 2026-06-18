@@ -24,8 +24,10 @@ export const DimensionOrder = ({dimNames, setDuplicateDims}: {dimNames: string[]
         setDuplicateDims(hasDupes)
     };
 
-    useEffect(()=>{ //The first render didn't have dimNames and used default value. UseEffect updates after fetch
+    useEffect(()=>{ //The first render didn't have dimNames and used default value. UseEffect updates after fetch. Also updates when switching to variable with diff Dims
+        // At the moment it resets each time because of the double click issue with menus that got introduced in 0.3.0. 
         permuteRef.current = Array.from({ length: slotCount }, (_, i) => i)
+        useGlobalStore.setState({ permute: [...permuteRef.current] });
     },[slotCount])
     return (
         <>
@@ -33,7 +35,7 @@ export const DimensionOrder = ({dimNames, setDuplicateDims}: {dimNames: string[]
             {Array.from({ length: slotCount }).map((_, slotIdx) => (
                 <Select
                     key={slotIdx}
-                    defaultValue={String(permute[slotIdx])}
+                    value={String(permute?.[slotIdx])}
                     onValueChange={(v) => handleChange(slotIdx, Number(v))}
                 >
                     <SelectTrigger className='flex-1 min-w-0 truncate'>
