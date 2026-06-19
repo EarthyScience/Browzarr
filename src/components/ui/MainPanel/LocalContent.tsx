@@ -40,7 +40,6 @@ const LocalContent = ({
         <LocalZarr
           setShowLocal={setShowLocal ?? (() => {})}
           setOpenVariables={onOpenDescription}
-          setInitStore={setInitStore}
         />
       )}
     </div>
