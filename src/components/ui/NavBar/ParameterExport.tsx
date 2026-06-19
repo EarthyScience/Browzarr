@@ -71,7 +71,6 @@ const plotValues = [
     'borderWidth',
     'cameraPosition',
     'disablePointScale',
-
 ]
 
 const zarrValues = [
@@ -95,6 +94,8 @@ export const ParameterExport = () => {
     const [copied, setCopied] = useState(false);
 
     function generateURL(){
+        const {camera} = usePlotStore.getState()
+        usePlotStore.setState({cameraPosition:camera?.position})
         const fullObj = {
             globalState: pick(useGlobalStore.getState(), globalValues),
             plotState: pick(usePlotStore.getState(), plotValues),
@@ -109,7 +110,7 @@ export const ParameterExport = () => {
         const url = generateURL()
         await navigator.clipboard.writeText(url);
         setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
+        setTimeout(() => setCopied(false), 1500); //Use for a pop-up that fades away
     };
     
     return (
@@ -119,24 +120,33 @@ export const ParameterExport = () => {
                     variant="ghost"
                     size="icon"
                     className="cursor-pointer" 
-                    onClick={copyToClipboard}
                 >
                     <BiExport className='size-8'/>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent>
+            <PopoverContent
+                side="right"
+                className='w-[200px]'
+            >
                 <div
-                    
+                    className='flex items-center'
                 >
                     <Button
                         variant="ghost"
                         size="icon"
                         className="cursor-pointer" 
+                        onClick={copyToClipboard}
                     >
                         <FiCopy className='size-5'/>
                     </Button>
-                        
-                    
+                        <div
+                            style={{
+                                opacity:copied ? 1 : 0,
+                                transition:'0.75s'
+                            }}
+                        >
+                            Copied!
+                        </div>
                 </div> 
             </PopoverContent>
         </Popover>
