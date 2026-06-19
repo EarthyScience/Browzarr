@@ -127,7 +127,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   const makeInitialCollapsedSels = (dims: DimOption[]): Record<string, SliceSelectionState> =>
     Object.fromEntries(dims.map((d) => [d.name, { ...defaultSelection(d.size), mode: 'scalar' as const }]));
 
-  // Start with no active rows
   const [rows, setRows] = useState<SlicerRow[]>([]);
   const [collapsedSels, setCollapsedSels] = useState<Record<string, SliceSelectionState>>(
     () => makeInitialCollapsedSels(availableDims),
@@ -155,7 +154,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
       const newRow: SlicerRow = {
         id: nextId(),
         dimName,
-        // force slice mode for active dims
         sel: { ...defaultSelection(dim.size), mode: 'slice' },
         axis: defaultAxisForIndex(prev.length, prev.length + 1),
       };
@@ -177,7 +175,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   };
 
   const updateSel = (id: number, sel: SliceSelectionState) =>
-    // force slice mode regardless of what DimSlicer emits
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, sel: { ...sel, mode: 'slice' } } : r)));
 
   const updateAxis = (id: number, axis: Axis) =>
@@ -199,9 +196,9 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   const canAdd = !atMax && !noUnused;
 
   const addTooltip = atMax
-    ? `Maximum of ${MAX_ACTIVE_DIMS} dimensions reached, remove one before adding another.`
+    ? `Maximum of ${MAX_ACTIVE_DIMS} dimensions, remove one before adding another.`
     : noUnused
-    ? 'All dimensions are already active'
+    ? 'All dimensions are already active.'
     : undefined;
 
   return (
@@ -250,7 +247,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
         </div>
       </div>
 
-      {/* Active slicers */}
+      {/* Active slicers — locked to slice mode */}
       <div className="space-y-3">
         {rows.map((row) => {
           const dim = availableDims.find((d) => d.name === row.dimName);
@@ -268,17 +265,18 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
               onAxisChange={(axis) => updateAxis(row.id, axis)}
               values={dim?.values}
               formatValue={dim?.formatValue}
+              lockMode="slice"
             />
           );
         })}
       </div>
 
-      {/* Collapsed dimensions */}
+      {/* Collapsed dimensions — locked to scalar mode */}
       {collapsedDims.length > 0 && (
         <div className="mt-4">
           <button
             onClick={() => setCollapsedOpen((o) => !o)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             {collapsedOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
             Collapsed dimensions
@@ -299,6 +297,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
                   onChange={(sel) => updateCollapsedSel(dim.name, sel)}
                   values={dim.values}
                   formatValue={dim.formatValue}
+                  lockMode="scalar"
                 />
               ))}
             </div>
@@ -311,7 +310,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
           <button
             onClick={addRow}
             disabled={!canAdd}
-            className="flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             aria-label="Add dimension"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -321,7 +320,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
             Add dimension
           </button>
 
-          {/* Tooltip — shown on hover when disabled */}
           {addTooltip && (
             <div className="pointer-events-none absolute bottom-full left-0 mb-1.5 hidden group-hover:block z-10">
               <div className="rounded bg-popover border border-border px-2 py-1 text-xs text-popover-foreground shadow-sm w-64">

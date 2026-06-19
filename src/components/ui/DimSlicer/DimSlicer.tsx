@@ -46,7 +46,6 @@ export interface DimSlicerProps {
   availableDims: DimOption[];
   dimName: string;
   onDimChange: (dimName: string) => void;
-  /** Called when the trash icon is clicked. If omitted, the icon is hidden. */
   onRemove?: () => void;
   dimSize: number;
   selection: SliceSelectionState;
@@ -56,6 +55,7 @@ export interface DimSlicerProps {
   onAxisChange?: (axis: Axis) => void;
   values?: number[];
   formatValue?: (value: number) => string;
+  /** If set, locks the mode and hides the mode toggle */
   lockMode?: SelectionMode;
 }
 
@@ -72,10 +72,12 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   onAxisChange,
   values,
   formatValue,
+  lockMode,
 }) => {
   const [currentAxis, setCurrentAxis] = useState<Axis>(propAxis);
   const effectiveDimSize = values ? values.length : dimSize;
-  const sel = selection ?? defaultSelection(effectiveDimSize);
+  const rawSel = selection ?? defaultSelection(effectiveDimSize);
+  const sel = lockMode ? { ...rawSel, mode: lockMode } : rawSel;
 
   const getIndexFromValue = (val: number): number => {
     if (!values) return val;
@@ -119,7 +121,10 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   };
 
   const updateSelection = (patch: Partial<SliceSelectionState>) => {
-    onChange({ ...sel, ...patch });
+    // if mode is locked, never let a patch override it
+    const next = { ...sel, ...patch };
+    if (lockMode) next.mode = lockMode;
+    onChange(next);
   };
 
   const startIndex = clamp(parseOr(sel.start, 0), 0, maxIndex);
@@ -145,7 +150,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
       {onRemove && (
         <button
           onClick={onRemove}
-          className="cursor-pointer absolute top-0.5 right-0.5 rounded p-0.5 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+          className="absolute top-0.5 right-0.5 rounded p-0.5 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
           aria-label="Remove dimension"
         >
           <Trash2 size={16} />
@@ -168,7 +173,12 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
         </Select>
 
         <div className="flex items-center gap-2">
-          <DimSlicerModeToggle mode={sel.mode} onModeChange={mode => updateSelection({ mode })} />
+          {!lockMode && (
+            <DimSlicerModeToggle
+              mode={sel.mode}
+              onModeChange={mode => updateSelection({ mode })}
+            />
+          )}
           {sel.mode === 'slice' && (
             <DimSlicerAxisToggle
               axis={currentAxis}
@@ -210,6 +220,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
         </div>
       )}
 
+      {/* Bottom controls */}
       {isDateDimension ? (
         sel.mode === 'scalar' ? (
           <div className="flex flex-wrap items-center justify-end gap-2">
