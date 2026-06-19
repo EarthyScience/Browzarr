@@ -1,6 +1,14 @@
 'use client';
 import React, { useState } from 'react';
 import { Slider } from '@/components/ui/slider';
+import { Trash2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import { DimSlicerAxisToggle } from './DimSlicerAxisToggle';
 import { DimSlicerModeToggle } from './DimSlicerModeToggle';
@@ -27,29 +35,34 @@ const MODE_ACCENT: Record<SelectionMode, string> = {
   slice: 'border-l-[#644FF0]',
 };
 
-export interface DimSlicerProps {
-  /** Dimension name, e.g. "time" or "dim_0" */
-  dimName: string;
-  /** Size of this dimension */
-  dimSize: number;
-  /** Current selection state */
-  selection: SliceSelectionState;
-  /** Called whenever the selection changes */
-  onChange: (next: SliceSelectionState) => void;
-  /** Step size for the slider (optional, defaults to 1) */
-  step?: number;
-  /** Selected axis (optional, defaults to 'x') */
-  axis?: Axis;
-  /** Called when axis changes */
-  onAxisChange?: (axis: Axis) => void;
-  /** Array of actual values for this dimension (optional, if provided, dimSize should match values.length) */
+export interface DimOption {
+  name: string;
+  size: number;
   values?: number[];
-  /** Function to format values for display (optional) */
+  formatValue?: (value: number) => string;
+}
+
+export interface DimSlicerProps {
+  availableDims: DimOption[];
+  dimName: string;
+  onDimChange: (dimName: string) => void;
+  /** Called when the trash icon is clicked. If omitted, the icon is hidden. */
+  onRemove?: () => void;
+  dimSize: number;
+  selection: SliceSelectionState;
+  onChange: (next: SliceSelectionState) => void;
+  step?: number;
+  axis?: Axis;
+  onAxisChange?: (axis: Axis) => void;
+  values?: number[];
   formatValue?: (value: number) => string;
 }
 
 const DimSlicer: React.FC<DimSlicerProps> = ({
+  availableDims,
   dimName,
+  onDimChange,
+  onRemove,
   dimSize,
   selection,
   onChange,
@@ -67,7 +80,6 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
     if (!values) return val;
     let closestIndex = 0;
     let minDiff = Math.abs(values[0] - val);
-
     for (let i = 1; i < values.length; i++) {
       const diff = Math.abs(values[i] - val);
       if (diff < minDiff) {
@@ -75,7 +87,6 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
         closestIndex = i;
       }
     }
-
     return closestIndex;
   };
 
@@ -86,13 +97,13 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
     return Number.isNaN(n) ? fallback : n;
   };
 
+  const maxIndex = Math.max(effectiveDimSize - 1, 0);
+
   const changeScalarBy = (delta: number) => {
     let val = parseOr(sel.scalar, 0) + delta;
-    val = clamp(val, 0, Math.max(effectiveDimSize - 1, 0));
+    val = clamp(val, 0, maxIndex);
     onChange({ ...sel, scalar: String(val) });
   };
-
-  const maxIndex = Math.max(effectiveDimSize - 1, 0);
 
   const changeStartBy = (delta: number) => {
     let val = parseOr(sel.start, 0) + delta;
@@ -128,11 +139,33 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   const showTimeControls = Boolean(values && isTimeDimension);
 
   return (
-    <div className={`border-0 border-l-2 rounded-md px-2 py-1.5 space-y-2 bg-muted/20 transition-colors ${MODE_ACCENT[sel.mode]}`}>
+    <div className={`relative border border-l-2 rounded-md px-2 py-1.5 space-y-2 bg-muted/20 transition-colors ${MODE_ACCENT[sel.mode]}`}>
 
-      {/* Top row: dim name + mode toggle + axis toggle (always shown above slider) */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-muted-foreground">{dimName}</span>
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          className="cursor-pointer absolute top-0.5 right-0.5 rounded p-0.5 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+          aria-label="Remove dimension"
+        >
+          <Trash2 size={16} />
+        </button>
+      )}
+
+      {/* Top row: dim select + mode toggle + axis toggle */}
+      <div className="flex items-center justify-between gap-2 pr-5">
+        <Select value={dimName} onValueChange={onDimChange}>
+          <SelectTrigger className="h-6 w-auto min-w-0 text-xs px-2 py-0 border-0 cursor-pointer">
+            <SelectValue placeholder="dim…" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableDims.map((d) => (
+              <SelectItem key={d.name} value={d.name} className="text-xs">
+                {d.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <div className="flex items-center gap-2">
           <DimSlicerModeToggle mode={sel.mode} onModeChange={mode => updateSelection({ mode })} />
           {sel.mode === 'slice' && (
@@ -158,7 +191,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
             onValueChange={([newStart, newStop]) =>
               updateSelection({ start: String(newStart), stop: String(newStop) })
             }
-            className="w-full cursor-pointer"
+            className="w-full cursor-pointer [&_[data-slot=slider-track]]:h-0.5 [&_[data-slot=slider-thumb]]:h-3 [&_[data-slot=slider-thumb]]:w-3"
           />
         </div>
       )}
@@ -171,7 +204,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
             step={step}
             value={[scalarIndex]}
             onValueChange={([val]) => updateSelection({ scalar: String(val) })}
-            className="w-full [&_[data-slot=slider-range]]:bg-transparent cursor-pointer"
+            className="w-full cursor-pointer [&_[data-slot=slider-range]]:bg-transparent [&_[data-slot=slider-track]]:h-0.5 [&_[data-slot=slider-thumb]]:h-3 [&_[data-slot=slider-thumb]]:w-3"
           />
         </div>
       )}
@@ -192,9 +225,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
               formattedValue={formattedValue}
               onValueChange={value => {
                 const parsed = parseFloat(value);
-                if (!Number.isNaN(parsed)) {
-                  updateSelection({ scalar: String(getIndexFromValue(parsed)) });
-                }
+                if (!Number.isNaN(parsed)) updateSelection({ scalar: String(getIndexFromValue(parsed)) });
               }}
               onIncrement={() => changeScalarBy(+1)}
               onDecrement={() => changeScalarBy(-1)}
@@ -215,14 +246,11 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
               formattedValue={formattedValue}
               onValueChange={value => {
                 const parsed = parseFloat(value);
-                if (!Number.isNaN(parsed)) {
-                  updateSelection({ start: String(getIndexFromValue(parsed)) });
-                }
+                if (!Number.isNaN(parsed)) updateSelection({ start: String(getIndexFromValue(parsed)) });
               }}
               onIncrement={() => changeStartBy(+1)}
               onDecrement={() => changeStartBy(-1)}
             />
-
             <div className="flex justify-end">
               <DimSlicerTimeControl
                 layout="row"
@@ -237,9 +265,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
                 formattedValue={formattedValue}
                 onValueChange={value => {
                   const parsed = parseFloat(value);
-                  if (!Number.isNaN(parsed)) {
-                    updateSelection({ stop: String(getIndexFromValue(parsed)) });
-                  }
+                  if (!Number.isNaN(parsed)) updateSelection({ stop: String(getIndexFromValue(parsed)) });
                 }}
                 onIncrement={() => changeStopBy(+1)}
                 onDecrement={() => changeStopBy(-1)}
@@ -263,9 +289,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
                 formattedValue={formattedValue}
                 onValueChange={value => {
                   const parsed = parseFloat(value);
-                  if (!Number.isNaN(parsed)) {
-                    updateSelection({ start: String(getIndexFromValue(parsed)) });
-                  }
+                  if (!Number.isNaN(parsed)) updateSelection({ start: String(getIndexFromValue(parsed)) });
                 }}
                 onIncrement={() => changeStartBy(+1)}
                 onDecrement={() => changeStartBy(-1)}
@@ -276,9 +300,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
                 placeholder={formattedValue(0)}
                 onValueChange={value => {
                   const parsed = parseFloat(value);
-                  if (!Number.isNaN(parsed)) {
-                    updateSelection({ start: String(getIndexFromValue(parsed)) });
-                  }
+                  if (!Number.isNaN(parsed)) updateSelection({ start: String(getIndexFromValue(parsed)) });
                 }}
                 onIncrement={() => changeStartBy(+1)}
                 onDecrement={() => changeStartBy(-1)}
@@ -305,9 +327,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
                 formattedValue={formattedValue}
                 onValueChange={value => {
                   const parsed = parseFloat(value);
-                  if (!Number.isNaN(parsed)) {
-                    updateSelection({ stop: String(getIndexFromValue(parsed)) });
-                  }
+                  if (!Number.isNaN(parsed)) updateSelection({ stop: String(getIndexFromValue(parsed)) });
                 }}
                 onIncrement={() => changeStopBy(+1)}
                 onDecrement={() => changeStopBy(-1)}
@@ -319,9 +339,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
                 placeholder={formattedValue(Math.max(effectiveDimSize - 1, 0))}
                 onValueChange={value => {
                   const parsed = parseFloat(value);
-                  if (!Number.isNaN(parsed)) {
-                    updateSelection({ stop: String(getIndexFromValue(parsed)) });
-                  }
+                  if (!Number.isNaN(parsed)) updateSelection({ stop: String(getIndexFromValue(parsed)) });
                 }}
                 onIncrement={() => changeStopBy(+1)}
                 onDecrement={() => changeStopBy(-1)}
@@ -341,9 +359,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
               formattedValue={formattedValue}
               onValueChange={value => {
                 const parsed = parseFloat(value);
-                if (!Number.isNaN(parsed)) {
-                  updateSelection({ scalar: String(getIndexFromValue(parsed)) });
-                }
+                if (!Number.isNaN(parsed)) updateSelection({ scalar: String(getIndexFromValue(parsed)) });
               }}
               onIncrement={() => changeScalarBy(+1)}
               onDecrement={() => changeScalarBy(-1)}
@@ -354,9 +370,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
               placeholder={formattedValue(0)}
               onValueChange={value => {
                 const parsed = parseFloat(value);
-                if (!Number.isNaN(parsed)) {
-                  updateSelection({ scalar: String(getIndexFromValue(parsed)) });
-                }
+                if (!Number.isNaN(parsed)) updateSelection({ scalar: String(getIndexFromValue(parsed)) });
               }}
               onIncrement={() => changeScalarBy(+1)}
               onDecrement={() => changeScalarBy(-1)}

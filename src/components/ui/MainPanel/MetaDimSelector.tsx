@@ -1,34 +1,19 @@
 "use client";
 
 import React, { useMemo, useState } from 'react';
-import DimSlicer, { Axis, defaultSelection, SliceSelectionState } from '@/components/ui/DimSlicer';
-import Metadata, { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"
+import DimSlicer, { Axis, defaultSelection, DimOption, SliceSelectionState } from '@/components/ui/DimSlicer';
+import { defaultAttributes, renderAttributes } from "@/components/ui/MetaData";
 import { Button } from '@/components/ui/button';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Badge } from "@/components/ui";
 import { parseLoc } from '@/utils/HelperFuncs';
-import {Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover"
-import { Badge } from "@/components/ui"
 
 const formatArray = (value: string | number[]): string => {
-  if (typeof value === 'string') return value
-  return Array.isArray(value) ? value.join(', ') : String(value)
-}
-
-const formatBytes = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes"
-  const k = 1024
-  const sizes = ["Bytes", "KB", "MB", "GB", "TB"]
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-}
+  if (typeof value === 'string') return value;
+  return Array.isArray(value) ? value.join(', ') : String(value);
+};
 
 interface DimInfo {
   dimArrays: ArrayLike<number>[];
@@ -40,11 +25,13 @@ type Props = {
   meta: {
     name?: string;
     shape?: number[];
+    chunks?: number[];
+    long_name?: string;
     dimInfo?: DimInfo;
     [key: string]: unknown;
   };
   metadata?: Record<string, unknown>;
-  onApply?: (sels: SliceSelectionState[], axes: Axis[]) => void;
+  onApply?: (sels: SliceSelectionState[], axes: Axis[], dimNames: string[]) => void;
 };
 
 const AXIS_COLOR: Record<Axis, string> = {
@@ -61,22 +48,35 @@ function defaultAxisForIndex(idx: number, total: number): Axis {
   return (['c', 'z', 'y', 'x'] as Axis[])[idx] ?? 'c';
 }
 
-function selectionSummary(sels: SliceSelectionState[]): string {
-  const parts = sels.map((sel) => {
-    if (sel.mode === 'scalar') return sel.scalar || '0';
-    const start = sel.start !== '' ? sel.start : '0';
-    const stop  = sel.stop  !== '' ? sel.stop  : ':';
-    return `${start}:${stop}`;
+function selectionSummary(dimNames: string[], sels: SliceSelectionState[]): string {
+  const parts = sels.map((sel, i) => {
+    const name = dimNames[i] ?? `dim${i}`;
+    const range =
+      sel.mode === 'scalar'
+        ? sel.scalar || '0'
+        : `${sel.start !== '' ? sel.start : '0'}:${sel.stop !== '' ? sel.stop : ':'}`;
+    return `${name}=${range}`;
   });
   return `[ ${parts.join(', ')} ]`;
 }
+
+/** One active slicer row */
+interface SlicerRow {
+  id: number;
+  dimName: string;
+  sel: SliceSelectionState;
+  axis: Axis;
+}
+
+let _nextId = 0;
+const nextId = () => ++_nextId;
 
 export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   const rawDimArrays = meta?.dimInfo?.dimArrays ?? [];
   const rawDimNames  = meta?.dimInfo?.dimNames  ?? [];
   const rawDimUnits  = meta?.dimInfo?.dimUnits  ?? [];
-  const dataShape = meta?.shape
-  const chunkShape = meta?.chunks 
+  const dataShape  = meta?.shape;
+  const chunkShape = meta?.chunks;
 
   const dimArrays: number[][] = useMemo(
     () => rawDimArrays.map((a) => Array.from(a)),
@@ -102,89 +102,119 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
     setDimUnits(dimUnits);
   }, [dimArrays, dimNames, dimUnits, setDimArrays, setDimNames, setDimUnits]);
 
-  const DIMS = useMemo(
+  /** All available dims derived from meta */
+  const availableDims: DimOption[] = useMemo(
     () =>
       dimArrays.map((values, idx) => ({
         name: dimNames[idx] ?? `dim${idx}`,
         size: values.length,
         values,
-        formatValue: (i: number): string =>
-          String(parseLoc(values[i] ?? i, dimUnits[idx] || undefined)),
+        formatValue: (v: number): string =>
+          String(parseLoc(values[v] ?? v, dimUnits[idx] || undefined)),
       })),
     [dimArrays, dimNames, dimUnits],
   );
 
-  const dimsKey = DIMS.map((d) => `${d.name}:${d.size}`).join('|');
+  const dimsKey = availableDims.map((d) => `${d.name}:${d.size}`).join('|');
 
-  const [sels, setSels] = useState<SliceSelectionState[]>(() =>
-    DIMS.map((d) => defaultSelection(d.size)),
-  );
-  const [axes, setAxes] = useState<Axis[]>(() =>
-    DIMS.map((_, i) => defaultAxisForIndex(i, DIMS.length)),
-  );
+  /** Pick the first dim name not already used by active rows, or fall back to first dim */
+  const firstUnusedDim = (currentRows: SlicerRow[]): string => {
+    const usedNames = new Set(currentRows.map((r) => r.dimName));
+    return availableDims.find((d) => !usedNames.has(d.name))?.name ?? availableDims[0]?.name ?? '';
+  };
 
+  const makeInitialRows = (dims: DimOption[]): SlicerRow[] =>
+    dims.map((d, i) => ({
+      id: nextId(),
+      dimName: d.name,
+      sel: defaultSelection(d.size),
+      axis: defaultAxisForIndex(i, dims.length),
+    }));
+
+  const [rows, setRows] = useState<SlicerRow[]>(() => makeInitialRows(availableDims));
   const [lastKey, setLastKey] = useState(dimsKey);
+
   if (dimsKey !== lastKey) {
     setLastKey(dimsKey);
-    setSels(DIMS.map((d) => defaultSelection(d.size)));
-    setAxes(DIMS.map((_, i) => defaultAxisForIndex(i, DIMS.length)));
+    setRows(makeInitialRows(availableDims));
   }
 
-  const selUpdaters = useMemo(
-    () => DIMS.map((_, i) => (next: SliceSelectionState) =>
-      setSels((prev) => {
-        const copy = prev.slice();
-        copy[i] = next;
-        return copy;
-      })
-    ),
-    [dimsKey],
+  /** Add a new row defaulting to the first unused dim */
+  const addRow = () => {
+    setRows((prev) => {
+      const dimName = firstUnusedDim(prev);
+      if (!dimName) return prev; // all dims already present and no duplicates allowed
+      const dim = availableDims.find((d) => d.name === dimName)!;
+      const newRow: SlicerRow = {
+        id: nextId(),
+        dimName,
+        sel: defaultSelection(dim.size),
+        axis: defaultAxisForIndex(prev.length, prev.length + 1),
+      };
+      return [...prev, newRow];
+    });
+  };
+
+  const removeRow = (id: number) =>
+    setRows((prev) => prev.filter((r) => r.id !== id));
+
+  const updateDimName = (id: number, dimName: string) => {
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        const dim = availableDims.find((d) => d.name === dimName);
+        return {
+          ...r,
+          dimName,
+          sel: defaultSelection(dim?.size),
+        };
+      }),
+    );
+  };
+
+  const updateSel = (id: number, sel: SliceSelectionState) =>
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, sel } : r)));
+
+  const updateAxis = (id: number, axis: Axis) =>
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, axis } : r)));
+
+  const summary = useMemo(
+    () => selectionSummary(rows.map((r) => r.dimName), rows.map((r) => r.sel)),
+    [rows],
   );
 
-  const axisUpdaters = useMemo(
-    () => DIMS.map((_, i) => (axis: Axis) =>
-      setAxes((prev) => {
-        const copy = prev.slice();
-        copy[i] = axis;
-        return copy;
-      })
-    ),
-    [dimsKey],
-  );
-
-  const summary = useMemo(() => selectionSummary(sels), [sels]);
+  const canAddMore = rows.length < availableDims.length;
 
   return (
     <>
-    <b>{`${meta.long_name} `}</b>
-    <Popover>
+      <b>{`${meta.long_name} `}</b>
+      <Popover>
         <PopoverTrigger className="cursor-pointer" asChild>
           <Badge variant="default" className="block">
-          Attributes
+            Attributes
           </Badge>
         </PopoverTrigger>
         <PopoverContent
           data-meta-popover
           className="max-h-[50vh] overflow-y-auto max-w-200"
           align="center"
-          >
+        >
           {renderAttributes(metadata, defaultAttributes)}
         </PopoverContent>
       </Popover>
-      <br/>
-      {/* e.g. temperature [ 0:364, 0:47, -90:89 ] */}
+      <br />
+
       <div className="font-mono text-xs">
         {'selection'} {summary}
       </div>
 
-      {/* e.g. (time, z, 0), (lon, x, 1), (lat, y, 2) */}
       <div className="flex flex-wrap gap-x-3 gap-y-1 pt-0.5 mb-4">
-        {DIMS.map((dim, i) => (
-          <span key={dim.name} className="font-mono text-xs text-muted-foreground">
+        {rows.map((row, i) => (
+          <span key={row.id} className="font-mono text-xs text-muted-foreground">
             (
-            <span className="text-foreground">{dim.name}</span>
+            <span className="text-foreground">{row.dimName}</span>
             ,{' '}
-            <span className={AXIS_COLOR[axes[i]]}>{axes[i]}</span>
+            <span className={AXIS_COLOR[row.axis]}>{row.axis}</span>
             ,{' '}
             <span className="text-muted-foreground/70">{i}</span>
             )
@@ -192,45 +222,56 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
         ))}
       </div>
 
-      <div className="grid grid-cols-[40%_40%_20%]">
-      <div className="flex flex-col mb-4">
-                <b>Data Shape</b>
-              {`[${formatArray(dataShape ?? [])}]`}
-            </div>
-            <div className="flex flex-col">
-              <b>Chunk Shape</b>
-            {`[${formatArray(chunkShape ?? [])}]`}
-            </div>
+      <div className="grid grid-cols-[40%_40%_20%] mb-4">
+        <div className="flex flex-col">
+          <b>Data Shape</b>
+          {`[${formatArray(dataShape ?? [])}]`}
+        </div>
+        <div className="flex flex-col">
+          <b>Chunk Shape</b>
+          {`[${formatArray(chunkShape ?? [])}]`}
+        </div>
       </div>
-        {/* This should be the real original values */}
-      {/* <div className="grid gap-2">
-        <div>
-          <b>In memory: </b>{formatBytes(currentSize)}
-        </div>
-        <div>
-          <b>On disk:  </b>{formatBytes(storedSize)}
-        </div>
-      </div> */}
 
-    <div className="space-y-3">
-      {DIMS.map((dim, i) => (
-        <DimSlicer
-          key={dim.name}
-          dimName={dim.name}
-          dimSize={dim.size}
-          selection={sels[i]}
-          axis={axes[i]}
-          onChange={selUpdaters[i]}
-          onAxisChange={axisUpdaters[i]}
-          values={dim.values}
-          formatValue={dim.formatValue}
-        />
-      ))}
-    </div>
-              {/* This will be the PLOT action. */}
-      <div className="flex justify-end pt-2">
-        <Button onClick={() => onApply?.(sels, axes)}>Pass to plot</Button>
+      <div className="space-y-3">
+        {rows.map((row) => {
+          const dim = availableDims.find((d) => d.name === row.dimName);
+          return (
+            <DimSlicer
+              key={row.id}
+              availableDims={availableDims}
+              dimName={row.dimName}
+              onDimChange={(name) => updateDimName(row.id, name)}
+              onRemove={() => removeRow(row.id)}
+              dimSize={dim?.size ?? 0}
+              selection={row.sel}
+              axis={row.axis}
+              onChange={(sel) => updateSel(row.id, sel)}
+              onAxisChange={(axis) => updateAxis(row.id, axis)}
+              values={dim?.values}
+              formatValue={dim?.formatValue}
+            />
+          );
+        })}
       </div>
-  </>
+      <div className="flex items-center justify-between pt-2">
+        <button
+          onClick={addRow}
+          disabled={!canAddMore}
+          className="cursor-pointer flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:pointer-events-none"
+          aria-label="Add dimension"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <line x1="7" y1="2" x2="7" y2="12" />
+            <line x1="2" y1="7" x2="12" y2="7" />
+          </svg>
+          Add dimension
+        </button>
+
+        <Button onClick={() => onApply?.(rows.map((r) => r.sel), rows.map((r) => r.axis), rows.map((r) => r.dimName))}>
+          Pass to plot
+        </Button>
+      </div>
+    </>
   );
 }
