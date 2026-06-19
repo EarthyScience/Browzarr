@@ -19,7 +19,7 @@ const globalValues = [
 ]
 
 const plotValues = [
-    'PlotType',
+    'plotType',
     'pointSize',
     'scalePoints',
     'scaleIntensity',
