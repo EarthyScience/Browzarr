@@ -57,6 +57,8 @@ export interface DimSlicerProps {
   formatValue?: (value: number) => string;
   /** If set, locks the mode and hides the mode toggle */
   lockMode?: SelectionMode;
+  /** If set, restricts which axes are shown in the axis toggle */
+  allowedAxes?: Axis[];
 }
 
 const DimSlicer: React.FC<DimSlicerProps> = ({
@@ -73,8 +75,9 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   values,
   formatValue,
   lockMode,
+  allowedAxes,
 }) => {
-  const [currentAxis, setCurrentAxis] = useState<Axis>(propAxis);
+  // const [currentAxis, setCurrentAxis] = useState<Axis>(propAxis);
   const effectiveDimSize = values ? values.length : dimSize;
   const rawSel = selection ?? defaultSelection(effectiveDimSize);
   const sel = lockMode ? { ...rawSel, mode: lockMode } : rawSel;
@@ -121,7 +124,6 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   };
 
   const updateSelection = (patch: Partial<SliceSelectionState>) => {
-    // if mode is locked, never let a patch override it
     const next = { ...sel, ...patch };
     if (lockMode) next.mode = lockMode;
     onChange(next);
@@ -180,13 +182,14 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
             />
           )}
           {sel.mode === 'slice' && (
-            <DimSlicerAxisToggle
-              axis={currentAxis}
-              onAxisChange={axis => {
-                setCurrentAxis(axis);
-                onAxisChange?.(axis);
-              }}
-            />
+           <span className={`text-xs font-bold px-2 py-1 h-6 flex items-center border rounded-md ${
+              propAxis === 'x' ? 'text-pink-500' :
+              propAxis === 'y' ? 'text-green-500' :
+              propAxis === 'z' ? 'text-blue-500' :
+              'text-yellow-500'
+            }`}>
+              {propAxis}
+            </span>
           )}
         </div>
       </div>

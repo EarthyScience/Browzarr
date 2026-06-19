@@ -12,6 +12,7 @@ import { parseLoc } from '@/utils/HelperFuncs';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 const MAX_ACTIVE_DIMS = 3;
+const DEFAULT_AXES: Axis[] = ['z', 'y', 'x'];
 
 const formatArray = (value: string | number[]): string => {
   if (typeof value === 'string') return value;
@@ -44,11 +45,8 @@ const AXIS_COLOR: Record<Axis, string> = {
   c: 'text-yellow-500',
 };
 
-function defaultAxisForIndex(idx: number, total: number): Axis {
-  if (total <= 1) return 'c';
-  if (total === 2) return idx === 0 ? 'y' : 'x';
-  if (total === 3) return idx === 0 ? 'z' : idx === 1 ? 'y' : 'x';
-  return (['c', 'z', 'y', 'x'] as Axis[])[idx] ?? 'c';
+function axisForIndex(idx: number): Axis {
+  return DEFAULT_AXES[idx] ?? DEFAULT_AXES[DEFAULT_AXES.length - 1];
 }
 
 function selectionSummary(
@@ -127,7 +125,16 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   const makeInitialCollapsedSels = (dims: DimOption[]): Record<string, SliceSelectionState> =>
     Object.fromEntries(dims.map((d) => [d.name, { ...defaultSelection(d.size), mode: 'scalar' as const }]));
 
-  const [rows, setRows] = useState<SlicerRow[]>([]);
+  /** Default to first MIN(3, availableDims.length) dims as active rows */
+  const makeInitialRows = (dims: DimOption[]): SlicerRow[] =>
+    dims.slice(0, MAX_ACTIVE_DIMS).map((d, i) => ({
+      id: nextId(),
+      dimName: d.name,
+      sel: { ...defaultSelection(d.size), mode: 'slice' },
+      axis: axisForIndex(i),
+    }));
+
+  const [rows, setRows] = useState<SlicerRow[]>(() => makeInitialRows(availableDims));
   const [collapsedSels, setCollapsedSels] = useState<Record<string, SliceSelectionState>>(
     () => makeInitialCollapsedSels(availableDims),
   );
@@ -136,7 +143,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
 
   if (dimsKey !== lastKey) {
     setLastKey(dimsKey);
-    setRows([]);
+    setRows(makeInitialRows(availableDims));
     setCollapsedSels(makeInitialCollapsedSels(availableDims));
   }
 
@@ -155,14 +162,14 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
         id: nextId(),
         dimName,
         sel: { ...defaultSelection(dim.size), mode: 'slice' },
-        axis: defaultAxisForIndex(prev.length, prev.length + 1),
+        axis: axisForIndex(prev.length),
       };
       return [...prev, newRow];
     });
   };
 
-  const removeRow = (id: number) =>
-    setRows((prev) => prev.filter((r) => r.id !== id));
+  const removeLastRow = () =>
+    setRows((prev) => prev.slice(0, -1));
 
   const updateDimName = (id: number, dimName: string) => {
     setRows((prev) =>
@@ -177,8 +184,8 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   const updateSel = (id: number, sel: SliceSelectionState) =>
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, sel: { ...sel, mode: 'slice' } } : r)));
 
-  const updateAxis = (id: number, axis: Axis) =>
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, axis } : r)));
+  // const updateAxis = (id: number, axis: Axis) =>
+  //   setRows((prev) => prev.map((r) => (r.id === id ? { ...r, axis } : r)));
 
   const updateCollapsedSel = (dimName: string, sel: SliceSelectionState) =>
     setCollapsedSels((prev) => ({ ...prev, [dimName]: { ...sel, mode: 'scalar' } }));
@@ -247,31 +254,56 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
         </div>
       </div>
 
-      {/* Active slicers — locked to slice mode */}
+      <div className="relative group mb-3">
+        <button
+          onClick={addRow}
+          disabled={!canAdd}
+          className="flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          aria-label="Add dimension"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <line x1="7" y1="2" x2="7" y2="12" />
+            <line x1="2" y1="7" x2="12" y2="7" />
+          </svg>
+          Add dimension
+        </button>
+
+        {addTooltip && (
+          <div className="pointer-events-none absolute bottom-full left-0 mb-1.5 hidden group-hover:block z-10">
+            <div className="rounded bg-popover border border-border px-2 py-1 text-xs text-popover-foreground shadow-sm w-64">
+              {addTooltip}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Active slicers — locked to slice, z/y/x axes only, trash only on last */}
       <div className="space-y-3">
-        {rows.map((row) => {
+        {rows.map((row, i) => {
           const dim = availableDims.find((d) => d.name === row.dimName);
+          const isLast = i === rows.length - 1;
           return (
             <DimSlicer
               key={row.id}
               availableDims={availableDims}
               dimName={row.dimName}
               onDimChange={(name) => updateDimName(row.id, name)}
-              onRemove={() => removeRow(row.id)}
+              onRemove={isLast && rows.length > 1 ? removeLastRow : undefined}
               dimSize={dim?.size ?? 0}
               selection={row.sel}
               axis={row.axis}
               onChange={(sel) => updateSel(row.id, sel)}
-              onAxisChange={(axis) => updateAxis(row.id, axis)}
+              // onAxisChange={(axis) => updateAxis(row.id, axis)}
               values={dim?.values}
               formatValue={dim?.formatValue}
               lockMode="slice"
+              allowedAxes={['z', 'y', 'x']}
             />
           );
         })}
-      </div>
+      </div>      
 
-      {/* Collapsed dimensions — locked to scalar mode */}
+      {/* Collapsed dimensions */}
       {collapsedDims.length > 0 && (
         <div className="mt-4">
           <button
@@ -305,30 +337,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-2">
-        <div className="relative group">
-          <button
-            onClick={addRow}
-            disabled={!canAdd}
-            className="flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-            aria-label="Add dimension"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <line x1="7" y1="2" x2="7" y2="12" />
-              <line x1="2" y1="7" x2="12" y2="7" />
-            </svg>
-            Add dimension
-          </button>
-
-          {addTooltip && (
-            <div className="pointer-events-none absolute bottom-full left-0 mb-1.5 hidden group-hover:block z-10">
-              <div className="rounded bg-popover border border-border px-2 py-1 text-xs text-popover-foreground shadow-sm w-64">
-                {addTooltip}
-              </div>
-            </div>
-          )}
-        </div>
-
+      <div className="flex justify-end pt-4">
         <Button onClick={() => onApply?.(rows.map((r) => r.sel), rows.map((r) => r.axis), rows.map((r) => r.dimName))}>
           Pass to plot
         </Button>
