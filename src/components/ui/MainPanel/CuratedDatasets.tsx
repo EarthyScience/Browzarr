@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { DATASETS_COLLECTION } from './DatasetCollection';
+import { ZARR_CATALOG } from './ZarrCatalog';
 import {
   Command,
   CommandEmpty,
@@ -30,7 +30,7 @@ const CuratedDatasets = ({
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
 
-  const filtered = DATASETS_COLLECTION.filter(ds =>
+  const filtered = ZARR_CATALOG.filter(ds =>
     ds.label.toLowerCase().includes(search.toLowerCase()) ||
     ds.subtitle.toLowerCase().includes(search.toLowerCase())
   );

@@ -1,4 +1,4 @@
-export const DATASETS_COLLECTION = [
+export const ZARR_CATALOG = [
   {
     key: 'seasfire',
     label: 'SeasFire Cube',
