@@ -13,18 +13,9 @@ interface LocalZarrType {
   setInitStore: (store: string) => void;
 }
 
-const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType) => {
-  const setCurrentStore = useZarrStore(state => state.setCurrentStore)
-  const {setStatus} = useGlobalStore.getState()
-  const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) {
-      setStatus(null)
-      return;
-    }
-    // Create a Map to hold the Zarr store data
+export async function LoadLocalZarr(files:File[]){
+  // Create a Map to hold the Zarr store data
     const fileMap = new Map<string, File>();
-
     // The base directory name will be the first part of the relative path
     const baseDir = files[0].webkitRelativePath.split('/')[0];
 
@@ -36,7 +27,6 @@ const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType)
         fileMap.set('/' + relativePath, file); // Zarrita looks for a leading slash before variables. Need to add it back
       }
     }
-
     // Create a custom zarrita store from the Map
     const customStore: zarr.AsyncReadable = {
       async get(key: string): Promise<Uint8Array | undefined> {
@@ -49,39 +39,53 @@ const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType)
       // Open the Zarr store using the custom store
       let store = await zarr.withMaybeConsolidatedMetadata(customStore);
       if (!('contents' in store)){
+        console.log("Trying to parse?")
         // Metadata is missing. We will need to parse variables here. 
         store = await ZarrParser(files, customStore)
       }
+      console.log("Here?")
       const gs = await zarr.open(store, {kind: 'group'});
       const blobKey = `local_${baseDir}`
-      //saveFile(gs, blobKey)
-      setCurrentStore(gs);
-      setShowLocal(false);
-      setOpenVariables(true);
-      setInitStore(blobKey)
-      setStatus(null)
-      useZarrStore.setState({ useNC: false})
+      useGlobalStore.setState({initStore:blobKey})
+      useZarrStore.setState({ useNC: false, blobKey, currentStore:gs})
     } catch (error) {
-      setStatus(null)
+      
       if (error instanceof Error) {
         console.log(`Error opening Zarr store: ${error.message}`);
       } else {
         console.log('An unknown error occurred when opening the Zarr store.');
       }
     }
-  };
-  return (
-    <div>
-        <Input type="file" id="filepicker"
-          className='hover:drop-shadow-md hover:scale-[110%]'
-          style={{width:'200px', cursor:'pointer'}}
-          // @ts-expect-error `webkitdirectory` is non-standard attribute. TS doesn't know about it. It's used for cross-browser compatibility.
-          directory=''
-          webkitdirectory='true'
-          onChange={handleFileSelect}
-        />
-    </div>
-  )
+}
+
+const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType) => {
+	const {setStatus} = useGlobalStore.getState()
+	const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+		const files = event.target.files;
+		if (!files || files.length === 0) {
+			setStatus(null)
+			return;
+		}
+		const baseDir = files[0].webkitRelativePath.split('/')[0];
+		LoadLocalZarr(Array.from(files)).then(()=>{
+		saveFile(Array.from(files), `local_${baseDir}`)
+		setShowLocal(false);
+		setOpenVariables(true);
+		setStatus(null)
+		})
+	};
+	return (
+		<div>
+			<Input type="file" id="filepicker"
+			className='hover:drop-shadow-md hover:scale-[110%]'
+			style={{width:'200px', cursor:'pointer'}}
+			// @ts-expect-error `webkitdirectory` is non-standard attribute. TS doesn't know about it. It's used for cross-browser compatibility.
+			directory=''
+			webkitdirectory='true'
+			onChange={handleFileSelect}
+			/>
+		</div>
+	)
 }
 
 export default LocalZarr

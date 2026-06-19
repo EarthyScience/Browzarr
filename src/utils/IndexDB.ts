@@ -11,7 +11,7 @@ export function openDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function saveFile(blob: Blob, key: string): Promise<string> {
+export async function saveFile(blob: any, key: string): Promise<string> {
   const db = await openDB();
   return new Promise((res, rej) => {
     const tx = db.transaction(STORE, 'readwrite');
@@ -21,7 +21,7 @@ export async function saveFile(blob: Blob, key: string): Promise<string> {
   });
 }
 
-export async function loadFile(key: string): Promise<{ blob: Blob; name: string } | null> {
+export async function loadFile(key: string): Promise<{ blob: any; name: string } | null> {
   const db = await openDB();
   console.log(key)
   return new Promise((res, rej) => {
