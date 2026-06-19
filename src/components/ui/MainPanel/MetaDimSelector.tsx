@@ -225,22 +225,30 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
       </Popover>
       <br />
 
-      <div className="font-mono text-xs">
+      <div className="font-mono text-xs mb-4">
         {'selection'} {summary}
       </div>
 
       <div className="flex flex-wrap gap-x-3 gap-y-1 pt-0.5 mb-4">
-        {rows.map((row, i) => (
-          <span key={row.id} className="font-mono text-xs text-muted-foreground">
-            (
-            <span className="text-foreground">{row.dimName}</span>
-            ,{' '}
-            <span className={AXIS_COLOR[row.axis]}>{row.axis}</span>
-            ,{' '}
-            <span className="text-muted-foreground/70">{i}</span>
-            )
-          </span>
-        ))}
+        {rows.map((row) => {
+          const originalIndex = availableDims.findIndex(
+            (d) => d.name === row.dimName
+          );
+
+          return (
+            <span key={row.id} className="font-mono text-xs text-muted-foreground">
+              (
+              <span className="text-foreground">{row.dimName}</span>
+              ,{' '}
+              <span className={AXIS_COLOR[row.axis]}>{row.axis}</span>
+              ,{' '}
+              <span className="text-muted-foreground/70">
+                {originalIndex}
+              </span>
+              )
+            </span>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-[40%_40%_20%] mb-4">
