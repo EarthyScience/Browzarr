@@ -9,6 +9,7 @@ import { useShallow } from 'zustand/shallow';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Badge } from "@/components/ui";
 import { parseLoc } from '@/utils/HelperFuncs';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 const formatArray = (value: string | number[]): string => {
   if (typeof value === 'string') return value;
@@ -48,19 +49,25 @@ function defaultAxisForIndex(idx: number, total: number): Axis {
   return (['c', 'z', 'y', 'x'] as Axis[])[idx] ?? 'c';
 }
 
-function selectionSummary(dimNames: string[], sels: SliceSelectionState[]): string {
-  const parts = sels.map((sel, i) => {
-    const name = dimNames[i] ?? `dim${i}`;
+/** Summary preserving original dim order from availableDims */
+function selectionSummary(
+  availableDims: DimOption[],
+  activeRows: SlicerRow[],
+  collapsedSels: Record<string, SliceSelectionState>,
+): string {
+  const parts = availableDims.map((dim) => {
+    const activeRow = activeRows.find((r) => r.dimName === dim.name);
+    const sel = activeRow ? activeRow.sel : collapsedSels[dim.name];
+    if (!sel) return `${dim.name}=?`;
     const range =
       sel.mode === 'scalar'
         ? sel.scalar || '0'
         : `${sel.start !== '' ? sel.start : '0'}:${sel.stop !== '' ? sel.stop : ':'}`;
-    return `${name}=${range}`;
+    return `${dim.name}=${range}`;
   });
   return `[ ${parts.join(', ')} ]`;
 }
 
-/** One active slicer row */
 interface SlicerRow {
   id: number;
   dimName: string;
@@ -102,7 +109,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
     setDimUnits(dimUnits);
   }, [dimArrays, dimNames, dimUnits, setDimArrays, setDimNames, setDimUnits]);
 
-  /** All available dims derived from meta */
   const availableDims: DimOption[] = useMemo(
     () =>
       dimArrays.map((values, idx) => ({
@@ -117,7 +123,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
 
   const dimsKey = availableDims.map((d) => `${d.name}:${d.size}`).join('|');
 
-  /** Pick the first dim name not already used by active rows, or fall back to first dim */
   const firstUnusedDim = (currentRows: SlicerRow[]): string => {
     const usedNames = new Set(currentRows.map((r) => r.dimName));
     return availableDims.find((d) => !usedNames.has(d.name))?.name ?? availableDims[0]?.name ?? '';
@@ -131,19 +136,27 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
       axis: defaultAxisForIndex(i, dims.length),
     }));
 
+  /** Collapsed dim scalar selections, keyed by dim name */
+  const makeInitialCollapsedSels = (dims: DimOption[]): Record<string, SliceSelectionState> =>
+    Object.fromEntries(dims.map((d) => [d.name, { ...defaultSelection(d.size), mode: 'scalar' as const }]));
+
   const [rows, setRows] = useState<SlicerRow[]>(() => makeInitialRows(availableDims));
+  const [collapsedSels, setCollapsedSels] = useState<Record<string, SliceSelectionState>>(
+    () => makeInitialCollapsedSels(availableDims),
+  );
   const [lastKey, setLastKey] = useState(dimsKey);
+  const [collapsedOpen, setCollapsedOpen] = useState(false);
 
   if (dimsKey !== lastKey) {
     setLastKey(dimsKey);
     setRows(makeInitialRows(availableDims));
+    setCollapsedSels(makeInitialCollapsedSels(availableDims));
   }
 
-  /** Add a new row defaulting to the first unused dim */
   const addRow = () => {
     setRows((prev) => {
       const dimName = firstUnusedDim(prev);
-      if (!dimName) return prev; // all dims already present and no duplicates allowed
+      if (!dimName) return prev;
       const dim = availableDims.find((d) => d.name === dimName)!;
       const newRow: SlicerRow = {
         id: nextId(),
@@ -163,11 +176,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
       prev.map((r) => {
         if (r.id !== id) return r;
         const dim = availableDims.find((d) => d.name === dimName);
-        return {
-          ...r,
-          dimName,
-          sel: defaultSelection(dim?.size),
-        };
+        return { ...r, dimName, sel: defaultSelection(dim?.size) };
       }),
     );
   };
@@ -178,21 +187,29 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   const updateAxis = (id: number, axis: Axis) =>
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, axis } : r)));
 
+  const updateCollapsedSel = (dimName: string, sel: SliceSelectionState) =>
+    setCollapsedSels((prev) => ({
+      ...prev,
+      // keep mode locked to scalar
+      [dimName]: { ...sel, mode: 'scalar' },
+    }));
+
   const summary = useMemo(
-    () => selectionSummary(rows.map((r) => r.dimName), rows.map((r) => r.sel)),
-    [rows],
+    () => selectionSummary(availableDims, rows, collapsedSels),
+    [availableDims, rows, collapsedSels],
   );
 
   const canAddMore = rows.length < availableDims.length;
+
+  const activeDimNames = new Set(rows.map((r) => r.dimName));
+  const collapsedDims = availableDims.filter((d) => !activeDimNames.has(d.name));
 
   return (
     <>
       <b>{`${meta.long_name} `}</b>
       <Popover>
         <PopoverTrigger className="cursor-pointer" asChild>
-          <Badge variant="default" className="block">
-            Attributes
-          </Badge>
+          <Badge variant="default" className="block">Attributes</Badge>
         </PopoverTrigger>
         <PopoverContent
           data-meta-popover
@@ -233,6 +250,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
         </div>
       </div>
 
+      {/* Active slicers */}
       <div className="space-y-3">
         {rows.map((row) => {
           const dim = availableDims.find((d) => d.name === row.dimName);
@@ -254,11 +272,45 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
           );
         })}
       </div>
+
+      {/* Collapsed dimensions */}
+      {collapsedDims.length > 0 && (
+        <div className="mt-4">
+          <button
+            onClick={() => setCollapsedOpen((o) => !o)}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            {collapsedOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+            Collapsed dimensions
+            <span className="ml-1 text-muted-foreground/50">({collapsedDims.length})</span>
+          </button>
+
+          {collapsedOpen && (
+            <div className="space-y-3 mt-2">
+              {collapsedDims.map((dim) => (
+                <DimSlicer
+                  key={dim.name}
+                  availableDims={availableDims}
+                  dimName={dim.name}
+                  onDimChange={() => {}}
+                  dimSize={dim.size}
+                  selection={collapsedSels[dim.name] ?? { ...defaultSelection(dim.size), mode: 'scalar' }}
+                  axis="c"
+                  onChange={(sel) => updateCollapsedSel(dim.name, sel)}
+                  values={dim.values}
+                  formatValue={dim.formatValue}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between pt-2">
         <button
           onClick={addRow}
           disabled={!canAddMore}
-          className="cursor-pointer flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:pointer-events-none"
+          className="flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:pointer-events-none"
           aria-label="Add dimension"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
