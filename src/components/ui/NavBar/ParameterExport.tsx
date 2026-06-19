@@ -102,7 +102,7 @@ export const ParameterExport = () => {
             zarrState: pick(useZarrStore.getState(), zarrValues),
         }
         const jString = JSON.stringify(fullObj, (_, v) => typeof v === 'bigint' ? v.toString() : v)
-        const params = `http://localhost:3000/?data=${encodeURIComponent(jString)}` //`https://browzarr.io/latest/?data=${encodeURIComponent(jString)}` 
+        const params = `https://browzarr.io/latest/?data=${encodeURIComponent(jString)}` 
         return params
     }
 
