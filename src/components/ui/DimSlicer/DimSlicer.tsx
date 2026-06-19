@@ -56,6 +56,7 @@ export interface DimSlicerProps {
   onAxisChange?: (axis: Axis) => void;
   values?: number[];
   formatValue?: (value: number) => string;
+  lockMode?: SelectionMode;
 }
 
 const DimSlicer: React.FC<DimSlicerProps> = ({
