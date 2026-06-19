@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import DimSlicer, { Axis, defaultSelection, SliceSelectionState } from '@/components/ui/DimSlicer';
+import Metadata, { defaultAttributes, renderAttributes } from "@/components/ui/MetaData"
 import { Button } from '@/components/ui/button';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
@@ -13,6 +14,21 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { parseLoc } from '@/utils/HelperFuncs';
+import {Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover"
+import { Badge } from "@/components/ui"
+
+const formatArray = (value: string | number[]): string => {
+  if (typeof value === 'string') return value
+  return Array.isArray(value) ? value.join(', ') : String(value)
+}
+
+const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes"
+  const k = 1024
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"]
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+}
 
 interface DimInfo {
   dimArrays: ArrayLike<number>[];
@@ -55,10 +71,12 @@ function selectionSummary(sels: SliceSelectionState[]): string {
   return `[ ${parts.join(', ')} ]`;
 }
 
-export default function MetaDimSelector({ meta, onApply }: Props) {
+export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   const rawDimArrays = meta?.dimInfo?.dimArrays ?? [];
   const rawDimNames  = meta?.dimInfo?.dimNames  ?? [];
   const rawDimUnits  = meta?.dimInfo?.dimUnits  ?? [];
+  const dataShape = meta?.shape
+  const chunkShape = meta?.chunks 
 
   const dimArrays: number[][] = useMemo(
     () => rawDimArrays.map((a) => Array.from(a)),
@@ -137,51 +155,82 @@ export default function MetaDimSelector({ meta, onApply }: Props) {
   const summary = useMemo(() => selectionSummary(sels), [sels]);
 
   return (
-    // <div className="min-h-0">
-      <Card className="border-0 w-full">
-        <CardHeader className="pb-2">
-          {/* <CardTitle>{meta?.name ?? 'variable'}</CardTitle> */}
-          {/* e.g. temperature [ 0:364, 0:47, -90:89 ] */}
-          <CardDescription className="font-mono text-xs">
-            {meta?.name ?? 'variable'} {summary}
-          </CardDescription>
+    <>
+    <b>{`${meta.long_name} `}</b>
+    <Popover>
+        <PopoverTrigger className="cursor-pointer" asChild>
+          <Badge variant="default" className="block">
+          Attributes
+          </Badge>
+        </PopoverTrigger>
+        <PopoverContent
+          data-meta-popover
+          className="max-h-[50vh] overflow-y-auto max-w-200"
+          align="center"
+          >
+          {renderAttributes(metadata, defaultAttributes)}
+        </PopoverContent>
+      </Popover>
+      <br/>
+      {/* e.g. temperature [ 0:364, 0:47, -90:89 ] */}
+      <div className="font-mono text-xs">
+        {'selection'} {summary}
+      </div>
 
-          {/* e.g. (time, z, 0), (lon, x, 1), (lat, y, 2) */}
-          <div className="flex flex-wrap gap-x-3 gap-y-1 pt-0.5">
-            {DIMS.map((dim, i) => (
-              <span key={dim.name} className="font-mono text-xs text-muted-foreground">
-                (
-                <span className="text-foreground">{dim.name}</span>
-                ,{' '}
-                <span className={AXIS_COLOR[axes[i]]}>{axes[i]}</span>
-                ,{' '}
-                <span className="text-muted-foreground/70">{i}</span>
-                )
-              </span>
-            ))}
-          </div>
-        </CardHeader>
+      {/* e.g. (time, z, 0), (lon, x, 1), (lat, y, 2) */}
+      <div className="flex flex-wrap gap-x-3 gap-y-1 pt-0.5 mb-4">
+        {DIMS.map((dim, i) => (
+          <span key={dim.name} className="font-mono text-xs text-muted-foreground">
+            (
+            <span className="text-foreground">{dim.name}</span>
+            ,{' '}
+            <span className={AXIS_COLOR[axes[i]]}>{axes[i]}</span>
+            ,{' '}
+            <span className="text-muted-foreground/70">{i}</span>
+            )
+          </span>
+        ))}
+      </div>
 
-        <CardContent className="space-y-3">
-          {DIMS.map((dim, i) => (
-            <DimSlicer
-              key={dim.name}
-              dimName={dim.name}
-              dimSize={dim.size}
-              selection={sels[i]}
-              axis={axes[i]}
-              onChange={selUpdaters[i]}
-              onAxisChange={axisUpdaters[i]}
-              values={dim.values}
-              formatValue={dim.formatValue}
-            />
-          ))}
-          {/* This will be the PLOT action. */}
-          <div className="flex justify-end pt-2">
-            <Button onClick={() => onApply?.(sels, axes)}>Pass to plot</Button>
-          </div>
-        </CardContent>
-      </Card>
-    // </div>
+      <div className="grid grid-cols-[40%_40%_20%]">
+      <div className="flex flex-col mb-4">
+                <b>Data Shape</b>
+              {`[${formatArray(dataShape ?? [])}]`}
+            </div>
+            <div className="flex flex-col">
+              <b>Chunk Shape</b>
+            {`[${formatArray(chunkShape ?? [])}]`}
+            </div>
+      </div>
+        {/* This should be the real original values */}
+      {/* <div className="grid gap-2">
+        <div>
+          <b>In memory: </b>{formatBytes(currentSize)}
+        </div>
+        <div>
+          <b>On disk:  </b>{formatBytes(storedSize)}
+        </div>
+      </div> */}
+
+    <div className="space-y-3">
+      {DIMS.map((dim, i) => (
+        <DimSlicer
+          key={dim.name}
+          dimName={dim.name}
+          dimSize={dim.size}
+          selection={sels[i]}
+          axis={axes[i]}
+          onChange={selUpdaters[i]}
+          onAxisChange={axisUpdaters[i]}
+          values={dim.values}
+          formatValue={dim.formatValue}
+        />
+      ))}
+    </div>
+              {/* This will be the PLOT action. */}
+      <div className="flex justify-end pt-2">
+        <Button onClick={() => onApply?.(sels, axes)}>Pass to plot</Button>
+      </div>
+  </>
   );
 }

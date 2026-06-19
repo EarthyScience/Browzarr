@@ -456,3 +456,11 @@ a[href]:hover::after {
   animation: glow-pulse 2s ease-in-out infinite;
   border-radius: 0.275rem;
 }
+
+input[type=number].no-spinner {
+  -moz-appearance: textfield;
+}
+
+input[type=number].no-spinner::-moz-number-spin-box {
+  display: none;
+}

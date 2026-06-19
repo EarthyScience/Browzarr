@@ -315,11 +315,12 @@ const Variables = () => {
             data-meta-popover
             side="left"
             align="start"
-            className="max-h-[80vh] overflow-y-auto w-[450px]"
+            className="max-h-[80vh] overflow-y-auto w-[400px]"
           >
-            {meta && (
+            {metadata && (
               <MetaDimSelector
                 meta={meta}
+                metadata={metadata}
                 onApply={(sels, axes) => {
                   // close UI after applying selections
                   setOpenMetaPopover(false);
