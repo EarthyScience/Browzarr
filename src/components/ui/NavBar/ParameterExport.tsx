@@ -95,7 +95,7 @@ export const ParameterExport = () => {
 
     function generateURL(){
         const {camera} = usePlotStore.getState()
-        usePlotStore.setState({cameraPosition:camera?.position})
+        usePlotStore.setState({cameraPosition:camera?.position}) // Set Camera position first to copy visual state
         const fullObj = {
             globalState: pick(useGlobalStore.getState(), globalValues),
             plotState: pick(usePlotStore.getState(), plotValues),
