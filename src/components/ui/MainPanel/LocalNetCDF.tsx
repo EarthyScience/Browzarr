@@ -10,9 +10,22 @@ import {
   AlertTitle,
 } from '@/components/ui/alert';
 import { isMobile } from '../MobileUIHider';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 
 interface LocalNCType {
   setOpenVariables: (open: boolean) => void;
+}
+
+const DB_NAME = 'browzarr-files';
+const STORE = 'blobs';
+
+export function openDB(): Promise<IDBDatabase> { // This will store File Blobs on disk for re-opening NetCDFs from searchParams.  
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
 }
 
 const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
@@ -20,23 +33,33 @@ const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
     // const {ncModule} = useZarrStore.getState()
     const [ncError, setError] = useState<string | null>(null);
 
-    const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    const files = event.target.files;
-    if (!files || files.length === 0) { setStatus(null); return; }
-    const file = files[0];
-    if (!NETCDF_EXT_REGEX.test(file.name)) {
-      setError('Please select a valid NetCDF (.nc, .netcdf, .nc3, .nc4) file.');
-      return;
-    }
-    try {
-      await loadNetCDF(file, file.name);
-      setOpenVariables(true)
-
-    } catch (e) {
-      setError(`Failed to load file: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  };
+	const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+		setError(null);
+		const files = event.target.files;
+		if (!files || files.length === 0) { setStatus(null); return; }
+		const file = files[0];
+		if (!NETCDF_EXT_REGEX.test(file.name)) {
+			setError('Please select a valid NetCDF (.nc, .netcdf, .nc3, .nc4) file.');
+			return;
+		}
+		try {
+			await loadNetCDF(file, file.name);
+			const db = await openDB();
+			const key = `local_${file.name}`
+			new Promise((res, rej) => {
+				const tx = db.transaction(STORE, 'readwrite');
+				tx.objectStore(STORE).put({ file, key }, key);
+				tx.oncomplete = () => {
+					res(key);
+					useZarrStore.setState({ncBlobKey:key})
+				};
+				tx.onerror = () => rej(tx.error);
+			});
+			setOpenVariables(true)
+		} catch (e) {
+			setError(`Failed to load file: ${e instanceof Error ? e.message : String(e)}`);
+		}
+  	};
 
   return (
     <div className="w-full">
