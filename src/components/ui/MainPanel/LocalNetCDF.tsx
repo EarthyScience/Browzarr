@@ -16,9 +16,6 @@ interface LocalNCType {
   setOpenVariables: (open: boolean) => void;
 }
 
-const DB_NAME = 'browzarr-files';
-const STORE = 'blobs';
-
 const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
     const {setStatus } = useGlobalStore.getState()
     // const {ncModule} = useZarrStore.getState()
@@ -36,7 +33,7 @@ const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
 		try {
 			await loadNetCDF(file, file.name);
 			const blobKey = `local_${file.name}`
-			await saveFile(file, file.name)
+			await saveFile(file, blobKey)
 			useZarrStore.setState({blobKey})
 			console.log('Set Key?')
 			setOpenVariables(true)

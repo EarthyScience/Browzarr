@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import * as THREE from "three";
-import { cameraPosition } from "three/src/nodes/TSL.js";
 
 type PlotState ={
   plotType: string;

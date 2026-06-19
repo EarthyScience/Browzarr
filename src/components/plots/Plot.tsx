@@ -142,6 +142,9 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   // ---- Camera Ref for state saves ---- //
   useEffect(()=>{
     usePlotStore.setState({camera})
+    return () => {
+      usePlotStore.setState({camera: undefined})
+    }
   },[camera])
 
   return (
