@@ -3,7 +3,7 @@ import React, {ChangeEvent, useState} from 'react'
 import { Input } from '../input'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { loadNetCDF, NETCDF_EXT_REGEX } from '@/utils/loadNetCDF';
-
+import { saveFile } from '@/utils/IndexDB';
 import {
   Alert,
   AlertDescription,
@@ -18,15 +18,6 @@ interface LocalNCType {
 
 const DB_NAME = 'browzarr-files';
 const STORE = 'blobs';
-
-export function openDB(): Promise<IDBDatabase> { // This will store File Blobs on disk for re-opening NetCDFs from searchParams.  
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
-    req.onsuccess = () => res(req.result);
-    req.onerror = () => rej(req.error);
-  });
-}
 
 const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
     const {setStatus } = useGlobalStore.getState()
@@ -44,17 +35,10 @@ const LocalNetCDF = ({ setOpenVariables}:LocalNCType) => {
 		}
 		try {
 			await loadNetCDF(file, file.name);
-			const db = await openDB();
-			const key = `local_${file.name}`
-			new Promise((res, rej) => {
-				const tx = db.transaction(STORE, 'readwrite');
-				tx.objectStore(STORE).put({ file, key }, key);
-				tx.oncomplete = () => {
-					res(key);
-					useZarrStore.setState({ncBlobKey:key})
-				};
-				tx.onerror = () => rej(tx.error);
-			});
+			const blobKey = `local_${file.name}`
+			await saveFile(file, file.name)
+			useZarrStore.setState({blobKey})
+			console.log('Set Key?')
 			setOpenVariables(true)
 		} catch (e) {
 			setError(`Failed to load file: ${e instanceof Error ? e.message : String(e)}`);
