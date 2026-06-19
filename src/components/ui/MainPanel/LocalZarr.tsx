@@ -10,7 +10,6 @@ import { saveFile } from '@/utils/IndexDB';
 interface LocalZarrType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
   setOpenVariables: (open: boolean) => void;
-  setInitStore: (store: string) => void;
 }
 
 export async function LoadLocalZarr(files:File[]){
@@ -43,7 +42,6 @@ export async function LoadLocalZarr(files:File[]){
         // Metadata is missing. We will need to parse variables here. 
         store = await ZarrParser(files, customStore)
       }
-      console.log("Here?")
       const gs = await zarr.open(store, {kind: 'group'});
       const blobKey = `local_${baseDir}`
       useGlobalStore.setState({initStore:blobKey})
@@ -58,7 +56,7 @@ export async function LoadLocalZarr(files:File[]){
     }
 }
 
-const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType) => {
+const LocalZarr = ({setShowLocal, setOpenVariables}:LocalZarrType) => {
 	const {setStatus} = useGlobalStore.getState()
 	const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
 		const files = event.target.files;
@@ -68,21 +66,21 @@ const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType)
 		}
 		const baseDir = files[0].webkitRelativePath.split('/')[0];
 		LoadLocalZarr(Array.from(files)).then(()=>{
-		saveFile(Array.from(files), `local_${baseDir}`)
-		setShowLocal(false);
-		setOpenVariables(true);
-		setStatus(null)
+      saveFile(Array.from(files), `local_${baseDir}`)
+      setShowLocal(false);
+      setOpenVariables(true);
+      setStatus(null)
 		})
 	};
 	return (
 		<div>
 			<Input type="file" id="filepicker"
-			className='hover:drop-shadow-md hover:scale-[110%]'
-			style={{width:'200px', cursor:'pointer'}}
-			// @ts-expect-error `webkitdirectory` is non-standard attribute. TS doesn't know about it. It's used for cross-browser compatibility.
-			directory=''
-			webkitdirectory='true'
-			onChange={handleFileSelect}
+        className='hover:drop-shadow-md hover:scale-[110%]'
+        style={{width:'200px', cursor:'pointer'}}
+        // @ts-expect-error `webkitdirectory` is non-standard attribute. TS doesn't know about it. It's used for cross-browser compatibility.
+        directory=''
+        webkitdirectory='true'
+        onChange={handleFileSelect}
 			/>
 		</div>
 	)

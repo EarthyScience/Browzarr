@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import * as THREE from "three";
+import { cameraPosition } from "three/src/nodes/TSL.js";
 
 type PlotState ={
   plotType: string;
@@ -64,6 +65,7 @@ type PlotState ={
   maskValue: number;
   cameraPosition: THREE.Vector3;
   disablePointScale: boolean;
+  camera: THREE.Camera | undefined;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -119,7 +121,9 @@ type PlotState ={
   setUseOrtho: (useOrtho: boolean) => void;
   setFillValue: (fillValue: number | undefined) => void;
   setCameraPosition: (cameraPosition: THREE.Vector3) => void;
+  
 }
+
 
 export const usePlotStore = create<PlotState>((set, get) => ({
   plotType: "volume", 
@@ -185,6 +189,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   borderWidth: 0.05,
   cameraPosition: new THREE.Vector3(0, 0, 5),
   disablePointScale: false,
+  camera: undefined,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
@@ -242,4 +247,5 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setUseOrtho: (useOrtho) => set({ useOrtho }),
   setFillValue: (fillValue) => set({ fillValue }),
   setCameraPosition: (cameraPosition) => set({ cameraPosition }),
+
 }))
