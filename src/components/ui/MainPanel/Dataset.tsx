@@ -12,10 +12,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Separator } from '@/components/ui/separator';
 import { DatasetOption, DescriptionContent } from './DescriptionContent';
 import RemoteZarr from './RemoteZarr';
+import RemoteIcechunk from './RemoteIcechunk';
 import LocalContent from './LocalContent';
 import DatasetsModal from './DataSetsModal';
+import { Switcher } from '../Widgets/Switcher';
 
 const Dataset = () => {
   const [showStoreInput, setShowStoreInput] = useState(false);
@@ -26,6 +29,7 @@ const Dataset = () => {
   const [popoverOpen, setPopoverOpen] = useState<boolean>(false);
   const [isSafari, setIsSafari] = useState<boolean>(false);
   const [openDatasetsModal, setOpenDatasetsModal] = useState<boolean>(false);
+  const [useIcechunk, setUseIcechunk] = useState(false);
 
   const { initStore, setInitStore, setOpenVariables } = useGlobalStore(
     useShallow(state => ({
@@ -102,35 +106,50 @@ const Dataset = () => {
               className="cursor-pointer w-full justify-between gap-2 mb-1"
               onClick={() => setOpenDatasetsModal(true)}
             >
-            {popoverSide !== 'top' && <BsBoxArrowLeft className="size-4" />}
+              {popoverSide !== 'top' && <BsBoxArrowLeft className="size-4" />}
               Explore Datasets
-            {popoverSide === 'top' && <BsBoxArrowRight className="size-4" />}
+              {popoverSide === 'top' && <BsBoxArrowRight className="size-4" />}
             </Button>
-
-            <div className="w-full h-px bg-border my-1" />
 
             <div className="w-full">
               <DatasetOption
                 active={activeOption === 'remote'}
                 onClick={() => {
-                  setShowStoreInput(prev => !prev);
+                  const opening = !showStoreInput || activeOption !== 'remote';
+                  setShowStoreInput(opening);
                   setShowLocalInput(false);
                   setActiveOption('remote');
                   setShowDescription(false);
+                  if (opening) setUseIcechunk(false);
                 }}
               >
-                Remote Zarr
+                Remote
               </DatasetOption>
               {showStoreInput && (
                 <div className="mt-2">
-                  <RemoteZarr
-                    initStore={initStore}
-                    setInitStore={setInitStore}
-                    onOpenDescription={() => setShowDescription(true)}
+                  <Switcher
+                    leftText="Zarr"
+                    rightText="Icechunk"
+                    state={!useIcechunk}
+                    onClick={() => setUseIcechunk(prev => !prev)}
                   />
+                  {useIcechunk ? (
+                    <RemoteIcechunk
+                      setInitStore={setInitStore}
+                      onOpenDescription={() => setShowDescription(true)}
+                    />
+                  ) : (
+                    <RemoteZarr
+                      initStore={initStore}
+                      setInitStore={setInitStore}
+                      onOpenDescription={() => setShowDescription(true)}
+                    />
+                  )}
                 </div>
               )}
             </div>
+
+            <Separator className='mt-2' />
 
             <div className="w-full">
               <DatasetOption
@@ -140,6 +159,7 @@ const Dataset = () => {
                   setShowStoreInput(false);
                   setActiveOption('local');
                   setShowDescription(false);
+                  setUseIcechunk(false);
                 }}
               >
                 Local
@@ -166,7 +186,6 @@ const Dataset = () => {
                 />
               </div>
             )}
-
           </div>
         </PopoverContent>
       </Popover>
