@@ -1,4 +1,4 @@
-export const DATASETS_COLLECTION_ICECHUNK = [
+export const ICECHUNK_CATALOG = [
     {
     key: 'chirps-daily',
     label: 'CHIRPS Daily Precipitation',

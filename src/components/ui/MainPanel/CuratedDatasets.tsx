@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ZARR_CATALOG } from './ZarrCatalog';
+import { ZARR_CATALOG } from "@/assets/index";
+
 import {
   Command,
   CommandEmpty,
