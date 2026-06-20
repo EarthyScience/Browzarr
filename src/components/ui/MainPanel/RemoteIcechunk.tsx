@@ -283,7 +283,7 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
           Advanced
         </Button>
         {showAdvanced && (
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
             <div className="flex items-center gap-2 text-xs">
               <label className="text-muted-foreground whitespace-nowrap">Max retries</label>
               <Input
