@@ -156,7 +156,7 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription, selectedUrl = '' }: P
     <div className="flex flex-col gap-3">
 
       {/* URL + Fetch */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mt-2">
         <Input
           className="w-full"
           placeholder="Store URL"

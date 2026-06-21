@@ -96,15 +96,7 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
 
         <div className="p-4 flex flex-col gap-1 -mt-3">
           {activeTab === 'remote' && (
-            <>
-              <RemoteZarr
-                key={selectedUrl}
-                initStore={initStore}
-                setInitStore={setInitStore}
-                onOpenDescription={openDescription}
-                selectedUrl={selectedUrl}
-              />
-              <Separator className="mb-2 mt-2"/>
+            <>             
               <StoreCatalog
                 catalog={ZARR_CATALOG}
                 placeholder="Search Zarr Stores..."
@@ -113,6 +105,13 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
                 setActiveOption={setActiveOption}
                 setInitStore={setSelectedUrl}
                 onOpenDescription={() => {}}
+              />
+               <RemoteZarr
+                key={selectedUrl}
+                initStore={initStore}
+                setInitStore={setInitStore}
+                onOpenDescription={openDescription}
+                selectedUrl={selectedUrl}
               />
             </>
           )}
@@ -125,13 +124,6 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
           )}
           {activeTab === 'icechunk' && (
             <>
-              <RemoteIcechunk
-                key={selectedIcechunkUrl}
-                setInitStore={setInitStore}
-                onOpenDescription={openDescription}
-                selectedUrl={selectedIcechunkUrl}
-              />
-              <Separator className="mb-2 mt-2"/>
               <StoreCatalog
                 catalog={ICECHUNK_CATALOG}
                 placeholder="Search Icechunk Stores..."
@@ -140,6 +132,12 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
                 setActiveOption={setActiveOption}
                 setInitStore={setSelectedIcechunkUrl}
                 onOpenDescription={() => {}}
+              />
+              <RemoteIcechunk
+                key={selectedIcechunkUrl}
+                setInitStore={setInitStore}
+                onOpenDescription={openDescription}
+                selectedUrl={selectedIcechunkUrl}
               />
             </>
           )}

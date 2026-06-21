@@ -98,7 +98,7 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription, selectedUrl = 
       }}
     >
       {/* URL + Fetch */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mt-2">
         <Input
           className="w-full"
           placeholder="Store URL"

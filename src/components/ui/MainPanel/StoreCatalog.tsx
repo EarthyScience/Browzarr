@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronsDown } from 'lucide-react';
 import {
   Command,
   CommandEmpty,
@@ -8,7 +9,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { ChevronDown } from 'lucide-react';
 
 const PAGE_SIZE = 3;
 
@@ -33,7 +33,6 @@ const gradientTextStyle = (gradient: string): React.CSSProperties => ({
   backgroundClip: 'text',
 });
 
-/** Splits `text` into segments, marking which chars match `query`. */
 const getMatchSegments = (text: string, query: string) => {
   if (!query.trim()) return [{ text, match: false }];
 
@@ -56,11 +55,7 @@ const getMatchSegments = (text: string, query: string) => {
   return segments;
 };
 
-type HighlightedTextProps = {
-  text: string;
-  query: string;
-  gradient: string;
-};
+type HighlightedTextProps = { text: string; query: string; gradient: string };
 
 const HighlightedText = ({ text, query, gradient }: HighlightedTextProps) => {
   const segments = getMatchSegments(text, query);
@@ -94,82 +89,119 @@ const StoreCatalog = ({
   placeholder = 'Search datasets...',
   gradient,
 }: Props) => {
+  // Keep search, pagination, and scroll-hint in one place so they reset atomically.
   const [search, setSearch] = useState('');
-  const [showAll, setShowAll] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Resetting visibleCount and isScrolled here (in the event handler)
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setVisibleCount(PAGE_SIZE);
+    setIsScrolled(false);
+  };
 
   const filtered = catalog.filter(ds =>
     ds.label.toLowerCase().includes(search.toLowerCase()) ||
     ds.subtitle.toLowerCase().includes(search.toLowerCase())
   );
 
-  const visible = showAll ? filtered : filtered.slice(0, PAGE_SIZE);
-  const hiddenCount = filtered.length - PAGE_SIZE;
-  const hasMore = hiddenCount > 0;
-
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
   const gradientValue = gradient ? GRADIENTS[gradient] : undefined;
+
+  // Track scroll position to fade out the hint once the user starts scrolling.
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const onScroll = () => setIsScrolled(el.scrollTop > 8);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Load the next page when the sentinel scrolls into view.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount(c => Math.min(c + PAGE_SIZE, filtered.length));
+        }
+      },
+      { root: listRef.current, threshold: 0 },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [filtered.length]);
 
   return (
     <Command shouldFilter={false} className="rounded-lg border">
       <CommandInput
         placeholder={placeholder}
         value={search}
-        onValueChange={(v) => {
-          setSearch(v);
-          setShowAll(false);
-        }}
+        onValueChange={handleSearchChange}
       />
-      <CommandList className='py-2'>
-        <CommandEmpty>No datasets found.</CommandEmpty>
-        <CommandGroup>
-          {visible.map(ds => (
-            <CommandItem
-              key={ds.key}
-              value={ds.key}
-              onSelect={() => {
-                setActiveOption(ds.key);
-                setInitStore(ds.store);
-                onOpenDescription();
-              }}
-              className={`flex flex-col items-start gap-0.5 mb-2 cursor-pointer ${
-                activeOption === ds.key ? 'bg-accent' : ''
-              }`}
-            >
-              <span className="font-medium text-sm">
-                {gradientValue && search
-                  ? <HighlightedText text={ds.label} query={search} gradient={gradientValue} />
-                  : ds.label
-                }
-              </span>
-              <span className="text-xs text-muted-foreground leading-snug">
-                {gradientValue && search
-                  ? <HighlightedText text={ds.subtitle} query={search} gradient={gradientValue} />
-                  : ds.subtitle
-                }
-              </span>
-            </CommandItem>
-          ))}
-          {!showAll && hasMore && (
-            <CommandItem
-              value="__show_more__"
-              onSelect={() => setShowAll(true)}
-              className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground cursor-pointer py-2 border-t border-dashed border-border mt-1 hover:text-foreground"
-            >
-              <ChevronDown className="size-3.5" />
-              {hiddenCount} more dataset{hiddenCount > 1 ? 's' : ''} available
-            </CommandItem>
-          )}
-          {showAll && hasMore && (
-            <CommandItem
-              value="__show_less__"
-              onSelect={() => setShowAll(false)}
-              className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground cursor-pointer py-2 border-t border-dashed border-border mt-1 hover:text-foreground"
-            >
-              <ChevronDown className="size-3.5 rotate-180" />
-              Show less
-            </CommandItem>
-          )}
-        </CommandGroup>
-      </CommandList>
+      <div className="relative">
+        <CommandList
+          ref={listRef}
+          className="py-2 overflow-y-auto"
+          style={{ maxHeight: '10rem' }}
+        >
+          <CommandEmpty>No datasets found.</CommandEmpty>
+          <CommandGroup>
+            {visible.map(ds => (
+              <CommandItem
+                key={ds.key}
+                value={ds.key}
+                onSelect={() => {
+                  setActiveOption(ds.key);
+                  setInitStore(ds.store);
+                  onOpenDescription();
+                }}
+                className={`flex flex-col items-start gap-0.5 mb-2 cursor-pointer ${
+                  activeOption === ds.key ? 'bg-accent' : ''
+                }`}
+              >
+                <span className="font-medium text-sm">
+                  {gradientValue && search
+                    ? <HighlightedText text={ds.label} query={search} gradient={gradientValue} />
+                    : ds.label}
+                </span>
+                <span className="text-xs text-muted-foreground leading-snug">
+                  {gradientValue && search
+                    ? <HighlightedText text={ds.subtitle} query={search} gradient={gradientValue} />
+                    : ds.subtitle}
+                </span>
+              </CommandItem>
+            ))}
+
+            {hasMore && <div ref={sentinelRef} className="h-px" aria-hidden />}
+          </CommandGroup>
+        </CommandList>
+
+        {hasMore && (
+          <div
+            className="pointer-events-none absolute bottom-0 left-0 right-0 flex flex-col items-center justify-end pb-1"
+            style={{
+              height: '3.5rem',
+              background: 'linear-gradient(to bottom, transparent, var(--popover, white) 80%)',
+              opacity: isScrolled ? 0 : 1,
+              transition: 'opacity 0.2s ease',
+            }}
+          >
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <ChevronsDown className="size-3 animate-bounce" />
+              scroll for more
+            </span>
+          </div>
+        )}
+      </div>
     </Command>
   );
 };
