@@ -93,10 +93,11 @@ const HeaderRows = ({ rows, set }: HeaderRowsProps) => {
 type Props = {
   setInitStore: (v: string) => void;
   onOpenDescription: () => void;
+  selectedUrl?: string
 };
 
-const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
-  const [url, setUrl] = useState('');
+const RemoteIcechunk = ({ setInitStore, onOpenDescription, selectedUrl = '' }: Props) => {
+  const [url, setUrl] = useState(selectedUrl);
 
   const [showSettings, setShowSettings] = useState(false);
 
@@ -155,7 +156,7 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
     <div className="flex flex-col gap-3">
 
       {/* URL + Fetch */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mt-2">
         <Input
           className="w-full"
           placeholder="Store URL"
