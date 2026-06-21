@@ -75,7 +75,7 @@ type Props = {
   activeOption: string;
   setActiveOption: (key: string) => void;
   setInitStore: (v: string) => void;
-  onOpenDescription: () => void;
+  onOpenDescription?: () => void;
   placeholder?: string;
   gradient?: GradientPreset;
 };
@@ -138,7 +138,7 @@ const StoreCatalog = ({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [filtered.length]);
+  }, [filtered.length, visibleCount]);
 
   return (
     <Command shouldFilter={false} className="rounded-lg border">
@@ -162,7 +162,7 @@ const StoreCatalog = ({
                 onSelect={() => {
                   setActiveOption(ds.key);
                   setInitStore(ds.store);
-                  onOpenDescription();
+                  onOpenDescription?.();
                 }}
                 className={`flex flex-col items-start gap-0.5 mb-2 cursor-pointer ${
                   activeOption === ds.key ? 'bg-accent' : ''
@@ -187,12 +187,9 @@ const StoreCatalog = ({
 
         {hasMore && (
           <div
-            className="pointer-events-none absolute bottom-0 left-0 right-0 flex flex-col items-center justify-end pb-1"
+            className="pointer-events-none absolute bottom-0 left-0 right-0 flex flex-col items-center justify-end pb-1 bg-gradient-to-t from-popover via-popover/80 to-transparent h-14 transition-opacity duration-200"
             style={{
-              height: '3.5rem',
-              background: 'linear-gradient(to bottom, transparent, var(--popover, white) 80%)',
               opacity: isScrolled ? 0 : 1,
-              transition: 'opacity 0.2s ease',
             }}
           >
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">

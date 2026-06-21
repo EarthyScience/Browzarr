@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { Input } from '@/components/ui/';
 import { Button } from '@/components/ui/button-enhanced';

@@ -120,7 +120,6 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
                 activeOption={activeOption}
                 setActiveOption={setActiveOption}
                 setInitStore={setSelectedUrl}
-                onOpenDescription={() => {}}
               />
               <RemoteZarr
                 key={selectedUrl}
@@ -147,7 +146,6 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
                 activeOption={activeOption}
                 setActiveOption={setActiveOption}
                 setInitStore={setSelectedIcechunkUrl}
-                onOpenDescription={() => {}}
               />
               <RemoteIcechunk
                 key={selectedIcechunkUrl}
