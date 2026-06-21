@@ -308,7 +308,7 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
                     type="number"
                     className="w-16"
                     value={maxRetries}
-                    onChange={e => setMaxRetries(Number(e.target.value))}
+                    onChange={e => setMaxRetries(Math.max(0, parseInt(e.target.value, 10) || 0))}
                   />
                 </div>
                 <div className="flex items-center gap-2 text-xs">
@@ -317,7 +317,7 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
                     type="number"
                     className="w-20"
                     value={retryDelay}
-                    onChange={e => setRetryDelay(Number(e.target.value))}
+                    onChange={e => setRetryDelay(Math.max(0, parseInt(e.target.value, 10) || 0))}
                   />
                 </div>
               </div>
