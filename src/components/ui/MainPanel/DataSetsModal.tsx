@@ -5,6 +5,8 @@ import { useShallow } from 'zustand/shallow';
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -15,7 +17,6 @@ import { ZARR_CATALOG, ICECHUNK_CATALOG } from "@/assets/index";
 import RemoteZarr from './RemoteZarr';
 import LocalContent from './LocalContent';
 import RemoteIcechunk from './RemoteIcechunk';
-import { Separator } from "@/components/ui/separator"
 
 type Tab = 'remote' | 'local' | 'icechunk';
 
@@ -24,6 +25,12 @@ const TABS: { value: Tab; label: string }[] = [
   { value: 'icechunk', label: 'Icechunk'    },
   { value: 'local',    label: 'Local'       },
 ];
+
+const TAB_DESCRIPTIONS: Record<Tab, string> = {
+  remote: 'Browse and open remote Zarr stores via URL or from the catalog.',
+  icechunk: 'Connect to versioned Icechunk stores for transactional data access.',
+  local: 'Open a Zarr dataset stored on your local filesystem.',
+};
 
 type Props = {
   open: boolean;
@@ -69,16 +76,25 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange }>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto p-0">
-        <DialogTitle className="sr-only">Open Dataset</DialogTitle>
+        <DialogHeader className="sr-only">
+          <DialogTitle>Open dataset</DialogTitle>
+          <DialogDescription>{TAB_DESCRIPTIONS[activeTab]}</DialogDescription>
+        </DialogHeader>
 
-        {/* Header */}
         <div className="px-4 pt-4 pb-3 border-b border-border">
-          <p className="text-xs font-medium mb-2 uppercase tracking-wide">
-            Open dataset
-          </p>
-          <ButtonGroup className="justify-between border-1 rounded-md">
+          {!showDescription && (
+            <>
+              <p className="text-xs font-medium mb-2 uppercase tracking-wide text-muted-foreground">
+                Open dataset
+              </p>
+              <p className="text-xs text-muted-foreground mb-2">
+                {TAB_DESCRIPTIONS[activeTab]}
+              </p>
+              </>
+          )}
+          <ButtonGroup className="justify-between border rounded-md">
             {TABS.map(({ value, label }) => (
               <Button
                 key={value}
@@ -94,9 +110,9 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
           </ButtonGroup>
         </div>
 
-        <div className="p-4 flex flex-col gap-1 -mt-3">
+        <div className="p-4 flex flex-col gap-1 -mt-4">
           {activeTab === 'remote' && (
-            <>             
+            <>
               <StoreCatalog
                 catalog={ZARR_CATALOG}
                 placeholder="Search Zarr Stores..."
@@ -106,7 +122,7 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
                 setInitStore={setSelectedUrl}
                 onOpenDescription={() => {}}
               />
-               <RemoteZarr
+              <RemoteZarr
                 key={selectedUrl}
                 initStore={initStore}
                 setInitStore={setInitStore}
