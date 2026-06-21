@@ -7,9 +7,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  ButtonGroup,
-} from "@/components/ui/button-group";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { Button } from "@/components/ui/button-enhanced";
 import { DescriptionContent } from './DescriptionContent';
 import CuratedDatasets from './CuratedDatasets';
@@ -17,13 +15,12 @@ import RemoteZarr from './RemoteZarr';
 import LocalContent from './LocalContent';
 import RemoteIcechunk from './RemoteIcechunk';
 
-type Tab = 'curated' | 'remote' | 'local' | 'icechunk';
+type Tab = 'remote' | 'local' | 'icechunk';
 
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'curated', label: 'Curated' },
-  { value: 'remote',  label: 'Remote Zarr' },
-  { value: 'icechunk', label: 'Icechunk' },
-  { value: 'local',   label: 'Local' },
+  { value: 'remote',   label: 'Remote Zarr' },
+  { value: 'icechunk', label: 'Icechunk'    },
+  { value: 'local',    label: 'Local'       },
 ];
 
 type Props = {
@@ -34,8 +31,9 @@ type Props = {
 
 const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
   const [activeOption, setActiveOption] = useState<string>('');
+  const [selectedUrl, setSelectedUrl] = useState<string>('');
   const [hasFetched, setHasFetched] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>('curated');
+  const [activeTab, setActiveTab] = useState<Tab>('remote');
 
   const { initStore, setInitStore, setOpenVariables, status } = useGlobalStore(
     useShallow(state => ({
@@ -47,16 +45,26 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
   );
 
   const showDescription = hasFetched && status === null;
-
   const openDescription = () => setHasFetched(true);
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
     setHasFetched(false);
+    setSelectedUrl('');
+    setActiveOption('');
+  };
+
+  const handleOpenChange = (v: boolean) => {
+    if (!v) {
+      setSelectedUrl('');
+      setActiveOption('');
+      setHasFetched(false);
+    }
+    onOpenChange(v);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange }>
       <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto p-0">
         <DialogTitle className="sr-only">Open Dataset</DialogTitle>
 
@@ -82,20 +90,22 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
         </div>
 
         <div className="p-4 flex flex-col gap-1 -mt-3">
-          {activeTab === 'curated' && (
-            <CuratedDatasets
-              activeOption={activeOption}
-              setActiveOption={setActiveOption}
-              setInitStore={setInitStore}
-              onOpenDescription={openDescription}
-            />
-          )}
           {activeTab === 'remote' && (
-            <RemoteZarr
-              initStore={initStore}
-              setInitStore={setInitStore}
-              onOpenDescription={openDescription}
-            />
+            <>
+              <RemoteZarr
+                key={selectedUrl}
+                initStore={initStore}
+                setInitStore={setInitStore}
+                onOpenDescription={openDescription}
+                selectedUrl={selectedUrl}
+              />
+              <CuratedDatasets
+                activeOption={activeOption}
+                setActiveOption={setActiveOption}
+                setInitStore={setSelectedUrl}
+                onOpenDescription={() => {}}
+              />
+            </>
           )}
           {activeTab === 'local' && (
             <LocalContent

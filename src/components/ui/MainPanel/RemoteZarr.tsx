@@ -1,9 +1,8 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { Input } from '@/components/ui/';
 import { Button } from '@/components/ui/button-enhanced';
-
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 
@@ -11,10 +10,10 @@ type HeaderRow  = { key: string; value: string };
 type AuthPreset = 'none' | 'bearer' | 'basic' | 'apikey';
 
 const PRESETS: { value: AuthPreset; label: string }[] = [
-  { value: 'none',   label: 'None'       },
-  { value: 'bearer', label: 'Bearer'     },
-  { value: 'basic',  label: 'Basic'      },
-  { value: 'apikey', label: 'API Key'    },
+  { value: 'none',   label: 'None'    },
+  { value: 'bearer', label: 'Bearer'  },
+  { value: 'basic',  label: 'Basic'   },
+  { value: 'apikey', label: 'API Key' },
 ];
 
 const PRESET_KEYS: Record<Exclude<AuthPreset, 'none'>, string> = {
@@ -33,14 +32,16 @@ type Props = {
   initStore: string;
   setInitStore: (v: string) => void;
   onOpenDescription: () => void;
+  selectedUrl?: string;
 };
 
-const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
+const RemoteZarr = ({ initStore, setInitStore, onOpenDescription, selectedUrl = '' }: Props) => {
   const [showFetchOptions, setShowFetchOptions] = useState(false);
   const [preset, setPreset] = useState<AuthPreset>('none');
   const [presetValue, setPresetValue] = useState('');
   const [headers, setHeaders] = useState<HeaderRow[]>([{ key: '', value: '' }]);
   const [showCustom, setShowCustom] = useState(false);
+  const [urlValue, setUrlValue] = useState(selectedUrl);
 
   const addHeaderRow = () => setHeaders(h => [...h, { key: '', value: '' }]);
   const removeHeaderRow = (i: number) => setHeaders(h => h.filter((_, idx) => idx !== i));
@@ -73,17 +74,16 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
       className="flex flex-col gap-3"
       onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const input = e.currentTarget.elements[0] as HTMLInputElement;
-        const url = input.value;
-        if (!url) return;
+        if (!urlValue) return;
 
         const fetchHandler = buildFetchHandler();
-        if (fetchHandler && url.startsWith('http://')) {
+        if (fetchHandler && urlValue.startsWith('http://')) {
           useGlobalStore.getState().setStatus('Error: Cannot send auth headers over plain HTTP — use HTTPS.');
           return;
         }
+
         const fetchOptions = {
-          ...(fetchHandler && { fetch: fetchHandler}),
+          ...(fetchHandler && { fetch: fetchHandler }),
         };
 
         useZarrStore.getState().setIcechunkOptions(null);
@@ -93,19 +93,24 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
         useGlobalStore.getState().setStatus('Fetching...');
 
         useZarrStore.getState().bumpFetchKey();
-        setInitStore(url);
+        setInitStore(urlValue);
         onOpenDescription();
       }}
     >
       {/* URL + Fetch */}
       <div className="flex items-center gap-2">
-        <Input className="w-full" placeholder="Store URL" />
+        <Input
+          className="w-full"
+          placeholder="Store URL"
+          value={urlValue}
+          onChange={e => setUrlValue(e.target.value)}
+        />
         <Button type="submit" variant="outline" className="cursor-pointer">
           Fetch
         </Button>
       </div>
 
-      {/* FetchOptions */}
+      {/* fetchOptions toggle */}
       <div>
         <Button
           type="button"
@@ -127,7 +132,7 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
                   <Button
                     key={value}
                     variant={preset === value ? 'secondary' : 'ghost'}
-                    className='cursor-pointer'
+                    className="cursor-pointer"
                     size="sm"
                     onClick={() => { setPreset(value); setPresetValue(''); }}
                   >
@@ -154,7 +159,7 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription }: Props) => {
             <div>
               <Button
                 type="button"
-                variant={'ghost'}
+                variant="ghost"
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 onClick={() => setShowCustom(v => !v)}
               >
