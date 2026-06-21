@@ -15,6 +15,7 @@ import { ZARR_CATALOG, ICECHUNK_CATALOG } from "@/assets/index";
 import RemoteZarr from './RemoteZarr';
 import LocalContent from './LocalContent';
 import RemoteIcechunk from './RemoteIcechunk';
+import { Separator } from "@/components/ui/separator"
 
 type Tab = 'remote' | 'local' | 'icechunk';
 
@@ -103,8 +104,11 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
                 onOpenDescription={openDescription}
                 selectedUrl={selectedUrl}
               />
+              <Separator className="mb-2 mt-2"/>
               <StoreCatalog
                 catalog={ZARR_CATALOG}
+                placeholder="Search Zarr Stores..."
+                gradient="zarr"
                 activeOption={activeOption}
                 setActiveOption={setActiveOption}
                 setInitStore={setSelectedUrl}
@@ -127,8 +131,11 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
                 onOpenDescription={openDescription}
                 selectedUrl={selectedIcechunkUrl}
               />
+              <Separator className="mb-2 mt-2"/>
               <StoreCatalog
                 catalog={ICECHUNK_CATALOG}
+                placeholder="Search Icechunk Stores..."
+                gradient="icechunk"
                 activeOption={activeOption}
                 setActiveOption={setActiveOption}
                 setInitStore={setSelectedIcechunkUrl}
