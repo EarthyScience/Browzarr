@@ -89,15 +89,14 @@ const StoreCatalog = ({
   placeholder = 'Search datasets...',
   gradient,
 }: Props) => {
-  // Keep search, pagination, and scroll-hint in one place so they reset atomically.
   const [search, setSearch] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [isScrolled, setIsScrolled] = useState(false);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  // Resetting visibleCount and isScrolled here (in the event handler)
   const handleSearchChange = (value: string) => {
     setSearch(value);
     setVisibleCount(PAGE_SIZE);
@@ -113,6 +112,28 @@ const StoreCatalog = ({
   const hasMore = visibleCount < filtered.length;
   const gradientValue = gradient ? GRADIENTS[gradient] : undefined;
 
+  // Intercept ArrowDown at the Command root. cmdk handles navigation itself
+  // and gives no callback when it reaches the last item — so we check whether
+  // the currently selected item is the last rendered one, and if there's more
+  // to load, we load it. cmdk will then naturally move focus to the new item
+  // on the next keydown.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowDown' || !hasMore) return;
+
+    const root = rootRef.current;
+    if (!root) return;
+
+    const items = Array.from(root.querySelectorAll('[cmdk-item]:not([aria-disabled="true"])'));
+    const selected = root.querySelector('[cmdk-item][aria-selected="true"]');
+
+    if (selected && items[items.length - 1] === selected) {
+      // We're on the last item — load the next page. This is still has issues but kinda works :/ 
+      // Don't preventDefault: let cmdk process the key after state updates
+      // so it can move selection to the newly rendered item.
+      setVisibleCount(c => Math.min(c + PAGE_SIZE, filtered.length));
+    }
+  };
+
   // Track scroll position to fade out the hint once the user starts scrolling.
   useEffect(() => {
     const el = listRef.current;
@@ -123,6 +144,7 @@ const StoreCatalog = ({
   }, []);
 
   // Load the next page when the sentinel scrolls into view.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: visibleCount controls sentinel mount/unmount; needed to re-bind observer after resets even when filtered.length is unchanged
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -141,7 +163,12 @@ const StoreCatalog = ({
   }, [filtered.length, visibleCount]);
 
   return (
-    <Command shouldFilter={false} className="rounded-lg border">
+    <Command
+      ref={rootRef}
+      shouldFilter={false}
+      className="rounded-lg border"
+      onKeyDown={handleKeyDown}
+    >
       <CommandInput
         placeholder={placeholder}
         value={search}
@@ -155,7 +182,7 @@ const StoreCatalog = ({
         >
           <CommandEmpty>No datasets found.</CommandEmpty>
           <CommandGroup>
-            {visible.map(ds => (
+            {visible.map((ds) => (
               <CommandItem
                 key={ds.key}
                 value={ds.key}
@@ -188,9 +215,7 @@ const StoreCatalog = ({
         {hasMore && (
           <div
             className="pointer-events-none absolute bottom-0 left-0 right-0 flex flex-col items-center justify-end pb-1 bg-gradient-to-t from-popover via-popover/80 to-transparent h-14 transition-opacity duration-200"
-            style={{
-              opacity: isScrolled ? 0 : 1,
-            }}
+            style={{ opacity: isScrolled ? 0 : 1 }}
           >
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <ChevronsDown className="size-3 animate-bounce" />
