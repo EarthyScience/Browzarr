@@ -1,8 +1,5 @@
 "use client";
-
 import React, { useState } from 'react';
-import { ZARR_CATALOG } from "@/assets/index";
-
 import {
   Command,
   CommandEmpty,
@@ -13,16 +10,25 @@ import {
 } from "@/components/ui/command";
 import { ChevronDown } from 'lucide-react';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 3;
+
+type CatalogEntry = {
+  key: string;
+  label: string;
+  subtitle: string;
+  store: string;
+};
 
 type Props = {
+  catalog: CatalogEntry[];
   activeOption: string;
   setActiveOption: (key: string) => void;
   setInitStore: (v: string) => void;
   onOpenDescription: () => void;
 };
 
-const CuratedDatasets = ({
+const StoreCatalog = ({
+  catalog,
   activeOption,
   setActiveOption,
   setInitStore,
@@ -31,7 +37,7 @@ const CuratedDatasets = ({
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
 
-  const filtered = ZARR_CATALOG.filter(ds =>
+  const filtered = catalog.filter(ds =>
     ds.label.toLowerCase().includes(search.toLowerCase()) ||
     ds.subtitle.toLowerCase().includes(search.toLowerCase())
   );
@@ -67,12 +73,11 @@ const CuratedDatasets = ({
               }`}
             >
               <span className="font-medium text-sm">{ds.label}</span>
-              <span className="text-xs text-muted-foreground leading-snug ">
+              <span className="text-xs text-muted-foreground leading-snug">
                 {ds.subtitle}
               </span>
             </CommandItem>
           ))}
-
           {!showAll && hasMore && (
             <CommandItem
               value="__show_more__"
@@ -83,7 +88,6 @@ const CuratedDatasets = ({
               {hiddenCount} more dataset{hiddenCount > 1 ? 's' : ''} available
             </CommandItem>
           )}
-
           {showAll && hasMore && (
             <CommandItem
               value="__show_less__"
@@ -100,4 +104,4 @@ const CuratedDatasets = ({
   );
 };
 
-export default CuratedDatasets;
+export default StoreCatalog;

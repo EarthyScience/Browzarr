@@ -10,7 +10,8 @@ import {
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Button } from "@/components/ui/button-enhanced";
 import { DescriptionContent } from './DescriptionContent';
-import CuratedDatasets from './CuratedDatasets';
+import StoreCatalog from './StoreCatalog';
+import { ZARR_CATALOG, ICECHUNK_CATALOG } from "@/assets/index";
 import RemoteZarr from './RemoteZarr';
 import LocalContent from './LocalContent';
 import RemoteIcechunk from './RemoteIcechunk';
@@ -32,6 +33,7 @@ type Props = {
 const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
   const [activeOption, setActiveOption] = useState<string>('');
   const [selectedUrl, setSelectedUrl] = useState<string>('');
+  const [selectedIcechunkUrl, setSelectedIcechunkUrl] = useState<string>('');
   const [hasFetched, setHasFetched] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('remote');
 
@@ -51,12 +53,14 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
     setActiveTab(tab);
     setHasFetched(false);
     setSelectedUrl('');
+    setSelectedIcechunkUrl('');
     setActiveOption('');
   };
 
   const handleOpenChange = (v: boolean) => {
     if (!v) {
       setSelectedUrl('');
+      setSelectedIcechunkUrl('');
       setActiveOption('');
       setHasFetched(false);
     }
@@ -99,7 +103,8 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
                 onOpenDescription={openDescription}
                 selectedUrl={selectedUrl}
               />
-              <CuratedDatasets
+              <StoreCatalog
+                catalog={ZARR_CATALOG}
                 activeOption={activeOption}
                 setActiveOption={setActiveOption}
                 setInitStore={setSelectedUrl}
@@ -115,10 +120,21 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
             />
           )}
           {activeTab === 'icechunk' && (
-            <RemoteIcechunk
-              setInitStore={setInitStore}
-              onOpenDescription={openDescription}
-            />
+            <>
+              <RemoteIcechunk
+                key={selectedIcechunkUrl}
+                setInitStore={setInitStore}
+                onOpenDescription={openDescription}
+                selectedUrl={selectedIcechunkUrl}
+              />
+              <StoreCatalog
+                catalog={ICECHUNK_CATALOG}
+                activeOption={activeOption}
+                setActiveOption={setActiveOption}
+                setInitStore={setSelectedIcechunkUrl}
+                onOpenDescription={() => {}}
+              />
+            </>
           )}
           {showDescription && (
             <DescriptionContent

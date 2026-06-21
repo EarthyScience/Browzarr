@@ -93,10 +93,11 @@ const HeaderRows = ({ rows, set }: HeaderRowsProps) => {
 type Props = {
   setInitStore: (v: string) => void;
   onOpenDescription: () => void;
+  selectedUrl?: string
 };
 
-const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
-  const [url, setUrl] = useState('');
+const RemoteIcechunk = ({ setInitStore, onOpenDescription, selectedUrl = '' }: Props) => {
+  const [url, setUrl] = useState(selectedUrl);
 
   const [showSettings, setShowSettings] = useState(false);
 
