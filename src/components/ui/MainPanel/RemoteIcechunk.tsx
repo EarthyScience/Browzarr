@@ -97,6 +97,9 @@ type Props = {
 
 const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
   const [url, setUrl] = useState('');
+
+  const [showSettings, setShowSettings] = useState(false);
+
   const [refType, setRefType] = useState<RefType>('branch');
   const [refValue, setRefValue] = useState('main');
 
@@ -169,143 +172,160 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription }: Props) => {
         </Button>
       </div>
 
-      {/* Branch / Tag / Snapshot */}
-      <div className="flex flex-wrap gap-2">
-        <div className="flex flex-1 gap-1">
-          {REF_TABS.map(({ value, label }) => (
+      {/* Settings toggle */}
+      <div>
+        <Button
+          type="button"
+          variant="ghost"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          onClick={() => setShowSettings(v => !v)}
+        >
+          {showSettings ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          Settings
+        </Button>
+
+        {showSettings && (
+          <div className="flex flex-col gap-3 mt-2">
+
+          {/* Branch / Tag / Snapshot */}
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-1">
+              {REF_TABS.map(({ value, label }) => (
+                <Button
+                  key={value}
+                  type="button"
+                  variant={refType === value ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className={`cursor-pointer flex-1 ${refType !== value ? 'text-muted-foreground' : ''}`}
+                  onClick={() => setRefType(value)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+            <Input
+              className="w-full"
+              placeholder={refType === 'branch' ? 'main' : refType}
+              value={refValue}
+              onChange={e => setRefValue(e.target.value)}
+            />
+          </div>
+
+          {/* Storage options */}
+          <div>
             <Button
-              key={value}
               type="button"
-              variant={refType === value ? 'secondary' : 'ghost'}
-              size="sm"
-              className={`cursor-pointer flex-1 ${refType !== value ? 'text-muted-foreground' : ''}`}
-              onClick={() => setRefType(value)}
+              variant="ghost"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0"
+              onClick={() => setShowStorage(v => !v)}
             >
-              {label}
+              {showStorage ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              Storage options
             </Button>
-          ))}
+            {showStorage && (
+              <div className="flex flex-col gap-2 mt-2">
+                <div className="flex gap-2">
+
+                  {/* Credentials Select */}
+                  <div className="flex flex-col gap-1 flex-1 text-xs">
+                    <span className="text-muted-foreground">Credentials</span>
+                    <Select
+                      value={credentials || '__default__'}
+                      onValueChange={v => setCredentials(v === '__default__' ? '' : v as Credentials)}
+                    >
+                      <SelectTrigger className="w-full text-xs h-8">
+                        <SelectValue placeholder="Default" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="__default__">Default</SelectItem>
+                          {CREDENTIALS_OPTIONS.map(o => (
+                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Cache Select */}
+                  <div className="flex flex-col gap-1 flex-1 text-xs">
+                    <span className="text-muted-foreground">Cache</span>
+                    <Select
+                      value={cache}
+                      onValueChange={v => setCache(v as Cache)}
+                    >
+                      <SelectTrigger className="w-full text-xs h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {CACHE_OPTIONS.map(o => (
+                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                </div>
+                <HeaderRows rows={storageHeaders} set={setStorageHeaders} />
+              </div>
+            )}
+          </div>
+
+          {/* fetchClient headers */}
+          <div>
+            <Button
+              type="button"
+              variant="ghost"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0"
+              onClick={() => setShowFetchClientHeaders(v => !v)}
+            >
+              {showFetchClientHeaders ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              fetchClient headers
+            </Button>
+            {showFetchClientHeaders && (
+              <HeaderRows rows={fetchClientHeaders} set={setFetchClientHeaders} />
+            )}
+          </div>
+
+          {/* Advanced */}
+          <div>
+            <Button
+              type="button"
+              variant="ghost"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0"
+              onClick={() => setShowAdvanced(v => !v)}
+            >
+              {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              Advanced
+            </Button>
+            {showAdvanced && (
+              <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <label className="text-muted-foreground whitespace-nowrap">Max retries</label>
+                  <Input
+                    type="number"
+                    className="w-16"
+                    value={maxRetries}
+                    onChange={e => setMaxRetries(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  />
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <label className="text-muted-foreground whitespace-nowrap">Retry delay (ms)</label>
+                  <Input
+                    type="number"
+                    className="w-20"
+                    value={retryDelay}
+                    onChange={e => setRetryDelay(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-        <Input
-          className="w-full"
-          placeholder={refType === 'branch' ? 'main' : refType}
-          value={refValue}
-          onChange={e => setRefValue(e.target.value)}
-        />
-      </div>
-
-      {/* Storage options */}
-      <div>
-        <Button
-          type="button"
-          variant="ghost"
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0"
-          onClick={() => setShowStorage(v => !v)}
-        >
-          {showStorage ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          Storage options
-        </Button>
-        {showStorage && (
-          <div className="flex flex-col gap-2 mt-2">
-            <div className="flex gap-2">
-
-              {/* Credentials Select */}
-              <div className="flex flex-col gap-1 flex-1 text-xs">
-                <span className="text-muted-foreground">Credentials</span>
-                <Select
-                  value={credentials || '__default__'}
-                  onValueChange={v => setCredentials(v === '__default__' ? '' : v as Credentials)}
-                >
-                  <SelectTrigger className="w-full text-xs h-8">
-                    <SelectValue placeholder="Default" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="__default__">Default</SelectItem>
-                      {CREDENTIALS_OPTIONS.map(o => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Cache Select */}
-              <div className="flex flex-col gap-1 flex-1 text-xs">
-                <span className="text-muted-foreground">Cache</span>
-                <Select
-                  value={cache}
-                  onValueChange={v => setCache(v as Cache)}
-                >
-                  <SelectTrigger className="w-full text-xs h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {CACHE_OPTIONS.map(o => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-
-            </div>
-            <HeaderRows rows={storageHeaders} set={setStorageHeaders} />
-          </div>
         )}
       </div>
-
-      {/* fetchClient headers */}
-      <div>
-        <Button
-          type="button"
-          variant="ghost"
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0"
-          onClick={() => setShowFetchClientHeaders(v => !v)}
-        >
-          {showFetchClientHeaders ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          fetchClient headers
-        </Button>
-        {showFetchClientHeaders && (
-          <HeaderRows rows={fetchClientHeaders} set={setFetchClientHeaders} />
-        )}
-      </div>
-
-      {/* Advanced */}
-      <div>
-        <Button
-          type="button"
-          variant="ghost"
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0"
-          onClick={() => setShowAdvanced(v => !v)}
-        >
-          {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          Advanced
-        </Button>
-        {showAdvanced && (
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
-            <div className="flex items-center gap-2 text-xs">
-              <label className="text-muted-foreground whitespace-nowrap">Max retries</label>
-              <Input
-                type="number"
-                className="w-16"
-                value={maxRetries}
-                onChange={e => setMaxRetries(Number(e.target.value))}
-              />
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <label className="text-muted-foreground whitespace-nowrap">Retry delay (ms)</label>
-              <Input
-                type="number"
-                className="w-20"
-                value={retryDelay}
-                onChange={e => setRetryDelay(Number(e.target.value))}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
     </div>
   );
 };
