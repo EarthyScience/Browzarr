@@ -54,10 +54,12 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
   const shapeLength = axisDimArrays.length
   const dimSlices = useMemo(()=> {
+    const slicers = permuteArr([zSlice, ySlice, xSlice], permute)
+    const [xSlicer, ySlicer, zSlicer] = slicers
     let slices = [
-      axisDimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-      revY ? axisDimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : axisDimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-      axisDimArrays[shapeLength-1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+      axisDimArrays[shapeLength-3].slice(zSlicer[0], zSlicer[1] ? zSlicer[1] : undefined),
+      revY ? axisDimArrays[shapeLength-2].slice(ySlicer[0], ySlicer[1] ? ySlicer[1] : undefined).reverse() : axisDimArrays[shapeLength-2].slice(ySlicer[0], ySlicer[1] ? ySlicer[1] : undefined),
+      axisDimArrays[shapeLength-1].slice(xSlicer[0], xSlicer[1] ? xSlicer[1] : undefined),
     ] 
     if (coarsen) {
       const {kernelDepth, kernelSize} = useZarrStore.getState()
