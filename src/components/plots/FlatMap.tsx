@@ -14,6 +14,7 @@ import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { GetFrag } from '../textures';
 import { SquareMeshes } from './TransectMeshes';
+import { usePlotTransformStore } from '@/GlobalStates/PlotTransformStore';
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
   setShowInfo: React.Dispatch<React.SetStateAction<boolean>>;
@@ -58,7 +59,12 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
       kernelSize: state.kernelSize,
       kernelDepth: state.kernelDepth
     })))
-
+    const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+              rotateX: state.rotateX,
+              rotateZ: state.rotateZ,
+              mirrorHorizontal: state.mirrorHorizontal,
+              mirrorVertical: state.mirrorVertical
+    })))
     const shapeLength = dimArrays.length
 
     const dimSlices = useMemo (() => {
@@ -204,19 +210,22 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
     },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange])
 
   return (
-    <>
-    <SquareMeshes />
-    <mesh 
-      material={shaderMaterial} 
-      geometry={geometry} 
-      scale={[((analysisMode && axis == 2) && flipY) ? -1:  1, flipY ? -1 : ((analysisMode && axis == 2) ? -1 : 1) , 1]}
-      rotation={[0,0,rotateMap ? Math.PI/2 : 0]}
-      onPointerEnter={()=>{setShowInfo(true); infoRef.current = true }}
-      onPointerLeave={()=>{setShowInfo(false); infoRef.current = false }}
-      onPointerMove={handleMove}
-      onClick={selectTS && HandleTimeSeries}
-    />
-    </>
+    <group 
+      scale={[mirrorHorizontal ? -1 : 1, mirrorVertical ? -1 : 1 , 1]}
+      rotation={[rotateX*Math.PI/2, 0, rotateZ*Math.PI/2]}
+    >
+      <SquareMeshes />
+      <mesh 
+        material={shaderMaterial} 
+        geometry={geometry} 
+        scale={[((analysisMode && axis == 2) && flipY) ? -1:  1, flipY ? -1 : ((analysisMode && axis == 2) ? -1 : 1) , 1]}
+        rotation={[0,0,rotateMap ? Math.PI/2 : 0]}
+        onPointerEnter={()=>{setShowInfo(true); infoRef.current = true }}
+        onPointerLeave={()=>{setShowInfo(false); infoRef.current = false }}
+        onPointerMove={handleMove}
+        onClick={selectTS && HandleTimeSeries}
+      />
+    </group>
   )
 }
 

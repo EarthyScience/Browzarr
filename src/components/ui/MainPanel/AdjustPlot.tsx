@@ -503,13 +503,13 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {valueRange, showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
+  const {valueRange, showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture, showTransformAxis,
     setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(state => ({
     showBorders: state.showBorders, borderColor: state.borderColor,
     nanColor: state.nanColor, nanTransparency: state.nanTransparency,
     plotType: state.plotType, interpPixels: state.interpPixels,
     fillValue: state.fillValue, useBorderTexture:state.useBorderTexture,
-    valueRange: state.valueRange, setValueRange: state.setValueRange,
+    valueRange: state.valueRange, showTransformAxis:state.showTransformAxis, setValueRange: state.setValueRange,
     setShowBorders: state.setShowBorders, setBorderColor: state.setBorderColor,
     setNanColor: state.setNanColor, setNanTransparency: state.setNanTransparency,
     setInterpPixels: state.setInterpPixels, setFillValue:state.setFillValue
@@ -527,7 +527,6 @@ const GlobalOptions = () =>{
     setRotateX: state.setRotateX, setRotateZ: state.setRotateZ, 
     setMirrorVertical: state.setMirrorVertical, setMirrorHorizontal: state.setMirrorHorizontal
   })))
-
   const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
   const [showMasks, setShowMasks] = useState(false);
   const [showTransform, setShowTransform] = useState(false);
@@ -535,6 +534,21 @@ const GlobalOptions = () =>{
   const [zAngle, setZAngle] = useState(rotateZ)
   const masks = ["None", "Land", "Water"]
   const isPC = plotType == 'point-cloud'
+  const canReset = (
+    mirrorHorizontal == true ||
+    mirrorVertical == true ||
+    rotateX % 4 != 0 ||
+    rotateZ % 4 != 0
+  );
+  function ResetTransforms(){
+    setRotateX(0);
+    setRotateZ(0);
+    setXAngle(0);
+    setZAngle(0);
+    setMirrorHorizontal(false);
+    setMirrorVertical(false)
+    return null;
+  }
   return (
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
       <button 
@@ -548,8 +562,23 @@ const GlobalOptions = () =>{
             }`}
           />
       </button>
-      <Hider show={!showTransform}>
+      <Hider show={showTransform}>
         <div className='grid grid-cols-2 gap-4 place-items-center'>
+          {/* Buttons */}
+            <div className='col-span-2 flex space-around items-center'>
+              <Button
+                variant='outline'
+                onClick={()=>usePlotStore.setState({showTransformAxis:!showTransformAxis})}
+              >
+                {showTransformAxis ? 'Hide' : 'Show'} Axis
+              </Button>
+              {canReset && <Button
+                variant='outline'
+                onClick={ResetTransforms}
+              >
+                Reset
+              </Button>}
+            </div>
             {/* Rotations */}
             <div className='col-span-2'>
               <b>Rotation</b>

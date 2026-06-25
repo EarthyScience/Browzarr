@@ -10,6 +10,7 @@ import { invalidate } from '@react-three/fiber'
 import { deg2rad } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { GetVert } from '../textures/GetVert';
+import { usePlotTransformStore } from '@/GlobalStates/PlotTransformStore';
 
 const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const {colormap, isFlat, valueScales, flipY,
@@ -31,6 +32,12 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
     })))
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
         analysisMode: state.analysisMode, axis:state.axis
+    })))
+    const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+        rotateX: state.rotateX,
+        rotateZ: state.rotateZ,
+        mirrorHorizontal: state.mirrorHorizontal,
+        mirrorVertical: state.mirrorVertical
     })))
     const {width, height} = useMemo(()=>{
         if (dataShape.length == 2){
@@ -130,13 +137,18 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
     },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, valueRange, textures, fillValue, analysisMode, axis, width, height, latBounds, lonBounds, maskValue])
 
   return (
-
-    <instancedMesh 
-        scale={[((analysisMode && axis == 2) && flipY) ? -1:  1, flipY ? -1 : ((analysisMode && axis == 2) ? -1 : 1) , 1]}
-        rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]}
-        args={[geometry, shaderMaterial, count]}
-        frustumCulled={false}
-    />
+    <group
+        scale={[mirrorHorizontal ? -1 : 1, mirrorVertical ? -1 : 1 , 1]}
+        rotation={[rotateX*Math.PI/2, 0, rotateZ*Math.PI/2]}  
+    >
+        <instancedMesh 
+            scale={[((analysisMode && axis == 2) && flipY) ? -1:  1, flipY ? -1 : ((analysisMode && axis == 2) ? -1 : 1) , 1]}
+            rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]}
+            args={[geometry, shaderMaterial, count]}
+            frustumCulled={false}
+        />
+    </group>
+    
   )
 }
 

@@ -46,7 +46,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
           rotateZ: state.rotateZ,
           mirrorHorizontal: state.mirrorHorizontal,
           mirrorVertical: state.mirrorVertical
-        })))
+      })))
     const {animate, animProg, cOffset, cScale, valueRange, selectTS, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
       zSlice, ySlice, xSlice, fillValue, borderTexture, maskTexture, maskValue,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
