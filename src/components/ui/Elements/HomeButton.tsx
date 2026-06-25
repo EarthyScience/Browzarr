@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import logoHome from "public/logo-light.svg";
 import { Button } from "@/components/ui/button-enhanced";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+const logoHome = "/logo-light.svg";
 
 export default function HomeButton() {
 	return (
@@ -20,7 +21,7 @@ export default function HomeButton() {
 						size="icon"
 						className="cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
 					>
-						<Image src={logoHome} alt="logoMPI" height={32} />
+						<Image src={logoHome} alt="logoMPI" height={32} width={32} />
 					</Button>
 				</Link>
 			</TooltipTrigger>

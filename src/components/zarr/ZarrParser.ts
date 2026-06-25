@@ -1,6 +1,33 @@
 import * as zarr from 'zarrita'
-import { jsonDecodeObject, jsonEncodeObject } from 'node_modules/zarrita/dist/src/util';
+import { InvalidMetadataError } from 'zarrita';
 
+// jsonEncodeObject and jsonDecodeObject
+// From zarrita/src/util.ts, better this, than rely on internals
+export function jsonEncodeObject(o: Record<string, unknown>): Uint8Array {
+	const str = JSON.stringify(
+		o,
+		(_key, value) => {
+			// JSON.stringify converts NaN/Infinity/-Infinity to null.
+			// Zarr v3 spec requires these as string representations.
+			if (typeof value === "number") {
+				if (Number.isNaN(value)) return "NaN";
+				if (value === Infinity) return "Infinity";
+				if (value === -Infinity) return "-Infinity";
+			}
+			return value;
+		},
+		2,
+	);
+	return new TextEncoder().encode(str);
+}
+export function jsonDecodeObject(bytes: Uint8Array) {
+	const str = new TextDecoder().decode(bytes);
+	try {
+		return JSON.parse(str);
+	} catch (cause) {
+		throw new InvalidMetadataError("Failed to decode JSON", { cause });
+	}
+}
 function is_meta_key(key: string) {
     return (key.endsWith(".zarray") ||
         key.endsWith(".zgroup") ||
