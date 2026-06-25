@@ -404,6 +404,6 @@ export function calculateStrides(
   return newStrides
 }
 
-export function permuteArr(arr: number[], permute?:number[]) {
+export function permuteArr(arr: any[], permute?:number[]) {
   return permute ? permute.map(i => arr[i]) : arr;
 }
