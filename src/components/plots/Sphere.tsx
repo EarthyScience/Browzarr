@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { usePlotTransformStore } from '@/GlobalStates/PlotTransformStore';
 import { useShallow } from 'zustand/shallow'
 import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
@@ -40,7 +41,12 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         flipY: state.flipY,
         textureArrayDepths: state.textureArrayDepths
     })))
-    
+    const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+          rotateX: state.rotateX,
+          rotateZ: state.rotateZ,
+          mirrorHorizontal: state.mirrorHorizontal,
+          mirrorVertical: state.mirrorVertical
+        })))
     const {animate, animProg, cOffset, cScale, valueRange, selectTS, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
       zSlice, ySlice, xSlice, fillValue, borderTexture, maskTexture, maskValue,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
@@ -176,14 +182,18 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         }
         updateDimCoords({[tsID] : dimObj})
       }
-
+  let yScale = mirrorVertical ? -1 : 1;
+  yScale *= flipY ? -1 : 1;
   return (
-    <>
-    <group scale={[1, flipY ? -1 : 1, 1]}>
-      <SquareMeshes />
+    <group
+      scale={[mirrorHorizontal ? -1 : 1, yScale, 1]}
+      rotation={[rotateX/2*Math.PI, 0, rotateZ/2*Math.PI]}
+    >
+      <group scale={[1, flipY ? -1 : 1, 1]}>
+        <SquareMeshes />
+      </group>
+      <mesh renderOrder={1} geometry={geometry} material={shaderMaterial} onClick={e=>selectTS && HandleTimeSeries(e)}/>
+      <mesh renderOrder={0} geometry={geometry} material={backMaterial} />
     </group>
-    <mesh renderOrder={1} geometry={geometry} material={shaderMaterial} onClick={e=>selectTS && HandleTimeSeries(e)}/>
-    <mesh renderOrder={0} geometry={geometry} material={backMaterial} />
-    </>
   )
 }

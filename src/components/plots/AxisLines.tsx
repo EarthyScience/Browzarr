@@ -20,7 +20,7 @@ const AXIS_CONSTANTS = {
   INITIAL_RESOLUTION: 7,
   MAX_RESOLUTION: 20,
   MIN_RESOLUTION: 1,
-  PC_GLOBAL_SCALE_DIVISOR: 500,
+  PC_GLOBAL_SCALE_DIVISOR: 10,
   LINE_WIDTH: 2.0,
   TICK_LENGTH_FACTOR: 0.05,
   TICK_FONT_SIZE_FACTOR: 0.05,
@@ -76,10 +76,6 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
   const globalScale = isPC ? permuteShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
-
-  // const depthRatio = useMemo(()=>permuteShape[0]/permuteShape[2]*timeScale,[permuteShape, timeScale]);
-  // const shapeRatio = useMemo(()=>permuteShape[1]/permuteShape[2], [permuteShape])
-  // const timeRatio = Math.max(permuteShape[0]/permuteShape[2], 2);
   const xScale = permuteShape[2]/2*globalScale;
   const yScale = permuteShape[1]/2*globalScale;
   const zScale = permuteShape[0]/2*globalScale;

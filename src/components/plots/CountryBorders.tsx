@@ -8,6 +8,7 @@ import { useShallow } from 'zustand/shallow';
 import { useFrame } from '@react-three/fiber';
 import {vertexShader, bordersFrag} from '../textures/shaders'
 import { invalidate } from '@react-three/fiber';
+import { usePlotTransformStore } from '@/GlobalStates/PlotTransformStore';
 
 function Reproject([lon, lat] : [number, number], lonBounds: [number, number], latBounds: [number, number]){
     let newLon = (lon-lonBounds[0])/(lonBounds[1]-lonBounds[0]);
@@ -41,7 +42,6 @@ function Borders({features}:{features: any}){
         flipY: state.flipY,
         shape: state.shape
     })))
-
     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
           const newLatStep = latResolution/2;
           const newLonStep = lonResolution/2;
@@ -212,7 +212,12 @@ const CountryBorders = () => {
         analysisMode: state.analysisMode,
         axis: state.axis
     })))
-
+    const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+        rotateX: state.rotateX,
+        rotateZ: state.rotateZ,
+        mirrorHorizontal: state.mirrorHorizontal,
+        mirrorVertical: state.mirrorVertical
+    })))
     const [spherize, setSpherize] = useState<boolean>(false)
 
     useEffect(()=>{
@@ -252,11 +257,12 @@ const CountryBorders = () => {
     const aspectRatio = dataShape[2]/dataShape[1]
     
     const globalScale = isPC ? dataShape[2]/500 : 1
-
+    let yScale = mirrorVertical ? -1 : 1;
+    // yScale *= flipY ? -1 : 1;
     return(
         <group
-            rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
-            scale={[globalScale, globalScale * (spherize ? 1 : 2 / aspectRatio), globalScale]}
+            rotation={[rotateX/2*Math.PI, 0, rotateZ/2*Math.PI]}
+            scale={[globalScale*(mirrorHorizontal ? -1 : 1), globalScale * (spherize ? 1 : 2 / aspectRatio) * yScale, globalScale]}
         >
             <group 
                 visible={showBorders && !(analysisMode && axis != 0)} 

@@ -8,6 +8,7 @@ import { deg2rad } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from './UVCube';
 import { ColumnMeshes } from './TransectMeshes';
+import { usePlotTransformStore } from '@/GlobalStates/PlotTransformStore';
 
 interface PCProps {
   texture: THREE.Data3DTexture[] | null,
@@ -63,7 +64,12 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       maskValue: state.maskValue,
       disablePointScale: state.disablePointScale
     })))
-
+    const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+              rotateX: state.rotateX,
+              rotateZ: state.rotateZ,
+              mirrorHorizontal: state.mirrorHorizontal,
+              mirrorVertical: state.mirrorVertical
+            })))
     //Extract data and shape from Data3DTexture
     const { data, width, height, depth } = useMemo(() => {
         const [depth, height, width] = dataShape
@@ -139,8 +145,13 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
     }
   }, [pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, timeScale, xRange, yRange, fillValue, zRange, maskValue, lonBounds, latBounds]);
   const tsScale = dataShape[2]/500
+  let yScale = mirrorVertical ? -1 : 1;
+  yScale *= flipY ? -1 : 1;
   return (
-    <group scale={[1,flipY ? -1:1, 1]}>
+    <group 
+       scale={[mirrorHorizontal ? -1 : 1, yScale, 1]}
+      rotation={[rotateX/2*Math.PI, 0, rotateZ/2*Math.PI]}
+    >
       <group scale={[tsScale,tsScale,tsScale]}>
         <ColumnMeshes />
       </group>

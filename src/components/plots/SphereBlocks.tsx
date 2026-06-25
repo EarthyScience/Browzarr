@@ -9,6 +9,7 @@ import { invalidate } from '@react-three/fiber'
 import { deg2rad } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { GetVert } from '../textures';
+import { usePlotTransformStore } from '@/GlobalStates/PlotTransformStore';
 const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const {colormap, isFlat, valueScales, 
             dataShape, textureArrayDepths} = useGlobalStore(useShallow(state=>({
@@ -33,6 +34,12 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         maskTexture: state.maskTexture,
         maskValue: state.maskValue,
     })))
+    const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+              rotateX: state.rotateX,
+              rotateZ: state.rotateZ,
+              mirrorHorizontal: state.mirrorHorizontal,
+              mirrorVertical: state.mirrorVertical
+            })))
 
     const count = useMemo(()=>{
         const width = dataShape[dataShape.length-1];
@@ -136,9 +143,12 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
             invalidate();
         }
     },[nanColor, nanTransparency])
-
+    let yScale = mirrorVertical ? -1 : 1;
   return (
-    <group scale={[1, 1, 1]}>
+    <group 
+        scale={[mirrorHorizontal ? -1 : 1, yScale, 1]}
+        rotation={[rotateX/2*Math.PI, 0, rotateZ/2*Math.PI]}
+    >
         <instancedMesh 
             args={[geometry, shaderMaterial, count]}
             frustumCulled={false}
