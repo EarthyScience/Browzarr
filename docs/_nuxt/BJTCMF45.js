@@ -1,0 +1,1 @@
+import{b as l,f as r,h as c,n as p,H as u,o as d,Q as s}from"./CSAY-Prv.js";const f={base:""},b={__name:"ProseTbody",props:{class:{type:null,required:!1}},setup(e){const o=e,a=l(),t=u(()=>s({extend:s(f),...a.ui?.prose?.tbody||{}}));return(n,i)=>(d(),r("tbody",{class:p(t.value({class:o.class}))},[c(n.$slots,"default")],2))}};export{b as default};

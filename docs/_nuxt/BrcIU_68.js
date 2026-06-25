@@ -1,0 +1,1 @@
+import{b as l,f as r,h as c,n as p,H as u,o as d,Q as e}from"./CSAY-Prv.js";const m={base:"bg-muted"},h={__name:"ProseThead",props:{class:{type:null,required:!1}},setup(s){const a=s,t=l(),o=u(()=>e({extend:e(m),...t.ui?.prose?.thead||{}}));return(n,f)=>(d(),r("thead",{class:p(o.value({class:a.class}))},[c(n.$slots,"default")],2))}};export{h as default};
