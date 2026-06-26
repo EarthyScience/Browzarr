@@ -15,6 +15,7 @@ import { useFrame } from '@react-three/fiber';
 import { parseLoc, coarsenFlatArray, permuteArr } from '@/utils/HelperFuncs';
 import { useCSSVariable } from '../ui';
 import * as THREE from 'three'
+import { usePlotTransformStore } from '@/GlobalStates/PlotTransformStore';
 
 const AXIS_CONSTANTS = {
   INITIAL_RESOLUTION: 7,
@@ -352,17 +353,17 @@ const FLAT_AXIS_CONSTANTS = {
 };
 
 const FlatAxis = () =>{
-  const {dimArrays, dimNames, dimUnits, flipY} = useGlobalStore(useShallow(state => ({
-    dimArrays: state.dimArrays,
-    dimNames: state.dimNames,
-    dimUnits: state.dimUnits,
+  const {axisDimArrays, axisDimNames, axisDimUnits, flipY} = useGlobalStore(useShallow(state => ({
+    axisDimArrays: state.axisDimArrays,
+    axisDimNames: state.axisDimNames,
+    axisDimUnits: state.axisDimUnits,
     flipY: state.flipY,
   })))
 
-  const {plotType,  zSlice, ySlice, xSlice, rotateFlat} = usePlotStore(useShallow(state=>({
+  const {plotType,  zSlice, ySlice, xSlice, permute} = usePlotStore(useShallow(state=>({
     plotType: state.plotType, zSlice: state.zSlice,
     ySlice: state.ySlice, xSlice: state.xSlice,
-    rotateFlat:state.rotateFlat
+    permute:state.permute
   })))
 
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow( state => ({
@@ -374,22 +375,29 @@ const FlatAxis = () =>{
     analysisMode: state.analysisMode,
     axis: state.axis
   })))
-  const shapeLength = dimArrays.length;
-  const is4D = dimArrays.length === 4;
-  const originallyFlat = dimArrays.length == 2;
+  const {rotateX, rotateZ, mirrorHorizontal, mirrorVertical} = usePlotTransformStore(useShallow(state=> ({
+      rotateX: state.rotateX,
+      rotateZ: state.rotateZ,
+      mirrorHorizontal: state.mirrorHorizontal,
+      mirrorVertical: state.mirrorVertical
+  })))
+
+  const shapeLength = axisDimArrays.length;
+  const is4D = shapeLength === 4;
+  const originallyFlat = shapeLength == 2;
   const slices = originallyFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
   
   const dimSlices = useMemo(()=>originallyFlat ? 
     [
-      flipY ? dimArrays[0].slice().reverse() : dimArrays[0], // Need the slice because inside useMemo it doesn't mutate the original properly
-      dimArrays[1]
+      flipY ? axisDimArrays[0].slice().reverse() : axisDimArrays[0], // Need the slice because inside useMemo it doesn't mutate the original properly
+      axisDimArrays[1]
     ] 
     :
     [
-      dimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-      flipY ? dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-      dimArrays[shapeLength-1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
-    ],[dimArrays, flipY])
+      axisDimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
+      flipY ? axisDimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : axisDimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+      axisDimArrays[shapeLength-1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+    ],[axisDimArrays, flipY])
 
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
@@ -401,8 +409,10 @@ const FlatAxis = () =>{
   },[axis, dimSlices, analysisMode])
 
   const swap = useMemo(() => (analysisMode && axis == 2 && !originallyFlat),[axis, analysisMode]) // This is for the horrible case when users plot along the horizontal dimension i.e; Longitude. Everything swaps
-  const widthIdx = swap ? dimLengths.length-2 : dimLengths.length-1
-  const heightIdx = swap ? dimLengths.length-1 : dimLengths.length-2
+  let widthIdx = swap ? dimLengths.length-2 : dimLengths.length-1
+  let heightIdx = swap ? dimLengths.length-1 : dimLengths.length-2
+  widthIdx = permute?.indexOf(widthIdx)?? widthIdx
+  heightIdx = permute?.indexOf(heightIdx)?? heightIdx
 
   const [xResolution, setXResolution] = useState<number>(FLAT_AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [yResolution, setYResolution] = useState<number>(FLAT_AXIS_CONSTANTS.INITIAL_RESOLUTION)
@@ -413,30 +423,30 @@ const FlatAxis = () =>{
       return {
         axisArrays: dimSlices.filter((_val, idx) => idx != axis),
         axisUnits: is4D
-          ? dimUnits.slice(1).filter((_val, idx) => idx != axis)
-          : dimUnits.filter((_val, idx) => idx != axis),
+          ? axisDimUnits.slice(1).filter((_val, idx) => idx != axis)
+          : axisDimUnits.filter((_val, idx) => idx != axis),
         axisNames: is4D
-          ? dimNames.slice(1).filter((_val, idx) => idx != axis)
-          : dimNames.filter((_val, idx) => idx != axis)
+          ? axisDimNames.slice(1).filter((_val, idx) => idx != axis)
+          : axisDimNames.filter((_val, idx) => idx != axis)
       };
     } else if (!originallyFlat) {
       return {
         axisArrays: dimSlices,
         axisUnits: is4D 
-          ? dimUnits.slice(1)
-          : dimUnits,
+          ? axisDimUnits.slice(1)
+          : axisDimUnits,
         axisNames: is4D
-          ? dimNames.slice(1)
-          : dimNames
+          ? axisDimNames.slice(1)
+          : axisDimNames
       };
     } else {
       return {
         axisArrays: dimSlices,
-        axisUnits: dimUnits,
-        axisNames: dimNames,
+        axisUnits: axisDimUnits,
+        axisNames: axisDimNames,
       };
     }
-  }, [analysisMode, dimArrays, dimUnits, is4D, dimNames, dimSlices]);
+  }, [analysisMode, axisDimArrays, axisDimUnits, is4D, axisDimNames, dimSlices]);
   
 
   const shapeRatio = useMemo(()=>{
@@ -474,14 +484,17 @@ const FlatAxis = () =>{
 
   const xTitleOffset = useMemo(() => (axisNames[widthIdx].length * FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE / 2 + 0.1), [axisNames, widthIdx]);
   const yTitleOffset = useMemo(() => (axisNames[heightIdx].length * FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE / 2 + 0.1), [axisNames, heightIdx]);
-
+  
   return (
     <group 
       visible={plotType == 'flat' && !hideAxis} 
-      rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
+      rotation={[rotateX*Math.PI/2, 0, rotateZ*Math.PI/2]}
     >
       {/* X Group */}
-      <group position={[0, -(swap ? 1 :  shapeRatio)-tickLength/2, 0]} rotation={[ Math.PI/2, 0, 0]}> 
+      <group 
+        position={[0, -(swap ? 1 :  shapeRatio)-tickLength/2, 0]} 
+        rotation={[ Math.PI/2, 0, 0]}
+      > 
         <primitive key={'xLine'} object={xLine} />
         {Array(xResolution).fill(null).map((_val,idx)=>(   
           xResolution > FLAT_AXIS_CONSTANTS.MIN_RESOLUTION &&              

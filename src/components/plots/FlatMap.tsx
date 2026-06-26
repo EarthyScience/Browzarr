@@ -190,6 +190,9 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
             vertexShader: vertShader,
             fragmentShader: GetFrag("flatFrag", isFlat),
             side: THREE.DoubleSide,
+            depthWrite:false,
+            depthTest: true,
+            transparent:false
         }),[isFlat, textures])
     
     useEffect(()=>{

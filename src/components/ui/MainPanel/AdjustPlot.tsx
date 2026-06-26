@@ -22,6 +22,7 @@ import { ChevronDown } from 'lucide-react';
 import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
 import { FaArrowRotateRight } from "react-icons/fa6";
 import { Mirror } from '../Elements/Icons';import { RiCloseLargeLine } from "react-icons/ri";
+import { IoMdSwap } from "react-icons/io";
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -532,6 +533,8 @@ const GlobalOptions = () =>{
   const [showTransform, setShowTransform] = useState(false);
   const [xAngle, setXAngle] = useState(rotateX)
   const [zAngle, setZAngle] = useState(rotateZ)
+  const [rotDir, setRotDir] = useState(1)
+
   const masks = ["None", "Land", "Water"]
   const isPC = plotType == 'point-cloud'
   const canReset = (
@@ -545,6 +548,7 @@ const GlobalOptions = () =>{
     setRotateZ(0);
     setXAngle(0);
     setZAngle(0);
+    setRotDir(1);
     setMirrorHorizontal(false);
     setMirrorVertical(false)
     return null;
@@ -583,57 +587,70 @@ const GlobalOptions = () =>{
             <div className='col-span-2'>
               <b>Rotation</b>
             </div>
-            <button
-              style={{
-                position:'relative',
-              }}
-              className='cursor-pointer'
-              onClick={()=>{setRotateX((rotateX + 1) % 4); setXAngle(x=> x + 1)}}
+            <div
+              className='col-span-2 grid grid-cols-3 w-full place-items-center'
             >
-              <div 
+              <button
                 style={{
-                  position:'absolute',
-                  top:'50%',
-                  left:0,
-                  width:'200%',
-                  transform:'translateX(-25%)',
-                  borderTop:'2px solid red',
-                  borderBottom:'2px solid red',
+                  position:'relative',
                 }}
-              />
-              <FaArrowRotateRight 
-                size={30}
+                className='cursor-pointer'
+                onClick={()=>{setRotateX((rotateX + rotDir) % 4); setXAngle(x=> x + rotDir)}}
+              >
+                <div 
+                  style={{
+                    position:'absolute',
+                    top:'50%',
+                    left:0,
+                    width:'200%',
+                    transform:'translateX(-25%)',
+                    borderTop:'2px solid red',
+                    borderBottom:'2px solid red',
+                  }}
+                />
+                <FaArrowRotateRight 
+                  size={30}
+                  style={{
+                    transition:'0.2s',
+                    rotate:`${xAngle*90}deg`,
+                    scale:`${rotDir} 1`
+                  }}
+                />
+              </button>
+              <button
+                className='cursor-pointer transition-transform duration-150 active:scale-[0.85]'
+                onClick={()=>setRotDir(rotDir*-1)}
+              >
+                <IoMdSwap size={25}/>
+              </button>
+              <button
                 style={{
-                  transition:'0.2s',
-                  rotate:`${xAngle*90}deg`
+                  position:'relative',
                 }}
-              />
-            </button>
-            <button
-              style={{
-                position:'relative',
-              }}
-              className='cursor-pointer'
-              onClick={()=>{setRotateZ((rotateZ + 1) % 4); setZAngle(x=> x + 1)}}
-            >
-              <div 
-                style={{
-                  position:'absolute',
-                  top:'50%',
-                  left:'50%',
-                  transform:'translate(-50%,-50%)',
-                  borderRadius:'4px',
-                  border: '4px solid red',
-                }}
-              />
-              <FaArrowRotateRight 
-                size={30}
-                style={{
-                  transition:'0.2s',
-                  rotate:`${zAngle*90}deg`
-                }}
-              />
-            </button>
+                className='cursor-pointer'
+                onClick={()=>{setRotateZ((rotateZ + rotDir) % 4); setZAngle(x=> x + rotDir)}}
+              >
+                <div 
+                  style={{
+                    position:'absolute',
+                    top:'50%',
+                    left:'50%',
+                    transform:'translate(-50%,-50%)',
+                    borderRadius:'4px',
+                    border: '4px solid red',
+                  }}
+                />
+                <FaArrowRotateRight 
+                  size={30}
+                  style={{
+                    transition:'0.2s',
+                    rotate:`${zAngle*90}deg`,
+                    scale:`${rotDir} 1`
+                  }}
+                />
+              </button>
+            </div>
+            
             {/* Mirror */}
             <div className='col-span-2'>
               <b>Mirror</b>

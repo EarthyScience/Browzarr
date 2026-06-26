@@ -80,7 +80,6 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       fragmentShader: useFragOpt ?  fragOpt : fragmentShader,
       transparent: true,
       blending: THREE.NormalBlending,
-      depthWrite: false,
       side: useOrtho ? THREE.FrontSide : THREE.BackSide,
     }),[useFragOpt, useOrtho, volTexture]);
 

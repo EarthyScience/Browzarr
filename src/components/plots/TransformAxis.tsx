@@ -16,6 +16,7 @@ export const TransformAxis = () => {
             material={material}
             rotation={[Math.PI/2, 0, 0]}
             visible={showTransformAxis}
+            renderOrder={10}
         />
     )
 }
