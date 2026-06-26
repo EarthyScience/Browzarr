@@ -5,7 +5,7 @@ import { TbVariable } from "react-icons/tb";
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
-import MetaDataInfo from "./MetaDataInfo";
+import MetaDimSelector from "./MetaDimSelector";
 import { GetDimInfo } from "@/utils/HelperFuncs";
 import { GetAttributes } from "@/components/zarr/ZarrLoaderLRU";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -34,7 +34,7 @@ const Variables = () => {
   const [openMetaPopover, setOpenMetaPopover] = useState(false);
 
   const [showMeta, setShowMeta] = useState(false);
-  const { variables, zMeta, metadata,  initStore, openVariables, setMetadata, setOpenVariables } = useGlobalStore(
+  const { variables, zMeta, metadata, initStore, openVariables, setMetadata, setOpenVariables } = useGlobalStore(
     useShallow((state) => ({
       variables: state.variables,
       zMeta: state.zMeta,
@@ -46,9 +46,7 @@ const Variables = () => {
     }))
   );
 
-  const [dimArrays, setDimArrays] = useState([[0],[0],[0]]);
-  const [dimUnits, setDimUnits] = useState([null,null,null]);
-  const [dimNames, setDimNames] = useState<string[]>(["Default"]);
+
 
   const [selectedVar, setSelectedVar] = useState<string | null>(null);
   const [meta, setMeta] = useState<any>(null);
@@ -110,10 +108,24 @@ const Variables = () => {
   // Handle variable selection
   const handleVariableSelect = (val: string, idx: number) => {
     setSelectedVar(val);
-    GetDimInfo(val).then(e => {
-      setDimNames(e.dimNames);
-      setDimArrays(e.dimArrays);
-      setDimUnits(e.dimUnits);
+    setMeta(null);
+    setMetadata(null);
+
+    Promise.all([GetDimInfo(val), GetAttributes(val)]).then(([dimInfo, attr]) => {
+      const relevant = zMeta?.find((e: any) => e.name === val);
+      if (relevant) {
+        setMeta({
+          ...relevant,
+          dimInfo: {
+            dimArrays: dimInfo.dimArrays,
+            dimNames: dimInfo.dimNames,
+            dimUnits: dimInfo.dimUnits,
+          },
+        });
+      }
+      setMetadata(attr);
+    }).catch((err) => {
+      console.error("Failed to fetch dimension info or attributes:", err);
     });
 
     if (popoverSide === "left") {
@@ -124,20 +136,10 @@ const Variables = () => {
   };
 
   useEffect(() => {
-    if (variables && zMeta && selectedVar) {
-      const relevant = zMeta.find((e: any) => e.name === selectedVar);
-      if (relevant){
-        setMeta({...relevant, dimInfo : {dimArrays, dimNames, dimUnits}});
-        GetAttributes(selectedVar).then(e=>setMetadata(e));
-      }
-    }
-  }, [selectedVar, variables, zMeta, dimArrays, dimNames, dimUnits]);
-
-  useEffect(()=>{
     setSelectedVar(null);
     setMeta(null);
     setMetadata(null);
-  },[initStore, setMetadata]);
+  }, [initStore, setMetadata]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -315,15 +317,19 @@ const Variables = () => {
             data-meta-popover
             side="left"
             align="start"
-            className="max-h-[80vh] overflow-y-auto w-[300px]"
+            className="max-h-[80vh] overflow-y-auto w-[400px]"
           >
-            {meta && (
-              <MetaDataInfo
+            {metadata && (
+              <MetaDimSelector
                 meta={meta}
-                metadata={metadata ?? {}}
-                setShowMeta={setOpenMetaPopover}
-                setOpenVariables={setOpenVariables}
-                popoverSide={"left"}
+                metadata={metadata}
+                onApply={(sels, axes) => {
+                  // close UI after applying selections
+                  setOpenMetaPopover(false);
+                  setOpenVariables(false);
+                  // future: persist sels/axes to store
+                  console.log('Applied slices', sels, axes);
+                }}
               />
             )}
           </PopoverContent>
@@ -332,15 +338,16 @@ const Variables = () => {
       {popoverSide === "top" && (
         <Dialog open={showMeta} onOpenChange={setShowMeta}>
           <DialogContent className="max-w-[85%] md:max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogTitle>{}</DialogTitle>
+            <DialogTitle>{ }</DialogTitle>
             <div className="-mt-4">
               {meta && (
-                <MetaDataInfo
+                <MetaDimSelector
                   meta={meta}
-                  metadata={metadata ?? {}}
-                  setShowMeta={setShowMeta}
-                  setOpenVariables={setOpenVariables}
-                  popoverSide={"top"}
+                  onApply={(sels, axes) => {
+                    setShowMeta(false);
+                    setOpenVariables(false);
+                    console.log('Applied slices', sels, axes);
+                  }}
                 />
               )}
             </div>
