@@ -79,9 +79,9 @@ const nextId = () => ++_nextId;
 
 export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   const rawDimArrays = meta?.dimInfo?.dimArrays ?? [];
-  const rawDimNames  = meta?.dimInfo?.dimNames  ?? [];
-  const rawDimUnits  = meta?.dimInfo?.dimUnits  ?? [];
-  const dataShape  = meta?.shape;
+  const rawDimNames = meta?.dimInfo?.dimNames ?? [];
+  const rawDimUnits = meta?.dimInfo?.dimUnits ?? [];
+  const dataShape = meta?.shape;
   const chunkShape = meta?.chunks;
 
   const dimArrays: number[][] = useMemo(
@@ -97,8 +97,8 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   const { setDimArrays, setDimNames, setDimUnits } = useGlobalStore(
     useShallow((state) => ({
       setDimArrays: state.setDimArrays,
-      setDimNames:  state.setDimNames,
-      setDimUnits:  state.setDimUnits,
+      setDimNames: state.setDimNames,
+      setDimUnits: state.setDimUnits,
     })),
   );
 
@@ -110,13 +110,20 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
 
   const availableDims: DimOption[] = useMemo(
     () =>
-      dimArrays.map((values, idx) => ({
-        name: dimNames[idx] ?? `dim${idx}`,
-        size: values.length,
-        values,
-        formatValue: (v: number): string =>
-          String(parseLoc(values[v] ?? v, dimUnits[idx] || undefined)),
-      })),
+      dimArrays.map((values, idx) => {
+        const baseName = dimNames[idx] ?? `dim${idx}`;
+        // Always include idx to guarantee uniqueness during the "Default" fallback phase
+        const name = `${baseName}::${idx}`;
+        const label = baseName;
+        return {
+          name,
+          label,
+          size: values.length,
+          values,
+          formatValue: (v: number): string =>
+            String(parseLoc(values[v] ?? v, dimUnits[idx] || undefined)),
+        };
+      }),
     [dimArrays, dimNames, dimUnits],
   );
 
@@ -205,8 +212,8 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   const addTooltip = atMax
     ? `Maximum of ${MAX_ACTIVE_DIMS} dimensions, remove one before adding another.`
     : noUnused
-    ? 'All dimensions are already active.'
-    : undefined;
+      ? 'All dimensions are already active.'
+      : undefined;
 
   return (
     <>
@@ -309,7 +316,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
             />
           );
         })}
-      </div>      
+      </div>
 
       {/* Collapsed dimensions */}
       {collapsedDims.length > 0 && (
@@ -330,7 +337,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
                   key={dim.name}
                   availableDims={availableDims}
                   dimName={dim.name}
-                  onDimChange={() => {}}
+                  onDimChange={() => { }}
                   dimSize={dim.size}
                   selection={collapsedSels[dim.name] ?? { ...defaultSelection(dim.size), mode: 'scalar' }}
                   axis="c"

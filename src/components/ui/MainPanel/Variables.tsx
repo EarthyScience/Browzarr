@@ -321,6 +321,7 @@ const Variables = () => {
           >
             {metadata && (
               <MetaDimSelector
+                key={selectedVar || "none"}
                 meta={meta}
                 metadata={metadata}
                 onApply={(sels, axes) => {
@@ -342,6 +343,7 @@ const Variables = () => {
             <div className="-mt-4">
               {meta && (
                 <MetaDimSelector
+                  key={selectedVar || "none"}
                   meta={meta}
                   onApply={(sels, axes) => {
                     setShowMeta(false);
