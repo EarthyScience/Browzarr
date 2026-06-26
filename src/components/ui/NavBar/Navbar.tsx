@@ -19,7 +19,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { ParameterExport } from "./ParameterExport";
 import { Orthographic, Perspective } from "../Elements/Icons";
 import PerformanceMode from "./PerformanceMode";
 
@@ -109,7 +108,6 @@ const Navbar = React.memo(function Navbar() {
 					</Button>
 					<PlotLineButton />
 					<ExportImageSettings />
-					<ParameterExport />
 					<PerformanceMode />
 				</div>
 			</div>

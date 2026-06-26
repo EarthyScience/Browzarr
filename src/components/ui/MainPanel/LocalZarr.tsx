@@ -5,16 +5,25 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { Input } from '../input';
 import ZarrParser from '@/components/zarr/ZarrParser';
-import { saveFile } from '@/utils/IndexDB';
 
 interface LocalZarrType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
   setOpenVariables: (open: boolean) => void;
+  setInitStore: (store: string) => void;
 }
 
-export async function LoadLocalZarr(files:File[]){
-  // Create a Map to hold the Zarr store data
+const LocalZarr = ({setShowLocal, setOpenVariables, setInitStore}:LocalZarrType) => {
+  const setCurrentStore = useZarrStore(state => state.setCurrentStore)
+  const {setStatus} = useGlobalStore.getState()
+  const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) {
+      setStatus(null)
+      return;
+    }
+    // Create a Map to hold the Zarr store data
     const fileMap = new Map<string, File>();
+
     // The base directory name will be the first part of the relative path
     const baseDir = files[0].webkitRelativePath.split('/')[0];
 
@@ -26,6 +35,7 @@ export async function LoadLocalZarr(files:File[]){
         fileMap.set('/' + relativePath, file); // Zarrita looks for a leading slash before variables. Need to add it back
       }
     }
+
     // Create a custom zarrita store from the Map
     const customStore: zarr.AsyncReadable = {
       async get(key: string): Promise<Uint8Array | undefined> {
@@ -38,52 +48,37 @@ export async function LoadLocalZarr(files:File[]){
       // Open the Zarr store using the custom store
       let store = await zarr.withMaybeConsolidatedMetadata(customStore);
       if (!('contents' in store)){
-        console.log("Trying to parse?")
         // Metadata is missing. We will need to parse variables here. 
         store = await ZarrParser(files, customStore)
       }
       const gs = await zarr.open(store, {kind: 'group'});
-      const blobKey = `local_${baseDir}`
-      useGlobalStore.setState({initStore:blobKey})
-      useZarrStore.setState({ useNC: false, blobKey, currentStore:gs})
+      setCurrentStore(gs);
+      setShowLocal(false);
+      setOpenVariables(true);
+      setInitStore(`local_${baseDir}`)
+      setStatus(null)
+      useZarrStore.setState({ useNC: false})
     } catch (error) {
-      
+      setStatus(null)
       if (error instanceof Error) {
         console.log(`Error opening Zarr store: ${error.message}`);
       } else {
         console.log('An unknown error occurred when opening the Zarr store.');
       }
     }
-}
-
-const LocalZarr = ({setShowLocal, setOpenVariables}:LocalZarrType) => {
-	const {setStatus} = useGlobalStore.getState()
-	const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
-		const files = event.target.files;
-		if (!files || files.length === 0) {
-			setStatus(null)
-			return;
-		}
-		const baseDir = files[0].webkitRelativePath.split('/')[0];
-		LoadLocalZarr(Array.from(files)).then(()=>{
-      saveFile(Array.from(files), `local_${baseDir}`)
-      setShowLocal(false);
-      setOpenVariables(true);
-      setStatus(null)
-		})
-	};
-	return (
-		<div>
-			<Input type="file" id="filepicker"
-        className='hover:drop-shadow-md hover:scale-[110%]'
-        style={{width:'200px', cursor:'pointer'}}
-        // @ts-expect-error `webkitdirectory` is non-standard attribute. TS doesn't know about it. It's used for cross-browser compatibility.
-        directory=''
-        webkitdirectory='true'
-        onChange={handleFileSelect}
-			/>
-		</div>
-	)
+  };
+  return (
+    <div>
+        <Input type="file" id="filepicker"
+          className='hover:drop-shadow-md hover:scale-[110%]'
+          style={{width:'200px', cursor:'pointer'}}
+          // @ts-expect-error `webkitdirectory` is non-standard attribute. TS doesn't know about it. It's used for cross-browser compatibility.
+          directory=''
+          webkitdirectory='true'
+          onChange={handleFileSelect}
+        />
+    </div>
+  )
 }
 
 export default LocalZarr

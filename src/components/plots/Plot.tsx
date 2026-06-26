@@ -42,7 +42,6 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   const hasMounted = useRef(false);
   const cameraRef = useRef<THREE.Camera | null>(null)
   const {set, camera, size} = useThree()
-
   // Reset Camera Position and Target
   useEffect(()=>{
     if (!hasMounted.current) {
@@ -85,7 +84,6 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
     }
   },[resetCamera, isFlat])
 
-  // ---- Switch from Perspective to Orthographic ---- //
   useEffect(()=>{
     if (hasMounted.current){
       let newCamera;
@@ -122,7 +120,6 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   }
   },[useOrtho])
 
-  // ---- Move camera to position ---- //
   useEffect(()=>{
     const cam = cameraRef.current
     const controls = orbitRef.current
@@ -141,14 +138,6 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       invalidate()
     }
   },[cameraPosition])
-
-  // ---- Camera Ref for state saves ---- //
-  useEffect(()=>{
-    usePlotStore.setState({camera})
-    return () => {
-      usePlotStore.setState({camera: undefined})
-    }
-  },[camera])
 
   return (
     <OrbitControls 

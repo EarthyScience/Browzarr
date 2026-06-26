@@ -66,7 +66,6 @@ type PlotState ={
   disablePointScale: boolean;
   permute: number[] | undefined;
   showTransformAxis: boolean;
-  camera: THREE.Camera | undefined;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -122,9 +121,7 @@ type PlotState ={
   setUseOrtho: (useOrtho: boolean) => void;
   setFillValue: (fillValue: number | undefined) => void;
   setCameraPosition: (cameraPosition: THREE.Vector3) => void;
-  
 }
-
 
 export const usePlotStore = create<PlotState>((set, get) => ({
   plotType: "volume", 
@@ -192,7 +189,6 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   disablePointScale: false,
   permute: undefined,
   showTransformAxis: false,
-  camera: undefined,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
@@ -250,5 +246,4 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setUseOrtho: (useOrtho) => set({ useOrtho }),
   setFillValue: (fillValue) => set({ fillValue }),
   setCameraPosition: (cameraPosition) => set({ cameraPosition }),
-
 }))
