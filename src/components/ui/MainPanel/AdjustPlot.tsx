@@ -553,6 +553,7 @@ const GlobalOptions = () =>{
     setMirrorVertical(false)
     return null;
   }
+  const mod = (a: number, b: number) => ((a % b) + b) % b; // JS doesn't actually have a module operator. So need our own
   return (
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
       <button 
@@ -595,7 +596,7 @@ const GlobalOptions = () =>{
                   position:'relative',
                 }}
                 className='cursor-pointer'
-                onClick={()=>{setRotateX((rotateX + rotDir) % 4); setXAngle(x=> x + rotDir)}}
+                onClick={()=>{setRotateX(mod(rotateX + rotDir, 4)); setXAngle(x=> x + rotDir)}}
               >
                 <div 
                   style={{
@@ -628,7 +629,7 @@ const GlobalOptions = () =>{
                   position:'relative',
                 }}
                 className='cursor-pointer'
-                onClick={()=>{setRotateZ((rotateZ - rotDir) % 4); setZAngle(x=> x + rotDir)}}
+                onClick={()=>{setRotateZ(mod(rotateZ + rotDir, 4)); setZAngle(x=> x + rotDir)}}
               >
                 <div 
                   style={{
