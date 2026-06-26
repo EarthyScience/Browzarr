@@ -26,6 +26,7 @@ function defaultSizeCalculator<T>(value: T): number {
 interface MemoryLRUOptions<T> {
     maxSize: number;
     sizeCalculator?: SizeCalculator<T>;
+    onChange?: () => void;
 }
 
 export class MemoryLRU<K, V> {
@@ -34,11 +35,13 @@ export class MemoryLRU<K, V> {
     public totalSize = 0;
     private maxSize: number;
     private readonly sizeCalculator: SizeCalculator<V>;
+    private readonly onChange?: () => void;
     private sizes = new Map<K, number>();
 
     constructor(options: MemoryLRUOptions<V>) {
         this.maxSize = options.maxSize;
         this.sizeCalculator = options.sizeCalculator ?? defaultSizeCalculator;
+        this.onChange = options.onChange;
     }
 
     get(key: K): V | undefined {
@@ -74,6 +77,8 @@ export class MemoryLRU<K, V> {
             this.sizes.delete(oldestKey);
             this.totalSize -= oldestSize;
         }
+
+        this.onChange?.();
     }
 
     resize(newSize: number): void {
@@ -103,6 +108,7 @@ export class MemoryLRU<K, V> {
         this.cache.delete(key);
         this.sizes.delete(key);
         this.order = this.order.filter(k => k !== key);
+        this.onChange?.();
         return true;
     }
 
@@ -111,6 +117,7 @@ export class MemoryLRU<K, V> {
         this.sizes.clear();
         this.order = [];
         this.totalSize = 0;
+        this.onChange?.();
     }
 
     get size(): number {
