@@ -173,7 +173,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
           </SelectTrigger>
           <SelectContent>
             {availableDims.map((d) => (
-              <SelectItem key={d.label ?? d.name} value={d.name} className="text-xs">
+              <SelectItem key={d.name} value={d.name} className="text-xs">
                 {d.label ?? d.name}
               </SelectItem>
             ))}
