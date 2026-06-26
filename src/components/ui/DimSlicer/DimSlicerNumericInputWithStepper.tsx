@@ -26,7 +26,6 @@ export const DimSlicerNumericInputWithStepper: React.FC<DimSlicerNumericInputWit
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [localValue, setLocalValue] = useState(value);
-  const isFocused = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,25 +39,19 @@ export const DimSlicerNumericInputWithStepper: React.FC<DimSlicerNumericInputWit
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Sync prop changes to local state when not focused
+  // Sync prop changes to local state
   useEffect(() => {
-    if (!isFocused.current) {
-      setLocalValue(value);
-    }
+    setLocalValue(value);
   }, [value]);
 
-  const handleFocus = () => {
-    isFocused.current = true;
-  };
-
-  const handleBlur = () => {
-    isFocused.current = false;
+  const commitValue = () => {
     onValueChange(localValue);
+    setLocalValue(value);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      onValueChange(localValue);
+      commitValue();
     }
   };
 
@@ -70,8 +63,7 @@ export const DimSlicerNumericInputWithStepper: React.FC<DimSlicerNumericInputWit
             type="number"
             value={localValue}
             onChange={e => setLocalValue(e.target.value)}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
+            onBlur={commitValue}
             onKeyDown={handleKeyDown}
             onClick={() => setExpanded(false)}
             className="no-spinner h-7 text-xs w-16 text-center appearance-none"

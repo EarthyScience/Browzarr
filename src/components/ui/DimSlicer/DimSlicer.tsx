@@ -83,7 +83,9 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   const sel = lockMode ? { ...rawSel, mode: lockMode } : rawSel;
 
   const getIndexFromValue = (val: number): number => {
-    if (!values) return val;
+    if (!values) {
+      return clamp(Math.round(val / step) * step, 0, maxIndex);
+    }
     let closestIndex = 0;
     let minDiff = Math.abs(values[0] - val);
     for (let i = 1; i < values.length; i++) {
