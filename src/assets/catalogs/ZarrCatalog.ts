@@ -1,0 +1,92 @@
+export const ZARR_CATALOG = [
+  {
+    key: 'seasfire',
+    label: 'SeasFire Cube',
+    subtitle: 'A Global Dataset for Seasonal Fire Modeling in the Earth System',
+    store: 'https://s3.bgc-jena.mpg.de:9000/misc/seasfire_rechunked.zarr',
+  },
+  {
+    key: 'ESDC',
+    label: 'ESDC',
+    subtitle: 'Earth System Data Cube v3.0.2',
+    store: 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr',
+  },
+  {
+    key: 'precipitation',
+    label: 'Precipitation (EC-Earth3P-HR)',
+    subtitle: 'Precipitation data from EC-Earth3P-HR highresSST-present',
+    store: 'https://storage.googleapis.com/cmip6/CMIP6/HighResMIP/EC-Earth-Consortium/EC-Earth3P-HR/highresSST-present/r1i1p1f1/Amon/pr/gr/v20170811/',
+  },
+  {
+    key: 'arco-ocean',
+    label: 'ARCO-OCEAN',
+    subtitle: 'Global Ocean Reanalysis Daily',
+    store: 'https://ogs-arco-ocean.s3.eu-south-1.amazonaws.com/dataset/tres=1d/res=0p25/levels=10/',
+  },
+  {
+    key: 'cmip6-mpi-esm1-2-hr-tas',
+    label: 'CMIP6 MPI-ESM1-2-HR',
+    subtitle: 'Historical Near-Surface Air Temperature',
+    store: 'https://storage.googleapis.com/cmip6/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/historical/r1i1p1f1/Amon/tas/gn/v20190710/',
+  },
+  {
+    key: 'cmip6-pmip-ipsl-cm6a-lr-tas',
+    label: 'CMIP6 PMIP IPSL-CM6A-LR',
+    subtitle: 'Mid-Holocene Near-Surface Air Temperature',
+    store: 'https://storage.googleapis.com/cmip6/CMIP6/PMIP/IPSL/IPSL-CM6A-LR/midHolocene/r1i1p1f3/Amon/tas/gr/v20180926/',
+  },
+  {
+    key: 'cmip6-hadgem3-gc31-hm-tas',
+    label: 'CMIP6 HighResMIP HadGEM3-GC31-HM',
+    subtitle: 'Near-Surface Air Temperature',
+    store: 'https://storage.googleapis.com/cmip6/CMIP6/HighResMIP/MOHC/HadGEM3-GC31-HM/highresSST-present/r1i1p1f1/Amon/tas/gn/v20170831/',
+  },
+  {
+    key: 'indian-ocean-chl',
+    label: 'Indian Ocean Physical and Biological Variables',
+    subtitle: '',
+    store: 'https://storage.googleapis.com/nmfs_odp_nwfsc/CB/mind_the_chl_gap/IO.zarr',
+  },
+  {
+    key: 'nasa-mur-sst',
+    label: 'NASA MUR Sea Surface Temperature',
+    subtitle: 'Multi-scale Ultra-high Resolution SST',
+    store: 'https://mur-sst.s3.us-west-2.amazonaws.com/zarr-v1/',
+  },
+  {
+    key: 'cmip6-gfdl-esm4-tos',
+    label: 'CMIP6 NOAA GFDL-ESM4',
+    subtitle: 'Historical Sea Surface Temperature',
+    store: 'https://storage.googleapis.com/cmip6/CMIP6/CMIP/NOAA-GFDL/GFDL-ESM4/historical/r2i1p1f1/Omon/tos/gn/v20180701/',
+  },
+  {
+    key: 'cmip6-awi-cm-1-1-mr-tos',
+    label: 'CMIP6 AWI-CM-1-1-MR',
+    subtitle: 'Historical Daily Sea Surface Temperature',
+    store: 'https://cmip6-pds.s3.amazonaws.com/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/historical/r1i1p1f1/Oday/tos/gn/v20181218/',
+  },
+  {
+    key: 'carbonplan-antarctic-era5',
+    label: 'CarbonPlan Antarctic ERA5 Reanalysis',
+    subtitle: '',
+    store: 'https://carbonplan-share.s3.us-west-2.amazonaws.com/zarr-layer-examples/antarctic_era5.zarr',
+  },
+  {
+    key: 'silam-dust',
+    label: 'SILAM Global Dust Model Forecasts',
+    subtitle: 'Dust',
+    store: 'https://data.source.coop/bkr/silam-dust/silam_global_dust_v3.zarr',
+  },
+  {
+    key: 'silam-dust-v2',
+    label: 'SILAM Global Dust Model Forecasts (v2)',
+    subtitle: 'Dust',
+    store: 'https://data.source.coop/bkr/silam-dust/data.zarr',
+  },
+  {
+    key: 'gefs-35day-direct',
+    label: 'NOAA GEFS 35-day Ensemble Forecast',
+    subtitle: '',
+    store: 'https://data.dynamical.org/noaa/gefs/forecast-35-day/latest.zarr',
+  },
+];

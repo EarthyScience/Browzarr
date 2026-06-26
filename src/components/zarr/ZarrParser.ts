@@ -11,6 +11,7 @@ function is_v3(meta: any) {
     return "zarr_format" in meta && meta.zarr_format === 3;
 }
 async function ZarrParser(files: any, store: any){
+    console.log(store)
     const fileCount = files.length;
     const vars = []
     const metadata: { [key: string]: any } = {}
@@ -26,6 +27,7 @@ async function ZarrParser(files: any, store: any){
     }
     for (const variable of vars){
         const decoded = await store.get(variable)
+        console.log(decoded)
         metadata[variable.slice(1)] = jsonDecodeObject(decoded)
     }
     const v2_meta = {metadata, zarr_consolidated_format: 1}

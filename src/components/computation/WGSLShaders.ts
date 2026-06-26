@@ -492,6 +492,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
 
+        ${isNaNFunc}
         @compute @workgroup_size(16, 16, 1)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
@@ -512,6 +513,8 @@ export const createShaders = (precision: Precision) => {
             var ySum: f32 = 0;
             var xSum: f32 = 0.0;
 
+            var nanCount: u32 = 0;
+
             // Iterate along the dimension we're averaging
             if (reduceDim == 0u) { 
                 let cCoord = outX * xStride + outY * yStride;
@@ -520,6 +523,7 @@ export const createShaders = (precision: Precision) => {
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
                     if (isNaN(xi) || isNaN(yi)){ 
+                        nanCount++;
                         continue;
                     }
                     xSum += f32(firstData[inputIndex]);
@@ -532,6 +536,7 @@ export const createShaders = (precision: Precision) => {
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
                     if (isNaN(xi) || isNaN(yi)){ 
+                        nanCount++;
                         continue;
                     }
                     xSum += f32(firstData[inputIndex]);
@@ -544,6 +549,7 @@ export const createShaders = (precision: Precision) => {
                     let xi: f32 = f32(firstData[inputIndex]);
                     let yi: f32 = f32(secondData[inputIndex]);
                     if (isNaN(xi) || isNaN(yi)){ 
+                        nanCount++;
                         continue;
                     }
                     xSum += f32(firstData[inputIndex]);
@@ -551,10 +557,11 @@ export const createShaders = (precision: Precision) => {
                 }
             }
             
-            let xMean: f32 = xSum / f32(dimLength);
-            let yMean: f32 = ySum / f32(dimLength);
+            let xMean: f32 = xSum / f32(dimLength - nanCount);
+            let yMean: f32 = ySum / f32(dimLength - nanCount);
             var numSum: f32 = 0;
             var denomSum: f32 = 0;
+
 
             if (reduceDim == 0u) { // Average along Z
                 let cCoord = outX * xStride + outY * yStride;
@@ -615,6 +622,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
 
+        ${isNaNFunc}
         @compute @workgroup_size(16, 16, 1)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
@@ -650,20 +658,25 @@ export const createShaders = (precision: Precision) => {
                 iterStride = xStride;
             }
 
+            var nanCount: u32 = 0;
+
             // Single pass: calculate sums, means, and covariance
             for (var i: u32 = 0u; i < dimLength; i++) {
                 let inputIndex = baseCoord + (i * iterStride);
                 let xi: f32 = f32(firstData[inputIndex]);
                 let yi: f32 = f32(secondData[inputIndex]);
                 if (isNaN(xi) || isNaN(yi)){ 
+                    nanCount++;
                     continue;
                 }
                 xSum += xi;
                 ySum += yi;
             }
 
-            let xMean: f32 = xSum / f32(dimLength);
-            let yMean: f32 = ySum / f32(dimLength);
+            var N: f32 = f32(dimLength - nanCount);
+
+            let xMean: f32 = xSum / N;
+            let yMean: f32 = ySum / N;
 
             // Second pass for covariance calculation
             for (var i: u32 = 0u; i < dimLength; i++) {
@@ -677,7 +690,7 @@ export const createShaders = (precision: Precision) => {
             }
 
             let outputIndex = outY * xSize + outX;
-            outputData[outputIndex] = ${precision}(numSum / (f32(dimLength) - 1));
+            outputData[outputIndex] = ${precision}(numSum / (N - 1));
         }
     `,
 
@@ -696,6 +709,8 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(1) var<storage, read> secondData: array<${precision}>;
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
+
+        ${isNaNFunc}
 
         @compute @workgroup_size(16, 16, 1)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -719,6 +734,8 @@ export const createShaders = (precision: Precision) => {
             var ySum: f32 = 0.0;
             var yySum: f32 = 0.0;
             var xySum: f32 = 0.0;
+
+            var nanCount: u32 = 0;
             // Iterate along the dimension we're averaging
             if (reduceDim == 0u) { // Average along Z
                 let cCoord = outX * xStride + outY * yStride;
@@ -727,6 +744,7 @@ export const createShaders = (precision: Precision) => {
                     let xI = f32(firstData[inputIndex]);
                     let yI = f32(secondData[inputIndex]);
                     if (isNaN(xI) || isNaN(yI)){ 
+                        nanCount++;
                         continue;
                     }
                     xSum += xI;
@@ -742,6 +760,7 @@ export const createShaders = (precision: Precision) => {
                     let xI = f32(firstData[inputIndex]);
                     let yI = f32(secondData[inputIndex]);
                     if (isNaN(xI) || isNaN(yI)){ 
+                        nanCount++;
                         continue;
                     }
                     xSum += xI;
@@ -757,6 +776,7 @@ export const createShaders = (precision: Precision) => {
                     let xI = f32(firstData[inputIndex]);
                     let yI = f32(secondData[inputIndex]);
                     if (isNaN(xI) || isNaN(yI)){ 
+                        nanCount++;
                         continue;
                     }
                     xSum += xI;
@@ -767,7 +787,7 @@ export const createShaders = (precision: Precision) => {
                 }
             }
 
-            let N: f32 = f32(dimLength);
+            let N: f32 = f32(dimLength - nanCount);
             let meanX = xSum / N;
             let meanY = ySum / N;
             let varX = (xxSum / N) - (meanX * meanX);
@@ -950,6 +970,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
 
+        ${isNaNFunc}
         @compute @workgroup_size(4, 4, 4)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
@@ -1055,7 +1076,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(1) var<storage, read> secondData: array<${precision}>;
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
-
+        ${isNaNFunc}
         @compute @workgroup_size(4, 4, 4)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
@@ -1169,7 +1190,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(1) var<storage, read> secondData: array<${precision}>;
         @group(0) @binding(2) var<storage, read_write> outputData: array<${precision}>;
         @group(0) @binding(3) var<uniform> params: Params;
-
+        ${isNaNFunc}
         @compute @workgroup_size(4, 4, 4)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
@@ -1411,7 +1432,7 @@ export const createShaders = (precision: Precision) => {
         @group(0) @binding(0) var<storage, read> inputData: array<${precision}>;
         @group(0) @binding(1) var<storage, read_write> outputData: array<f32>;
         @group(0) @binding(2) var<uniform> params: Params;
-
+        ${isNaNFunc}
         @compute @workgroup_size(4, 4, 4)
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
