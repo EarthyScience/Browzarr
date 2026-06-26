@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import DimSlicer, { Axis, defaultSelection, DimOption, SliceSelectionState } from '@/components/ui/DimSlicer';
 import { defaultAttributes, renderAttributes } from "@/components/ui/MetaData";
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button-enhanced';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -353,7 +353,10 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
       )}
 
       <div className="flex justify-end pt-4">
-        <Button onClick={() => onApply?.(rows.map((r) => r.sel), rows.map((r) => r.axis), rows.map((r) => r.dimName))}>
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={() => onApply?.(rows.map((r) => r.sel), rows.map((r) => r.axis), rows.map((r) => r.dimName))}>
           Pass to plot
         </Button>
       </div>

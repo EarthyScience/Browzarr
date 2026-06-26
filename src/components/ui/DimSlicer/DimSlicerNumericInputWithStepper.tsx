@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button-enhanced';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { MinusIcon, PlusIcon } from 'lucide-react';
 

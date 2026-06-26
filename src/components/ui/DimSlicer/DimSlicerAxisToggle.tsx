@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button-enhanced';
 import { ButtonGroup } from '@/components/ui/button-group';
 
 export type Axis = 'x' | 'y' | 'z' | 'c';
