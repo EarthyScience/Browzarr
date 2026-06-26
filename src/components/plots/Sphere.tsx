@@ -182,11 +182,10 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         }
         updateDimCoords({[tsID] : dimObj})
       }
-  let yScale = mirrorVertical ? -1 : 1;
-  yScale *= flipY ? -1 : 1;
+
   return (
     <group
-      scale={[mirrorHorizontal ? -1 : 1, yScale, 1]}
+      scale={[mirrorHorizontal ? -1 : 1, mirrorVertical ? -1 : 1, 1]}
       rotation={[rotateX/2*Math.PI, 0, rotateZ/2*Math.PI]}
     >
       <group scale={[1, flipY ? -1 : 1, 1]}>

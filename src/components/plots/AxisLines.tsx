@@ -21,7 +21,7 @@ const AXIS_CONSTANTS = {
   INITIAL_RESOLUTION: 7,
   MAX_RESOLUTION: 20,
   MIN_RESOLUTION: 1,
-  PC_GLOBAL_SCALE_DIVISOR: 10,
+  PC_GLOBAL_SCALE_DIVISOR: 1000,
   LINE_WIDTH: 2.0,
   TICK_LENGTH_FACTOR: 0.05,
   TICK_FONT_SIZE_FACTOR: 0.05,
@@ -79,9 +79,15 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
   const globalScale = isPC ? permuteShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
-  const xScale = permuteShape[2]/2*globalScale;
-  const yScale = permuteShape[1]/2*globalScale;
-  const zScale = permuteShape[0]/2*globalScale;
+  const xScale = isPC
+                ? dataShape[permute?.indexOf(2)??2]*globalScale
+                : permuteShape[2]/2*globalScale;
+  const yScale = isPC
+                ? dataShape[permute?.indexOf(1)??2]*globalScale
+                :permuteShape[1]/2*globalScale;
+  const zScale = isPC
+                ? dataShape[permute?.indexOf(0)??2]*globalScale
+                :permuteShape[0]/2*globalScale;
 
   const rangers = useMemo(()=>permuteArr([zRange,yRange,xRange],permute),[yRange,zRange, xRange, permute])
   const xRanger = rangers[2];

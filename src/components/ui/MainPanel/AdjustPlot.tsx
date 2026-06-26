@@ -628,7 +628,7 @@ const GlobalOptions = () =>{
                   position:'relative',
                 }}
                 className='cursor-pointer'
-                onClick={()=>{setRotateZ((rotateZ + rotDir) % 4); setZAngle(x=> x + rotDir)}}
+                onClick={()=>{setRotateZ((rotateZ - rotDir) % 4); setZAngle(x=> x + rotDir)}}
               >
                 <div 
                   style={{
