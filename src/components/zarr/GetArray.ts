@@ -18,10 +18,10 @@ export async function GetArray(varOveride?: string) {
     const meta = await fetcher.getMetadata(targetVariable);
     const { shape, chunkShape, fillValue, dtype } = meta;
     const rank = shape.length;
-    const hasZ = rank >= 3;
+    const hasZ = axisMapping.z >= 0;
     const xDimIndex = axisMapping.x >= 0 ? axisMapping.x : rank - 1;
     const yDimIndex = axisMapping.y >= 0 ? axisMapping.y : rank - 2;
-    const zDimIndex = axisMapping.z >= 0 ? axisMapping.z : rank - 3;
+    const zDimIndex = axisMapping.z >= 0 ? axisMapping.z : -1;
 
     const calcDim = (slice: [number, number | null], dimIdx: number) => { // This function provides information for extraction from each dimension of datarray
         if (dimIdx < 0) return { start: 0, end: 1, size: 0, chunkDim: 1 };

@@ -211,7 +211,11 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
   }
 
   const sizeData = useMemo(() => {
-    const is2D = dataShape.length === 2;
+    const rowZ = rows.find((r) => r.axis === 'z');
+    const rowY = rows.find((r) => r.axis === 'y');
+    const rowX = rows.find((r) => r.axis === 'x');
+
+    const is2D = dataShape.length === 2 || !rowZ;
 
     const getSliceDims = (row?: SlicerRow, defaultLast = 0) => {
       if (!row) return { first: 0, last: defaultLast, steps: defaultLast };
@@ -225,10 +229,6 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       if (isNaN(stop)) stop = defaultLast;
       return { first: start, last: stop, steps: Math.max(1, stop - start) };
     };
-
-    const rowZ = rows.find(r => r.axis === 'z');
-    const rowY = rows.find(r => r.axis === 'y');
-    const rowX = rows.find(r => r.axis === 'x');
 
     const origIdxZ = rowZ ? getOrigIdx(rowZ.dimName) : -1;
     const origIdxY = rowY ? getOrigIdx(rowY.dimName) : -1;
