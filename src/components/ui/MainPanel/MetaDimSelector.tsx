@@ -256,15 +256,9 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       const sizeRatio = totalSteps / (dataShape[0] * dataShape[1] || 1);
       calculatedSize = (meta.totalSize || 0) * sizeRatio;
     } else {
-      const chunkZ = origIdxZ >= 0 ? chunkShape[origIdxZ] : 1;
-      const chunkY = origIdxY >= 0 ? chunkShape[origIdxY] : 1;
-      const chunkX = origIdxX >= 0 ? chunkShape[origIdxX] : 1;
-
-      const xChunksNeeded = Math.ceil(x.steps / chunkX);
-      const yChunksNeeded = Math.ceil(y.steps / chunkY);
-      const zChunksNeeded = Math.ceil(z.steps / chunkZ);
-
-      const size = xChunksNeeded * yChunksNeeded * zChunksNeeded * (meta.chunkSize || 1);
+      const totalSteps = x.steps * y.steps * z.steps;
+      const sizeRatio = totalSteps / (dataShape.reduce((a, b) => a * b, 1) || 1);
+      const size = (meta.totalSize || 0) * sizeRatio;
       calculatedSize = size / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1);
     }
     
@@ -370,6 +364,26 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     setZSlice(getSliceArray(rowZ, dataShape ? dataShape[getOrigIdx(rowZ?.dimName || '')] : 0));
     setYSlice(getSliceArray(rowY, dataShape ? dataShape[getOrigIdx(rowY?.dimName || '')] : 0));
     setXSlice(getSliceArray(rowX, dataShape ? dataShape[getOrigIdx(rowX?.dimName || '')] : 0));
+
+    const ndSlices: (number | [number, number | null])[] = availableDims.map((dim) => {
+      const row = rows.find((r) => r.dimName === dim.name);
+      if (row) {
+        if (row.sel.mode === 'scalar') return parseInt(row.sel.scalar) || 0;
+        return [parseInt(row.sel.start) || 0, parseInt(row.sel.stop) || dim.size];
+      }
+      const colSel = collapsedSels[dim.name];
+      if (colSel && colSel.mode === 'scalar') return parseInt(colSel.scalar) || 0;
+      return 0;
+    });
+
+    const axisMapping = {
+      x: getOrigIdx(rowX?.dimName || ''),
+      y: getOrigIdx(rowY?.dimName || ''),
+      z: getOrigIdx(rowZ?.dimName || '')
+    };
+
+    useZarrStore.getState().setNdSlices(ndSlices);
+    useZarrStore.getState().setAxisMapping(axisMapping);
 
     if (collapsedDims.length > 0) {
       const firstCollapsed = collapsedDims[0];

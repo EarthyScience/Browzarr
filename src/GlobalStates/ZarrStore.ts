@@ -25,9 +25,14 @@ type ZarrState = {
   fetchKey: number;
   blobKey: string | undefined; // The key for the stored File blob for a local NC
   
+  ndSlices: (number | [number, number | null])[];
+  axisMapping: { x: number, y: number, z: number };
+
   setZSlice: (zSlice: [number , number | null]) => void;
   setYSlice: (ySlice: [number , number | null]) => void;
   setXSlice: (xSlice: [number , number | null]) => void;
+  setNdSlices: (ndSlices: (number | [number, number | null])[]) => void;
+  setAxisMapping: (mapping: { x: number, y: number, z: number }) => void;
   setCompress: (compress: boolean) => void;
   setCurrentStore: (currentStore: any) => void;
   setReFetch: (reFetch: boolean) => void;
@@ -49,6 +54,8 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   zSlice: [0, null],
   ySlice: [0, null],
   xSlice: [0, null],
+  ndSlices: [],
+  axisMapping: { x: -1, y: -1, z: -1 },
   compress: false,
   currentStore: GetStore(ESDC),
   reFetch: false,
@@ -69,6 +76,8 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   setZSlice: (zSlice) => set({ zSlice }),
   setYSlice: (ySlice) => set({ ySlice }),
   setXSlice: (xSlice) => set({ xSlice }),
+  setNdSlices: (ndSlices) => set({ ndSlices }),
+  setAxisMapping: (axisMapping) => set({ axisMapping }),
   setCompress: (compress) => set({ compress }),
   setCurrentStore: (currentStore) => set({ currentStore }),
   setReFetch: (reFetch) => set({ reFetch }),
