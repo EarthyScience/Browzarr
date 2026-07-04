@@ -2,7 +2,7 @@ uniform sampler2D cmap;
 uniform float cOffset;
 uniform float cScale;
 
-varying float vStrength;
+in float vStrength;
 
 out vec4 Color;
 
