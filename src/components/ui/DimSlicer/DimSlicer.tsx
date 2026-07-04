@@ -84,7 +84,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   const sel = lockMode ? { ...rawSel, mode: lockMode } : rawSel;
 
   const getIndexFromValue = (val: number): number => {
-    if (!values) {
+    if (!values || values.length === 0) {
       return clamp(Math.round(val / step) * step, 0, maxIndex);
     }
     let closestIndex = 0;
@@ -189,9 +189,9 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
           )}
           {sel.mode === 'slice' && (
             <span className={`text-xs font-bold px-2 py-1 h-6 flex items-center border rounded-md ${propAxis === 'x' ? 'text-pink-500' :
-                propAxis === 'y' ? 'text-green-500' :
-                  propAxis === 'z' ? 'text-blue-500' :
-                    'text-yellow-500'
+              propAxis === 'y' ? 'text-green-500' :
+                propAxis === 'z' ? 'text-blue-500' :
+                  'text-yellow-500'
               }`}>
               {propAxis}
             </span>

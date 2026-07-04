@@ -78,21 +78,21 @@ let _nextId = 0;
 const nextId = () => ++_nextId;
 
 export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
-  const rawDimArrays = meta?.dimInfo?.dimArrays ?? [];
-  const rawDimNames = meta?.dimInfo?.dimNames ?? [];
-  const rawDimUnits = meta?.dimInfo?.dimUnits ?? [];
+  const dimArrays = useMemo(
+    () => (meta?.dimInfo?.dimArrays ?? []).map((a) => Array.from(a)),
+    [meta?.dimInfo?.dimArrays]
+  );
+  const dimUnits = useMemo(
+    () => (meta?.dimInfo?.dimUnits ?? []).map((u) => u ?? ''),
+    [meta?.dimInfo?.dimUnits]
+  );
+  const dimNames = useMemo(
+    () => meta?.dimInfo?.dimNames ?? [],
+    [meta?.dimInfo?.dimNames]
+  );
   const dataShape = meta?.shape;
   const chunkShape = meta?.chunks;
 
-  const dimArrays: number[][] = useMemo(
-    () => rawDimArrays.map((a) => Array.from(a)),
-    [rawDimArrays],
-  );
-  const dimUnits: string[] = useMemo(
-    () => rawDimUnits.map((u) => u ?? ''),
-    [rawDimUnits],
-  );
-  const dimNames: string[] = rawDimNames;
 
   const { setDimArrays, setDimNames, setDimUnits } = useGlobalStore(
     useShallow((state) => ({
@@ -217,7 +217,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
 
   return (
     <>
-      <b>{`${meta.long_name} `}</b>
+      <b>{`${meta.long_name ?? ''} `}</b>
       <Popover>
         <PopoverTrigger className="cursor-pointer" asChild>
           <Badge variant="default" className="block">Attributes</Badge>
