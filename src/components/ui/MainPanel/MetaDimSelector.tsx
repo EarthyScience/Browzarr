@@ -250,20 +250,31 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
 
     const thisCount = texCounts.reduce((prod, val) => prod * Math.ceil(val), 1)
 
-    let calculatedSize = 0;
-    if (is2D) {
-      const totalSteps = x.steps * y.steps;
-      const sizeRatio = totalSteps / (dataShape[0] * dataShape[1] || 1);
-      calculatedSize = (meta.totalSize || 0) * sizeRatio;
-    } else {
-      const totalSteps = x.steps * y.steps * z.steps;
-      const sizeRatio = totalSteps / (dataShape.reduce((a, b) => a * b, 1) || 1);
-      const size = (meta.totalSize || 0) * sizeRatio;
-      calculatedSize = size / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1);
+    const getSelSteps = (dimName: string, defaultLast: number) => {
+      const row = rows.find(r => r.dimName === dimName);
+      if (row) return getSliceDims(row, defaultLast).steps;
+      
+      const collSel = collapsedSels[dimName];
+      if (collSel) {
+        if (collSel.mode === 'scalar') return 1;
+        const start = parseInt(collSel.start) || 0;
+        let stop = parseInt(collSel.stop);
+        if (isNaN(stop)) stop = defaultLast;
+        return Math.max(1, stop - start);
+      }
+      return defaultLast;
+    };
+
+    const totalSteps = availableDims.reduce((prod, d) => prod * getSelSteps(d.name, d.size), 1);
+    const sizeRatio = totalSteps / (dataShape.reduce((a, b) => a * b, 1) || 1);
+    let calculatedSize = (meta.totalSize || 0) * sizeRatio;
+
+    if (!is2D) {
+      calculatedSize = calculatedSize / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1);
     }
     
     return { size: calculatedSize, thisCount, depths };
-  }, [meta, rows, dataShape, chunkShape, coarsen, kernelSize, kernelDepth, maxTextureSize, max3DTextureSize]);
+  }, [meta, rows, collapsedSels, availableDims, dataShape, chunkShape, coarsen, kernelSize, kernelDepth, maxTextureSize, max3DTextureSize]);
 
   useEffect(() => {
     setTextureArrayDepths(sizeData.depths);

@@ -230,14 +230,17 @@ export function copyChunkToArray(
 				(yStart + cy) * destStride[1] +
 				xStart;
 
-			// Get the row of data from the source chunk, using the new xLimit
-			const rowData = chunkData.subarray(
-				sourceRowOffset,
-				sourceRowOffset + xLimit,
-			);
-
-			// Place the row in the correct position in the final array
-			destArray.set(rowData, destRowOffset);
+			if (chunkStride[2] === 1) {
+				const rowData = chunkData.subarray(
+					sourceRowOffset,
+					sourceRowOffset + xLimit,
+				);
+				destArray.set(rowData, destRowOffset);
+			} else {
+				for (let cx = 0; cx < xLimit; cx++) {
+					destArray[destRowOffset + cx] = chunkData[sourceRowOffset + cx * chunkStride[2]];
+				}
+			}
 		}
 	}
 }
@@ -281,14 +284,17 @@ export function copyChunkToArray2D(
 		// destStride[0] is the stride for the Y-dimension
 		const destRowOffset = (yStart + cy) * destStride[0] + xStart;
 
-		// Get the row of data from the source chunk, using the calculated xLimit
-		const rowData = chunkData.subarray(
-			sourceRowOffset,
-			sourceRowOffset + xLimit,
-		);
-
-		// Place the row in the correct position in the final destination array
-		destArray.set(rowData, destRowOffset);
+		if (chunkStride[1] === 1) {
+			const rowData = chunkData.subarray(
+				sourceRowOffset,
+				sourceRowOffset + xLimit,
+			);
+			destArray.set(rowData, destRowOffset);
+		} else {
+			for (let cx = 0; cx < xLimit; cx++) {
+				destArray[destRowOffset + cx] = chunkData[sourceRowOffset + cx * chunkStride[1]];
+			}
+		}
 	}
 }
 
