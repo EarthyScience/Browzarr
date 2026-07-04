@@ -66,7 +66,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
       const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
       const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
       const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
-      let slices = dimArrays.length === 2
+      let slices = isFlat
         ? [
           dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
           dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
