@@ -69,6 +69,10 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           nanColor: {value: new THREE.Color(nanColor)},
           fillValue: {value: fillValue?? NaN}
       },
+      defines: {
+        USE_VORIGIN: 1,
+        USE_VDIRECTION: 1
+      },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
       fragmentShader: useFragOpt ?  fragOpt : fragmentShader,
       transparent: true,
