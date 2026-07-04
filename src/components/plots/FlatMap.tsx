@@ -172,7 +172,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
             uniforms:{
               cScale: {value: cScale},
               cOffset: {value: cOffset},
-              map : {value: Array.from({ length: 14 }, (_, idx) => textures?.[idx])},
+              map : {value: Array.from({ length: 14 }, (_, idx) => textures?.[idx] ?? textures?.[0])},
               maskTexture: {value: maskTexture},
               maskValue: {value: maskValue},
               threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},

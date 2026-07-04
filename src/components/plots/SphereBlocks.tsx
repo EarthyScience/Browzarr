@@ -79,7 +79,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
-                map: { value: textures },
+                map: { value: Array.from({ length: 14 }, (_, idx) => textures?.[idx] ?? textures?.[0]) },
                 maskTexture: {value: maskTexture},
                 maskValue: {value: maskValue},
                 threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
@@ -108,7 +108,7 @@ const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Data
     useEffect(()=>{
         if (shaderMaterial){
             const uniforms = shaderMaterial.uniforms;
-            uniforms.map.value = textures;
+            uniforms.map.value = Array.from({ length: 14 }, (_, idx) => textures?.[idx] ?? textures?.[0]);
             uniforms.animateProg.value =  animProg
             uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
             uniforms.displacement.value = sphereDisplacement

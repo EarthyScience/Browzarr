@@ -83,7 +83,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
-                map: { value: Array.from({ length: 14 }, (_, idx) => textures?.[idx]) },
+                map: { value: Array.from({ length: 14 }, (_, idx) => textures?.[idx] ?? textures?.[0]) },
                 maskTexture: { value: maskTexture},
                 maskValue: { value: maskValue },
                 threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
