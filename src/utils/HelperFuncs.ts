@@ -304,7 +304,8 @@ export function GetCurrentArray(overrideStore?:string){
             dataShape,
             strides as [number, number, number], 
             [z, y, x], 
-            [zStartIdx, yStartIdx, xStartIdx]
+            chunk.fullChunkDim || [1, 1, 1],
+            chunk.sliceStart || [0, 0, 0]
           )
         }
       }
