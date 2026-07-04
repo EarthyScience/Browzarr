@@ -316,18 +316,26 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       const dimName = firstUnusedDim(prev);
       if (!dimName) return prev;
       const dim = availableDims.find((d) => d.name === dimName)!;
-      const newRow: SlicerRow = {
+      const newRows: SlicerRow[] = [...prev, {
         id: nextId(),
         dimName,
         sel: { ...defaultSelection(dim.size), mode: 'slice' },
-        axis: firstUnusedAxis(prev),
-      };
-      return [...prev, newRow];
+        axis: 'z', // Placeholder, reassigned below
+      }];
+      
+      const defaultAxes: Axis[] = ['z', 'y', 'x'];
+      const axes = defaultAxes.slice(-newRows.length);
+      return newRows.map((r, i) => ({ ...r, axis: axes[i] }));
     });
   };
 
   const removeLastRow = () =>
-    setRows((prev) => prev.slice(0, -1));
+    setRows((prev) => {
+      const newRows = prev.slice(0, -1);
+      const defaultAxes: Axis[] = ['z', 'y', 'x'];
+      const axes = defaultAxes.slice(-newRows.length);
+      return newRows.map((r, i) => ({ ...r, axis: axes[i] }));
+    });
 
   const updateDimName = (id: number, dimName: string) => {
     setRows((prev) =>

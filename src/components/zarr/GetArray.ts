@@ -18,23 +18,50 @@ export async function GetArray(varOveride?: string) {
     const meta = await fetcher.getMetadata(targetVariable);
     const { shape, chunkShape, fillValue, dtype } = meta;
     const rank = shape.length;
-    const hasZ = axisMapping.z >= 0;
-    const xDimIndex = axisMapping.x >= 0 ? axisMapping.x : rank - 1;
-    const yDimIndex = axisMapping.y >= 0 ? axisMapping.y : rank - 2;
-    const zDimIndex = axisMapping.z >= 0 ? axisMapping.z : -1;
+    // Identify which dimensions are already explicitly mapped
+    const parseMapped = (val: any) => typeof val === 'number' && !isNaN(val) && val >= 0 ? val : -1;
+    const mappedX = parseMapped(axisMapping.x);
+    const mappedY = parseMapped(axisMapping.y);
+    const mappedZ = parseMapped(axisMapping.z);
+    
+    const mappedDims = new Set([mappedX, mappedY, mappedZ].filter(v => v >= 0));
+    const unmappedDims: number[] = [];
+    for (let i = rank - 1; i >= 0; i--) {
+        if (!mappedDims.has(i)) unmappedDims.push(i);
+    }
 
-    const calcDim = (slice: [number, number | null], dimIdx: number) => { // This function provides information for extraction from each dimension of datarray
+    const xDimIndex = mappedX >= 0 ? mappedX : (unmappedDims.length > 0 ? unmappedDims.shift()! : rank - 1);
+    const yDimIndex = mappedY >= 0 ? mappedY : (unmappedDims.length > 0 ? unmappedDims.shift()! : rank - 2);
+    const zDimIndex = mappedZ >= 0 ? mappedZ : -1;
+
+    const hasZ = zDimIndex >= 0;
+
+    const calcDim = (slice: [number, number | null], dimIdx: number) => { 
         if (dimIdx < 0) return { start: 0, end: 1, size: 0, chunkDim: 1 };
         const dimSize = shape[dimIdx];
         const chunkDim = chunkShape[dimIdx];
         const start = Math.floor(slice[0] / chunkDim);
         const sliceEnd = slice[1] ?? dimSize;
-        return { start, end: Math.ceil(sliceEnd / chunkDim), size: sliceEnd - slice[0], chunkDim };
+        return { start, end: Math.ceil(sliceEnd / chunkDim), size: sliceEnd - slice[0], chunkDim, offset: slice[0] % chunkDim };
     };
 
-    const xDim = calcDim(xSlice, xDimIndex);
-    const yDim = calcDim(ySlice, yDimIndex);
-    const zDim = calcDim(zSlice, zDimIndex);
+    // If an axis is unmapped in the UI (NaN), we MUST fetch it as a scalar (size 1) 
+    // using the collapsed value from ndSlices. Otherwise, it defaults to [0, null] 
+    // and fetches the entire dimension, leading to massive memory requests (OOM).
+    const getEffectiveSlice = (mappingIdx: number, dimIdx: number, uiSlice: [number, number | null]): [number, number | null] => {
+        if (mappingIdx >= 0) return uiSlice; // Axis is mapped, use the UI slice
+        
+        if (dimIdx >= 0 && ndSlices && ndSlices[dimIdx] !== undefined) {
+            const sel = ndSlices[dimIdx];
+            if (typeof sel === 'number') return [sel, sel + 1];
+            if (Array.isArray(sel)) return sel as [number, number | null];
+        }
+        return [0, 1]; // Safe fallback to scalar
+    };
+
+    const xDim = calcDim(getEffectiveSlice(axisMapping.x, xDimIndex, xSlice), xDimIndex);
+    const yDim = calcDim(getEffectiveSlice(axisMapping.y, yDimIndex, ySlice), yDimIndex);
+    const zDim = calcDim(getEffectiveSlice(axisMapping.z, zDimIndex, zSlice), zDimIndex);
 
     let outputShape = hasZ ? [zDim.size, yDim.size, xDim.size] : [yDim.size, xDim.size];
     if (coarsen) {
@@ -42,7 +69,10 @@ export async function GetArray(varOveride?: string) {
     }
 
     const totalElements = outputShape.reduce((a, b) => a * b, 1);
-    if (totalElements > 1e9) { useErrorStore.getState().setError("largeArray"); throw new Error("Cannot allocate array."); }
+    if (totalElements > 1e9) { 
+        useErrorStore.getState().setError("largeArray"); 
+        throw new Error("Cannot allocate array. Details printed to console."); 
+    }
 
     const destStride = calculateStrides(outputShape);
     setStrides(destStride);
