@@ -89,7 +89,7 @@ export const useDataFetcher = () => {
                     if (shapeLength === 2) {
                         setIsFlat(true);
                         if (!["flat", "sphere"].includes(plotType)) {
-                            setPlotType("sphere");
+                            setPlotType("flat");
                         }
                     } else {
                         setIsFlat(false);

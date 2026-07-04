@@ -65,9 +65,7 @@ const AXIS_COLOR: Record<Axis, string> = {
   c: 'text-yellow-500',
 };
 
-function axisForIndex(idx: number): Axis {
-  return DEFAULT_AXES[idx] ?? DEFAULT_AXES[DEFAULT_AXES.length - 1];
-}
+
 
 function selectionSummary(
   availableDims: DimOption[],
@@ -187,14 +185,17 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
   const makeInitialCollapsedSels = (dims: DimOption[]): Record<string, SliceSelectionState> =>
     Object.fromEntries(dims.map((d) => [d.name, { ...defaultSelection(d.size), mode: 'scalar' as const }]));
 
-  /** Default to first MIN(3, availableDims.length) dims as active rows */
-  const makeInitialRows = (dims: DimOption[]): SlicerRow[] =>
-    dims.slice(0, MAX_ACTIVE_DIMS).map((d, i) => ({
+  const makeInitialRows = (dims: DimOption[]): SlicerRow[] => {
+    const activeDims = dims.slice(-Math.min(MAX_ACTIVE_DIMS, dims.length));
+    const defaultAxes: Axis[] = ['z', 'y', 'x'];
+    const axes = defaultAxes.slice(-activeDims.length);
+    return activeDims.map((d, i) => ({
       id: nextId(),
       dimName: d.name,
       sel: { ...defaultSelection(d.size), mode: 'slice' },
-      axis: axisForIndex(i),
+      axis: axes[i],
     }));
+  };
 
   const [rows, setRows] = useState<SlicerRow[]>(() => makeInitialRows(availableDims));
   const [collapsedSels, setCollapsedSels] = useState<Record<string, SliceSelectionState>>(
@@ -304,6 +305,11 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     return availableDims.find((d) => !usedNames.has(d.name))?.name ?? '';
   };
 
+  const firstUnusedAxis = (currentRows: SlicerRow[]): Axis => {
+    const used = new Set(currentRows.map((r) => r.axis));
+    return (['x', 'y', 'z'] as Axis[]).find((a) => !used.has(a)) ?? 'z';
+  };
+
   const addRow = () => {
     setRows((prev) => {
       if (prev.length >= MAX_ACTIVE_DIMS) return prev;
@@ -314,7 +320,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
         id: nextId(),
         dimName,
         sel: { ...defaultSelection(dim.size), mode: 'slice' },
-        axis: axisForIndex(prev.length),
+        axis: firstUnusedAxis(prev),
       };
       return [...prev, newRow];
     });

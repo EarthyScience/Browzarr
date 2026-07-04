@@ -379,10 +379,9 @@ const FlatAxis = () =>{
   const is4D = dimArrays.length === 4;
   const originallyFlat = dimArrays.length == 2;
   const slices = originallyFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
-  
-  const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
-  const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
-  const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
+  const xIdx = (axisMapping.x >= 0 && axisMapping.x < shapeLength) ? axisMapping.x : shapeLength - 1;
+  const yIdx = (axisMapping.y >= 0 && axisMapping.y < shapeLength) ? axisMapping.y : Math.max(0, shapeLength - 2);
+  const zIdx = (axisMapping.z >= 0 && axisMapping.z < shapeLength) ? axisMapping.z : Math.max(0, shapeLength - 3);
 
   const dimSlices = useMemo(()=> {
     return originallyFlat ? 
@@ -476,8 +475,8 @@ const FlatAxis = () =>{
   const yDimScale = yResolution/(yResolution-1)
   const yValDelta = 1/(yResolution-1)
 
-  const xTitleOffset = useMemo(() => (axisNames[widthIdx].length * FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE / 2 + 0.1), [axisNames, widthIdx]);
-  const yTitleOffset = useMemo(() => (axisNames[heightIdx].length * FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE / 2 + 0.1), [axisNames, heightIdx]);
+  const xTitleOffset = useMemo(() => ((axisNames[widthIdx]?.length || 0) * FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE / 2 + 0.1), [axisNames, widthIdx]);
+  const yTitleOffset = useMemo(() => ((axisNames[heightIdx]?.length || 0) * FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE / 2 + 0.1), [axisNames, heightIdx]);
 
   return (
     <group 
