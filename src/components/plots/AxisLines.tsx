@@ -53,20 +53,27 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     hideAxisControls: state.hideAxisControls
   })))
 
+  const { axisMapping } = useZarrStore(useShallow(state => ({
+    axisMapping: state.axisMapping
+  })))
+
   const shapeLength = dimArrays.length
 
   const dimSlices = useMemo(()=> {
+    const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
+    const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
+    const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
     let slices = [
-      dimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-      revY ? dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-      dimArrays[shapeLength-1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
+      dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
+      revY ? dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() ?? [] : dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+      dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
     ] 
     if (coarsen) {
       const {kernelDepth, kernelSize} = useZarrStore.getState()
       slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 ? kernelDepth : kernelSize)))
     }
     return slices
-  },[revY, dimArrays, zSlice, ySlice, xSlice, coarsen])
+  },[revY, dimArrays, zSlice, ySlice, xSlice, coarsen, axisMapping, shapeLength])
   const dimLengths = dimSlices.map(val => val.length)
 
   const [xResolution, setXResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
@@ -364,22 +371,31 @@ const FlatAxis = () =>{
     analysisMode: state.analysisMode,
     axis: state.axis
   })))
+  const { axisMapping } = useZarrStore(useShallow(state => ({
+    axisMapping: state.axisMapping
+  })))
   const shapeLength = dimArrays.length;
   const is4D = dimArrays.length === 4;
   const originallyFlat = dimArrays.length == 2;
   const slices = originallyFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
   
-  const dimSlices = useMemo(()=>originallyFlat ? 
+  const dimSlices = useMemo(()=> {
+    const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
+    const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
+    const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
+    
+    return originallyFlat ? 
     [
-      flipY ? dimArrays[0].slice().reverse() : dimArrays[0], // Need the slice because inside useMemo it doesn't mutate the original properly
-      dimArrays[1]
+      flipY ? dimArrays[yIdx]?.slice().reverse() ?? [] : dimArrays[yIdx] ?? [], 
+      dimArrays[xIdx] ?? []
     ] 
     :
     [
-      dimArrays[shapeLength-3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-      flipY ? dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() : dimArrays[shapeLength-2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-      dimArrays[shapeLength-1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined),
-    ],[dimArrays, flipY])
+      dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
+      flipY ? dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() ?? [] : dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+      dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
+    ]
+  },[dimArrays, flipY, axisMapping, originallyFlat, shapeLength, xSlice, ySlice, zSlice])
 
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){

@@ -42,6 +42,7 @@ export function zarrFetcher() {
     return {
         async getMetadata(variable: string) {
             const group = await currentStore;
+            if (!group) throw new Error("Zarr store not initialized");
             const tempOutVar = await zarr.open(group.resolve(variable), { kind: "array" });
             outVar = tempOutVar
             if (!outVar.is("number") && !outVar.is("bigint")) {
@@ -60,12 +61,13 @@ export function zarrFetcher() {
                 _outVar: outVar, // carry through for fetchChunk
             } as any;
         },
-        async fetchChunk({ variable, rank, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D }: any): Promise<FetchOutput> {
-            const chunkSlice = new Array(rank).fill(0);
-            chunkSlice[xDimIndex] = zarr.slice(x * chunkShape[xDimIndex], (x + 1) * chunkShape[xDimIndex]);
-            chunkSlice[yDimIndex] = zarr.slice(y * chunkShape[yDimIndex], (y + 1) * chunkShape[yDimIndex]);
-            if (zDimIndex >= 0) chunkSlice[zDimIndex] = zarr.slice(z * chunkShape[zDimIndex], (z + 1) * chunkShape[zDimIndex]);
-            if (rank >= 4) chunkSlice[0] = idx4D;
+        async fetchChunk({ variable, chunkShape, ndSlices }: any): Promise<FetchOutput> {
+            const chunkSlice = ndSlices.map((s: any, i: number) => {
+                if (typeof s === "number") return s;
+                const start = s[0] * chunkShape[i];
+                const end = (s[0] + 1) * chunkShape[i];
+                return zarr.slice(start, end);
+            });
 
             const chunk = await fetchWithRetry(() => zarr.get(outVar, chunkSlice), `variable ${variable}`, useGlobalStore.getState().setStatus);
             if (!chunk || chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {

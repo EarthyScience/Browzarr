@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { GetStore } from "@/components/zarr/ZarrLoaderLRU";
 import { FetchStoreOptions, IcechunkStoreOptions } from "@/components/zarr/Interfaces";
 
 const ESDC = 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr'
@@ -57,7 +56,7 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   ndSlices: [],
   axisMapping: { x: -1, y: -1, z: -1 },
   compress: false,
-  currentStore: GetStore(ESDC),
+  currentStore: Promise.resolve(undefined),
   reFetch: false,
   currentChunks: {x:[], y:[], z:[]},
   arraySize: 0,

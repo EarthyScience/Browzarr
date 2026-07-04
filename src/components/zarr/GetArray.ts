@@ -56,6 +56,9 @@ export async function GetArray(varOveride?: string) {
     let iter = 1;
     const rescaleIDs: string[] = [];
 
+    const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : (idx4D ?? "");
+    const cacheBase = scalarIndices !== "" ? `${initStore}_${targetVariable}_${scalarIndices}` : `${initStore}_${targetVariable}`;
+
     setStatus("Downloading...");
     setProgress(0);
 
@@ -63,7 +66,6 @@ export async function GetArray(varOveride?: string) {
         for (let y = yDim.start; y < yDim.end; y++) {
             for (let x = xDim.start; x < xDim.end; x++) {
                 const chunkID = `z${z}_y${y}_x${x}`;
-                const cacheBase = rank > 3 ? `${initStore}_${targetVariable}_${idx4D}` : `${initStore}_${targetVariable}`;
                 const cacheName = `${cacheBase}_chunk_${chunkID}`;
                 const cachedChunk = cache.get(cacheName);
                 const isCacheValid = cachedChunk &&

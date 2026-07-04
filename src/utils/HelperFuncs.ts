@@ -259,13 +259,16 @@ function DecompressArray(compressed : Uint8Array){
 
 export function GetCurrentArray(overrideStore?:string){
   const { variable, is4D, idx4D, initStore, strides, dataShape, setStatus }= useGlobalStore.getState()
-  const { arraySize, currentChunks } = useZarrStore.getState()
+  const { arraySize, currentChunks, ndSlices } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
   
-  if (cache.has(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)){
-      const chunk = cache.get(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)
-      const compressed = chunk.compressed
+  const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : (idx4D ?? "");
+  const cacheBase = scalarIndices !== "" ? `${store}_${variable}_${scalarIndices}` : `${store}_${variable}`;
+  
+  if (cache.has(cacheBase)){
+      const chunk = cache.get(cacheBase)
+      const compressed = chunk?.compressed
       setStatus(compressed ? "Decompressing data..." : null)
       const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
       setStatus(null)
@@ -281,8 +284,9 @@ export function GetCurrentArray(overrideStore?:string){
       for (let y = yStartIdx; y < yEndIdx; y++) {
         for (let x = xStartIdx; x < xEndIdx; x++) {
           const chunkID = `z${z}_y${y}_x${x}`
-          const cacheName = is4D ? `${store}_${variable}_${idx4D}_chunk_${chunkID}` : `${store}_${variable}_chunk_${chunkID}`
+          const cacheName = `${cacheBase}_chunk_${chunkID}`
           const chunk = cache.get(cacheName)
+          if (!chunk) continue;
           const compressed = chunk.compressed
           const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
           copyChunkToArray(

@@ -52,10 +52,10 @@ float sample1(
 out vec3 aPosition;
 
 void main() {
-    vec2 uv = giveUV(position); // We can't just pass this as a varying because the fragment will try to interpoalte between the seems which looks bad 
+    vec2 texCoord = giveUV(position); // We can't just pass this as a varying because the fragment will try to interpoalte between the seems which looks bad 
     int yStepSize = int(textureDepths.x); 
-    bool inBounds = all(greaterThanEqual(uv, vec2(0.0))) && 
-                all(lessThanEqual(uv, vec2(1.0)));
+    bool inBounds = all(greaterThanEqual(texCoord, vec2(0.0))) && 
+                all(lessThanEqual(texCoord, vec2(1.0)));
     aPosition = position;
     if (inBounds){
         vec3 normal = normalize(position);

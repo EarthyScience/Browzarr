@@ -9,6 +9,7 @@ import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { GetFrag, GetVert } from '../textures';
 import { SquareMeshes } from './TransectMeshes';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -62,10 +63,17 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         getColorIdx: state.getColorIdx,
         incrementColorIdx: state.incrementColorIdx
     })))
+    const { axisMapping } = useZarrStore(useShallow(state => ({
+      axisMapping: state.axisMapping
+    })))
+    const shapeLength = dimArrays.length;
+    const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
+    const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
+    const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
     const dimSlices = [
-      dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-      dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-      dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
+      dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
+      dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+      dimArrays.length > 2 ? (dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? []) : [],
     ]
 
     const {lonBounds, latBounds} = useCoordBounds()

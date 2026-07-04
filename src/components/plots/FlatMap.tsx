@@ -54,27 +54,31 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
       analysisMode: state.analysisMode,
       analysisArray: state.analysisArray
     })))
-    const {kernelSize, kernelDepth} = useZarrStore(useShallow(state => ({
+    const {kernelSize, kernelDepth, axisMapping} = useZarrStore(useShallow(state => ({
       kernelSize: state.kernelSize,
-      kernelDepth: state.kernelDepth
+      kernelDepth: state.kernelDepth,
+      axisMapping: state.axisMapping
     })))
 
     const shapeLength = dimArrays.length
 
     const dimSlices = useMemo (() => {
+      const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
+      const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
+      const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
       let slices = dimArrays.length === 2
         ? [
-          dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-          dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+          dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+          dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
         ]
         : [
-          dimArrays[shapeLength - 3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-          dimArrays[shapeLength - 2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-          dimArrays[shapeLength - 1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined )
+          dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
+          dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+          dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined ) ?? [],
         ]
-      if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 ? kernelDepth : kernelSize)))
+      if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
       return slices
-    } ,[dimArrays, zSlice, ySlice, xSlice, coarsen])
+    } ,[dimArrays, zSlice, ySlice, xSlice, coarsen, axisMapping, shapeLength, kernelDepth, kernelSize])
 
     const shapeRatio = useMemo(()=> {
       if (dataShape.length == 2){
