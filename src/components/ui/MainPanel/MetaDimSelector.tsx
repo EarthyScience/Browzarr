@@ -209,7 +209,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     setCollapsedSels(makeInitialCollapsedSels(availableDims));
   }
 
-  const currentSize = useMemo(() => {
+  const sizeData = useMemo(() => {
     const is2D = dataShape.length === 2;
 
     const getSliceDims = (row?: SlicerRow, defaultLast = 0) => {
@@ -244,24 +244,17 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     const maxSizeLimit = is2D ? maxTextureSize : max3DTextureSize;
     const texCounts = [z.steps / maxSizeLimit, y.steps / maxSizeLimit, x.steps / maxSizeLimit];
     
-    setTextureArrayDepths(
-      texCounts.some(count => count > 1)
+    const depths = texCounts.some(count => count > 1)
         ? texCounts.map(val => Math.ceil(val))
-        : [1, 1, 1]
-    );
+        : [1, 1, 1];
+
     const thisCount = texCounts.reduce((prod, val) => prod * Math.ceil(val), 1)
-    setTexCount(thisCount)
 
-    if (thisCount > 14){ 
-      setTooBig(true)
-    } else {
-      setTooBig(false)
-    }
-
+    let calculatedSize = 0;
     if (is2D) {
       const totalSteps = x.steps * y.steps;
       const sizeRatio = totalSteps / (dataShape[0] * dataShape[1] || 1);
-      return (meta.totalSize || 0) * sizeRatio;
+      calculatedSize = (meta.totalSize || 0) * sizeRatio;
     } else {
       const chunkZ = origIdxZ >= 0 ? chunkShape[origIdxZ] : 1;
       const chunkY = origIdxY >= 0 ? chunkShape[origIdxY] : 1;
@@ -272,9 +265,19 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       const zChunksNeeded = Math.ceil(z.steps / chunkZ);
 
       const size = xChunksNeeded * yChunksNeeded * zChunksNeeded * (meta.chunkSize || 1);
-      return size / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1)
+      calculatedSize = size / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1);
     }
-  }, [meta, rows, dataShape, chunkShape, coarsen, kernelSize, kernelDepth, maxTextureSize, max3DTextureSize, setTextureArrayDepths]);
+    
+    return { size: calculatedSize, thisCount, depths };
+  }, [meta, rows, dataShape, chunkShape, coarsen, kernelSize, kernelDepth, maxTextureSize, max3DTextureSize]);
+
+  useEffect(() => {
+    setTextureArrayDepths(sizeData.depths);
+    setTexCount(sizeData.thisCount);
+    setTooBig(sizeData.thisCount > 14);
+  }, [sizeData, setTextureArrayDepths]);
+
+  const currentSize = sizeData.size;
 
   const cachedSize = useMemo(()=>{
     const thisDtype = (meta?.dtype as string) || '';
