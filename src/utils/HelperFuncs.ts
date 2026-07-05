@@ -92,13 +92,31 @@ export function parseLoc(input: any, units: string | undefined, verbose: boolean
         const [scale, offset] = parseTimeUnit(units)
         const timeStamp = Number(input) * scale;
         const date = new Date(timeStamp + offset);
+        
+        const day = date.getUTCDate();
+        const month = date.getUTCMonth() + 1; // Months are 0-indexed
+        const year = date.getUTCFullYear();
+        const hours = date.getUTCHours();
+        const mins = date.getUTCMinutes();
+        const secs = date.getUTCSeconds();
+        
+        const lowerUnits = units.toLowerCase();
+        const showTime = lowerUnits.includes('hour') || lowerUnits.includes('min') || lowerUnits.includes('sec') || hours !== 0 || mins !== 0 || secs !== 0;
+        
         if (verbose) {
-          return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`; // e.g., "18 Aug 2025"
+          let dateStr = `${day} ${months[month - 1]} ${year}`;
+          if (showTime) {
+             dateStr += ` ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+             if (secs !== 0 || lowerUnits.includes('sec')) dateStr += `:${String(secs).padStart(2, '0')}`;
+          }
+          return dateStr;
         } else {
-          const day = date.getDate();
-          const month = date.getMonth() + 1; // Months are 0-indexed
-          const year = date.getFullYear();
-          return `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`; // e.g., "18-8-2025"
+          let dateStr = `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
+          if (showTime) {
+             dateStr += ` ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+             if (secs !== 0 || lowerUnits.includes('sec')) dateStr += `:${String(secs).padStart(2, '0')}`;
+          }
+          return dateStr;
         }
       }
       catch{

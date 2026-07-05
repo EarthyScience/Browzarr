@@ -113,7 +113,7 @@ export default function TimeCombobox({
 
   const targetWidth = Math.min(
     Math.max(Math.max(selectedLabel.length, placeholder.length) + 2, 12),
-    20
+    40
   )
 
   return (
