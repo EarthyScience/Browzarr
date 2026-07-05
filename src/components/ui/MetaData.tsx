@@ -72,8 +72,17 @@ export function renderAttributes(
     );
   });
 }
-const Metadata = ({ data, variable }: { data: Record<string, any>, variable: string }) => {
-    const isMobile = useIsMobile();
+const Metadata = ({ data, variable, isMobile: isMobileProp }: { data: Record<string, any>, variable: string, isMobile?: boolean }) => {
+    const isMobileHook = useIsMobile();
+    const [mounted, setMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // If isMobileProp is provided, we use it directly (no hydration mismatch).
+    // Otherwise, we default to false during SSR to match the initial Popover render, and swap after mount.
+    const isMobile = isMobileProp !== undefined ? isMobileProp : (mounted ? isMobileHook : false);
 
     const trigger = (
       <Button
@@ -131,7 +140,7 @@ const Metadata = ({ data, variable }: { data: Record<string, any>, variable: str
                 </TooltipContent>
             </Tooltip>
             <PopoverContent 
-              className="w-[300px] max-h-[50vh] overflow-y-auto" 
+              className="w-[400px] max-h-[50vh] overflow-y-auto" 
               side="right" 
               align="start"
             >

@@ -89,6 +89,8 @@ const getOrigIdx = (dimName: string) => {
 
 export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, setOpenVariables }: Props) {
   const isMobile = useIsMobile();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const dimArrays = useMemo(
     () => (meta?.dimInfo?.dimArrays ?? []).map((a) => Array.from(a)),
     [meta?.dimInfo?.dimArrays]
@@ -425,7 +427,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
         <div className="flex flex-col gap-3 w-full min-w-0">
           <div className="flex items-center gap-2">
             <b className="text-base">{`${meta.long_name ?? meta.name ?? ''} `}</b>
-              {isMobile ? (
+              {mounted && isMobile ? (
                 <Dialog>
                   <DialogTrigger className="cursor-pointer" asChild>
                     <Badge variant="default" className="block">Attributes</Badge>
