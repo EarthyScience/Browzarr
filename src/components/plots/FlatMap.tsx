@@ -95,7 +95,20 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
     const rotateMap = analysisMode && axis == 2;
     const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
-    const analysisDims = useMemo(()=>dimArrays.length > 2 ? dimSlices.filter((_e,idx)=> idx != axis) : dimSlices,[dimSlices,axis])
+    const analysisDims = useMemo(() => {
+      if (!analysisMode) return dimSlices;
+      const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
+      const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
+      const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
+      const fullSlices = [
+        dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
+        dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+        dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
+      ];
+      let slices = fullSlices.filter((_, idx) => idx !== axis);
+      if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
+      return slices;
+    }, [analysisMode, dimSlices, dimArrays, zSlice, ySlice, xSlice, axisMapping, shapeLength, axis, coarsen, kernelDepth, kernelSize])
 
     const {lonBounds, latBounds} = useCoordBounds()
 
