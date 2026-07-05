@@ -127,7 +127,7 @@ export default function TimeCombobox({
     >
       <ComboboxInput
         className="max-w-full"
-        style={{ minWidth: `${targetWidth}ch`, width: `${targetWidth}ch` }}
+        style={{ width: `${targetWidth}ch` }}
         placeholder={placeholder}
         aria-label={ariaLabel}
         showClear

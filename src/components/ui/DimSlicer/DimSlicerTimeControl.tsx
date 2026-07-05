@@ -38,7 +38,7 @@ export function DimSlicerTimeControl({
   showInput = true,
 }: DimSlicerTimeControlProps) {
   return (
-    <div className={`flex gap-1 ${layout === 'row' ? 'items-center' : 'flex-col items-start'}`}>
+    <div className={`flex gap-1 ${layout === 'row' ? 'items-center flex-wrap' : 'flex-col items-start'}`}>
       <div className={layout === 'row' ? 'min-w-0' : ''}>
         <TimeCombobox
           currentIndex={currentIndex}
