@@ -81,11 +81,12 @@ const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center
   </div>
 
 const AnalysisOptions = () => {
-  const {plotOn, variable, variables, dimNames, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(state => ({
+  const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(state => ({
     plotOn: state.plotOn, 
     variable: state.variable,
     variables: state.variables,
     dimNames: state.dimNames,
+    activeIndices: state.activeIndices,
     initStore: state.initStore,
     isFlat: state.isFlat,
     setTimeSeries: state.setTimeSeries,
@@ -369,12 +370,12 @@ const AnalysisOptions = () => {
                         <td style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                           <Select onValueChange={e => setNewDim(parseInt(e))}>
                             <SelectTrigger style={{ width: ['CUMSUM3D', 'LinearSlope'].includes(operation) ? '50%' : '175px', marginLeft: '18px' }}>
-                              <SelectValue placeholder={dimNames[newDim]} />
+                              <SelectValue placeholder={dimNames[activeIndices[newDim]] ?? "Select Axis"} />
                             </SelectTrigger>
                             <SelectContent>
-                              {dimNames.map((dimName, idx) => (
-                                <SelectItem key={idx} value={String(idx)}>
-                                  {dimName}
+                              {activeIndices.map((origIdx, dataShapeIdx) => (
+                                <SelectItem key={dataShapeIdx} value={String(dataShapeIdx)}>
+                                  {dimNames[origIdx]}
                                 </SelectItem>
                               ))}
                             </SelectContent>

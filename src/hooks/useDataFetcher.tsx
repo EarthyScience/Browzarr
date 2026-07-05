@@ -75,6 +75,9 @@ export const useDataFetcher = () => {
                 //---- Main Fetch ----//
                 GetArray().then((result) => {
                     const shape = result.shape.filter((val) => val != 1);
+                    const activeIndices = result.indices.filter((_, idx) => result.shape[idx] != 1);
+                    useGlobalStore.getState().setActiveIndices(activeIndices);
+
                     const [tempTexture, scaling] = ArrayToTexture({
                         data: result.data,
                         shape

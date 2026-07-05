@@ -214,5 +214,5 @@ export async function GetArray(varOveride?: string) {
             }
     }
     setProgress(0);
-    return { data: typedArray, shape: outputShape, dtype, scalingFactor };
+    return { data: typedArray, shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor };
 }
