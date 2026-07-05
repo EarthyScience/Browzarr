@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { TbVariable } from "react-icons/tb";
+import { Loader2 } from "lucide-react";
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
@@ -49,6 +50,8 @@ const Variables = () => {
 
 
   const [selectedVar, setSelectedVar] = useState<string | null>(null);
+  const [isLoadingVar, setIsLoadingVar] = useState<string | null>(null);
+  const activeRequest = useRef<string | null>(null);
   const [meta, setMeta] = useState<any>(null);
   const [query, setQuery] = useState("");
   // root *open by default* (collapsible but starts open)
@@ -116,11 +119,15 @@ const Variables = () => {
       return;
     }
 
+    setIsLoadingVar(val);
     setSelectedVar(val);
     setMeta(null);
     setMetadata(null);
+    activeRequest.current = val;
 
     Promise.all([GetDimInfo(val), GetAttributes(val)]).then(([dimInfo, attr]) => {
+      if (activeRequest.current !== val) return;
+
       const relevant = zMeta?.find((e: any) => e.name === val);
       if (relevant) {
         setMeta({
@@ -133,15 +140,19 @@ const Variables = () => {
         });
       }
       setMetadata(attr);
+      setIsLoadingVar(null);
+
+      if (popoverSide === "left") {
+        setOpenMetaPopover(true);
+      } else {
+        setShowMeta(true);
+      }
     }).catch((err) => {
+      if (activeRequest.current === val) {
+        setIsLoadingVar(null);
+      }
       console.error("Failed to fetch dimension info or attributes:", err);
     });
-
-    if (popoverSide === "left") {
-      setOpenMetaPopover(true);
-    } else {
-      setShowMeta(true);
-    }
   };
 
   useEffect(() => {
@@ -167,13 +178,15 @@ const Variables = () => {
     return (
       <React.Fragment key={val}>
         <div
-          className="cursor-pointer pl-2 py-1 text-sm hover:bg-muted rounded"
-          style={{
-            background: selectedVar === val ? "var(--muted-foreground)" : "",
-          }}
+          className={`cursor-pointer pl-2 py-1 text-sm rounded flex items-center justify-between transition-colors ${
+            selectedVar === val 
+              ? "bg-primary text-primary-foreground" 
+              : "hover:bg-muted"
+          }`}
           onClick={() => handleVariableSelect(val, idx)}
         >
-          {variableName}
+          <span>{variableName}</span>
+          {isLoadingVar === val && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
         </div>
         {!isLastItem && <Separator className="my-1" />}
       </React.Fragment>
