@@ -5,6 +5,7 @@ import { parseTimeUnit } from '@/utils/HelperFuncs'
 import { Fragment } from 'react'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow'
 
 
