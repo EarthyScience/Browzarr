@@ -52,6 +52,14 @@ export function ToFloat16(
 			maxVal = val;
 		}
 	}
+	if (maxVal === 0) {
+		const newArray = new Float16Array(array.length);
+		for (let i = 0; i < array.length; i++) {
+			newArray[i] = array[i] === 0 ? 0 : NaN;
+		}
+		return [newArray, initialScale !== 0 ? initialScale : null];
+	}
+
 	const additionalScaling = Math.ceil(Math.log10(maxVal / 65504));
 	const needsRescale = additionalScaling > 0 || additionalScaling <= -6;
 	//I think this is complicating things. Because if it was already scaled then there should already by enough variance in the data it doesn't need to go further

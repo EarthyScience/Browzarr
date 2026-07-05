@@ -171,6 +171,12 @@ export function NCFetcher() {
             // Filter out collapsed dims so shape matches Zarrita behavior
             let collapsedShape = counts.filter((c, i) => ndSlices ? (!Array.isArray(ndSlices[i]) && i !== xDimIndex && i !== yDimIndex && i !== zDimIndex ? false : true) : c !== 1);
             if (collapsedShape.length === 0) collapsedShape = [1];
+            
+            console.log("NCFetcher fetchChunk:", {
+                variable, rank, x, y, z, xDimIndex, yDimIndex, zDimIndex, ndSlices,
+                starts, counts, collapsedShape, rawShape: shape, chunkShape
+            });
+
             return { data, shape: collapsedShape, stride: calculateStrides(collapsedShape) };
         },
     };
