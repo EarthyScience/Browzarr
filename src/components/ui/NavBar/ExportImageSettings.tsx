@@ -11,6 +11,7 @@ import {
 import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
 import { ChevronDown } from 'lucide-react';
 import {
@@ -61,12 +62,18 @@ const ExportImageSettings = () => {
     const [showSettings, setShowSettings] = useState(true)
 	const [previewState, setPreviewState] = useState(false)
 
+    const { axisMapping } = useZarrStore(useShallow(state => ({
+        axisMapping: state.axisMapping
+    })));
+
     useEffect(()=>{
-        const timeArray = dimArrays[dimArrays.length-3]
-        const timeLength = timeArray?.length || 1
-        const sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0]
-        setFrames(sliceDist)
-    },[zSlice])
+        const shapeLength = dimArrays?.length || 3;
+        const zIdx = axisMapping?.z >= 0 ? axisMapping.z : Math.max(0, shapeLength - 3);
+        const zArray = dimArrays[zIdx];
+        const zLength = zArray?.length || 1;
+        const sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : zLength - zSlice[0];
+        setFrames(sliceDist);
+    },[zSlice, dimArrays, axisMapping])
 
 
   return (

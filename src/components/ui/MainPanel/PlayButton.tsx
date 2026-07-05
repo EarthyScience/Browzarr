@@ -109,10 +109,11 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
       zMeta: state.zMeta,
       variable: state.variable,
   })))
-  const {reFetch, setZSlice, ReFetch} = useZarrStore(useShallow(state => ({
+  const {reFetch, setZSlice, ReFetch, axisMapping} = useZarrStore(useShallow(state => ({
     reFetch: state.reFetch,
     setZSlice: state.setZSlice,
-    ReFetch: state.ReFetch
+    ReFetch: state.ReFetch,
+    axisMapping: state.axisMapping
   })))
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -122,14 +123,17 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
   const [showNextChunk, setShowNextChunk] = useState(false)
   const [showPrevChunk, setShowPrevChunk] = useState(false)
 
-  // TIME SLICE INFO
-  const timeArray = dimArrays[dimArrays.length-3]
-  let timeSlice = timeArray?.slice(zSlice[0], zSlice[1] ?? undefined)
-  const timeLength = timeArray?.length || 1
-  let sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : timeLength - zSlice[0]
+  const shapeLength = dimArrays?.length || 3;
+  const zIdx = axisMapping?.z >= 0 ? axisMapping.z : Math.max(0, shapeLength - 3);
 
-  if (coarsen && timeSlice) {
-    timeSlice = coarsenFlatArray(timeSlice, kernel.kernelDepth)
+  // Z-SLICE INFO
+  const zArray = dimArrays[zIdx]
+  let zArraySlice = zArray?.slice(zSlice[0], zSlice[1] ?? undefined)
+  const zLength = zArray?.length || 1
+  let sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : zLength - zSlice[0]
+
+  if (coarsen && zArraySlice) {
+    zArraySlice = coarsenFlatArray(zArraySlice, kernel.kernelDepth)
     sliceDist = Math.floor(sliceDist/kernel.kernelDepth)
   }
   
@@ -137,13 +141,13 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
   const [chunkTimeLength, chunkDivWidth, chunkSize] = useMemo(()=>{
     const meta = (zMeta as {name : string, chunks:number[], chunkSize:number}[])?.find(e => e.name === variable)
     if(meta) {
-      const chunkTimeSize = meta.chunks[meta.chunks.length - 3]
-      const tempWidth = (chunkTimeSize / timeLength) * 100
+      const chunkTimeSize = meta.chunks[zIdx] ?? meta.chunks[meta.chunks.length - 3]
+      const tempWidth = (chunkTimeSize / zLength) * 100
       const chunkSize = meta.chunkSize
       return [chunkTimeSize, tempWidth, chunkSize]
     }
     return [0,0, 1]
-  }, [zMeta, variable, timeLength])
+  }, [zMeta, variable, zLength, zIdx])
   
   function AdjustCacheSize(){
     const {maxSize, setMaxSize, cache} = useCacheStore.getState()
@@ -154,7 +158,7 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
   }
   // ANIMATION LOOP
   useEffect(() => {
-    if (!timeSlice?.length) return
+    if (!zArraySlice?.length) return
     if (animate) {
       if (previousFPS.current !== fps && intervalRef.current) {
         clearInterval(intervalRef.current)
@@ -183,9 +187,9 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
   }, [animate, fps])
 
   // LABELS
-  const currentLabel = parseLoc(timeSlice?.[Math.round(animProg * sliceDist)], dimUnits[0], true)
-  const firstLabel = parseLoc(timeSlice?.[0], dimUnits[0], true)
-  const lastLabel = parseLoc(timeSlice?.[sliceDist-1], dimUnits[0], true)
+  const currentLabel = parseLoc(zArraySlice?.[Math.round(animProg * sliceDist)], dimUnits[zIdx], true)
+  const firstLabel = parseLoc(zArraySlice?.[0], dimUnits[zIdx], true)
+  const lastLabel = parseLoc(zArraySlice?.[sliceDist-1], dimUnits[zIdx], true)
 
   // RESET ON FETCH
   useEffect(()=>{
@@ -230,10 +234,10 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
           <Button
             variant='secondary'
             size='sm'
-            className={`cursor-pointer ${!zSlice[1] || zSlice[1] === timeLength? "invisible" : null}`}
+            className={`cursor-pointer ${!zSlice[1] || zSlice[1] === zLength? "invisible" : null}`}
             onClick={() => {
               if (zSlice[1] === null) return
-              setZSlice([zSlice[0], Math.min(zSlice[1] + chunkTimeLength, timeLength)])
+              setZSlice([zSlice[0], Math.min(zSlice[1] + chunkTimeLength, zLength)])
               setKeepOpen(true)
               AdjustCacheSize()
               ReFetch()
@@ -246,9 +250,9 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
         </div>
 
         {/* VISUALIZER */}
-        {(sliceDist < Math.floor(timeLength / (coarsen ? kernel.kernelDepth : 1))) && <ChunkVisualizer
+        {(sliceDist < Math.floor(zLength / (coarsen ? kernel.kernelDepth : 1))) && <ChunkVisualizer
           zSlice={zSlice}
-          timeLength={timeLength}
+          timeLength={zLength}
           chunkWidth={chunkDivWidth}
           showPrev={showPrevChunk}
           showNext={showNextChunk}
@@ -260,14 +264,14 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
           <span className='text-xs'>{firstLabel}</span>
 
           <Slider
-            value={[Math.round(animProg * timeLength)]}
+            value={[Math.round(animProg * zLength)]}
             min={0}
-            max={timeLength - 1}
+            max={zLength - 1}
             step={1}
             className='flex-1'
             onValueChange={(vals: number[]) => {
               const v = Array.isArray(vals) ? vals[0] : 0
-              setAnimProg(v / timeLength)
+              setAnimProg(v / zLength)
               previousVal.current = v
             }}
           />
