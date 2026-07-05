@@ -11,6 +11,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Badge, Switch, Input, Hider } from "@/components/ui";
 import { parseLoc } from '@/utils/HelperFuncs';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { usePlotStore } from '@/GlobalStates/PlotStore';
@@ -102,6 +103,7 @@ const getOrigIdx = (dimName: string) => {
 };
 
 export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, setOpenVariables }: Props) {
+  const isMobile = useIsMobile();
   const dimArrays = useMemo(
     () => (meta?.dimInfo?.dimArrays ?? []).map((a) => Array.from(a)),
     [meta?.dimInfo?.dimArrays]
@@ -437,22 +439,37 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
   return (
     <>
       <b>{`${meta.long_name ?? ''} `}</b>
-      <Dialog>
-        <DialogTrigger className="cursor-pointer" asChild>
-          <Badge variant="default" className="block">Attributes</Badge>
-        </DialogTrigger>
-        <DialogContent className="metadata-dialog">
-          <DialogHeader>
-            <DialogTitle>Attributes</DialogTitle>
-            <DialogDescription className="sr-only">Metadata Information for variable</DialogDescription>
-          </DialogHeader>
-          <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words p-0">
-            <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] gap-x-1 gap-y-[6px]">
-              {renderAttributes(metadata, defaultAttributes)}
+      {isMobile ? (
+        <Dialog>
+          <DialogTrigger className="cursor-pointer" asChild>
+            <Badge variant="default" className="block">Attributes</Badge>
+          </DialogTrigger>
+          <DialogContent className="metadata-dialog">
+            <DialogHeader>
+              <DialogTitle>Attributes</DialogTitle>
+              <DialogDescription className="sr-only">Metadata Information for variable</DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words p-0">
+              <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] gap-x-1 gap-y-[6px]">
+                {renderAttributes(metadata, defaultAttributes)}
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <Popover>
+          <PopoverTrigger className="cursor-pointer" asChild>
+            <Badge variant="default" className="block">Attributes</Badge>
+          </PopoverTrigger>
+          <PopoverContent
+            data-meta-popover
+            className="w-[300px] max-h-[50vh] overflow-y-auto"
+            align="center"
+          >
+            {renderAttributes(metadata, defaultAttributes)}
+          </PopoverContent>
+        </Popover>
+      )}
       <br />
 
       <div className="font-mono text-xs mb-4">

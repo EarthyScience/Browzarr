@@ -13,6 +13,12 @@ import {
 } from "@/components/ui/dialog"
 
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -67,6 +73,8 @@ export function renderAttributes(
   });
 }
 const Metadata = ({ data, variable }: { data: Record<string, any>, variable: string }) => {
+    const isMobile = useIsMobile();
+
     const trigger = (
       <Button
           variant={variable == "Attributes" ? "default" : "ghost"}
@@ -86,26 +94,51 @@ const Metadata = ({ data, variable }: { data: Record<string, any>, variable: str
       </div>
     );
 
+    if (isMobile) {
+        return (
+            <Dialog>
+                <Tooltip delayDuration={500} >
+                    <TooltipTrigger asChild>
+                        <DialogTrigger asChild>
+                            {trigger}
+                        </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="start">
+                        <span>Show Variable Attributes</span>
+                    </TooltipContent>
+                </Tooltip>
+                <DialogContent className="metadata-dialog">
+                    <DialogHeader>
+                        <DialogTitle>Attributes</DialogTitle>
+                        <DialogDescription className="sr-only">Metadata Information for variable</DialogDescription>
+                    </DialogHeader>
+                    {content}
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
     return (
-        <Dialog>
+        <Popover>
             <Tooltip delayDuration={500} >
                 <TooltipTrigger asChild>
-                    <DialogTrigger asChild>
+                    <PopoverTrigger asChild>
                         {trigger}
-                    </DialogTrigger>
+                    </PopoverTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" align="start">
                     <span>Show Variable Attributes</span>
                 </TooltipContent>
             </Tooltip>
-            <DialogContent className="metadata-dialog">
-                <DialogHeader>
-                    <DialogTitle>Attributes</DialogTitle>
-                    <DialogDescription className="sr-only">Metadata Information for variable</DialogDescription>
-                </DialogHeader>
+            <PopoverContent 
+              className="w-[300px] max-h-[50vh] overflow-y-auto" 
+              side="right" 
+              align="start"
+            >
+                <h2 className="text-lg font-semibold mb-2">Attributes</h2>
                 {content}
-            </DialogContent>
-        </Dialog>
+            </PopoverContent>
+        </Popover>
     );
 };
 
