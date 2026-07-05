@@ -107,6 +107,15 @@ const Variables = () => {
 
   // Handle variable selection
   const handleVariableSelect = (val: string, idx: number) => {
+    if (selectedVar === val && meta?.name === val && metadata) {
+      if (popoverSide === "left") {
+        setOpenMetaPopover(true);
+      } else {
+        setShowMeta(true);
+      }
+      return;
+    }
+
     setSelectedVar(val);
     setMeta(null);
     setMetadata(null);
@@ -319,7 +328,7 @@ const Variables = () => {
             align="start"
             className="max-h-[80vh] overflow-y-auto w-[400px]"
           >
-            {metadata && (
+            {metadata && meta && (
               <MetaDimSelector
                 key={selectedVar || "none"}
                 meta={meta}
@@ -341,10 +350,11 @@ const Variables = () => {
           <DialogContent className="max-w-[85%] md:max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogTitle>{ }</DialogTitle>
             <div className="-mt-4">
-              {meta && (
+              {meta && metadata && (
                 <MetaDimSelector
                   key={selectedVar || "none"}
                   meta={meta}
+                  metadata={metadata}
                   onApply={(sels, axes) => {
                     setShowMeta(false);
                     setOpenVariables(false);

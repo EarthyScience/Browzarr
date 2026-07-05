@@ -59,9 +59,10 @@ export default function TimeCombobox({
   const filtered = useMemo(() => {
     const normalizedInput = inputValue.trim().toLowerCase()
     const selectedQuery = selectedLabel.trim().toLowerCase()
-    return normalizedInput === '' || normalizedInput === selectedQuery
+    const results = normalizedInput === '' || normalizedInput === selectedQuery
       ? labeledValues
       : labeledValues.filter(({ label }) => label.toLowerCase().includes(normalizedInput))
+    return results.slice(0, 100)
   }, [inputValue, selectedLabel, labeledValues])
 
   const targetWidth = Math.min(
