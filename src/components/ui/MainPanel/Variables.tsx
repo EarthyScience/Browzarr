@@ -373,7 +373,7 @@ const Variables = () => {
       )}
       {popoverSide === "top" && (
         <Dialog open={showMeta} onOpenChange={setShowMeta} modal={false}>
-          <DialogContent className="max-w-[85%] md:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-[85vw] md:max-w-2xl max-h-[80vh] overflow-y-auto px-4 sm:px-6">
             <DialogTitle>{ }</DialogTitle>
             <DialogDescription className="sr-only">Variables configuration dialog</DialogDescription>
             <div className="-mt-4">
