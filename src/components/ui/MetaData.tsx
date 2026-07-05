@@ -20,6 +20,7 @@ import {
 
 
 import { Button } from "@/components/ui/button-enhanced"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export const defaultAttributes = [
     "long_name",
@@ -66,37 +67,45 @@ export function renderAttributes(
   });
 }
 const Metadata = ({ data, variable }: { data: Record<string, any>, variable: string }) => {
+    const trigger = (
+      <Button
+          variant={variable == "Attributes" ? "default" : "ghost"}
+          size="icon"
+          className="size-6 w-auto cursor-pointer px-2"
+          tabIndex={0}
+      >
+          {variable}
+      </Button>
+    );
+
+    const content = (
+      <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words p-0">
+          <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] gap-x-1 gap-y-[6px]">
+              {renderAttributes(data, defaultAttributes)}
+          </div>
+      </div>
+    );
+
     return (
-          <Dialog modal={false}>
-              <Tooltip delayDuration={500} >
-                  <TooltipTrigger asChild>
-                  <DialogTrigger asChild>
-                      <Button
-                          variant={variable == "Attributes" ? "default" : "ghost"}
-                          size="icon"
-                          className="size-6 w-auto cursor-pointer px-2"
-                          tabIndex={0}
-                          >
-                          {variable}
-                      </Button>
-                      </DialogTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" align="start">
-                      <span>Show Variable Attributes</span>
-                  </TooltipContent>
-              </Tooltip>
-              <DialogContent className="metadata-dialog">
-                  <DialogHeader>
-                      <DialogTitle>Attributes</DialogTitle>
-                      <DialogDescription className="sr-only">Metadata Information for variable</DialogDescription>
-                  </DialogHeader>
-                      <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words p-0">
-                          <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] gap-x-1 gap-y-[6px]">
-                              {renderAttributes(data, defaultAttributes)}
-                          </div>
-                      </div>
-              </DialogContent>
-          </Dialog>
+        <Dialog>
+            <Tooltip delayDuration={500} >
+                <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                        {trigger}
+                    </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="start">
+                    <span>Show Variable Attributes</span>
+                </TooltipContent>
+            </Tooltip>
+            <DialogContent className="metadata-dialog">
+                <DialogHeader>
+                    <DialogTitle>Attributes</DialogTitle>
+                    <DialogDescription className="sr-only">Metadata Information for variable</DialogDescription>
+                </DialogHeader>
+                {content}
+            </DialogContent>
+        </Dialog>
     );
 };
 

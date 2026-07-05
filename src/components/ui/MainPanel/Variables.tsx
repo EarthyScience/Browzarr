@@ -12,6 +12,7 @@ import { GetAttributes } from "@/components/zarr/ZarrLoaderLRU";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button-enhanced";
 import { Input } from "../input";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Tooltip,
   TooltipContent,
@@ -32,7 +33,8 @@ import {
 
 
 const Variables = () => {
-  const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
+  const isMobile = useIsMobile();
+  const popoverSide = isMobile ? "top" : "left";
   const [openMetaPopover, setOpenMetaPopover] = useState(false);
 
   const [showMeta, setShowMeta] = useState(false);
@@ -169,15 +171,6 @@ const Variables = () => {
     setMeta(null);
     setMetadata(null);
   }, [initStore, setMetadata]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setPopoverSide(window.innerWidth < 768 ? "top" : "left");
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   // Variable item renderer (keeps separator between variables in same group)
   const VariableItem = ({ val, idx, arrayLength }: { val: string; idx: number; arrayLength: number }) => {

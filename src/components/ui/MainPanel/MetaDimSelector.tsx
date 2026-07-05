@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button-enhanced';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge, Switch, Input, Hider } from "@/components/ui";
 import { parseLoc } from '@/utils/HelperFuncs';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -436,18 +437,22 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
   return (
     <>
       <b>{`${meta.long_name ?? ''} `}</b>
-      <Popover>
-        <PopoverTrigger className="cursor-pointer" asChild>
+      <Dialog>
+        <DialogTrigger className="cursor-pointer" asChild>
           <Badge variant="default" className="block">Attributes</Badge>
-        </PopoverTrigger>
-        <PopoverContent
-          data-meta-popover
-          className="max-h-[50vh] overflow-y-auto max-w-200"
-          align="center"
-        >
-          {renderAttributes(metadata, defaultAttributes)}
-        </PopoverContent>
-      </Popover>
+        </DialogTrigger>
+        <DialogContent className="metadata-dialog">
+          <DialogHeader>
+            <DialogTitle>Attributes</DialogTitle>
+            <DialogDescription className="sr-only">Metadata Information for variable</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words p-0">
+            <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] gap-x-1 gap-y-[6px]">
+              {renderAttributes(metadata, defaultAttributes)}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       <br />
 
       <div className="font-mono text-xs mb-4">
