@@ -53,6 +53,7 @@ const Variables = () => {
   const [selectedVar, setSelectedVar] = useState<string | null>(null);
   const [isLoadingVar, setIsLoadingVar] = useState<string | null>(null);
   const activeRequest = useRef<string | null>(null);
+  const isInteractingWithMeta = useRef(false);
   const [meta, setMeta] = useState<any>(null);
   const [query, setQuery] = useState("");
   // root *open by default* (collapsible but starts open)
@@ -108,6 +109,13 @@ const Variables = () => {
       setOpenAccordionItems(["root"]);
     }
   }, [query, tree]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open && isInteractingWithMeta.current) {
+      return; // Do not close if interacting with Meta popovers/portals
+    }
+    setOpenVariables(open);
+  };
 
   // Handle variable selection
   const handleVariableSelect = (val: string, idx: number) => {
@@ -273,7 +281,7 @@ const Variables = () => {
 
   return (
     <>
-      <Popover open={openVariables} onOpenChange={setOpenVariables}>
+      <Popover open={openVariables} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <div>
             <Tooltip delayDuration={500}>
@@ -303,6 +311,24 @@ const Variables = () => {
         <PopoverContent
           side={popoverSide}
           className="max-h-[50vh] overflow-hidden flex flex-col"
+          onInteractOutside={(e) => {
+            const target = e.target as HTMLElement;
+            // Prevent the main variable list from closing when interacting with Meta popups/portals.
+            // We set a flag instead of calling e.preventDefault() so that native text selection still works!
+            if (
+              target.closest('[data-meta-popover]') ||
+              target.closest('.metadata-dialog') ||
+              target.closest('[data-slot="combobox-content"]') ||
+              target.closest('[role="dialog"]') ||
+              target.closest('[role="listbox"]') ||
+              target.closest('[data-radix-popper-content-wrapper]')
+            ) {
+              isInteractingWithMeta.current = true;
+              setTimeout(() => {
+                isInteractingWithMeta.current = false;
+              }, 0);
+            }
+          }}
         >
           <div className="flex items-center gap-2 mb-4 justify-center max-w-[240px] md:max-w-sm mx-auto flex-shrink-0">
             <Input
