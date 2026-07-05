@@ -62,20 +62,54 @@ export default function TimeCombobox({
     return values.map((_, i) => ({ label: formattedValue(i), index: i }))
   }, [values, formattedValue])
 
-  const filtered = useMemo(() => {
+  const filteredData = useMemo(() => {
     const normalizedInput = inputValue.trim().toLowerCase()
     const selectedQuery = selectedLabel.trim().toLowerCase()
     const isFiltering = normalizedInput !== '' && normalizedInput !== selectedQuery;
 
     if (isFiltering) {
       const results = labeledValues.filter(({ label }) => label.toLowerCase().includes(normalizedInput))
-      return results.slice(0, windowRadius * 2);
+      return { items: results.slice(0, windowRadius * 2), startIdx: 0 };
     }
 
     const startIdx = Math.max(0, currentIndex - windowRadius);
     const endIdx = Math.min(labeledValues.length, currentIndex + windowRadius);
-    return labeledValues.slice(startIdx, endIdx);
+    return { items: labeledValues.slice(startIdx, endIdx), startIdx };
   }, [inputValue, selectedLabel, labeledValues, windowRadius, currentIndex])
+
+  const filtered = filteredData.items;
+
+  const listRef = React.useRef<HTMLDivElement>(null);
+  const lastVisibleItem = React.useRef<{ index: string; offset: number } | null>(null);
+
+  React.useLayoutEffect(() => {
+    if (listRef.current && lastVisibleItem.current) {
+      const { index, offset } = lastVisibleItem.current;
+      const target = listRef.current;
+      const item = target.querySelector(`[data-index="${index}"]`);
+      if (item) {
+        const targetRect = target.getBoundingClientRect();
+        const itemRect = item.getBoundingClientRect();
+        const currentOffset = itemRect.top - targetRect.top;
+        const diff = currentOffset - offset;
+        
+        if (Math.abs(diff) > 0) {
+          target.scrollTop += diff;
+        }
+      }
+      // Also apply once in a microtask just in case Base UI auto-scrolls asynchronously
+      requestAnimationFrame(() => {
+        if (target && item) {
+          const newCurrentOffset = item.getBoundingClientRect().top - target.getBoundingClientRect().top;
+          const newDiff = newCurrentOffset - offset;
+          if (Math.abs(newDiff) > 0) {
+            target.scrollTop += newDiff;
+          }
+        }
+      });
+      lastVisibleItem.current = null;
+    }
+  }, [filteredData]);
 
   const targetWidth = Math.min(
     Math.max(Math.max(selectedLabel.length, placeholder.length) + 2, 12),
@@ -101,6 +135,7 @@ export default function TimeCombobox({
       <ComboboxContent>
         {filtered.length === 0 ? <ComboboxEmpty>No items found.</ComboboxEmpty> : null}
         <ComboboxList
+          ref={listRef}
           onScroll={(e: React.UIEvent<HTMLDivElement>) => {
             const target = e.currentTarget;
             const scrollPos = target.scrollTop;
@@ -115,24 +150,41 @@ export default function TimeCombobox({
                 const selectedQuery = selectedLabel.trim().toLowerCase()
                 const isFiltering = normalizedInput !== '' && normalizedInput !== selectedQuery;
                 
+                let nextR = r;
                 if (isFiltering) {
-                  return isNearBottom ? Math.min(r + 50, 5000) : r;
+                  nextR = isNearBottom ? Math.min(r + 50, 5000) : r;
                 } else {
                   const startIdx = Math.max(0, currentIndex - r);
                   const endIdx = Math.min(labeledValues.length, currentIndex + r);
                   const canGrowTop = startIdx > 0 && isNearTop;
                   const canGrowBottom = endIdx < labeledValues.length && isNearBottom;
                   if (canGrowTop || canGrowBottom) {
-                    return Math.min(r + 50, 5000);
+                    nextR = Math.min(r + 50, 5000);
                   }
                 }
-                return r;
+
+                if (nextR !== r) {
+                  const targetRect = target.getBoundingClientRect();
+                  const children = Array.from(target.querySelectorAll('[data-slot="combobox-item"]'));
+                  for (const child of children) {
+                    const childRect = child.getBoundingClientRect();
+                    if (childRect.bottom >= targetRect.top) {
+                      lastVisibleItem.current = {
+                        index: child.getAttribute('data-index') || '',
+                        offset: childRect.top - targetRect.top
+                      };
+                      break;
+                    }
+                  }
+                }
+
+                return nextR;
               });
             }
           }}
         >
           {filtered.map(({ label, index }) => (
-            <ComboboxItem key={index} value={label}>
+            <ComboboxItem key={index} value={label} data-index={index}>
               {label}
             </ComboboxItem>
           ))}
