@@ -150,6 +150,7 @@ export const createShaders = (precision: Precision) => {
     MeanReduction: /* wgsl */`
         ${ReductionBoilerPlate}
             var sum: f32 = 0.0;
+            var nanCount: u32 = 0u;
             
             // Iterate along the dimension we're averaging
             if (reduceDim == 0u) { // Average along Z
@@ -158,6 +159,7 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (z * zStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (isNaN(newVal)){ 
+                        nanCount++;
                         continue;
                     }
                     sum += newVal;
@@ -168,6 +170,7 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (y * yStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (isNaN(newVal)){ 
+                        nanCount++;
                         continue;
                     }
                     sum += newVal;
@@ -178,14 +181,20 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (x * xStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (isNaN(newVal)){ 
+                        nanCount++;
                         continue;
                     }
                     sum += newVal;
                 }
             }
             
+            let N = f32(dimLength - nanCount);
             let outputIndex = outY * xSize + outX;
-            outputData[outputIndex] = ${precision}(sum / f32(dimLength));
+            if (N > 0.0) {
+                outputData[outputIndex] = ${precision}(sum / N);
+            } else {
+                outputData[outputIndex] = ${precision}(bitcast<f32>(0x7fc00000u)); // NaN
+            }
         }
     `,
 
@@ -556,8 +565,14 @@ export const createShaders = (precision: Precision) => {
                 }
             }
             
-            let xMean: f32 = xSum / f32(dimLength - nanCount);
-            let yMean: f32 = ySum / f32(dimLength - nanCount);
+            let N: f32 = f32(dimLength - nanCount);
+            if (N <= 1.0) {
+                let outputIndex = outY * xSize + outX;
+                outputData[outputIndex] = ${precision}(bitcast<f32>(0x7fc00000u)); // NaN
+                return;
+            }
+            let xMean: f32 = xSum / N;
+            let yMean: f32 = ySum / N;
             var numSum: f32 = 0;
             var denomSum: f32 = 0;
 
@@ -601,7 +616,11 @@ export const createShaders = (precision: Precision) => {
             }
             
             let outputIndex = outY * xSize + outX;
-            outputData[outputIndex] = ${precision}(numSum/(denomSum+1e-4));
+            if (denomSum > 1e-7) {
+                outputData[outputIndex] = ${precision}(numSum / denomSum);
+            } else {
+                outputData[outputIndex] = ${precision}(bitcast<f32>(0x7fc00000u)); // NaN
+            }
         }
     `,
 
@@ -673,6 +692,11 @@ export const createShaders = (precision: Precision) => {
             }
 
             var N: f32 = f32(dimLength - nanCount);
+            if (N <= 1.0) {
+                let outputIndex = outY * xSize + outX;
+                outputData[outputIndex] = ${precision}(bitcast<f32>(0x7fc00000u)); // NaN
+                return;
+            }
 
             let xMean: f32 = xSum / N;
             let yMean: f32 = ySum / N;
@@ -689,7 +713,7 @@ export const createShaders = (precision: Precision) => {
             }
 
             let outputIndex = outY * xSize + outX;
-            outputData[outputIndex] = ${precision}(numSum / (N - 1));
+            outputData[outputIndex] = ${precision}(numSum / (N - 1.0));
         }
     `,
 
@@ -777,7 +801,7 @@ export const createShaders = (precision: Precision) => {
             let N: f32 = f32(dimLength - nanCount);
             if (N <= 1.0) {
                 let outputIndex = outY * xSize + outX;
-                outputData[outputIndex] = ${precision}(0.0 / 0.0); // NaN
+                outputData[outputIndex] = ${precision}(bitcast<f32>(0x7fc00000u)); // NaN
                 return;
             }
 
@@ -836,10 +860,11 @@ export const createShaders = (precision: Precision) => {
             let sigmaX = sqrt(max(0.0, varX));
             let sigmaY = sqrt(max(0.0, varY));
             
-            // Use 1e-4 because f16 can flush 1e-6 to zero
-            let epsilon = 1e-4;
-            let denominator = sigmaX * sigmaY + epsilon;
-            let correlation = covXY / denominator;
+            let denominator = sigmaX * sigmaY;
+            var correlation: f32 = 0.0;
+            if (denominator > 1e-7) {
+                correlation = covXY / denominator;
+            }
 
             let outputIndex = outY * xSize + outX;
             outputData[outputIndex] = ${precision}(correlation);
