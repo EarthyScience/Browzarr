@@ -729,13 +729,10 @@ export const createShaders = (precision: Precision) => {
             }
 
             var xSum: f32 = 0.0;
-            var xxSum: f32 = 0.0;
             var ySum: f32 = 0.0;
-            var yySum: f32 = 0.0;
-            var xySum: f32 = 0.0;
-
-            var nanCount: u32 = 0;
-            // Iterate along the dimension we're averaging
+            var nanCount: u32 = 0u;
+            
+            // --- First Pass: Calculate Means ---
             if (reduceDim == 0u) { // Average along Z
                 let cCoord = outX * xStride + outY * yStride;
                 for (var z: u32 = 0u; z < dimLength; z++) {
@@ -747,10 +744,7 @@ export const createShaders = (precision: Precision) => {
                         continue;
                     }
                     xSum += xI;
-                    xxSum += xI * xI;
                     ySum += yI;
-                    yySum += yI * yI;
-                    xySum += xI * yI;
                 }
             } else if (reduceDim == 1u) { // Average along Y
                 let cCoord = outX * xStride + outY * zStride;
@@ -763,10 +757,7 @@ export const createShaders = (precision: Precision) => {
                         continue;
                     }
                     xSum += xI;
-                    xxSum += xI * xI;
                     ySum += yI;
-                    yySum += yI * yI;
-                    xySum += xI * yI;
                 }
             } else { // Average along X
                 let cCoord = outX * yStride + outY * zStride;
@@ -779,22 +770,74 @@ export const createShaders = (precision: Precision) => {
                         continue;
                     }
                     xSum += xI;
-                    xxSum += xI * xI;
                     ySum += yI;
-                    yySum += yI * yI;
-                    xySum += xI * yI;
                 }
             }
 
             let N: f32 = f32(dimLength - nanCount);
+            if (N <= 1.0) {
+                let outputIndex = outY * xSize + outX;
+                outputData[outputIndex] = ${precision}(0.0 / 0.0); // NaN
+                return;
+            }
+
             let meanX = xSum / N;
             let meanY = ySum / N;
-            let varX = (xxSum / N) - (meanX * meanX);
-            let varY = (yySum / N) - (meanY * meanY);
-            let covXY = (xySum / N) - (meanX * meanY);
+
+            // --- Second Pass: Calculate Variance and Covariance ---
+            var varXSum: f32 = 0.0;
+            var varYSum: f32 = 0.0;
+            var covXYSum: f32 = 0.0;
+
+            if (reduceDim == 0u) { // Average along Z
+                let cCoord = outX * xStride + outY * yStride;
+                for (var z: u32 = 0u; z < dimLength; z++) {
+                    let inputIndex = cCoord + (z * zStride);
+                    let xI = f32(firstData[inputIndex]);
+                    let yI = f32(secondData[inputIndex]);
+                    if (isNaN(xI) || isNaN(yI)){ continue; }
+                    let dx = xI - meanX;
+                    let dy = yI - meanY;
+                    varXSum += dx * dx;
+                    varYSum += dy * dy;
+                    covXYSum += dx * dy;
+                }
+            } else if (reduceDim == 1u) { // Average along Y
+                let cCoord = outX * xStride + outY * zStride;
+                for (var y: u32 = 0u; y < dimLength; y++) {
+                    let inputIndex = cCoord + (y * yStride);
+                    let xI = f32(firstData[inputIndex]);
+                    let yI = f32(secondData[inputIndex]);
+                    if (isNaN(xI) || isNaN(yI)){ continue; }
+                    let dx = xI - meanX;
+                    let dy = yI - meanY;
+                    varXSum += dx * dx;
+                    varYSum += dy * dy;
+                    covXYSum += dx * dy;
+                }
+            } else { // Average along X
+                let cCoord = outX * yStride + outY * zStride;
+                for (var x: u32 = 0u; x < dimLength; x++) {
+                    let inputIndex = cCoord + (x * xStride);
+                    let xI = f32(firstData[inputIndex]);
+                    let yI = f32(secondData[inputIndex]);
+                    if (isNaN(xI) || isNaN(yI)){ continue; }
+                    let dx = xI - meanX;
+                    let dy = yI - meanY;
+                    varXSum += dx * dx;
+                    varYSum += dy * dy;
+                    covXYSum += dx * dy;
+                }
+            }
+
+            let varX = varXSum / N;
+            let varY = varYSum / N;
+            let covXY = covXYSum / N;
             let sigmaX = sqrt(max(0.0, varX));
             let sigmaY = sqrt(max(0.0, varY));
-            let epsilon = 1e-6;
+            
+            // Use 1e-4 because f16 can flush 1e-6 to zero
+            let epsilon = 1e-4;
             let denominator = sigmaX * sigmaY + epsilon;
             let correlation = covXY / denominator;
 

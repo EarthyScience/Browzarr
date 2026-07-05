@@ -124,8 +124,10 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
         setLoc([e.clientX, e.clientY]);
         lastUV.current = e.uv;
         const { x, y } = e.uv;
-        const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[2].length;
-        const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[1].length;
+        const zSliceIdx = dimSlices.length > 2 ? 2 : 1;
+        const ySliceIdx = dimSlices.length > 2 ? 1 : 0;
+        const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[zSliceIdx].length;
+        const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[ySliceIdx].length;
 
         const xIdx = Math.round(x*xSize-.5)
         const yIdx = Math.round(y*ySize-.5)
@@ -133,7 +135,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
         dataIdx += isFlat ? 0 : Math.floor((dimSlices[0].length-1) * animProg) * xSize*ySize
         const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
         val.current = dataVal;
-        coords.current = isFlat ? analysisMode ? [analysisDims[0][yIdx], analysisDims[1][xIdx]] : [dimSlices[0][yIdx], dimSlices[1][xIdx]] : [dimSlices[1][yIdx], dimSlices[2][xIdx]]
+        coords.current = isFlat ? analysisMode ? [analysisDims[0][yIdx], analysisDims[1][xIdx]] : [dimSlices[0][yIdx], dimSlices[1][xIdx]] : [dimSlices[ySliceIdx][yIdx], dimSlices[zSliceIdx][xIdx]]
       }
     }
 
