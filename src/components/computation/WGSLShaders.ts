@@ -1058,10 +1058,9 @@ export const createShaders = (precision: Precision) => {
                 return;
             }
 
-            let total_threads_per_slice = workGroups.x * workGroups.y * 16;
-            let globalIdx = global_id.z * total_threads_per_slice + 
-                            global_id.y * (workGroups.x * 4) + 
-                            global_id.x;
+            let globalIdx = outZ * zStride + 
+                            outY * yStride + 
+                            outX * xStride;
 
             let xy_radius: i32 = i32(kernelSize/2u);
             let z_radius: i32 = i32(kernelDepth/2u);
@@ -1164,10 +1163,9 @@ export const createShaders = (precision: Precision) => {
                 return;
             }
 
-            let total_threads_per_slice = workGroups.x * workGroups.y * 16;
-            let globalIdx = global_id.z * total_threads_per_slice + 
-                            global_id.y * (workGroups.x * 4) + 
-                            global_id.x;
+            let globalIdx = outZ * zStride + 
+                            outY * yStride + 
+                            outX * xStride;
 
             let xy_radius: i32 = i32(kernelSize/2u);
             let z_radius: i32 = i32(kernelDepth/2u);
@@ -1278,10 +1276,9 @@ export const createShaders = (precision: Precision) => {
                 return;
             }
 
-            let total_threads_per_slice = workGroups.x * workGroups.y * 16;
-            let globalIdx = global_id.z * total_threads_per_slice + 
-                            global_id.y * (workGroups.x * 4) + 
-                            global_id.x;
+            let globalIdx = outZ * zStride + 
+                            outY * yStride + 
+                            outX * xStride;
 
             let xy_radius: i32 = i32(kernelSize/2u);
             let z_radius: i32 = i32(kernelDepth/2u);
