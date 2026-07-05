@@ -61,19 +61,47 @@ export function zarrFetcher() {
                 _outVar: outVar, // carry through for fetchChunk
             } as any;
         },
-        async fetchChunk({ variable, chunkShape, ndSlices }: any): Promise<FetchOutput> {
-            const chunkSlice = ndSlices.map((s: any, i: number) => {
-                if (typeof s === "number") return s;
-                const start = s[0] * chunkShape[i];
-                const end = (s[0] + 1) * chunkShape[i];
-                return zarr.slice(start, end);
-            });
+        async fetchChunk({ rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, variable, ndSlices }: any): Promise<FetchOutput> {
+            const chunkSlice = new Array(rank).fill(0);
+            if (ndSlices && ndSlices.length === rank) {
+                for (let i = 0; i < rank; i++) {
+                    if (i === xDimIndex) {
+                        chunkSlice[i] = zarr.slice(x * chunkShape[i], Math.min((x + 1) * chunkShape[i], shape[i]));
+                    } else if (i === yDimIndex) {
+                        chunkSlice[i] = zarr.slice(y * chunkShape[i], Math.min((y + 1) * chunkShape[i], shape[i]));
+                    } else if (i === zDimIndex) {
+                        chunkSlice[i] = zarr.slice(z * chunkShape[i], Math.min((z + 1) * chunkShape[i], shape[i]));
+                    } else {
+                        const sel = ndSlices[i];
+                        if (Array.isArray(sel)) {
+                            chunkSlice[i] = zarr.slice(sel[0], sel[1]);
+                        } else {
+                            chunkSlice[i] = sel;
+                        }
+                    }
+                }
+            } else {
+                chunkSlice[xDimIndex] = zarr.slice(x * chunkShape[xDimIndex], (x + 1) * chunkShape[xDimIndex]);
+                chunkSlice[yDimIndex] = zarr.slice(y * chunkShape[yDimIndex], (y + 1) * chunkShape[yDimIndex]);
+                if (zDimIndex >= 0) {
+                    chunkSlice[zDimIndex] = zarr.slice(z * chunkShape[zDimIndex], (z + 1) * chunkShape[zDimIndex]);
+                }
+                if (rank >= 4) {
+                    chunkSlice[0] = idx4D;
+                }
+            }
 
             const chunk = await fetchWithRetry(() => zarr.get(outVar, chunkSlice), `variable ${variable}`, useGlobalStore.getState().setStatus);
             if (!chunk || chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
                 throw new Error("BigInt arrays not supported.");
             }
-            return { data: chunk.data as Float32Array, shape: chunkShape, stride: chunk.stride };
+            
+            let outShape = chunk.shape;
+            if (!outShape || outShape.length === 0) {
+                outShape = chunkShape; // fallback if Zarrita doesn't collapse
+            }
+            
+            return { data: chunk.data as Float32Array, shape: outShape as number[], stride: chunk.stride as number[] };
         },
     };
 }
