@@ -21,6 +21,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Accordion,
@@ -302,13 +303,6 @@ const Variables = () => {
         <PopoverContent
           side={popoverSide}
           className="max-h-[50vh] overflow-hidden flex flex-col"
-          onInteractOutside={(e) => {
-            const target = e.target as HTMLElement;
-            // If the click is inside the MetaData popover, do not close
-            if (target.closest('[data-meta-popover]')) {
-              e.preventDefault();
-            }
-          }}
         >
           <div className="flex items-center gap-2 mb-4 justify-center max-w-[240px] md:max-w-sm mx-auto flex-shrink-0">
             <Input
@@ -359,9 +353,10 @@ const Variables = () => {
         </Popover>
       )}
       {popoverSide === "top" && (
-        <Dialog open={showMeta} onOpenChange={setShowMeta}>
+        <Dialog open={showMeta} onOpenChange={setShowMeta} modal={false}>
           <DialogContent className="max-w-[85%] md:max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogTitle>{ }</DialogTitle>
+            <DialogDescription className="sr-only">Variables configuration dialog</DialogDescription>
             <div className="-mt-4">
               {meta && metadata && (
                 <MetaDimSelector

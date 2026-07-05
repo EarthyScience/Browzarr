@@ -6,6 +6,7 @@ import './css/MetaData.css'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -66,7 +67,7 @@ export function renderAttributes(
 }
 const Metadata = ({ data, variable }: { data: Record<string, any>, variable: string }) => {
     return (
-          <Dialog>
+          <Dialog modal={false}>
               <Tooltip delayDuration={500} >
                   <TooltipTrigger asChild>
                   <DialogTrigger asChild>
@@ -84,9 +85,10 @@ const Metadata = ({ data, variable }: { data: Record<string, any>, variable: str
                       <span>Show Variable Attributes</span>
                   </TooltipContent>
               </Tooltip>
-              <DialogContent aria-describedby="Metadata Information for variable" className="metadata-dialog">
+              <DialogContent className="metadata-dialog">
                   <DialogHeader>
                       <DialogTitle>Attributes</DialogTitle>
+                      <DialogDescription className="sr-only">Metadata Information for variable</DialogDescription>
                   </DialogHeader>
                       <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words p-0">
                           <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] gap-x-1 gap-y-[6px]">

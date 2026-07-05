@@ -88,9 +88,9 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
       return clamp(Math.round(val / step) * step, 0, maxIndex);
     }
     let closestIndex = 0;
-    let minDiff = Math.abs(values[0] - val);
+    let minDiff = Math.abs(Number(values[0]) - val);
     for (let i = 1; i < values.length; i++) {
-      const diff = Math.abs(values[i] - val);
+      const diff = Math.abs(Number(values[i]) - val);
       if (diff < minDiff) {
         minDiff = diff;
         closestIndex = i;
