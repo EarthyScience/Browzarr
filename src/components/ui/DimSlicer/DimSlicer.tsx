@@ -252,7 +252,7 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
             />
           </div>
         ) : (
-          <div className="grid gap-2 lg:grid-cols-2">
+          <div className="flex flex-col gap-2">
             <DimSlicerTimeControl
               layout="row"
               showInput={false}

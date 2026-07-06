@@ -22,7 +22,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 
 const MAX_ACTIVE_DIMS = 3;
-const DEFAULT_AXES: Axis[] = ['z', 'y', 'x'];
 
 const formatArray = (value: string | number[]): string => {
   if (typeof value === 'string') return value;
@@ -67,10 +66,6 @@ const AXIS_COLOR: Record<Axis, string> = {
   z: 'text-blue-500',
   c: 'text-yellow-500',
 };
-
-
-
-
 
 interface SlicerRow {
   id: number;
@@ -136,7 +131,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
   const [displaySpat, setDisplaySpat] = useState(String(kernelSize))
   const [displayDepth, setDisplayDepth] = useState(String(kernelDepth))
 
-  React.useEffect(() => {
+  useEffect(() => {
     setDimArrays(dimArrays);
     setDimNames(dimNames);
     setDimUnits(dimUnits);
