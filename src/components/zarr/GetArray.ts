@@ -32,7 +32,7 @@ export async function GetArray(varOveride?: string) {
 
     const xDimIndex = mappedX >= 0 ? mappedX : (unmappedDims.length > 0 ? unmappedDims.shift()! : rank - 1);
     const yDimIndex = mappedY >= 0 ? mappedY : (unmappedDims.length > 0 ? unmappedDims.shift()! : rank - 2);
-    const zDimIndex = mappedZ >= 0 ? mappedZ : -1;
+    const zDimIndex = mappedZ >= 0 ? mappedZ : (unmappedDims.length > 0 ? unmappedDims.shift()! : -1);
 
     const hasZ = zDimIndex >= 0;
 

@@ -212,6 +212,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       const start = parseInt(sel.start) || 0;
       let stop = parseInt(sel.stop);
       if (isNaN(stop)) stop = defaultLast;
+      else stop += 1;
       return { first: start, last: stop, steps: Math.max(1, stop - start) };
     };
 
@@ -246,6 +247,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
         const start = parseInt(collSel.start) || 0;
         let stop = parseInt(collSel.stop);
         if (isNaN(stop)) stop = defaultLast;
+        else stop += 1;
         return Math.max(1, stop - start);
       }
       return defaultLast;
@@ -365,7 +367,10 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
         const val = parseInt(sel.scalar) || 0;
         return [val, val + 1];
       }
-      return [parseInt(sel.start) || 0, parseInt(sel.stop) || defaultLast];
+      const start = parseInt(sel.start) || 0;
+      let stop = parseInt(sel.stop);
+      stop = isNaN(stop) ? defaultLast : stop + 1;
+      return [start, stop];
     };
 
     setZSlice(getSliceArray(rowZ, dataShape ? dataShape[getOrigIdx(rowZ?.dimName || '')] : 0));
@@ -376,7 +381,10 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       const row = rows.find((r) => r.dimName === dim.name);
       if (row) {
         if (row.sel.mode === 'scalar') return parseInt(row.sel.scalar) || 0;
-        return [parseInt(row.sel.start) || 0, parseInt(row.sel.stop) || dim.size];
+        const start = parseInt(row.sel.start) || 0;
+        let stop = parseInt(row.sel.stop);
+        stop = isNaN(stop) ? dim.size : stop + 1;
+        return [start, stop];
       }
       const colSel = collapsedSels[dim.name];
       if (colSel && colSel.mode === 'scalar') return parseInt(colSel.scalar) || 0;
