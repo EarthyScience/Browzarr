@@ -50,25 +50,6 @@ const InitializeDevice = async () => {
         Error('need a browser that supports WebGPU');
         return {device, hasF16};
     } else{
-        const originalCreateBuffer = device.createBuffer.bind(device);
-        device.createBuffer = (descriptor: GPUBufferDescriptor) => {
-            return originalCreateBuffer({
-                ...descriptor,
-                size: Math.ceil(descriptor.size / 4) * 4
-            });
-        };
-
-        const originalWriteBuffer = device.queue.writeBuffer.bind(device.queue);
-        device.queue.writeBuffer = (buffer: GPUBuffer, bufferOffset: GPUSize64, data: BufferSource | SharedArrayBuffer, dataOffset?: GPUSize64, size?: GPUSize64) => {
-            let dataToWrite = data as ArrayBufferView;
-            if (dataToWrite.byteLength % 4 !== 0) {
-                const paddedLength = Math.ceil(dataToWrite.byteLength / 4) * 4;
-                const paddedBuffer = new Uint8Array(paddedLength);
-                paddedBuffer.set(new Uint8Array(dataToWrite.buffer, dataToWrite.byteOffset, dataToWrite.byteLength));
-                dataToWrite = paddedBuffer;
-            }
-            originalWriteBuffer(buffer, bufferOffset, dataToWrite as any, dataOffset, size);
-        };
         return {device, hasF16}
     }
 }
@@ -127,7 +108,7 @@ export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {sha
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -138,7 +119,7 @@ export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {sha
 
     const readBuffer = device.createBuffer({
         label:'Output Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
     // Write Buffers to GPU
@@ -168,7 +149,7 @@ export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {sha
     encoder.copyBufferToBuffer(
     outputBuffer, 0,
     readBuffer, 0,
-    Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4
+    outputSize * (hasF16 ? 2 : 4)
     );
 
     // Submit work to GPU
@@ -181,7 +162,7 @@ export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {sha
 
     // Clean up
     readBuffer.unmap();
-    return results.slice(0, outputSize);
+    return results;
 
 }
 
@@ -238,7 +219,7 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -250,7 +231,7 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
 
     const readBuffer = device.createBuffer({
         label:'Read Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
 
@@ -281,7 +262,7 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
     encoder.copyBufferToBuffer(
     outputBuffer, 0,
     readBuffer, 0,
-    Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4
+    outputSize * (hasF16 ? 2 : 4)
     );
 
     // Submit work to GPU
@@ -294,7 +275,7 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
 
     // Clean up
     readBuffer.unmap();
-    return results.slice(0, outputSize);
+    return results;
 }
 
 export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, reduceDim: number, operation:string){
@@ -357,7 +338,7 @@ export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: A
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -368,7 +349,7 @@ export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: A
 
     const readBuffer = device.createBuffer({
         label:'Output Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
 
@@ -402,7 +383,7 @@ export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: A
     encoder.copyBufferToBuffer(
     outputBuffer, 0,
     readBuffer, 0,
-    Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4
+    outputSize * (hasF16 ? 2 : 4)
     );
 
     // Submit work to GPU
@@ -415,7 +396,7 @@ export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: A
 
     // Clean up
     readBuffer.unmap();
-    return results.slice(0, outputSize);
+    return results;
 }
 
 export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, kernel: {kernelSize: number, kernelDepth: number}, operation: string){
@@ -479,7 +460,7 @@ export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: A
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -490,7 +471,7 @@ export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: A
 
     const readBuffer = device.createBuffer({
         label:'Read Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
 
@@ -524,7 +505,7 @@ export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: A
     encoder.copyBufferToBuffer(
     outputBuffer, 0,
     readBuffer, 0,
-    Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4
+    outputSize * (hasF16 ? 2 : 4)
     );
 
     // Submit work to GPU
@@ -537,7 +518,7 @@ export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: A
 
     // Clean up
     readBuffer.unmap();
-    return results.slice(0, outputSize);
+    return results;
 }
 
 export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, reduceDim: number, reverse: number){
@@ -648,7 +629,7 @@ export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: 
 
     // Clean up
     readBuffer.unmap();
-    return results.slice(0, outputSize);
+    return results;
 }
 
 export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, operation: string, kernelSize: number){
@@ -698,7 +679,7 @@ export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -710,7 +691,7 @@ export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape
 
     const readBuffer = device.createBuffer({
         label:'Read Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
 
@@ -742,7 +723,7 @@ export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape
     encoder.copyBufferToBuffer(
     outputBuffer, 0,
     readBuffer, 0,
-    Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4
+    outputSize * (hasF16 ? 2 : 4)
     );
 
     // Submit work to GPU
@@ -755,7 +736,7 @@ export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape
 
     // Clean up
     readBuffer.unmap();
-    return results.slice(0, outputSize);
+    return results;
 }
 
 export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dataShape: number[], outputShape: number[], strides: number[]}, kernel: {kernelSize: number, kernelDepth: number}, reduceDim: number, shaderCode: string){
@@ -816,7 +797,7 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -828,7 +809,7 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
 
     const readBuffer = device.createBuffer({
         label:'Read Buffer',
-        size: Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
 
@@ -862,7 +843,7 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
     encoder.copyBufferToBuffer(
         outputBuffer, 0,
         readBuffer, 0,
-        Math.ceil(outputSize * (hasF16 ? 2 : 4) / 4) * 4
+        outputSize * (hasF16 ? 2 : 4)
     );
 
     // Submit work to GPU
@@ -875,5 +856,5 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
 
     // Clean up
     readBuffer.unmap();
-    return results.slice(0, outputSize);
+    return results;
 }
