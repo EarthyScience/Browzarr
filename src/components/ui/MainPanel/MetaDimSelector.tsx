@@ -117,7 +117,8 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
   const { maxSize, cache, setMaxSize } = useCacheStore(useShallow(state => ({ maxSize: state.maxSize, cache: state.cache, setMaxSize: state.setMaxSize })))
   const [cacheSize, setCacheSize] = useState(maxSize)
   
-  const { setZSlice, setYSlice, setXSlice, ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(useShallow(state => ({
+  const { ndSlices, axisMapping, setZSlice, setYSlice, setXSlice, ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(useShallow(state => ({
+    ndSlices: state.ndSlices, axisMapping: state.axisMapping,
     setZSlice: state.setZSlice, setYSlice: state.setYSlice, setXSlice: state.setXSlice,
     ReFetch: state.ReFetch, compress: state.compress, setCompress: state.setCompress,
     coarsen: state.coarsen, setCoarsen: state.setCoarsen, kernelSize: state.kernelSize, setKernelSize: state.setKernelSize, kernelDepth: state.kernelDepth, setKernelDepth: state.setKernelDepth
@@ -161,10 +162,48 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
 
   const dimsKey = availableDims.map((d) => `${d.name}:${d.size}`).join('|');
 
-  const makeInitialCollapsedSels = (dims: DimOption[]): Record<string, SliceSelectionState> =>
-    Object.fromEntries(dims.map((d) => [d.name, { ...defaultSelection(d.size), mode: 'scalar' as const }]));
+  const makeInitialCollapsedSels = (dims: DimOption[]): Record<string, SliceSelectionState> => {
+    const isCurrentVar = variable === meta.name && ndSlices && ndSlices.length === dims.length;
+    return Object.fromEntries(dims.map((d, i) => {
+      let sel: SliceSelectionState = { ...defaultSelection(d.size), mode: 'scalar' };
+      if (isCurrentVar) {
+        const s = ndSlices[i];
+        if (typeof s === 'number') {
+          sel = { start: '', stop: '', scalar: String(s), mode: 'scalar' };
+        }
+      }
+      return [d.name, sel];
+    }));
+  };
 
   const makeInitialRows = (dims: DimOption[]): SlicerRow[] => {
+    const isCurrentVar = variable === meta.name && ndSlices && ndSlices.length === dims.length && axisMapping;
+    
+    if (isCurrentVar) {
+      const initRows: SlicerRow[] = [];
+      const axes: Axis[] = ['z', 'y', 'x'];
+      
+      for (const axis of axes) {
+        const mappedIdx = (axisMapping as Record<string, number>)[axis];
+        if (mappedIdx !== undefined && mappedIdx >= 0 && mappedIdx < dims.length) {
+          const dim = dims[mappedIdx];
+          const s = ndSlices[mappedIdx];
+          let sel: SliceSelectionState = { ...defaultSelection(dim.size), mode: 'slice' };
+          if (Array.isArray(s)) {
+             sel = { start: String(s[0]), stop: s[1] !== null ? String(s[1]) : '', scalar: '', mode: 'slice' };
+          }
+          initRows.push({
+            id: nextId(),
+            dimName: dim.name,
+            sel,
+            axis
+          });
+        }
+      }
+      
+      if (initRows.length > 0) return initRows;
+    }
+
     const activeDims = dims.slice(-Math.min(MAX_ACTIVE_DIMS, dims.length));
     const defaultAxes: Axis[] = ['z', 'y', 'x'];
     const axes = defaultAxes.slice(-activeDims.length);
