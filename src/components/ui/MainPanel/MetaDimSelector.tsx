@@ -127,6 +127,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
 
   const [tooBig, setTooBig] = useState(false)
   const [cached, setCached] = useState(false)
+  const [cachedChunks, setCachedChunks] = useState<string | null>(null)
   const [texCount, setTexCount] = useState(0)
   const [displaySpat, setDisplaySpat] = useState(String(kernelSize))
   const [displayDepth, setDisplayDepth] = useState(String(kernelDepth))
@@ -137,14 +138,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     setDimUnits(dimUnits);
   }, [dimArrays, dimNames, dimUnits, setDimArrays, setDimNames, setDimUnits]);
 
-  useEffect(()=>{
-    setCompress(false)
-    if (cache.has(`${initStore}_${meta.name}`)){
-      setCached(true);
-    } else {
-      setCached(false);
-    }
-  },[meta, cache, initStore, setCompress])
+
 
   const availableDims: DimOption[] = useMemo(
     () =>
@@ -194,6 +188,93 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     setRows(makeInitialRows(availableDims));
     setCollapsedSels(makeInitialCollapsedSels(availableDims));
   }
+
+  useEffect(()=>{
+    setCompress(false)
+    setCachedChunks(null)
+    setCached(false)
+
+    if (!meta || !meta.chunks || !meta.shape) {
+      if (meta && cache.has(`${initStore}_${meta.name}`)) {
+        setCached(true);
+      }
+      return;
+    }
+
+    const ndSlicesTemp = availableDims.map((d) => {
+      const activeRow = rows.find((r) => r.dimName === d.name);
+      if (activeRow) {
+        return [parseInt(activeRow.sel.start) || 0, parseInt(activeRow.sel.stop) || d.size] as [number, number];
+      }
+      const colSel = collapsedSels[d.name];
+      if (colSel && colSel.mode === 'scalar') return parseInt(colSel.scalar) || 0;
+      return 0;
+    });
+
+    const scalarIndices = ndSlicesTemp.filter(s => typeof s === "number").join("_");
+    const cacheBase = scalarIndices !== "" ? `${initStore}_${meta.name}_${scalarIndices}` : `${initStore}_${meta.name}`;
+
+    const rowZ = rows.find((r) => r.axis === 'z');
+    const rowY = rows.find((r) => r.axis === 'y');
+    const rowX = rows.find((r) => r.axis === 'x');
+
+    const origIdxZ = rowZ ? getOrigIdx(rowZ.dimName) : -1;
+    const origIdxY = rowY ? getOrigIdx(rowY.dimName) : -1;
+    const origIdxX = rowX ? getOrigIdx(rowX.dimName) : -1;
+
+    const getSliceDims = (row?: SlicerRow, origIdx?: number) => {
+      const defaultLast = origIdx !== undefined && origIdx >= 0 ? meta.shape?.[origIdx] ?? 1 : 1;
+      if (!row) return { first: 0, last: defaultLast };
+      const sel = row.sel;
+      if (sel.mode === 'scalar') {
+        const val = parseInt(sel.scalar) || 0;
+        return { first: val, last: val + 1 };
+      }
+      const start = parseInt(sel.start) || 0;
+      let stop = parseInt(sel.stop);
+      if (isNaN(stop)) stop = defaultLast;
+      else stop += 1;
+      return { first: start, last: stop };
+    };
+
+    const zSlice = getSliceDims(rowZ, origIdxZ);
+    const ySlice = getSliceDims(rowY, origIdxY);
+    const xSlice = getSliceDims(rowX, origIdxX);
+
+    const calcDim = (slice: {first: number, last: number}, dimIdx: number) => { 
+        if (dimIdx < 0) return { start: 0, end: 1 };
+        const chunkDim = meta.chunks?.[dimIdx];
+        if (!chunkDim) return { start: 0, end: 1 };
+        const start = Math.floor(slice.first / chunkDim);
+        return { start, end: Math.ceil(slice.last / chunkDim) };
+    };
+
+    const zDim = calcDim(zSlice, origIdxZ);
+    const yDim = calcDim(ySlice, origIdxY);
+    const xDim = calcDim(xSlice, origIdxX);
+
+    let accum = 0;
+    let total = 0;
+    for (let z = zDim.start; z < zDim.end; z++) {
+        for (let y = yDim.start; y < yDim.end; y++) {
+            for (let x = xDim.start; x < xDim.end; x++) {
+                total++;
+                const chunkID = `z${z}_y${y}_x${x}`;
+                const cacheName = `${cacheBase}_chunk_${chunkID}`;
+                if (cache.has(cacheName)) {
+                    accum++;
+                }
+            }
+        }
+    }
+
+    if (total > 0 && accum > 0) {
+      setCachedChunks(`${accum}/${total}`);
+      setCached(true);
+    } else if (cache.has(`${initStore}_${meta.name}`)) {
+      setCached(true);
+    }
+  }, [meta, cache, initStore, setCompress, rows, collapsedSels, availableDims])
 
   const sizeData = useMemo(() => {
     const rowZ = rows.find((r) => r.axis === 'z');
@@ -487,31 +568,40 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
                 <Switch id="compress-data" checked={compress} onCheckedChange={e=>setCompress(e)}/>
               </div>
 
-              {/* Size info badge */}
-              <div className="flex items-center gap-2 text-xs bg-background border px-2 py-1 rounded-md shadow-sm">
-                <span className="text-muted-foreground">Raw:</span> <span className="font-medium">{formatBytes(currentSize)}</span>
-                <span className="text-muted-foreground/50">|</span>
-                <span className="text-muted-foreground">Stored:</span> <span className="font-medium">{compress ? "<" : ""}{formatBytes(cachedSize)}</span>
-              </div>
-
-              {/* Plot Button & Info */}
-              <div className="flex flex-wrap items-center justify-end gap-3 ml-auto min-w-0">
-                {tooBig && 
-                  <div className="bg-destructive/10 border border-destructive/20 rounded-md p-1.5 px-2 text-right min-w-0">
-                    <span className="text-xs font-medium text-destructive break-words whitespace-normal">
-                      Too many textures ({texCount}/14). Won&apos;t fit.
-                    </span>
-                  </div>
-                }
+              {/* Plot Button */}
+              <div className="flex items-center justify-end ml-auto min-w-0">
                 {!tooBig && <Button
-                  variant="pink"        
+                  variant={'pink'}
                   className="cursor-pointer hover:scale-[1.05] shadow-sm h-8 px-4"
                   disabled={smallCache}
                   onClick={handlePlot}
                 >
                   Plot
                 </Button>}
-                {cached && <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Already cached</span>}
+              </div>
+            </div>
+
+            {/* Status Information */}
+            <div className="flex flex-col gap-2">
+              {/* Size info badge */}
+              <div className="flex items-center gap-2 text-xs bg-background border px-2 py-1 rounded-md shadow-sm w-fit">
+                <span className="text-muted-foreground">Raw:</span> <span className="font-medium">{formatBytes(currentSize)}</span>
+                <span className="text-muted-foreground/50">|</span>
+                <span className="text-muted-foreground">Stored:</span> <span className="font-medium">{compress ? "<" : ""}{formatBytes(cachedSize)}</span>
+              </div>
+              
+              {/* Messages */}
+              <div className="flex flex-col gap-1 text-xs">
+                {tooBig && 
+                  <span className="font-medium text-destructive">
+                    Too many textures ({texCount}/14). Won&apos;t fit.
+                  </span>
+                }
+                {cached && 
+                  <span className="font-medium text-muted-foreground">
+                    {cachedChunks ? `${cachedChunks} chunks already cached` : "Already cached"}
+                  </span>
+                }
               </div>
             </div>
           </div>
