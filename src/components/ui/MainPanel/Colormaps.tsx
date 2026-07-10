@@ -17,22 +17,24 @@ import {
 
 const Colormaps = () => {
 
-  const [cmap, setCmap] = useState<string>("Spectral");
-  const [flipCmap, setFlipCmap] = useState<boolean>(false);
   const [hoveredCmap, setHoveredCmap] = useState<string | null>(null);
-  const { colormap, setColormap } = useGlobalStore(
+  const { colormap, setColormap, colormapName, flipColormap, setColormapName, setFlipColormap } = useGlobalStore(
     useShallow((state) => ({
       setColormap: state.setColormap,
       colormap: state.colormap,
+      colormapName: state.colormapName,
+      flipColormap: state.flipColormap,
+      setColormapName: state.setColormapName,
+      setFlipColormap: state.setFlipColormap,
     }))
   );
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
   useEffect(() => {
     setColormap(
-      GetColorMapTexture(colormap, (hoveredCmap || cmap) === "Default" ? "Spectral" : (hoveredCmap || cmap), 1, "#000000", 0, flipCmap)
+      GetColorMapTexture(colormap, (hoveredCmap || colormapName) === "Default" ? "Spectral" : (hoveredCmap || colormapName), 1, "#000000", 0, flipColormap)
     );
-  }, [cmap, flipCmap, hoveredCmap]);
+  }, [colormapName, flipColormap, hoveredCmap]);
 
   useEffect(() => {
       const handleResize = () => {
@@ -55,9 +57,9 @@ const Colormaps = () => {
                 size="icon"
                 className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full'
                 style={{
-                  backgroundImage: `url(./colormap_icons/${cmap}.webp)` ,
+                  backgroundImage: `url(./colormap_icons/${colormapName}.webp)` ,
                   backgroundSize: "100%",
-                  transform: flipCmap ? "scaleX(-1)" : "",
+                  transform: flipColormap ? "scaleX(-1)" : "",
                   width: "32px",
                   height: "32px",
                 }} /> 
@@ -82,7 +84,7 @@ const Colormaps = () => {
             {colormaps.map((val) => (
               <Image
                 key={val}
-                className={`cmap ${flipCmap ? "flipped" : ""}`}
+                className={`cmap ${flipColormap ? "flipped" : ""}`}
                 src={`./colormap_icons/${val}.webp`}
                 alt={val}
                 height={100}
@@ -90,7 +92,7 @@ const Colormaps = () => {
                 onMouseEnter={() => setHoveredCmap(val)}
                 onMouseLeave={() => setHoveredCmap(null)}
                 onClick={() => {
-                  setCmap(val);
+                  setColormapName(val);
                   setHoveredCmap(null);
                 }}
               />
@@ -105,10 +107,10 @@ const Colormaps = () => {
               height: "50px",
               width: "50px",
               cursor: "pointer",
-              transform: `${flipCmap ? "rotate(270deg)" : "rotate(90deg)"}`,
+              transform: `${flipColormap ? "rotate(270deg)" : "rotate(90deg)"}`,
               transition: ".25s",
             }}
-            onClick={() => setFlipCmap((x) => !x)}
+            onClick={() => setFlipColormap(!flipColormap)}
         />
       </PopoverContent>
       

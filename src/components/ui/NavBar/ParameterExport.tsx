@@ -16,6 +16,8 @@ const globalValues = [
     'initStore',
     'storeFromURL',
     'variable',
+    'colormapName',
+    'flipColormap',
 ]
 
 const plotValues = [
