@@ -151,6 +151,7 @@ export const createShaders = (precision: Precision) => {
     MeanReduction: /* wgsl */`
         ${ReductionBoilerPlate}
             var sum: f32 = 0.0;
+            var nanCount: u32 = 0u;
             
             // Iterate along the dimension we're averaging
             if (reduceDim == 0u) { // Average along Z
@@ -159,6 +160,7 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (z * zStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (isNaN(newVal)){ 
+                        nanCount++;
                         continue;
                     }
                     sum += newVal;
@@ -169,6 +171,7 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (y * yStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (isNaN(newVal)){ 
+                        nanCount++;
                         continue;
                     }
                     sum += newVal;
@@ -179,6 +182,7 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (x * xStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (isNaN(newVal)){ 
+                        nanCount++;
                         continue;
                     }
                     sum += newVal;
@@ -186,7 +190,8 @@ export const createShaders = (precision: Precision) => {
             }
             
             let outputIndex = outY * xSize + outX;
-            outputData[outputIndex] = ${precision}(sum / f32(dimLength));
+            let N = f32(dimLength - nanCount);
+            outputData[outputIndex] = ${precision}(sum / N);
         }
     `,
 
@@ -272,6 +277,7 @@ export const createShaders = (precision: Precision) => {
     StDevReduction: /* wgsl */`
         ${ReductionBoilerPlate}
             var sum: f32 = 0.0;
+            var nanCount: u32 = 0u;
             // Iterate along the dimension we're averaging
             if (reduceDim == 0u) { // Average along Z
                 let cCoord = outX * xStride + outY * yStride;
@@ -279,6 +285,7 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (z * zStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (isNaN(newVal)){ 
+                        nanCount++;
                         continue;
                     }
                     sum += newVal;
@@ -289,6 +296,7 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (y * yStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (isNaN(newVal)){ 
+                        nanCount++;
                         continue;
                     }
                     sum += newVal;
@@ -299,13 +307,15 @@ export const createShaders = (precision: Precision) => {
                     let inputIndex = cCoord + (x * xStride);
                     let newVal = f32(inputData[u32(inputIndex)]);
                     if (isNaN(newVal)){
+                        nanCount++;
                         continue;
                     }
                     sum += newVal;
                 }
             }
             
-            let mean: f32 = sum / f32(dimLength);
+            let N: f32 = f32(dimLength - nanCount);
+            let mean: f32 = sum / N;
 
             var squaredDiffSum: f32 = 0.0;
 
@@ -345,7 +355,7 @@ export const createShaders = (precision: Precision) => {
                 }
             }
 
-            let stDev: f32 = sqrt(squaredDiffSum / f32(dimLength));
+            let stDev: f32 = sqrt(squaredDiffSum / N);
             let outputIndex = outY * xSize + outX;
             outputData[outputIndex] = ${precision}(stDev);
         }
@@ -822,7 +832,9 @@ export const createShaders = (precision: Precision) => {
                             let zOffset = kz * i32(zStride);
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
 
-                            sum += f32(inputData[u32(newIdx)]);
+                            let val = f32(inputData[u32(newIdx)]);
+                            if (isNaN(val)) { continue; }
+                            sum += val;
                             count ++;
                         }
                     }
@@ -1029,9 +1041,7 @@ export const createShaders = (precision: Precision) => {
 
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
-                            if (isNaN(xI) || isNaN(yI)){ 
-                                continue;
-                            }
+                            if (isNaN(xI) || isNaN(yI)) { continue; }
                             xSum += xI;
                             xxSum += xI * xI;
                             ySum += yI;
@@ -1132,9 +1142,7 @@ export const createShaders = (precision: Precision) => {
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
-                            if (isNaN(xI) || isNaN(yI)){ 
-                                continue;
-                            }
+                            if (isNaN(xI) || isNaN(yI)) { continue; }
                             xSum += xI;    
                             ySum += yI;
                             count ++;
@@ -1160,11 +1168,8 @@ export const createShaders = (precision: Precision) => {
                             let newIdx = i32(globalIdx) + xOffset + yOffset + zOffset;
                             let xI = f32(firstData[newIdx]);
                             let yI = f32(secondData[newIdx]);
-                            if (isNaN(xI) || isNaN(yI)){ 
-                                continue;
-                            }
+                            if (isNaN(xI) || isNaN(yI)) { continue; }
                             numSum += (xI - meanX) * (yI - meanY);
-                            count ++;
                         }
                     }
                 }
