@@ -218,9 +218,12 @@ export function ParseExtent(dimUnits: string[], dimArrays: any[][]){
     const yArray = dimArrays[yIdx] || [];
 
     const minLat = Number(yArray[ySlice[0]]);
-    const maxLat = Number(yArray[ySlice[1] ?? yArray.length-1]);
+    const maxLatIdx = ySlice[1] !== null ? ySlice[1] - 1 : yArray.length - 1;
+    const maxLat = Number(yArray[maxLatIdx]);
+    
     let minLon = Number(xArray[xSlice[0]]);
-    let maxLon = Number(xArray[xSlice[1] ?? xArray.length-1]);
+    const maxLonIdx = xSlice[1] !== null ? xSlice[1] - 1 : xArray.length - 1;
+    let maxLon = Number(xArray[maxLonIdx]);
 
     if (maxLon > 180){
       maxLon -= 180

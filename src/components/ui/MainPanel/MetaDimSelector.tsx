@@ -489,8 +489,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       }
       const start = parseInt(sel.start) || 0;
       let stop = parseInt(sel.stop);
-      stop = isNaN(stop) ? defaultLast : stop + 1;
-      return [start, stop];
+      return [start, isNaN(stop) ? null : stop + 1];
     };
 
     setZSlice(getSliceArray(rowZ, dataShape ? dataShape[getOrigIdx(rowZ?.dimName || '')] : 0));
@@ -503,8 +502,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
         if (row.sel.mode === 'scalar') return parseInt(row.sel.scalar) || 0;
         const start = parseInt(row.sel.start) || 0;
         let stop = parseInt(row.sel.stop);
-        stop = isNaN(stop) ? dim.size : stop + 1;
-        return [start, stop];
+        return [start, isNaN(stop) ? null : stop + 1];
       }
       const colSel = collapsedSels[dim.name];
       if (colSel && colSel.mode === 'scalar') return parseInt(colSel.scalar) || 0;
