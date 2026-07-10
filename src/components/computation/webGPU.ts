@@ -572,7 +572,7 @@ export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: 
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: outputSize * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -584,7 +584,7 @@ export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: 
 
     const readBuffer = device.createBuffer({
         label:'Read Buffer',
-        size: outputSize * 4,
+        size: outputSize * (hasF16 ? 2 : 4),
         usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
 
@@ -616,7 +616,7 @@ export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: 
     encoder.copyBufferToBuffer(
     outputBuffer, 0,
     readBuffer, 0,
-    outputSize * 4
+    outputSize * (hasF16 ? 2 : 4)
     );
 
     // Submit work to GPU
@@ -625,7 +625,7 @@ export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: 
     // Map staging buffer to read results
     await readBuffer.mapAsync(GPUMapMode.READ);
     const resultArrayBuffer = readBuffer.getMappedRange();
-    const results = new Float32Array(resultArrayBuffer.slice());
+    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
 
     // Clean up
     readBuffer.unmap();

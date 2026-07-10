@@ -1556,6 +1556,7 @@ export const createShaders = (precision: Precision) => {
             let totalSize: u32 = xSize * ySize * zSize;
             var baseIdx = outZ * zStride + outY * yStride + outX * xStride;
             var accum: f32 = 0;
+            var validCount: u32 = 0u;
 
             // Iterate along the dimension we're averaging
             if (reduceDim == 0u) { // CUMSUM along Z
@@ -1571,6 +1572,7 @@ export const createShaders = (precision: Precision) => {
                     let val = f32(inputData[idx]);
                     if (isNaN(val)) { continue; }
                     accum += val;
+                    validCount++;
                 }
 
             } else if (reduceDim == 1u) { // CUMSUM along Y
@@ -1586,6 +1588,7 @@ export const createShaders = (precision: Precision) => {
                     let val = f32(inputData[idx]);
                     if (isNaN(val)) { continue; }
                     accum += val;
+                    validCount++;
                 }
             } else { // CUMSUM along X
                 if (reverse == u32(1)){
@@ -1600,9 +1603,16 @@ export const createShaders = (precision: Precision) => {
                     let val = f32(inputData[idx]);
                     if (isNaN(val)) { continue; }
                     accum += val;
+                    validCount++;
                 }
             }
-                outputData[baseIdx] = accum;
+            let current_val = f32(inputData[baseIdx]);
+            if (validCount == 0u && isNaN(current_val)) {
+                let zero = 0.0;
+                outputData[baseIdx] = ${precision}(zero / zero);
+            } else {
+                outputData[baseIdx] = ${precision}(accum);
+            }
         }
     `
     }
