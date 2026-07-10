@@ -384,7 +384,7 @@ const AnalysisOptions = () => {
                           <Tooltip delayDuration={300}>
                             <div style={{width:'90%', display:'flex', justifyContent:'space-around', alignItems:'center', alignContent:'center'}}>
                               <label htmlFor="reverse-axis" style={{textAlign:'left'}}>Rev.</label>
-                              <TooltipTrigger >  
+                              <TooltipTrigger asChild>  
                                 <Switch id='reverse-axis' checked={reverseDirection == 1} onCheckedChange={e=> {setReverseDirection(e ? 1 : 0)}}/>
                               </TooltipTrigger>
                             </div>
