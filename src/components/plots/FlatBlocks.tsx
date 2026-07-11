@@ -81,7 +81,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
-                map: { value: Array.from({ length: 14 }, (_, idx) => textures?.[idx] ?? textures?.[0]) },
+                map: { value: textures },
                 maskTexture: {value: maskTexture},
                 maskValue: {value: maskValue},
                 threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
@@ -111,7 +111,7 @@ const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTe
     useEffect(()=>{
         if (shaderMaterial){
             const uniforms = shaderMaterial.uniforms;
-            uniforms.map.value = Array.from({ length: 14 }, (_, idx) => textures?.[idx] ?? textures?.[0]);
+            uniforms.map.value = textures;
             uniforms.animateProg.value =  animProg
             uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
             uniforms.displacement.value = displacement
