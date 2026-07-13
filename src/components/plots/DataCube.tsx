@@ -9,12 +9,14 @@ import { deg2rad } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from '@/components/plots'
 import { ColumnMeshes } from './TransectMeshes';
+import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
 }
 
-export const DataCube = ({ volTexture }: DataCubeProps ) => {
+export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
+    const volTexture = usePaddedTextures(propVolTexture);
     const {shape, colormap, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
       shape:state.shape, 
       colormap:state.colormap, 

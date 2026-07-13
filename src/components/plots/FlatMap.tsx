@@ -14,6 +14,7 @@ import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { GetFrag } from '../textures';
 import { SquareMeshes } from './TransectMeshes';
+import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
   setShowInfo: React.Dispatch<React.SetStateAction<boolean>>;
@@ -21,7 +22,8 @@ interface InfoSettersProps{
   coords: React.RefObject<number[]>;
 }
 
-const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
+const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
+    const textures = usePaddedTextures(propTextures);
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, colormap, dimArrays, dimNames, dimUnits, 
       isFlat, dataShape, textureArrayDepths, strides,

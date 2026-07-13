@@ -10,6 +10,7 @@ import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { GetFrag, GetVert } from '../textures';
 import { SquareMeshes } from './TransectMeshes';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -18,7 +19,8 @@ function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number
     return new THREE.Vector2(1-u,v)
 }
 
-export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
+export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
+    const textures = usePaddedTextures(propTextures);
     const {setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(state=>({
       setPlotDim:state.setPlotDim, 
       updateDimCoords:state.updateDimCoords,

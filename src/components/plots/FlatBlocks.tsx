@@ -10,8 +10,10 @@ import { invalidate } from '@react-three/fiber'
 import { deg2rad } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { GetVert } from '../textures/GetVert';
+import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 
-const FlatBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
+const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
+    const textures = usePaddedTextures(propTextures);
     const {colormap, isFlat, valueScales, flipY,
             dataShape, textureArrayDepths} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,

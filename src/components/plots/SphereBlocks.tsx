@@ -9,7 +9,9 @@ import { invalidate } from '@react-three/fiber'
 import { deg2rad } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { GetVert } from '../textures';
-const SphereBlocks = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
+import { usePaddedTextures } from '@/hooks/usePaddedTextures';
+const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
+    const textures = usePaddedTextures(propTextures);
     const {colormap, isFlat, valueScales, 
             dataShape, textureArrayDepths} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,
