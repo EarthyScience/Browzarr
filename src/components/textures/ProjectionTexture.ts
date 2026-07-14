@@ -1,5 +1,8 @@
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
 import * as THREE from 'three';
+
+import proj4 from 'proj4';
 
 function normalizeArray(array: Array<number>){
     const len = array.length;
@@ -77,4 +80,72 @@ export function SetReprojectionTexture(dimArrays: Array<number>[]){
 
     const remapTexture = createRemapTexture(xArray, yArray);
     useGlobalStore.setState({remapTexture});
+}
+
+export function reproject(){
+    const {defaultProjection, projection} = usePlotStore.getState()
+    const {dimArrays, remapTexture } = useGlobalStore.getState()
+    if (remapTexture) remapTexture.dispose();
+    const dimCount = dimArrays.length;
+    const xArray = dimArrays[dimCount-1];
+    const yArray = dimArrays[dimCount-2];
+
+    const width = xArray.length;
+    const height = yArray.length;
+
+    const coords = [];
+    for (let j = 0; j < height; j++) {
+        const y = yArray[j];
+        for (let i = 0; i < width; i++) {
+            const x = xArray[i];
+            coords.push([x,y])
+        }
+    }
+
+    const proj = proj4(defaultProjection, projection);
+    const floatData = new Float64Array(width * height * 2);
+    const data = new Uint16Array(width * height * 2);
+    let [xMin, xMax] = [Infinity, -Infinity];
+    let [yMin, yMax] = [Infinity, -Infinity];
+
+    let ptr = 0;
+    for (let j = 0; j < height; j++) {
+        const y = yArray[j];
+        for (let i = 0; i < width; i++) {
+            const [px, py] = proj.forward([xArray[i], y]);
+            if (py > yMax) yMax = py;
+            if (py < yMin) yMin = py;
+            if (px > xMax) xMax = px;
+            if (px < xMin) xMin = px;
+            floatData[ptr++] = px;
+            floatData[ptr++] = py;
+        }
+    }
+    const xRange = xMax - xMin;
+    const xScaler = 1/xRange;
+    const yRange = yMax - yMin;
+    const yScaler = 1/yRange;
+
+    for (let i = 0; i < width * height; i++){
+        const idx = i * 2;
+        const nx = (floatData[idx] - xMin) * xScaler;     // normalized to [0, 1]
+        const ny = (floatData[idx + 1] - yMin) * yScaler; // normalized to [0, 1]
+        data[idx] = THREE.DataUtils.toHalfFloat(nx);
+        data[idx + 1] = THREE.DataUtils.toHalfFloat(ny);
+    }
+    
+    const texture = new THREE.DataTexture(
+        data,
+        width,
+        height,
+        THREE.RGFormat,
+        THREE.HalfFloatType
+    );
+    texture.needsUpdate = true;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearFilter;
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+
+    useGlobalStore.setState({remapTexture: texture})
 }

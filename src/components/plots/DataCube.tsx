@@ -48,12 +48,12 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       glslVersion: THREE.GLSL3,
       uniforms: {
           modelViewMatrixInverse: { value: new THREE.Matrix4() }, // Used for Orthographic RayMarcher
-          map: { value: volTexture},
-          remap: { value: remapTexture},
+          map: { value: Array.from({ length: 11 }, (_, idx) => volTexture?.[idx] ?? volTexture?.[0])},
           maskTexture: { value: maskTexture },
           maskValue: {value: maskValue },
           textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
           cmap:{value: colormap},
+          remapTexture: { value: remapTexture},
           cOffset:{value: cOffset},
           cScale: {value: cScale},
           threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
@@ -77,7 +77,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       blending: THREE.NormalBlending,
       depthWrite: false,
       side: useOrtho ? THREE.FrontSide : THREE.BackSide,
-    }),[useFragOpt, useOrtho, volTexture]);
+    }),[useFragOpt, useOrtho, volTexture, remapTexture]);
 
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
     useEffect(() => {

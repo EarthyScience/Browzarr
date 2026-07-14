@@ -12,7 +12,7 @@ import { ThreeEvent } from '@react-three/fiber';
 import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
-import { GetFrag } from '../textures';
+import { flatFrag } from '../textures/shaders';
 import { SquareMeshes } from './TransectMeshes';
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
@@ -24,13 +24,13 @@ interface InfoSettersProps{
 const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, colormap, dimArrays, dimNames, dimUnits, 
-      isFlat, dataShape, textureArrayDepths, strides,
+      isFlat, dataShape, textureArrayDepths, strides, remapTexture,
       setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(state => ({
       flipY: state.flipY, colormap: state.colormap, 
       dimArrays: state.dimArrays, strides: state.strides, 
       dimNames:state.dimNames, dimUnits: state.dimUnits,
       isFlat: state.isFlat, dataShape: state.dataShape,
-      textureArrayDepths: state.textureArrayDepths,
+      textureArrayDepths: state.textureArrayDepths,remapTexture:state.remapTexture,
       setPlotDim:state.setPlotDim, 
       updateDimCoords:state.updateDimCoords,
       updateTimeSeries: state.updateTimeSeries
@@ -168,7 +168,8 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
             uniforms:{
               cScale: {value: cScale},
               cOffset: {value: cOffset},
-              map : {value: Array.from({ length: 14 }, (_, idx) => textures?.[idx])},
+              map : {value: Array.from({ length: 12 }, (_, idx) => textures?.[idx])},
+              remapTexture: { value: remapTexture},
               maskTexture: {value: maskTexture},
               maskValue: {value: maskValue},
               threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
@@ -181,10 +182,13 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
               nanAlpha: {value: 1 - nanTransparency},
               fillValue: {value: fillValue?? NaN},
             },
+            defines:{
+              IS_FLAT: isFlat
+            },
             vertexShader: vertShader,
-            fragmentShader: GetFrag("flatFrag", isFlat),
+            fragmentShader: flatFrag,
             side: THREE.DoubleSide,
-        }),[isFlat, textures])
+        }),[isFlat, remapTexture, textures])
     
     useEffect(()=>{
       if(shaderMaterial){

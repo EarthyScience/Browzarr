@@ -1,12 +1,13 @@
 //This is for Flat Textures but with 3D textures to sample from i,e; animation
 
 #ifdef IS_FLAT
-    uniform sampler2D map[14];
+    uniform sampler2D map[12];
 #else
-    uniform sampler3D map[14];
+    uniform sampler3D map[12];
 #endif
 uniform sampler2D maskTexture;
 uniform sampler2D cmap;
+uniform sampler2D remapTexture;
 uniform vec3 textureDepths;
 
 
@@ -58,8 +59,8 @@ float sample1(
     else if (index == 9) return texture(map[9], p).r;
     else if (index == 10) return texture(map[10], p).r;
     else if (index == 11) return texture(map[11], p).r;
-    else if (index == 12) return texture(map[12], p).r;
-    else if (index == 13) return texture(map[13], p).r;
+    // else if (index == 12) return texture(map[12], p).r;
+    // else if (index == 13) return texture(map[13], p).r;
     else return 0.0;
 }
 
@@ -78,12 +79,14 @@ void main() {
     int yStepSize = int(textureDepths.x); 
     #ifdef IS_FLAT
         vec2 texCoord = vUv;
+        texCoord.xy = texture(remapTexture,texCoord.xy).rg;
         texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
         ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
         int textureIdx = idx.y * yStepSize + idx.x;
         vec2 localCoord = texCoord * (textureDepths.xy); // Scale up
     #else
         vec3 texCoord = vec3(vUv, animateProg);
+        texCoord.xy = texture(remapTexture,texCoord.xy).rg;
         texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
         ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
         int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
@@ -101,4 +104,5 @@ void main() {
     float sampLoc = isNaN ? strength: (strength)*cScale;
     sampLoc = isNaN ? strength : min(sampLoc+cOffset,0.995);
     Color = isNaN ? vec4(nanColor, nanAlpha) : vec4(texture2D(cmap, vec2(sampLoc, 0.5)).rgb, 1.);
+    // Color = vec4(texture(remapTexture,texCoord.xy).rg, 0. , 1.);
 }

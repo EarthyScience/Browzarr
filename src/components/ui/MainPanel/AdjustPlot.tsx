@@ -20,6 +20,7 @@ import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
 import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
 import { RiCloseLargeLine } from "react-icons/ri";
+import { reproject } from '@/components/textures/ProjectionTexture';
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -501,12 +502,12 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {valueRange, showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
+  const {valueRange, showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture, defaultProjection,
     setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(state => ({
     showBorders: state.showBorders, borderColor: state.borderColor,
     nanColor: state.nanColor, nanTransparency: state.nanTransparency,
     plotType: state.plotType, interpPixels: state.interpPixels,
-    fillValue: state.fillValue, useBorderTexture:state.useBorderTexture,
+    fillValue: state.fillValue, useBorderTexture:state.useBorderTexture, defaultProjection: state.defaultProjection,
     valueRange: state.valueRange, setValueRange: state.setValueRange,
     setShowBorders: state.setShowBorders, setBorderColor: state.setBorderColor,
     setNanColor: state.setNanColor, setNanTransparency: state.setNanTransparency,
@@ -521,8 +522,10 @@ const GlobalOptions = () =>{
   })))
   const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
   const [showMasks, setShowMasks] = useState(false)
+  const [showRepro, setShowRepro] = useState(false)
   const masks = ["None", "Land", "Water"]
   const isPC = plotType == 'point-cloud'
+
   return (
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
       <div className="border-t border-gray-300 w-full my-4" />
@@ -599,6 +602,29 @@ const GlobalOptions = () =>{
             </SelectContent>
           </Select>
         </div>
+      </Hider>
+      <button
+        onClick={()=>setShowRepro(x=>!x)}
+        className="flex items-center gap-2 w-full mb-2"
+      >
+        <b>Reprojection</b>
+        <ChevronDown 
+          className={`h-4 w-4 transition-transform duration-200 ${
+            showMasks ? '' : 'rotate-180'
+          }`}
+        />
+      </button>
+      <Hider show={showRepro} >
+          <Input
+            type='string' 
+            defaultValue={defaultProjection}
+            onChange={e=>usePlotStore.setState({projection:e.target.value})}
+          />
+          <Button
+            onClick={reproject}
+          >
+            Reproject
+          </Button>
       </Hider>
       {!(analysisMode && axis != 0) && // Hide if Analysismode and Axis != 0
       <>
