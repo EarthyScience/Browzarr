@@ -20,6 +20,7 @@ type StoreState = {
   shape: THREE.Vector3;
   valueScales: { maxVal: number; minVal: number };
   colormap: THREE.DataTexture;
+  remapTexture: THREE.DataTexture | undefined;
   timeSeries: Record<string, Record<string, any>>;
   strides: number[];
   metadata: Record<string, any> | null;
@@ -89,6 +90,7 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   shape: new THREE.Vector3(2, 2, 2),
   valueScales: { maxVal: 1, minVal: -1 },
   colormap: GetColorMapTexture(),
+  remapTexture: undefined,
   timeSeries: {},
   strides: [10368,144,1],
   metadata: null,

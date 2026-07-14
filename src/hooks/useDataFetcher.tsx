@@ -8,6 +8,7 @@ import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
 import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
 import { GetArray } from '@/components/zarr/GetArray';
 import { ArrayToTexture } from '@/components/textures';
+import { SetReprojectionTexture } from '@/components/textures/ProjectionTexture';
 
 export const useDataFetcher = () => {
     const {
@@ -134,6 +135,7 @@ export const useDataFetcher = () => {
 
                 setDimUnits(dimUnits);
                 ParseExtent(dimUnits, dimArrays);
+                SetReprojectionTexture(dimArrays);
             });
 
         } else {

@@ -15,11 +15,12 @@ interface DataCubeProps {
 }
 
 export const DataCube = ({ volTexture }: DataCubeProps ) => {
-    const {shape, colormap, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
+    const {shape, colormap, flipY, textureArrayDepths, remapTexture} = useGlobalStore(useShallow(state=>({
       shape:state.shape, 
       colormap:state.colormap, 
       flipY:state.flipY,
-      textureArrayDepths: state.textureArrayDepths
+      textureArrayDepths: state.textureArrayDepths,
+      remapTexture: state.remapTexture
     }))) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const {
       valueRange, xRange, yRange, zRange, quality, useOrtho, 
@@ -47,7 +48,8 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       glslVersion: THREE.GLSL3,
       uniforms: {
           modelViewMatrixInverse: { value: new THREE.Matrix4() }, // Used for Orthographic RayMarcher
-          map: { value: Array.from({ length: 14 }, (_, idx) => volTexture?.[idx])},
+          map: { value: volTexture},
+          remap: { value: remapTexture},
           maskTexture: { value: maskTexture },
           maskValue: {value: maskValue },
           textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
