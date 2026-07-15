@@ -190,7 +190,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
           const dim = dims[mappedIdx];
           const s = ndSlices[mappedIdx];
           const dimShape = dataShape[mappedIdx] ?? dim.size;
-          let sel: SliceSelectionState = { mode: 'slice', start: '0', stop: String(Math.max(dimShape - 1, 0)), scalar: '0' };
+          let sel = defaultSelection(dimShape);
           if (Array.isArray(s)) {
              sel = { start: String(s[0]), stop: s[1] !== null ? String(s[1]) : '', scalar: '', mode: 'slice' };
           }
@@ -211,10 +211,11 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     const axes = defaultAxes.slice(-activeDims.length);
     return activeDims.map((d, i) => {
         const dimShape = dataShape[availableDims.indexOf(d)] ?? d.size;
+        const sel = defaultSelection(dimShape);
         return {
           id: nextId(),
           dimName: d.name,
-          sel: { mode: 'slice', start: '0', stop: String(Math.max(dimShape - 1, 0)), scalar: '0' },
+          sel,
           axis: axes[i],
         };
     });
@@ -435,7 +436,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       const newRows: SlicerRow[] = [...prev, {
         id: nextId(),
         dimName,
-        sel: { mode: 'slice', start: '0', stop: String(Math.max(dimShape - 1, 0)), scalar: '0' },
+        sel: defaultSelection(dimShape),
         axis: 'z', // Placeholder, reassigned below
       }];
       
@@ -457,9 +458,10 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     setRows((prev) =>
       prev.map((r) => {
         if (r.id !== id) return r;
-        const dim = availableDims.find((d) => d.name === dimName);
-        const dimShape = dataShape[availableDims.findIndex(d => d.name === dimName)] ?? dim?.size ?? 0;
-        return { ...r, dimName, sel: { mode: 'slice', start: '0', stop: String(Math.max(dimShape - 1, 0)), scalar: '0' } };
+        const dimIndex = availableDims.findIndex((d) => d.name === dimName);
+        const dim = availableDims[dimIndex];
+        const dimShape = dataShape[dimIndex] ?? dim?.size ?? 0;
+        return { ...r, dimName, sel: defaultSelection(dimShape) };
       }),
     );
   };
