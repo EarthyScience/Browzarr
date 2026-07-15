@@ -86,8 +86,11 @@ export async function GetArray(varOveride?: string) {
     let iter = 1;
     const rescaleIDs: string[] = [];
 
-    const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : (idx4D ?? "");
-    const cacheBase = scalarIndices !== "" ? `${initStore}_${targetVariable}_${scalarIndices}` : `${initStore}_${targetVariable}`;
+    const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : "";
+    let cacheBase = scalarIndices !== "" ? `${initStore}_${targetVariable}_${scalarIndices}` : `${initStore}_${targetVariable}`;
+    if (rank >= 4 && idx4D !== undefined && idx4D !== null) {
+        cacheBase = `${cacheBase}_time${idx4D}`;
+    }
 
     setStatus("Downloading...");
     setProgress(0);
@@ -103,7 +106,7 @@ export async function GetArray(varOveride?: string) {
                                     cachedChunk.kernel.kernelDepth === (coarsen ? kernelDepth : undefined);
 
                 if (isCacheValid) {
-                    const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : cachedChunk.data.slice();
+                    const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : new Float16Array(cachedChunk.data);
                     if (hasZ) {
                         copyChunkToArray(
                             chunkData, 

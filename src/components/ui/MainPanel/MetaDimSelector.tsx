@@ -102,7 +102,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
   const chunkShape = meta?.chunks || [];
 
 
-  const { setDimArrays, setDimNames, setDimUnits, initStore, setVariable, setTextureArrayDepths, variable } = useGlobalStore(
+  const { setDimArrays, setDimNames, setDimUnits, initStore, setVariable, setTextureArrayDepths, variable, idx4D } = useGlobalStore(
     useShallow((state) => ({
       setDimArrays: state.setDimArrays,
       setDimNames: state.setDimNames,
@@ -111,6 +111,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       setVariable: state.setVariable,
       setTextureArrayDepths: state.setTextureArrayDepths,
       variable: state.variable,
+      idx4D: state.idx4D,
     })),
   );
 
@@ -188,7 +189,8 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
         if (mappedIdx !== undefined && mappedIdx >= 0 && mappedIdx < dims.length) {
           const dim = dims[mappedIdx];
           const s = ndSlices[mappedIdx];
-          let sel: SliceSelectionState = { ...defaultSelection(dim.size), mode: 'slice' };
+          const dimShape = dataShape[mappedIdx] ?? dim.size;
+          let sel: SliceSelectionState = { mode: 'slice', start: '0', stop: String(Math.max(dimShape - 1, 0)), scalar: '0' };
           if (Array.isArray(s)) {
              sel = { start: String(s[0]), stop: s[1] !== null ? String(s[1]) : '', scalar: '', mode: 'slice' };
           }
@@ -207,12 +209,15 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     const activeDims = dims.slice(-Math.min(MAX_ACTIVE_DIMS, dims.length));
     const defaultAxes: Axis[] = ['z', 'y', 'x'];
     const axes = defaultAxes.slice(-activeDims.length);
-    return activeDims.map((d, i) => ({
-      id: nextId(),
-      dimName: d.name,
-      sel: { ...defaultSelection(d.size), mode: 'slice' },
-      axis: axes[i],
-    }));
+    return activeDims.map((d, i) => {
+        const dimShape = dataShape[availableDims.indexOf(d)] ?? d.size;
+        return {
+          id: nextId(),
+          dimName: d.name,
+          sel: { mode: 'slice', start: '0', stop: String(Math.max(dimShape - 1, 0)), scalar: '0' },
+          axis: axes[i],
+        };
+    });
   };
 
   const [rows, setRows] = useState<SlicerRow[]>(() => makeInitialRows(availableDims));
@@ -251,7 +256,10 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     });
 
     const scalarIndices = ndSlicesTemp.filter(s => typeof s === "number").join("_");
-    const cacheBase = scalarIndices !== "" ? `${initStore}_${meta.name}_${scalarIndices}` : `${initStore}_${meta.name}`;
+    let cacheBase = scalarIndices !== "" ? `${initStore}_${meta.name}_${scalarIndices}` : `${initStore}_${meta.name}`;
+    if (meta.shape && meta.shape.length >= 4 && idx4D !== undefined && idx4D !== null) {
+        cacheBase = `${cacheBase}_time${idx4D}`;
+    }
 
     const rowZ = rows.find((r) => r.axis === 'z');
     const rowY = rows.find((r) => r.axis === 'y');
@@ -423,10 +431,11 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       const dimName = firstUnusedDim(prev);
       if (!dimName) return prev;
       const dim = availableDims.find((d) => d.name === dimName)!;
+      const dimShape = dataShape[availableDims.indexOf(dim)] ?? dim.size;
       const newRows: SlicerRow[] = [...prev, {
         id: nextId(),
         dimName,
-        sel: { ...defaultSelection(dim.size), mode: 'slice' },
+        sel: { mode: 'slice', start: '0', stop: String(Math.max(dimShape - 1, 0)), scalar: '0' },
         axis: 'z', // Placeholder, reassigned below
       }];
       
@@ -449,7 +458,8 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       prev.map((r) => {
         if (r.id !== id) return r;
         const dim = availableDims.find((d) => d.name === dimName);
-        return { ...r, dimName, sel: { ...defaultSelection(dim?.size), mode: 'slice' } };
+        const dimShape = dataShape[availableDims.findIndex(d => d.name === dimName)] ?? dim?.size ?? 0;
+        return { ...r, dimName, sel: { mode: 'slice', start: '0', stop: String(Math.max(dimShape - 1, 0)), scalar: '0' } };
       }),
     );
   };
@@ -489,20 +499,23 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       }
       const start = parseInt(sel.start) || 0;
       let stop = parseInt(sel.stop);
-      return [start, isNaN(stop) ? null : stop + 1];
+      if (isNaN(stop)) return [start, null];
+      return [start, Math.min(stop + 1, defaultLast > 0 ? defaultLast : stop + 1)];
     };
 
     setZSlice(getSliceArray(rowZ, dataShape ? dataShape[getOrigIdx(rowZ?.dimName || '')] : 0));
     setYSlice(getSliceArray(rowY, dataShape ? dataShape[getOrigIdx(rowY?.dimName || '')] : 0));
     setXSlice(getSliceArray(rowX, dataShape ? dataShape[getOrigIdx(rowX?.dimName || '')] : 0));
 
-    const ndSlices: (number | [number, number | null])[] = availableDims.map((dim) => {
+    const ndSlices: (number | [number, number | null])[] = availableDims.map((dim, idx) => {
+      const dimShape = dataShape ? dataShape[idx] ?? dim.size : dim.size;
       const row = rows.find((r) => r.dimName === dim.name);
       if (row) {
         if (row.sel.mode === 'scalar') return parseInt(row.sel.scalar) || 0;
         const start = parseInt(row.sel.start) || 0;
         let stop = parseInt(row.sel.stop);
-        return [start, isNaN(stop) ? null : stop + 1];
+        if (isNaN(stop)) return [start, null];
+        return [start, Math.min(stop + 1, dimShape)];
       }
       const colSel = collapsedSels[dim.name];
       if (colSel && colSel.mode === 'scalar') return parseInt(colSel.scalar) || 0;
