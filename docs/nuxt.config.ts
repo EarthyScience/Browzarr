@@ -17,5 +17,14 @@ export default defineNuxtConfig({
   // Nitro static build config
   nitro: {
     preset: 'static',
+  },
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@comark/vue',
+        '@vue/devtools-core',
+        '@vue/devtools-kit',
+      ]
+    }
   }
 })
