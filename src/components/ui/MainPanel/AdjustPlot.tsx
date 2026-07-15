@@ -21,6 +21,7 @@ import { ChevronDown } from 'lucide-react';
 import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
 import { RiCloseLargeLine } from "react-icons/ri";
 import { reproject } from '@/components/textures/ProjectionTexture';
+import { Reprojection } from '../Elements/Reprojection';
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -603,29 +604,6 @@ const GlobalOptions = () =>{
           </Select>
         </div>
       </Hider>
-      <button
-        onClick={()=>setShowRepro(x=>!x)}
-        className="flex items-center gap-2 w-full mb-2"
-      >
-        <b>Reprojection</b>
-        <ChevronDown 
-          className={`h-4 w-4 transition-transform duration-200 ${
-            showMasks ? '' : 'rotate-180'
-          }`}
-        />
-      </button>
-      <Hider show={showRepro} >
-          <Input
-            type='string' 
-            defaultValue={defaultProjection}
-            onChange={e=>usePlotStore.setState({projection:e.target.value})}
-          />
-          <Button
-            onClick={reproject}
-          >
-            Reproject
-          </Button>
-      </Hider>
       {!(analysisMode && axis != 0) && // Hide if Analysismode and Axis != 0
       <>
         <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
@@ -763,7 +741,7 @@ const AdjustPlot = () => {
             Close settings
           </TooltipContent>
         </Tooltip>
-        <div className={`overflow-y-auto -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          
+        <div className={`overflow-y-auto no-scrollbar -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          
           <RxReset size={25} 
             style={{
               // position:'absolute',
@@ -778,6 +756,7 @@ const AdjustPlot = () => {
           {plotType === 'sphere' && <SphereOptions/>}
           {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
           {plotType === 'flat' && <FlatOptions />}
+          {['flat','volume'].includes(plotType) && <Reprojection />}
           <GlobalOptions />
         </div>
       </PopoverContent>

@@ -71,6 +71,9 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           nanColor: {value: new THREE.Color(nanColor)},
           fillValue: {value: fillValue?? NaN}
       },
+      defines:{
+        REPROJECT: remapTexture ? true : false
+      },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
       fragmentShader: useFragOpt ?  fragOpt : fragmentShader,
       transparent: true,
@@ -78,6 +81,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       depthWrite: false,
       side: useOrtho ? THREE.FrontSide : THREE.BackSide,
     }),[useFragOpt, useOrtho, volTexture, remapTexture]);
+
 
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
     useEffect(() => {

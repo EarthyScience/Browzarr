@@ -65,8 +65,8 @@ type PlotState ={
   cameraPosition: THREE.Vector3;
   disablePointScale: boolean;
   camera: THREE.Camera | undefined;
-  defaultProjection: string;
-  projection: string;
+  defaultProjection: string | undefined;
+  projection: string | undefined;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -191,8 +191,8 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   cameraPosition: new THREE.Vector3(0, 0, 5),
   disablePointScale: false,
   camera: undefined,
-  defaultProjection: "EPSG:4326",
-  projection: "EPSG:4326",
+  defaultProjection: undefined,
+  projection: undefined,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),

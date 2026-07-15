@@ -1,5 +1,6 @@
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { ArrayMinMax, linspace } from '@/utils/HelperFuncs';
 import * as THREE from 'three';
 
 import proj4 from 'proj4';
@@ -82,62 +83,83 @@ export function SetReprojectionTexture(dimArrays: Array<number>[]){
     useGlobalStore.setState({remapTexture});
 }
 
-export function reproject(){
+export function reproject(resolution: number = 256){
     const {defaultProjection, projection} = usePlotStore.getState()
+    if (!defaultProjection || !projection) return; // This shouldn't trigger as the button will be disabled for this same condition
     const {dimArrays, remapTexture } = useGlobalStore.getState()
     if (remapTexture) remapTexture.dispose();
     const dimCount = dimArrays.length;
+
     const xArray = dimArrays[dimCount-1];
     const yArray = dimArrays[dimCount-2];
-
     const width = xArray.length;
     const height = yArray.length;
 
-    const coords = [];
+    const [xMin, xMax] = ArrayMinMax(xArray);
+    const [yMin, yMax] = ArrayMinMax(yArray);
+    // We need the border points as the min/max of the old CRS won't always be the min/max of the new CRS
+    const boundaryPoints: [number, number][] = [];
+    console.log(xMin, xMax, yMin, yMax)
+    // top edge: j = 0, all i
+    for (let i = 0; i < width; i++) {
+        boundaryPoints.push([xArray[i], yArray[0]]);
+    }
+    // bottom edge: j = height - 1, all i
+    for (let i = 0; i < width; i++) {
+        boundaryPoints.push([xArray[i], yArray[height - 1]]);
+    }
+    // left edge: i = 0, all j
     for (let j = 0; j < height; j++) {
-        const y = yArray[j];
-        for (let i = 0; i < width; i++) {
-            const x = xArray[i];
-            coords.push([x,y])
-        }
+        boundaryPoints.push([xArray[0], yArray[j]]);
+    }
+    // right edge: i = width - 1, all j
+    for (let j = 0; j < height; j++) {
+        boundaryPoints.push([xArray[width - 1], yArray[j]]);
     }
 
     const proj = proj4(defaultProjection, projection);
-    const floatData = new Float64Array(width * height * 2);
-    const data = new Uint16Array(width * height * 2);
-    let [xMin, xMax] = [Infinity, -Infinity];
-    let [yMin, yMax] = [Infinity, -Infinity];
+    let [minX, minY] = [Infinity, Infinity];
+    let [maxX, maxY] = [-Infinity, -Infinity];
 
-    let ptr = 0;
-    for (let j = 0; j < height; j++) {
-        const y = yArray[j];
-        for (let i = 0; i < width; i++) {
-            const [px, py] = proj.forward([xArray[i], y]);
-            if (py > yMax) yMax = py;
-            if (py < yMin) yMin = py;
-            if (px > xMax) xMax = px;
-            if (px < xMin) xMin = px;
-            floatData[ptr++] = px;
-            floatData[ptr++] = py;
-        }
-    }
-    const xRange = xMax - xMin;
-    const xScaler = 1/xRange;
-    const yRange = yMax - yMin;
-    const yScaler = 1/yRange;
+    // Get min/max of new CRS for new Axis'
+    for (const [lon, lat] of boundaryPoints) {
+        const [px, py] = proj.forward([lon, lat]);
+        minX = Math.min(minX, px); maxX = Math.max(maxX, px);
+        minY = Math.min(minY, py); maxY = Math.max(maxY, py);
+    }    
+ 
+    // ---- Get Estimate of aspectRatio ---- //
+    const midX = Math.floor(width / 2);
+    const midY = Math.floor(height / 2);
+    const [x0, y0] = proj.forward([xArray[midX], yArray[midY]]);
+    const [x1, y1] = proj.forward([xArray[midX + 1], yArray[midY + 1]]);
+    const xSize = Math.abs(x1 - x0);
+    const ySize = Math.abs(y1 - y0);
+    const aspectRatio = xSize/ySize;
 
-    for (let i = 0; i < width * height; i++){
-        const idx = i * 2;
-        const nx = (floatData[idx] - xMin) * xScaler;     // normalized to [0, 1]
-        const ny = (floatData[idx + 1] - yMin) * yScaler; // normalized to [0, 1]
-        data[idx] = THREE.DataUtils.toHalfFloat(nx);
-        data[idx + 1] = THREE.DataUtils.toHalfFloat(ny);
+    // ---- Construct new CRS axis' ----//
+    const targetWidth = Math.ceil(resolution*aspectRatio);
+    const targetHeight = resolution;
+    const xTicks = linspace(minX, maxX, targetWidth);
+    const yTicks = linspace(minY, maxY, targetHeight);
+    const data = new Uint16Array(targetWidth * targetHeight * 2);
+    for (let j = 0; j < targetHeight; j++) {
+        for (let i = 0; i < targetWidth; i++) {
+            const [lon, lat] = proj.inverse([xTicks[i], yTicks[j]]);
+            const u = (lon - xMin) / (xMax - xMin);
+            const v = (lat - yMin) / (yMax - yMin);
+            const idx = (j * targetWidth + i) * 2;
+            const valid = u >= 0 && u <= 1 && v >= 0 && v <= 1 && isFinite(lon) && isFinite(lat);
+            data[idx]     = THREE.DataUtils.toHalfFloat(valid ? u : -1);  
+            data[idx + 1] = THREE.DataUtils.toHalfFloat(valid ? v : -1);
+        }  
     }
-    
+    const sanity = proj4(projection, defaultProjection, [-17912187.334735576, -8989370.410319714])
+    console.log(sanity)
     const texture = new THREE.DataTexture(
         data,
-        width,
-        height,
+        targetWidth,
+        targetHeight,
         THREE.RGFormat,
         THREE.HalfFloatType
     );

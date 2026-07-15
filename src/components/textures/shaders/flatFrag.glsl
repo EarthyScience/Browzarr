@@ -79,14 +79,30 @@ void main() {
     int yStepSize = int(textureDepths.x); 
     #ifdef IS_FLAT
         vec2 texCoord = vUv;
-        texCoord.xy = texture(remapTexture,texCoord.xy).rg;
+        #ifdef REPROJECT
+            texCoord.xy = texture(remapTexture,texCoord.xy).rg;
+             if (
+                texCoord.x > 1. ||
+                texCoord.x < 0. ||
+                texCoord.y > 1. ||
+                texCoord.y < 0. 
+            ) discard;
+        #endif
         texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
         ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
         int textureIdx = idx.y * yStepSize + idx.x;
         vec2 localCoord = texCoord * (textureDepths.xy); // Scale up
     #else
         vec3 texCoord = vec3(vUv, animateProg);
-        texCoord.xy = texture(remapTexture,texCoord.xy).rg;
+        #ifdef REPROJECT
+            texCoord.xy = texture(remapTexture,texCoord.xy).rg;
+            if (
+                texCoord.x >= 1. ||
+                texCoord.x <= 0. ||
+                texCoord.y >= 1. ||
+                texCoord.y <= 0. 
+            ) discard;
+        #endif
         texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
         ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
         int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
@@ -104,5 +120,7 @@ void main() {
     float sampLoc = isNaN ? strength: (strength)*cScale;
     sampLoc = isNaN ? strength : min(sampLoc+cOffset,0.995);
     Color = isNaN ? vec4(nanColor, nanAlpha) : vec4(texture2D(cmap, vec2(sampLoc, 0.5)).rgb, 1.);
+    // float check = float(texture(remapTexture,texCoord.xy).g >= 0.);
+    // Color = vec4(check, 0., 0. , 1.);
     // Color = vec4(texture(remapTexture,texCoord.xy).rg, 0. , 1.);
 }

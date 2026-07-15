@@ -183,7 +183,8 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
               fillValue: {value: fillValue?? NaN},
             },
             defines:{
-              IS_FLAT: isFlat
+              IS_FLAT: isFlat,
+              REPROJECT: remapTexture ? true: false
             },
             vertexShader: vertShader,
             fragmentShader: flatFrag,

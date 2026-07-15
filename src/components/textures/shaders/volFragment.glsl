@@ -112,9 +112,15 @@ void main() {
             continue;
         }
         vec3 texCoord = p / scale + 0.5;
-        vec2 newV = texCoord.xy;
-        vec2 repTex = texture2D(remapTexture, newV).rg;
-        texCoord.xy = repTex;
+        #ifdef REPROJECT
+            texCoord.xy = texture2D(remapTexture, texCoord.xy).rg;
+            if (
+                texCoord.x > 1. ||
+                texCoord.x < 0. ||
+                texCoord.y > 1. ||
+                texCoord.y < 0. 
+            ) {continue;}
+        #endif
 
         if (maskValue != 0){
             vec2 newV = texCoord.xy; 
