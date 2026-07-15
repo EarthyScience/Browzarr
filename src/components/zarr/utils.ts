@@ -52,6 +52,14 @@ export function ToFloat16(
 			maxVal = val;
 		}
 	}
+	if (maxVal === 0) {
+		const newArray = new Float16Array(array.length);
+		for (let i = 0; i < array.length; i++) {
+			newArray[i] = array[i] === 0 ? 0 : NaN;
+		}
+		return [newArray, initialScale !== 0 ? initialScale : null];
+	}
+
 	const additionalScaling = Math.ceil(Math.log10(maxVal / 65504));
 	const needsRescale = additionalScaling > 0 || additionalScaling <= -6;
 	//I think this is complicating things. Because if it was already scaled then there should already by enough variance in the data it doesn't need to go further
@@ -195,49 +203,45 @@ export function copyChunkToArray(
 	destShape: number[],
 	destStride: number[],
 	chunkGridPos: number[],
-	chunkGridStart: number[],
+	fullChunkDim: number[],
+	sliceStart: number[],
 ): void {
 	const [z, y, x] = chunkGridPos;
-	const [zStartIdx, yStartIdx, xStartIdx] = chunkGridStart;
-	const [chunkShapeZ, chunkShapeY, chunkShapeX] = chunkShape;
+	const [chunkDimZ, chunkDimY, chunkDimX] = fullChunkDim;
+	const [sliceStartZ, sliceStartY, sliceStartX] = sliceStart;
 	const [destShapeZ, destShapeY, destShapeX] = destShape;
 
-	// 1. Calculate the local coordinates of the chunk within the destination grid
-	const localZ = z - zStartIdx;
-	const localY = y - yStartIdx;
-	const localX = x - xStartIdx;
+	const absZ = z * chunkDimZ;
+	const absY = y * chunkDimY;
+	const absX = x * chunkDimX;
 
-	// 2. Determine the starting element position for this chunk in the destination array
-	const zStart = localZ * chunkShapeZ;
-	const yStart = localY * chunkShapeY;
-	const xStart = localX * chunkShapeX;
+	const czStart = Math.max(0, sliceStartZ - absZ);
+	const czEnd = Math.min(chunkShape[0], sliceStartZ + destShapeZ - absZ);
+	const cyStart = Math.max(0, sliceStartY - absY);
+	const cyEnd = Math.min(chunkShape[1], sliceStartY + destShapeY - absY);
+	const cxStart = Math.max(0, sliceStartX - absX);
+	const cxEnd = Math.min(chunkShape[2], sliceStartX + destShapeX - absX);
 
-	// 3. Calculate the actual number of elements to copy for this chunk
-	// This prevents writing past the end of the destination array for partial chunks.
-	const zLimit = Math.min(chunkShapeZ, destShapeZ - zStart);
-	const yLimit = Math.min(chunkShapeY, destShapeY - yStart);
-	const xLimit = Math.min(chunkShapeX, destShapeX - xStart);
-
-	// 4. Loop using the calculated limits and copy row by row
-	for (let cz = 0; cz < zLimit; cz++) {
-		for (let cy = 0; cy < yLimit; cy++) {
-			// Offset to the start of the row in the SOURCE chunk data
+	for (let cz = czStart; cz < czEnd; cz++) {
+		for (let cy = cyStart; cy < cyEnd; cy++) {
 			const sourceRowOffset = cz * chunkStride[0] + cy * chunkStride[1];
+			const destZ = (absZ + cz) - sliceStartZ;
+			const destY = (absY + cy) - sliceStartY;
+			const destXStart = (absX + cxStart) - sliceStartX;
+			const destRowOffset = destZ * destStride[0] + destY * destStride[1] + destXStart;
 
-			// Offset to the start of the row in the DESTINATION typedArray
-			const destRowOffset =
-				(zStart + cz) * destStride[0] +
-				(yStart + cy) * destStride[1] +
-				xStart;
-
-			// Get the row of data from the source chunk, using the new xLimit
-			const rowData = chunkData.subarray(
-				sourceRowOffset,
-				sourceRowOffset + xLimit,
-			);
-
-			// Place the row in the correct position in the final array
-			destArray.set(rowData, destRowOffset);
+			if (chunkStride[2] === 1) {
+				const rowData = chunkData.subarray(
+					sourceRowOffset + cxStart,
+					sourceRowOffset + cxEnd,
+				);
+				destArray.set(rowData, destRowOffset);
+			} else {
+				for (let cx = cxStart; cx < cxEnd; cx++) {
+					const destX = (absX + cx) - sliceStartX;
+					destArray[destZ * destStride[0] + destY * destStride[1] + destX] = chunkData[sourceRowOffset + cx * chunkStride[2]];
+				}
+			}
 		}
 	}
 }
@@ -250,45 +254,40 @@ export function copyChunkToArray2D(
 	destShape: number[],
 	destStride: number[],
 	chunkGridPos: number[],
-	chunkGridStart: number[],
+	fullChunkDim: number[],
+	sliceStart: number[],
 ): void {
-	// Destructure the 2D properties
 	const [y, x] = chunkGridPos;
-	const [yStartIdx, xStartIdx] = chunkGridStart;
-	const [chunkShapeY, chunkShapeX] = chunkShape;
+	const [chunkDimY, chunkDimX] = fullChunkDim;
+	const [sliceStartY, sliceStartX] = sliceStart;
 	const [destShapeY, destShapeX] = destShape;
 
-	// 1. Calculate the local coordinates of the chunk within the destination grid
-	const localY = y - yStartIdx;
-	const localX = x - xStartIdx;
+	const absY = y * chunkDimY;
+	const absX = x * chunkDimX;
 
-	// 2. Determine the starting element position for this chunk in the destination array
-	const yStart = localY * chunkShapeY;
-	const xStart = localX * chunkShapeX;
+	const cyStart = Math.max(0, sliceStartY - absY);
+	const cyEnd = Math.min(chunkShape[0], sliceStartY + destShapeY - absY);
+	const cxStart = Math.max(0, sliceStartX - absX);
+	const cxEnd = Math.min(chunkShape[1], sliceStartX + destShapeX - absX);
 
-	// 3. Calculate the actual number of elements to copy for this chunk.
-	// This prevents writing past the end of the destination array for partial chunks.
-	const yLimit = Math.min(chunkShapeY, destShapeY - yStart);
-	const xLimit = Math.min(chunkShapeX, destShapeX - xStart);
-
-	// 4. Loop through the rows (Y-axis) and copy each one
-	for (let cy = 0; cy < yLimit; cy++) {
-		// Offset to the start of the row in the SOURCE chunk data
-		// chunkStride[0] is the stride for the Y-dimension
+	for (let cy = cyStart; cy < cyEnd; cy++) {
 		const sourceRowOffset = cy * chunkStride[0];
+		const destY = (absY + cy) - sliceStartY;
+		const destXStart = (absX + cxStart) - sliceStartX;
+		const destRowOffset = destY * destStride[0] + destXStart;
 
-		// Offset to the start of the row in the DESTINATION typedArray
-		// destStride[0] is the stride for the Y-dimension
-		const destRowOffset = (yStart + cy) * destStride[0] + xStart;
-
-		// Get the row of data from the source chunk, using the calculated xLimit
-		const rowData = chunkData.subarray(
-			sourceRowOffset,
-			sourceRowOffset + xLimit,
-		);
-
-		// Place the row in the correct position in the final destination array
-		destArray.set(rowData, destRowOffset);
+		if (chunkStride[1] === 1) {
+			const rowData = chunkData.subarray(
+				sourceRowOffset + cxStart,
+				sourceRowOffset + cxEnd,
+			);
+			destArray.set(rowData, destRowOffset);
+		} else {
+			for (let cx = cxStart; cx < cxEnd; cx++) {
+				const destX = (absX + cx) - sliceStartX;
+				destArray[destY * destStride[0] + destX] = chunkData[sourceRowOffset + cx * chunkStride[1]];
+			}
+		}
 	}
 }
 

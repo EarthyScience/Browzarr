@@ -6,10 +6,17 @@ import './css/MetaData.css'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 import {
   Tooltip,
@@ -19,6 +26,7 @@ import {
 
 
 import { Button } from "@/components/ui/button-enhanced"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export const defaultAttributes = [
     "long_name",
@@ -64,37 +72,82 @@ export function renderAttributes(
     );
   });
 }
-const Metadata = ({ data, variable }: { data: Record<string, any>, variable: string }) => {
+const Metadata = ({ data, variable, isMobile: isMobileProp }: { data: Record<string, any>, variable: string, isMobile?: boolean }) => {
+    const isMobileHook = useIsMobile();
+    const [mounted, setMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // If isMobileProp is provided, we use it directly (no hydration mismatch).
+    // Otherwise, we default to false during SSR to match the initial Popover render, and swap after mount.
+    const isMobile = isMobileProp !== undefined ? isMobileProp : (mounted ? isMobileHook : false);
+
+    const trigger = (
+      <Button
+          variant={variable == "Attributes" ? "default" : "ghost"}
+          size="icon"
+          className="size-6 w-auto cursor-pointer px-2"
+          tabIndex={0}
+      >
+          {variable}
+      </Button>
+    );
+
+    const content = (
+      <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words p-0">
+          <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] gap-x-1 gap-y-[6px]">
+              {renderAttributes(data, defaultAttributes)}
+          </div>
+      </div>
+    );
+
+    if (isMobile) {
+        return (
+            <Dialog>
+                <Tooltip delayDuration={500} >
+                    <TooltipTrigger asChild>
+                        <DialogTrigger asChild>
+                            {trigger}
+                        </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="start">
+                        <span>Show Variable Attributes</span>
+                    </TooltipContent>
+                </Tooltip>
+                <DialogContent className="metadata-dialog">
+                    <DialogHeader>
+                        <DialogTitle>Attributes</DialogTitle>
+                        <DialogDescription className="sr-only">Metadata Information for variable</DialogDescription>
+                    </DialogHeader>
+                    {content}
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
     return (
-          <Dialog>
-              <Tooltip delayDuration={500} >
-                  <TooltipTrigger asChild>
-                  <DialogTrigger asChild>
-                      <Button
-                          variant={variable == "Attributes" ? "default" : "ghost"}
-                          size="icon"
-                          className="size-6 w-auto cursor-pointer px-2"
-                          tabIndex={0}
-                          >
-                          {variable}
-                      </Button>
-                      </DialogTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" align="start">
-                      <span>Show Variable Attributes</span>
-                  </TooltipContent>
-              </Tooltip>
-              <DialogContent aria-describedby="Metadata Information for variable" className="metadata-dialog">
-                  <DialogHeader>
-                      <DialogTitle>Attributes</DialogTitle>
-                  </DialogHeader>
-                      <div className="max-h-[60vh] text-[12px] overflow-y-auto break-words p-0">
-                          <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] gap-x-1 gap-y-[6px]">
-                              {renderAttributes(data, defaultAttributes)}
-                          </div>
-                      </div>
-              </DialogContent>
-          </Dialog>
+        <Popover>
+            <Tooltip delayDuration={500} >
+                <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                        {trigger}
+                    </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="start">
+                    <span>Show Variable Attributes</span>
+                </TooltipContent>
+            </Tooltip>
+            <PopoverContent 
+              className="w-[400px] max-h-[50vh] overflow-y-auto" 
+              side="right" 
+              align="start"
+            >
+                <h2 className="text-lg font-semibold mb-2">Attributes</h2>
+                {content}
+            </PopoverContent>
+        </Popover>
     );
 };
 

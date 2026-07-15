@@ -9,7 +9,7 @@ attribute vec3 aSpherePosition;
 attribute vec3 aCubePosition;
 attribute vec3 aPlanePosition;
 
-varying vec3 vColor; 
+out vec3 vColor; 
 
 void main() {
     // Linearly interpolate between the three shapes using the mix uniforms

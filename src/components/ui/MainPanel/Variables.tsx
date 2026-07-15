@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { TbVariable } from "react-icons/tb";
+import { Loader2 } from "lucide-react";
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
-import MetaDataInfo from "./MetaDataInfo";
+import MetaDimSelector from "./MetaDimSelector";
 import { GetDimInfo } from "@/utils/HelperFuncs";
 import { GetAttributes } from "@/components/zarr/ZarrLoaderLRU";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button-enhanced";
 import { Input } from "../input";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Tooltip,
   TooltipContent,
@@ -20,6 +22,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Accordion,
@@ -30,11 +33,12 @@ import {
 
 
 const Variables = () => {
-  const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
+  const isMobile = useIsMobile();
+  const popoverSide = isMobile ? "top" : "left";
   const [openMetaPopover, setOpenMetaPopover] = useState(false);
 
   const [showMeta, setShowMeta] = useState(false);
-  const { variables, zMeta, metadata,  initStore, openVariables, setMetadata, setOpenVariables } = useGlobalStore(
+  const { variables, zMeta, metadata, initStore, openVariables, setMetadata, setOpenVariables } = useGlobalStore(
     useShallow((state) => ({
       variables: state.variables,
       zMeta: state.zMeta,
@@ -46,11 +50,12 @@ const Variables = () => {
     }))
   );
 
-  const [dimArrays, setDimArrays] = useState([[0],[0],[0]]);
-  const [dimUnits, setDimUnits] = useState([null,null,null]);
-  const [dimNames, setDimNames] = useState<string[]>(["Default"]);
+
 
   const [selectedVar, setSelectedVar] = useState<string | null>(null);
+  const [isLoadingVar, setIsLoadingVar] = useState<string | null>(null);
+  const activeRequest = useRef<string | null>(null);
+  const isInteractingWithMeta = useRef(false);
   const [meta, setMeta] = useState<any>(null);
   const [query, setQuery] = useState("");
   // root *open by default* (collapsible but starts open)
@@ -107,46 +112,65 @@ const Variables = () => {
     }
   }, [query, tree]);
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open && isInteractingWithMeta.current) {
+      return; // Do not close if interacting with Meta popovers/portals
+    }
+    setOpenVariables(open);
+  };
+
   // Handle variable selection
   const handleVariableSelect = (val: string, idx: number) => {
-    setSelectedVar(val);
-    GetDimInfo(val).then(e => {
-      setDimNames(e.dimNames);
-      setDimArrays(e.dimArrays);
-      setDimUnits(e.dimUnits);
-    });
-
-    if (popoverSide === "left") {
-      setOpenMetaPopover(true);
-    } else {
-      setShowMeta(true);
+    if (selectedVar === val && meta?.name === val && metadata) {
+      if (popoverSide === "left") {
+        setOpenMetaPopover(true);
+      } else {
+        setShowMeta(true);
+      }
+      return;
     }
+
+    setIsLoadingVar(val);
+    setSelectedVar(val);
+    setMeta(null);
+    setMetadata(null);
+    activeRequest.current = val;
+
+    Promise.all([GetDimInfo(val), GetAttributes(val)]).then(([dimInfo, attr]) => {
+      if (activeRequest.current !== val) return;
+
+      const relevant = zMeta?.find((e: any) => e.name === val);
+      if (relevant) {
+        setMeta({
+          ...relevant,
+          dimInfo: {
+            dimArrays: dimInfo.dimArrays,
+            dimNames: dimInfo.dimNames,
+            dimUnits: dimInfo.dimUnits,
+          },
+        });
+      }
+      setMetadata(attr);
+      setIsLoadingVar(null);
+
+      if (popoverSide === "left") {
+        setOpenMetaPopover(true);
+      } else {
+        setShowMeta(true);
+      }
+    }).catch((err) => {
+      if (activeRequest.current === val) {
+        setIsLoadingVar(null);
+      }
+      console.error("Failed to fetch dimension info or attributes:", err);
+    });
   };
 
   useEffect(() => {
-    if (variables && zMeta && selectedVar) {
-      const relevant = zMeta.find((e: any) => e.name === selectedVar);
-      if (relevant){
-        setMeta({...relevant, dimInfo : {dimArrays, dimNames, dimUnits}});
-        GetAttributes(selectedVar).then(e=>setMetadata(e));
-      }
-    }
-  }, [selectedVar, variables, zMeta, dimArrays, dimNames, dimUnits]);
-
-  useEffect(()=>{
     setSelectedVar(null);
     setMeta(null);
     setMetadata(null);
-  },[initStore, setMetadata]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setPopoverSide(window.innerWidth < 768 ? "top" : "left");
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [initStore, setMetadata]);
 
   // Variable item renderer (keeps separator between variables in same group)
   const VariableItem = ({ val, idx, arrayLength }: { val: string; idx: number; arrayLength: number }) => {
@@ -156,13 +180,15 @@ const Variables = () => {
     return (
       <React.Fragment key={val}>
         <div
-          className="cursor-pointer pl-2 py-1 text-sm hover:bg-muted rounded"
-          style={{
-            background: selectedVar === val ? "var(--muted-foreground)" : "",
-          }}
+          className={`cursor-pointer pl-2 py-1 text-sm rounded flex items-center justify-between transition-colors ${
+            selectedVar === val 
+              ? "bg-primary text-primary-foreground" 
+              : "hover:bg-muted"
+          }`}
           onClick={() => handleVariableSelect(val, idx)}
         >
-          {variableName}
+          <span>{variableName}</span>
+          {isLoadingVar === val && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
         </div>
         {!isLastItem && <Separator className="my-1" />}
       </React.Fragment>
@@ -248,7 +274,7 @@ const Variables = () => {
 
   return (
     <>
-      <Popover open={openVariables} onOpenChange={setOpenVariables}>
+      <Popover open={openVariables} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <div>
             <Tooltip delayDuration={500}>
@@ -280,9 +306,20 @@ const Variables = () => {
           className="max-h-[50vh] overflow-hidden flex flex-col"
           onInteractOutside={(e) => {
             const target = e.target as HTMLElement;
-            // If the click is inside the MetaData popover, do not close
-            if (target.closest('[data-meta-popover]')) {
-              e.preventDefault();
+            // Prevent the main variable list from closing when interacting with Meta popups/portals.
+            // We set a flag instead of calling e.preventDefault() so that native text selection still works!
+            if (
+              target.closest('[data-meta-popover]') ||
+              target.closest('.metadata-dialog') ||
+              target.closest('[data-slot="combobox-content"]') ||
+              target.closest('[role="dialog"]') ||
+              target.closest('[role="listbox"]') ||
+              target.closest('[data-radix-popper-content-wrapper]')
+            ) {
+              isInteractingWithMeta.current = true;
+              setTimeout(() => {
+                isInteractingWithMeta.current = false;
+              }, 0);
             }
           }}
         >
@@ -315,32 +352,41 @@ const Variables = () => {
             data-meta-popover
             side="left"
             align="start"
-            className="max-h-[80vh] overflow-y-auto w-[300px]"
+            className="max-h-[80vh] overflow-y-auto w-[350px]"
           >
-            {meta && (
-              <MetaDataInfo
+            {metadata && meta && (
+              <MetaDimSelector
+                key={selectedVar || "none"}
                 meta={meta}
-                metadata={metadata ?? {}}
-                setShowMeta={setOpenMetaPopover}
-                setOpenVariables={setOpenVariables}
-                popoverSide={"left"}
+                metadata={metadata}
+                onApply={(sels, axes) => {
+                  // close UI after applying selections
+                  setOpenMetaPopover(false);
+                  setOpenVariables(false);
+                  // future: persist sels/axes to store
+                  console.log('Applied slices', sels, axes);
+                }}
               />
             )}
           </PopoverContent>
         </Popover>
       )}
       {popoverSide === "top" && (
-        <Dialog open={showMeta} onOpenChange={setShowMeta}>
-          <DialogContent className="max-w-[85%] md:max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogTitle>{}</DialogTitle>
+        <Dialog open={showMeta} onOpenChange={setShowMeta} modal={false}>
+          <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-[85vw] md:max-w-2xl max-h-[80vh] overflow-y-auto px-4 sm:px-6">
+            <DialogTitle>{ }</DialogTitle>
+            <DialogDescription className="sr-only">Variables configuration dialog</DialogDescription>
             <div className="-mt-4">
-              {meta && (
-                <MetaDataInfo
+              {meta && metadata && (
+                <MetaDimSelector
+                  key={selectedVar || "none"}
                   meta={meta}
-                  metadata={metadata ?? {}}
-                  setShowMeta={setShowMeta}
-                  setOpenVariables={setOpenVariables}
-                  popoverSide={"top"}
+                  metadata={metadata}
+                  onApply={(sels, axes) => {
+                    setShowMeta(false);
+                    setOpenVariables(false);
+                    console.log('Applied slices', sels, axes);
+                  }}
                 />
               )}
             </div>

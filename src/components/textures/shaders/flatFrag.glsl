@@ -21,7 +21,7 @@ uniform vec2 threshold;
 uniform int maskValue;
 uniform float fillValue;
 
-varying vec2 vUv;
+in vec2 vUv;
 out vec4 Color;
 #define epsilon 0.0001
 #define PI 3.14159265

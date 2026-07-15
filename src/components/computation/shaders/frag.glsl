@@ -4,7 +4,7 @@ uniform sampler2D cmap;
 uniform float cOffset;
 uniform float cScale;
 
-varying vec2 vUv;
+in vec2 vUv;
 out vec4 Color;
 
 void main() {

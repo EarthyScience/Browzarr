@@ -16,6 +16,8 @@ const globalValues = [
     'initStore',
     'storeFromURL',
     'variable',
+    'colormapName',
+    'flipColormap',
 ]
 
 const plotValues = [
@@ -71,12 +73,15 @@ const plotValues = [
     'borderWidth',
     'cameraPosition',
     'disablePointScale',
+    'is360Deg',
 ]
 
 const zarrValues = [
     'zSlice',
     'ySlice',
     'xSlice',
+    'ndSlices',
+    'axisMapping',
     'compress',
     'useNC', // This one is more static and so toggling switch doesn't break all other logic
     'fetchNC',

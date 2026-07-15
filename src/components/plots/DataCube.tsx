@@ -9,12 +9,14 @@ import { deg2rad } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from '@/components/plots'
 import { ColumnMeshes } from './TransectMeshes';
+import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
 }
 
-export const DataCube = ({ volTexture }: DataCubeProps ) => {
+export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
+    const volTexture = usePaddedTextures(propVolTexture);
     const {shape, colormap, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
       shape:state.shape, 
       colormap:state.colormap, 
@@ -47,7 +49,7 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
       glslVersion: THREE.GLSL3,
       uniforms: {
           modelViewMatrixInverse: { value: new THREE.Matrix4() }, // Used for Orthographic RayMarcher
-          map: { value: Array.from({ length: 14 }, (_, idx) => volTexture?.[idx])},
+          map: { value: volTexture},
           maskTexture: { value: maskTexture },
           maskValue: {value: maskValue },
           textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
@@ -68,6 +70,10 @@ export const DataCube = ({ volTexture }: DataCubeProps ) => {
           nanAlpha: {value: 1-nanTransparency},
           nanColor: {value: new THREE.Color(nanColor)},
           fillValue: {value: fillValue?? NaN}
+      },
+      defines: {
+        USE_VORIGIN: 1,
+        USE_VDIRECTION: 1
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
       fragmentShader: useFragOpt ?  fragOpt : fragmentShader,

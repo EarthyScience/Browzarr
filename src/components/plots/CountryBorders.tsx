@@ -69,10 +69,13 @@ function Borders({features}:{features: any}){
             vertexShader,
             fragmentShader: bordersFrag,
             uniforms:{
-                xBounds: {value: new THREE.Vector2(xRange[0], xRange[1])},
+                xBounds: {value: new THREE.Vector2(-xRange[1],-xRange[0])},
                 yBounds: {value: new THREE.Vector2(yRange[0]/shape.x, yRange[1]/shape.x)},
                 borderColor: {value: new THREE.Color(borderColor)},
                 trim: {value: !spherize},
+            },
+            defines: {
+                USE_APOSITION: 1
             }
         }
     ),[])
