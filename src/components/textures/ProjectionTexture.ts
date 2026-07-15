@@ -95,11 +95,12 @@ export function reproject(resolution: number = 256){
     const width = xArray.length;
     const height = yArray.length;
 
+
     const [xMin, xMax] = ArrayMinMax(xArray);
     const [yMin, yMax] = ArrayMinMax(yArray);
     // We need the border points as the min/max of the old CRS won't always be the min/max of the new CRS
     const boundaryPoints: [number, number][] = [];
-    console.log(xMin, xMax, yMin, yMax)
+
     // top edge: j = 0, all i
     for (let i = 0; i < width; i++) {
         boundaryPoints.push([xArray[i], yArray[0]]);
@@ -128,14 +129,7 @@ export function reproject(resolution: number = 256){
         minY = Math.min(minY, py); maxY = Math.max(maxY, py);
     }    
  
-    // ---- Get Estimate of aspectRatio ---- //
-    const midX = Math.floor(width / 2);
-    const midY = Math.floor(height / 2);
-    const [x0, y0] = proj.forward([xArray[midX], yArray[midY]]);
-    const [x1, y1] = proj.forward([xArray[midX + 1], yArray[midY + 1]]);
-    const xSize = Math.abs(x1 - x0);
-    const ySize = Math.abs(y1 - y0);
-    const aspectRatio = xSize/ySize;
+    const aspectRatio = Math.abs(maxX - minX)/ Math.abs(maxY - minY);
 
     // ---- Construct new CRS axis' ----//
     const targetWidth = Math.ceil(resolution*aspectRatio);
