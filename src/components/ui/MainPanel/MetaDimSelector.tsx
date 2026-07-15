@@ -281,7 +281,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       const start = parseInt(sel.start) || 0;
       let stop = parseInt(sel.stop);
       if (isNaN(stop)) stop = defaultLast;
-      else stop += 1;
+      else stop = Math.min(stop + 1, defaultLast > 0 ? defaultLast : stop + 1);
       return { first: start, last: stop };
     };
 
@@ -341,7 +341,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       const start = parseInt(sel.start) || 0;
       let stop = parseInt(sel.stop);
       if (isNaN(stop)) stop = defaultLast;
-      else stop += 1;
+      else stop = Math.min(stop + 1, defaultLast > 0 ? defaultLast : stop + 1);
       return { first: start, last: stop, steps: Math.max(1, stop - start) };
     };
 
@@ -376,13 +376,16 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
         const start = parseInt(collSel.start) || 0;
         let stop = parseInt(collSel.stop);
         if (isNaN(stop)) stop = defaultLast;
-        else stop += 1;
+        else stop = Math.min(stop + 1, defaultLast > 0 ? defaultLast : stop + 1);
         return Math.max(1, stop - start);
       }
       return defaultLast;
     };
 
-    const totalSteps = availableDims.reduce((prod, d) => prod * getSelSteps(d.name, d.size), 1);
+    const totalSteps = availableDims.reduce((prod, d, idx) => {
+        const dimShape = dataShape[idx] ?? d.size;
+        return prod * getSelSteps(d.name, dimShape);
+    }, 1);
     const sizeRatio = totalSteps / (dataShape.reduce((a, b) => a * b, 1) || 1);
     let calculatedSize = (meta.totalSize || 0) * sizeRatio;
 
