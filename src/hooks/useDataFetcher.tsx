@@ -8,6 +8,7 @@ import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
 import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
 import { GetArray } from '@/components/zarr/GetArray';
 import { ArrayToTexture } from '@/components/textures';
+import { SetReprojectionTexture } from '@/components/textures/ProjectionTexture';
 
 export const useDataFetcher = () => {
     const {
@@ -126,12 +127,14 @@ export const useDataFetcher = () => {
                 setDimArrays(dimArrays);
                 setDimNames(dimNames);
                 setDimUnits(dimUnits);
+                useGlobalStore.setState({axisDimArrays: dimArrays, axisDimNames: dimNames, axisDimUnits: dimUnits});
 
                 const targetDim = dimArrays.length > 2 ? dimArrays[1] : dimArrays[0];
                 const shouldFlip = targetDim[1] < targetDim[0];
                 setFlipY(shouldFlip);
 
                 ParseExtent(dimUnits, dimArrays);
+                SetReprojectionTexture(dimArrays);
             });
 
         } else {

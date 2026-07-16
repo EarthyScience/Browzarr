@@ -3,11 +3,11 @@
 attribute vec2 instanceUV;
 
 #ifdef IS_FLAT
-    uniform sampler2D map[14];
+    uniform sampler2D map[12];
 #else
-    uniform sampler3D map[14];
+    uniform sampler3D map[12];
 #endif
-
+uniform sampler2D remapTexture;
 uniform sampler2D maskTexture;
 uniform vec3 textureDepths;
 
@@ -61,8 +61,6 @@ float sample1(
     else if (index == 9) return texture(map[9], p).r;
     else if (index == 10) return texture(map[10], p).r;
     else if (index == 11) return texture(map[11], p).r;
-    else if (index == 12) return texture(map[12], p).r;
-    else if (index == 13) return texture(map[13], p).r;
     else return 0.0;
 }
 
@@ -81,6 +79,14 @@ void main() {
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     vec3 texCoord = vec3(instanceUV, animateProg);
+    #ifdef REPROJECT
+        vec3 remap = texture(remapTexture,instanceUV).rgb;
+        texCoord.xy = remap.rg;
+        if (remap.b < 0.5){
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            return;
+        }
+    #endif
     #ifdef IS_FLAT
         ivec2 idx = clamp(ivec2(instanceUV * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
         int textureIdx = idx.y * yStepSize + idx.x;

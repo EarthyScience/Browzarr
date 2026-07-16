@@ -33,13 +33,13 @@ const AXIS_CONSTANTS = {
 };
 
 const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, flipDown: boolean}) =>{
-  const {dimArrays, dimNames, dimUnits, dataShape, revY, is4D} = useGlobalStore(useShallow(state => ({
-    dimArrays: state.dimArrays,
-    dimNames: state.dimNames,
-    dimUnits: state.dimUnits,
+  const {axisDimArrays, axisDimNames, axisDimUnits, dataShape, revY, shape} = useGlobalStore(useShallow(state => ({
+    axisDimArrays: state.axisDimArrays,
+    axisDimNames: state.axisDimNames,
+    axisDimUnits: state.axisDimUnits,
     dataShape: state.dataShape,
     revY: state.flipY,
-    is4D: state.is4D
+    shape: state.shape
   })))
 
   const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice, coarsen} = usePlotStore(useShallow(state => ({
@@ -55,19 +55,18 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   })))
 
   const {xIdx, yIdx, zIdx} = useAxisIndices()
-
   const dimSlices = useMemo(()=> {
     let slices = [
-      dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
-      revY ? dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() ?? [] : dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
-      dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
+      axisDimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
+      revY ? axisDimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() ?? [] : axisDimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+      axisDimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
     ] 
     if (coarsen) {
       const {kernelDepth, kernelSize} = useZarrStore.getState()
       slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 ? kernelDepth : kernelSize)))
     }
     return slices
-  },[revY, dimArrays, zSlice, ySlice, xSlice, coarsen, xIdx, yIdx, zIdx])
+  },[revY, axisDimArrays, zSlice, ySlice, xSlice, coarsen, xIdx, yIdx, zIdx])
 
   const dimLengths = dimSlices.map(val => val.length)
 
@@ -75,13 +74,12 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const [yResolution, setYResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [zResolution, setZResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
 
-
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
   const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
 
-  const depthRatio = useMemo(()=>dataShape[0]/dataShape[2]*timeScale,[dataShape, timeScale]);
-  const shapeRatio = useMemo(()=>dataShape[1]/dataShape[2], [dataShape])
-  const timeRatio = Math.max(dataShape[0]/dataShape[2], 2);
+  const depthRatio = useMemo(()=>shape.z/shape.x*timeScale,[shape, timeScale]);
+  const shapeRatio = useMemo(()=>shape.y/shape.x, [shape])
+  const timeRatio = Math.max(shape.z/shape.x, 2);
 
   const secondaryColor = useCSSVariable('--text-plot') //replace with needed variable
   const colorHex = useMemo(()=>{
@@ -116,9 +114,9 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const zDimScale = zResolution/(zResolution-1)
   const zValDelta = 1/(zResolution-1)
 
-  const xTitleOffset = useMemo(() => ((dimNames[xIdx]?.length || 0) * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale, xIdx]);
-  const yTitleOffset = useMemo(() => ((dimNames[yIdx]?.length || 0) * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale, yIdx]);
-  const zTitleOffset = useMemo(() => ((dimNames[zIdx]?.length || 0) * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [dimNames, globalScale, zIdx]);
+  const xTitleOffset = useMemo(() => ((axisDimNames[xIdx]?.length || 0) * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [axisDimNames, globalScale, xIdx]);
+  const yTitleOffset = useMemo(() => ((axisDimNames[yIdx]?.length || 0) * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [axisDimNames, globalScale, yIdx]);
+  const zTitleOffset = useMemo(() => ((axisDimNames[zIdx]?.length || 0) * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [axisDimNames, globalScale, zIdx]);
   
   return (
     <group visible={plotType != 'sphere' && plotType != 'flat' && !hideAxis}>
@@ -142,7 +140,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]}
               position={[0, 0, flipX ? -AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale : AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale]}
-            >{parseLoc(dimSlices[2]?.[Math.floor((dimLengths[2]-1)*idx*xValDelta)] || 0,dimUnits[xIdx])}</Text>
+            >{parseLoc(dimSlices[2]?.[Math.floor((dimLengths[2]-1)*idx*xValDelta)] || 0,axisDimUnits[xIdx])}</Text>
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]} position={[(xRange[0]+xRange[1])/2*globalScale, 0, flipX ? -AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale : AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale]}>
@@ -153,7 +151,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
             fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
             color={colorHex}
             material-depthTest={false}
-          >{dimNames[xIdx]}</Text>
+          >{axisDimNames[xIdx]}</Text>
           <group visible={!hideAxisControls}>
             {xResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
             <Text 
@@ -206,7 +204,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]}
               position={[flipY ? AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale :-AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[0]?.[(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]] || 0,dimUnits[zIdx])}</Text>
+            >{parseLoc(dimSlices[0]?.[(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]] || 0,axisDimUnits[zIdx])}</Text>
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]} position={[flipY ? AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale : -AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale, 0, isPC ? (zRange[0]+zRange[1])/2*depthRatio*(globalScale) : (zRange[0]+zRange[1])/2]}>
@@ -217,7 +215,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
             fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
             color={colorHex}
             material-depthTest={false}
-          >{dimNames[zIdx]}</Text>
+          >{axisDimNames[zIdx]}</Text>
           
           <group visible={!hideAxisControls}>
             {zResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
@@ -272,7 +270,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[0, flipX ? Math.PI : 0, 0]}
               position={[flipY ? -0.07*globalScale : 0.07*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[1]?.[Math.floor((dimLengths[1]-1)*idx*yValDelta)] || 0,dimUnits[yIdx])}</Text>
+            >{parseLoc(dimSlices[1]?.[Math.floor((dimLengths[1]-1)*idx*yValDelta)] || 0,axisDimUnits[yIdx])}</Text>
           </group>
         ))}
         <group rotation={[0, flipX ? Math.PI : 0 , 0]} position={[flipY ? -0.32*globalScale : 0.32*globalScale, (yRange[0]+yRange[1])/2*shapeRatio*globalScale, 0]}>
@@ -285,7 +283,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
             material-depthTest={false}
             rotation={[0, 0, Math.PI / 2]}
           >
-            {dimNames[yIdx]}
+            {axisDimNames[yIdx]}
           </Text>
 
           <group visible={!hideAxisControls}>
@@ -344,10 +342,10 @@ const FLAT_AXIS_CONSTANTS = {
 };
 
 const FlatAxis = () =>{
-  const {dimArrays, dimNames, dimUnits, flipY} = useGlobalStore(useShallow(state => ({
-    dimArrays: state.dimArrays,
-    dimNames: state.dimNames,
-    dimUnits: state.dimUnits,
+  const {axisDimArrays, axisDimNames, axisDimUnits, flipY} = useGlobalStore(useShallow(state => ({
+    axisDimArrays: state.axisDimArrays,
+    axisDimNames: state.axisDimNames,
+    axisDimUnits: state.axisDimUnits,
     flipY: state.flipY,
   })))
 
@@ -367,23 +365,23 @@ const FlatAxis = () =>{
     axis: state.axis
   })))
 
-  const originallyFlat = dimArrays.length == 2;
+  const originallyFlat = axisDimArrays.length == 2;
   const slices = originallyFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
   const {xIdx, yIdx, zIdx} = useAxisIndices()
 
   const dimSlices = useMemo(()=> {
     return originallyFlat ? 
     [
-      flipY ? dimArrays[yIdx]?.slice().reverse() ?? [] : dimArrays[yIdx] ?? [], 
-      dimArrays[xIdx] ?? []
+      flipY ? axisDimArrays[yIdx]?.slice().reverse() ?? [] : axisDimArrays[yIdx] ?? [], 
+      axisDimArrays[xIdx] ?? []
     ] 
     :
     [
-      dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
-      flipY ? dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() ?? [] : dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
-      dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
+      axisDimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
+      flipY ? axisDimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() ?? [] : axisDimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+      axisDimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
     ]
-  },[dimArrays, flipY, originallyFlat, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
+  },[axisDimArrays, flipY, originallyFlat, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
 
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
@@ -406,13 +404,13 @@ const FlatAxis = () =>{
     if (originallyFlat) {
       return {
         axisArrays: dimSlices,
-        axisUnits: [dimUnits[yIdx], dimUnits[xIdx]],
-        axisNames: [dimNames[yIdx], dimNames[xIdx]],
+        axisUnits: [axisDimUnits[yIdx], axisDimUnits[xIdx]],
+        axisNames: [axisDimNames[yIdx], axisDimNames[xIdx]],
       };
     }
 
-    const baseUnits = [dimUnits[zIdx], dimUnits[yIdx], dimUnits[xIdx]];
-    const baseNames = [dimNames[zIdx], dimNames[yIdx], dimNames[xIdx]];
+    const baseUnits = [axisDimUnits[zIdx], axisDimUnits[yIdx], axisDimUnits[xIdx]];
+    const baseNames = [axisDimNames[zIdx], axisDimNames[yIdx], axisDimNames[xIdx]];
 
     if (analysisMode) {
       return {
@@ -427,9 +425,8 @@ const FlatAxis = () =>{
         axisNames: baseNames,
       };
     }
-  }, [analysisMode, dimArrays, dimUnits, dimNames, dimSlices, originallyFlat, axis, xIdx, yIdx, zIdx]);
+  }, [analysisMode, axisDimArrays, axisDimUnits, axisDimNames, dimSlices, originallyFlat, axis, xIdx, yIdx, zIdx]);
   
-
   const shapeRatio = useMemo(()=>{
     if(analysisMode && axis == 2){
       return dimLengths[heightIdx]/dimLengths[widthIdx]

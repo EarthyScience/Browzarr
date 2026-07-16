@@ -12,6 +12,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
 import { loadNetCDF, NETCDF_EXT_REGEX } from '@/utils/loadNetCDF';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
 
 async function sendPing() {
   const url = "https://www.bgc-jena.mpg.de/~jpoehls/browzarr/visitor_logger.php";
@@ -86,8 +87,11 @@ export function LandingHome() {
     );
     setCurrentStore(newStore);
     // Clear after use
-    useZarrStore.getState().setIcechunkOptions(null);
-    useZarrStore.getState().setFetchOptions(null);
+    const {remapTexture} = useGlobalStore.getState();
+    if (remapTexture) remapTexture.dispose();
+    useZarrStore.setState({icechunkOptions: null, fetchOptions:null});
+    useGlobalStore.setState({remapTexture: undefined });
+    usePlotStore.setState({nativeCRS:undefined, destCRS:undefined});
   }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice, storeFromURL, setOpenVariables, setStoreFromURL]);
 
   useEffect(() => {

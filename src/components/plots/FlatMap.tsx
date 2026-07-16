@@ -12,7 +12,7 @@ import { ThreeEvent } from '@react-three/fiber';
 import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
-import { GetFrag } from '../textures';
+import { flatFrag } from '../textures/shaders';
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
@@ -27,13 +27,14 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     const textures = usePaddedTextures(propTextures);
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, colormap, dimArrays, dimNames, dimUnits, 
-      isFlat, dataShape, textureArrayDepths, strides,
+      isFlat, dataShape, textureArrayDepths, strides, remapTexture, shape,
       setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(state => ({
       flipY: state.flipY, colormap: state.colormap, 
       dimArrays: state.dimArrays, strides: state.strides, 
       dimNames:state.dimNames, dimUnits: state.dimUnits,
       isFlat: state.isFlat, dataShape: state.dataShape,
       textureArrayDepths: state.textureArrayDepths,
+      remapTexture:state.remapTexture, shape: state.shape,
       setPlotDim:state.setPlotDim, 
       updateDimCoords:state.updateDimCoords,
       updateTimeSeries: state.updateTimeSeries
@@ -78,17 +79,17 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
       return slices
     } ,[dimArrays, zSlice, ySlice, xSlice, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
-
     const shapeRatio = useMemo(()=> {
       if (dataShape.length == 2){
-        return dataShape[0]/dataShape[1]
+        return shape.y/shape.x
       } else if (analysisMode){
         const thisShape = dataShape.filter((_val, idx) => idx != axis)
         return thisShape[0]/thisShape[1]
       } else {
-        return dataShape[1]/dataShape[2]
+        return shape.y/shape.x
       }
-    }, [axis, analysisMode] )
+    }, [axis, shape, dataShape, analysisMode] )
+    
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
     const infoRef = useRef<boolean>(false)
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
@@ -184,6 +185,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
               cScale: {value: cScale},
               cOffset: {value: cOffset},
               map : {value: textures},
+              remapTexture: { value: remapTexture},
               maskTexture: {value: maskTexture},
               maskValue: {value: maskValue},
               threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
@@ -196,10 +198,14 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
               nanAlpha: {value: 1 - nanTransparency},
               fillValue: {value: fillValue?? NaN},
             },
+            defines:{
+              IS_FLAT: isFlat,
+              REPROJECT: remapTexture ? true: false
+            },
             vertexShader: vertShader,
-            fragmentShader: GetFrag("flatFrag", isFlat),
+            fragmentShader: flatFrag,
             side: THREE.DoubleSide,
-        }),[isFlat, textures])
+        }),[isFlat, remapTexture, textures])
     
     useEffect(()=>{
       if(shaderMaterial){

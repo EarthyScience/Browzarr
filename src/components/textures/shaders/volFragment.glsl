@@ -7,9 +7,10 @@ in vec3 vDirection;
 
 out vec4 color;
 
-uniform sampler3D map[14]; // We are limited to 16 textures. Cmap counts as one. 15 is weird so we use 14. 
+uniform sampler3D map[12]; // We are limited to 16 textures. Cmap counts as one. 15 is weird so we use 14. 
 uniform sampler2D maskTexture;
 uniform sampler2D cmap;
+uniform sampler2D remapTexture;
 uniform vec3 textureDepths;
 
 uniform float cOffset;
@@ -74,8 +75,6 @@ float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so
     else if (index == 9) return texture(map[9], p).r;
     else if (index == 10) return texture(map[10], p).r;
     else if (index == 11) return texture(map[11], p).r;
-    else if (index == 12) return texture(map[12], p).r;
-    else if (index == 13) return texture(map[13], p).r;
     else return 0.0;
 }
 
@@ -112,6 +111,11 @@ void main() {
             continue;
         }
         vec3 texCoord = p / scale + 0.5;
+        #ifdef REPROJECT
+            vec3 remap = texture2D(remapTexture, texCoord.xy).rgb;
+            texCoord.xy = remap.rg;
+            if (remap.b < 0.5) {continue;}
+        #endif
 
         if (maskValue != 0){
             vec2 newV = texCoord.xy; 

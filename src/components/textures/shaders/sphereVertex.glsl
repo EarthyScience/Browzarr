@@ -1,9 +1,9 @@
  // by Jeran Poehls
 
 #ifdef IS_FLAT
-    uniform sampler2D map[14];
+    uniform sampler2D map[12];
 #else
-    uniform sampler3D map[14];
+    uniform sampler3D map[12];
 #endif
 
 uniform vec3 textureDepths;
@@ -44,8 +44,6 @@ float sample1(
     else if (index == 9) return texture(map[9], p).r;
     else if (index == 10) return texture(map[10], p).r;
     else if (index == 11) return texture(map[11], p).r;
-    else if (index == 12) return texture(map[12], p).r;
-    else if (index == 13) return texture(map[13], p).r;
     else return 0.0;
 }
 

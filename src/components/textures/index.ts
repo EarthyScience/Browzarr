@@ -7,5 +7,3 @@ export {
     ArrayToTexture,
     CreateTexture
 }
-export {GetFrag} from './GetFrag'
-export {GetVert} from './GetVert'

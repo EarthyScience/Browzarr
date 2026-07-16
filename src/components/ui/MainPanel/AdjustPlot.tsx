@@ -20,6 +20,8 @@ import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
 import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
 import { RiCloseLargeLine } from "react-icons/ri";
+import { reproject } from '@/components/textures/ProjectionTexture';
+import { Reprojection } from '../Elements/Reprojection';
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -501,12 +503,12 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {valueRange, showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
+  const {valueRange, showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture, nativeCRS,
     setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(state => ({
     showBorders: state.showBorders, borderColor: state.borderColor,
     nanColor: state.nanColor, nanTransparency: state.nanTransparency,
     plotType: state.plotType, interpPixels: state.interpPixels,
-    fillValue: state.fillValue, useBorderTexture:state.useBorderTexture,
+    fillValue: state.fillValue, useBorderTexture:state.useBorderTexture, nativeCRS: state.nativeCRS,
     valueRange: state.valueRange, setValueRange: state.setValueRange,
     setShowBorders: state.setShowBorders, setBorderColor: state.setBorderColor,
     setNanColor: state.setNanColor, setNanTransparency: state.setNanTransparency,
@@ -521,8 +523,10 @@ const GlobalOptions = () =>{
   })))
   const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
   const [showMasks, setShowMasks] = useState(false)
+  const [showRepro, setShowRepro] = useState(false)
   const masks = ["None", "Land", "Water"]
   const isPC = plotType == 'point-cloud'
+
   return (
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
       <div className="border-t border-gray-300 w-full my-4" />
@@ -737,7 +741,7 @@ const AdjustPlot = () => {
             Close settings
           </TooltipContent>
         </Tooltip>
-        <div className={`overflow-y-auto -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          
+        <div className={`overflow-y-auto no-scrollbar -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          
           <RxReset size={25} 
             style={{
               // position:'absolute',
@@ -752,6 +756,7 @@ const AdjustPlot = () => {
           {plotType === 'sphere' && <SphereOptions/>}
           {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
           {plotType === 'flat' && <FlatOptions />}
+          {['flat','volume'].includes(plotType) && <Reprojection />}
           <GlobalOptions />
         </div>
       </PopoverContent>

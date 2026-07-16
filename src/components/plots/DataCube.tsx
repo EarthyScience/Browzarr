@@ -17,11 +17,12 @@ interface DataCubeProps {
 
 export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const volTexture = usePaddedTextures(propVolTexture);
-    const {shape, colormap, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
+    const {shape, colormap, flipY, textureArrayDepths, remapTexture} = useGlobalStore(useShallow(state=>({
       shape:state.shape, 
       colormap:state.colormap, 
       flipY:state.flipY,
-      textureArrayDepths: state.textureArrayDepths
+      textureArrayDepths: state.textureArrayDepths,
+      remapTexture: state.remapTexture
     }))) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const {
       valueRange, xRange, yRange, zRange, quality, useOrtho, 
@@ -54,6 +55,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
           maskValue: {value: maskValue },
           textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
           cmap:{value: colormap},
+          remapTexture: { value: remapTexture},
           cOffset:{value: cOffset},
           cScale: {value: cScale},
           threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
@@ -73,7 +75,8 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
       },
       defines: {
         USE_VORIGIN: 1,
-        USE_VDIRECTION: 1
+        USE_VDIRECTION: 1,
+        REPROJECT: remapTexture ? true : false
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
       fragmentShader: useFragOpt ?  fragOpt : fragmentShader,
@@ -81,7 +84,8 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
       blending: THREE.NormalBlending,
       depthWrite: false,
       side: useOrtho ? THREE.FrontSide : THREE.BackSide,
-    }),[useFragOpt, useOrtho, volTexture]);
+    }),[useFragOpt, useOrtho, volTexture, remapTexture]);
+
 
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
     useEffect(() => {
