@@ -8,23 +8,22 @@ import { Button } from '../button'
 import { checkProjString, reproject, resetProjection } from '@/components/textures/ProjectionTexture'
 import { TbReplace } from "react-icons/tb";
 import { RxReset } from "react-icons/rx";
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 
 export const Reprojection = () => {
-    const {projection, defaultProjection} = usePlotStore(useShallow(state => ({
-        projection: state.projection,
-        defaultProjection: state.defaultProjection
+    const {destCRS, nativeCRS} = usePlotStore(useShallow(state => ({
+        destCRS: state.destCRS,
+        nativeCRS: state.nativeCRS
     })))
     const [showRepro, setShowRepro] = useState(false)
     const [changeNativeCRS, setChangeNativeCRS] = useState(false)
 
-    const nativeCRS = useRef('')
+    const tempCRS = useRef('')
     const repRes = useRef(256)
 
     function handleNativeCRS(){
-        const valid = checkProjString(nativeCRS.current)
+        const valid = checkProjString(tempCRS.current)
         if (valid){
-            usePlotStore.setState({ defaultProjection: nativeCRS.current })
+            usePlotStore.setState({ nativeCRS: tempCRS.current })
             setChangeNativeCRS(false)
         }
     }
@@ -49,8 +48,8 @@ export const Reprojection = () => {
                         <div
                             className="flex-1 rounded-md border border-[#333] bg-[#1e1e1e] px-3 py-2 font-mono text-sm text-[#d4d4d4] whitespace-pre-wrap"
                         >
-                            {defaultProjection
-                                ? `Native CRS: ${defaultProjection}`
+                            {nativeCRS
+                                ? `Native CRS: ${nativeCRS}`
                                 : "No CRS detected"}
                         </div>
                         <div className="flex flex-col gap-1">
@@ -69,13 +68,13 @@ export const Reprojection = () => {
                         </div>
                         
                     </div>
-                    <Hider show={!defaultProjection || changeNativeCRS}>
+                    <Hider show={!nativeCRS || changeNativeCRS}>
                         <div className="flex flex-col gap-2 rounded-md border border-dashed border-muted-foreground/30 p-3">
                             <Input
                                 type="string"
-                                defaultValue={nativeCRS.current}
-                                onChange={e => (nativeCRS.current = e.target.value)}
-                                placeholder={`${defaultProjection ? "Update" : "Enter" } native CRS`}
+                                defaultValue={tempCRS.current}
+                                onChange={e => (tempCRS.current = e.target.value)}
+                                placeholder={`${nativeCRS ? "Update" : "Enter" } native CRS`}
                             />
                             <Button
                                 className="cursor-pointer w-full"
@@ -91,8 +90,8 @@ export const Reprojection = () => {
                             <p>Resolution</p>
                             <Input
                                 type="string"
-                                defaultValue={projection}
-                                onChange={e => usePlotStore.setState({ projection: e.target.value })}
+                                defaultValue={destCRS}
+                                onChange={e => usePlotStore.setState({ destCRS: e.target.value })}
                                 placeholder="Target projection"
                             />
                             <Input
@@ -106,7 +105,7 @@ export const Reprojection = () => {
                          <Button
                             className="cursor-pointer col-span-2"
                             onClick={()=>reproject(repRes.current)}
-                            disabled={!projection || !defaultProjection}
+                            disabled={!destCRS || !nativeCRS}
                         >
                             Reproject
                         </Button>

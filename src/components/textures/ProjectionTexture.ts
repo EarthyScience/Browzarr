@@ -125,9 +125,9 @@ export function SetReprojectionTexture(dimArrays: Array<number>[]){
 }
 
 export function reproject(resolution: number = 256){
-    const {defaultProjection, projection} = usePlotStore.getState()
-    if (!defaultProjection || !projection) return; // This shouldn't trigger as the button will be disabled for this same condition
-    if (!checkProjString(projection)) return; // defaultProjection will already be checked when the user sets it, so we don't need to check it here
+    const {nativeCRS, destCRS} = usePlotStore.getState()
+    if (!nativeCRS || !destCRS) return; // This shouldn't trigger as the button will be disabled for this same condition
+    if (!checkProjString(destCRS)) return; // nativeCRS will already be checked when the user sets it, so we don't need to check it here
     console.log("Heh?")
     const {dimArrays, remapTexture } = useGlobalStore.getState()
     if (remapTexture) remapTexture.dispose();
@@ -158,7 +158,7 @@ export function reproject(resolution: number = 256){
         boundaryPoints.push([xArray[width - 1], yArray[j]]);
     }
 
-    const proj = proj4(defaultProjection, projection);
+    const proj = proj4(nativeCRS, destCRS);
     let [minX, minY] = [Infinity, Infinity];
     let [maxX, maxY] = [-Infinity, -Infinity];
 
@@ -217,7 +217,7 @@ export function reproject(resolution: number = 256){
     useGlobalStore.setState({remapTexture: texture})
 
     // ---- Update Axis and Shape information ----//
-    const crsCheck = proj4(projection);
+    const crsCheck = proj4(destCRS);
     const {axisDimArrays, axisDimUnits, axisDimNames, shape} = useGlobalStore.getState()
     const newAxisDimArrays = [...axisDimArrays];
     newAxisDimArrays[xIdx] = xTicks;
@@ -244,6 +244,5 @@ export function reproject(resolution: number = 256){
         xSlice: [0, null],
         ySlice: [0, null]
     })
-    console.log(shape,newShape)
 
 }
