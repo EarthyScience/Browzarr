@@ -5,7 +5,7 @@ import { Hider } from '../Widgets/Hider'
 import { ChevronDown } from 'lucide-react'
 import { Input } from '../input'
 import { Button } from '../button'
-import { checkProjString, reproject } from '@/components/textures/ProjectionTexture'
+import { checkProjString, reproject, resetProjection } from '@/components/textures/ProjectionTexture'
 import { TbReplace } from "react-icons/tb";
 import { RxReset } from "react-icons/rx";
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
@@ -56,7 +56,7 @@ export const Reprojection = () => {
                         <div className="flex flex-col gap-1">
                             <button 
                                 className="shrink-0 rounded-md p-2 hover:bg-muted cursor-pointer transition-colors"
-                                onClick={()=>useGlobalStore.setState({remapTexture: undefined})}
+                                onClick={resetProjection}
                             >
                                 <RxReset className="h-4 w-4" />
                             </button>

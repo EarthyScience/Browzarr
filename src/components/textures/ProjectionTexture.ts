@@ -5,6 +5,8 @@ import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import * as THREE from 'three';
 
 import proj4 from 'proj4';
+import { getAxisIndices } from '@/hooks/useAxisIndices';
+import { useZarrStore } from '@/GlobalStates/ZarrStore';
 
 export function checkProjString(projString: string){
     const {setError} = useErrorStore.getState()
@@ -16,7 +18,31 @@ export function checkProjString(projString: string){
         setError('badProj')
         return false
     }
-    
+}
+
+export function resetProjection(){
+    const {dimArrays, dimNames, dimUnits, shape} = useGlobalStore.getState()
+    const {xSlice, ySlice} = useZarrStore.getState()
+    const {xIdx, yIdx} = getAxisIndices()
+
+    const xLength = dimArrays[xIdx].length;
+    const yLength = dimArrays[yIdx].length;
+    const aspectRatio = xLength/yLength;
+    const newShape = new THREE.Vector3().copy(shape)
+    newShape.y = 2/aspectRatio;
+
+    useGlobalStore.setState({
+        axisDimArrays: dimArrays,
+        axisDimUnits: dimUnits,
+        axisDimNames: dimNames,
+        shape: newShape,
+        remapTexture: undefined
+    })
+    usePlotStore.setState({
+        xSlice, 
+        ySlice
+    })
+
 }
 
 function normalizeArray(array: Array<number>){
@@ -88,8 +114,9 @@ function createRemapTexture(xArray: Array<number>, yArray: Array<number>) {
 
 export function SetReprojectionTexture(dimArrays: Array<number>[]){
     const dimCount = dimArrays.length;
-    const xArray = dimArrays[dimCount-1];
-    const yArray = dimArrays[dimCount-2];
+    const {xIdx, yIdx} = getAxisIndices()
+    const xArray = dimArrays[xIdx];
+    const yArray = dimArrays[yIdx];
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
     if (isRegular) return;
 
@@ -101,13 +128,13 @@ export function reproject(resolution: number = 256){
     const {defaultProjection, projection} = usePlotStore.getState()
     if (!defaultProjection || !projection) return; // This shouldn't trigger as the button will be disabled for this same condition
     if (!checkProjString(projection)) return; // defaultProjection will already be checked when the user sets it, so we don't need to check it here
-
+    console.log("Heh?")
     const {dimArrays, remapTexture } = useGlobalStore.getState()
     if (remapTexture) remapTexture.dispose();
-    const dimCount = dimArrays.length;
 
-    const xArray = dimArrays[dimCount-1];
-    const yArray = dimArrays[dimCount-2];
+    const {xIdx, yIdx} = getAxisIndices()
+    const xArray = dimArrays[xIdx];
+    const yArray = dimArrays[yIdx];
     const width = xArray.length;
     const height = yArray.length;
 
@@ -160,6 +187,8 @@ export function reproject(resolution: number = 256){
     const targetHeight = resolution;
     const xTicks = linspace(minX, maxX, targetWidth);
     const yTicks = linspace(minY, maxY, targetHeight);
+
+    // ---- Create Rpojection Texture ----//
     const data = new Uint16Array(targetWidth * targetHeight * 4);
     for (let j = 0; j < targetHeight; j++) {
         for (let i = 0; i < targetWidth; i++) {
@@ -186,4 +215,35 @@ export function reproject(resolution: number = 256){
     texture.wrapT = THREE.ClampToEdgeWrapping;
 
     useGlobalStore.setState({remapTexture: texture})
+
+    // ---- Update Axis and Shape information ----//
+    const crsCheck = proj4(projection);
+    const {axisDimArrays, axisDimUnits, axisDimNames, shape} = useGlobalStore.getState()
+    const newAxisDimArrays = [...axisDimArrays];
+    newAxisDimArrays[xIdx] = xTicks;
+    newAxisDimArrays[yIdx] = yTicks;
+
+    const newAxisDimUnits = [...axisDimUnits];
+    //@ts-ignore At this point these are all valid
+    newAxisDimUnits[xIdx] = crsCheck.oProj.units;
+    //@ts-ignore At this point these are all valid
+    newAxisDimUnits[yIdx] = crsCheck.oProj.units;
+
+    const newAxisDimNames = [...axisDimNames];
+    newAxisDimNames[xIdx] = 'X';
+    newAxisDimNames[yIdx] = 'Y';
+    const newShape = new THREE.Vector3().copy(shape)
+    newShape.y = 2/aspectRatio;
+    useGlobalStore.setState({
+        axisDimArrays: newAxisDimArrays, 
+        axisDimUnits: newAxisDimUnits, 
+        axisDimNames: newAxisDimNames,
+        shape: newShape
+    })
+    usePlotStore.setState({
+        xSlice: [0, null],
+        ySlice: [0, null]
+    })
+    console.log(shape,newShape)
+
 }

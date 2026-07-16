@@ -32,6 +32,9 @@ type StoreState = {
   dimNames: string[];
   dimUnits: string[];
   dimCoords: Record<string, DimCoords>;
+  axisDimArrays: number[][];
+  axisDimNames: string[];
+  axisDimUnits: string[];
   plotDim: number;
   flipY:boolean;
   initStore:string;
@@ -70,6 +73,9 @@ type StoreState = {
   setDimUnits: (dimUnits: string[]) => void;
   setDimCoords: (dimCoords?: Record<string, DimCoords>) => void;
   updateDimCoords: (newDims: Record<string, DimCoords>) => void;
+  setAxisDimArrays: (axisDimArrays: number[][]) => void;
+  setAxisDimNames: (axisDimNames: string[]) => void;
+  setAxisDimUnits: (axisDimUnits: string[]) => void;
   setPlotDim: (plotDim: number) => void;
   setFlipY: (flipY:boolean) => void;
   setInitStore: (initStore:string) => void;
@@ -107,6 +113,9 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   dimArrays: [[0], [0], [0]],
   dimNames: ["Default"],
   dimUnits: ["Default"],
+  axisDimArrays: [[0], [0], [0]],
+  axisDimNames: ["Default"],
+  axisDimUnits: ["Default"],
   dimCoords: {},
   plotDim: 0,
   flipY: false,
@@ -166,6 +175,9 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
 
     set({ dimCoords: limitedDimCoords });
   },
+  setAxisDimArrays: (axisDimArrays) => set({ axisDimArrays }),
+  setAxisDimNames: (axisDimNames) => set({ axisDimNames }),
+  setAxisDimUnits: (axisDimUnits) => set({ axisDimUnits }),
   setPlotDim: (plotDim) => set({ plotDim }),
   setFlipY: (flipY) => set({ flipY }),
   setInitStore: (initStore) => set({ initStore }),
