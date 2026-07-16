@@ -104,8 +104,9 @@ beforeAll(() => {
     COPY_DST: 2,
     TEXTURE_BINDING: 4,
     STORAGE_BINDING: 8,
-    RENDER_ATTACHMENT: 16
-  }
+    RENDER_ATTACHMENT: 16,
+    TRANSIENT_ATTACHMENT: 32
+  } as GPUTextureUsage
 })
 
 // Export helper to set mock GPU results

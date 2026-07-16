@@ -71,7 +71,7 @@ const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
                 uniform bool useMapColors;
                 uniform vec3 lineColor;
                 uniform vec3 userColor;
-                varying float vNormed;
+                in float vNormed;
 
                 void main() {
                     vec4 texColor = texture(cmap, vec2(vNormed, 0.1));

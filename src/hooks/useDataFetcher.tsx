@@ -76,6 +76,9 @@ export const useDataFetcher = () => {
                 //---- Main Fetch ----//
                 GetArray().then((result) => {
                     const shape = result.shape.filter((val) => val != 1);
+                    const activeIndices = result.indices.filter((_, idx) => result.shape[idx] != 1);
+                    useGlobalStore.getState().setActiveIndices(activeIndices);
+
                     const [tempTexture, scaling] = ArrayToTexture({
                         data: result.data,
                         shape
@@ -90,7 +93,7 @@ export const useDataFetcher = () => {
                     if (shapeLength === 2) {
                         setIsFlat(true);
                         if (!["flat", "sphere"].includes(plotType)) {
-                            setPlotType("sphere");
+                            setPlotType("flat");
                         }
                     } else {
                         setIsFlat(false);
@@ -121,19 +124,14 @@ export const useDataFetcher = () => {
             //---- DimInfo ----//
             GetDimInfo(variable).then((arrays) => {
                 let { dimArrays, dimUnits, dimNames } = arrays;
-                if (is4D) {
-                    dimArrays = dimArrays.slice(1);
-                    dimUnits = dimUnits.slice(1);
-                    dimNames = dimNames.slice(1);
-                }
-                setDimNames(dimNames);
                 setDimArrays(dimArrays);
+                setDimNames(dimNames);
+                setDimUnits(dimUnits);
 
                 const targetDim = dimArrays.length > 2 ? dimArrays[1] : dimArrays[0];
                 const shouldFlip = targetDim[1] < targetDim[0];
                 setFlipY(shouldFlip);
 
-                setDimUnits(dimUnits);
                 ParseExtent(dimUnits, dimArrays);
                 SetReprojectionTexture(dimArrays);
             });

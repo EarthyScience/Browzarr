@@ -8,7 +8,8 @@ import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { SquareMeshes } from './TransectMeshes';
-import { sphereVertex, sphereFrag } from '../textures/shaders';
+import { usePaddedTextures } from '@/hooks/usePaddedTextures';
+import { useAxisIndices } from '@/hooks';
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -17,7 +18,8 @@ function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number
     return new THREE.Vector2(1-u,v)
 }
 
-export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
+export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
+    const textures = usePaddedTextures(propTextures);
     const {setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(state=>({
       setPlotDim:state.setPlotDim, 
       updateDimCoords:state.updateDimCoords,
@@ -62,11 +64,17 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         getColorIdx: state.getColorIdx,
         incrementColorIdx: state.incrementColorIdx
     })))
-    const dimSlices = [
-      dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-      dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-      dimArrays.length > 2 ? dimArrays[2].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) : [],
-    ]
+
+    const {xIdx, yIdx, zIdx} = useAxisIndices()
+    const dimSlices = useMemo(() => {
+      return [
+        dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ?? undefined) ?? [],
+        dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ?? undefined) ?? [],
+        dimArrays.length > 2
+          ? dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ?? undefined) ?? []
+          : [],
+      ];
+    }, [dimArrays, zIdx, yIdx, xIdx, zSlice, ySlice, xSlice]);
 
     const {lonBounds, latBounds} = useCoordBounds()
 
@@ -75,7 +83,7 @@ export const Sphere = ({textures} : {textures: THREE.Data3DTexture[] | THREE.Dat
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
-                map: { value: Array.from({ length: 14 }, (_, idx) => textures?.[idx]) },
+                map: { value: textures },
                 maskTexture: { value: maskTexture},
                 maskValue: { value: maskValue },
                 threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},

@@ -14,6 +14,8 @@ import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { flatFrag } from '../textures/shaders';
 import { SquareMeshes } from './TransectMeshes';
+import { usePaddedTextures } from '@/hooks/usePaddedTextures';
+import { useAxisIndices } from '@/hooks';
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
   setShowInfo: React.Dispatch<React.SetStateAction<boolean>>;
@@ -21,7 +23,8 @@ interface InfoSettersProps{
   coords: React.RefObject<number[]>;
 }
 
-const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
+const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
+    const textures = usePaddedTextures(propTextures);
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, colormap, dimArrays, dimNames, dimUnits, 
       isFlat, dataShape, textureArrayDepths, strides, remapTexture,
@@ -56,25 +59,25 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
     })))
     const {kernelSize, kernelDepth} = useZarrStore(useShallow(state => ({
       kernelSize: state.kernelSize,
-      kernelDepth: state.kernelDepth
+      kernelDepth: state.kernelDepth,
     })))
 
-    const shapeLength = dimArrays.length
+    const {xIdx, yIdx, zIdx} = useAxisIndices()
 
     const dimSlices = useMemo (() => {
-      let slices = dimArrays.length === 2
+      let slices = isFlat
         ? [
-          dimArrays[0].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-          dimArrays[1].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
+          dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+          dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
         ]
         : [
-          dimArrays[shapeLength - 3].slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined),
-          dimArrays[shapeLength - 2].slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined),
-          dimArrays[shapeLength - 1].slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined )
+          dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
+          dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+          dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined ) ?? [],
         ]
-      if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 ? kernelDepth : kernelSize)))
+      if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
       return slices
-    } ,[dimArrays, zSlice, ySlice, xSlice, coarsen])
+    } ,[dimArrays, zSlice, ySlice, xSlice, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
 
     const shapeRatio = useMemo(()=> {
       if (dataShape.length == 2){
@@ -91,7 +94,17 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
     const rotateMap = analysisMode && axis == 2;
     const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
-    const analysisDims = useMemo(()=>dimArrays.length > 2 ? dimSlices.filter((_e,idx)=> idx != axis) : dimSlices,[dimSlices,axis])
+    const analysisDims = useMemo(() => {
+      if (!analysisMode) return dimSlices;
+      const fullSlices = [
+        dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
+        dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+        dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
+      ];
+      let slices = fullSlices.filter((_, idx) => idx !== axis);
+      if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
+      return slices;
+    }, [analysisMode, dimSlices, dimArrays, zSlice, ySlice, xSlice, axis, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
 
     const {lonBounds, latBounds} = useCoordBounds()
 
@@ -107,8 +120,10 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
         setLoc([e.clientX, e.clientY]);
         lastUV.current = e.uv;
         const { x, y } = e.uv;
-        const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[2].length;
-        const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[1].length;
+        const zSliceIdx = dimSlices.length > 2 ? 2 : 1;
+        const ySliceIdx = dimSlices.length > 2 ? 1 : 0;
+        const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[zSliceIdx].length;
+        const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[ySliceIdx].length;
 
         const xIdx = Math.round(x*xSize-.5)
         const yIdx = Math.round(y*ySize-.5)
@@ -116,7 +131,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
         dataIdx += isFlat ? 0 : Math.floor((dimSlices[0].length-1) * animProg) * xSize*ySize
         const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
         val.current = dataVal;
-        coords.current = isFlat ? analysisMode ? [analysisDims[0][yIdx], analysisDims[1][xIdx]] : [dimSlices[0][yIdx], dimSlices[1][xIdx]] : [dimSlices[1][yIdx], dimSlices[2][xIdx]]
+        coords.current = isFlat ? analysisMode ? [analysisDims[0][yIdx], analysisDims[1][xIdx]] : [dimSlices[0][yIdx], dimSlices[1][xIdx]] : [dimSlices[ySliceIdx][yIdx], dimSlices[zSliceIdx][xIdx]]
       }
     }
 
@@ -168,7 +183,7 @@ const FlatMap = ({textures, infoSetters} : {textures : THREE.DataTexture[] | THR
             uniforms:{
               cScale: {value: cScale},
               cOffset: {value: cOffset},
-              map : {value: Array.from({ length: 12 }, (_, idx) => textures?.[idx])},
+              map : {value: textures},
               remapTexture: { value: remapTexture},
               maskTexture: {value: maskTexture},
               maskValue: {value: maskValue},

@@ -251,7 +251,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 left:'50%',
                 transform:'translateX(-50%)',
             }}>
-                {<Metadata data={metadata} variable ={variable} />}
+                {<Metadata data={metadata} variable={variable} isMobile={true} />}
                 {`${analysisString}`}
             </p>
         {(cScale != 1 || cOffset != 0) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} 

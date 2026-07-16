@@ -44,6 +44,7 @@ export async function GetZarrMetadata(
 	groupStore: Promise<GroupType>,
 ): Promise<ZarrMetadata[]> {
 	const group = await groupStore;
+	if (!group) return [];
 	if (group.store instanceof IcechunkStore) {
 		return getIcechunkMetadata(group as zarr.Group<IcechunkStore>);
 	}
@@ -56,6 +57,7 @@ export async function GetTitleDescription(
 	groupStore: Promise<GroupType>,
 ): Promise<ZarrTitleDescription> {
 	const group = await groupStore;
+	if (!group) return { title: null, description: null };
 	if (group.store instanceof IcechunkStore) {
 		return getIcechunkTitleDescription(group as zarr.Group<IcechunkStore>);
 	}

@@ -73,7 +73,7 @@ const months = [
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ];
   
-export function parseLoc(input:number, units: string | undefined, verbose: boolean = false) {
+export function parseLoc(input: any, units: string | undefined, verbose: boolean = false) {
     if (!units){
       if (typeof(input) == 'bigint'){
         return input;
@@ -92,28 +92,46 @@ export function parseLoc(input:number, units: string | undefined, verbose: boole
         const [scale, offset] = parseTimeUnit(units)
         const timeStamp = Number(input) * scale;
         const date = new Date(timeStamp + offset);
+        
+        const day = date.getUTCDate();
+        const month = date.getUTCMonth() + 1; // Months are 0-indexed
+        const year = date.getUTCFullYear();
+        const hours = date.getUTCHours();
+        const mins = date.getUTCMinutes();
+        const secs = date.getUTCSeconds();
+        
+        const lowerUnits = units.toLowerCase();
+        const showTime = lowerUnits.includes('hour') || lowerUnits.includes('min') || lowerUnits.includes('sec') || hours !== 0 || mins !== 0 || secs !== 0;
+        
         if (verbose) {
-          return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`; // e.g., "18 Aug 2025"
+          let dateStr = `${day} ${months[month - 1]} ${year}`;
+          if (showTime) {
+             dateStr += ` ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+             if (secs !== 0 || lowerUnits.includes('sec')) dateStr += `:${String(secs).padStart(2, '0')}`;
+          }
+          return dateStr;
         } else {
-          const day = date.getDate();
-          const month = date.getMonth() + 1; // Months are 0-indexed
-          const year = date.getFullYear();
-          return `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`; // e.g., "18-8-2025"
+          let dateStr = `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
+          if (showTime) {
+             dateStr += ` ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+             if (secs !== 0 || lowerUnits.includes('sec')) dateStr += `:${String(secs).padStart(2, '0')}`;
+          }
+          return dateStr;
         }
       }
       catch{
         return input;
       }
     }
-    if ( units.match(/(degree|degrees|deg|°)/i) ){
-        if (input){
-          return `${input.toFixed(2)}°`
+    if ( units && units.match(/(degree|degrees|deg|°)/i) ){
+        if (input !== undefined && input !== null){
+          return `${Number(input).toFixed(2)}°`
         } else{
           return input
         } 
     }
     else {
-        return input ? input.toFixed(2) : input;
+        return (input !== undefined && input !== null && typeof input !== 'string') ? Number(input).toFixed(2) : input;
     }
 }
 
@@ -179,27 +197,37 @@ export function linspace(start: number, stop: number, num: number): number[] {
     return Array.from({ length: num }, (_, i) => start + step * i);
   }
 
-export function ParseExtent(dimUnits: string[], dimArrays: number[][]){
+export function ParseExtent(dimUnits: string[], dimArrays: any[][]){
   const {setLonExtent, setLatExtent, setLonResolution, setLatResolution, setOriginalExtent } = usePlotStore.getState();
   const {xSlice, ySlice} = usePlotStore.getState();
-  const tempUnits = dimUnits.length > 2 ? dimUnits.slice(1) : dimUnits;
+  const {axisMapping} = useZarrStore.getState();
+  const shapeLength = dimArrays.length;
+  const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
+  const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
+
   let tryParse = false;
-  for (const unit of tempUnits){
-    if (!unit) continue;
-    if (unit.match(/(degree|degrees|deg|°)/i)){
+  const xUnit = dimUnits[xIdx];
+  const yUnit = dimUnits[yIdx];
+
+  if ((xUnit && xUnit.match(/(degree|degrees|deg|°)/i)) || (yUnit && yUnit.match(/(degree|degrees|deg|°)/i))) {
       tryParse = true;
-      break;
-    }
   }
+
   if (tryParse){
-    const tempArrs = dimArrays.length > 2 ? dimArrays.slice(1) : dimArrays
-    const minLat = tempArrs[0][ySlice[0]]
-    const maxLat = tempArrs[0][ySlice[1]??tempArrs[0].length-1]
-    let minLon = tempArrs[1][xSlice[0]]
-    let maxLon = tempArrs[1][xSlice[1]?? tempArrs[1].length-1]
+    const xArray = dimArrays[xIdx] || [];
+    const yArray = dimArrays[yIdx] || [];
+
+    const minLat = Number(yArray[ySlice[0]]);
+    const maxLatIdx = ySlice[1] !== null ? ySlice[1] - 1 : yArray.length - 1;
+    const maxLat = Number(yArray[maxLatIdx]);
+    
+    let minLon = Number(xArray[xSlice[0]]);
+    const maxLonIdx = xSlice[1] !== null ? xSlice[1] - 1 : xArray.length - 1;
+    let maxLon = Number(xArray[maxLonIdx]);
+
     if (maxLon > 180){
       maxLon -= 180
-      minLon -=180
+      minLon -= 180
       usePlotStore.setState({is360Deg:true})
     } else{
       usePlotStore.setState({is360Deg:false})
@@ -207,8 +235,8 @@ export function ParseExtent(dimUnits: string[], dimArrays: number[][]){
     setLonExtent([minLon, maxLon])
     setLatExtent([minLat, maxLat])
 
-    const latRes = Math.abs(tempArrs[0][1] - tempArrs[0][0])
-    const lonRes = Math.abs(tempArrs[1][1] - tempArrs[1][0])
+    const latRes = Math.abs(Number(yArray[1] ?? 0) - Number(yArray[0] ?? 0)) || 1;
+    const lonRes = Math.abs(Number(xArray[1] ?? 0) - Number(xArray[0] ?? 0)) || 1;
     setLonResolution(lonRes)
     setLatResolution(latRes)
     setOriginalExtent(new THREE.Vector4(minLon, maxLon, minLat, maxLat))
@@ -259,13 +287,16 @@ function DecompressArray(compressed : Uint8Array){
 
 export function GetCurrentArray(overrideStore?:string){
   const { variable, is4D, idx4D, initStore, strides, dataShape, setStatus }= useGlobalStore.getState()
-  const { arraySize, currentChunks } = useZarrStore.getState()
+  const { arraySize, currentChunks, ndSlices } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
   
-  if (cache.has(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)){
-      const chunk = cache.get(is4D ? `${store}_${idx4D}_${variable}` : `${store}_${variable}`)
-      const compressed = chunk.compressed
+  const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : (idx4D ?? "");
+  const cacheBase = scalarIndices !== "" ? `${store}_${variable}_${scalarIndices}` : `${store}_${variable}`;
+  
+  if (cache.has(cacheBase)){
+      const chunk = cache.get(cacheBase)
+      const compressed = chunk?.compressed
       setStatus(compressed ? "Decompressing data..." : null)
       const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
       setStatus(null)
@@ -281,8 +312,9 @@ export function GetCurrentArray(overrideStore?:string){
       for (let y = yStartIdx; y < yEndIdx; y++) {
         for (let x = xStartIdx; x < xEndIdx; x++) {
           const chunkID = `z${z}_y${y}_x${x}`
-          const cacheName = is4D ? `${store}_${variable}_${idx4D}_chunk_${chunkID}` : `${store}_${variable}_chunk_${chunkID}`
+          const cacheName = `${cacheBase}_chunk_${chunkID}`
           const chunk = cache.get(cacheName)
+          if (!chunk) continue;
           const compressed = chunk.compressed
           const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
           copyChunkToArray(
@@ -293,7 +325,8 @@ export function GetCurrentArray(overrideStore?:string){
             dataShape,
             strides as [number, number, number], 
             [z, y, x], 
-            [zStartIdx, yStartIdx, xStartIdx]
+            chunk.fullChunkDim || [1, 1, 1],
+            chunk.sliceStart || [0, 0, 0]
           )
         }
       }
