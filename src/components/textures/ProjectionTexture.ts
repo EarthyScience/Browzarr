@@ -1,9 +1,23 @@
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { ArrayMinMax, linspace } from '@/utils/HelperFuncs';
+import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import * as THREE from 'three';
 
 import proj4 from 'proj4';
+
+export function checkProjString(projString: string){
+    const {setError} = useErrorStore.getState()
+    try{
+        const proj = proj4(projString)
+        console.log(proj)
+        return true
+    } catch{
+        setError('badProj')
+        return false
+    }
+    
+}
 
 function normalizeArray(array: Array<number>){
     const len = array.length;
@@ -86,6 +100,8 @@ export function SetReprojectionTexture(dimArrays: Array<number>[]){
 export function reproject(resolution: number = 256){
     const {defaultProjection, projection} = usePlotStore.getState()
     if (!defaultProjection || !projection) return; // This shouldn't trigger as the button will be disabled for this same condition
+    if (!checkProjString(projection)) return; // defaultProjection will already be checked when the user sets it, so we don't need to check it here
+
     const {dimArrays, remapTexture } = useGlobalStore.getState()
     if (remapTexture) remapTexture.dispose();
     const dimCount = dimArrays.length;
@@ -101,19 +117,16 @@ export function reproject(resolution: number = 256){
     // We need the border points as the min/max of the old CRS won't always be the min/max of the new CRS
     const boundaryPoints: [number, number][] = [];
 
-    // top edge: j = 0, all i
+    
     for (let i = 0; i < width; i++) {
         boundaryPoints.push([xArray[i], yArray[0]]);
     }
-    // bottom edge: j = height - 1, all i
     for (let i = 0; i < width; i++) {
         boundaryPoints.push([xArray[i], yArray[height - 1]]);
     }
-    // left edge: i = 0, all j
     for (let j = 0; j < height; j++) {
         boundaryPoints.push([xArray[0], yArray[j]]);
     }
-    // right edge: i = width - 1, all j
     for (let j = 0; j < height; j++) {
         boundaryPoints.push([xArray[width - 1], yArray[j]]);
     }

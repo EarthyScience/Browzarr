@@ -26,5 +26,9 @@ export const ErrorList = {
     largeArray :{
         title: "Requested too Much Memory",
         description: "Browzarr cannot request that much data in one call. This is a fixable issue, open an issue on GitHub so I am motivated to implement it."
+    },
+    badProj :{
+        title: "Unrecognized Projection String",
+        description: "The projection string provided is not recognized. Please check the string and try again."
     }
 }
