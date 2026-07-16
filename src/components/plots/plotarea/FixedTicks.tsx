@@ -7,6 +7,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow'
+import { useAxisIndices } from '@/hooks'
 
 
 interface ViewportBounds {
@@ -52,20 +53,15 @@ export function FixedTicks({
                 ySlice: state.ySlice,
                 xSlice: state.xSlice
       })))
-  const { axisMapping } = useZarrStore(useShallow(state => ({
-    axisMapping: state.axisMapping
-  })))
-  const shapeLength = dimArrays.length;
+  const {xIdx, yIdx, zIdx} = useAxisIndices()
+
   const dimSlices = useMemo(() => {
-    const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
-    const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
-    const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
     return [
       dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
       dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
       dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
     ]
-  }, [dimArrays, xSlice, ySlice, zSlice, axisMapping, shapeLength])
+  }, [dimArrays, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
   const xDimArray = useMemo(() => dimSlices[plotDim], [dimSlices, plotDim])
   const xTickCount = 10;
   const yTickCount = 8;
@@ -73,7 +69,6 @@ export function FixedTicks({
   const xDimSize = xDimArray.length;
   const yDimSize = (valueScales.maxVal-valueScales.minVal)
   //Converts BigInt to DateTime
- 
 
   const textArray = useMemo(()=>{
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

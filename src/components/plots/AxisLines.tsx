@@ -14,6 +14,7 @@ import { LineMaterial } from 'three-stdlib';
 import { useFrame } from '@react-three/fiber';
 import { parseLoc, coarsenFlatArray } from '@/utils/HelperFuncs';
 import { useCSSVariable } from '../ui';
+import { useAxisIndices } from '@/hooks';
 import * as THREE from 'three'
 
 const AXIS_CONSTANTS = {
@@ -53,15 +54,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     hideAxisControls: state.hideAxisControls
   })))
 
-  const { axisMapping } = useZarrStore(useShallow(state => ({
-    axisMapping: state.axisMapping
-  })))
-
-  const shapeLength = dimArrays.length
-
-  const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
-  const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
-  const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
+  const {xIdx, yIdx, zIdx} = useAxisIndices()
 
   const dimSlices = useMemo(()=> {
     let slices = [
@@ -74,7 +67,8 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
       slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 ? kernelDepth : kernelSize)))
     }
     return slices
-  },[revY, dimArrays, zSlice, ySlice, xSlice, coarsen, axisMapping, shapeLength])
+  },[revY, dimArrays, zSlice, ySlice, xSlice, coarsen, xIdx, yIdx, zIdx])
+
   const dimLengths = dimSlices.map(val => val.length)
 
   const [xResolution, setXResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
@@ -372,16 +366,10 @@ const FlatAxis = () =>{
     analysisMode: state.analysisMode,
     axis: state.axis
   })))
-  const { axisMapping } = useZarrStore(useShallow(state => ({
-    axisMapping: state.axisMapping
-  })))
-  const shapeLength = dimArrays.length;
-  const is4D = dimArrays.length === 4;
+
   const originallyFlat = dimArrays.length == 2;
   const slices = originallyFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
-  const xIdx = (axisMapping.x >= 0 && axisMapping.x < shapeLength) ? axisMapping.x : shapeLength - 1;
-  const yIdx = (axisMapping.y >= 0 && axisMapping.y < shapeLength) ? axisMapping.y : Math.max(0, shapeLength - 2);
-  const zIdx = (axisMapping.z >= 0 && axisMapping.z < shapeLength) ? axisMapping.z : Math.max(0, shapeLength - 3);
+  const {xIdx, yIdx, zIdx} = useAxisIndices()
 
   const dimSlices = useMemo(()=> {
     return originallyFlat ? 
@@ -395,7 +383,7 @@ const FlatAxis = () =>{
       flipY ? dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() ?? [] : dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
       dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
     ]
-  },[dimArrays, flipY, axisMapping, originallyFlat, shapeLength, xSlice, ySlice, zSlice])
+  },[dimArrays, flipY, originallyFlat, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
 
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
@@ -439,7 +427,7 @@ const FlatAxis = () =>{
         axisNames: baseNames,
       };
     }
-  }, [analysisMode, dimArrays, dimUnits, dimNames, dimSlices, originallyFlat, axisMapping, shapeLength, axis]);
+  }, [analysisMode, dimArrays, dimUnits, dimNames, dimSlices, originallyFlat, axis, xIdx, yIdx, zIdx]);
   
 
   const shapeRatio = useMemo(()=>{
