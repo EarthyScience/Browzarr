@@ -15,6 +15,7 @@ import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { GetFrag } from '../textures';
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
+import { useAxisIndices } from '@/hooks';
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
   setShowInfo: React.Dispatch<React.SetStateAction<boolean>>;
@@ -56,18 +57,14 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       analysisMode: state.analysisMode,
       analysisArray: state.analysisArray
     })))
-    const {kernelSize, kernelDepth, axisMapping} = useZarrStore(useShallow(state => ({
+    const {kernelSize, kernelDepth} = useZarrStore(useShallow(state => ({
       kernelSize: state.kernelSize,
       kernelDepth: state.kernelDepth,
-      axisMapping: state.axisMapping
     })))
 
-    const shapeLength = dimArrays.length
+    const {xIdx, yIdx, zIdx} = useAxisIndices()
 
     const dimSlices = useMemo (() => {
-      const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
-      const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
-      const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
       let slices = isFlat
         ? [
           dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
@@ -80,7 +77,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         ]
       if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
       return slices
-    } ,[dimArrays, zSlice, ySlice, xSlice, coarsen, axisMapping, shapeLength, kernelDepth, kernelSize])
+    } ,[dimArrays, zSlice, ySlice, xSlice, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
 
     const shapeRatio = useMemo(()=> {
       if (dataShape.length == 2){
@@ -99,9 +96,6 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
     const analysisDims = useMemo(() => {
       if (!analysisMode) return dimSlices;
-      const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
-      const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
-      const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
       const fullSlices = [
         dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
         dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
@@ -110,7 +104,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       let slices = fullSlices.filter((_, idx) => idx !== axis);
       if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
       return slices;
-    }, [analysisMode, dimSlices, dimArrays, zSlice, ySlice, xSlice, axisMapping, shapeLength, axis, coarsen, kernelDepth, kernelSize])
+    }, [analysisMode, dimSlices, dimArrays, zSlice, ySlice, xSlice, axis, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
 
     const {lonBounds, latBounds} = useCoordBounds()
 
