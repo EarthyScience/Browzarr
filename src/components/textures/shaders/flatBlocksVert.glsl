@@ -7,7 +7,7 @@ attribute vec2 instanceUV;
 #else
     uniform sampler3D map[14];
 #endif
-
+uniform sampler2D remapTexture;
 uniform sampler2D maskTexture;
 uniform vec3 textureDepths;
 
@@ -81,6 +81,14 @@ void main() {
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     vec3 texCoord = vec3(instanceUV, animateProg);
+    #ifdef REPROJECT
+        vec3 remap = texture(remapTexture,instanceUV).rgb;
+        texCoord.xy = remap.rg;
+        if (remap.b < 0.5){
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            return;
+        }
+    #endif
     #ifdef IS_FLAT
         ivec2 idx = clamp(ivec2(instanceUV * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
         int textureIdx = idx.y * yStepSize + idx.x;

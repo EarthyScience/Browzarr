@@ -27,13 +27,14 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     const textures = usePaddedTextures(propTextures);
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, colormap, dimArrays, dimNames, dimUnits, 
-      isFlat, dataShape, textureArrayDepths, strides, remapTexture,
+      isFlat, dataShape, textureArrayDepths, strides, remapTexture, shape,
       setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(state => ({
       flipY: state.flipY, colormap: state.colormap, 
       dimArrays: state.dimArrays, strides: state.strides, 
       dimNames:state.dimNames, dimUnits: state.dimUnits,
       isFlat: state.isFlat, dataShape: state.dataShape,
-      textureArrayDepths: state.textureArrayDepths,remapTexture:state.remapTexture,
+      textureArrayDepths: state.textureArrayDepths,
+      remapTexture:state.remapTexture, shape: state.shape,
       setPlotDim:state.setPlotDim, 
       updateDimCoords:state.updateDimCoords,
       updateTimeSeries: state.updateTimeSeries
@@ -78,17 +79,17 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
       return slices
     } ,[dimArrays, zSlice, ySlice, xSlice, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
-
     const shapeRatio = useMemo(()=> {
       if (dataShape.length == 2){
-        return dataShape[0]/dataShape[1]
+        return shape.y/shape.x
       } else if (analysisMode){
         const thisShape = dataShape.filter((_val, idx) => idx != axis)
         return thisShape[0]/thisShape[1]
       } else {
-        return dataShape[1]/dataShape[2]
+        return shape.y/shape.x
       }
-    }, [axis, analysisMode] )
+    }, [axis, shape, dataShape, analysisMode] )
+    
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
     const infoRef = useRef<boolean>(false)
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))

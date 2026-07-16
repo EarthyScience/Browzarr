@@ -5,22 +5,25 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
-import { sphereBlocksFrag, sphereBlocksVert } from '../textures/shaders'
+import { flatBlocksVert, sphereBlocksFrag } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
 import { deg2rad } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
+import { useAxisIndices } from '@/hooks';
 
 const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
     const {colormap, isFlat, valueScales, flipY,
-            dataShape, textureArrayDepths} = useGlobalStore(useShallow(state=>({
+            dataShape, textureArrayDepths, axisDimArrays, remapTexture} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,
         isFlat: state.isFlat,  
         valueScales: state.valueScales,
         flipY: state.flipY,
         dataShape: state.dataShape,
-        textureArrayDepths: state.textureArrayDepths
+        textureArrayDepths: state.textureArrayDepths,
+        axisDimArrays: state.axisDimArrays,
+        remapTexture: state.remapTexture
     })))
     const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, fillValue, valueRange, offsetNegatives, rotateFlat, maskTexture, maskValue,
         } = usePlotStore(useShallow(state=> ({
@@ -33,16 +36,16 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
         analysisMode: state.analysisMode, axis:state.axis
     })))
+    const {xIdx, yIdx} = useAxisIndices()
     const {width, height} = useMemo(()=>{
-        if (dataShape.length == 2){
-            return {width: dataShape[1], height: dataShape[0]}
-        } else if (analysisMode){
+        if (analysisMode){
             const thisShape = dataShape.filter((_val, idx) => idx != axis)
             return {width: thisShape[1], height: thisShape[0]}
         } else {
-            return {width: dataShape[2], height: dataShape[1]}
+            return {width: axisDimArrays[xIdx].length, height: axisDimArrays[yIdx].length}
         }
-    },[analysisMode, axis, dataShape]) 
+    },[analysisMode, axis, dataShape, axisDimArrays]) 
+    
     const rotateMap = analysisMode && axis == 2;
     const count = useMemo(()=>{
         const count = width * height;
@@ -83,6 +86,7 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
             glslVersion: THREE.GLSL3,
             uniforms: {
                 map: { value: textures },
+                remapTexture: { value: remapTexture },
                 maskTexture: {value: maskTexture},
                 maskValue: {value: maskValue},
                 threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
@@ -101,16 +105,17 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
                 fillValue: {value: fillValue?? NaN},
             },
             defines:{
-                IS_FLAT: isFlat
+                IS_FLAT: isFlat,
+                REPROJECT: remapTexture ? true: false
             },
-            vertexShader: sphereBlocksVert,
+            vertexShader: flatBlocksVert,
             fragmentShader: sphereBlocksFrag,
             blending: THREE.NoBlending,
             depthWrite:true,
             depthTest:true,
         })
         return shader
-    },[width, height, isFlat])
+    },[width, height, isFlat, remapTexture])
 
     useEffect(()=>{
         if (shaderMaterial){

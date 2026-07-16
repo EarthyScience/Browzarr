@@ -77,9 +77,9 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
   const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
 
-  const depthRatio = useMemo(()=>dataShape[0]/dataShape[2]*timeScale,[dataShape, timeScale]);
-  const shapeRatio = useMemo(()=>dataShape[1]/dataShape[2], [dataShape])
-  const timeRatio = Math.max(dataShape[0]/dataShape[2], 2);
+  const depthRatio = useMemo(()=>shape.z/shape.x*timeScale,[shape, timeScale]);
+  const shapeRatio = useMemo(()=>shape.y/shape.x, [shape])
+  const timeRatio = Math.max(shape.z/shape.x, 2);
 
   const secondaryColor = useCSSVariable('--text-plot') //replace with needed variable
   const colorHex = useMemo(()=>{
@@ -342,10 +342,10 @@ const FLAT_AXIS_CONSTANTS = {
 };
 
 const FlatAxis = () =>{
-  const {dimArrays, dimNames, dimUnits, flipY} = useGlobalStore(useShallow(state => ({
-    dimArrays: state.dimArrays,
-    dimNames: state.dimNames,
-    dimUnits: state.dimUnits,
+  const {axisDimArrays, axisDimNames, axisDimUnits, flipY} = useGlobalStore(useShallow(state => ({
+    axisDimArrays: state.axisDimArrays,
+    axisDimNames: state.axisDimNames,
+    axisDimUnits: state.axisDimUnits,
     flipY: state.flipY,
   })))
 
@@ -365,23 +365,23 @@ const FlatAxis = () =>{
     axis: state.axis
   })))
 
-  const originallyFlat = dimArrays.length == 2;
+  const originallyFlat = axisDimArrays.length == 2;
   const slices = originallyFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
   const {xIdx, yIdx, zIdx} = useAxisIndices()
 
   const dimSlices = useMemo(()=> {
     return originallyFlat ? 
     [
-      flipY ? dimArrays[yIdx]?.slice().reverse() ?? [] : dimArrays[yIdx] ?? [], 
-      dimArrays[xIdx] ?? []
+      flipY ? axisDimArrays[yIdx]?.slice().reverse() ?? [] : axisDimArrays[yIdx] ?? [], 
+      axisDimArrays[xIdx] ?? []
     ] 
     :
     [
-      dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
-      flipY ? dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() ?? [] : dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
-      dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
+      axisDimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
+      flipY ? axisDimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() ?? [] : axisDimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+      axisDimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
     ]
-  },[dimArrays, flipY, originallyFlat, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
+  },[axisDimArrays, flipY, originallyFlat, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
 
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
@@ -404,13 +404,13 @@ const FlatAxis = () =>{
     if (originallyFlat) {
       return {
         axisArrays: dimSlices,
-        axisUnits: [dimUnits[yIdx], dimUnits[xIdx]],
-        axisNames: [dimNames[yIdx], dimNames[xIdx]],
+        axisUnits: [axisDimUnits[yIdx], axisDimUnits[xIdx]],
+        axisNames: [axisDimNames[yIdx], axisDimNames[xIdx]],
       };
     }
 
-    const baseUnits = [dimUnits[zIdx], dimUnits[yIdx], dimUnits[xIdx]];
-    const baseNames = [dimNames[zIdx], dimNames[yIdx], dimNames[xIdx]];
+    const baseUnits = [axisDimUnits[zIdx], axisDimUnits[yIdx], axisDimUnits[xIdx]];
+    const baseNames = [axisDimNames[zIdx], axisDimNames[yIdx], axisDimNames[xIdx]];
 
     if (analysisMode) {
       return {
@@ -425,9 +425,8 @@ const FlatAxis = () =>{
         axisNames: baseNames,
       };
     }
-  }, [analysisMode, dimArrays, dimUnits, dimNames, dimSlices, originallyFlat, axis, xIdx, yIdx, zIdx]);
+  }, [analysisMode, axisDimArrays, axisDimUnits, axisDimNames, dimSlices, originallyFlat, axis, xIdx, yIdx, zIdx]);
   
-
   const shapeRatio = useMemo(()=>{
     if(analysisMode && axis == 2){
       return dimLengths[heightIdx]/dimLengths[widthIdx]

@@ -12,7 +12,6 @@ export function checkProjString(projString: string){
     const {setError} = useErrorStore.getState()
     try{
         const proj = proj4(projString)
-        console.log(proj)
         return true
     } catch{
         setError('badProj')
@@ -128,7 +127,7 @@ export function reproject(resolution: number = 256){
     const {nativeCRS, destCRS} = usePlotStore.getState()
     if (!nativeCRS || !destCRS) return; // This shouldn't trigger as the button will be disabled for this same condition
     if (!checkProjString(destCRS)) return; // nativeCRS will already be checked when the user sets it, so we don't need to check it here
-    console.log("Heh?")
+
     const {dimArrays, remapTexture } = useGlobalStore.getState()
     if (remapTexture) remapTexture.dispose();
 
