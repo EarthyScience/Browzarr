@@ -27,7 +27,6 @@ export const Reprojection = () => {
             setChangeNativeCRS(false)
         }
     }
-
     return (
         <div className="space-y-2">
             <button
@@ -95,17 +94,18 @@ export const Reprojection = () => {
                                 placeholder="Target projection"
                             />
                             <Input
-                                className='appearance-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-noneappearance-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+                                className='appearance-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
                                 type="number"
                                 defaultValue={repRes.current}
-                                onChange={e => repRes.current = parseInt(e.target.value )}
+                                step={1}
+                                onChange={e => { const val = parseInt(e.target.value); repRes.current = isNaN(val) ? 256 : val; }}
                                 placeholder="Resolution"
                             />
                         </div>
                          <Button
                             className="cursor-pointer col-span-2"
                             onClick={()=>reproject(repRes.current)}
-                            disabled={!destCRS || !nativeCRS}
+                            disabled={!destCRS || !nativeCRS || isNaN(repRes.current)}
                         >
                             Reproject
                         </Button>

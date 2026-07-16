@@ -20,7 +20,8 @@ export function checkProjString(projString: string){
 }
 
 export function resetProjection(){
-    const {dimArrays, dimNames, dimUnits, shape} = useGlobalStore.getState()
+    const {dimArrays, dimNames, dimUnits, shape, remapTexture} = useGlobalStore.getState()
+    if (remapTexture) remapTexture.dispose()
     const {xSlice, ySlice} = useZarrStore.getState()
     const {xIdx, yIdx} = getAxisIndices()
 
@@ -29,6 +30,7 @@ export function resetProjection(){
     const aspectRatio = xLength/yLength;
     const newShape = new THREE.Vector3().copy(shape)
     newShape.y = 2/aspectRatio;
+    
 
     useGlobalStore.setState({
         axisDimArrays: dimArrays,
@@ -54,7 +56,7 @@ function normalizeArray(array: Array<number>){
         if (v > max) max = v;
     }
     const range = max - min;
-    const scaler = 1/range;
+    const scaler = range === 0 ? 0 : 1 / range;
     const out = new Float32Array(len);
     for (let i = 0; i < array.length; i++){
         out[i] = (array[i]-min)* scaler;
@@ -118,7 +120,7 @@ export function SetReprojectionTexture(dimArrays: Array<number>[]){
     const yArray = dimArrays[yIdx];
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
     if (isRegular) return;
-
+    //Dispose of remaptexture if you use this function
     const remapTexture = createRemapTexture(xArray, yArray);
     useGlobalStore.setState({remapTexture});
 }
