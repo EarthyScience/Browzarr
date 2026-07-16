@@ -130,31 +130,40 @@ export function reproject(resolution: number = 256){
     }    
  
     const aspectRatio = Math.abs(maxX - minX)/ Math.abs(maxY - minY);
+    function safeInverse(proj: any, xy: [number, number], tol = 1e-6) {
+        //This function checks if the coordinates are valid and returns 0 or 1 based on conditions
+        const [lon, lat] = proj.inverse(xy);
+        if (!isFinite(lon) || !isFinite(lat)) return [lon, lat, 0];
+        const [xCheck, yCheck] = proj.forward([lon, lat]);
+        if (Math.abs(xCheck - xy[0]) > tol * Math.max(1, Math.abs(xy[0])) ||
+            Math.abs(yCheck - xy[1]) > tol * Math.max(1, Math.abs(xy[1]))) {
+            return [lon, lat, 0];
+        }
+        return [lon, lat, 1];
+    }
 
     // ---- Construct new CRS axis' ----//
     const targetWidth = Math.ceil(resolution*aspectRatio);
     const targetHeight = resolution;
     const xTicks = linspace(minX, maxX, targetWidth);
     const yTicks = linspace(minY, maxY, targetHeight);
-    const data = new Uint16Array(targetWidth * targetHeight * 2);
+    const data = new Uint16Array(targetWidth * targetHeight * 4);
     for (let j = 0; j < targetHeight; j++) {
         for (let i = 0; i < targetWidth; i++) {
-            const [lon, lat] = proj.inverse([xTicks[i], yTicks[j]]);
+            const [lon, lat, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
             const u = (lon - xMin) / (xMax - xMin);
             const v = (lat - yMin) / (yMax - yMin);
-            const idx = (j * targetWidth + i) * 2;
-            const valid = u >= 0 && u <= 1 && v >= 0 && v <= 1 && isFinite(lon) && isFinite(lat);
-            data[idx]     = THREE.DataUtils.toHalfFloat(valid ? u : -1);  
-            data[idx + 1] = THREE.DataUtils.toHalfFloat(valid ? v : -1);
+            const idx = (j * targetWidth + i) * 4;
+            data[idx]     = THREE.DataUtils.toHalfFloat(u);  
+            data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
+            data[idx + 2] = THREE.DataUtils.toHalfFloat(valid);
         }  
     }
-    const sanity = proj4(projection, defaultProjection, [-17912187.334735576, -8989370.410319714])
-    console.log(sanity)
     const texture = new THREE.DataTexture(
         data,
         targetWidth,
         targetHeight,
-        THREE.RGFormat,
+        THREE.RGBAFormat, // Must be RGBA as HalfFloat RGB is not supported
         THREE.HalfFloatType
     );
     texture.needsUpdate = true;

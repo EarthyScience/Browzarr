@@ -113,13 +113,9 @@ void main() {
         }
         vec3 texCoord = p / scale + 0.5;
         #ifdef REPROJECT
-            texCoord.xy = texture2D(remapTexture, texCoord.xy).rg;
-            if (
-                texCoord.x > 1. ||
-                texCoord.x < 0. ||
-                texCoord.y > 1. ||
-                texCoord.y < 0. 
-            ) {continue;}
+            vec3 remap = texture2D(remapTexture, texCoord.xy).rgb;
+            texCoord.xy = remap.rg;
+            if (remap.b < 0.5) {continue;}
         #endif
 
         if (maskValue != 0){

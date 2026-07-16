@@ -80,13 +80,9 @@ void main() {
     #ifdef IS_FLAT
         vec2 texCoord = vUv;
         #ifdef REPROJECT
-            texCoord.xy = texture(remapTexture,texCoord.xy).rg;
-             if (
-                texCoord.x > 1. ||
-                texCoord.x < 0. ||
-                texCoord.y > 1. ||
-                texCoord.y < 0. 
-            ) discard;
+            vec3 remap = texture(remapTexture,texCoord.xy).rgb;
+            texCoord.xy = remap.rg;
+            if (remap.b < 0.5) discard;
         #endif
         texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
         ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
@@ -95,13 +91,9 @@ void main() {
     #else
         vec3 texCoord = vec3(vUv, animateProg);
         #ifdef REPROJECT
-            texCoord.xy = texture(remapTexture,texCoord.xy).rg;
-            if (
-                texCoord.x >= 1. ||
-                texCoord.x <= 0. ||
-                texCoord.y >= 1. ||
-                texCoord.y <= 0. 
-            ) discard;
+            vec3 remap = texture(remapTexture,texCoord.xy).rgb;
+            texCoord.xy = remap.rg;
+            if (remap.b < 0.5) discard;
         #endif
         texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
         ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
