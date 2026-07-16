@@ -53,9 +53,6 @@ export function FixedTicks({
                 ySlice: state.ySlice,
                 xSlice: state.xSlice
       })))
-  const { axisMapping } = useZarrStore(useShallow(state => ({
-    axisMapping: state.axisMapping
-  })))
   const {xIdx, yIdx, zIdx} = useAxisIndices()
 
   const dimSlices = useMemo(() => {
@@ -64,7 +61,7 @@ export function FixedTicks({
       dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
       dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
     ]
-  }, [dimArrays, xSlice, ySlice, zSlice, axisMapping, xIdx, yIdx, zIdx])
+  }, [dimArrays, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
   const xDimArray = useMemo(() => dimSlices[plotDim], [dimSlices, plotDim])
   const xTickCount = 10;
   const yTickCount = 8;

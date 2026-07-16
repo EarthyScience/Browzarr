@@ -67,8 +67,8 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
       slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 ? kernelDepth : kernelSize)))
     }
     return slices
-  },[revY, dimArrays, zSlice, ySlice, xSlice, coarsen])
-  
+  },[revY, dimArrays, zSlice, ySlice, xSlice, coarsen, xIdx, yIdx, zIdx])
+
   const dimLengths = dimSlices.map(val => val.length)
 
   const [xResolution, setXResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
@@ -383,7 +383,7 @@ const FlatAxis = () =>{
       flipY ? dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() ?? [] : dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
       dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
     ]
-  },[dimArrays, flipY, originallyFlat, xSlice, ySlice, zSlice])
+  },[dimArrays, flipY, originallyFlat, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
 
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
@@ -427,7 +427,7 @@ const FlatAxis = () =>{
         axisNames: baseNames,
       };
     }
-  }, [analysisMode, dimArrays, dimUnits, dimNames, dimSlices, originallyFlat, axis]);
+  }, [analysisMode, dimArrays, dimUnits, dimNames, dimSlices, originallyFlat, axis, xIdx, yIdx, zIdx]);
   
 
   const shapeRatio = useMemo(()=>{
