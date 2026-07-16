@@ -79,7 +79,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
   const depthRatio = useMemo(()=>shape.z/shape.x*timeScale,[shape, timeScale]);
   const shapeRatio = useMemo(()=>shape.y/shape.x, [shape])
-  const timeRatio = Math.max(shape.z/shape.x, 2);
+  const timeRatio = useMemo(()=>Math.max(shape.z/shape.x * 2, 2),[shape]);
 
   const secondaryColor = useCSSVariable('--text-plot') //replace with needed variable
   const colorHex = useMemo(()=>{
@@ -101,7 +101,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
 
   const zLine = useMemo(()=> {
     const geom = new LineSegmentsGeometry().setPositions([0, 0, isPC ? zRange[0]*globalScale*depthRatio-tickLength/2 : (zRange[0]*timeRatio-tickLength)/2, 0, 0, isPC ? zRange[1]*globalScale*depthRatio+tickLength/2 : (zRange[1]*timeRatio+tickLength)/2]);
-    return new LineSegments2(geom, lineMat)},[zRange, depthRatio, isPC, lineMat, globalScale])
+    return new LineSegments2(geom, lineMat)},[zRange, depthRatio, isPC, lineMat, globalScale, timeRatio])
 
   const tickLine = useMemo(()=> {
     const geom = new LineSegmentsGeometry().setPositions([0, 0, 0, 0, 0, tickLength]);
