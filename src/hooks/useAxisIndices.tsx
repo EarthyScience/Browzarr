@@ -13,9 +13,9 @@ export const useAxisIndices = () => {
 		dimArrays: state.dimArrays
 	})))
 	const shapeLength = dimArrays.length;
-    const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
-    const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
-    const zIdx = axisMapping.z >= 0 ? axisMapping.z : shapeLength - 3;
+    const xIdx = (axisMapping.x >= 0 && axisMapping.x < shapeLength) ? axisMapping.x : Math.max(0, shapeLength - 1);
+    const yIdx = (axisMapping.y >= 0 && axisMapping.y < shapeLength) ? axisMapping.y : Math.max(0, shapeLength - 2);
+    const zIdx = (axisMapping.z >= 0 && axisMapping.z < shapeLength) ? axisMapping.z : Math.max(0, shapeLength - 3);
 
     return {
 		xIdx, yIdx, zIdx
