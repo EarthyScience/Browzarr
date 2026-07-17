@@ -1,4 +1,5 @@
-import { create } from "zustand";
+"use client";
+import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import * as THREE from 'three';
 import { GetColorMapTexture } from "@/components/textures";
 
@@ -97,7 +98,7 @@ type StoreState = {
   setClampExtremes: (clampExtremes: boolean) => void;
 };
 
-export const useGlobalStore = create<StoreState>((set, get) => ({
+const createStore = () => create<StoreState>((set, get) => ({
   dataShape: [1, 1, 1],
   activeIndices: [],
   shape: new THREE.Vector3(2, 2, 2),
@@ -197,3 +198,12 @@ export const useGlobalStore = create<StoreState>((set, get) => ({
   setScalingFactor: (scalingFactor) => set({ scalingFactor }),
   setClampExtremes: (clampExtremes) => set({ clampExtremes }),
 }));
+
+declare global {
+  var __appStore: UseBoundStore<StoreApi<StoreState>> | undefined
+}
+
+
+// Supposedly this makes it a global that cannot be duplicated by Next into different code chunks
+export const useGlobalStore =
+  globalThis.__appStore ?? (globalThis.__appStore = createStore())
