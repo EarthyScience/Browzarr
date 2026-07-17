@@ -45,10 +45,10 @@ type Operation = keyof typeof ShaderMap;
 const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture[] | THREE.DataTexture[] | null>> }) => {
 
     // Global state hooks remain the same
-    const { strides, dataShape, valueScales, isFlat, plotOn, setIsFlat, setStatus, setValueScales } = useGlobalStore(useShallow(state => ({
+    const { strides, dataShape, valueScales, isFlat, plotOn, setIsFlat, setStatus, setValueScales, variable } = useGlobalStore(useShallow(state => ({
         strides: state.strides, dataShape: state.dataShape, valueScales: state.valueScales,
         isFlat: state.isFlat, plotOn:state.plotOn, setIsFlat: state.setIsFlat, setStatus: state.setStatus,
-         setValueScales: state.setValueScales,
+         setValueScales: state.setValueScales, variable: state.variable
     })));
 
     const setPlotType = usePlotStore(state => state.setPlotType);
@@ -98,7 +98,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             }
 
             // --- 2. Dispatch GPU computation based on the operation ---
-            const inputArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore)
+            const inputArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore, variable, dataShape, strides)
             const shapeInfo = { shape: dataShape, strides};
             const kernelParams = { kernelDepth, kernelSize };
             // [1538316, 1481, 1]
@@ -204,7 +204,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
 
         const is2D = outputShape.length === 2
         async function Analyze(){
-            const dataArray = analysisMode ? analysisArray : GetCurrentArray(analysisStore)
+            const dataArray = analysisMode ? analysisArray : GetCurrentArray(analysisStore, variable, dataShape, strides)
             const newArray = await CustomShader(dataArray, shapeInfo, kernelParams, axis, customShader?? "") as Float16Array
             const {minVal, maxVal} = valueScales
             const textureData = new Uint8Array(newArray.length)

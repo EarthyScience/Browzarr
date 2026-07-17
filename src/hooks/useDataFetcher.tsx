@@ -79,7 +79,7 @@ export const useDataFetcher = () => {
                     const activeIndices = result.indices.filter((_, idx) => result.shape[idx] != 1);
                     useGlobalStore.getState().setActiveIndices(activeIndices);
 
-                    const [tempTexture, scaling] = ArrayToTexture({
+                    const [tempTexture, scaling, textureData] = ArrayToTexture({
                         data: result.data,
                         shape
                     });
@@ -87,6 +87,7 @@ export const useDataFetcher = () => {
                     setTextures(tempTexture);
                     setValueScales(scaling as { maxVal: number; minVal: number });
                     useGlobalStore.getState().setScalingFactor(result.scalingFactor);
+                    useGlobalStore.setState({ textureData });
 
                     const shapeLength = shape.length;
 

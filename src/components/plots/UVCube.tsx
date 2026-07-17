@@ -78,14 +78,15 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     analysisArray: state.analysisArray
   })))
 
-  const {shape, dataShape, strides, dimArrays,dimNames,dimUnits} = useGlobalStore(
+  const {shape, dataShape, strides, dimArrays,dimNames,dimUnits, variable} = useGlobalStore(
     useShallow(state=>({
       shape:state.shape,
       dataShape: state.dataShape,
       strides: state.strides,
       dimArrays:state.dimArrays,
       dimNames:state.dimNames,
-      dimUnits:state.dimUnits
+      dimUnits:state.dimUnits,
+      variable: state.variable
     })))
   
   const {selectTS, xRange, yRange, zRange,getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
@@ -106,7 +107,7 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       setDimCoords({});
     }
     lastNormal.current = dimAxis;
-    const tempTS = GetTimeSeries({data: analysisMode ? analysisArray : GetCurrentArray(), shape: dataShape, stride: strides},{uv,normal})
+    const tempTS = GetTimeSeries({data: analysisMode ? analysisArray : GetCurrentArray(undefined, variable, dataShape, strides), shape: dataShape, stride: strides},{uv,normal})
     const plotDim = (normal.toArray()).map((val, idx) => {
       if (Math.abs(val) > 0) {
         return idx;
