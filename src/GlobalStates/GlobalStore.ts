@@ -1,3 +1,4 @@
+"use client";
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import * as THREE from 'three';
 import { GetColorMapTexture } from "@/components/textures";
