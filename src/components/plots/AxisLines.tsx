@@ -77,12 +77,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
   const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
 
-  const depthRatio = useMemo(() => {
-    if (isPC && dataShape && dataShape[2]) {
-      return (dataShape[0] / dataShape[2]) * timeScale;
-    }
-    return (shape.z / shape.x) * timeScale;
-  }, [isPC, dataShape, shape, timeScale]);
+  const depthRatio = useMemo(()=>shape.z/shape.x*timeScale,[shape, timeScale]);
   const shapeRatio = useMemo(()=>shape.y/shape.x, [shape])
   const timeRatio = useMemo(()=>Math.max(shape.z/shape.x * 2, 2),[shape]);
 
