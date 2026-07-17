@@ -31,7 +31,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       analysisArray: state.analysisArray
     })))
     const {colormap, isFlat, dimArrays, dimNames, dimUnits, valueScales, 
-          dataShape, strides, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
+          dataShape, strides, flipY, textureArrayDepths, variable} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,
         isFlat: state.isFlat,  
         dimArrays:state.dimArrays,
@@ -41,7 +41,8 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
         dataShape: state.dataShape,
         strides: state.strides,
         flipY: state.flipY,
-        textureArrayDepths: state.textureArrayDepths
+        textureArrayDepths: state.textureArrayDepths,
+        variable: state.variable
     })))
     
     const {animate, animProg, cOffset, cScale, valueRange, selectTS, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
@@ -154,7 +155,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
         const uv = XYZtoRemap(point, latBounds, lonBounds);
         const normal = new THREE.Vector3(0,0,1)
         const tsUV = flipY ? new THREE.Vector2(uv.x, 1-uv.y) : uv
-        const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:tsUV,normal})
+        const tempTS = GetTimeSeries({data: (analysisMode && analysisArray) ? analysisArray : GetCurrentArray(undefined, variable, dataShape, strides), shape:dataShape, stride:strides},{uv:tsUV,normal})
         setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
           
         const coordUV = parseUVCoords({normal:normal,uv:uv})

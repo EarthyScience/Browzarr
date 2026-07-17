@@ -281,15 +281,28 @@ export function GetTimeSeries(array : arrayInfo, TimeSeriesInfo:TimeSeriesInfo){
 
 function DecompressArray(compressed : Uint8Array){
 	const decompressed = decompressSync(compressed)
-	const floatArray = new Float16Array(decompressed.buffer)
+  const aligned = decompressed.byteOffset % 2 === 0 ? decompressed : decompressed.slice()
+	const floatArray = new Float16Array(aligned.buffer, aligned.byteOffset, aligned.byteLength / 2)
 	return floatArray
 }
 
-export function GetCurrentArray(overrideStore?:string){
-  const { variable, is4D, idx4D, initStore, strides, dataShape, setStatus }= useGlobalStore.getState()
+export function GetCurrentArray(
+  overrideStore?: string, 
+  overrideVariable?: string,
+  overrideDataShape?: number[],
+  overrideStrides?: number[]
+){
+  const { variable: globalVariable, is4D, idx4D, initStore, strides: globalStrides, dataShape: globalDataShape, setStatus }= useGlobalStore.getState()
   const { arraySize, currentChunks, ndSlices } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
+  const variable = overrideVariable ? overrideVariable : globalVariable
+  const dataShape = overrideDataShape ? overrideDataShape : globalDataShape
+  const strides = overrideStrides ? overrideStrides : globalStrides
+
+  if (!dataShape || !strides) {
+    return new Float16Array(0);
+  }
   
   const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : (idx4D ?? "");
   const cacheBase = scalarIndices !== "" ? `${store}_${variable}_${scalarIndices}` : `${store}_${variable}`;
