@@ -191,12 +191,7 @@ export function CompressArray(array: Float16Array, level: number) {
 // Infer compressed type
 export function DecompressArray(compressed: Uint8Array) {
 	const decompressed = decompressSync(compressed);
-	const aligned = decompressed.byteOffset % 2 === 0 ? decompressed : decompressed.slice()
-	const floatArray = new Float16Array(
-		aligned.buffer,
-		aligned.byteOffset,
-		aligned.byteLength / 2,
-	);
+	const floatArray = new Float16Array(decompressed.buffer);
 	return floatArray;
 }
 
