@@ -98,7 +98,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             }
 
             // --- 2. Dispatch GPU computation based on the operation ---
-            const inputArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore, variable, dataShape, strides)
+            const inputArray = analysisMode ? analysisArray : GetCurrentArray(analysisStore, variable, dataShape, strides)
             const shapeInfo = { shape: dataShape, strides};
             const kernelParams = { kernelDepth, kernelSize };
             // [1538316, 1481, 1]

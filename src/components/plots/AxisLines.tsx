@@ -78,7 +78,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
 
   const depthRatio = useMemo(() => {
-    if (isPC) {
+    if (isPC && dataShape && dataShape[2]) {
       return (dataShape[0] / dataShape[2]) * timeScale;
     }
     return (shape.z / shape.x) * timeScale;

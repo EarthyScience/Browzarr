@@ -95,7 +95,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     const infoRef = useRef<boolean>(false)
     const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
     const rotateMap = analysisMode && axis == 2;
-    const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(undefined, variable, dataShape, strides),[analysisMode, analysisArray, textures, variable, dataShape, strides])
+    const sampleArray = useMemo(()=> (analysisMode && analysisArray) ? analysisArray : GetCurrentArray(undefined, variable, dataShape, strides),[analysisMode, analysisArray, textures, variable, dataShape, strides])
     const analysisDims = useMemo(() => {
       if (!analysisMode) return dimSlices;
       const fullSlices = [
@@ -144,7 +144,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
             const normal = new THREE.Vector3(0,0,1)
             if(uv){
               const tsUV = flipY ? new THREE.Vector2(uv.x, 1-uv.y) : uv
-              const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(undefined, variable, dataShape, strides), shape:dataShape, stride:strides},{uv:tsUV,normal})
+              const tempTS = GetTimeSeries({data: ((analysisMode && analysisArray)) ? analysisArray : GetCurrentArray(undefined, variable, dataShape, strides), shape:dataShape, stride:strides},{uv:tsUV,normal})
               setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
                 
               const coordUV = parseUVCoords({normal:normal,uv:uv})
