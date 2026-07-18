@@ -1,5 +1,11 @@
 export const ICECHUNK_CATALOG = [
-    {
+  {
+    key: 'noaa-hrrr-forecast-48-hour-virtual',
+    label: 'NOAA HRRR (High-Resolution Rapid Refresh)',
+    subtitle: '3 km resolution, Continental US, hourly steps out to 48 hours',
+    store: 'https://dynamical-noaa-hrrr.s3.us-west-2.amazonaws.com/noaa-hrrr-forecast-48-hour-virtual/v0.5.0.icechunk/',
+  },
+  {
     key: 'chirps-daily',
     label: 'CHIRPS Daily Precipitation',
     subtitle: '',
