@@ -1,7 +1,9 @@
 import { registry } from "zarrita";
 
-// Minimal dtype -> TypedArray constructor map. GRIB decodes to float; dynamical
-// stores use float64/float32 (the coordinate helper path may hit either).
+/**
+ * Minimal dtype to TypedArray constructor map.
+ * GRIB decodes to float; dynamical stores use float64/float32 (the coordinate helper path may hit either).
+ */
 const CTORS: Record<string, new (length: number) => any> = {
   float64: Float64Array,
   float32: Float32Array,
@@ -15,7 +17,9 @@ const CTORS: Record<string, new (length: number) => any> = {
   uint8: Uint8Array,
 };
 
-// C-order (row-major) strides for a chunk shape.
+/**
+ * Calculates C-order (row-major) strides for a chunk shape.
+ */
 function cStrides(shape: readonly number[]): number[] {
   const stride = new Array<number>(shape.length);
   let acc = 1;
@@ -34,6 +38,18 @@ type GribberishConfig = {
 
 type ChunkMeta = { dataType: string; shape: number[] };
 
+/**
+ * A Zarrita `array_to_bytes` codec that decodes GRIB2 message bytes into a
+ * typed array, backed by the `@mattnucc/gribberish` bindings (native in Node,
+ * WASM in the browser).
+ *
+ * This mirrors gribberish's own Python numcodecs `GribberishCodec`
+ * (python/gribberish/zarr/codec.py): each stored chunk is one GRIB2 message;
+ * data variables decode via `dataAdjusted(adjust_longitude_range, north_up)`,
+ * and the synthetic `latitude`/`longitude` variables come from `latlngAdjusted`.
+ *
+ * @see {@link https://github.com/mpiannucci/gribberish/blob/main/python/gribberish/zarr/codec.py | Reference Python Implementation}
+ */
 export class GribberishCodec {
   kind = "array_to_bytes" as const;
 
@@ -57,14 +73,23 @@ export class GribberishCodec {
     this.#stride = cStrides(meta.shape);
   }
 
+  /**
+   * Instantiates the codec from config and metadata.
+   */
   static fromConfig(config: GribberishConfig, meta: ChunkMeta): GribberishCodec {
     return new GribberishCodec(config, meta);
   }
 
+  /**
+   * Read-only codec, encoding is not supported.
+   */
   encode(): never {
     throw new Error("gribberish codec is read-only (decode only)");
   }
 
+  /**
+   * Decodes GRIB2 binary bytes into the target layout array.
+   */
   async decode(bytes: Uint8Array): Promise<{
     data: ArrayBufferView;
     shape: number[];
