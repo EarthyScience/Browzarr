@@ -15,6 +15,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  serverExternalPackages: ['@mattnucc/gribberish'],
   // Turbopack config for dev mode
   turbopack: {
     rules: {

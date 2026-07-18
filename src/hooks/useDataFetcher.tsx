@@ -129,8 +129,10 @@ export const useDataFetcher = () => {
                 setDimUnits(dimUnits);
                 useGlobalStore.setState({axisDimArrays: dimArrays, axisDimNames: dimNames, axisDimUnits: dimUnits});
 
-                const targetDim = dimArrays.length > 2 ? dimArrays[1] : dimArrays[0];
-                const shouldFlip = targetDim[1] < targetDim[0];
+                const { axisMapping } = useZarrStore.getState();
+                const yIdx = (axisMapping.y >= 0 && axisMapping.y < dimArrays.length) ? axisMapping.y : Math.max(0, dimArrays.length - 2);
+                const targetDim = dimArrays[yIdx] || dimArrays[0];
+                const shouldFlip = (targetDim && targetDim.length >= 2) ? targetDim[1] < targetDim[0] : false;
                 setFlipY(shouldFlip);
 
                 ParseExtent(dimUnits, dimArrays);

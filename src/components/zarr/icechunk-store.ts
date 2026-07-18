@@ -3,6 +3,7 @@
 import type { NodeSnapshot } from "icechunk-js";
 import { IcechunkStore } from "icechunk-js";
 import * as zarr from "zarrita";
+import "@/codecs/gribberish";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { useErrorStore, ZarrError } from "@/GlobalStates/ErrorStore";
 import { useGlobalStore } from "@/GlobalStates/GlobalStore";
