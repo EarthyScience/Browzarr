@@ -87,6 +87,20 @@ export class GribberishCodec {
     throw new Error("gribberish codec is read-only (decode only)");
   }
 
+  #copyToTypedArray(values: ArrayLike<number>): ArrayBufferView {
+    const out = new this.#ctor(values.length);
+    const isBig = out instanceof BigInt64Array || out instanceof BigUint64Array;
+    if (isBig) {
+      for (let i = 0; i < values.length; i++) {
+        const val = values[i]!;
+        out[i] = Number.isFinite(val) ? BigInt(Math.trunc(val)) : BigInt(0);
+      }
+    } else {
+      out.set(values);
+    }
+    return out;
+  }
+
   /**
    * Decodes GRIB2 binary bytes into the target layout array.
    */
@@ -96,30 +110,31 @@ export class GribberishCodec {
     stride: number[];
   }> {
     const { GribMessage } = await import("@mattnucc/gribberish");
-    let values: ArrayLike<number>;
+    let out: ArrayBufferView;
     
     const isLatitude = this.#var === "latitude" || this.#var === "lat";
     const isLongitude = this.#var === "longitude" || this.#var === "lon";
 
-    if (isLatitude || isLongitude) {
-      const msg = GribMessage.parseFromBuffer(bytes, 0);
-      const latlng = msg.latlngAdjusted(this.#adjustLon, this.#northUp);
-      values = isLatitude ? latlng.latitude : latlng.longitude;
-    } else {
-      const msg = GribMessage.parseFromBuffer(bytes, 0);
-      values = msg.dataAdjusted(this.#adjustLon, this.#northUp);
-    }
-
-    // Copy into the array's native dtype. gribberish returns JS numbers, so
-    // integer dtypes go through the BigInt/Number constructors as needed.
-    const out = new this.#ctor(values.length);
-    const isBig = out instanceof BigInt64Array || out instanceof BigUint64Array;
-    if (isBig) {
-      for (let i = 0; i < values.length; i++) {
-        out[i] = BigInt(Math.trunc(values[i]!));
+    const msg = GribMessage.parseFromBuffer(bytes, 0);
+    try {
+      if (isLatitude || isLongitude) {
+        const latlng = msg.latlngAdjusted(this.#adjustLon, this.#northUp);
+        try {
+          const values = isLatitude ? latlng.latitude : latlng.longitude;
+          out = this.#copyToTypedArray(values);
+        } finally {
+          if (latlng && typeof (latlng as any).free === "function") {
+            (latlng as any).free();
+          }
+        }
+      } else {
+        const values = msg.dataAdjusted(this.#adjustLon, this.#northUp);
+        out = this.#copyToTypedArray(values);
       }
-    } else {
-      out.set(values);
+    } finally {
+      if (msg && typeof (msg as any).free === "function") {
+        (msg as any).free();
+      }
     }
 
     return { data: out, shape: this.#shape, stride: this.#stride };
