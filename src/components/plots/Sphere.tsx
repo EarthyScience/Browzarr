@@ -31,7 +31,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       analysisArray: state.analysisArray
     })))
     const {colormap, isFlat, dimArrays, dimNames, dimUnits, valueScales, 
-          dataShape, strides, flipY, textureArrayDepths} = useGlobalStore(useShallow(state=>({
+          dataShape, strides, flipY, textureArrayDepths, remapTexture} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,
         isFlat: state.isFlat,  
         dimArrays:state.dimArrays,
@@ -41,7 +41,8 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
         dataShape: state.dataShape,
         strides: state.strides,
         flipY: state.flipY,
-        textureArrayDepths: state.textureArrayDepths
+        textureArrayDepths: state.textureArrayDepths,
+        remapTexture: state.remapTexture
     })))
     
     const {animate, animProg, cOffset, cScale, valueRange, selectTS, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
@@ -85,6 +86,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
             glslVersion: THREE.GLSL3,
             uniforms: {
                 map: { value: textures },
+                remapTexture: { value: remapTexture },
                 maskTexture: { value: maskTexture},
                 maskValue: { value: maskValue },
                 threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
@@ -102,7 +104,8 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
                 fillValue: {value: NaN},
             },
             defines:{
-              IS_FLAT: isFlat
+              IS_FLAT: isFlat,
+              REPROJECT: remapTexture ? true : false
             },
             vertexShader: sphereVertex,
             fragmentShader: sphereFrag,
@@ -120,8 +123,12 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       return mat;
     },[shaderMaterial])
 
-    const updateMaterial = (material: THREE.ShaderMaterial) =>{
+    const updateMaterial = (material: THREE.ShaderMaterial) => {
       const uniforms = material.uniforms;
+      uniforms.map.value = textures;
+      uniforms.remapTexture.value = remapTexture;
+      material.defines.REPROJECT = remapTexture ? true : false;
+      material.needsUpdate = true;
       uniforms.cmap.value =  colormap
       uniforms.maskValue.value = maskValue
       uniforms.cOffset.value =  cOffset
@@ -144,7 +151,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       if (backMaterial){
         updateMaterial(backMaterial)
       }
-    },[animProg, colormap, cOffset, cScale, animate, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement,valueRange, fillValue, maskValue, valueScales])
+    },[textures, remapTexture, animProg, colormap, cOffset, cScale, animate, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement,valueRange, fillValue, maskValue, valueScales])
     
     
     function HandleTimeSeries(event: THREE.Intersection){
@@ -190,12 +197,10 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       }
 
   return (
-    <>
-    <group scale={[1, flipY ? -1 : 1, 1]}>
+    <group scale={[1, 1, 1]}>
       <SquareMeshes />
+      <mesh renderOrder={1} geometry={geometry} material={shaderMaterial} onClick={e=>selectTS && HandleTimeSeries(e)}/>
+      <mesh renderOrder={0} geometry={geometry} material={backMaterial} />
     </group>
-    <mesh renderOrder={1} geometry={geometry} material={shaderMaterial} onClick={e=>selectTS && HandleTimeSeries(e)}/>
-    <mesh renderOrder={0} geometry={geometry} material={backMaterial} />
-    </>
   )
 }

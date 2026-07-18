@@ -225,21 +225,26 @@ export function ParseExtent(dimUnits: string[], dimArrays: any[][]){
     const maxLonIdx = xSlice[1] !== null ? xSlice[1] - 1 : xArray.length - 1;
     let maxLon = Number(xArray[maxLonIdx]);
 
-    if (maxLon > 180){
-      maxLon -= 180
-      minLon -= 180
+    let finalMinLon = Math.min(minLon, maxLon);
+    let finalMaxLon = Math.max(minLon, maxLon);
+    let finalMinLat = Math.min(minLat, maxLat);
+    let finalMaxLat = Math.max(minLat, maxLat);
+
+    if (finalMaxLon > 180){
+      finalMaxLon -= 180
+      finalMinLon -= 180
       usePlotStore.setState({is360Deg:true})
     } else{
       usePlotStore.setState({is360Deg:false})
     }
-    setLonExtent([minLon, maxLon])
-    setLatExtent([minLat, maxLat])
+    setLonExtent([finalMinLon, finalMaxLon])
+    setLatExtent([finalMinLat, finalMaxLat])
 
     const latRes = Math.abs(Number(yArray[1] ?? 0) - Number(yArray[0] ?? 0)) || 1;
     const lonRes = Math.abs(Number(xArray[1] ?? 0) - Number(xArray[0] ?? 0)) || 1;
     setLonResolution(lonRes)
     setLatResolution(latRes)
-    setOriginalExtent(new THREE.Vector4(minLon, maxLon, minLat, maxLat))
+    setOriginalExtent(new THREE.Vector4(finalMinLon, finalMaxLon, finalMinLat, finalMaxLat))
   }
   else{
     setLonExtent([-180,180])

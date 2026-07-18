@@ -756,7 +756,7 @@ const AdjustPlot = () => {
           {plotType === 'sphere' && <SphereOptions/>}
           {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
           {plotType === 'flat' && <FlatOptions />}
-          {['flat','volume'].includes(plotType) && <Reprojection />}
+          <Reprojection />
           <GlobalOptions />
         </div>
       </PopoverContent>

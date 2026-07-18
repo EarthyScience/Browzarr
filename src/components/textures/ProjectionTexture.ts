@@ -1,6 +1,6 @@
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { ArrayMinMax, linspace } from '@/utils/HelperFuncs';
+import { ArrayMinMax, linspace, ParseExtent } from '@/utils/HelperFuncs';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import * as THREE from 'three';
 
@@ -130,7 +130,7 @@ export function reproject(resolution: number = 256){
     if (!nativeCRS || !destCRS) return; // This shouldn't trigger as the button will be disabled for this same condition
     if (!checkProjString(destCRS)) return; // nativeCRS will already be checked when the user sets it, so we don't need to check it here
 
-    const {dimArrays, remapTexture } = useGlobalStore.getState()
+    const {dimArrays, remapTexture, flipY } = useGlobalStore.getState()
     if (remapTexture) remapTexture.dispose();
 
     const {xIdx, yIdx} = getAxisIndices()
@@ -187,19 +187,28 @@ export function reproject(resolution: number = 256){
     const targetWidth = Math.ceil(resolution*aspectRatio);
     const targetHeight = resolution;
     const xTicks = linspace(minX, maxX, targetWidth);
-    const yTicks = linspace(minY, maxY, targetHeight);
+    const yTicks = flipY ? linspace(maxY, minY, targetHeight) : linspace(minY, maxY, targetHeight);
+
+    // Detect if coordinate axes are descending
+    const isXDescending = xArray.length > 1 ? xArray[0] > xArray[xArray.length - 1] : false;
+    const isYDescending = yArray.length > 1 ? yArray[0] > yArray[yArray.length - 1] : false;
 
     // ---- Create Rpojection Texture ----//
     const data = new Uint16Array(targetWidth * targetHeight * 4);
     for (let j = 0; j < targetHeight; j++) {
         for (let i = 0; i < targetWidth; i++) {
             const [lon, lat, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
-            const u = (lon - xMin) / (xMax - xMin);
-            const v = (lat - yMin) / (yMax - yMin);
+            const u = isXDescending ? (xMax - lon) / (xMax - xMin) : (lon - xMin) / (xMax - xMin);
+            const v = isYDescending ? (yMax - lat) / (yMax - yMin) : (lat - yMin) / (yMax - yMin);
+            
+            // Check boundary bounds to avoid displaying clamped blocks outside the dataset area
+            const inBounds = lon >= xMin && lon <= xMax && lat >= yMin && lat <= yMax;
+            const validVal = (valid === 1 && inBounds) ? 1 : 0;
+
             const idx = (j * targetWidth + i) * 4;
             data[idx]     = THREE.DataUtils.toHalfFloat(u);  
             data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
-            data[idx + 2] = THREE.DataUtils.toHalfFloat(valid);
+            data[idx + 2] = THREE.DataUtils.toHalfFloat(validVal);
         }  
     }
     const texture = new THREE.DataTexture(
@@ -225,10 +234,11 @@ export function reproject(resolution: number = 256){
     newAxisDimArrays[yIdx] = yTicks;
 
     const newAxisDimUnits = [...axisDimUnits];
+    const targetUnits = crsCheck.oProj.units || 'degrees';
     //@ts-ignore At this point these are all valid
-    newAxisDimUnits[xIdx] = crsCheck.oProj.units;
+    newAxisDimUnits[xIdx] = targetUnits;
     //@ts-ignore At this point these are all valid
-    newAxisDimUnits[yIdx] = crsCheck.oProj.units;
+    newAxisDimUnits[yIdx] = targetUnits;
 
     const newAxisDimNames = [...axisDimNames];
     newAxisDimNames[xIdx] = 'X';
@@ -245,5 +255,6 @@ export function reproject(resolution: number = 256){
         xSlice: [0, null],
         ySlice: [0, null]
     })
+    ParseExtent(newAxisDimUnits, newAxisDimArrays);
 
 }

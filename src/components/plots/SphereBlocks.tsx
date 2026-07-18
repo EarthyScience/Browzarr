@@ -12,12 +12,14 @@ import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
     const {colormap, isFlat, valueScales, 
-            dataShape, textureArrayDepths} = useGlobalStore(useShallow(state=>({
+            dataShape, textureArrayDepths, flipY, remapTexture} = useGlobalStore(useShallow(state=>({
         colormap: state.colormap,
         isFlat: state.isFlat,  
         valueScales: state.valueScales,
         dataShape: state.dataShape,
         textureArrayDepths: state.textureArrayDepths, 
+        flipY: state.flipY,
+        remapTexture: state.remapTexture
     })))
     const { animProg, cOffset, cScale, nanColor, nanTransparency, sphereDisplacement, offsetNegatives, fillValue, valueRange, maskTexture, maskValue} = usePlotStore(useShallow(state=> ({
         animate: state.animate,
@@ -81,6 +83,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             glslVersion: THREE.GLSL3,
             uniforms: {
                 map: { value: textures },
+                remapTexture: { value: remapTexture },
                 maskTexture: {value: maskTexture},
                 maskValue: {value: maskValue},
                 threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
@@ -98,7 +101,8 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
                 fillValue: {value: fillValue?? NaN},
             },
             defines:{
-                IS_FLAT: isFlat
+                IS_FLAT: isFlat,
+                REPROJECT: remapTexture ? true : false
             },
             vertexShader: sphereBlocksVert,
             fragmentShader: sphereBlocksFrag,
@@ -113,6 +117,9 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
         if (shaderMaterial){
             const uniforms = shaderMaterial.uniforms;
             uniforms.map.value = textures;
+            uniforms.remapTexture.value = remapTexture;
+            shaderMaterial.defines.REPROJECT = remapTexture ? true : false;
+            shaderMaterial.needsUpdate = true;
             uniforms.animateProg.value =  animProg
             uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
             uniforms.displacement.value = sphereDisplacement
@@ -127,7 +134,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             uniforms.maskValue.value = maskValue
         }
         invalidate();
-    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, valueRange, offsetNegatives, textures, maskValue, fillValue])
+    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, valueRange, offsetNegatives, textures, remapTexture, maskValue, fillValue])
 
     const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor}),[])
     nanMaterial.transparent = true;
