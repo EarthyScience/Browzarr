@@ -54,8 +54,10 @@ vec3 computePosition(int vertexID) {
         float px = (float(x) - (float(width)/2.)) / 500.;
         float py = (float(y) - (float(height)/2.)) / 500.;
     #endif
-    #ifdef FLIP_Y
-        py = -py;
+    #ifndef REPROJECT
+        #ifdef FLIP_Y
+            py = -py;
+        #endif
     #endif
     float pz = (float(depth) > 1.0) ? (float(z) / (float(depth) - 1.0) - 0.5) * (nativeShape.z / 500.0) : 0.0;
 

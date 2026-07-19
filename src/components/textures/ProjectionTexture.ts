@@ -273,7 +273,7 @@ export function reproject(resolution: number = 256){
     newAxisDimArrays[yIdx] = yTicks;
 
     const newAxisDimUnits = [...axisDimUnits];
-    const targetUnits = (crsCheck.oProj as any)?.units;
+    const targetUnits = (crsCheck.oProj as any)?.units || 'degrees';
     //@ts-ignore At this point these are all valid
     newAxisDimUnits[xIdx] = targetUnits;
     //@ts-ignore At this point these are all valid

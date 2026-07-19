@@ -150,10 +150,10 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         fillValue: {value: fillValue?? NaN}
       },
       defines: {
-        REPROJECT: remapTexture ? true : false,
-        FLIP_Y: flipY ? true : false,
-        IS_2D: is2D,
-        NO_SCLAE:disablePointScale,
+        ...(remapTexture ? { REPROJECT: true } : {}),
+        ...(flipY ? { FLIP_Y: true } : {}),
+        ...(is2D ? { IS_2D: true } : {}),
+        ...(disablePointScale ? { NO_SCALE: true } : {})
       },
       vertexShader: pointVert,
       fragmentShader:pointFrag,
@@ -161,7 +161,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       depthTest: true,
       blending:THREE.NoBlending,
     })
-    ),[disablePointScale, is2D]);
+    ),[disablePointScale, is2D, remapTexture, flipY]);
   
    useEffect(() => {
     if (shaderMaterial) {
