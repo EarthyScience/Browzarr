@@ -15,6 +15,7 @@ import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import AnalysisWG from './AnalysisWG';
 import ExportCanvas from '@/utils/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
+import { reproject } from '@/components/textures/ProjectionTexture';
 
 const TransectNotice = () =>{
   const {selectTS} = usePlotStore(useShallow(state => ({selectTS: state.selectTS})))
@@ -219,6 +220,10 @@ const Plot = () => {
 
   useEffect(()=>{ // Rotates flat back when changing away
     usePlotStore.setState({rotateFlat: false})
+    const { remapTexture } = useGlobalStore.getState();
+    if (remapTexture) {
+      reproject();
+    }
   },[plotType])
 
   useEffect(()=>{

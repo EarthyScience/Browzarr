@@ -60,10 +60,14 @@ export const useDataFetcher = () => {
             try {
                 //---- Texture Cleanup ----//
                 if (textures) {
-                    textures.forEach((tex) => {
-                        tex.dispose();
-                        if (tex.source) (tex.source as any).data = null;
-                    });
+                    const oldTextures = textures;
+                    setTimeout(() => {
+                        oldTextures.forEach((tex) => {
+                            tex.dispose();
+                            if (tex.source) (tex.source as any).data = null;
+                        });
+                    }, 0);
+                    setTextures(null);
                 }
                 //----- TS Cleanup ----//
                 useGlobalStore.setState({timeSeries:{}, dimCoords:{}})

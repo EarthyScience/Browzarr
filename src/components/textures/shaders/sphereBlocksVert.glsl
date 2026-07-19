@@ -9,6 +9,7 @@ attribute vec2 instanceUV;
 #endif
 uniform sampler2D maskTexture;
 uniform vec3 textureDepths;
+uniform sampler2D remapTexture;
 
 uniform float displaceZero;
 uniform float displacement;
@@ -93,11 +94,28 @@ void main() {
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     #ifdef IS_FLAT
-        ivec2 idx = clamp(ivec2(instanceUV * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
+        vec3 texCoord = vec3(instanceUV, animateProg);
+        #ifdef REPROJECT
+            vec3 remap = texture(remapTexture, instanceUV).rgb;
+            texCoord.xy = remap.rg;
+            if (remap.b < 0.5){
+                gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                return;
+            }
+        #endif
+        ivec2 idx = clamp(ivec2(texCoord.xy * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
         int textureIdx = idx.y * yStepSize + idx.x;
-        vec2 localCoord = instanceUV * (textureDepths.xy); // Scale up
+        vec2 localCoord = texCoord.xy * (textureDepths.xy); // Scale up
     #else
         vec3 texCoord = vec3(instanceUV, animateProg);
+        #ifdef REPROJECT
+            vec3 remap = texture(remapTexture, instanceUV).rgb;
+            texCoord.xy = remap.rg;
+            if (remap.b < 0.5){
+                gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                return;
+            }
+        #endif
         ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1); // Ivec3 is like running a "floor" operation on all three at once. The clamp is because the very last idx is OOR
         int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
         vec3 localCoord = texCoord * textureDepths; // Scale up

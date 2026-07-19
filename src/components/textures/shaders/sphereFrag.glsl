@@ -12,6 +12,7 @@ in vec3 aPosition;
 uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
+uniform sampler2D remapTexture;
 
 uniform float cOffset;
 uniform float cScale;
@@ -77,10 +78,24 @@ void main(){
         vec2 texCoord = giveUV(aPosition);
         bool inBounds = all(greaterThanEqual(texCoord, vec2(0.0))) && 
             all(lessThanEqual(texCoord, vec2(1.0)));
+        #ifdef REPROJECT
+            if (inBounds) {
+                vec3 remap = texture(remapTexture, texCoord.xy).rgb;
+                texCoord.xy = remap.rg;
+                if (remap.b < 0.5) inBounds = false;
+            }
+        #endif
     #else
         vec2 sampleCoord = giveUV(aPosition);
         bool inBounds = all(greaterThanEqual(sampleCoord, vec2(0.0))) && 
             all(lessThanEqual(sampleCoord, vec2(1.0)));
+        #ifdef REPROJECT
+            if (inBounds) {
+                vec3 remap = texture(remapTexture, sampleCoord.xy).rgb;
+                sampleCoord.xy = remap.rg;
+                if (remap.b < 0.5) inBounds = false;
+            }
+        #endif
     #endif
    
     if (inBounds) {

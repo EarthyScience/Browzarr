@@ -45,11 +45,15 @@ function Borders({features}:{features: any}){
     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
           const newLatStep = latResolution/2;
           const newLonStep = lonResolution/2;
-          const newLonBounds = [Math.max(lonExtent[0]-newLonStep, -180), Math.min(lonExtent[1]+newLonStep, 180)]
-          let newLatBounds = [Math.max(latExtent[0]-newLatStep, -90), Math.min(latExtent[1]+newLatStep, 90)]
+          const minLat = Math.min(latExtent[0], latExtent[1]);
+          const maxLat = Math.max(latExtent[0], latExtent[1]);
+          const minLon = Math.min(lonExtent[0], lonExtent[1]);
+          const maxLon = Math.max(lonExtent[0], lonExtent[1]);
+          const newLonBounds = [Math.max(minLon-newLonStep, -180), Math.min(maxLon+newLonStep, 180)]
+          let newLatBounds = [Math.max(minLat-newLatStep, -90), Math.min(maxLat+newLatStep, 90)]
           newLatBounds = flipY ? [newLatBounds[1], newLatBounds[0]] : newLatBounds
           return [newLonBounds as [number, number], newLatBounds as [number, number]]
-        },[latExtent, lonExtent, lonResolution, latResolution])
+        },[latExtent, lonExtent, lonResolution, latResolution, flipY])
 
     const [spherize, setSpherize] = useState<boolean>(false)
 
@@ -63,33 +67,37 @@ function Borders({features}:{features: any}){
 
     },[plotType])
 
-    const lineShaderMat = useMemo(()=>new THREE.ShaderMaterial(
-        {
-            glslVersion: THREE.GLSL3,
-            vertexShader,
-            fragmentShader: bordersFrag,
-            uniforms:{
-                xBounds: {value: new THREE.Vector2(-xRange[1],-xRange[0])},
-                yBounds: {value: new THREE.Vector2(yRange[0]/shape.x, yRange[1]/shape.x)},
-                borderColor: {value: new THREE.Color(borderColor)},
-                trim: {value: !spherize},
-            },
-            defines: {
-                USE_APOSITION: 1
+    const lineShaderMat = useMemo(() => {
+        const shapeX = (shape && shape.x > 0) ? shape.x : 1;
+        return new THREE.ShaderMaterial(
+            {
+                glslVersion: THREE.GLSL3,
+                vertexShader,
+                fragmentShader: bordersFrag,
+                uniforms:{
+                    xBounds: {value: new THREE.Vector2(-xRange[1],-xRange[0])},
+                    yBounds: {value: new THREE.Vector2(yRange[0]/shapeX, yRange[1]/shapeX)},
+                    borderColor: {value: new THREE.Color(borderColor)},
+                    trim: {value: !spherize},
+                },
+                defines: {
+                    USE_APOSITION: 1
+                }
             }
-        }
-    ),[])
+        );
+    }, [])
 
     useEffect(()=>{
         if (lineShaderMat){
             const uniforms = lineShaderMat.uniforms
             uniforms.xBounds.value = new THREE.Vector2(xRange[0], xRange[1])
-            uniforms.yBounds.value = new THREE.Vector2(yRange[0]/shape.x, yRange[1]/shape.x)
+            const shapeX = (shape && shape.x > 0) ? shape.x : 1;
+            uniforms.yBounds.value = new THREE.Vector2(yRange[0]/shapeX, yRange[1]/shapeX)
             uniforms.borderColor.value = new THREE.Color(borderColor)
             uniforms.trim.value = !spherize
             invalidate()
         }
-    },[xRange, yRange, borderColor, spherize])
+    },[xRange, yRange, borderColor, spherize, shape])
 
     const lineGeometries = useMemo(() => {
     return features.flatMap((feature: any, i: number) => {
@@ -201,9 +209,11 @@ const CountryBorders = () => {
     const [borders, setBorders] = useState<any>(null)
     const [swapSides, setSwapSides] = useState<boolean>(false)
 
-    const {dataShape, is4D} = useGlobalStore(useShallow(state => ({
+    const {dataShape, is4D, flipY, shape} = useGlobalStore(useShallow(state => ({
         dataShape: state.dataShape,
-        is4D: state.is4D
+        is4D: state.is4D,
+        flipY: state.flipY,
+        shape: state.shape
     })))
     const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, is360Deg} = usePlotStore(useShallow(state => ({
         zRange: state.zRange, plotType: state.plotType,
@@ -251,19 +261,19 @@ const CountryBorders = () => {
     const isPC = plotType == 'point-cloud'
     const isFlatMap = plotType == "flat"
     const timeRatio = isPC ? dataShape[0]/dataShape[2] :  Math.max(dataShape[0]/dataShape[2],2)
-    const depthScale = timeRatio*timeScale
-    const aspectRatio = dataShape[2]/dataShape[1]
-    
+    const depthRatio = (shape && shape.x > 0) ? (shape.z / shape.x) * timeScale : 1;
     const globalScale = isPC ? dataShape[2]/500 : 1
+    const depthScale = isPC ? depthRatio : timeRatio/2
+    const aspectRatio = (shape && shape.y > 0) ? (shape.x / shape.y) : 1;
 
     return(
         <group
             rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
-            scale={[globalScale, globalScale * (spherize ? 1 : 2 / aspectRatio), globalScale]}
+            scale={[globalScale, globalScale * (spherize ? 1 : (2 / aspectRatio) * (flipY ? -1 : 1)), globalScale]}
         >
             <group 
                 visible={showBorders && !(analysisMode && axis != 0)} 
-                position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(isPC ? depthScale + pointSize/10000 : timeRatio/2) : zRange[1]*(isPC ? depthScale + pointSize/10000 : timeRatio/2)]} // I don't know what value to use here. THis seems okay but not perfect
+                position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0)) : zRange[1]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0))]} // I don't know what value to use here. THis seems okay but not perfect
                 rotation={[0, (is360Deg && spherize) ? Math.PI : 0, 0]} 
             >
                 {coastLines && <Borders features={coastLines} />}
