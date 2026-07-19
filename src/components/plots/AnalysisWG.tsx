@@ -74,7 +74,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             return
         }
         // Guard clauses: exit if not triggered, no operation is selected, or data is invalid.
-        if (!operation) {
+        if (!operation || operation === "Default") {
             return;
         }
         const executeAnalysis = async () => {
@@ -204,8 +204,9 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
 
         const is2D = outputShape.length === 2
         async function Analyze(){
+            if (!customShader) return;
             const dataArray = analysisMode ? analysisArray : GetCurrentArray(analysisStore)
-            const newArray = await CustomShader(dataArray, shapeInfo, kernelParams, axis, customShader?? "") as Float16Array
+            const newArray = await CustomShader(dataArray, shapeInfo, kernelParams, axis, customShader) as Float16Array
             const {minVal, maxVal} = valueScales
             const textureData = new Uint8Array(newArray.length)
             const range = (maxVal - minVal)

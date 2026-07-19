@@ -85,6 +85,10 @@ export function LandingHome() {
     }
     if (initStore.startsWith('local')) return; // local_ set by LocalNetCDF/LocalZarr after load
     setUseNC(false)
+    const { storeFromURL: currentStoreFromURL } = useGlobalStore.getState();
+    if (!currentStoreFromURL) {
+      useGlobalStore.setState({ variables: [], variable: "Default" });
+    }
     const { icechunkOptions, fetchOptions } = useZarrStore.getState();
     const newStore = GetStore(
       initStore,
