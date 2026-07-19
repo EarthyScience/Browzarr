@@ -38,7 +38,7 @@ export const useDataFetcher = () => {
             interpPixels:state.interpPixels,
             setPlotType: state.setPlotType
     })))
-    const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(
+    const {zSlice, ySlice, xSlice, reFetch, coarsen, kernelDepth, kernelSize, currentStore} = useZarrStore(
         useShallow(state=> ({
             zSlice: state.zSlice,
             ySlice: state.ySlice,
@@ -46,7 +46,8 @@ export const useDataFetcher = () => {
             reFetch: state.reFetch,
             coarsen: state.coarsen,
             kernelDepth: state.kernelDepth,
-            kernelSize: state.kernelSize
+            kernelSize: state.kernelSize,
+            currentStore: state.currentStore
     })))
 
     //---- Local State ----//
@@ -112,6 +113,14 @@ export const useDataFetcher = () => {
                     setShow(true);
                     setPlotOn(true);
                     setStatus(null);
+
+                    const { storeFromURL, setStoreFromURL } = useGlobalStore.getState();
+                    if (storeFromURL) {
+                        setStoreFromURL(false);
+                    }
+                }).catch((error) => {
+                    console.error("Error fetching Zarr array:", error);
+                    setStatus(null);
                 });
             } catch (error) {
                 console.error(error);
@@ -123,6 +132,8 @@ export const useDataFetcher = () => {
             GetAttributes().then((result) => {
                 setMetadata(result);
                 setStableMetadata(result);
+            }).catch((err) => {
+                console.error("Error getting attributes:", err);
             });
 
             //---- DimInfo ----//
@@ -141,12 +152,14 @@ export const useDataFetcher = () => {
 
                 ParseExtent(dimUnits, dimArrays);
                 SetReprojectionTexture(dimArrays);
+            }).catch((err) => {
+                console.error("Error getting dimension info:", err);
             });
 
         } else {
             setMetadata(null);
         }
-    }, [reFetch]); 
+    }, [variable, zSlice, ySlice, xSlice, reFetch, coarsen, kernelDepth, kernelSize, currentStore]); 
 
     useEffect(()=> {
     if (!textures) return;

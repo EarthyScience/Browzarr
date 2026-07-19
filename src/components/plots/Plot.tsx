@@ -161,13 +161,14 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 }
 
 const Plot = () => {
-  const {colormap, isFlat, DPR, valueScales, setIsFlat, dataShape} = useGlobalStore(useShallow(state=>({
+  const {colormap, isFlat, DPR, valueScales, setIsFlat, dataShape, storeFromURL} = useGlobalStore(useShallow(state=>({
     colormap: state.colormap, 
     isFlat: state.isFlat, 
     DPR: state.DPR, 
     valueScales: state.valueScales,
     setIsFlat: state.setIsFlat, 
     dataShape: state.dataShape,
+    storeFromURL: state.storeFromURL
   })))
   const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
   const {plotType, displaceSurface, setPlotType} = usePlotStore(useShallow(state => ({
@@ -189,16 +190,20 @@ const Plot = () => {
   const {textures, show, stableMetadata, setTextures} = useDataFetcher()
   
   useEffect(()=>{
-    if (analysisMode) return;
+    if (analysisMode || storeFromURL) return;
     const isEffectivelyFlat = dataShape.length === 2 || (dataShape.length === 3 && dataShape.includes(1));
-    if (isEffectivelyFlat && plotType != "flat" && plotType != "sphere"){
-      setPlotType("flat")
-      setIsFlat(true)
-    } else if (!isEffectivelyFlat && plotType != "volume" && plotType != "isosurface") {
-      setPlotType("volume")
-      setIsFlat(false)
+    if (isEffectivelyFlat) {
+      if (!["flat", "sphere"].includes(plotType)) {
+        setPlotType("flat")
+        setIsFlat(true)
+      }
+    } else {
+      if (!["volume", "point-cloud", "isosurface"].includes(plotType)) {
+        setPlotType("volume")
+        setIsFlat(false)
+      }
     }
-  },[dataShape, analysisMode])
+  },[dataShape, analysisMode, storeFromURL, plotType])
 
   useEffect(()=>{ // Reset after analysis mode
     if(!analysisMode && show){

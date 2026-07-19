@@ -54,9 +54,12 @@ export function LandingHome() {
 
   useEffect(() => {
     void fetchKey;
-    setZSlice([0, null]);
-    setYSlice([0, null]);
-    setXSlice([0, null]);
+    const { storeFromURL } = useGlobalStore.getState();
+    if (!storeFromURL) {
+      setZSlice([0, null]);
+      setYSlice([0, null]);
+      setXSlice([0, null]);
+    }
     if (initStore.startsWith('local:')) {
       const path = initStore.replace('local:', '');
       if (!NETCDF_EXT_REGEX.test(path)) return;
@@ -69,8 +72,11 @@ export function LandingHome() {
         .then(async blob => {
           await loadNetCDF(blob, filename);
           if (storeFromURL) {
-            setOpenVariables(true);
-            setStoreFromURL(false);
+            const { variable } = useGlobalStore.getState();
+            if (variable === "Default") {
+              setOpenVariables(true);
+              setStoreFromURL(false);
+            }
           }
           return;
         })
@@ -92,7 +98,7 @@ export function LandingHome() {
     useZarrStore.setState({icechunkOptions: null, fetchOptions:null});
     useGlobalStore.setState({remapTexture: undefined });
     usePlotStore.setState({nativeCRS:undefined, destCRS:undefined});
-  }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice, storeFromURL, setOpenVariables, setStoreFromURL]);
+  }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice, setOpenVariables, setStoreFromURL]);
 
   useEffect(() => {
     const { initStore } = useGlobalStore.getState();
@@ -114,10 +120,12 @@ export function LandingHome() {
     variables.then((e) => {
       if (isMounted && currentStore === activeStore) {
         setVariables(e);
-        const { storeFromURL } = useGlobalStore.getState();
+        const { storeFromURL, variable } = useGlobalStore.getState();
         if (storeFromURL) {
-          setOpenVariables(true);
-          setStoreFromURL(false);
+          if (variable === "Default") {
+            setOpenVariables(true);
+            setStoreFromURL(false);
+          }
         }
       }
     });

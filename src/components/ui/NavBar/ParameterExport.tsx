@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { useZarrStore } from '@/GlobalStates/ZarrStore'
+import { useImageExportStore } from '@/GlobalStates/ImageExportStore'
 import { BiExport } from "react-icons/bi";
 import { FiCopy } from "react-icons/fi";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -14,10 +15,11 @@ function pick(obj: Record<string, any>, keys: string[]) {
 }
 const globalValues = [
     'initStore',
-    'storeFromURL',
     'variable',
     'colormapName',
     'flipColormap',
+    'is4D',
+    'idx4D',
 ]
 
 const plotValues = [
@@ -94,6 +96,20 @@ const zarrValues = [
     'blobKey'
 ]
 
+const imageExportValues = [
+    'keyFrameEditor',
+    'frames',
+    'useTime',
+    'animate',
+    'orbit',
+    'orbitDeg',
+    'orbitDir',
+    'pingpong',
+    'timeRate',
+    'loopTime',
+    'frameRate',
+]
+
 
 export const ParameterExport = () => {
     const [copied, setCopied] = useState(false);
@@ -101,10 +117,18 @@ export const ParameterExport = () => {
     function generateURL(){
         const {camera} = usePlotStore.getState()
         usePlotStore.setState({cameraPosition:camera?.position}) // Set Camera position first to copy visual state
+        const keyFramesMap = useImageExportStore.getState().keyFrames
+        const serializedKeyFrames = keyFramesMap && keyFramesMap.size > 0
+            ? Array.from(keyFramesMap.entries())
+            : undefined
         const fullObj = {
             globalState: pick(useGlobalStore.getState(), globalValues),
             plotState: pick(usePlotStore.getState(), plotValues),
             zarrState: pick(useZarrStore.getState(), zarrValues),
+            imageExportState: {
+                ...pick(useImageExportStore.getState(), imageExportValues),
+                keyFrames: serializedKeyFrames
+            }
         }
         const jString = JSON.stringify(fullObj, (_, v) => typeof v === 'bigint' ? v.toString() : v)
         const params = `https://browzarr.io/latest/?data=${encodeURIComponent(jString)}` 

@@ -186,7 +186,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
       
       for (const axis of axes) {
         const mappedIdx = (axisMapping as Record<string, number>)[axis];
-        if (mappedIdx !== undefined && mappedIdx >= 0 && mappedIdx < dims.length) {
+        if (mappedIdx !== undefined && mappedIdx !== null && mappedIdx >= 0 && mappedIdx < dims.length) {
           const dim = dims[mappedIdx];
           const s = ndSlices[mappedIdx];
           const dimShape = dataShape[mappedIdx] ?? dim.size;
