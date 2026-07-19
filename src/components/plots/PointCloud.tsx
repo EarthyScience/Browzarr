@@ -126,9 +126,10 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       defines: {
         REPROJECT: remapTexture ? true : false,
         FLIP_Y: flipY ? true : false,
-        IS_2D: is2D
+        IS_2D: is2D,
+        NO_SCLAE:disablePointScale,
       },
-      vertexShader:disablePointScale ? "#define NO_SCALE\n"+pointVert : pointVert,
+      vertexShader: pointVert,
       fragmentShader:pointFrag,
       depthWrite: true,
       depthTest: true,
