@@ -101,8 +101,8 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
                 fillValue: {value: fillValue?? NaN},
             },
             defines:{
-                IS_FLAT: isFlat,
-                REPROJECT: remapTexture ? true : false
+                ...(isFlat ? { IS_FLAT: true } : {}),
+                ...(remapTexture ? { REPROJECT: true } : {})
             },
             vertexShader: sphereBlocksVert,
             fragmentShader: sphereBlocksFrag,
@@ -118,7 +118,11 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             const uniforms = shaderMaterial.uniforms;
             uniforms.map.value = textures;
             uniforms.remapTexture.value = remapTexture;
-            shaderMaterial.defines.REPROJECT = remapTexture ? true : false;
+            if (remapTexture) {
+                shaderMaterial.defines.REPROJECT = true;
+            } else {
+                delete shaderMaterial.defines.REPROJECT;
+            }
             shaderMaterial.needsUpdate = true;
             uniforms.animateProg.value =  animProg
             uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)

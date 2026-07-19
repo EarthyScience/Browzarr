@@ -30,7 +30,7 @@ const MappingCube = () =>{
   const globalScale = dataShape[2]/500
   const offset = 1/500; //I don't really understand that. But the cube is off by one pixel in each dimension
   
-  const depthRatio = useMemo(()=>shape.z/shape.x*timeScale,[shape, timeScale]);
+  const depthRatio = useMemo(()=> (shape && shape.x > 0 ? (shape.z / shape.x) * timeScale : 1),[shape, timeScale]);
   const shapeRatio = useMemo(()=>dataShape[1]/dataShape[2], [dataShape])
 
   return(
@@ -82,20 +82,46 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         };
     }, [textureData, dataShape]);
 
-    const targetWidth = remapTexture ? remapTexture.image.width : width;
-    const targetHeight = remapTexture ? remapTexture.image.height : height;
+    const targetWidth = (remapTexture && remapTexture.image) ? remapTexture.image.width : width;
+    const targetHeight = (remapTexture && remapTexture.image) ? remapTexture.image.height : height;
     const is2D = dataShape.length === 2;
-    const depthRatio = useMemo(()=>shape.z/shape.x*timeScale,[shape, timeScale]);
+    const depthRatio = useMemo(()=> (shape && shape.x > 0 ? (shape.z / shape.x) * timeScale : 1),[shape, timeScale]);
 
-    // Create buffer geometry
-    const geometry = useMemo(() => {
-      const geom = new THREE.BufferGeometry();
+    // Create buffer geometries (divided into chunks of max 25M vertices to fit WebGL draw limit)
+    const geometries = useMemo(() => {
       const numPoints = depth * targetHeight * targetWidth;
-      const attrData = remapTexture ? new Uint8Array(numPoints) : (data as Uint8Array);
-      geom.setAttribute('value', new THREE.Uint8BufferAttribute(attrData, 1));
-      geom.setDrawRange(0, numPoints); // This is used to tell it how many data points are needed since we aren't giving it positions.
-      return geom;
-    }, [data, depth, targetWidth, targetHeight, remapTexture]);
+      const maxPoints = 100000000;
+      const stride = numPoints > maxPoints ? Math.ceil(numPoints / maxPoints) : 1;
+      
+      const subNumPoints = Math.floor(numPoints / stride);
+      const attrData = new Uint8Array(subNumPoints);
+      const indexData = new Float32Array(subNumPoints);
+      const originalData = data as Uint8Array;
+      
+      let writePtr = 0;
+      for (let i = 0; i < numPoints; i += stride) {
+        if (writePtr < subNumPoints) {
+          attrData[writePtr] = originalData[i] ?? 0;
+          indexData[writePtr] = i;
+          writePtr++;
+        }
+      }
+      
+      const valueAttr = new THREE.Uint8BufferAttribute(attrData, 1);
+      const indexAttr = new THREE.Float32BufferAttribute(indexData, 1);
+      
+      const maxPointsPerDraw = 25000000;
+      const list = [];
+      for (let offset = 0; offset < subNumPoints; offset += maxPointsPerDraw) {
+        const count = Math.min(maxPointsPerDraw, subNumPoints - offset);
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute('value', valueAttr);
+        geom.setAttribute('vertexIdx', indexAttr);
+        geom.setDrawRange(offset, count);
+        list.push(geom);
+      }
+      return list;
+    }, [data, depth, targetWidth, targetHeight]);
     const {lonBounds, latBounds} = useCoordBounds() 
 
     const shaderMaterial = useMemo(()=> (new THREE.ShaderMaterial({
@@ -142,9 +168,21 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       const uniforms = shaderMaterial.uniforms;
       uniforms.map.value = volTexture;
       uniforms.remapTexture.value = remapTexture;
-      shaderMaterial.defines.REPROJECT = remapTexture ? true : false;
-      shaderMaterial.defines.FLIP_Y = flipY ? true : false;
-      shaderMaterial.defines.IS_2D = is2D;
+      if (remapTexture) {
+        shaderMaterial.defines.REPROJECT = true;
+      } else {
+        delete shaderMaterial.defines.REPROJECT;
+      }
+      if (flipY) {
+        shaderMaterial.defines.FLIP_Y = true;
+      } else {
+        delete shaderMaterial.defines.FLIP_Y;
+      }
+      if (is2D) {
+        shaderMaterial.defines.IS_2D = true;
+      } else {
+        delete shaderMaterial.defines.IS_2D;
+      }
       shaderMaterial.needsUpdate = true;
       uniforms.shape.value.set(depth, targetHeight, targetWidth);
       uniforms.nativeShape.value.set(dataShape[0], dataShape[1], dataShape[2]);
@@ -176,7 +214,9 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       <group scale={[tsScale,tsScale,tsScale]}>
         <ColumnMeshes />
       </group>
-      <points geometry={geometry} material={shaderMaterial} frustumCulled={false}/>
+      {geometries.map((geom, idx) => (
+        <points key={idx} geometry={geom} material={shaderMaterial} frustumCulled={false}/>
+      ))}
       <MappingCube/>
     </group>
 

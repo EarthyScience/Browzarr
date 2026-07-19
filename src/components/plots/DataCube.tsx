@@ -76,7 +76,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
       defines: {
         USE_VORIGIN: 1,
         USE_VDIRECTION: 1,
-        REPROJECT: remapTexture ? true : false
+        ...(remapTexture ? { REPROJECT: true } : {})
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
       fragmentShader: useFragOpt ?  fragOpt : fragmentShader,

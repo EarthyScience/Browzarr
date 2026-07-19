@@ -126,11 +126,11 @@ export function SetReprojectionTexture(dimArrays: Array<number>[]){
 }
 
 export function reproject(resolution: number = 256){
-    const {nativeCRS, destCRS} = usePlotStore.getState()
+    const {nativeCRS, destCRS, plotType} = usePlotStore.getState()
     if (!nativeCRS || !destCRS) return; // This shouldn't trigger as the button will be disabled for this same condition
     if (!checkProjString(destCRS)) return; // nativeCRS will already be checked when the user sets it, so we don't need to check it here
 
-    const {dimArrays, remapTexture, flipY } = useGlobalStore.getState()
+    const {dimArrays, remapTexture, flipY, dataShape } = useGlobalStore.getState()
     if (remapTexture) remapTexture.dispose();
 
     const {xIdx, yIdx} = getAxisIndices()
@@ -170,7 +170,9 @@ export function reproject(resolution: number = 256){
         minY = Math.min(minY, py); maxY = Math.max(maxY, py);
     }    
  
-    const aspectRatio = Math.abs(maxX - minX)/ Math.abs(maxY - minY);
+    const xDiff = Math.abs(maxX - minX);
+    const yDiff = Math.abs(maxY - minY);
+    const aspectRatio = yDiff > 0 ? xDiff / yDiff : 1;
     function safeInverse(proj: any, xy: [number, number], tol = 1e-6) {
         //This function checks if the coordinates are valid and returns 0 or 1 based on conditions
         const [lon, lat] = proj.inverse(xy);
@@ -184,32 +186,69 @@ export function reproject(resolution: number = 256){
     }
 
     // ---- Construct new CRS axis' ----//
-    const targetWidth = Math.ceil(resolution*aspectRatio);
-    const targetHeight = resolution;
-    const xTicks = linspace(minX, maxX, targetWidth);
-    const yTicks = flipY ? linspace(maxY, minY, targetHeight) : linspace(minY, maxY, targetHeight);
+    let adjustedResolution = resolution;
 
-    // Detect if coordinate axes are descending
-    const isXDescending = xArray.length > 1 ? xArray[0] > xArray[xArray.length - 1] : false;
-    const isYDescending = yArray.length > 1 ? yArray[0] > yArray[yArray.length - 1] : false;
+    let targetWidth: number;
+    let targetHeight: number;
+    let data: Uint16Array;
+    let xTicks: Array<number>;
+    let yTicks: Array<number>;
 
-    // ---- Create Rpojection Texture ----//
-    const data = new Uint16Array(targetWidth * targetHeight * 4);
-    for (let j = 0; j < targetHeight; j++) {
-        for (let i = 0; i < targetWidth; i++) {
-            const [lon, lat, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
-            const u = isXDescending ? (xMax - lon) / (xMax - xMin) : (lon - xMin) / (xMax - xMin);
-            const v = isYDescending ? (yMax - lat) / (yMax - yMin) : (lat - yMin) / (yMax - yMin);
-            
-            // Check boundary bounds to avoid displaying clamped blocks outside the dataset area
-            const inBounds = lon >= xMin && lon <= xMax && lat >= yMin && lat <= yMax;
-            const validVal = (valid === 1 && inBounds) ? 1 : 0;
+    if (plotType === 'point-cloud') {
+        targetWidth = width;
+        targetHeight = height;
+        xTicks = linspace(minX, maxX, targetWidth);
+        yTicks = flipY ? linspace(maxY, minY, targetHeight) : linspace(minY, maxY, targetHeight);
+        data = new Uint16Array(targetWidth * targetHeight * 4);
 
-            const idx = (j * targetWidth + i) * 4;
-            data[idx]     = THREE.DataUtils.toHalfFloat(u);  
-            data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
-            data[idx + 2] = THREE.DataUtils.toHalfFloat(validVal);
-        }  
+        const xDiff = Math.abs(maxX - minX);
+        const yDiff = Math.abs(maxY - minY);
+
+        for (let j = 0; j < targetHeight; j++) {
+            const lat = yArray[j];
+            for (let i = 0; i < targetWidth; i++) {
+                const lon = xArray[i];
+                const [px, py] = proj.forward([lon, lat]);
+                const valid = (isFinite(px) && isFinite(py)) ? 1 : 0;
+
+                const u = xDiff > 0 ? (px - minX) / xDiff : 0;
+                const v = yDiff > 0 ? (py - minY) / yDiff : 0;
+
+                const idx = (j * targetWidth + i) * 4;
+                data[idx]     = THREE.DataUtils.toHalfFloat(u);  
+                data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
+                data[idx + 2] = THREE.DataUtils.toHalfFloat(valid);
+            }
+        }
+    } else {
+        targetWidth = Math.ceil(adjustedResolution * aspectRatio);
+        targetHeight = adjustedResolution;
+        xTicks = linspace(minX, maxX, targetWidth);
+        yTicks = flipY ? linspace(maxY, minY, targetHeight) : linspace(minY, maxY, targetHeight);
+
+        // Detect if coordinate axes are descending
+        const isXDescending = xArray.length > 1 ? xArray[0] > xArray[xArray.length - 1] : false;
+        const isYDescending = yArray.length > 1 ? yArray[0] > yArray[yArray.length - 1] : false;
+
+        data = new Uint16Array(targetWidth * targetHeight * 4);
+        const xRangeDiff = xMax - xMin;
+        const yRangeDiff = yMax - yMin;
+        for (let j = 0; j < targetHeight; j++) {
+            for (let i = 0; i < targetWidth; i++) {
+                const [lon, lat, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
+                const u = xRangeDiff > 0 ? (isXDescending ? (xMax - lon) / xRangeDiff : (lon - xMin) / xRangeDiff) : 0;
+                const v = yRangeDiff > 0 ? (isYDescending ? (yMax - lat) / yRangeDiff : (lat - yMin) / yRangeDiff) : 0;
+                
+                // Check boundary bounds to avoid displaying clamped blocks outside the dataset area
+                const inBounds = lon >= xMin && lon <= xMax && lat >= yMin && lat <= yMax;
+                const validVal = (valid === 1 && inBounds) ? 1 : 0;
+
+                const idx = (j * targetWidth + i) * 4;
+                data[idx]     = THREE.DataUtils.toHalfFloat(u);  
+                data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
+                data[idx + 2] = THREE.DataUtils.toHalfFloat(validVal);
+            }  
+        }
     }
     const texture = new THREE.DataTexture(
         data,

@@ -104,8 +104,8 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
                 fillValue: {value: NaN},
             },
             defines:{
-              IS_FLAT: isFlat,
-              REPROJECT: remapTexture ? true : false
+              ...(isFlat ? { IS_FLAT: true } : {}),
+              ...(remapTexture ? { REPROJECT: true } : {})
             },
             vertexShader: sphereVertex,
             fragmentShader: sphereFrag,
@@ -127,7 +127,11 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       const uniforms = material.uniforms;
       uniforms.map.value = textures;
       uniforms.remapTexture.value = remapTexture;
-      material.defines.REPROJECT = remapTexture ? true : false;
+      if (remapTexture) {
+        material.defines.REPROJECT = true;
+      } else {
+        delete material.defines.REPROJECT;
+      }
       material.needsUpdate = true;
       uniforms.cmap.value =  colormap
       uniforms.maskValue.value = maskValue
