@@ -1,39 +1,39 @@
  // by Jeran Poehls
 
-#ifdef USE_VORIGIN
+#if USE_VORIGIN
 out vec3 vOrigin;
 #endif
 
-#ifdef USE_VDIRECTION
+#if USE_VDIRECTION
 out vec3 vDirection;
 #endif
 
-#ifdef USE_APOSITION
+#if USE_APOSITION
 out vec3 aPosition;
 #endif
 
-#ifdef USE_VUV
+#if USE_VUV
 out vec2 Vuv;
 #endif
 
 void main() {
     vec4 worldPos = modelViewMatrix * vec4( position, 1.0 );
     
-#ifdef USE_APOSITION
+#if USE_APOSITION
     aPosition = position; //Pass out position for sphere frag
 #endif
 
-#ifdef USE_VORIGIN
+#if USE_VORIGIN
     vOrigin = vec3( inverse( modelMatrix ) * vec4( cameraPosition, 1.0 ) ).xyz;
 #endif
 
-#ifdef USE_VDIRECTION
-#ifdef USE_VORIGIN
+#if USE_VDIRECTION
+#if USE_VORIGIN
     vDirection = position - vOrigin;
 #endif
 #endif
 
-#ifdef USE_VUV
+#if USE_VUV
     Vuv = uv;
 #endif
 

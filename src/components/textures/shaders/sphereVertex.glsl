@@ -1,6 +1,6 @@
  // by Jeran Poehls
 
-#ifdef IS_FLAT
+#if IS_FLAT
     uniform sampler2D map[12];
 #else
     uniform sampler3D map[12];
@@ -25,7 +25,7 @@ vec2 giveUV(vec3 position){
 }
 
 float sample1(
-    #ifdef IS_FLAT
+    #if IS_FLAT
         vec2 p,
     #else
         vec3 p,
@@ -58,7 +58,7 @@ void main() {
     if (inBounds){
         vec3 normal = normalize(position);
         int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
-        #ifdef IS_FLAT
+        #if IS_FLAT
             ivec2 idx = clamp(ivec2(uv * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
             int textureIdx = idx.y * yStepSize + idx.x;
             vec2 localCoord = uv * (textureDepths.xy); // Scale up

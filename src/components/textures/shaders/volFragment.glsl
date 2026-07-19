@@ -111,7 +111,7 @@ void main() {
             continue;
         }
         vec3 texCoord = p / scale + 0.5;
-        #ifdef REPROJECT
+        #if REPROJECT
             vec3 remap = texture2D(remapTexture, texCoord.xy).rgb;
             texCoord.xy = remap.rg;
             if (remap.b < 0.5) {continue;}

@@ -2,7 +2,7 @@
 
 attribute vec2 instanceUV;
 
-#ifdef IS_FLAT
+#if IS_FLAT
     uniform sampler2D map[12];
 #else
     uniform sampler3D map[12];
@@ -42,7 +42,7 @@ vec2 realCoords(vec2 uv){
 
 
 float sample1(
-    #ifdef IS_FLAT
+    #if IS_FLAT
         vec2 p,
     #else
         vec3 p,
@@ -79,7 +79,7 @@ void main() {
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     vec3 texCoord = vec3(instanceUV, animateProg);
-    #ifdef REPROJECT
+    #if REPROJECT
         vec3 remap = texture(remapTexture,instanceUV).rgb;
         texCoord.xy = remap.rg;
         if (remap.b < 0.5){
@@ -87,7 +87,7 @@ void main() {
             return;
         }
     #endif
-    #ifdef IS_FLAT
+    #if IS_FLAT
         ivec2 idx = clamp(ivec2(instanceUV * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
         int textureIdx = idx.y * yStepSize + idx.x;
         vec2 localCoord = instanceUV * (textureDepths.xy); // Scale up

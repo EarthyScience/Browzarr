@@ -3,7 +3,7 @@ out vec4 color;
 
 in vec3 aPosition;
 
-#ifdef IS_FLAT
+#if IS_FLAT
     uniform sampler2D map[12];
 #else
     uniform sampler3D map[12];
@@ -51,7 +51,7 @@ vec2 giveMaskUV(vec3 position){
 }
 
 float sample1( 
-    #ifdef IS_FLAT
+    #if IS_FLAT
         vec2 p,
     #else
         vec3 p,
@@ -74,11 +74,11 @@ float sample1(
 }
 
 void main(){
-    #ifdef IS_FLAT
+    #if IS_FLAT
         vec2 texCoord = giveUV(aPosition);
         bool inBounds = all(greaterThanEqual(texCoord, vec2(0.0))) && 
             all(lessThanEqual(texCoord, vec2(1.0)));
-        #ifdef REPROJECT
+        #if REPROJECT
             if (inBounds) {
                 vec3 remap = texture(remapTexture, texCoord.xy).rgb;
                 texCoord.xy = remap.rg;
@@ -89,7 +89,7 @@ void main(){
         vec2 sampleCoord = giveUV(aPosition);
         bool inBounds = all(greaterThanEqual(sampleCoord, vec2(0.0))) && 
             all(lessThanEqual(sampleCoord, vec2(1.0)));
-        #ifdef REPROJECT
+        #if REPROJECT
             if (inBounds) {
                 vec3 remap = texture(remapTexture, sampleCoord.xy).rgb;
                 sampleCoord.xy = remap.rg;
@@ -101,7 +101,7 @@ void main(){
     if (inBounds) {
         int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
         int yStepSize = int(textureDepths.x); 
-        #ifdef IS_FLAT
+        #if IS_FLAT
             ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
             int textureIdx = idx.y * yStepSize + idx.x;
             vec2 localCoord = texCoord * (textureDepths.xy); // Scale up
