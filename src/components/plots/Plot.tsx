@@ -192,18 +192,14 @@ const Plot = () => {
   useEffect(()=>{
     if (analysisMode || storeFromURL) return;
     const isEffectivelyFlat = dataShape.length === 2 || (dataShape.length === 3 && dataShape.includes(1));
-    if (isEffectivelyFlat) {
-      if (!["flat", "sphere"].includes(plotType)) {
-        setPlotType("flat")
-        setIsFlat(true)
-      }
-    } else {
-      if (!["volume", "point-cloud", "isosurface"].includes(plotType)) {
-        setPlotType("volume")
-        setIsFlat(false)
-      }
+    if (isEffectivelyFlat && plotType != "flat" && plotType != "sphere"){
+      setPlotType("flat")
+      setIsFlat(true)
+    } else if (!isEffectivelyFlat && plotType != "volume" && plotType != "isosurface" && plotType != "point-cloud") {
+      setPlotType("volume")
+      setIsFlat(false)
     }
-  },[dataShape, analysisMode, storeFromURL, plotType])
+  },[dataShape, analysisMode, storeFromURL])
 
   useEffect(()=>{ // Reset after analysis mode
     if(!analysisMode && show){

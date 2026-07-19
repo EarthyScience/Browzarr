@@ -104,7 +104,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
                 fillValue: {value: NaN},
             },
             defines:{
-                ...(isFlat ? { IS_FLAT: true } : {}),
+                ...((textures && textures.length > 0 && !(textures[0] instanceof THREE.Data3DTexture)) ? { IS_FLAT: true } : {}),
                 ...(remapTexture ? { REPROJECT: true } : {})
             },
             vertexShader: sphereVertex,
@@ -115,7 +115,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
             depthWrite:true,
         })
         return shader
-    },[isFlat, textures, borderTexture])
+    },[textures, borderTexture, remapTexture])
 
     const backMaterial = useMemo(()=>{
       const mat = shaderMaterial.clone()

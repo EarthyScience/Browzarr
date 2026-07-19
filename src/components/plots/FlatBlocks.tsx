@@ -105,7 +105,7 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
                 fillValue: {value: fillValue?? NaN},
             },
             defines:{
-                ...(isFlat ? { IS_FLAT: true } : {}),
+                ...((textures && textures.length > 0 && !(textures[0] instanceof THREE.Data3DTexture)) ? { IS_FLAT: true } : {}),
                 ...(remapTexture ? { REPROJECT: true } : {})
             },
             vertexShader: flatBlocksVert,
@@ -115,7 +115,7 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
             depthTest:true,
         })
         return shader
-    },[width, height, isFlat, remapTexture])
+    },[width, height, textures, remapTexture])
 
     useEffect(()=>{
         if (shaderMaterial){

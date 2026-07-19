@@ -199,13 +199,13 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
               fillValue: {value: fillValue?? NaN},
             },
             defines:{
-              ...(isFlat ? { IS_FLAT: true } : {}),
+              ...((textures && textures.length > 0 && !(textures[0] instanceof THREE.Data3DTexture)) ? { IS_FLAT: true } : {}),
               ...(remapTexture ? { REPROJECT: true } : {})
             },
             vertexShader: vertShader,
             fragmentShader: flatFrag,
             side: THREE.DoubleSide,
-        }),[isFlat, remapTexture, textures])
+        }),[remapTexture, textures])
     
     useEffect(()=>{
       if(shaderMaterial){
