@@ -94,9 +94,9 @@ export const useDataFetcher = () => {
 
                     const shapeLength = shape.length;
 
-                    if (shapeLength === 2) {
+                    if (shapeLength === 2 || ["flat", "sphere"].includes(plotType)) {
                         setIsFlat(true);
-                        if (!["flat", "sphere"].includes(plotType)) {
+                        if (shapeLength === 2 && !["flat", "sphere"].includes(plotType)) {
                             setPlotType("flat");
                         }
                     } else {
@@ -108,6 +108,10 @@ export const useDataFetcher = () => {
                     
                     setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio, 2)));
                     setDataShape(result.shape);
+                    const { storeFromURL, setStoreFromURL } = useGlobalStore.getState();
+                    if (storeFromURL) {
+                        setStoreFromURL(false);
+                    }
                     
                     setShow(true);
                     setPlotOn(true);

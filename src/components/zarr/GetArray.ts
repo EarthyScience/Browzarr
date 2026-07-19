@@ -49,7 +49,7 @@ export async function GetArray(varOveride?: string) {
     // using the collapsed value from ndSlices. Otherwise, it defaults to [0, null] 
     // and fetches the entire dimension, leading to massive memory requests (OOM).
     const getEffectiveSlice = (mappingIdx: number, dimIdx: number, uiSlice: [number, number | null]): [number, number | null] => {
-        if (mappingIdx >= 0) return uiSlice; // Axis is mapped, use the UI slice
+        if (mappingIdx !== null && mappingIdx >= 0) return uiSlice; // Axis is mapped, use the UI slice
         
         if (dimIdx >= 0 && ndSlices && ndSlices[dimIdx] !== undefined) {
             const sel = ndSlices[dimIdx];

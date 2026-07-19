@@ -18,6 +18,8 @@ const globalValues = [
     'variable',
     'colormapName',
     'flipColormap',
+    'is4D',
+    'idx4D',
 ]
 
 const plotValues = [

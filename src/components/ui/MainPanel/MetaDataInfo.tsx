@@ -66,14 +66,17 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   })))
   const {maxSize, cache, setMaxSize} = useCacheStore(useShallow(state => ({maxSize: state.maxSize, cache:state.cache, setMaxSize:state.setMaxSize})))
   const [cacheSize, setCacheSize] = useState(maxSize)
-  const { zSlice, ySlice, xSlice, compress, coarsen, kernelSize, kernelDepth, setZSlice, setYSlice, setXSlice, ReFetch, setCompress, setCoarsen, setKernelSize, setKernelDepth } = useZarrStore(useShallow(state => ({
+  const { zSlice, ySlice, xSlice, compress, coarsen, kernelSize, kernelDepth, ndSlices, axisMapping, setZSlice, setYSlice, setXSlice, ReFetch, setCompress, setCoarsen, setKernelSize, setKernelDepth, setNdSlices } = useZarrStore(useShallow(state => ({
     zSlice: state.zSlice, ySlice: state.ySlice, xSlice: state.xSlice,
     compress: state.compress, coarsen: state.coarsen, kernelSize: state.kernelSize,
     kernelDepth: state.kernelDepth,
+    ndSlices: state.ndSlices,
+    axisMapping: state.axisMapping,
     setZSlice: state.setZSlice, setYSlice: state.setYSlice, setXSlice: state.setXSlice,
     ReFetch: state.ReFetch, setCompress: state.setCompress,
     setCoarsen: state.setCoarsen, setKernelSize: state.setKernelSize,
-    setKernelDepth: state.setKernelDepth
+    setKernelDepth: state.setKernelDepth,
+    setNdSlices: state.setNdSlices
   })))
   const {maxTextureSize, max3DTextureSize} = usePlotStore(useShallow(state => ({maxTextureSize: state.maxTextureSize, max3DTextureSize: state.max3DTextureSize})))
 
@@ -200,7 +203,10 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   // ---- Available Chunks ---- //
   useEffect(()=>{
     setCompress(false)
-    setIdx4D(null);
+    const { storeFromURL } = useGlobalStore.getState();
+    if (!storeFromURL) {
+      setIdx4D(null);
+    }
     setCachedChunks(null);
     if (cache.has(`${initStore}_${meta.name}`)){
       
@@ -294,17 +300,44 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
         </Hider>
         <br/>
         <>
-        {is4D &&
-        <>
-          <div>
-            <p>
-            This is Four-Dimensional Dataset. You must select an index along the first dimension. <br/>
-            Please select an index from <b>0</b> to <b>{meta.shape[0]-1}</b>
-            </p>
-            <Input type="number" min={0} max={meta.shape[0]-1} value={String(idx4D)} onChange={e=>setIdx4D(parseInt(e.target.value))}/>
-          </div>
-        </>
-        }
+        {(() => {
+          if (!meta || !meta.shape || meta.shape.length <= 2) return null;
+          const mappedIndices = axisMapping ? Object.values(axisMapping).filter((v): v is number => v !== null && v !== undefined && v >= 0) : [];
+          
+          return meta.shape.map((dimSize: number, dimIdx: number) => {
+            if (mappedIndices.includes(dimIdx)) return null;
+            
+            const currentVal = ndSlices && ndSlices[dimIdx] !== undefined ? ndSlices[dimIdx] : 0;
+            const displayVal = typeof currentVal === 'number' ? currentVal : (Array.isArray(currentVal) ? currentVal[0] : 0);
+            
+            return (
+              <div key={dimIdx} className="mb-4">
+                <p className="text-sm font-semibold mb-1">
+                  Dimension <b>{dimNames[dimIdx] || `Axis ${dimIdx}`}</b> (size {dimSize}). Select index:
+                </p>
+                <Input
+                  type="number"
+                  min={0}
+                  max={dimSize - 1}
+                  value={String(displayVal)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const val = parseInt(e.target.value) || 0;
+                    const clamped = Math.max(0, Math.min(dimSize - 1, val));
+                    
+                    const newNdSlices = ndSlices ? [...ndSlices] : Array(meta.shape.length).fill(0);
+                    newNdSlices[dimIdx] = clamped;
+                    setNdSlices(newNdSlices);
+                    
+                    if (dimIdx === 0) {
+                      setIdx4D(clamped);
+                    }
+                    ReFetch();
+                  }}
+                />
+              </div>
+            );
+          });
+        })()}
         {((is3D || isFlat || idx4D != null) && !(cached && !cachedChunks)) &&
           <>
             {(hasTimeChunks || hasXChunks || hasYChunks )  && (
