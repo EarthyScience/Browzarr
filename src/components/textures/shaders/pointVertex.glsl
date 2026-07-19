@@ -1,4 +1,5 @@
 attribute float value;
+in float vertexIdx;
 
 out float vValue;
 
@@ -22,47 +23,7 @@ uniform int maskValue;
 #define PI 3.1415925
 
 #ifdef REPROJECT
-    #ifdef IS_2D
-        uniform sampler2D map[12];
-    #else
-        uniform sampler3D map[12];
-    #endif
     uniform sampler2D remapTexture;
-    uniform vec3 textureDepths;
-
-    #ifdef IS_2D
-    float sample1(vec2 p, int index) {
-        if (index == 0) return texture(map[0], p).r;
-        else if (index == 1) return texture(map[1], p).r;
-        else if (index == 2) return texture(map[2], p).r;
-        else if (index == 3) return texture(map[3], p).r;
-        else if (index == 4) return texture(map[4], p).r;
-        else if (index == 5) return texture(map[5], p).r;
-        else if (index == 6) return texture(map[6], p).r;
-        else if (index == 7) return texture(map[7], p).r;
-        else if (index == 8) return texture(map[8], p).r;
-        else if (index == 9) return texture(map[9], p).r;
-        else if (index == 10) return texture(map[10], p).r;
-        else if (index == 11) return texture(map[11], p).r;
-        else return 0.0;
-    }
-    #else
-    float sample1(vec3 p, int index) {
-        if (index == 0) return texture(map[0], p).r;
-        else if (index == 1) return texture(map[1], p).r;
-        else if (index == 2) return texture(map[2], p).r;
-        else if (index == 3) return texture(map[3], p).r;
-        else if (index == 4) return texture(map[4], p).r;
-        else if (index == 5) return texture(map[5], p).r;
-        else if (index == 6) return texture(map[6], p).r;
-        else if (index == 7) return texture(map[7], p).r;
-        else if (index == 8) return texture(map[8], p).r;
-        else if (index == 9) return texture(map[9], p).r;
-        else if (index == 10) return texture(map[10], p).r;
-        else if (index == 11) return texture(map[11], p).r;
-        else return 0.0;
-    }
-    #endif
 #endif
 
 vec3 computePosition(int vertexID) {
@@ -77,15 +38,18 @@ vec3 computePosition(int vertexID) {
     int x = vertexID % width;
 
     #ifdef REPROJECT
-        float nativeWidth = nativeShape.z;
+        // Get the reprojected normalized coordinates (u, v) from remapTexture
+        vec2 uv = vec2((float(x) + 0.5) / float(width), (float(y) + 0.5) / float(height));
+        vec3 remap = texture(remapTexture, uv).rgb;
         
-        float px = (float(x)/float(width) - 0.5) * (nativeWidth / 500.0);
+        float nativeWidth = nativeShape.z;
+        float px = (remap.r - 0.5) * (nativeWidth / 500.0);
         
         float lonRange = abs(lonBounds.y - lonBounds.x);
         float latRange = abs(latBounds.y - latBounds.x);
-        float aspectRatio = lonRange / latRange;
+        float aspectRatio = (latRange > 0.0 && lonRange > 0.0) ? (lonRange / latRange) : 1.0;
         
-        float py = (float(y)/float(height) - 0.5) * (nativeWidth / 500.0) / aspectRatio;
+        float py = (remap.g - 0.5) * (nativeWidth / 500.0) / aspectRatio;
     #else
         float px = (float(x) - (float(width)/2.)) / 500.;
         float py = (float(y) - (float(height)/2.)) / 500.;
@@ -97,6 +61,7 @@ vec3 computePosition(int vertexID) {
 
     return vec3(px * 2.0, py * 2.0, pz * 2.0);
 }
+
 vec2 giveUV(int vertexID){
     int height = int(shape.y);
     int width = int(shape.z);
@@ -109,6 +74,7 @@ vec2 giveUV(int vertexID){
 
     return vec2(u, v);
 }
+
 vec2 realCoords(vec2 uv){
     vec2 normalizedLon = lonBounds/2./PI+0.5;
     vec2 normalizedLat = latBounds/PI+0.5;
@@ -122,8 +88,10 @@ vec2 realCoords(vec2 uv){
 }
 
 void main() {
+    int originalID = int(vertexIdx);
+
     if (maskValue != 0 ){ // If using a mask, quick check if vertex is masked out before doing additional rendering
-        vec2 newV = realCoords(giveUV(gl_VertexID));
+        vec2 newV = realCoords(giveUV(originalID));
         float mask = texture(maskTexture, newV).r;
         bool cond = maskValue == 1 ? mask< 0.5 : mask>=0.5;
         if (cond){ // Masked out. Move off screen
@@ -132,44 +100,26 @@ void main() {
         }
     }
 
-    #ifdef REPROJECT
-        int targetHeight = int(shape.y);
-        int targetWidth = int(shape.z);
-        int targetDepth = int(shape.x);
-        
-        int sliceSize = targetWidth * targetHeight;
-        int z = gl_VertexID / sliceSize;
-        int y = (gl_VertexID % sliceSize) / targetWidth;
-        int x = gl_VertexID % targetWidth;
+    // Set the point value directly from attribute (no 3D texture sampling needed!)
+    vValue = float(value)/255.;
 
-        float u = float(x) / float(targetWidth);
-        float v = float(y) / float(targetHeight);
+    #ifdef REPROJECT
+        // For reprojected points, we must check if they are in the valid projection area.
+        int height = int(shape.y);
+        int width = int(shape.z);
+        int sliceSize = width * height;
+        int y = (originalID % sliceSize) / width;
+        int x = originalID % width;
         
-        vec3 remap = texture(remapTexture, vec2(u, v)).rgb;
+        vec2 uv = vec2((float(x) + 0.5) / float(width), (float(y) + 0.5) / float(height));
+        vec3 remap = texture(remapTexture, uv).rgb;
         if (remap.b < 0.5) {
             gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
             return;
         }
-        
-        vec3 texCoord = vec3(remap.rg, float(z) / float(targetDepth));
-        
-        int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
-        int yStepSize = int(textureDepths.x); 
-        ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
-        int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
-        #ifdef IS_2D
-            vec2 localCoord = texCoord.xy * textureDepths.xy;
-            localCoord = fract(localCoord);
-            vValue = sample1(localCoord, textureIdx);
-        #else
-            vec3 localCoord = texCoord * textureDepths;
-            localCoord = fract(localCoord);
-            vValue = sample1(localCoord, textureIdx);
-        #endif
-    #else
-        vValue = float(value)/255.;
     #endif
-    vec3 scaledPos = computePosition(gl_VertexID);
+
+    vec3 scaledPos = computePosition(originalID);
     float depthSize = (float(shape.x) > 1.0) ? (nativeShape.z / 500.0) : 0.001;
 
     scaledPos.z += depthSize;
@@ -183,7 +133,7 @@ void main() {
         float pointScale = pointSize/gl_Position.w;
         pointScale = scalePoints ? pointScale*pow(vValue,scaleIntensity) : pointScale;
         
-        if (value == 255. || (pointScale*gl_Position.w < 0.75 && scalePoints)){ //Hide points that are invisible or get too small when scalled
+        if (value == 255. || (pointScale*gl_Position.w < 0.75 && scalePoints)){ //Hide points that are invisible or get too small when scaled
             gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
         }
         gl_PointSize =  pointScale;
@@ -198,7 +148,7 @@ void main() {
         float nativeWidth = nativeShape.z;
         float lonRange = abs(lonBounds.y - lonBounds.x);
         float latRange = abs(latBounds.y - latBounds.x);
-        float aspectRatio = lonRange / latRange;
+        float aspectRatio = (latRange > 0.0 && lonRange > 0.0) ? (lonRange / latRange) : 1.0;
 
         float scaleX = nativeWidth / 500.0;
         float scaleY = (nativeWidth / 500.0) / aspectRatio;
@@ -220,5 +170,4 @@ void main() {
     if (xCheck || zCheck || yCheck || fillCheck){ //Hide points that are clipped
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     }
-
 }
