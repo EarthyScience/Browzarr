@@ -67,33 +67,37 @@ function Borders({features}:{features: any}){
 
     },[plotType])
 
-    const lineShaderMat = useMemo(()=>new THREE.ShaderMaterial(
-        {
-            glslVersion: THREE.GLSL3,
-            vertexShader,
-            fragmentShader: bordersFrag,
-            uniforms:{
-                xBounds: {value: new THREE.Vector2(-xRange[1],-xRange[0])},
-                yBounds: {value: new THREE.Vector2(yRange[0]/shape.x, yRange[1]/shape.x)},
-                borderColor: {value: new THREE.Color(borderColor)},
-                trim: {value: !spherize},
-            },
-            defines: {
-                USE_APOSITION: 1
+    const lineShaderMat = useMemo(() => {
+        const shapeX = (shape && shape.x > 0) ? shape.x : 1;
+        return new THREE.ShaderMaterial(
+            {
+                glslVersion: THREE.GLSL3,
+                vertexShader,
+                fragmentShader: bordersFrag,
+                uniforms:{
+                    xBounds: {value: new THREE.Vector2(-xRange[1],-xRange[0])},
+                    yBounds: {value: new THREE.Vector2(yRange[0]/shapeX, yRange[1]/shapeX)},
+                    borderColor: {value: new THREE.Color(borderColor)},
+                    trim: {value: !spherize},
+                },
+                defines: {
+                    USE_APOSITION: 1
+                }
             }
-        }
-    ),[])
+        );
+    }, [])
 
     useEffect(()=>{
         if (lineShaderMat){
             const uniforms = lineShaderMat.uniforms
             uniforms.xBounds.value = new THREE.Vector2(xRange[0], xRange[1])
-            uniforms.yBounds.value = new THREE.Vector2(yRange[0]/shape.x, yRange[1]/shape.x)
+            const shapeX = (shape && shape.x > 0) ? shape.x : 1;
+            uniforms.yBounds.value = new THREE.Vector2(yRange[0]/shapeX, yRange[1]/shapeX)
             uniforms.borderColor.value = new THREE.Color(borderColor)
             uniforms.trim.value = !spherize
             invalidate()
         }
-    },[xRange, yRange, borderColor, spherize])
+    },[xRange, yRange, borderColor, spherize, shape])
 
     const lineGeometries = useMemo(() => {
     return features.flatMap((feature: any, i: number) => {
@@ -257,10 +261,10 @@ const CountryBorders = () => {
     const isPC = plotType == 'point-cloud'
     const isFlatMap = plotType == "flat"
     const timeRatio = isPC ? dataShape[0]/dataShape[2] :  Math.max(dataShape[0]/dataShape[2],2)
-    const depthRatio = shape.z / shape.x * timeScale;
+    const depthRatio = (shape && shape.x > 0) ? (shape.z / shape.x) * timeScale : 1;
     const globalScale = isPC ? dataShape[2]/500 : 1
     const depthScale = isPC ? depthRatio : timeRatio/2
-    const aspectRatio = shape.x / shape.y;
+    const aspectRatio = (shape && shape.y > 0) ? (shape.x / shape.y) : 1;
 
     return(
         <group
