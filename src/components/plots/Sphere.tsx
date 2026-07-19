@@ -104,8 +104,8 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
                 fillValue: {value: NaN},
             },
             defines:{
-              ...(isFlat ? { IS_FLAT: true } : {}),
-              ...(remapTexture ? { REPROJECT: true } : {})
+                IS_FLAT: true,
+                REPROJECT: remapTexture ? true : false
             },
             vertexShader: sphereVertex,
             fragmentShader: sphereFrag,

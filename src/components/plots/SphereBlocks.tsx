@@ -101,8 +101,8 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
                 fillValue: {value: fillValue?? NaN},
             },
             defines:{
-                ...(isFlat ? { IS_FLAT: true } : {}),
-                ...(remapTexture ? { REPROJECT: true } : {})
+                IS_FLAT: true,
+                REPROJECT: remapTexture ? true : false
             },
             vertexShader: sphereBlocksVert,
             fragmentShader: sphereBlocksFrag,
