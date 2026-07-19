@@ -29,13 +29,21 @@ type GroupType = zarr.Group<
 	zarr.FetchStore | zarr.Listable<zarr.FetchStore> | IcechunkStore
 >;
 
+function isIcechunkStore(store: unknown): store is IcechunkStore {
+	return (
+		store instanceof IcechunkStore ||
+		typeof (store as any)?.listNodes === "function" ||
+		(store as any)?.constructor?.name?.includes("IcechunkStore")
+	);
+}
+
 export async function GetStore(
 	storePath: string,
 	fetchOptions?: FetchStoreOptions,
 	icechunkOptions?: IcechunkStoreOptions,
 ): Promise<GroupType | undefined> {
-	if (icechunkOptions) {
-		return getIcechunkStore(storePath, icechunkOptions);
+	if (storePath.toLowerCase().includes("icechunk") || icechunkOptions) {
+		return getIcechunkStore(storePath, icechunkOptions ?? undefined);
 	}
 	return getFetchStore(storePath, fetchOptions);
 }
@@ -45,7 +53,7 @@ export async function GetZarrMetadata(
 ): Promise<ZarrMetadata[]> {
 	const group = await groupStore;
 	if (!group) return [];
-	if (group.store instanceof IcechunkStore) {
+	if (isIcechunkStore(group.store)) {
 		return getIcechunkMetadata(group as zarr.Group<IcechunkStore>);
 	}
 	return getFetchStoreMetadata(
@@ -58,7 +66,7 @@ export async function GetTitleDescription(
 ): Promise<ZarrTitleDescription> {
 	const group = await groupStore;
 	if (!group) return { title: null, description: null };
-	if (group.store instanceof IcechunkStore) {
+	if (isIcechunkStore(group.store)) {
 		return getIcechunkTitleDescription(group as zarr.Group<IcechunkStore>);
 	}
 	return getFetchStoreTitleDescription(
@@ -78,7 +86,7 @@ export async function GetZarrAttributes(thisVariable?: string) {
 	const group = await currentStore;
 	if (!group) throw new Error(`Failed to open store: ${initStore}`);
 
-	if (group.store instanceof IcechunkStore) {
+	if (isIcechunkStore(group.store)) {
 		return getIcechunkAttributes(
 			group as zarr.Group<IcechunkStore>,
 			resolvedVariable,
@@ -124,7 +132,7 @@ export async function GetZarrDims(variable: string) {
 	const group = await useZarrStore.getState().currentStore;
 	if (!group) throw new Error(`Failed to open store: ${initStore}`);
 
-	if (group.store instanceof IcechunkStore) {
+	if (isIcechunkStore(group.store)) {
 		return getIcechunkDims(
 			group as zarr.Group<IcechunkStore>,
 			variable,

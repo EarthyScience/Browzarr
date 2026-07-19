@@ -66,17 +66,16 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   })))
   const {maxSize, cache, setMaxSize} = useCacheStore(useShallow(state => ({maxSize: state.maxSize, cache:state.cache, setMaxSize:state.setMaxSize})))
   const [cacheSize, setCacheSize] = useState(maxSize)
-  const { zSlice, ySlice, xSlice, compress, coarsen, kernelSize, kernelDepth, ndSlices, axisMapping, setZSlice, setYSlice, setXSlice, ReFetch, setCompress, setCoarsen, setKernelSize, setKernelDepth, setNdSlices } = useZarrStore(useShallow(state => ({
+  const { zSlice, ySlice, xSlice, compress, coarsen, kernelSize, kernelDepth, setZSlice, setYSlice, setXSlice, ReFetch, setCompress, setCoarsen, setKernelSize, setKernelDepth, ndSlices, axisMapping, setNdSlices } = useZarrStore(useShallow(state => ({
     zSlice: state.zSlice, ySlice: state.ySlice, xSlice: state.xSlice,
     compress: state.compress, coarsen: state.coarsen, kernelSize: state.kernelSize,
     kernelDepth: state.kernelDepth,
-    ndSlices: state.ndSlices,
-    axisMapping: state.axisMapping,
     setZSlice: state.setZSlice, setYSlice: state.setYSlice, setXSlice: state.setXSlice,
     ReFetch: state.ReFetch, setCompress: state.setCompress,
     setCoarsen: state.setCoarsen, setKernelSize: state.setKernelSize,
     setKernelDepth: state.setKernelDepth,
-    setNdSlices: state.setNdSlices
+    ndSlices: state.ndSlices, axisMapping: state.axisMapping,
+    setNdSlices: state.setNdSlices,
   })))
   const {maxTextureSize, max3DTextureSize} = usePlotStore(useShallow(state => ({maxTextureSize: state.maxTextureSize, max3DTextureSize: state.max3DTextureSize})))
 
@@ -95,6 +94,11 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
   const zLength = useMemo(() => meta.shape ? meta.shape[shapeLength-3] : 0, [meta])
   const yLength = useMemo(() => meta.shape ? meta.shape[shapeLength-2] : 0, [meta])
   const xLength = useMemo(() => meta.shape ? meta.shape[shapeLength-1] : 0, [meta])
+  const collapsedIndices = useMemo(() => {
+    if (!meta?.shape || !axisMapping) return [];
+    const activeAxes = new Set([axisMapping.x, axisMapping.y, axisMapping.z].filter(idx => idx >= 0));
+    return meta.shape.map((_: number, idx: number) => idx).filter((idx: number) => !activeAxes.has(idx));
+  }, [meta, axisMapping]);
   const { dataShape, chunkShape } = useMemo(() => {
     if (coarsen) {
       const n = meta.shape.length;
@@ -300,45 +304,45 @@ const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSi
         </Hider>
         <br/>
         <>
-        {(() => {
-          if (!meta || !meta.shape || meta.shape.length <= 2) return null;
-          const mappedIndices = axisMapping ? Object.values(axisMapping).filter((v): v is number => v !== null && v !== undefined && v >= 0) : [];
+        {collapsedIndices.map((dimIdx: number) => {
+          const dimName = dimNames[dimIdx] ?? `Dimension ${dimIdx}`;
+          const dimSize = meta.shape[dimIdx];
+          const currentValue = typeof ndSlices[dimIdx] === 'number' ? (ndSlices[dimIdx] as number) : 0;
           
-          return meta.shape.map((dimSize: number, dimIdx: number) => {
-            if (mappedIndices.includes(dimIdx)) return null;
-            
-            const currentVal = ndSlices && ndSlices[dimIdx] !== undefined ? ndSlices[dimIdx] : 0;
-            const displayVal = typeof currentVal === 'number' ? currentVal : (Array.isArray(currentVal) ? currentVal[0] : 0);
-            
-            return (
-              <div key={dimIdx} className="mb-4">
-                <p className="text-sm font-semibold mb-1">
-                  Dimension <b>{dimNames[dimIdx] || `Axis ${dimIdx}`}</b> (size {dimSize}). Select index:
-                </p>
-                <Input
-                  type="number"
-                  min={0}
-                  max={dimSize - 1}
-                  value={String(displayVal)}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const val = parseInt(e.target.value) || 0;
-                    const clamped = Math.max(0, Math.min(dimSize - 1, val));
-                    
-                    const newNdSlices = ndSlices ? [...ndSlices] : Array(meta.shape.length).fill(0);
-                    newNdSlices[dimIdx] = clamped;
-                    setNdSlices(newNdSlices);
-                    
-                    if (dimIdx === 0) {
-                      setIdx4D(clamped);
-                    }
-                    ReFetch();
-                  }}
-                />
-              </div>
-            );
-          });
-        })()}
-        {((is3D || isFlat || idx4D != null) && !(cached && !cachedChunks)) &&
+          return (
+            <div key={dimIdx} className="mt-2">
+              <p>
+                Dimension <b>{dimName}</b> is collapsed. Select an index from <b>0</b> to <b>{dimSize - 1}</b>:
+              </p>
+              <Input 
+                type="number" 
+                min={0} 
+                max={dimSize - 1} 
+                value={String(currentValue)} 
+                onChange={(e) => {
+                  const val = Math.max(0, Math.min(dimSize - 1, parseInt(e.target.value) || 0));
+                  const newNdSlices = Array.from({ length: meta.shape.length }, (_, i) => {
+                    if (i === dimIdx) return val;
+                    if (ndSlices[i] !== undefined) return ndSlices[i];
+                    if (i === axisMapping.z) return zSlice;
+                    if (i === axisMapping.y) return ySlice;
+                    if (i === axisMapping.x) return xSlice;
+                    return 0;
+                  });
+                  setNdSlices(newNdSlices);
+                  
+                  // Also set idx4D for legacy support if this is the first collapsed dimension
+                  if (dimIdx === collapsedIndices[0]) {
+                    setIdx4D(val);
+                  }
+                  
+                  ReFetch();
+                }}
+              />
+            </div>
+          );
+        })}
+        {((meta.shape && meta.shape.length >= 2) && !(cached && !cachedChunks)) &&
           <>
             {(hasTimeChunks || hasXChunks || hasYChunks )  && (
               <>
