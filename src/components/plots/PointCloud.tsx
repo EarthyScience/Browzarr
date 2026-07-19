@@ -82,8 +82,8 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         };
     }, [textureData, dataShape]);
 
-    const targetWidth = remapTexture ? remapTexture.image.width : width;
-    const targetHeight = remapTexture ? remapTexture.image.height : height;
+    const targetWidth = (remapTexture && remapTexture.image) ? remapTexture.image.width : width;
+    const targetHeight = (remapTexture && remapTexture.image) ? remapTexture.image.height : height;
     const is2D = dataShape.length === 2;
     const depthRatio = useMemo(()=> (shape && shape.x > 0 ? (shape.z / shape.x) * timeScale : 1),[shape, timeScale]);
 
