@@ -26,11 +26,12 @@ export const useDataFetcher = () => {
         setPlotOn: state.setPlotOn,
         setStatus: state.setStatus  
     })))
-    const {variable, is4D, setIsFlat} = useGlobalStore(
+    const {variable, is4D, setIsFlat, initStore} = useGlobalStore(
         useShallow(state=>({
             variable: state.variable, 
             is4D: state.is4D,
             setIsFlat: state.setIsFlat, 
+            initStore: state.initStore
     })))
     const {plotType, interpPixels, setPlotType} = usePlotStore(
         useShallow(state => ({
@@ -38,7 +39,7 @@ export const useDataFetcher = () => {
             interpPixels:state.interpPixels,
             setPlotType: state.setPlotType
     })))
-    const {zSlice, ySlice, xSlice, reFetch, coarsen, kernelDepth, kernelSize, currentStore} = useZarrStore(
+    const {zSlice, ySlice, xSlice, reFetch, coarsen, kernelDepth, kernelSize, currentStore, loadedStorePath} = useZarrStore(
         useShallow(state=> ({
             zSlice: state.zSlice,
             ySlice: state.ySlice,
@@ -47,7 +48,8 @@ export const useDataFetcher = () => {
             coarsen: state.coarsen,
             kernelDepth: state.kernelDepth,
             kernelSize: state.kernelSize,
-            currentStore: state.currentStore
+            currentStore: state.currentStore,
+            loadedStorePath: state.loadedStorePath
     })))
 
     //---- Local State ----//
@@ -57,6 +59,7 @@ export const useDataFetcher = () => {
 
     useEffect(() => {
         if (variable !== "Default") {
+            if (initStore !== loadedStorePath) return;
             setShow(false);
             try {
                 //---- Texture Cleanup ----//
@@ -159,7 +162,7 @@ export const useDataFetcher = () => {
         } else {
             setMetadata(null);
         }
-    }, [variable, zSlice, ySlice, xSlice, reFetch, coarsen, kernelDepth, kernelSize, currentStore]); 
+    }, [variable, zSlice, ySlice, xSlice, reFetch, coarsen, kernelDepth, kernelSize, currentStore, initStore, loadedStorePath]); 
 
     useEffect(()=> {
     if (!textures) return;
