@@ -73,13 +73,11 @@ float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so
 }
 
 bool boundsCheck(vec3 loc) {
-    vec2 scaledXBounds = vec2(flatBounds.x, flatBounds.y) / 2. + 0.5; // Scale from [-1, 1] to [0, 1] to match UV/texCoords
-    vec2 scaledZBounds = vec2(flatBounds.z, flatBounds.w) / 2. + 0.5;
-    vec2 scaledYBounds = vec2(vertBounds.x, vertBounds.y) / 2. + 0.5;
+    vec3 scaledLoc = loc * 2.0 - 1.0; // scales texCoords/UV from [0 ,1] to [-1 - 1] of the sliders
 
-    bool xCheck = loc.x < scaledXBounds.x || loc.x > scaledXBounds.y;
-    bool yCheck = loc.y < scaledYBounds.x || loc.y > scaledYBounds.y;
-    bool zCheck = loc.z < scaledZBounds.x || loc.z > scaledZBounds.y;
+    bool xCheck = scaledLoc.x < flatBounds.x || scaledLoc.x > flatBounds.y;
+    bool yCheck = scaledLoc.y < vertBounds.x || scaledLoc.y > vertBounds.y;
+    bool zCheck = scaledLoc.z < flatBounds.z || scaledLoc.z > flatBounds.w;
 
     return (xCheck || zCheck || yCheck);
 }
@@ -101,7 +99,7 @@ void main() {
             gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
             return;
         }
-        vec3 position = givePosition(vec3(remap, texCoord.z));
+        vec3 position = givePosition(newCoord);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     #else
         if (boundsCheck(texCoord)){
