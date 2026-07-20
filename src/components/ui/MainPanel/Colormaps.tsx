@@ -68,11 +68,14 @@ const Colormaps = () => {
                 size="icon"
                 className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full'
                 style={{
-                  backgroundImage: `url(./colormap_icons/${colormapName}.webp)` ,
-                  backgroundSize: "100%",
+                  backgroundImage: getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral'),
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'center',
+                  backgroundSize: '100% 100%',
                   transform: flipColormap ? "scaleX(-1)" : "",
                   width: "32px",
                   height: "32px",
+                  border: '1px solid var(--ui-border)'
                 }} /> 
             </div>
           </TooltipTrigger>
@@ -151,12 +154,15 @@ const Colormaps = () => {
               }}
               onMouseEnter={() => setHoveredCmap(val)}
               onMouseLeave={() => setHoveredCmap(null)}
-              style={{
+                style={{
                 width: '100%',
                 height: '34px',
                 borderRadius: '0.5rem',
                 border: '1px solid var(--ui-border)',
-                background: getColormapGradientCss(val),
+                backgroundImage: getColormapGradientCss(val),
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'center',
+                backgroundSize: '100% 100%',
                 color: 'var(--ui-text-highlighted)',
                 display: 'flex',
                 alignItems: 'center',
