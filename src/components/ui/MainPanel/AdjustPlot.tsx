@@ -22,6 +22,7 @@ import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/c
 import { RiCloseLargeLine } from "react-icons/ri";
 import { reproject } from '@/components/textures/ProjectionTexture';
 import { Reprojection } from '../Elements/Reprojection';
+import { useAxisIndices } from '@/hooks';
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -92,17 +93,13 @@ const DimSlicer = () =>{
 
       const defaultScales = {minVal: 0, maxVal: 0} //This is fed into MinMax as it is required but overwritten if an array is present
   
-      const {dimArrays, dimNames, dimUnits, is4D} = useGlobalStore(useShallow(state => ({
-        dimArrays : state.dimArrays, 
-        dimNames: state.dimNames,
-        dimUnits: state.dimUnits,
+      const {axisDimArrays, axisDimNames, axisDimUnits, is4D} = useGlobalStore(useShallow(state => ({
+        axisDimArrays : state.axisDimArrays, 
+        axisDimNames: state.axisDimNames,
+        axisDimUnits: state.axisDimUnits,
         is4D: state.is4D
       })))
-
-      const theseDims = is4D ? dimNames.slice(1) : dimNames
-      const theseUnits = is4D ? dimUnits.slice(1) : dimUnits
-      const theseArrays = is4D ? dimArrays.slice(1) : dimArrays
-
+      const {xIdx, yIdx, zIdx} = useAxisIndices()
       const [isSpatialOpen, setIsSpatialOpen] = useState(false);
   return (
     <>
@@ -129,33 +126,33 @@ const DimSlicer = () =>{
           <div className="overflow-hidden">
             <div className="flex flex-col items-center gap-2">
               <div className='grid w-[100%] place-items-center'>
-                <h2>{theseDims[2]}</h2>
+                <h2>{axisDimNames[xIdx]}</h2>
                 <MinMaxSlider 
                   range={xRange} 
                   setRange={setXRange} 
                   valueScales={defaultScales} 
-                  array={theseArrays[2]} 
-                  units={theseUnits[2]}
+                  array={axisDimArrays[xIdx]} 
+                  units={axisDimUnits[xIdx]}
                 />
               </div>
               <div className='grid w-[100%] place-items-center'>
-                <h2>{theseDims[1]}</h2>
+                <h2>{axisDimNames[yIdx]}</h2>
                 <MinMaxSlider 
                 range={yRange} 
                 setRange={setYRange} 
                 valueScales={defaultScales} 
-                array={theseArrays[1]} 
-                units={theseUnits[1]}
+                array={axisDimArrays[yIdx]} 
+                units={axisDimUnits[yIdx]}
                 />
               </div>
               <div className='grid w-[100%] place-items-center'>
-                <h2>{theseDims[0]}</h2>
+                <h2>{axisDimNames[zIdx]}</h2>
                 <MinMaxSlider 
                   range={zRange} 
                   setRange={setZRange} 
                   valueScales={defaultScales} 
-                  array={theseArrays[0]} 
-                  units={theseUnits[0]}
+                  array={axisDimArrays[zIdx]} 
+                  units={axisDimUnits[zIdx]}
                 />
               </div>
             </div>

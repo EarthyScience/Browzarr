@@ -134,10 +134,11 @@ export const SquareMeshes = () => {
 }
 
 export const ColumnMeshes = () => {
-	const {timeSeries, dataShape, shape} = useGlobalStore(useShallow(state=>({
+	const {timeSeries, dataShape, remapTexture} = useGlobalStore(useShallow(state=>({
 		timeSeries:state.timeSeries,
 		dataShape: state.dataShape,
-		shape: state.shape
+		shape: state.shape,
+		remapTexture: state.remapTexture
 	})))
 	const {plotType} = usePlotStore(useShallow(state=>({
 		plotType: state.plotType

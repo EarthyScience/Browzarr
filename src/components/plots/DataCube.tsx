@@ -86,7 +86,6 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
       side: useOrtho ? THREE.FrontSide : THREE.BackSide,
     }),[useFragOpt, useOrtho, volTexture, remapTexture]);
 
-
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
     useEffect(() => {
       if (shaderMaterial) {
@@ -120,10 +119,10 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
           .invert();
     })
   return (
-    <group scale={[1,flipY ? -1: 1,1]}>
+    <group >
       <ColumnMeshes />
-      <mesh ref={meshRef} geometry={geometry} material={shaderMaterial} />
-      <UVCube />
+      <UVCube />  
+      <mesh ref={meshRef} scale={[1,flipY ? -1 : 1,1]} geometry={geometry} material={shaderMaterial} />
     </group>
   )
 }

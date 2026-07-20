@@ -237,8 +237,7 @@ export function reproject(resolution: number = 256){
             for (let i = 0; i < targetWidth; i++) {
                 const [lon, lat, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
                 const u = xRangeDiff > 0 ? (isXDescending ? (xMax - lon) / xRangeDiff : (lon - xMin) / xRangeDiff) : 0;
-                const v = yRangeDiff > 0 ? (isYDescending ? (yMax - lat) / yRangeDiff : (lat - yMin) / yRangeDiff) : 0;
-                
+                const v = (isYDescending ? (yMax - lat) / yRangeDiff : (lat - yMin) / yRangeDiff)
                 // Check boundary bounds to avoid displaying clamped blocks outside the dataset area
                 const inBounds = lon >= xMin && lon <= xMax && lat >= yMin && lat <= yMax;
                 const validVal = (valid === 1 && inBounds) ? 1 : 0;

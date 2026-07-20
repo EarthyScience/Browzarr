@@ -26,6 +26,23 @@ function updateFace(
   }
 }
 
+function sample2D(tex: THREE.DataTexture, u:number, v:number): [THREE.Vector2, boolean] {
+  const { data, width, height } = tex.image;
+  if (!data) return [new THREE.Vector2(u, v), true];
+
+  const x = Math.floor(u * (width - 1));
+  const y = Math.floor(v * (height - 1));
+
+  const idx = (y * width + x) * 4; // RGBA
+  const newU = THREE.DataUtils.fromHalfFloat(data[idx + 0])
+  const newV = THREE.DataUtils.fromHalfFloat(data[idx + 1])
+  const valid = THREE.DataUtils.fromHalfFloat(data[idx + 2])
+  return [
+    new THREE.Vector2(newU,newV),
+    valid > 0.5
+  ];
+}
+
 
 const UpdateUVs = (
   geometry: THREE.BoxGeometry, 
@@ -78,14 +95,16 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     analysisArray: state.analysisArray
   })))
 
-  const {shape, dataShape, strides, dimArrays,dimNames,dimUnits} = useGlobalStore(
+  const {shape, dataShape, strides, axisDimArrays,axisDimNames,axisDimUnits, remapTexture, flipY} = useGlobalStore(
     useShallow(state=>({
       shape:state.shape,
       dataShape: state.dataShape,
       strides: state.strides,
-      dimArrays:state.dimArrays,
-      dimNames:state.dimNames,
-      dimUnits:state.dimUnits
+      axisDimArrays:state.axisDimArrays,
+      axisDimNames:state.axisDimNames,
+      axisDimUnits:state.axisDimUnits,
+      remapTexture: state.remapTexture,
+      flipY: state.flipY
     })))
   
   const {selectTS, xRange, yRange, zRange,getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
@@ -99,14 +118,25 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
 
   function HandleTimeSeries(event: THREE.Intersection){
     const uv = event.uv!;
+    let valid = true;
+    let newUV: THREE.Vector2 | undefined;
     const normal = event.normal!;
+    if (remapTexture && Math.abs(normal.z) > 0.5){ // Get new UV if reprojected and along z Axis
+      const [thisUV, isValid] = sample2D(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
+      if (flipY) thisUV.y = 1-thisUV.y
+      if (isValid) newUV = thisUV;
+    }
+
     const dimAxis = getUnitAxis(normal);
     if (dimAxis != lastNormal.current){
       setTimeSeries({}); //Clear timeseries if new axis
       setDimCoords({});
     }
     lastNormal.current = dimAxis;
-    const tempTS = GetTimeSeries({data: analysisMode ? analysisArray : GetCurrentArray(), shape: dataShape, stride: strides},{uv,normal})
+    const tempTS = valid ? GetTimeSeries(
+      { data: analysisMode ? analysisArray : GetCurrentArray(), shape: dataShape, stride: strides },
+      { uv: newUV ?? uv, normal }
+    ) : []
     const plotDim = (normal.toArray()).map((val, idx) => {
       if (Math.abs(val) > 0) {
         return idx;
@@ -114,10 +144,10 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       return null;}).filter(idx => idx !== null);
     setPlotDim(2-plotDim[0]) //I think this 2 is only if there are 3-dims. Need to rework the logic
 
-    const coordUV = parseUVCoords({normal:normal,uv:uv})
-    let dimCoords = coordUV.map((val,idx)=>val ? dimArrays[idx][Math.round(val*dimArrays[idx].length)] : null)
-    const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
-    const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
+    const coordUV = valid ? parseUVCoords({normal:normal,uv}) : [null]
+    let dimCoords = coordUV.map((val,idx)=>val ? axisDimArrays[idx][Math.round(val*axisDimArrays[idx].length)] : null)
+    const thisDimNames = axisDimNames.filter((_,idx)=> dimCoords[idx] !== null)
+    const thisDimUnits = axisDimUnits.filter((_,idx)=> dimCoords[idx] !== null)
     dimCoords = dimCoords.filter(val => val !== null)
     const tsID = `${dimCoords[0]}_${dimCoords[1]}`
     const tsObj = {
@@ -140,7 +170,7 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
         units:thisDimUnits[1]
       },
       plot:{
-        units:dimUnits[2-plotDim[0]]
+        units:axisDimUnits[2-plotDim[0]]
       }
     }
     updateDimCoords({[tsID] : dimObj})
