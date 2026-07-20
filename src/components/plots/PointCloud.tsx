@@ -4,8 +4,6 @@ import { pointFrag, pointVert } from '@/components/textures/shaders'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
-import { deg2rad } from '@/utils/HelperFuncs';
-import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from './UVCube';
 import { ColumnMeshes } from './TransectMeshes';
 
@@ -108,8 +106,6 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       }
       return list;
     }, [depth, width, height]);
-
-    const {lonBounds, latBounds} = useCoordBounds() 
 
     const shaderMaterial = useMemo(()=> (new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
