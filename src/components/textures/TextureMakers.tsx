@@ -8,10 +8,9 @@ interface Array {
     shape: number[];
 }
 
-function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number}): {minVal: number, maxVal: number}{
-    const { setTextureData} = useGlobalStore.getState()
+function createData(array: Array, valueScales?: {maxVal: number, minVal: number}): {textureData: Uint8Array, scales:{minVal: number, maxVal: number}}{
     const data = array.data;
-    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data )
+    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
     const textureData = new Uint8Array(data.length)
     const range = (maxVal - minVal)
     for (let i = 0; i < data.length; i++){
@@ -22,13 +21,12 @@ function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number})
         textureData[i] = normed * 254;
       }
     };
-    setTextureData(textureData)
-    return {minVal, maxVal}
+    return {textureData, scales:{minVal, maxVal}}
 }
 
 export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
   const {textureArrayDepths} = useGlobalStore.getState()
-  const textureData = data ? data : useGlobalStore.getState().textureData
+  const textureData = data 
   if (!textureData){
     return
   }
@@ -76,8 +74,8 @@ export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTe
 }
 
 export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
-    const scales = StoreData(array, valueScales);
-    const textures = CreateTexture(array.shape)
+    const {textureData, scales} = createData(array, valueScales)
+    const textures = CreateTexture(array.shape, textureData)
     return [textures as THREE.Data3DTexture[] | THREE.DataTexture[], scales];
 }
 
