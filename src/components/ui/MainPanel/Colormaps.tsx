@@ -1,9 +1,8 @@
 "use client";
 
-import React, {useEffect, useState} from 'react'
-import { GetColorMapTexture } from '@/components/textures';
+import React, {useEffect, useState, useMemo} from 'react'
+import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss } from '@/components/textures';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { colormaps } from '@/components/textures';
 import { useShallow } from 'zustand/shallow';
 import { MdOutlineSwapVert } from "react-icons/md";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -17,6 +16,7 @@ import {
 
 const Colormaps = () => {
 
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [hoveredCmap, setHoveredCmap] = useState<string | null>(null);
   const { colormap, setColormap, colormapName, flipColormap, setColormapName, setFlipColormap } = useGlobalStore(
     useShallow((state) => ({
@@ -29,6 +29,17 @@ const Colormaps = () => {
     }))
   );
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
+
+  const [prevColormapName, setPrevColormapName] = useState<string>(colormapName || '');
+
+  const filteredColormaps = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return colormaps;
+    return availableColorMapNames.filter((name) => name.toLowerCase().includes(query));
+  }, [searchQuery]);
+
+  const visibleMatches = useMemo(() => filteredColormaps.slice(0, 64), [filteredColormaps]);
+  const hasMoreResults = filteredColormaps.length > visibleMatches.length;
 
   useEffect(() => {
     setColormap(
@@ -81,7 +92,56 @@ const Colormaps = () => {
         side={popoverSide}
         className="colormaps"
       >
-            {colormaps.map((val) => (
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.6rem' }}>
+          <button
+            type="button"
+            onClick={() => setFlipColormap(!flipColormap)}
+            style={{ padding: '0.5rem 0.75rem', borderRadius: '0.55rem', border: '1px solid var(--ui-border)', background: 'var(--ui-bg-accented)', cursor: 'pointer' }}
+          >
+            {flipColormap ? 'Unflip' : 'Flip'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setColormapName(prevColormapName);
+              setFlipColormap(false);
+              setHoveredCmap(null);
+            }}
+            style={{ padding: '0.5rem 0.75rem', borderRadius: '0.55rem', border: '1px solid var(--ui-border)', background: 'transparent', cursor: 'pointer' }}
+          >
+            Revert
+          </button>
+          <div style={{ marginLeft: 'auto', fontSize: '0.85rem', color: 'var(--ui-text-muted)' }}>
+            {colormapName}{flipColormap ? ' (flipped)' : ''}
+          </div>
+        </div>
+        <div className="colormap-search-bar" style={{ marginBottom: '0.9rem' }}>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search colormap names"
+            className="search-input"
+            style={{
+              width: '100%',
+              padding: '0.85rem 1rem',
+              borderRadius: '0.75rem',
+              border: '1px solid var(--ui-border)',
+              background: 'var(--ui-bg-code)',
+              color: 'var(--ui-text-highlighted)',
+            }}
+          />
+        </div>
+        {searchQuery.trim() && (
+          <div className="search-results-summary" style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--ui-text-muted)' }}>
+            Showing <strong>{visibleMatches.length}</strong> of <strong>{filteredColormaps.length}</strong> matches for{' "'}{searchQuery}{'"'}
+            {hasMoreResults && ' — first 64 shown'}
+          </div>
+        )}
+        <div className="colormaps-grid" style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(1, minmax(0, 1fr))' }}>
+          {visibleMatches.map((val) => {
+            const hasIcon = colormaps.includes(val);
+            return hasIcon ? (
               <Image
                 key={val}
                 className={`cmap ${flipColormap ? "flipped" : ""}`}
@@ -92,11 +152,47 @@ const Colormaps = () => {
                 onMouseEnter={() => setHoveredCmap(val)}
                 onMouseLeave={() => setHoveredCmap(null)}
                 onClick={() => {
+                  setPrevColormapName(colormapName);
                   setColormapName(val);
                   setHoveredCmap(null);
                 }}
               />
-            ))}
+            ) : (
+              <button
+                key={val}
+                className="cmap fallback-cmap"
+                type="button"
+                onClick={() => {
+                  setPrevColormapName(colormapName);
+                  setColormapName(val);
+                  setHoveredCmap(null);
+                }}
+                onMouseEnter={() => setHoveredCmap(val)}
+                onMouseLeave={() => setHoveredCmap(null)}
+                style={{
+                  width: '100%',
+                  height: '100px',
+                  borderRadius: '0.75rem',
+                  border: '1px solid var(--ui-border)',
+                  background: getColormapGradientCss(val),
+                  color: 'var(--ui-text-highlighted)',
+                  textAlign: 'left',
+                  padding: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.45)',
+                }}
+              >
+                <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{val}</span>
+              </button>
+            )
+          })}
+        </div>
+        {filteredColormaps.length === 0 && (
+          <div style={{ padding: '1rem 0', color: 'var(--ui-text-muted)' }}>
+            No colormaps found. Try a different search term.
+          </div>
+        )}
         <MdOutlineSwapVert
             className="flipper"
             style={{
