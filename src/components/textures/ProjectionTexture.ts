@@ -198,7 +198,7 @@ export function reproject(resolution: number = 256){
         targetWidth = width;
         targetHeight = height;
         xTicks = linspace(minX, maxX, targetWidth);
-        yTicks = flipY ? linspace(maxY, minY, targetHeight) : linspace(minY, maxY, targetHeight);
+        yTicks = linspace(minY, maxY, targetHeight);
         data = new Uint16Array(targetWidth * targetHeight * 4);
 
         const xDiff = Math.abs(maxX - minX);
@@ -211,8 +211,8 @@ export function reproject(resolution: number = 256){
                 const [px, py] = proj.forward([lon, lat]);
                 const valid = (isFinite(px) && isFinite(py)) ? 1 : 0;
 
-                const u = xDiff > 0 ? (px - minX) / xDiff : 0;
-                const v = yDiff > 0 ? (py - minY) / yDiff : 0;
+                const u = (px - minX) / xDiff;
+                const v = (py - minY) / yDiff;
 
                 const idx = (j * targetWidth + i) * 4;
                 data[idx]     = THREE.DataUtils.toHalfFloat(u);  

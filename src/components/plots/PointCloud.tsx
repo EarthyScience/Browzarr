@@ -43,10 +43,9 @@ const MappingCube = () =>{
 export const PointCloud = ({textures} : {textures:PCProps} )=>{
     const { colormap } = textures;
     const volTexture = usePaddedTextures(textures.texture);
-    const { flipY, dataShape, textureData, remapTexture, textureArrayDepths, shape } = useGlobalStore(useShallow(state=>({
+    const { flipY, dataShape, remapTexture, textureArrayDepths, shape } = useGlobalStore(useShallow(state=>({
       flipY: state.flipY,
       dataShape: state.dataShape,
-      textureData: state.textureData,
       remapTexture: state.remapTexture,
       textureArrayDepths: state.textureArrayDepths,
       shape: state.shape
@@ -72,56 +71,44 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
     })))
 
     //Extract data and shape from Data3DTexture
-    const { data, width, height, depth } = useMemo(() => {
+    const { width, height, depth } = useMemo(() => {
         const [depth, height, width] = dataShape
         return {
-          data: textureData,
           width: width,
           height: height,
           depth: depth,
         };
-    }, [textureData, dataShape]);
-
-    const targetWidth = (remapTexture && remapTexture.image) ? remapTexture.image.width : width;
-    const targetHeight = (remapTexture && remapTexture.image) ? remapTexture.image.height : height;
-    const is2D = dataShape.length === 2;
+    }, [dataShape]);
+    const globalscale = dataShape[2]/500
     const depthRatio = useMemo(()=> (shape && shape.x > 0 ? (shape.z / shape.x) * timeScale : 1),[shape, timeScale]);
 
-    // Create buffer geometries (divided into chunks of max 25M vertices to fit WebGL draw limit)
     const geometries = useMemo(() => {
-      const numPoints = depth * targetHeight * targetWidth;
-      const maxPoints = 100000000;
+      const numPoints = depth * height * width;
+      const maxPoints = 1e8;
       const stride = numPoints > maxPoints ? Math.ceil(numPoints / maxPoints) : 1;
       
       const subNumPoints = Math.floor(numPoints / stride);
-      const attrData = new Uint8Array(subNumPoints);
-      const indexData = new Float32Array(subNumPoints);
-      const originalData = data as Uint8Array;
+      const indexData = new Int32Array(subNumPoints);
       
       let writePtr = 0;
       for (let i = 0; i < numPoints; i += stride) {
         if (writePtr < subNumPoints) {
-          attrData[writePtr] = originalData[i] ?? 0;
-          indexData[writePtr] = i;
-          writePtr++;
+          indexData[writePtr++] = i;
         }
       }
-      
-      const valueAttr = new THREE.Uint8BufferAttribute(attrData, 1);
-      const indexAttr = new THREE.Float32BufferAttribute(indexData, 1);
-      
-      const maxPointsPerDraw = 25000000;
+      const indexAttr = new THREE.Int32BufferAttribute(indexData, 1);
+      const maxPointsPerDraw = 2e31 - 1; // 32bit limit
       const list = [];
       for (let offset = 0; offset < subNumPoints; offset += maxPointsPerDraw) {
         const count = Math.min(maxPointsPerDraw, subNumPoints - offset);
         const geom = new THREE.BufferGeometry();
-        geom.setAttribute('value', valueAttr);
         geom.setAttribute('vertexIdx', indexAttr);
         geom.setDrawRange(offset, count);
         list.push(geom);
       }
       return list;
-    }, [data, depth, targetWidth, targetHeight]);
+    }, [depth, width, height]);
+
     const {lonBounds, latBounds} = useCoordBounds() 
 
     const shaderMaterial = useMemo(()=> (new THREE.ShaderMaterial({
@@ -132,8 +119,6 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         textureDepths: { value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0]) },
         maskTexture: {value: maskTexture},
         maskValue: {value: maskValue},
-        latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
-        lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
         pointSize: {value: pointSize},
         cmap: {value: colormap},
         cOffset: {value: cOffset},
@@ -143,16 +128,15 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         scaleIntensity: {value: scaleIntensity},
         timeScale: {value: depthRatio},
         animateProg: {value: animProg},
-        shape: {value: new THREE.Vector3(depth, targetHeight, targetWidth)},
-        nativeShape: {value: new THREE.Vector3(dataShape[0], dataShape[1], dataShape[2])},
+        aspect: {value: shape.x/shape.y},
+        shape: {value: new THREE.Vector3(depth, height, width)},
         flatBounds:{value: new THREE.Vector4(xRange[0], xRange[1], zRange[0], zRange[1])},
         vertBounds:{value: new THREE.Vector2(yRange[0], yRange[1])},
         fillValue: {value: fillValue?? NaN}
       },
       defines: {
+        GLOBAL_SCALE: globalscale*2,
         ...(remapTexture ? { REPROJECT: true } : {}),
-        ...(flipY ? { FLIP_Y: true } : {}),
-        ...(is2D ? { IS_2D: true } : {}),
         ...(disablePointScale ? { NO_SCALE: true } : {})
       },
       vertexShader: pointVert,
@@ -161,31 +145,14 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       depthTest: true,
       blending:THREE.NoBlending,
     })
-    ),[disablePointScale, is2D, remapTexture, flipY]);
+    ),[disablePointScale, remapTexture]);
   
    useEffect(() => {
     if (shaderMaterial) {
       const uniforms = shaderMaterial.uniforms;
       uniforms.map.value = volTexture;
-      uniforms.remapTexture.value = remapTexture;
-      if (remapTexture) {
-        shaderMaterial.defines.REPROJECT = true;
-      } else {
-        delete shaderMaterial.defines.REPROJECT;
-      }
-      if (flipY) {
-        shaderMaterial.defines.FLIP_Y = true;
-      } else {
-        delete shaderMaterial.defines.FLIP_Y;
-      }
-      if (is2D) {
-        shaderMaterial.defines.IS_2D = true;
-      } else {
-        delete shaderMaterial.defines.IS_2D;
-      }
       shaderMaterial.needsUpdate = true;
-      uniforms.shape.value.set(depth, targetHeight, targetWidth);
-      uniforms.nativeShape.value.set(dataShape[0], dataShape[1], dataShape[2]);
+      uniforms.shape.value.set(depth, height, width);
       uniforms.pointSize.value = pointSize;
       uniforms.cmap.value = colormap;
       uniforms.cOffset.value = cOffset;
@@ -193,8 +160,6 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       uniforms.valueRange.value.set(valueRange[0], valueRange[1]);
       uniforms.scalePoints.value = scalePoints;
       uniforms.scaleIntensity.value = scaleIntensity;
-      uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
-      uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
       uniforms.timeScale.value = depthRatio;
       uniforms.animateProg.value = animProg;
       uniforms.flatBounds.value.set(
@@ -206,17 +171,20 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       );
       uniforms.fillValue.value = fillValue?? NaN
       uniforms.maskValue.value = maskValue
+      uniforms.aspect.value = shape.x/shape.y;
     }
-  }, [volTexture, remapTexture, flipY, is2D, depthRatio, depth, targetHeight, targetWidth, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue, lonBounds, latBounds]);
-  const tsScale = dataShape[2]/500
+  }, [volTexture, depthRatio, depth, height, shape, width, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue]);
+  
   return (
-    <group scale={[1, 1, 1]}>
-      <group scale={[tsScale,tsScale,tsScale]}>
+    <group>
+      <group scale={[globalscale,globalscale,globalscale]}>
         <ColumnMeshes />
       </group>
-      {geometries.map((geom, idx) => (
-        <points key={idx} geometry={geom} material={shaderMaterial} frustumCulled={false}/>
-      ))}
+      <group scale={[1, (flipY && !remapTexture) ? -1 : 1, 1]}>
+        {geometries.map((geom, idx) => (
+          <points key={idx} geometry={geom} material={shaderMaterial} frustumCulled={false}/>
+        ))}
+      </group>
       <MappingCube/>
     </group>
 
