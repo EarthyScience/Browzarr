@@ -53,7 +53,6 @@ type StoreState = {
   idx4D: number | null;
   titleDescription: { title: string | null; description: string | null };
   textureArrayDepths: number[];
-  textureData: Uint8Array;
   clampExtremes: boolean;
   
   // setters
@@ -92,7 +91,6 @@ type StoreState = {
   setIdx4D: (idx4D: number | null) => void;
   setTitleDescription: (titleDescription: { title: string | null; description: string | null }) => void;
   setTextureArrayDepths: (textureArrayResolution: number[] ) => void;
-  setTextureData: (textureData: Uint8Array ) => void;
   setDPR: (DPR: number) => void;
   setScalingFactor: (scalingFactor: number | null) => void;
   setClampExtremes: (clampExtremes: boolean) => void;
@@ -133,7 +131,6 @@ const createStore = () => create<StoreState>((set, get) => ({
   idx4D: null,
   titleDescription: { title: null, description: null },
   textureArrayDepths: [1,1,1], 
-  textureData: new Uint8Array(1),
   DPR: 1,
   scalingFactor: null,
   clampExtremes: false,
@@ -193,7 +190,6 @@ const createStore = () => create<StoreState>((set, get) => ({
   setIdx4D: (idx4D) => set({ idx4D }),
   setTitleDescription: (titleDescription) => set({ titleDescription }),
   setTextureArrayDepths: (textureArrayDepths) => set({ textureArrayDepths }),
-  setTextureData: (textureData) => set({ textureData }),
   setDPR: (DPR) => set({ DPR }),
   setScalingFactor: (scalingFactor) => set({ scalingFactor }),
   setClampExtremes: (clampExtremes) => set({ clampExtremes }),
