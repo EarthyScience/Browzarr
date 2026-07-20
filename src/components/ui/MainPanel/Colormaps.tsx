@@ -7,7 +7,7 @@ import { useShallow } from 'zustand/shallow';
 import { MdOutlineSwapVert } from "react-icons/md";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button-enhanced";
-import Image from 'next/image';
+// Render gradients directly instead of using pre-generated icon images
 import {
   Tooltip,
   TooltipContent,
@@ -138,55 +138,39 @@ const Colormaps = () => {
             {hasMoreResults && ' — first 64 shown'}
           </div>
         )}
-        <div className="colormaps-grid" style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(1, minmax(0, 1fr))' }}>
-          {visibleMatches.map((val) => {
-            const hasIcon = colormaps.includes(val);
-            return hasIcon ? (
-              <Image
-                key={val}
-                className={`cmap ${flipColormap ? "flipped" : ""}`}
-                src={`./colormap_icons/${val}.webp`}
-                alt={val}
-                height={100}
-                width={256}
-                onMouseEnter={() => setHoveredCmap(val)}
-                onMouseLeave={() => setHoveredCmap(null)}
-                onClick={() => {
-                  setPrevColormapName(colormapName);
-                  setColormapName(val);
-                  setHoveredCmap(null);
-                }}
-              />
-            ) : (
-              <button
-                key={val}
-                className="cmap fallback-cmap"
-                type="button"
-                onClick={() => {
-                  setPrevColormapName(colormapName);
-                  setColormapName(val);
-                  setHoveredCmap(null);
-                }}
-                onMouseEnter={() => setHoveredCmap(val)}
-                onMouseLeave={() => setHoveredCmap(null)}
-                style={{
-                  width: '100%',
-                  height: '100px',
-                  borderRadius: '0.75rem',
-                  border: '1px solid var(--ui-border)',
-                  background: getColormapGradientCss(val),
-                  color: 'var(--ui-text-highlighted)',
-                  textAlign: 'left',
-                  padding: '0.75rem',
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  textShadow: '0 1px 3px rgba(0,0,0,0.45)',
-                }}
-              >
-                <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{val}</span>
-              </button>
-            )
-          })}
+        <div className="colormaps-grid" style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(1, minmax(0, 1fr))' }}>
+          {visibleMatches.map((val) => (
+            <button
+              key={val}
+              className={`cmap rendered-cmap ${flipColormap ? "flipped" : ""}`}
+              type="button"
+              onClick={() => {
+                setPrevColormapName(colormapName);
+                setColormapName(val);
+                setHoveredCmap(null);
+              }}
+              onMouseEnter={() => setHoveredCmap(val)}
+              onMouseLeave={() => setHoveredCmap(null)}
+              style={{
+                width: '100%',
+                height: '34px',
+                borderRadius: '0.5rem',
+                border: '1px solid var(--ui-border)',
+                background: getColormapGradientCss(val),
+                color: 'var(--ui-text-highlighted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0 0.75rem',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                textShadow: '0 1px 3px rgba(0,0,0,0.45)',
+                overflow: 'hidden',
+              }}
+            >
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{val}</span>
+            </button>
+          ))}
         </div>
         {filteredColormaps.length === 0 && (
           <div style={{ padding: '1rem 0', color: 'var(--ui-text-muted)' }}>
