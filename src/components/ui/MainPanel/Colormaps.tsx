@@ -5,8 +5,10 @@ import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradi
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
 import { MdOutlineSwapVert } from "react-icons/md";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button-enhanced";
+import { Input } from "@/components/ui/input";
 // Render gradients directly instead of using pre-generated icon images
 import {
   Tooltip,
@@ -66,7 +68,7 @@ const Colormaps = () => {
             <div>
               <Button
                 size="icon"
-                className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full'
+                className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full cmap-trigger'
                 style={{
                   backgroundImage: getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral'),
                   backgroundRepeat: 'no-repeat',
@@ -75,7 +77,6 @@ const Colormaps = () => {
                   transform: flipColormap ? "scaleX(-1)" : "",
                   width: "32px",
                   height: "32px",
-                  border: '1px solid var(--ui-border)'
                 }} /> 
             </div>
           </TooltipTrigger>
@@ -95,45 +96,46 @@ const Colormaps = () => {
         side={popoverSide}
         className="colormaps"
       >
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.6rem' }}>
-          <button
-            type="button"
-            onClick={() => setFlipColormap(!flipColormap)}
-            style={{ padding: '0.5rem 0.75rem', borderRadius: '0.55rem', border: '1px solid var(--ui-border)', background: 'var(--ui-bg-accented)', cursor: 'pointer' }}
-          >
-            {flipColormap ? 'Unflip' : 'Flip'}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setColormapName(prevColormapName);
-              setFlipColormap(false);
-              setHoveredCmap(null);
-            }}
-            style={{ padding: '0.5rem 0.75rem', borderRadius: '0.55rem', border: '1px solid var(--ui-border)', background: 'transparent', cursor: 'pointer' }}
-          >
-            Revert
-          </button>
-          <div style={{ marginLeft: 'auto', fontSize: '0.85rem', color: 'var(--ui-text-muted)' }}>
-            {colormapName}{flipColormap ? ' (flipped)' : ''}
+        <style>{`\n.colormaps .rendered-cmap, .colormaps .cmap-trigger, .colormaps .search-input {\n  border: 1px solid rgba(0,0,0,0.08);\n}\n@media (prefers-color-scheme: dark) {\n  .colormaps .rendered-cmap, .colormaps .cmap-trigger, .colormaps .search-input {\n    border: 1px solid rgba(255,255,255,0.12);\n  }\n}\n`}</style>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.6rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <ButtonGroup className="justify-start" style={{ gap: '0.5rem' }}>
+              <Button
+                type="button"
+                onClick={() => setFlipColormap(!flipColormap)}
+                size="sm"
+                variant="secondary"
+              >
+                {flipColormap ? 'Unflip' : 'Flip'}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setColormapName(prevColormapName);
+                  setFlipColormap(false);
+                  setHoveredCmap(null);
+                }}
+                size="sm"
+                variant="ghost"
+              >
+                Revert
+              </Button>
+            </ButtonGroup>
+
+            <div style={{ marginLeft: 'auto' }}>
+              <Button size="sm" variant="ghost" style={{ cursor: 'default' }}>{colormapName}{flipColormap ? ' (flipped)' : ''}</Button>
+            </div>
           </div>
-        </div>
-        <div className="colormap-search-bar" style={{ marginBottom: '0.9rem' }}>
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search colormap names"
-            className="search-input"
-            style={{
-              width: '100%',
-              padding: '0.85rem 1rem',
-              borderRadius: '0.75rem',
-              border: '1px solid var(--ui-border)',
-              background: 'var(--ui-bg-code)',
-              color: 'var(--ui-text-highlighted)',
-            }}
-          />
+
+          <div>
+            <Input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search colormap names"
+              className="search-input"
+            />
+          </div>
         </div>
         {searchQuery.trim() && (
           <div className="search-results-summary" style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--ui-text-muted)' }}>
@@ -141,7 +143,10 @@ const Colormaps = () => {
             {hasMoreResults && ' — first 64 shown'}
           </div>
         )}
-        <div className="colormaps-grid" style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(1, minmax(0, 1fr))' }}>
+
+        <div className="colormap-list-container" style={{ marginTop: '0.5rem' }}>
+          <div style={{ maxHeight: '40vh', overflowY: 'auto', paddingRight: '0.25rem' }}>
+            <div className="colormaps-grid" style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(1, minmax(0, 1fr))' }}>
           {visibleMatches.map((val) => (
             <button
               key={val}
@@ -158,7 +163,6 @@ const Colormaps = () => {
                 width: '100%',
                 height: '34px',
                 borderRadius: '0.5rem',
-                border: '1px solid var(--ui-border)',
                 backgroundImage: getColormapGradientCss(val),
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'center',
@@ -177,27 +181,14 @@ const Colormaps = () => {
               <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{val}</span>
             </button>
           ))}
+            </div>
         </div>
         {filteredColormaps.length === 0 && (
           <div style={{ padding: '1rem 0', color: 'var(--ui-text-muted)' }}>
             No colormaps found. Try a different search term.
           </div>
         )}
-        <MdOutlineSwapVert
-            className="flipper"
-            style={{
-              position: "absolute",
-              top:"-2rem",
-              right: "80%",
-              bottom: "90%",
-              height: "50px",
-              width: "50px",
-              cursor: "pointer",
-              transform: `${flipColormap ? "rotate(270deg)" : "rotate(90deg)"}`,
-              transition: ".25s",
-            }}
-            onClick={() => setFlipColormap(!flipColormap)}
-        />
+        </div>
       </PopoverContent>
       
       </Popover>
