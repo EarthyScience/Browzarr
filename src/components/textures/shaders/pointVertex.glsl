@@ -18,6 +18,7 @@ uniform vec2 vertBounds;
 uniform vec3 shape;
 uniform float fillValue;
 uniform int maskValue;
+uniform float aspect;
 
 #define PI 3.1415925
 
@@ -49,7 +50,7 @@ vec3 givePosition(vec3 texCoord) {
     int width = int(shape.z);
 
     float px = (texCoord.x - 0.5);
-    float py =  (texCoord.y - 0.5) / ASPECT_RATIO;
+    float py =  (texCoord.y - 0.5) / aspect;
     float pz = (texCoord.z - 0.5) * timeScale;
 
     return vec3(px, py, pz) * GLOBAL_SCALE;

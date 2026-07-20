@@ -136,7 +136,6 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       },
       defines: {
         GLOBAL_SCALE: globalscale*2,
-        ASPECT_RATIO: Math.abs(shape.x/shape.y), // It gets cast as INT without the math.abs for some reason
         ...(remapTexture ? { REPROJECT: true } : {}),
         ...(disablePointScale ? { NO_SCALE: true } : {})
       },
@@ -172,7 +171,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       );
       uniforms.fillValue.value = fillValue?? NaN
       uniforms.maskValue.value = maskValue
-      uniforms.aspect.value = shape.x/shape.x;
+      uniforms.aspect.value = shape.x/shape.y;
     }
   }, [volTexture, depthRatio, depth, height, shape, width, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue]);
   
