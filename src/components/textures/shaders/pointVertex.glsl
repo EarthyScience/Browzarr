@@ -72,6 +72,18 @@ float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so
     else return 0.0;
 }
 
+bool boundsCheck(vec3 loc) {
+    vec2 scaledXBounds = vec2(flatBounds.x, flatBounds.y) / 2. + 0.5; // Scale from [-1, 1] to [0, 1] to match UV/texCoords
+    vec2 scaledZBounds = vec2(flatBounds.z, flatBounds.w) / 2. + 0.5;
+    vec2 scaledYBounds = vec2(vertBounds.x, vertBounds.y) / 2. + 0.5;
+
+    bool xCheck = loc.x < scaledXBounds.x || loc.x > scaledXBounds.y;
+    bool yCheck = loc.y < scaledYBounds.x || loc.y > scaledYBounds.y;
+    bool zCheck = loc.z < scaledZBounds.x || loc.z > scaledZBounds.y;
+
+    return (xCheck || zCheck || yCheck);
+}
+
 void main() {
     vec3 texCoord = computeTexCoord(vertexIdx);
     if (maskValue != 0 ){ // If using a mask, quick check if vertex is masked out before doing additional rendering
@@ -82,6 +94,24 @@ void main() {
             return;
         }
     }
+    #ifdef REPROJECT
+        vec2 remap = texture(remapTexture, texCoord.xy).rg;
+        vec3 newCoord = vec3(remap, texCoord.z);
+        if (boundsCheck(newCoord)){
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            return;
+        }
+        vec3 position = givePosition(vec3(remap, texCoord.z));
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    #else
+        if (boundsCheck(texCoord)){
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            return;
+        }
+        vec3 position = givePosition(texCoord);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    #endif
+
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
 
@@ -92,41 +122,22 @@ void main() {
     localCoord = fract(localCoord);
     vValue = sample1(localCoord, textureIdx);
 
-    #ifdef REPROJECT
-        vec2 remap = texture(remapTexture, texCoord.xy).rg;
-        vec3 position = givePosition(vec3(remap, texCoord.z));
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    #else
-        vec3 position = givePosition(texCoord);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    #endif
-
+    bool fillCheck = abs(vValue - fillValue) < 0.005;
+    if (vValue < valueRange.x || vValue > valueRange.y || fillCheck){ //Hide points that are outside of value range
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+        return;
+    }
     #ifndef NO_SCALE
         float pointScale = pointSize/gl_Position.w;
         pointScale = scalePoints ? pointScale*pow(vValue,scaleIntensity) : pointScale;
         
         if (vValue == 1. || (pointScale*gl_Position.w < 0.75 && scalePoints)){ //Hide points that are invisible or get too small when scaled
             gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            return;
         }
         gl_PointSize =  pointScale;
     #else
         gl_PointSize =  1.;
     #endif
-    if (vValue < valueRange.x || vValue > valueRange.y){ //Hide points that are outside of value range
-        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-    }
-
-    vec2 scaledXBounds = vec2(flatBounds.x, flatBounds.y) / 2. + 0.5; // Scale from [-1, 1] to [0, 1] to match texCoords
-    vec2 scaledZBounds = vec2(flatBounds.z, flatBounds.w) / 2. + 0.5;
-    vec2 scaledYBounds = vec2(vertBounds.x, vertBounds.y) / 2. + 0.5;
-    
-    bool xCheck = texCoord.x < scaledXBounds.x || texCoord.x > scaledXBounds.y;
-    bool zCheck = texCoord.z < scaledZBounds.x || texCoord.z > scaledZBounds.y;
-    bool yCheck = texCoord.y < scaledYBounds.x || texCoord.y > scaledYBounds.y;
-    bool fillCheck = abs(vValue - fillValue) < 0.005;
-
-    if (xCheck || zCheck || yCheck || fillCheck){ //Hide points that are clipped
-        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-    }
 
 }
