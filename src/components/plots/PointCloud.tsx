@@ -96,8 +96,8 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
           indexData[writePtr++] = i;
         }
       }
-      const indexAttr = new THREE.Int32BufferAttribute(indexData, 1);
-      const maxPointsPerDraw = 2**31 - 1; // 32bit limit
+      const indexAttr = new THREE.Uint32BufferAttribute(indexData, 1);
+      const maxPointsPerDraw = 25e6;
       const list = [];
       for (let offset = 0; offset < subNumPoints; offset += maxPointsPerDraw) {
         const count = Math.min(maxPointsPerDraw, subNumPoints - offset);
