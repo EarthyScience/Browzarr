@@ -9,6 +9,14 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button-enhanced";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Search } from "lucide-react"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+
 // Render gradients directly instead of using pre-generated icon images
 import {
   Tooltip,
@@ -33,6 +41,10 @@ const Colormaps = () => {
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
   const [prevColormapName, setPrevColormapName] = useState<string>(colormapName || '');
+
+  const displayColormapName = (colormapName || '').length > 5
+    ? `${(colormapName || '').slice(0, 5)}…`
+    : (colormapName || '');
 
   const filteredColormaps = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -99,12 +111,13 @@ const Colormaps = () => {
         <style>{`\n.colormaps .rendered-cmap, .colormaps .cmap-trigger, .colormaps .search-input {\n  border: 1px solid rgba(0,0,0,0.08);\n}\n@media (prefers-color-scheme: dark) {\n  .colormaps .rendered-cmap, .colormaps .cmap-trigger, .colormaps .search-input {\n    border: 1px solid rgba(255,255,255,0.12);\n  }\n}\n`}</style>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.6rem' }}>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <ButtonGroup className="justify-start" style={{ gap: '0.5rem' }}>
+            <ButtonGroup className="justify-start gap-0.25">
               <Button
                 type="button"
                 onClick={() => setFlipColormap(!flipColormap)}
                 size="sm"
                 variant="secondary"
+                className="cursor-pointer"
               >
                 {flipColormap ? 'Unflip' : 'Flip'}
               </Button>
@@ -116,26 +129,40 @@ const Colormaps = () => {
                   setHoveredCmap(null);
                 }}
                 size="sm"
-                variant="ghost"
+                variant="secondary"
+                className="cursor-pointer"
               >
                 Revert
               </Button>
             </ButtonGroup>
 
             <div style={{ marginLeft: 'auto' }}>
-              <Button size="sm" variant="ghost" style={{ cursor: 'default' }}>{colormapName}{flipColormap ? ' (flipped)' : ''}</Button>
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" style={{ cursor: 'default' }}>
+                    {displayColormapName}
+                  </Button>
+                </TooltipTrigger>
+                {colormapName && colormapName.length > 5 && (
+                  <TooltipContent side="top" align="center">
+                    <span>{colormapName}</span>
+                  </TooltipContent>
+                )}
+              </Tooltip>
             </div>
           </div>
-
-          <div>
-            <Input
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search colormap names"
-              className="search-input"
-            />
-          </div>
+          <Separator/>
+          <InputGroup className="max-w-xs">
+            <InputGroupInput 
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search..."
+             />
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+          </InputGroup>
+        <Separator/>
         </div>
         {searchQuery.trim() && (
           <div className="search-results-summary" style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--ui-text-muted)' }}>
