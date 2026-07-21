@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss, colormapIndex } from '@/components/textures';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
@@ -10,7 +10,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Button } from "@/components/ui/button-enhanced";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Search, X } from "lucide-react"
+import { Search, X, Eye, EyeOff } from "lucide-react"
 import {
   InputGroup,
   InputGroupAddon,
@@ -36,6 +36,7 @@ const Colormaps = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [hoveredCmap, setHoveredCmap] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('None');
+  const [showNames, setShowNames] = useState(true);
   const { colormap, setColormap, colormapName, flipColormap, setColormapName, setFlipColormap } = useGlobalStore(
     useShallow((state) => ({
       setColormap: state.setColormap,
@@ -49,6 +50,7 @@ const Colormaps = () => {
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
   const [prevColormapName, setPrevColormapName] = useState<string>(colormapName || '');
+  const previousTextureRef = useRef(colormap);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -61,25 +63,31 @@ const Colormaps = () => {
   const filteredColormaps = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    // "None" + no query => original curated default list
-    if (selectedCategory === 'None' && !query) return colormaps;
+    // No search: category filtering works normally
+    if (!query) {
+      if (selectedCategory === 'None') {
+        return colormaps;
+      }
 
-    const scoped = selectedCategory === 'None'
-      ? colormapIndex
-      : colormapIndex.filter((entry) => entry.category === selectedCategory);
+      return colormapIndex
+        .filter((entry) => entry.category === selectedCategory)
+        .map((entry) => entry.name);
+    }
 
-    if (!query) return scoped.map((entry) => entry.name);
-
+    // Search ALWAYS uses the complete collection
     const nameMatches: string[] = [];
     const otherMatches: string[] = [];
 
-    for (const entry of scoped) {
+    for (const entry of colormapIndex) {
       const nameHit = entry.name.toLowerCase().includes(query);
       const categoryHit = entry.category?.toLowerCase().includes(query);
       const notesHit = entry.notes?.toLowerCase().includes(query);
 
-      if (nameHit) nameMatches.push(entry.name);
-      else if (categoryHit || notesHit) otherMatches.push(entry.name);
+      if (nameHit) {
+        nameMatches.push(entry.name);
+      } else if (categoryHit || notesHit) {
+        otherMatches.push(entry.name);
+      }
     }
 
     return [...nameMatches, ...otherMatches];
@@ -89,10 +97,14 @@ const Colormaps = () => {
   const hasMoreResults = filteredColormaps.length > visibleMatches.length;
 
   useEffect(() => {
+    previousTextureRef.current = colormap;
+  }, [colormap]);
+
+  useEffect(() => {
     setColormap(
-      GetColorMapTexture(colormap, (hoveredCmap || colormapName) === "Default" ? "Spectral" : (hoveredCmap || colormapName), 1, "#000000", 0, flipColormap)
+      GetColorMapTexture(previousTextureRef.current, (hoveredCmap || colormapName) === "Default" ? "Spectral" : (hoveredCmap || colormapName), 1, "#000000", 0, flipColormap)
     );
-  }, [colormapName, flipColormap, hoveredCmap]);
+  }, [colormapName, flipColormap, hoveredCmap, setColormap]);
 
   useEffect(() => {
       const handleResize = () => {
@@ -191,7 +203,27 @@ const Colormaps = () => {
               </SelectContent>
             </Select>
 
-            <div style={{ marginRight: 'auto' }}>
+            <div style={{ marginRight: 'auto', display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="cursor-pointer"
+                    onClick={() => setShowNames(prev => !prev)}
+                  >
+                    {showNames ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center">
+                  <span>{showNames ? "Hide names" : "Show names"}</span>
+                </TooltipContent>
+              </Tooltip>
+
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                   <Button
@@ -199,14 +231,14 @@ const Colormaps = () => {
                     variant="secondary"
                     className="border-b-1 border-amber-400"
                   >
-                    <span className="max-w-[230px] truncate">
+                    <span className="max-w-[188px] truncate">
                       {colormapName}
                     </span>
                   </Button>
                 </TooltipTrigger>
-                  <TooltipContent side="top" align="center">
-                    <span>{colormapName}</span>
-                  </TooltipContent>
+                <TooltipContent side="top" align="center">
+                  <span>{colormapName}</span>
+                </TooltipContent>
               </Tooltip>
             </div>
           </div>
@@ -237,7 +269,7 @@ const Colormaps = () => {
         {(searchQuery.trim() || selectedCategory !== 'None') && (
           <div className="search-results-summary" style={{ margin: '0 0.75rem 0.75rem', fontSize: '0.85rem', color: 'var(--ui-text-muted)' }}>
             Showing <strong>{visibleMatches.length}</strong> of <strong>{filteredColormaps.length}</strong>
-            {selectedCategory !== 'None' && <> in <strong>{selectedCategory}</strong></>}
+            {selectedCategory !== 'None' && !searchQuery.trim() && <> in <strong>{selectedCategory}</strong></>}
             {searchQuery.trim() && <> matching &quot;{searchQuery}&quot;</>}
             {hasMoreResults && ' — first 64 shown'}
           </div>
@@ -259,7 +291,7 @@ const Colormaps = () => {
               onMouseEnter={() => setHoveredCmap(val)}
               onMouseLeave={() => setHoveredCmap(null)}
               style={{
-                width: '100%',
+                width: '96%',
                 minWidth: 0,
                 height: '34px',
                 borderRadius: '0.5rem',
@@ -289,26 +321,28 @@ const Colormaps = () => {
                   pointerEvents: 'none',
                 }}
               />
-              <span
-                style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  padding: '0.05rem 0.75rem',
-                  marginLeft: 0,
-                  borderRadius: '0.38rem',
-                  background: 'rgba(244, 237, 237, 0.13)',
-                  backdropFilter: 'blur(8px) saturate(140%)',
-                  WebkitBackdropFilter: 'blur(8px) saturate(140%)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
-                  fontWeight: 400,
-                  color: 'rgba(241, 237, 237, 0.96)',
-                }}
-              >
-                {val}
-              </span>
+              {showNames && (
+                <span
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    padding: '0.05rem 0.75rem',
+                    marginLeft: 0,
+                    borderRadius: '0.38rem',
+                    background: 'rgba(244, 237, 237, 0.13)',
+                    backdropFilter: 'blur(8px) saturate(140%)',
+                    WebkitBackdropFilter: 'blur(8px) saturate(140%)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
+                    fontWeight: 400,
+                    color: 'rgba(241, 237, 237, 0.96)',
+                  }}
+                >
+                  {val}
+                </span>
+              )}
             </button>
           ))}
             </div>
