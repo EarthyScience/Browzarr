@@ -5,7 +5,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
-import { evaluate_cmap } from 'js-colormaps-es';
+import { evaluateColorMap } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
@@ -175,8 +175,8 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
         dimCoords = dimCoords.filter(val => val !== null)
         const tsID = `${dimCoords[0]}_${dimCoords[1]}`
         const tsObj = {
-          color:evaluate_cmap(getColorIdx()/10,"Paired"),
-          data:tempTS,
+          color: evaluateColorMap(getColorIdx() / 10, 'Paired'),
+          data: tempTS,
           normal,
           uv: tsUV,
         }

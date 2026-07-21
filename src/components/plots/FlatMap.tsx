@@ -10,7 +10,7 @@ import { vertShader } from '@/components/computation/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
 import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
-import { evaluate_cmap } from 'js-colormaps-es';
+import { evaluateColorMap } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { flatFrag } from '../textures/shaders';
 import { SquareMeshes } from './TransectMeshes';
@@ -153,8 +153,8 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
               dimCoords = dimCoords.filter(val => val !== null)
               const tsID = `${dimCoords[0]}_${dimCoords[1]}`
               const tsObj = {
-                color:evaluate_cmap(getColorIdx()/10,"Paired"),
-                data:tempTS,
+                color: evaluateColorMap(getColorIdx() / 10, 'Paired'),
+                data: tempTS,
                 normal,
                 uv: tsUV,
               }
