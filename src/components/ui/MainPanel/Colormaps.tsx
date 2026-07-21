@@ -35,7 +35,7 @@ const Colormaps = () => {
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [hoveredCmap, setHoveredCmap] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('None');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showNames, setShowNames] = useState(true);
   const { colormap, setColormap, colormapName, flipColormap, setColormapName, setFlipColormap } = useGlobalStore(
     useShallow((state) => ({
@@ -65,7 +65,7 @@ const Colormaps = () => {
 
     // No search: category filtering works normally
     if (!query) {
-      if (selectedCategory === 'None') {
+      if (!selectedCategory || selectedCategory === 'None') {
         return colormaps;
       }
 
@@ -190,7 +190,10 @@ const Colormaps = () => {
               </Button>
             </ButtonGroup>
 
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select
+              value={selectedCategory === 'None' ? '' : selectedCategory}
+              onValueChange={(value) => setSelectedCategory(value === 'None' ? '' : value)}
+            >
               <SelectTrigger size="sm" className="w-[110px] cursor-pointer">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
@@ -269,7 +272,7 @@ const Colormaps = () => {
         {(searchQuery.trim() || selectedCategory !== 'None') && (
           <div className="search-results-summary" style={{ margin: '0 0.75rem 0.75rem', fontSize: '0.85rem', color: 'var(--ui-text-muted)' }}>
             Showing <strong>{visibleMatches.length}</strong> of <strong>{filteredColormaps.length}</strong>
-            {selectedCategory !== 'None' && !searchQuery.trim() && <> in <strong>{selectedCategory}</strong></>}
+            {selectedCategory && selectedCategory !== 'None' && !searchQuery.trim() && <> in <strong>{selectedCategory}</strong></>}
             {searchQuery.trim() && <> matching &quot;{searchQuery}&quot;</>}
             {hasMoreResults && ' — first 64 shown'}
           </div>
