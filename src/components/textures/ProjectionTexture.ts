@@ -198,7 +198,7 @@ export function reproject(resolution: number = 256){
         targetWidth = width;
         targetHeight = height;
         xTicks = linspace(minX, maxX, targetWidth);
-        yTicks = linspace(minY, maxY, targetHeight);
+        yTicks = flipY ? linspace(maxY, minY, targetHeight) : linspace(minY, maxY, targetHeight);
         data = new Uint16Array(targetWidth * targetHeight * 4);
 
         const xDiff = Math.abs(maxX - minX);

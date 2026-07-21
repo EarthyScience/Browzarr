@@ -125,8 +125,10 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       const [thisUV, isValid] = sample2D(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
       if (flipY) thisUV.y = 1-thisUV.y
       if (isValid) newUV = thisUV;
+      else{
+        return;
+      }
     }
-
     const dimAxis = getUnitAxis(normal);
     if (dimAxis != lastNormal.current){
       setTimeSeries({}); //Clear timeseries if new axis
@@ -154,6 +156,7 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       color:evaluate_cmap(getColorIdx()/10,"Paired"),
       normal,
       uv,
+      newUV,
       data:tempTS
     }
     updateTimeSeries({ [tsID] : tsObj})
@@ -175,6 +178,21 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     }
     updateDimCoords({[tsID] : dimObj})
   }
+
+  // useEffect(()=>{
+  //   // This effect gets the reprojected UVs for all points after reprojecting
+    
+  //   if (remapTexture){
+  //     const {timeSeries} = useGlobalStore.getState()
+  //     for (const [tsID, tsObj] of Object.entries(timeSeries)){
+  //       const {uv} = tsObj
+  //       const [thisUV, _isValid] = sample2D(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Should always be valid as either was plotted from original CRS, or invalid are not added in new CRS
+  //       if (flipY) thisUV.y = 1-thisUV.y
+  //       const newTSObj = {...tsObj, newUV:thisUV}
+  //       updateTimeSeries({ [tsID] : newTSObj})
+  //     }
+  //   }
+  // },[remapTexture])
 
   const {geometry, position} = useMemo(() => {
     const xScale = (xRange[1] - xRange[0])/2

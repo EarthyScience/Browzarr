@@ -5,6 +5,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 import { useShallow } from 'zustand/shallow'
 import { deg2rad, parseUVCoords } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
+import { useAxisIndices } from '@/hooks'
 
 function remapToXYZ(uv: THREE.Vector2, latBounds: number[], lonBounds: number[]): THREE.Vector3 {
 	const u = 1 - uv.x;
@@ -44,6 +45,7 @@ function normalToPos(uv: THREE.Vector2, normal:THREE.Vector3, ratios:{depthRatio
 }
 
 function normalToScale(normal:THREE.Vector3, ratios:{depthRatio:number, aspectRatio:number}, steps:{xSteps:number, ySteps:number, zSteps:number}){
+	//This function scales meshes to match the observed size of the pixels
 	let scaleZ, scaleY, scaleX: number;
 	const {xSteps,ySteps,zSteps} = steps;
 	const {aspectRatio, depthRatio} = ratios;
@@ -143,17 +145,22 @@ export const ColumnMeshes = () => {
 	const {plotType} = usePlotStore(useShallow(state=>({
 		plotType: state.plotType
 	})))
-
+	const {xIdx, yIdx, zIdx} = useAxisIndices()
 	const meshes: THREE.Mesh[] = useMemo(()=>{
 		const meshes: THREE.Mesh[] = []
-		const dataLen = dataShape.length;
-		const xSteps = dataShape[dataLen-1];
-		const ySteps = dataShape[dataLen-2];
-		const zSteps = dataShape[dataLen-3];
-		const aspectRatio = dataShape[dataLen-2]/dataShape[dataLen-1]
-		const depthRatio = dataShape[dataLen-3]/dataShape[dataLen-1]
+		const xSteps = remapTexture 
+						? remapTexture.image.width 
+						: dataShape[xIdx];
+		const ySteps = remapTexture
+						? remapTexture.image.height 
+						: dataShape[yIdx];
+		const zSteps = dataShape[zIdx];
+		const aspectRatio = ySteps/xSteps; // This is not aspect ratio
+		const depthRatio = zSteps/xSteps;
+
 		for (const [tsID, tsObj] of Object.entries(timeSeries)){
-			const {normal, uv, color} = tsObj
+			const {normal, uv, newUV, color} = tsObj
+			const thisUV = remapTexture ? uv : newUV?? uv;
 			const position = normalToPos(uv, normal, {aspectRatio,depthRatio})
 			const meshScale = normalToScale(normal, {aspectRatio, depthRatio}, {xSteps, ySteps, zSteps})
 			const thisColor = color.map((c: number) => Math.pow((c/255), 2.2)) // Gamma correct the color
@@ -166,7 +173,7 @@ export const ColumnMeshes = () => {
 		}
 		return meshes
 
-	},[timeSeries, plotType])
+	},[timeSeries, plotType, remapTexture])
 	useEffect(() => {
 		return () => {
 			meshes.forEach(mesh => {
