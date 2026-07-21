@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useEffect, useState, useMemo} from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss, colormapIndex } from '@/components/textures';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
@@ -16,6 +16,13 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group"
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 // Render gradients directly instead of using pre-generated icon images
 import {
@@ -28,6 +35,7 @@ const Colormaps = () => {
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [hoveredCmap, setHoveredCmap] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('None');
   const { colormap, setColormap, colormapName, flipColormap, setColormapName, setFlipColormap } = useGlobalStore(
     useShallow((state) => ({
       setColormap: state.setColormap,
@@ -42,18 +50,30 @@ const Colormaps = () => {
 
   const [prevColormapName, setPrevColormapName] = useState<string>(colormapName || '');
 
-  const displayColormapName = (colormapName || '').length > 5
-    ? `${(colormapName || '').slice(0, 5)}…`
-    : (colormapName || '');
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    colormapIndex.forEach((entry) => {
+      if (entry.category) set.add(entry.category);
+    });
+    return ['None', ...Array.from(set).sort()];
+  }, []);
 
   const filteredColormaps = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return colormaps;
+
+    // "None" + no query => original curated default list
+    if (selectedCategory === 'None' && !query) return colormaps;
+
+    const scoped = selectedCategory === 'None'
+      ? colormapIndex
+      : colormapIndex.filter((entry) => entry.category === selectedCategory);
+
+    if (!query) return scoped.map((entry) => entry.name);
 
     const nameMatches: string[] = [];
     const otherMatches: string[] = [];
 
-    for (const entry of colormapIndex) {
+    for (const entry of scoped) {
       const nameHit = entry.name.toLowerCase().includes(query);
       const categoryHit = entry.category?.toLowerCase().includes(query);
       const notesHit = entry.notes?.toLowerCase().includes(query);
@@ -63,7 +83,7 @@ const Colormaps = () => {
     }
 
     return [...nameMatches, ...otherMatches];
-  }, [searchQuery]);
+  }, [searchQuery, selectedCategory]);
 
   const visibleMatches = useMemo(() => filteredColormaps.slice(0, 64), [filteredColormaps]);
   const hasMoreResults = filteredColormaps.length > visibleMatches.length;
@@ -127,6 +147,7 @@ const Colormaps = () => {
           overscrollBehavior: 'contain',
           padding: 0,
           boxSizing: 'border-box',
+          maxHeight: popoverSide === 'top' ? '80vh' : undefined,
         }}
       >
         <style>{`\n.colormaps {\n  scrollbar-width: none;\n}\n.colormaps::-webkit-scrollbar {\n  display: none;\n}\n.colormaps .rendered-cmap, .colormaps .cmap-trigger, .colormaps .search-input {\n  border: 1px solid rgba(0,0,0,0.08);\n}\n@media (prefers-color-scheme: dark) {\n  .colormaps .rendered-cmap, .colormaps .cmap-trigger, .colormaps .search-input {\n    border: 1px solid rgba(255,255,255,0.12);\n  }\n}\n`}</style>
@@ -157,21 +178,35 @@ const Colormaps = () => {
               </Button>
             </ButtonGroup>
 
-            <div style={{ marginLeft: 'auto' }}>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger size="sm" className="w-[110px] cursor-pointer">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat} className="cursor-pointer">
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div style={{ marginRight: 'auto' }}>
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
+                    className="border-b-1 border-amber-400"
                   >
-                    {displayColormapName}
+                    <span className="max-w-[230px] truncate">
+                      {colormapName}
+                    </span>
                   </Button>
                 </TooltipTrigger>
-                {colormapName && colormapName.length > 5 && (
                   <TooltipContent side="top" align="center">
                     <span>{colormapName}</span>
                   </TooltipContent>
-                )}
               </Tooltip>
             </div>
           </div>
@@ -180,7 +215,7 @@ const Colormaps = () => {
             <InputGroupInput 
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search by name or category..."
+              placeholder="Search..."
             />
             <InputGroupAddon>
               <Search />
@@ -197,16 +232,16 @@ const Colormaps = () => {
           </Button>
         ) : null}
         </InputGroup>
+        <Separator/>
         </div>
-        {searchQuery.trim() && (
+        {(searchQuery.trim() || selectedCategory !== 'None') && (
           <div className="search-results-summary" style={{ margin: '0 0.75rem 0.75rem', fontSize: '0.85rem', color: 'var(--ui-text-muted)' }}>
-            Showing <strong>{visibleMatches.length}</strong> of <strong>{filteredColormaps.length}</strong> matches for{' "'}{searchQuery}{'"'}
+            Showing <strong>{visibleMatches.length}</strong> of <strong>{filteredColormaps.length}</strong>
+            {selectedCategory !== 'None' && <> in <strong>{selectedCategory}</strong></>}
+            {searchQuery.trim() && <> matching &quot;{searchQuery}&quot;</>}
             {hasMoreResults && ' — first 64 shown'}
           </div>
-          
-        )
-        }
-        <Separator/>
+        )}
 
         <div className="colormap-list-container" style={{ marginTop: '0.5rem', width: '100%', padding: '0 0.75rem 0.75rem' }}>
           <div style={{ maxHeight: 'min(50vh, 360px)', overflowY: 'auto', paddingRight: 0, width: '100%', boxSizing: 'border-box' }}>
