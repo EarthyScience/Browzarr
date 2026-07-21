@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useEffect, useState, useMemo} from 'react'
-import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss } from '@/components/textures';
+import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss, colormapIndex } from '@/components/textures';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
 import { MdOutlineSwapVert } from "react-icons/md";
@@ -49,7 +49,20 @@ const Colormaps = () => {
   const filteredColormaps = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return colormaps;
-    return availableColorMapNames.filter((name) => name.toLowerCase().includes(query));
+
+    const nameMatches: string[] = [];
+    const otherMatches: string[] = [];
+
+    for (const entry of colormapIndex) {
+      const nameHit = entry.name.toLowerCase().includes(query);
+      const categoryHit = entry.category?.toLowerCase().includes(query);
+      const notesHit = entry.notes?.toLowerCase().includes(query);
+
+      if (nameHit) nameMatches.push(entry.name);
+      else if (categoryHit || notesHit) otherMatches.push(entry.name);
+    }
+
+    return [...nameMatches, ...otherMatches];
   }, [searchQuery]);
 
   const visibleMatches = useMemo(() => filteredColormaps.slice(0, 64), [filteredColormaps]);
@@ -167,7 +180,7 @@ const Colormaps = () => {
             <InputGroupInput 
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search..."
+              placeholder="Search by name or category..."
             />
             <InputGroupAddon>
               <Search />
@@ -184,14 +197,16 @@ const Colormaps = () => {
           </Button>
         ) : null}
         </InputGroup>
-        <Separator/>
         </div>
         {searchQuery.trim() && (
           <div className="search-results-summary" style={{ margin: '0 0.75rem 0.75rem', fontSize: '0.85rem', color: 'var(--ui-text-muted)' }}>
             Showing <strong>{visibleMatches.length}</strong> of <strong>{filteredColormaps.length}</strong> matches for{' "'}{searchQuery}{'"'}
             {hasMoreResults && ' — first 64 shown'}
           </div>
-        )}
+          
+        )
+        }
+        <Separator/>
 
         <div className="colormap-list-container" style={{ marginTop: '0.5rem', width: '100%', padding: '0 0.75rem 0.75rem' }}>
           <div style={{ maxHeight: 'min(50vh, 360px)', overflowY: 'auto', paddingRight: 0, width: '100%', boxSizing: 'border-box' }}>

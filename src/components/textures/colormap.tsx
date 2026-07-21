@@ -2,7 +2,24 @@ import * as THREE from 'three';
 import { colorschemes, get, findColorScheme } from 'color-schemes-js';
 
 export const colormaps = ['magma', 'inferno', 'plasma', 'viridis', 'cividis', 'twilight', 'twilight_shifted', 'turbo', 'Blues', 'BrBG', 'BuGn', 'BuPu', 'CMRmap', 'GnBu', 'Greens', 'Greys', 'OrRd', 'Oranges', 'PRGn', 'PiYG', 'PuBu', 'PuBuGn', 'PuOr', 'PuRd', 'Purples', 'RdBu', 'RdGy', 'RdPu', 'RdYlBu', 'RdYlGn', 'Reds', 'Spectral', 'Wistia', 'YlGn', 'YlGnBu', 'YlOrBr', 'YlOrRd', 'afmhot', 'autumn', 'binary', 'bone', 'brg', 'bwr', 'cool', 'coolwarm', 'copper', 'cubehelix', 'flag', 'gist_earth', 'gist_gray', 'gist_heat', 'gist_ncar', 'gist_rainbow', 'gist_stern', 'gist_yarg', 'gnuplot', 'gnuplot2', 'gray', 'hot', 'hsv', 'jet', 'nipy_spectral', 'ocean', 'pink', 'prism', 'rainbow', 'seismic', 'spring', 'summer', 'terrain', 'winter', 'Accent', 'Dark2', 'Paired', 'Pastel1', 'Pastel2', 'Set1', 'Set2', 'Set3', 'tab10', 'tab20', 'tab20b', 'tab20c'];
+
 export const availableColorMapNames = Object.keys(colorschemes).sort();
+
+export type ColormapEntry = {
+  name: string;
+  category?: string;
+  notes?: string;
+};
+
+// Single searchable index, built once at module load from the color-schemes-js data
+export const colormapIndex: ColormapEntry[] = availableColorMapNames.map((name) => {
+  const scheme = colorschemes[name];
+  return {
+    name,
+    category: scheme.category,
+    notes: scheme.notes,
+  };
+});
 
 const legacySchemeMap: Record<string, string> = {
   Spectral: 'Spectral_11',

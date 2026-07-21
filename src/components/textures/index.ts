@@ -1,4 +1,4 @@
-import { GetColorMapTexture, colormaps, evaluateColorMap, availableColorMapNames, getColormapGradientCss } from './colormap';
+import { GetColorMapTexture, colormaps, evaluateColorMap, availableColorMapNames, getColormapGradientCss, colormapIndex } from './colormap';
 import {ArrayToTexture, CreateTexture}from './TextureMakers'
 
 export {
@@ -7,6 +7,7 @@ export {
     evaluateColorMap,
     availableColorMapNames,
     getColormapGradientCss,
+    colormapIndex,
     ArrayToTexture,
     CreateTexture
 }
