@@ -51,6 +51,9 @@ const Colormaps = () => {
 
   const [prevColormapName, setPrevColormapName] = useState<string>(colormapName || '');
   const previousTextureRef = useRef(colormap);
+  const colormapNameRef = useRef(colormapName);
+  const flipColormapRef = useRef(flipColormap);
+  const lastHoveredCmap = useRef<string | null>(null);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -96,15 +99,44 @@ const Colormaps = () => {
   const visibleMatches = useMemo(() => filteredColormaps.slice(0, 64), [filteredColormaps]);
   const hasMoreResults = filteredColormaps.length > visibleMatches.length;
 
+  // Keep refs in sync with store state changes
+  useEffect(() => {
+    colormapNameRef.current = colormapName;
+    flipColormapRef.current = flipColormap;
+  }, [colormapName, flipColormap]);
+
   useEffect(() => {
     previousTextureRef.current = colormap;
   }, [colormap]);
 
   useEffect(() => {
-    setColormap(
-      GetColorMapTexture(previousTextureRef.current, (hoveredCmap || colormapName) === "Default" ? "Spectral" : (hoveredCmap || colormapName), 1, "#000000", 0, flipColormap)
-    );
-  }, [colormapName, flipColormap, hoveredCmap, setColormap]);
+    if (hoveredCmap !== null) {
+      // Show hovered colormap preview
+      setColormap(
+        GetColorMapTexture(
+          previousTextureRef.current,
+          hoveredCmap === "Default" ? "Spectral" : hoveredCmap,
+          1,
+          "#000000",
+          0,
+          flipColormapRef.current
+        )
+      );
+    } else if (lastHoveredCmap.current !== null) {
+      // Mouse left hover: revert to selected colormap
+      setColormap(
+        GetColorMapTexture(
+          previousTextureRef.current,
+          colormapNameRef.current === "Default" ? "Spectral" : colormapNameRef.current,
+          1,
+          "#000000",
+          0,
+          flipColormapRef.current
+        )
+      );
+    }
+    lastHoveredCmap.current = hoveredCmap;
+  }, [hoveredCmap, setColormap]);
 
   useEffect(() => {
       const handleResize = () => {

@@ -36,24 +36,43 @@ const legacySchemeMap: Record<string, string> = {
   winter: 'Winter',
 };
 
+const resolutionCache = new Map<string, string>();
 export function resolveColorSchemeName(name: string): string {
   const trimmed = name?.trim();
   if (!trimmed) return 'viridis';
-  if (legacySchemeMap[trimmed]) return legacySchemeMap[trimmed];
-  if (colorschemes[trimmed]) return trimmed;
-  const exact = Object.keys(colorschemes).find((key) => key.toLowerCase() === trimmed.toLowerCase());
-  if (exact) return exact;
-  const results = findColorScheme(trimmed);
-  if (results.length > 0) {
-    return results.sort((a, b) => b.scheme.length - a.scheme.length)[0].name;
+
+  const cached = resolutionCache.get(trimmed);
+  if (cached) return cached;
+
+  let resolved = 'viridis';
+  if (legacySchemeMap[trimmed]) {
+    resolved = legacySchemeMap[trimmed];
+  } else if (colorschemes[trimmed]) {
+    resolved = trimmed;
+  } else {
+    const exact = Object.keys(colorschemes).find((key) => key.toLowerCase() === trimmed.toLowerCase());
+    if (exact) {
+      resolved = exact;
+    } else {
+      const results = findColorScheme(trimmed);
+      if (results.length > 0) {
+        resolved = results.sort((a, b) => b.scheme.length - a.scheme.length)[0].name;
+      }
+    }
   }
-  return 'viridis';
+
+  resolutionCache.set(trimmed, resolved);
+  return resolved;
 }
 
 export function evaluateColorMap(value: number, palette: string, reverse = false): [number, number, number] {
   const schemeName = resolveColorSchemeName(palette);
-  const scheme = colorschemes[schemeName];
-  const color = get(scheme, reverse ? 1 - value : value);
+  const scheme = colorschemes[schemeName] || colorschemes['viridis'];
+  if (!scheme) {
+    return [0, 0, 0];
+  }
+  const t = Math.max(0, Math.min(1, reverse ? 1 - value : value));
+  const color = get(scheme, t);
   const rgb = color.toRgb255();
   return [rgb.r, rgb.g, rgb.b];
 }
