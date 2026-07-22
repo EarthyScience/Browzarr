@@ -119,6 +119,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       if (infoRef.current && e.uv) {
         let {uv} = e;
         if (!uv) return;
+        setLoc([e.clientX, e.clientY]);
         eventRef.current = e;
         if (remapTexture){
           const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
@@ -126,13 +127,11 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
           if (isValid) uv = thisUV;
           else{
             val.current = NaN;
-            setLoc([e.clientX, e.clientY]);
             coords.current = [thisUV.y,thisUV.x]
             return;
           }
         }
-        setLoc([e.clientX, e.clientY]);
-
+      
         const { x, y } = uv;
         const zSliceIdx = dimSlices.length > 2 ? 2 : 1;
         const ySliceIdx = dimSlices.length > 2 ? 1 : 0;
