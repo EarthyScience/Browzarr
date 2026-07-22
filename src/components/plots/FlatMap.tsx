@@ -9,7 +9,8 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { vertShader } from '@/components/computation/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
-import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad, sample2D } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
+import { sampleCRS } from '../textures/ProjectionTexture';
 import { evaluateColorMap } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { flatFrag } from '../textures/shaders';
@@ -120,7 +121,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         if (!uv) return;
         eventRef.current = e;
         if (remapTexture){
-          const [thisUV, isValid] = sample2D(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
+          const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
           if (flipY) thisUV.y = 1-thisUV.y
           if (isValid) uv = thisUV;
           else{
@@ -155,7 +156,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       let newUV: THREE.Vector2 | undefined;
       const normal = new THREE.Vector3(0,0,1)
       if (remapTexture){
-          const [thisUV, isValid] = sample2D(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
+          const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
           if (flipY) thisUV.y = 1-thisUV.y
           if (isValid) newUV = thisUV;
           else{

@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray, sample2D } from '@/utils/HelperFuncs';
+import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
+import { sampleCRS } from '../textures/ProjectionTexture';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
@@ -103,13 +104,20 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     const uv = event.uv!;
     const normal = event.normal!;
     let newUV: THREE.Vector2 | undefined;
-    if (remapTexture && Math.abs(normal.z) > 0.5){ // Get new UV if reprojected and along z Axis
-      const [thisUV, isValid] = sample2D(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
-      if (flipY) thisUV.y = 1-thisUV.y
-      if (isValid) newUV = thisUV;
-      else{
-        return;
+    if (remapTexture){ // Get new UV if reprojected and along z Axis
+      if (Math.abs(normal.z) > 0.5){ // If its along the Z just grab the full timeseries at new UV
+        const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
+        if (flipY) thisUV.y = 1-thisUV.y
+        if (isValid) newUV = thisUV;
+        else{
+          return;
+        } 
+      } else if (Math.abs(normal.x) > 0.5){ // If along Either X or y, we need a new function to resample the timeseries into the new CRS
+          // For later
+      } else {
+        //for later
       }
+      
     }
     const dimAxis = getUnitAxis(normal);
     if (dimAxis != lastNormal.current){
@@ -147,17 +155,18 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       first:{
         name:thisDimNames[0],
         loc:dimCoords[0] ?? 0,
-        units:thisDimUnits[0]
+        units:thisDimUnits[0] ?? ''
       },
       second:{
         name:thisDimNames[1],
         loc:dimCoords[1] ?? 0,
-        units:thisDimUnits[1]
+        units:thisDimUnits[1] ?? ''
       },
       plot:{
-        units:axisDimUnits[2-plotDim[0]]
+        units:axisDimUnits[2-plotDim[0]] ?? ''
       }
     }
+    console.log(dimObj)
     updateDimCoords({[tsID] : dimObj})
   }
 

@@ -19,12 +19,12 @@ interface pointInfo{
 const MIN_HEIGHT = 10;
 
 function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
-  const {plotDim, dimArrays, dimNames, dimUnits, timeSeries} = useGlobalStore(
+  const {plotDim, axisDimArrays, axisDimNames, axisDimUnits, timeSeries} = useGlobalStore(
     useShallow(state=>({
       plotDim:state.plotDim,
-      dimArrays:state.dimArrays,
-      dimNames:state.dimNames,
-      dimUnits:state.dimUnits,
+      axisDimArrays:state.axisDimArrays,
+      axisDimNames:state.axisDimNames,
+      axisDimUnits:state.axisDimUnits,
       timeSeries:state.timeSeries,
     }))
   );
@@ -33,7 +33,7 @@ function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
   if (Object.entries(pointID).length > 0 && Object.entries(timeSeries).length > 0){
     const [tsID, idx] = pointID;
     pointY = timeSeries[tsID]['data'][idx];
-    pointX = dimArrays[plotDim][idx];
+    pointX = axisDimArrays[plotDim][idx];
   }
 
   const [divX,divY] = pointLoc;
@@ -59,7 +59,7 @@ function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
         }}
       >
         {`${pointY.toFixed(2)}${plotUnits??''}`}<br/>
-        {`${dimNames[plotDim]}: ${parseLoc(pointX,dimUnits[plotDim])}       
+        {`${axisDimNames[plotDim]}: ${parseLoc(pointX,axisDimUnits[plotDim])}       
         `}
       </div>}
     </>

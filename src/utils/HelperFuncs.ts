@@ -438,21 +438,3 @@ export function calculateStrides(
   })
   return newStrides
 }
-
-export function sample2D(tex: THREE.DataTexture, u:number, v:number): [THREE.Vector2, boolean] {
-  // Samples an array given UVs
-  const { data, width, height } = tex.image;
-  if (!data) return [new THREE.Vector2(u, v), true];
-
-  const x = Math.floor(u * (width - 1));
-  const y = Math.floor(v * (height - 1));
-
-  const idx = (y * width + x) * 4; // RGBA
-  const newU = THREE.DataUtils.fromHalfFloat(data[idx + 0])
-  const newV = THREE.DataUtils.fromHalfFloat(data[idx + 1])
-  const valid = THREE.DataUtils.fromHalfFloat(data[idx + 2])
-  return [
-    new THREE.Vector2(newU,newV),
-    valid > 0.5
-  ];
-}

@@ -41,10 +41,10 @@ export function FixedTicks({
   const { camera, size } = useThree()
   const initSize = useRef(size)
   const [bounds, setBounds] = useState<ViewportBounds>({ left: 0, right: 0, top: 0, bottom: 0 })
-  const {dimCoords, dimArrays, plotDim, valueScales} = useGlobalStore(
+  const {dimCoords, axisDimArrays, plotDim, valueScales} = useGlobalStore(
     useShallow(state=>({
       dimCoords:state.dimCoords,
-      dimArrays:state.dimArrays,
+      axisDimArrays:state.axisDimArrays,
       plotDim:state.plotDim,
       valueScales:state.valueScales
     })))
@@ -57,11 +57,11 @@ export function FixedTicks({
 
   const dimSlices = useMemo(() => {
     return [
-      dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
-      dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
-      dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
+      axisDimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
+      axisDimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
+      axisDimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
     ]
-  }, [dimArrays, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
+  }, [axisDimArrays, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
   const xDimArray = useMemo(() => dimSlices[plotDim], [dimSlices, plotDim])
   const xTickCount = 10;
   const yTickCount = 8;
