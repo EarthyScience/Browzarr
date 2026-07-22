@@ -206,44 +206,47 @@ export function copyChunkToArray(
 	fullChunkDim: number[],
 	sliceStart: number[],
 ): void {
-	const [z, y, x] = chunkGridPos;
-	const [chunkDimZ, chunkDimY, chunkDimX] = fullChunkDim;
-	const [sliceStartZ, sliceStartY, sliceStartX] = sliceStart;
-	const [destShapeZ, destShapeY, destShapeX] = destShape;
+	// ---- This is a vibecoded function and I don't really know how it works. 
+	const ndim = chunkShape.length;
+	const start = new Array<number>(ndim);
+	const end = new Array<number>(ndim);
+	const destBase = new Array<number>(ndim); // abs offset - sliceStart, per dim
 
-	const absZ = z * chunkDimZ;
-	const absY = y * chunkDimY;
-	const absX = x * chunkDimX;
+	for (let i = 0; i < ndim; i++) {
+		const abs = chunkGridPos[i] * fullChunkDim[i];
+		start[i] = Math.max(0, sliceStart[i] - abs);
+		end[i] = Math.min(chunkShape[i], sliceStart[i] + destShape[i] - abs);
+		destBase[i] = abs - sliceStart[i];
+	}
 
-	const czStart = Math.max(0, sliceStartZ - absZ);
-	const czEnd = Math.min(chunkShape[0], sliceStartZ + destShapeZ - absZ);
-	const cyStart = Math.max(0, sliceStartY - absY);
-	const cyEnd = Math.min(chunkShape[1], sliceStartY + destShapeY - absY);
-	const cxStart = Math.max(0, sliceStartX - absX);
-	const cxEnd = Math.min(chunkShape[2], sliceStartX + destShapeX - absX);
+	const last = ndim - 1;
+	const contiguous = chunkStride[last] === 1 && destStride[last] === 1;
 
-	for (let cz = czStart; cz < czEnd; cz++) {
-		for (let cy = cyStart; cy < cyEnd; cy++) {
-			const sourceRowOffset = cz * chunkStride[0] + cy * chunkStride[1];
-			const destZ = (absZ + cz) - sliceStartZ;
-			const destY = (absY + cy) - sliceStartY;
-			const destXStart = (absX + cxStart) - sliceStartX;
-			const destRowOffset = destZ * destStride[0] + destY * destStride[1] + destXStart;
-
-			if (chunkStride[2] === 1) {
-				const rowData = chunkData.subarray(
-					sourceRowOffset + cxStart,
-					sourceRowOffset + cxEnd,
+	function walk(dim: number, chunkOffset: number, destOffset: number): void {
+		if (dim === last) {
+			const s = start[dim], e = end[dim];
+			if (contiguous) {
+				destArray.set(
+					chunkData.subarray(chunkOffset + s, chunkOffset + e),
+					destOffset + s + destBase[dim],
 				);
-				destArray.set(rowData, destRowOffset);
 			} else {
-				for (let cx = cxStart; cx < cxEnd; cx++) {
-					const destX = (absX + cx) - sliceStartX;
-					destArray[destZ * destStride[0] + destY * destStride[1] + destX] = chunkData[sourceRowOffset + cx * chunkStride[2]];
+				for (let c = s; c < e; c++) {
+					destArray[destOffset + (c + destBase[dim]) * destStride[dim]] =
+						chunkData[chunkOffset + c * chunkStride[dim]];
 				}
 			}
+			return;
+		}
+		for (let c = start[dim]; c < end[dim]; c++) {
+			walk(
+				dim + 1,
+				chunkOffset + c * chunkStride[dim],
+				destOffset + (c + destBase[dim]) * destStride[dim],
+			);
 		}
 	}
+	walk(0, 0, 0);
 }
 
 export function copyChunkToArray2D(
