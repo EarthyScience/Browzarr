@@ -9,7 +9,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { vertShader } from '@/components/computation/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
-import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad, getLogEps } from '@/utils/HelperFuncs';
 import { sampleCRS } from '../textures/ProjectionTexture';
 import { evaluateColorMap, colorScaleToId } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
@@ -40,7 +40,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     const textures = usePaddedTextures(propTextures);
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, colormap, dimArrays, dimNames, dimUnits, 
-      isFlat, dataShape, textureArrayDepths, strides, remapTexture, shape,
+      isFlat, dataShape, textureArrayDepths, strides, remapTexture, shape, valueScales,
       setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(state => ({
       flipY: state.flipY, colormap: state.colormap, 
       dimArrays: state.dimArrays, strides: state.strides, 
@@ -48,6 +48,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       isFlat: state.isFlat, dataShape: state.dataShape,
       textureArrayDepths: state.textureArrayDepths,
       remapTexture:state.remapTexture, shape: state.shape,
+      valueScales: state.valueScales,
       setPlotDim:state.setPlotDim, 
       updateDimCoords:state.updateDimCoords,
       updateTimeSeries: state.updateTimeSeries
@@ -238,6 +239,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
               fillValue: {value: fillValue?? NaN},
               colorScale: {value: colorScaleToId(colorScale)},
               logConstant: {value: logConstant},
+              logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
               lowclip: {value: parseColorToVec4(lowclip)},
               highclip: {value: parseColorToVec4(highclip)},
               useLowclip: {value: useLowclip},
@@ -268,12 +270,13 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         uniforms.fillValue.value = fillValue?? NaN;
         uniforms.colorScale.value = colorScaleToId(colorScale);
         uniforms.logConstant.value = logConstant;
+        uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
         uniforms.lowclip.value = parseColorToVec4(lowclip);
         uniforms.highclip.value = parseColorToVec4(highclip);
         uniforms.useLowclip.value = useLowclip;
         uniforms.useHighclip.value = useHighclip;
       }
-    },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip])
+    },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange, colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip])
     useEffect(()=>{
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})

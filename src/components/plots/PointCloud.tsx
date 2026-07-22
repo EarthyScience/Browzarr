@@ -4,7 +4,7 @@ import { pointFrag, pointVert } from '@/components/textures/shaders'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
-import { deg2rad } from '@/utils/HelperFuncs';
+import { deg2rad, getLogEps } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from './UVCube';
 import { ColumnMeshes } from './TransectMeshes';
@@ -55,12 +55,13 @@ const MappingCube = () =>{
 export const PointCloud = ({textures} : {textures:PCProps} )=>{
     const { colormap } = textures;
     const volTexture = usePaddedTextures(textures.texture);
-    const { flipY, dataShape, remapTexture, textureArrayDepths, shape } = useGlobalStore(useShallow(state=>({
+    const { flipY, dataShape, remapTexture, textureArrayDepths, shape, valueScales } = useGlobalStore(useShallow(state=>({
       flipY: state.flipY,
       dataShape: state.dataShape,
       remapTexture: state.remapTexture,
       textureArrayDepths: state.textureArrayDepths,
-      shape: state.shape
+      shape: state.shape,
+      valueScales: state.valueScales,
     })))
     const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, 
       timeScale, xRange, yRange, zRange, fillValue,
@@ -154,6 +155,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         fillValue: {value: fillValue?? NaN},
         colorScale: {value: colorScaleToId(colorScale)},
         logConstant: {value: logConstant},
+        logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
         lowclip: {value: parseColorToVec4(lowclip)},
         highclip: {value: parseColorToVec4(highclip)},
         useLowclip: {value: useLowclip},
@@ -199,12 +201,13 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       uniforms.aspect.value = shape.x/shape.y;
       uniforms.colorScale.value = colorScaleToId(colorScale);
       uniforms.logConstant.value = logConstant;
+      uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
       uniforms.lowclip.value = parseColorToVec4(lowclip);
       uniforms.highclip.value = parseColorToVec4(highclip);
       uniforms.useLowclip.value = useLowclip;
       uniforms.useHighclip.value = useHighclip;
     }
-  }, [volTexture, depthRatio, depth, height, shape, width, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip]);
+  }, [volTexture, depthRatio, depth, height, shape, width, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue, colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip]);
   
   return (
     <group>

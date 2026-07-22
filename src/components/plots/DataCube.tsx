@@ -6,7 +6,7 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { colorScaleToId } from '@/components/textures';
 import { useShallow } from 'zustand/shallow';
 import { invalidate, useFrame } from '@react-three/fiber';
-import { deg2rad } from '@/utils/HelperFuncs';
+import { deg2rad, getLogEps } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from '@/components/plots'
 import { ColumnMeshes } from './TransectMeshes';
@@ -29,12 +29,13 @@ interface DataCubeProps {
 
 export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const volTexture = usePaddedTextures(propVolTexture);
-    const {shape, colormap, flipY, textureArrayDepths, remapTexture} = useGlobalStore(useShallow(state=>({
+    const {shape, colormap, flipY, textureArrayDepths, remapTexture, valueScales} = useGlobalStore(useShallow(state=>({
       shape:state.shape, 
       colormap:state.colormap, 
       flipY:state.flipY,
       textureArrayDepths: state.textureArrayDepths,
-      remapTexture: state.remapTexture
+      remapTexture: state.remapTexture,
+      valueScales: state.valueScales,
     }))) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const {
       valueRange, xRange, yRange, zRange, quality, useOrtho, 
@@ -93,6 +94,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
           fillValue: {value: fillValue?? NaN},
           colorScale: {value: colorScaleToId(colorScale)},
           logConstant: {value: logConstant},
+          logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
           lowclip: {value: parseColorToVec4(lowclip)},
           highclip: {value: parseColorToVec4(highclip)},
           useLowclip: {value: useLowclip},
@@ -135,13 +137,14 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
         uniforms.maskValue.value = maskValue;
         uniforms.colorScale.value = colorScaleToId(colorScale);
         uniforms.logConstant.value = logConstant;
+        uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
         uniforms.lowclip.value = parseColorToVec4(lowclip);
         uniforms.highclip.value = parseColorToVec4(highclip);
         uniforms.useLowclip.value = useLowclip;
         uniforms.useHighclip.value = useHighclip;
         invalidate() // Needed because Won't trigger re-render if camera is stationary. 
       }
-    }, [shape, colormap, cOffset, cScale, valueRange, xRange, yRange, zRange, aspectRatio, latBounds, lonBounds, quality, animProg, transparency, nanTransparency, nanColor, maskValue, fillValue, vTransferScale, vTransferRange, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip]);
+    }, [colormap, cOffset, cScale, valueRange, shape, xRange, timeRatio, yRange, aspectRatio, quality, animProg, transparency, nanTransparency, nanColor, vTransferScale, vTransferRange, fillValue, maskValue, latBounds, lonBounds, colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip]);
     useFrame(({camera})=>{ // This calculates InverseModel matrix for the orthographic raymarcher
       if (!useOrtho || !meshRef.current || !shaderMaterial) return;
       meshRef.current.modelViewMatrix.multiplyMatrices(camera.matrixWorldInverse, meshRef.current.matrixWorld);

@@ -24,11 +24,12 @@ export function colorScaleToId(colorScale: string): number {
   }
 }
 
-export function applyColorScale(x: number, scaleType: string, c = 1.0): number {
+export function applyColorScale(x: number, scaleType: string, c = 1.0, logEps = 0.000001): number {
   if (scaleType === 'log(x)') {
-    const eps = 0.000001;
+    const eps = Math.max(logEps, 0.000001);
+    if (x < eps) return 0.0;
     const clamped = Math.max(x, eps);
-    return (Math.log(clamped) - Math.log(eps)) / (Math.log(1.0 + eps) - Math.log(eps));
+    return (Math.log(clamped) - Math.log(eps)) / (Math.log(1.0) - Math.log(eps));
   } else if (scaleType === 'log(1+x)') {
     return Math.log(1.0 + Math.max(x, 0.0)) / Math.log(2.0);
   } else if (scaleType === 'log(x+c)') {

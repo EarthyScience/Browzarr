@@ -32,6 +32,7 @@ uniform vec2 latBounds;
 uniform vec2 lonBounds;
 uniform int colorScale;
 uniform float logConstant;
+uniform float logEps;
 uniform vec4 lowclip;
 uniform vec4 highclip;
 uniform bool useLowclip;
@@ -40,11 +41,11 @@ uniform bool useHighclip;
 #define epsilon 0.000001
 #define pi 3.1415926535
 
-float applyColorScale(float x, int scaleType, float c) {
+float applyColorScale(float x, int scaleType, float c, float eps) {
     if (scaleType == 1) {
-        float eps = 0.000001;
-        float clamped = max(x, eps);
-        return (log(clamped) - log(eps)) / (log(1.0 + eps) - log(eps));
+        float safeEps = max(eps, 0.000001);
+        float clamped = max(x, safeEps);
+        return (log(clamped) - log(safeEps)) / (log(1.0) - log(safeEps));
     } else if (scaleType == 2) {
         return log(1.0 + max(x, 0.0)) / log(2.0);
     } else if (scaleType == 3) {
@@ -180,31 +181,38 @@ void main() {
             } else {
                 float range = max(threshold.y - threshold.x, 0.0001);
                 float normD = clamp((d - threshold.x) / range, 0.0, 1.0);
-                float scaledD = applyColorScale(normD, colorScale, logConstant);
-                float rawSampLoc = scaledD * cScale + cOffset;
-
-                if (d < threshold.x || rawSampLoc < 0.0) {
+                if (colorScale == 1 && normD < logEps) {
                     if (useLowclip) {
                         accumColor.rgb += (1.0 - alphaAcc) * lowclip.a * lowclip.rgb;
                         alphaAcc += lowclip.a * (1.0 - alphaAcc);
                     }
-                } else if (d > threshold.y || rawSampLoc > 1.0) {
-                    if (useHighclip) {
-                        accumColor.rgb += (1.0 - alphaAcc) * highclip.a * highclip.rgb;
-                        alphaAcc += highclip.a * (1.0 - alphaAcc);
-                    }
                 } else {
-                    float sampLoc = clamp(rawSampLoc, 0.0, 0.99);
-                    vec4 col = texture(cmap, vec2(sampLoc, 0.5));
-                    float alpha;
-                    if (useClipScale) {
-                        float normalizedOpacity = clamp(scaledD, 0.0, 1.0);
-                        alpha = pow(max(normalizedOpacity, 0.001), transparency * opacityMag);
+                    float scaledD = applyColorScale(normD, colorScale, logConstant, logEps);
+                    float rawSampLoc = scaledD * cScale + cOffset;
+
+                    if (d < threshold.x || rawSampLoc < 0.0) {
+                        if (useLowclip) {
+                            accumColor.rgb += (1.0 - alphaAcc) * lowclip.a * lowclip.rgb;
+                            alphaAcc += lowclip.a * (1.0 - alphaAcc);
+                        }
+                    } else if (d > threshold.y || rawSampLoc > 1.0) {
+                        if (useHighclip) {
+                            accumColor.rgb += (1.0 - alphaAcc) * highclip.a * highclip.rgb;
+                            alphaAcc += highclip.a * (1.0 - alphaAcc);
+                        }
                     } else {
-                        alpha = pow(max(sampLoc, 0.001), transparency * opacityMag);
+                        float sampLoc = clamp(rawSampLoc, 0.0, 0.99);
+                        vec4 col = texture(cmap, vec2(sampLoc, 0.5));
+                        float alpha;
+                        if (useClipScale) {
+                            float normalizedOpacity = clamp(scaledD, 0.0, 1.0);
+                            alpha = pow(max(normalizedOpacity, 0.001), transparency * opacityMag);
+                        } else {
+                            alpha = pow(max(sampLoc, 0.001), transparency * opacityMag);
+                        }
+                        accumColor.rgb += (1.0 - alphaAcc) * alpha * col.rgb;
+                        alphaAcc += alpha * (1.0 - alphaAcc);
                     }
-                    accumColor.rgb += (1.0 - alphaAcc) * alpha * col.rgb;
-                    alphaAcc += alpha * (1.0 - alphaAcc);
                 }
             }      
 

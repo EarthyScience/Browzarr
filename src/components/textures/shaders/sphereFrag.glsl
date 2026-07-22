@@ -26,6 +26,7 @@ uniform float fillValue;
 uniform int maskValue;
 uniform int colorScale;
 uniform float logConstant;
+uniform float logEps;
 uniform vec4 lowclip;
 uniform vec4 highclip;
 uniform bool useLowclip;
@@ -34,11 +35,11 @@ uniform bool useHighclip;
 #define pi 3.141592653
 #define epsilon 0.0001
 
-float applyColorScale(float x, int scaleType, float c) {
+float applyColorScale(float x, int scaleType, float c, float eps) {
     if (scaleType == 1) {
-        float eps = 0.000001;
-        float clamped = max(x, eps);
-        return (log(clamped) - log(eps)) / (log(1.0 + eps) - log(eps));
+        float safeEps = max(eps, 0.000001);
+        float clamped = max(x, safeEps);
+        return (log(clamped) - log(safeEps)) / (log(1.0) - log(safeEps));
     } else if (scaleType == 2) {
         return log(1.0 + max(x, 0.0)) / log(2.0);
     } else if (scaleType == 3) {
@@ -150,15 +151,19 @@ void main(){
         } else {
             float range = max(threshold.y - threshold.x, 0.0001);
             float normS = clamp((strength - threshold.x) / range, 0.0, 1.0);
-            float scaledS = applyColorScale(normS, colorScale, logConstant);
-            float rawSampLoc = scaledS * cScale + cOffset;
-            if (rawSampLoc < 0.0) {
+            if (colorScale == 1 && normS < logEps) {
                 color = useLowclip ? lowclip : vec4(texture(cmap, vec2(0.0, 0.5)).rgb, 1.0);
-            } else if (rawSampLoc > 1.0) {
-                color = useHighclip ? highclip : vec4(texture(cmap, vec2(0.995, 0.5)).rgb, 1.0);
             } else {
-                float sampLoc = clamp(rawSampLoc, 0.0, 0.995);
-                color = vec4(texture(cmap, vec2(sampLoc, 0.5)).rgb, 1.0);
+                float scaledS = applyColorScale(normS, colorScale, logConstant, logEps);
+                float rawSampLoc = scaledS * cScale + cOffset;
+                if (rawSampLoc < 0.0) {
+                    color = useLowclip ? lowclip : vec4(texture(cmap, vec2(0.0, 0.5)).rgb, 1.0);
+                } else if (rawSampLoc > 1.0) {
+                    color = useHighclip ? highclip : vec4(texture(cmap, vec2(0.995, 0.5)).rgb, 1.0);
+                } else {
+                    float sampLoc = clamp(rawSampLoc, 0.0, 0.995);
+                    color = vec4(texture(cmap, vec2(sampLoc, 0.5)).rgb, 1.0);
+                }
             }
         }
 

@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksFrag, sphereBlocksVert } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
-import { deg2rad } from '@/utils/HelperFuncs'
+import { deg2rad, getLogEps } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { colorScaleToId } from '@/components/textures';
@@ -119,6 +119,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
                 fillValue: {value: fillValue?? NaN},
                 colorScale: {value: colorScaleToId(colorScale)},
                 logConstant: {value: logConstant},
+                logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
                 lowclip: {value: parseColorToVec4(lowclip)},
                 highclip: {value: parseColorToVec4(highclip)},
                 useLowclip: {value: useLowclip},
@@ -162,6 +163,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             uniforms.maskValue.value = maskValue
             uniforms.colorScale.value = colorScaleToId(colorScale);
             uniforms.logConstant.value = logConstant;
+            uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
             uniforms.lowclip.value = parseColorToVec4(lowclip);
             uniforms.highclip.value = parseColorToVec4(highclip);
             uniforms.useLowclip.value = useLowclip;

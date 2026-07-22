@@ -4,7 +4,7 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
-import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
+import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad, getLogEps } from '@/utils/HelperFuncs';
 import { evaluateColorMap, colorScaleToId } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { SquareMeshes } from './TransectMeshes';
@@ -121,6 +121,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
                 fillValue: {value: NaN},
                 colorScale: {value: colorScaleToId(colorScale)},
                 logConstant: {value: logConstant},
+                logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
                 lowclip: {value: parseColorToVec4(lowclip)},
                 highclip: {value: parseColorToVec4(highclip)},
                 useLowclip: {value: useLowclip},
@@ -171,6 +172,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       uniforms.fillValue.value = fillValue?? NaN
       uniforms.colorScale.value = colorScaleToId(colorScale)
       uniforms.logConstant.value = logConstant
+      uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)
       uniforms.lowclip.value = parseColorToVec4(lowclip)
       uniforms.highclip.value = parseColorToVec4(highclip)
       uniforms.useLowclip.value = useLowclip

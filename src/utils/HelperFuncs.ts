@@ -165,11 +165,27 @@ export function getUnitAxis(vec: THREE.Vector3) { //Takes the normal of a cube i
 export function ArrayMinMax(array:number[] | TypedArray | TypedArrayBufferLike){
   let minVal = Infinity;
   let maxVal = -Infinity;
+  let minPosVal = Infinity;
   for (let i = 0; i < array.length; i++){
-    minVal = array[i] < minVal ? array[i] : minVal
-    maxVal = array[i] > maxVal ? array[i] : maxVal
+    const v = array[i];
+    if (!isNaN(v)) {
+      if (v < minVal) minVal = v;
+      if (v > maxVal) maxVal = v;
+      if (v > 0 && v < minPosVal) minPosVal = v;
+    }
   }
-  return [minVal,maxVal]
+  return [minVal, maxVal, minPosVal === Infinity ? undefined : minPosVal];
+}
+
+export function getLogEps(minVal: number, maxVal: number, minPosVal?: number): number {
+  if (minVal > 0) return 0.000001;
+  const range = maxVal - minVal;
+  if (range <= 0) return 0.0001;
+  const posMin = (minPosVal !== undefined && minPosVal > 0)
+    ? Math.max(minPosVal, maxVal * 1e-6)
+    : Math.max(maxVal * 1e-4, 1e-6);
+  const xPos = (posMin - minVal) / range;
+  return Math.max(Math.min(xPos, 0.5), 0.000001);
 }
 
 export async function getVariablesOptions(variablesPromise: Promise<string[]> | undefined) {

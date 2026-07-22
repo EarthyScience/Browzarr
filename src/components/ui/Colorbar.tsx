@@ -9,7 +9,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import './css/Colorbar.css'
-import { linspace } from '@/utils/HelperFuncs';
+import { linspace, getLogEps } from '@/utils/HelperFuncs';
 import Metadata from "./MetaData";
 
 import { applyColorScale } from "@/components/textures";
@@ -85,6 +85,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     }),[valueScales])
     const range = origMax - origMin
 
+    const logEps = useMemo(() => getLogEps(origMin, origMax, (valueScales as any).minPosVal), [origMin, origMax, valueScales]);
+
     const [tickCount, setTickCount] = useState<number>(5)
     const [newMin, setNewMin] = useState(origMin)
     const [newMax, setNewMax] = useState(origMax)
@@ -108,15 +110,23 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         return colors
     },[colormap])
 
+    const effectiveMin = useMemo(() => {
+        if (colorScale === 'log(x)' && origMin <= 0) {
+            return origMin + logEps * range;
+        }
+        return newMin;
+    }, [colorScale, origMin, newMin, logEps, range]);
+
     const [locs, vals] = useMemo(()=>{
         const locs = linspace(0, 100, tickCount);
+        const startVal = (colorScale === 'log(x)' && origMin <= 0) ? effectiveMin : newMin;
         const vals = locs.map(loc => {
           const t = loc / 100;
-          const scaledT = applyColorScale(t, colorScale, logConstant);
-          return newMin + (newMax - newMin) * scaledT;
+          const scaledT = applyColorScale(t, colorScale, logConstant, logEps);
+          return startVal + (newMax - startVal) * scaledT;
         });
         return [locs, vals]
-    },[ tickCount, newMin, newMax, colorScale, logConstant])
+    },[ tickCount, newMin, newMax, colorScale, logConstant, logEps, effectiveMin, origMin])
 
     // Mouse move handler
     const handleMouseMove = (e: MouseEvent) => {
@@ -174,11 +184,12 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     },[newMin, newMax])
 
     useEffect(()=>{ // Update internal vals when global vals change
-        setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)))
+        const startMin = (colorScale === 'log(x)' && origMin <= 0) ? effectiveMin : origMin;
+        setDisplayMin(Num2String(startMin*Math.pow(10, scalingFactor??0)))
         setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0)))
         setNewMin(origMin)
         setNewMax(origMax)
-    },[origMax, origMin, scalingFactor])
+    },[origMax, origMin, scalingFactor, colorScale, effectiveMin])
 
     useEffect(() => {
         if (canvasRef.current && colors.length > 0) {
@@ -201,7 +212,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
 
                 for (let x = 0; x < mainWidth; x++) {
                     const normX = x / mainWidth;
-                    const scaledT = applyColorScale(normX, colorScale, logConstant);
+                    const scaledT = applyColorScale(normX, colorScale, logConstant, logEps);
                     const colorIndex = Math.min(Math.floor(scaledT * (colors.length - 1)), colors.length - 1);
                     ctx.fillStyle = colors[colorIndex] || '#000';
                     ctx.fillRect(startX + x, 0, 1, height);
@@ -213,7 +224,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 }
             }     
         }
-    }, [colors, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip]);
+    }, [colors, colorScale, logConstant, logEps, lowclip, highclip, useLowclip, useHighclip]);
     const analysisString = useMemo(()=>{
         if (analysisMode){
             const twoVar = variable2 != "Default";
