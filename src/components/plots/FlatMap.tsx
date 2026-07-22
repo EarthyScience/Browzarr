@@ -129,19 +129,18 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
             return;
           }
         }
-        
         setLoc([e.clientX, e.clientY]);
 
-        const { x, y } = e.uv;
+        const { x, y } = uv;
         const zSliceIdx = dimSlices.length > 2 ? 2 : 1;
         const ySliceIdx = dimSlices.length > 2 ? 1 : 0;
         const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[zSliceIdx].length;
         const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[ySliceIdx].length;
 
-        const xIdx = Math.round(x*xSize-.5)
-        const yIdx = Math.round(y*ySize-.5)
-        let dataIdx = xSize * yIdx + xIdx;
-        dataIdx += isFlat ? 0 : Math.floor((dimSlices[0].length-1) * animProg) * xSize*ySize
+        const xId = Math.round(x*xSize-.5)
+        const yId = Math.round(y*ySize-.5)
+        let dataIdx = xSize * yId + xId;
+        dataIdx += isFlat ? 0 : Math.floor((dimSlices[zIdx].length-1) * animProg) * xSize*ySize
         const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
         val.current = dataVal;
         coords.current = [y,x]
@@ -150,45 +149,55 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
 
     // ----- TIMESERIES ----- //
     function HandleTimeSeries(event: THREE.Intersection){
-            const uv = event.uv;
-            const normal = new THREE.Vector3(0,0,1)
-            if(uv){
-              const tsUV = flipY ? new THREE.Vector2(uv.x, 1-uv.y) : uv
-              const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:tsUV,normal})
-              setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
-                
-              const coordUV = parseUVCoords({normal:normal,uv:uv})
-              let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length)] : null)
-              const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
-              const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
-              dimCoords = dimCoords.filter(val => val !== null)
-              const tsID = `${dimCoords[0]}_${dimCoords[1]}`
-              const tsObj = {
-                color: evaluateColorMap(getColorIdx() / 10, 'Paired'),
-                data: tempTS,
-                normal,
-                uv: tsUV,
-              }
-              incrementColorIdx();
-              updateTimeSeries({ [tsID] : tsObj})
-              const dimObj = {
-                first:{
-                  name:thisDimNames[0],
-                  loc:dimCoords[0] ?? 0,
-                  units:thisDimUnits[0]
-                },
-                second:{
-                  name:thisDimNames[1],
-                  loc:dimCoords[1] ?? 0,
-                  units:thisDimUnits[1]
-                },
-                plot:{
-                  units:dimUnits[0]
-                }
-              }
-              updateDimCoords({[tsID] : dimObj})
-            }
+      const uv = event.uv;
+      if (!uv) return;
+      const tsUV = flipY ? new THREE.Vector2(uv.x, 1-uv.y) : uv
+      let newUV: THREE.Vector2 | undefined;
+      const normal = new THREE.Vector3(0,0,1)
+      if (remapTexture){
+          const [thisUV, isValid] = sample2D(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
+          if (flipY) thisUV.y = 1-thisUV.y
+          if (isValid) newUV = thisUV;
+          else{
+            return;
           }
+        }
+      
+      const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:newUV ?? tsUV,normal})
+      setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
+        
+      const coordUV = parseUVCoords({normal:normal,uv:uv})
+      let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length)] : null)
+      const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
+      const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
+      dimCoords = dimCoords.filter(val => val !== null)
+      const tsID = `${dimCoords[0]}_${dimCoords[1]}`
+      const tsObj = {
+        color: evaluateColorMap(getColorIdx() / 10, 'Paired'),
+        data: tempTS,
+        normal,
+        uv: tsUV,
+      }
+      incrementColorIdx();
+      updateTimeSeries({ [tsID] : tsObj})
+      const dimObj = {
+        first:{
+          name:thisDimNames[0],
+          loc:dimCoords[0] ?? 0,
+          units:thisDimUnits[0]
+        },
+        second:{
+          name:thisDimNames[1],
+          loc:dimCoords[1] ?? 0,
+          units:thisDimUnits[1]
+        },
+        plot:{
+          units:dimUnits[0]
+        }
+      }
+      updateDimCoords({[tsID] : dimObj})
+      
+    }
     // ----- SHADER MATERIAL ----- //
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
