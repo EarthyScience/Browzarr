@@ -65,7 +65,6 @@
     "@ffmpeg/util": "^0.12.2",
     "@hookform/resolvers": "^5.2.2",
     "@mattnucc/gribberish": "^1.5.0",
-    "@mattnucc/gribberish-wasm32-wasi": "^1.5.0",
     "@monaco-editor/react": "^4.7.0",
     "@react-spring/three": "^10.0.0",
     "@react-three/drei": "^10.7.7",
