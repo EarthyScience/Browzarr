@@ -204,7 +204,7 @@ export async function GetArray(varOveride?: string) {
 
                     cache.set(cacheName, {
                         data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-                        shape: thisShape, stride: chunkStride,
+                        shape: thisShape.filter((val)=> val > 1), stride: chunkStride,
                         scaling: scalingFactor, compressed: compress, coarsened: coarsen,
                         kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined },
                         fullChunkDim: [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
