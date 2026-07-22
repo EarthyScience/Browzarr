@@ -65,7 +65,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
     const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, 
       timeScale, xRange, yRange, zRange, fillValue,
       maskTexture, maskValue, disablePointScale,
-      colorScale, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({
+      colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({
       scalePoints: state.scalePoints,
       scaleIntensity: state.scaleIntensity,
       pointSize: state.pointSize,
@@ -82,6 +82,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       maskValue: state.maskValue,
       disablePointScale: state.disablePointScale,
       colorScale: state.colorScale,
+      logConstant: state.logConstant,
       lowclip: state.lowclip,
       highclip: state.highclip,
       useLowclip: state.useLowclip,
@@ -152,6 +153,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         vertBounds:{value: new THREE.Vector2(yRange[0], yRange[1])},
         fillValue: {value: fillValue?? NaN},
         colorScale: {value: colorScaleToId(colorScale)},
+        logConstant: {value: logConstant},
         lowclip: {value: parseColorToVec4(lowclip)},
         highclip: {value: parseColorToVec4(highclip)},
         useLowclip: {value: useLowclip},
@@ -196,12 +198,13 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       uniforms.maskValue.value = maskValue
       uniforms.aspect.value = shape.x/shape.y;
       uniforms.colorScale.value = colorScaleToId(colorScale);
+      uniforms.logConstant.value = logConstant;
       uniforms.lowclip.value = parseColorToVec4(lowclip);
       uniforms.highclip.value = parseColorToVec4(highclip);
       uniforms.useLowclip.value = useLowclip;
       uniforms.useHighclip.value = useHighclip;
     }
-  }, [volTexture, depthRatio, depth, height, shape, width, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue, colorScale, lowclip, highclip, useLowclip, useHighclip]);
+  }, [volTexture, depthRatio, depth, height, shape, width, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip]);
   
   return (
     <group>

@@ -38,7 +38,7 @@ const Colormaps = () => {
   const [hoveredCmap, setHoveredCmap] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showNames, setShowNames] = useState(true);
-  const { colormap, setColormap, colormapName, flipColormap, setColormapName, setFlipColormap } = useGlobalStore(
+  const { colormap, setColormap, colormapName, flipColormap, setColormapName, setFlipColormap, valueScales } = useGlobalStore(
     useShallow((state) => ({
       setColormap: state.setColormap,
       colormap: state.colormap,
@@ -46,12 +46,15 @@ const Colormaps = () => {
       flipColormap: state.flipColormap,
       setColormapName: state.setColormapName,
       setFlipColormap: state.setFlipColormap,
+      valueScales: state.valueScales,
     }))
   );
-  const { colorScale, setColorScale, lowclip, setLowclip, highclip, setHighclip, useLowclip, setUseLowclip, useHighclip, setUseHighclip } = usePlotStore(
+  const { colorScale, setColorScale, logConstant, setLogConstant, lowclip, setLowclip, highclip, setHighclip, useLowclip, setUseLowclip, useHighclip, setUseHighclip } = usePlotStore(
     useShallow((state) => ({
       colorScale: state.colorScale,
       setColorScale: state.setColorScale,
+      logConstant: state.logConstant,
+      setLogConstant: state.setLogConstant,
       lowclip: state.lowclip,
       setLowclip: state.setLowclip,
       highclip: state.highclip,
@@ -301,14 +304,34 @@ const Colormaps = () => {
                   <SelectValue placeholder="Scale" />
                 </SelectTrigger>
                 <SelectContent>
-                  {COLOR_SCALE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value} className="cursor-pointer">
-                      {opt.label}
-                    </SelectItem>
-                  ))}
+                  {COLOR_SCALE_OPTIONS.map((opt) => {
+                    const isDisabled = opt.value === 'log(x)' && valueScales && valueScales.minVal < 0;
+                    return (
+                      <SelectItem
+                        key={opt.value}
+                        value={opt.value}
+                        disabled={isDisabled}
+                        className="cursor-pointer"
+                      >
+                        {opt.label} {isDisabled ? '(min < 0)' : ''}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
+            {colorScale === 'log(x+c)' && (
+              <div className="flex items-center justify-between gap-2 w-full pl-2">
+                <span className="text-xs text-muted-foreground font-mono">c =</span>
+                <input
+                  type="number"
+                  step="any"
+                  value={logConstant}
+                  onChange={(e) => setLogConstant(parseFloat(e.target.value) || 1.0)}
+                  className="w-20 px-2 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-700 bg-transparent"
+                />
+              </div>
+            )}
             <div className="flex items-center justify-between gap-2 w-full">
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input

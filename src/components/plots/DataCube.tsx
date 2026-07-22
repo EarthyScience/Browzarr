@@ -40,7 +40,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
       valueRange, xRange, yRange, zRange, quality, useOrtho, 
       animProg, cScale, cOffset, useFragOpt, transparency, maskTexture, maskValue,
       nanTransparency, nanColor, vTransferRange, vTransferScale, fillValue,
-      colorScale, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({
+      colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({
       valueRange: state.valueRange, xRange: state.xRange,
       yRange: state.yRange, zRange: state.zRange,
       quality: state.quality, useOrtho: state.useOrtho,
@@ -55,6 +55,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
       vTransferScale: state.vTransferScale,
       fillValue: state.fillValue,
       colorScale: state.colorScale,
+      logConstant: state.logConstant,
       lowclip: state.lowclip,
       highclip: state.highclip,
       useLowclip: state.useLowclip,
@@ -91,6 +92,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
           nanColor: {value: new THREE.Color(nanColor)},
           fillValue: {value: fillValue?? NaN},
           colorScale: {value: colorScaleToId(colorScale)},
+          logConstant: {value: logConstant},
           lowclip: {value: parseColorToVec4(lowclip)},
           highclip: {value: parseColorToVec4(highclip)},
           useLowclip: {value: useLowclip},
@@ -132,13 +134,14 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
         uniforms.fillValue.value = fillValue?? NaN;
         uniforms.maskValue.value = maskValue;
         uniforms.colorScale.value = colorScaleToId(colorScale);
+        uniforms.logConstant.value = logConstant;
         uniforms.lowclip.value = parseColorToVec4(lowclip);
         uniforms.highclip.value = parseColorToVec4(highclip);
         uniforms.useLowclip.value = useLowclip;
         uniforms.useHighclip.value = useHighclip;
         invalidate() // Needed because Won't trigger re-render if camera is stationary. 
       }
-    }, [shape, colormap, cOffset, cScale, valueRange, xRange, yRange, zRange, aspectRatio, latBounds, lonBounds, quality, animProg, transparency, nanTransparency, nanColor, maskValue, fillValue, vTransferScale, vTransferRange, colorScale, lowclip, highclip, useLowclip, useHighclip]);
+    }, [shape, colormap, cOffset, cScale, valueRange, xRange, yRange, zRange, aspectRatio, latBounds, lonBounds, quality, animProg, transparency, nanTransparency, nanColor, maskValue, fillValue, vTransferScale, vTransferRange, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip]);
     useFrame(({camera})=>{ // This calculates InverseModel matrix for the orthographic raymarcher
       if (!useOrtho || !meshRef.current || !shaderMaterial) return;
       meshRef.current.modelViewMatrix.multiplyMatrices(camera.matrixWorldInverse, meshRef.current.matrixWorld);

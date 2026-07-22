@@ -7,6 +7,7 @@ export const COLOR_SCALE_OPTIONS = [
   { label: 'x (Linear)', value: 'identity' },
   { label: 'log(x)', value: 'log(x)' },
   { label: 'log(1+x)', value: 'log(1+x)' },
+  { label: 'log(x+c)', value: 'log(x+c)' },
   { label: 'sign(x)*sqrt(abs(x))', value: 'sign(x)*sqrt(abs(x))' },
   { label: 'exp(x)/100', value: 'exp(x)/100' },
 ] as const;
@@ -15,20 +16,27 @@ export function colorScaleToId(colorScale: string): number {
   switch (colorScale) {
     case 'log(x)': return 1;
     case 'log(1+x)': return 2;
-    case 'sign(x)*sqrt(abs(x))': return 3;
-    case 'exp(x)/100': return 4;
+    case 'log(x+c)': return 3;
+    case 'sign(x)*sqrt(abs(x))': return 4;
+    case 'exp(x)/100': return 5;
     case 'identity':
     default: return 0;
   }
 }
 
-export function applyColorScale(x: number, scaleType: string): number {
+export function applyColorScale(x: number, scaleType: string, c = 1.0): number {
   if (scaleType === 'log(x)') {
     const eps = 0.000001;
     const clamped = Math.max(x, eps);
     return (Math.log(clamped) - Math.log(eps)) / (Math.log(1.0 + eps) - Math.log(eps));
   } else if (scaleType === 'log(1+x)') {
     return Math.log(1.0 + Math.max(x, 0.0)) / Math.log(2.0);
+  } else if (scaleType === 'log(x+c)') {
+    const safeC = Math.max(c, 0.00001);
+    const clamped = Math.max(x + safeC, 0.000001);
+    const num = Math.log(clamped) - Math.log(safeC);
+    const denom = Math.log(1.0 + safeC) - Math.log(safeC);
+    return denom !== 0 ? num / denom : x;
   } else if (scaleType === 'sign(x)*sqrt(abs(x))') {
     return Math.sign(x) * Math.sqrt(Math.abs(x));
   } else if (scaleType === 'exp(x)/100') {

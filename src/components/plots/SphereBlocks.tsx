@@ -34,7 +34,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
         remapTexture: state.remapTexture
     })))
     const { animProg, cOffset, cScale, nanColor, nanTransparency, sphereDisplacement, offsetNegatives, fillValue, valueRange, maskTexture, maskValue,
-        colorScale, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state=> ({
+        colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state=> ({
         animate: state.animate,
         animProg: state.animProg,
         cOffset: state.cOffset,
@@ -49,6 +49,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
         maskTexture: state.maskTexture,
         maskValue: state.maskValue,
         colorScale: state.colorScale,
+        logConstant: state.logConstant,
         lowclip: state.lowclip,
         highclip: state.highclip,
         useLowclip: state.useLowclip,
@@ -117,6 +118,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
                 displacement: {value: sphereDisplacement},
                 fillValue: {value: fillValue?? NaN},
                 colorScale: {value: colorScaleToId(colorScale)},
+                logConstant: {value: logConstant},
                 lowclip: {value: parseColorToVec4(lowclip)},
                 highclip: {value: parseColorToVec4(highclip)},
                 useLowclip: {value: useLowclip},
@@ -159,13 +161,14 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             uniforms.fillValue.value = fillValue?? NaN
             uniforms.maskValue.value = maskValue
             uniforms.colorScale.value = colorScaleToId(colorScale);
+            uniforms.logConstant.value = logConstant;
             uniforms.lowclip.value = parseColorToVec4(lowclip);
             uniforms.highclip.value = parseColorToVec4(highclip);
             uniforms.useLowclip.value = useLowclip;
             uniforms.useHighclip.value = useHighclip;
         }
         invalidate();
-    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, valueRange, offsetNegatives, textures, remapTexture, maskValue, fillValue, colorScale, lowclip, highclip, useLowclip, useHighclip])
+    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, valueRange, offsetNegatives, textures, remapTexture, maskValue, fillValue, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip])
 
     const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor}),[])
     nanMaterial.transparent = true;

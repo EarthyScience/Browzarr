@@ -58,7 +58,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
     
     const {animate, animProg, cOffset, cScale, valueRange, selectTS, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
       zSlice, ySlice, xSlice, fillValue, borderTexture, maskTexture, maskValue,
-      getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state=> ({
+      getColorIdx, incrementColorIdx, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state=> ({
         animate: state.animate,
         animProg: state.animProg,
         cOffset: state.cOffset,
@@ -77,6 +77,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
         getColorIdx: state.getColorIdx,
         incrementColorIdx: state.incrementColorIdx,
         colorScale: state.colorScale,
+        logConstant: state.logConstant,
         lowclip: state.lowclip,
         highclip: state.highclip,
         useLowclip: state.useLowclip,
@@ -119,6 +120,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
                 displacement: {value: sphereDisplacement},
                 fillValue: {value: NaN},
                 colorScale: {value: colorScaleToId(colorScale)},
+                logConstant: {value: logConstant},
                 lowclip: {value: parseColorToVec4(lowclip)},
                 highclip: {value: parseColorToVec4(highclip)},
                 useLowclip: {value: useLowclip},
@@ -168,6 +170,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       uniforms.displacement.value = sphereDisplacement
       uniforms.fillValue.value = fillValue?? NaN
       uniforms.colorScale.value = colorScaleToId(colorScale)
+      uniforms.logConstant.value = logConstant
       uniforms.lowclip.value = parseColorToVec4(lowclip)
       uniforms.highclip.value = parseColorToVec4(highclip)
       uniforms.useLowclip.value = useLowclip
@@ -181,7 +184,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       if (backMaterial){
         updateMaterial(backMaterial)
       }
-    },[textures, remapTexture, animProg, colormap, cOffset, cScale, animate, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement,valueRange, fillValue, maskValue, valueScales, colorScale, lowclip, highclip, useLowclip, useHighclip])
+    },[textures, remapTexture, animProg, colormap, cOffset, cScale, animate, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement,valueRange, fillValue, maskValue, valueScales, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip])
     
     
     function HandleTimeSeries(event: THREE.Intersection){

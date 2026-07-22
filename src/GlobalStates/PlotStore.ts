@@ -68,6 +68,7 @@ type PlotState ={
   nativeCRS: string | undefined;
   destCRS: string | undefined;
   colorScale: string;
+  logConstant: number;
   lowclip: string;
   highclip: string;
   useLowclip: boolean;
@@ -97,6 +98,7 @@ type PlotState ={
   setCOffset: (cOffset: number) => void;
   setCScale: (cScale: number) => void;
   setColorScale: (colorScale: string) => void;
+  setLogConstant: (logConstant: number) => void;
   setLowclip: (lowclip: string) => void;
   setHighclip: (highclip: string) => void;
   setUseLowclip: (useLowclip: boolean) => void;
@@ -204,6 +206,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   nativeCRS: undefined,
   destCRS: undefined,
   colorScale: "identity",
+  logConstant: 1.0,
   lowclip: "#000000",
   highclip: "#ffffff",
   useLowclip: false,
@@ -235,6 +238,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setCOffset: (cOffset) => set({ cOffset }),
   setCScale: (cScale) => set({ cScale }),
   setColorScale: (colorScale) => set({ colorScale }),
+  setLogConstant: (logConstant) => set({ logConstant }),
   setLowclip: (lowclip) => set({ lowclip }),
   setHighclip: (highclip) => set({ highclip }),
   setUseLowclip: (useLowclip) => set({ useLowclip }),

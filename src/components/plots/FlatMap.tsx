@@ -55,7 +55,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
 
     const {cScale, cOffset, animProg, nanTransparency, nanColor, 
       zSlice, ySlice, xSlice, selectTS, fillValue, coarsen, maskTexture, maskValue, valueRange,
-      getColorIdx, incrementColorIdx, colorScale, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({
+      getColorIdx, incrementColorIdx, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({
       cOffset: state.cOffset, cScale: state.cScale,
       resetAnim: state.resetAnim, animate: state.animate,
       animProg: state.animProg, nanTransparency: state.nanTransparency,
@@ -66,6 +66,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       getColorIdx: state.getColorIdx,
       incrementColorIdx: state.incrementColorIdx,
       colorScale: state.colorScale,
+      logConstant: state.logConstant,
       lowclip: state.lowclip,
       highclip: state.highclip,
       useLowclip: state.useLowclip,
@@ -124,10 +125,10 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       return slices;
     }, [analysisMode, dimSlices, dimArrays, zSlice, ySlice, xSlice, axis, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
 
-    const {lonBounds, latBounds} = useCoordBounds()
-
     useEffect(()=>{
+      return () => {
         geometry.dispose()
+      }
     },[geometry])
 
     // ----- MOUSE MOVE ----- //
@@ -214,9 +215,9 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         }
       }
       updateDimCoords({[tsID] : dimObj})
-      
     }
     // ----- SHADER MATERIAL ----- //
+    const {lonBounds, latBounds} = useCoordBounds()
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms:{
@@ -236,6 +237,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
               nanAlpha: {value: 1 - nanTransparency},
               fillValue: {value: fillValue?? NaN},
               colorScale: {value: colorScaleToId(colorScale)},
+              logConstant: {value: logConstant},
               lowclip: {value: parseColorToVec4(lowclip)},
               highclip: {value: parseColorToVec4(highclip)},
               useLowclip: {value: useLowclip},
@@ -265,12 +267,13 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         uniforms.maskValue.value = maskValue;
         uniforms.fillValue.value = fillValue?? NaN;
         uniforms.colorScale.value = colorScaleToId(colorScale);
+        uniforms.logConstant.value = logConstant;
         uniforms.lowclip.value = parseColorToVec4(lowclip);
         uniforms.highclip.value = parseColorToVec4(highclip);
         uniforms.useLowclip.value = useLowclip;
         uniforms.useHighclip.value = useHighclip;
       }
-    },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange, colorScale, lowclip, highclip, useLowclip, useHighclip])
+    },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip])
     useEffect(()=>{
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})

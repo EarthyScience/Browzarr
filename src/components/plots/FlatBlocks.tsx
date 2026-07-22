@@ -38,13 +38,13 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
         remapTexture: state.remapTexture
     })))
     const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, fillValue, valueRange, offsetNegatives, rotateFlat, maskTexture, maskValue,
-        colorScale, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state=> ({
+        colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state=> ({
         animate: state.animate, animProg: state.animProg, cOffset: state.cOffset,
         cScale: state.cScale, nanColor: state.nanColor, nanTransparency: state.nanTransparency,
         displacement: state.displacement, valueRange:state.valueRange, sphereResolution: state.sphereResolution,
         offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat,
         maskTexture:state.maskTexture, maskValue:state.maskValue, fillValue:state.fillValue,
-        colorScale: state.colorScale, lowclip: state.lowclip, highclip: state.highclip,
+        colorScale: state.colorScale, logConstant: state.logConstant, lowclip: state.lowclip, highclip: state.highclip,
         useLowclip: state.useLowclip, useHighclip: state.useHighclip,
     })))
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
@@ -118,6 +118,7 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
                 displacement: {value: displacement},
                 fillValue: {value: fillValue?? NaN},
                 colorScale: {value: colorScaleToId(colorScale)},
+                logConstant: {value: logConstant},
                 lowclip: {value: parseColorToVec4(lowclip)},
                 highclip: {value: parseColorToVec4(highclip)},
                 useLowclip: {value: useLowclip},
@@ -154,13 +155,14 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
             uniforms.maskValue.value = maskValue;
             uniforms.fillValue.value = fillValue?? NaN;
             uniforms.colorScale.value = colorScaleToId(colorScale);
+            uniforms.logConstant.value = logConstant;
             uniforms.lowclip.value = parseColorToVec4(lowclip);
             uniforms.highclip.value = parseColorToVec4(highclip);
             uniforms.useLowclip.value = useLowclip;
             uniforms.useHighclip.value = useHighclip;
         }
         invalidate();
-    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, valueRange, textures, fillValue, analysisMode, axis, width, height, latBounds, lonBounds, maskValue, colorScale, lowclip, highclip, useLowclip, useHighclip])
+    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, valueRange, textures, fillValue, analysisMode, axis, width, height, latBounds, lonBounds, maskValue, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip])
 
   return (
 

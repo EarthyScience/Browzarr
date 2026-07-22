@@ -31,6 +31,7 @@ uniform int maskValue;
 uniform vec2 latBounds;
 uniform vec2 lonBounds;
 uniform int colorScale;
+uniform float logConstant;
 uniform vec4 lowclip;
 uniform vec4 highclip;
 uniform bool useLowclip;
@@ -39,7 +40,7 @@ uniform bool useHighclip;
 #define epsilon 0.000001
 #define pi 3.1415926535
 
-float applyColorScale(float x, int scaleType) {
+float applyColorScale(float x, int scaleType, float c) {
     if (scaleType == 1) {
         float eps = 0.000001;
         float clamped = max(x, eps);
@@ -47,8 +48,14 @@ float applyColorScale(float x, int scaleType) {
     } else if (scaleType == 2) {
         return log(1.0 + max(x, 0.0)) / log(2.0);
     } else if (scaleType == 3) {
-        return sign(x) * sqrt(abs(x));
+        float safeC = max(c, 0.00001);
+        float clamped = max(x + safeC, 0.000001);
+        float num = log(clamped) - log(safeC);
+        float denom = log(1.0 + safeC) - log(safeC);
+        return denom != 0.0 ? num / denom : x;
     } else if (scaleType == 4) {
+        return sign(x) * sqrt(abs(x));
+    } else if (scaleType == 5) {
         return (exp(x) - 1.0) / (exp(1.0) - 1.0);
     }
     return x;
@@ -158,31 +165,35 @@ void main() {
         if (d == 1. || abs(d - fillValue) < 0.005) {
             accumColor.rgb += (1.0 - alphaAcc) * pow(nanAlpha, 5.) * nanColor.rgb;
             alphaAcc += pow(nanAlpha, 5.);
-        } else if (d < threshold.x) {
-            if (useLowclip) {
-                accumColor.rgb += (1.0 - alphaAcc) * lowclip.a * lowclip.rgb;
-                alphaAcc += lowclip.a * (1.0 - alphaAcc);
-            }
-        } else if (d > threshold.y) {
-            if (useHighclip) {
-                accumColor.rgb += (1.0 - alphaAcc) * highclip.a * highclip.rgb;
-                alphaAcc += highclip.a * (1.0 - alphaAcc);
-            }
         } else {
             float range = max(threshold.y - threshold.x, 0.0001);
             float normD = clamp((d - threshold.x) / range, 0.0, 1.0);
-            float scaledD = applyColorScale(normD, colorScale);
-            float sampLoc = min(scaledD * cScale + cOffset, 0.99);
-            vec4 col = texture(cmap, vec2(sampLoc, 0.5));
-            float alpha;
-            if (useClipScale) {
-                float normalizedOpacity = clamp(scaledD, 0.0, 1.0);
-                alpha = pow(max(normalizedOpacity, 0.001), transparency * opacityMag);
+            float scaledD = applyColorScale(normD, colorScale, logConstant);
+            float rawSampLoc = scaledD * cScale + cOffset;
+
+            if (d < threshold.x || rawSampLoc < 0.0) {
+                if (useLowclip) {
+                    accumColor.rgb += (1.0 - alphaAcc) * lowclip.a * lowclip.rgb;
+                    alphaAcc += lowclip.a * (1.0 - alphaAcc);
+                }
+            } else if (d > threshold.y || rawSampLoc > 1.0) {
+                if (useHighclip) {
+                    accumColor.rgb += (1.0 - alphaAcc) * highclip.a * highclip.rgb;
+                    alphaAcc += highclip.a * (1.0 - alphaAcc);
+                }
             } else {
-                alpha = pow(max(sampLoc, 0.001), transparency * opacityMag);
+                float sampLoc = clamp(rawSampLoc, 0.0, 0.99);
+                vec4 col = texture(cmap, vec2(sampLoc, 0.5));
+                float alpha;
+                if (useClipScale) {
+                    float normalizedOpacity = clamp(scaledD, 0.0, 1.0);
+                    alpha = pow(max(normalizedOpacity, 0.001), transparency * opacityMag);
+                } else {
+                    alpha = pow(max(sampLoc, 0.001), transparency * opacityMag);
+                }
+                accumColor.rgb += (1.0 - alphaAcc) * alpha * col.rgb;
+                alphaAcc += alpha * (1.0 - alphaAcc);
             }
-            accumColor.rgb += (1.0 - alphaAcc) * alpha * col.rgb;
-            alphaAcc += alpha * (1.0 - alphaAcc);
         }
 
         if (alphaAcc >= 1.0) break;

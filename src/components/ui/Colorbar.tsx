@@ -56,12 +56,13 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         variable: state.variable,
         scalingFactor: state.scalingFactor
     })))
-    const {cScale, cOffset, setCScale, setCOffset, colorScale, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({ 
+    const {cScale, cOffset, setCScale, setCOffset, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({ 
         cScale: state.cScale,
         cOffset: state.cOffset,
         setCScale: state.setCScale,
         setCOffset: state.setCOffset,
         colorScale: state.colorScale,
+        logConstant: state.logConstant,
         lowclip: state.lowclip,
         highclip: state.highclip,
         useLowclip: state.useLowclip,
@@ -111,11 +112,11 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         const locs = linspace(0, 100, tickCount);
         const vals = locs.map(loc => {
           const t = loc / 100;
-          const scaledT = applyColorScale(t, colorScale);
+          const scaledT = applyColorScale(t, colorScale, logConstant);
           return newMin + (newMax - newMin) * scaledT;
         });
         return [locs, vals]
-    },[ tickCount, newMin, newMax, colorScale])
+    },[ tickCount, newMin, newMax, colorScale, logConstant])
 
     // Mouse move handler
     const handleMouseMove = (e: MouseEvent) => {
@@ -200,7 +201,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
 
                 for (let x = 0; x < mainWidth; x++) {
                     const normX = x / mainWidth;
-                    const scaledT = applyColorScale(normX, colorScale);
+                    const scaledT = applyColorScale(normX, colorScale, logConstant);
                     const colorIndex = Math.min(Math.floor(scaledT * (colors.length - 1)), colors.length - 1);
                     ctx.fillStyle = colors[colorIndex] || '#000';
                     ctx.fillRect(startX + x, 0, 1, height);
@@ -212,7 +213,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 }
             }     
         }
-    }, [colors, colorScale, lowclip, highclip, useLowclip, useHighclip]);
+    }, [colors, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip]);
     const analysisString = useMemo(()=>{
         if (analysisMode){
             const twoVar = variable2 != "Default";
