@@ -124,7 +124,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         const startVal = (colorScale === 'log(x)' && origMin <= 0) ? effectiveMin : newMin;
         const vals = locs.map(loc => {
           const t = loc / 100;
-          const scaledT = applyColorScale(t, colorScale, logConstant, logEps, dataRange);
+          const scaledT = applyColorScale(t, colorScale, logConstant, logEps, dataRange, newMin);
           return startVal + (newMax - startVal) * scaledT;
         });
         return [locs, vals]
@@ -214,7 +214,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
 
                 for (let x = 0; x < mainWidth; x++) {
                     const normX = x / mainWidth;
-                    const scaledT = applyColorScale(normX, colorScale, logConstant, logEps, dataRange);
+                    const scaledT = applyColorScale(normX, colorScale, logConstant, logEps, dataRange, newMin);
                     const colorIndex = Math.min(Math.floor(scaledT * (colors.length - 1)), colors.length - 1);
                     ctx.fillStyle = colors[colorIndex] || '#000';
                     ctx.fillRect(startX + x, 0, 1, height);
@@ -226,7 +226,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 }
             }     
         }
-    }, [colors, colorScale, logConstant, logEps, dataRange, lowclip, highclip, useLowclip, useHighclip]);
+    }, [colors, colorScale, logConstant, logEps, dataRange, newMin, lowclip, highclip, useLowclip, useHighclip]);
     const analysisString = useMemo(()=>{
         if (analysisMode){
             const twoVar = variable2 != "Default";

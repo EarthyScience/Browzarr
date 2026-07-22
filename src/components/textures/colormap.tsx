@@ -24,13 +24,24 @@ export function colorScaleToId(colorScale: string): number {
   }
 }
 
-export function applyColorScale(x: number, scaleType: string, c = 1.0, logEps = 0.000001, dataRange = 100.0): number {
+export function applyColorScale(x: number, scaleType: string, c = 1.0, logEps = 0.000001, dataRange = 100.0, minVal = 0.0): number {
   const safeRange = Math.max(dataRange, 1.0);
   if (scaleType === 'log(x)') {
-    const eps = Math.max(logEps, 0.000001);
-    if (x < eps) return 0.0;
-    const clamped = Math.max(x, eps);
-    return (Math.log(clamped) - Math.log(eps)) / (Math.log(1.0) - Math.log(eps));
+    if (minVal > 0) {
+      const K = safeRange / minVal;
+      const clampedX = Math.max(x, 0.0);
+      const num = Math.log(1.0 + clampedX * K);
+      const denom = Math.log(1.0 + K);
+      return denom !== 0 ? num / denom : x;
+    } else {
+      const eps = Math.max(logEps, 0.000001);
+      if (x < eps) return 0.0;
+      const xRel = (x - eps) / (1.0 - eps);
+      const K = (1.0 - eps) / eps;
+      const num = Math.log(1.0 + xRel * K);
+      const denom = Math.log(1.0 + K);
+      return denom !== 0 ? num / denom : x;
+    }
   } else if (scaleType === 'log(1+x)') {
     const clampedX = Math.max(x, 0.0);
     const num = Math.log(1.0 + clampedX * safeRange);

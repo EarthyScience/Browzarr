@@ -34,6 +34,7 @@ uniform int colorScale;
 uniform float logConstant;
 uniform float logEps;
 uniform float dataRange;
+uniform float minVal;
 uniform vec4 lowclip;
 uniform vec4 highclip;
 uniform bool useLowclip;
@@ -42,12 +43,24 @@ uniform bool useHighclip;
 #define epsilon 0.000001
 #define pi 3.1415926535
 
-float applyColorScale(float x, int scaleType, float c, float eps, float range) {
+float applyColorScale(float x, int scaleType, float c, float eps, float range, float minV) {
     float safeRange = max(range, 1.0);
     if (scaleType == 1) {
-        float safeEps = max(eps, 0.000001);
-        float clamped = max(x, safeEps);
-        return (log(clamped) - log(safeEps)) / (log(1.0) - log(safeEps));
+        if (minV > 0.0) {
+            float K = safeRange / minV;
+            float clampedX = max(x, 0.0);
+            float num = log(1.0 + clampedX * K);
+            float denom = log(1.0 + K);
+            return denom != 0.0 ? num / denom : x;
+        } else {
+            float safeEps = max(eps, 0.000001);
+            if (x < safeEps) return 0.0;
+            float xRel = (x - safeEps) / (1.0 - safeEps);
+            float K = (1.0 - safeEps) / safeEps;
+            float num = log(1.0 + xRel * K);
+            float denom = log(1.0 + K);
+            return denom != 0.0 ? num / denom : x;
+        }
     } else if (scaleType == 2) {
         float clampedX = max(x, 0.0);
         float num = log(1.0 + clampedX * safeRange);
@@ -196,7 +209,7 @@ void main() {
                         alphaAcc += lowclip.a * (1.0 - alphaAcc);
                     }
                 } else {
-                    float scaledD = applyColorScale(normD, colorScale, logConstant, logEps, dataRange);
+                    float scaledD = applyColorScale(normD, colorScale, logConstant, logEps, dataRange, minVal);
                     float rawSampLoc = scaledD * cScale + cOffset;
 
                     if (d < threshold.x || rawSampLoc < 0.0) {

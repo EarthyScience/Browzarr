@@ -121,6 +121,7 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
                 logConstant: {value: logConstant},
                 logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
                 dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 1.0)},
+                minVal: {value: valueScales.minVal},
                 lowclip: {value: parseColorToVec4(lowclip)},
                 highclip: {value: parseColorToVec4(highclip)},
                 useLowclip: {value: useLowclip},
@@ -160,6 +161,7 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
             uniforms.logConstant.value = logConstant;
             uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
             uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 1.0);
+            uniforms.minVal.value = valueScales.minVal;
             uniforms.lowclip.value = parseColorToVec4(lowclip);
             uniforms.highclip.value = parseColorToVec4(highclip);
             uniforms.useLowclip.value = useLowclip;
