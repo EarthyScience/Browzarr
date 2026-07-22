@@ -125,6 +125,24 @@ export function SetReprojectionTexture(dimArrays: Array<number>[]){
     useGlobalStore.setState({remapTexture});
 }
 
+export function sampleCRS(tex: THREE.DataTexture, u:number, v:number): [THREE.Vector2, boolean] {
+  // Samples an array given UVs
+  const { data, width, height } = tex.image;
+  if (!data) return [new THREE.Vector2(u, v), true];
+
+  const x = Math.floor(u * (width - 1));
+  const y = Math.floor(v * (height - 1));
+
+  const idx = (y * width + x) * 4; // RGBA
+  const newU = THREE.DataUtils.fromHalfFloat(data[idx + 0])
+  const newV = THREE.DataUtils.fromHalfFloat(data[idx + 1])
+  const valid = THREE.DataUtils.fromHalfFloat(data[idx + 2])
+  return [
+    new THREE.Vector2(newU,newV),
+    valid > 0.5
+  ];
+}
+
 export function reproject(resolution: number = 256){
     const {nativeCRS, destCRS, plotType} = usePlotStore.getState()
     if (!nativeCRS || !destCRS) return; // This shouldn't trigger as the button will be disabled for this same condition
@@ -198,7 +216,7 @@ export function reproject(resolution: number = 256){
         targetWidth = width;
         targetHeight = height;
         xTicks = linspace(minX, maxX, targetWidth);
-        yTicks = linspace(minY, maxY, targetHeight);
+        yTicks = flipY ? linspace(maxY, minY, targetHeight) : linspace(minY, maxY, targetHeight);
         data = new Uint16Array(targetWidth * targetHeight * 4);
 
         const xDiff = Math.abs(maxX - minX);
@@ -237,8 +255,7 @@ export function reproject(resolution: number = 256){
             for (let i = 0; i < targetWidth; i++) {
                 const [lon, lat, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
                 const u = xRangeDiff > 0 ? (isXDescending ? (xMax - lon) / xRangeDiff : (lon - xMin) / xRangeDiff) : 0;
-                const v = yRangeDiff > 0 ? (isYDescending ? (yMax - lat) / yRangeDiff : (lat - yMin) / yRangeDiff) : 0;
-                
+                const v = (isYDescending ? (yMax - lat) / yRangeDiff : (lat - yMin) / yRangeDiff)
                 // Check boundary bounds to avoid displaying clamped blocks outside the dataset area
                 const inBounds = lon >= xMin && lon <= xMax && lat >= yMin && lat <= yMax;
                 const validVal = (valid === 1 && inBounds) ? 1 : 0;

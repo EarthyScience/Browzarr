@@ -5,6 +5,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 import { useShallow } from 'zustand/shallow'
 import { deg2rad, parseUVCoords } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
+import { useAxisIndices } from '@/hooks'
 
 function remapToXYZ(uv: THREE.Vector2, latBounds: number[], lonBounds: number[]): THREE.Vector3 {
 	const u = 1 - uv.x;
@@ -44,6 +45,7 @@ function normalToPos(uv: THREE.Vector2, normal:THREE.Vector3, ratios:{depthRatio
 }
 
 function normalToScale(normal:THREE.Vector3, ratios:{depthRatio:number, aspectRatio:number}, steps:{xSteps:number, ySteps:number, zSteps:number}){
+	//This function scales meshes to match the observed size of the pixels
 	let scaleZ, scaleY, scaleX: number;
 	const {xSteps,ySteps,zSteps} = steps;
 	const {aspectRatio, depthRatio} = ratios;
@@ -64,20 +66,20 @@ function normalToScale(normal:THREE.Vector3, ratios:{depthRatio:number, aspectRa
 }
 
 export const SquareMeshes = () => {
-	const {timeSeries, dataShape, shape, flipY} = useGlobalStore(useShallow(state=>({
+	const {timeSeries, dataShape, shape} = useGlobalStore(useShallow(state=>({
 		timeSeries:state.timeSeries,
 		dataShape: state.dataShape,
-		shape: state.shape, flipY:state.flipY
+		shape: state.shape
 	})))
 	const {plotType} = usePlotStore(useShallow(state=>({
 		plotType: state.plotType
 	})))
 	const {lonBounds, latBounds} = useCoordBounds()
+	const {xIdx, yIdx} = useAxisIndices()
 	const meshes: THREE.Mesh[] = useMemo(() =>{
 		const meshes = []
-		const dataLen = dataShape.length;
-		const xSteps = dataShape[dataLen-1];
-		const ySteps = dataShape[dataLen-2];
+		const xSteps = dataShape[xIdx];
+		const ySteps = dataShape[yIdx];
 		const normedXExtent = (lonBounds[1]-lonBounds[0])/360
 		const normedYExtent = (latBounds[1]-latBounds[0])/180
 		const isSphere = plotType == "sphere";
@@ -134,24 +136,29 @@ export const SquareMeshes = () => {
 }
 
 export const ColumnMeshes = () => {
-	const {timeSeries, dataShape, shape} = useGlobalStore(useShallow(state=>({
+	const {timeSeries, dataShape, remapTexture} = useGlobalStore(useShallow(state=>({
 		timeSeries:state.timeSeries,
 		dataShape: state.dataShape,
-		shape: state.shape
+		shape: state.shape,
+		remapTexture: state.remapTexture
 	})))
 	const {plotType} = usePlotStore(useShallow(state=>({
 		plotType: state.plotType
 	})))
-
+	const {xIdx, yIdx, zIdx} = useAxisIndices()
 	const meshes: THREE.Mesh[] = useMemo(()=>{
 		const meshes: THREE.Mesh[] = []
-		const dataLen = dataShape.length;
-		const xSteps = dataShape[dataLen-1];
-		const ySteps = dataShape[dataLen-2];
-		const zSteps = dataShape[dataLen-3];
-		const aspectRatio = dataShape[dataLen-2]/dataShape[dataLen-1]
-		const depthRatio = dataShape[dataLen-3]/dataShape[dataLen-1]
-		for (const [tsID, tsObj] of Object.entries(timeSeries)){
+		const xSteps = remapTexture 
+						? remapTexture.image.width 
+						: dataShape[xIdx];
+		const ySteps = remapTexture
+						? remapTexture.image.height 
+						: dataShape[yIdx];
+		const zSteps = dataShape[zIdx];
+		const aspectRatio = ySteps/xSteps; // This is not aspect ratio
+		const depthRatio = zSteps/xSteps;
+
+		for (const [_tsID, tsObj] of Object.entries(timeSeries)){
 			const {normal, uv, color} = tsObj
 			const position = normalToPos(uv, normal, {aspectRatio,depthRatio})
 			const meshScale = normalToScale(normal, {aspectRatio, depthRatio}, {xSteps, ySteps, zSteps})

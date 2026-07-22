@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useMemo, useEffect, useRef, useState} from 'react'
+import React, {useMemo, useEffect, useRef} from 'react'
 import * as THREE from 'three'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
@@ -10,6 +10,7 @@ import { vertShader } from '@/components/computation/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
 import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
+import { sampleCRS } from '../textures/ProjectionTexture';
 import { evaluateColorMap } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { flatFrag } from '../textures/shaders';
@@ -92,7 +93,6 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
     const infoRef = useRef<boolean>(false)
-    const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
     const rotateMap = analysisMode && axis == 2;
     const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
     const analysisDims = useMemo(() => {
@@ -117,67 +117,88 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     const eventRef = useRef<ThreeEvent<PointerEvent> | null>(null);
     const handleMove = (e: ThreeEvent<PointerEvent>) => {
       if (infoRef.current && e.uv) {
-        eventRef.current = e;
+        let {uv} = e;
+        if (!uv) return;
         setLoc([e.clientX, e.clientY]);
-        lastUV.current = e.uv;
-        const { x, y } = e.uv;
+        eventRef.current = e;
+        if (remapTexture){
+          const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
+          if (flipY) thisUV.y = 1-thisUV.y
+          if (isValid) uv = thisUV;
+          else{
+            val.current = NaN;
+            coords.current = [thisUV.y,thisUV.x]
+            return;
+          }
+        }
+      
+        const { x, y } = uv;
         const zSliceIdx = dimSlices.length > 2 ? 2 : 1;
         const ySliceIdx = dimSlices.length > 2 ? 1 : 0;
         const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[zSliceIdx].length;
         const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[ySliceIdx].length;
 
-        const xIdx = Math.round(x*xSize-.5)
-        const yIdx = Math.round(y*ySize-.5)
-        let dataIdx = xSize * yIdx + xIdx;
-        dataIdx += isFlat ? 0 : Math.floor((dimSlices[0].length-1) * animProg) * xSize*ySize
+        const xId = Math.round(x*xSize-.5)
+        const yId = Math.round(y*ySize-.5)
+        let dataIdx = xSize * yId + xId;
+        dataIdx += isFlat ? 0 : Math.floor((dimSlices[zIdx].length-1) * animProg) * xSize*ySize
         const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
         val.current = dataVal;
-        coords.current = isFlat ? analysisMode ? [analysisDims[0][yIdx], analysisDims[1][xIdx]] : [dimSlices[0][yIdx], dimSlices[1][xIdx]] : [dimSlices[ySliceIdx][yIdx], dimSlices[zSliceIdx][xIdx]]
+        coords.current = [y,x]
       }
     }
 
-
     // ----- TIMESERIES ----- //
     function HandleTimeSeries(event: THREE.Intersection){
-            const uv = event.uv;
-            const normal = new THREE.Vector3(0,0,1)
-            if(uv){
-              const tsUV = flipY ? new THREE.Vector2(uv.x, 1-uv.y) : uv
-              const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:tsUV,normal})
-              setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
-                
-              const coordUV = parseUVCoords({normal:normal,uv:uv})
-              let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length)] : null)
-              const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
-              const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
-              dimCoords = dimCoords.filter(val => val !== null)
-              const tsID = `${dimCoords[0]}_${dimCoords[1]}`
-              const tsObj = {
-                color: evaluateColorMap(getColorIdx() / 10, 'Paired'),
-                data: tempTS,
-                normal,
-                uv: tsUV,
-              }
-              incrementColorIdx();
-              updateTimeSeries({ [tsID] : tsObj})
-              const dimObj = {
-                first:{
-                  name:thisDimNames[0],
-                  loc:dimCoords[0] ?? 0,
-                  units:thisDimUnits[0]
-                },
-                second:{
-                  name:thisDimNames[1],
-                  loc:dimCoords[1] ?? 0,
-                  units:thisDimUnits[1]
-                },
-                plot:{
-                  units:dimUnits[0]
-                }
-              }
-              updateDimCoords({[tsID] : dimObj})
-            }
+      const uv = event.uv;
+      if (!uv) return;
+      const tsUV = flipY ? new THREE.Vector2(uv.x, 1-uv.y) : uv
+      let newUV: THREE.Vector2 | undefined;
+      const normal = new THREE.Vector3(0,0,1)
+      if (remapTexture){
+          const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
+          if (flipY) thisUV.y = 1-thisUV.y
+          if (isValid) newUV = thisUV;
+          else{
+            return;
           }
+        }
+      
+      const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:newUV ?? tsUV,normal})
+      setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
+        
+      const coordUV = parseUVCoords({normal:normal,uv:uv})
+      let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length)] : null)
+      const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
+      const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
+      dimCoords = dimCoords.filter(val => val !== null)
+      const tsID = `${dimCoords[0]}_${dimCoords[1]}`
+      const tsObj = {
+        color: evaluateColorMap(getColorIdx() / 10, 'Paired'),
+        data: tempTS,
+        normal,
+        uv: tsUV,
+      }
+      incrementColorIdx();
+      updateTimeSeries({ [tsID] : tsObj})
+      const dimObj = {
+        first:{
+          name:thisDimNames[0],
+          loc:dimCoords[0] ?? 0,
+          units:thisDimUnits[0]
+        },
+        second:{
+          name:thisDimNames[1],
+          loc:dimCoords[1] ?? 0,
+          units:thisDimUnits[1]
+        },
+        plot:{
+          units:dimUnits[0]
+        }
+      }
+      updateDimCoords({[tsID] : dimObj})
+      
+    }
     // ----- SHADER MATERIAL ----- //
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
@@ -223,7 +244,10 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         uniforms.fillValue.value = fillValue?? NaN
       }
     },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange])
-
+    useEffect(()=>{
+      // This is duplicated. Probably shoud just move it to Plot.tsx
+      useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
+    },[remapTexture])
   return (
     <>
     <SquareMeshes />
