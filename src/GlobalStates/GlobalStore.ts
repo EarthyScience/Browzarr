@@ -144,8 +144,18 @@ const createStore = () => create<StoreState>((set, get) => ({
   setShape: (shape) => set({ shape }),
   setValueScales: (valueScales) => set({ valueScales }),
   setColormap: (colormap) => set({ colormap }),
-  setColormapName: (colormapName) => set({ colormapName }),
-  setFlipColormap: (flipColormap) => set({ flipColormap }),
+  setColormapName: (colormapName) => {
+    const prev = get().colormap;
+    const palette = (colormapName === 'Default') ? 'Spectral' : colormapName;
+    const tex = GetColorMapTexture(prev, palette, 1, '#000000', 0, get().flipColormap);
+    set({ colormapName, colormap: tex });
+  },
+  setFlipColormap: (flipColormap) => {
+    const palette = (get().colormapName === 'Default') ? 'Spectral' : get().colormapName;
+    const prev = get().colormap;
+    const tex = GetColorMapTexture(prev, palette, 1, '#000000', 0, flipColormap);
+    set({ flipColormap, colormap: tex });
+  },
   setTimeSeries: (timeSeries) => set({ timeSeries }),
   updateTimeSeries: (newEntries) => {
     const merged = { ...newEntries, ...get().timeSeries  };

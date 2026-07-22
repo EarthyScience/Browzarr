@@ -1,4 +1,4 @@
-import { evaluate_cmap } from 'js-colormaps-es';
+import { evaluateColorMap } from '@/components/textures';
 
 interface UpdateColorbarParams {
   colorbarId: string;
@@ -66,7 +66,7 @@ export function updateColorbar(params: UpdateColorbarParams) {
 
 export function getColors(palette: string): [number, number, number][] {
   const unitInterval = Array.from({ length: 32 }, (_, index) => index / 31);
-  return unitInterval.map(value => evaluate_cmap(value, palette, false));
+  return unitInterval.map((value) => evaluateColorMap(value, palette, false));
 }
 
 export function rgbToHex(color: [number, number, number]): string {

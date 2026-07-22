@@ -5,7 +5,7 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
-import { evaluate_cmap } from 'js-colormaps-es';
+import { evaluateColorMap } from '@/components/textures';
 
 function normalizeUV(uv:number, scale:number, pos:number){
   return (uv*scale) + (pos-0.5*scale+0.5)
@@ -135,11 +135,11 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     dimCoords = dimCoords.filter(val => val !== null)
     const tsID = `${dimCoords[0]}_${dimCoords[1]}`
     const tsObj = {
-      color:evaluate_cmap(getColorIdx()/10,"Paired"),
+      color: evaluateColorMap(getColorIdx() / 10, 'Paired'),
       normal,
       uv,
       newUV, // Delete this if never solve moving between projections. ATM is redundant
-      data:tempTS
+      data: tempTS
     }
     updateTimeSeries({ [tsID] : tsObj})
     incrementColorIdx();

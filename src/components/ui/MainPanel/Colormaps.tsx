@@ -1,14 +1,30 @@
 "use client";
 
-import React, {useEffect, useState} from 'react'
-import { GetColorMapTexture } from '@/components/textures';
+import React, { useEffect, useState, useMemo, useRef } from 'react'
+import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss, colormapIndex } from '@/components/textures';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { colormaps } from '@/components/textures';
 import { useShallow } from 'zustand/shallow';
 import { MdOutlineSwapVert } from "react-icons/md";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button-enhanced";
-import Image from 'next/image';
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Search, X, Eye, EyeOff } from "lucide-react"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+
+// Render gradients directly instead of using pre-generated icon images
 import {
   Tooltip,
   TooltipContent,
@@ -17,7 +33,10 @@ import {
 
 const Colormaps = () => {
 
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [hoveredCmap, setHoveredCmap] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [showNames, setShowNames] = useState(true);
   const { colormap, setColormap, colormapName, flipColormap, setColormapName, setFlipColormap } = useGlobalStore(
     useShallow((state) => ({
       setColormap: state.setColormap,
@@ -30,11 +49,94 @@ const Colormaps = () => {
   );
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
+  const [prevColormapName, setPrevColormapName] = useState<string>(colormapName || '');
+  const previousTextureRef = useRef(colormap);
+  const colormapNameRef = useRef(colormapName);
+  const flipColormapRef = useRef(flipColormap);
+  const lastHoveredCmap = useRef<string | null>(null);
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    colormapIndex.forEach((entry) => {
+      if (entry.category) set.add(entry.category);
+    });
+    return ['None', ...Array.from(set).sort()];
+  }, []);
+
+  const filteredColormaps = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    // No search: category filtering works normally
+    if (!query) {
+      if (!selectedCategory || selectedCategory === 'None') {
+        return colormaps;
+      }
+
+      return colormapIndex
+        .filter((entry) => entry.category === selectedCategory)
+        .map((entry) => entry.name);
+    }
+
+    // Search ALWAYS uses the complete collection
+    const nameMatches: string[] = [];
+    const otherMatches: string[] = [];
+
+    for (const entry of colormapIndex) {
+      const nameHit = entry.name.toLowerCase().includes(query);
+      const categoryHit = entry.category?.toLowerCase().includes(query);
+      const notesHit = entry.notes?.toLowerCase().includes(query);
+
+      if (nameHit) {
+        nameMatches.push(entry.name);
+      } else if (categoryHit || notesHit) {
+        otherMatches.push(entry.name);
+      }
+    }
+
+    return [...nameMatches, ...otherMatches];
+  }, [searchQuery, selectedCategory]);
+
+  const visibleMatches = useMemo(() => filteredColormaps.slice(0, 64), [filteredColormaps]);
+  const hasMoreResults = filteredColormaps.length > visibleMatches.length;
+
+  // Keep refs in sync with store state changes
   useEffect(() => {
-    setColormap(
-      GetColorMapTexture(colormap, (hoveredCmap || colormapName) === "Default" ? "Spectral" : (hoveredCmap || colormapName), 1, "#000000", 0, flipColormap)
-    );
-  }, [colormapName, flipColormap, hoveredCmap]);
+    colormapNameRef.current = colormapName;
+    flipColormapRef.current = flipColormap;
+  }, [colormapName, flipColormap]);
+
+  useEffect(() => {
+    previousTextureRef.current = colormap;
+  }, [colormap]);
+
+  useEffect(() => {
+    if (hoveredCmap !== null) {
+      // Show hovered colormap preview
+      setColormap(
+        GetColorMapTexture(
+          previousTextureRef.current,
+          hoveredCmap === "Default" ? "Spectral" : hoveredCmap,
+          1,
+          "#000000",
+          0,
+          flipColormapRef.current
+        )
+      );
+    } else if (lastHoveredCmap.current !== null) {
+      // Mouse left hover: revert to selected colormap
+      setColormap(
+        GetColorMapTexture(
+          previousTextureRef.current,
+          colormapNameRef.current === "Default" ? "Spectral" : colormapNameRef.current,
+          1,
+          "#000000",
+          0,
+          flipColormapRef.current
+        )
+      );
+    }
+    lastHoveredCmap.current = hoveredCmap;
+  }, [hoveredCmap, setColormap]);
 
   useEffect(() => {
       const handleResize = () => {
@@ -55,10 +157,12 @@ const Colormaps = () => {
             <div>
               <Button
                 size="icon"
-                className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full'
+                className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full cmap-trigger'
                 style={{
-                  backgroundImage: `url(./colormap_icons/${colormapName}.webp)` ,
-                  backgroundSize: "100%",
+                  backgroundImage: getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral'),
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'center',
+                  backgroundSize: '100% 100%',
                   transform: flipColormap ? "scaleX(-1)" : "",
                   width: "32px",
                   height: "32px",
@@ -80,38 +184,210 @@ const Colormaps = () => {
       <PopoverContent
         side={popoverSide}
         className="colormaps"
+        style={{
+          width: '280px',
+          maxWidth: 'calc(100vw - 1.5rem)',
+          overflow: 'hidden',
+          overscrollBehavior: 'contain',
+          padding: 0,
+          boxSizing: 'border-box',
+          maxHeight: popoverSide === 'top' ? '80vh' : undefined,
+        }}
       >
-            {colormaps.map((val) => (
-              <Image
-                key={val}
-                className={`cmap ${flipColormap ? "flipped" : ""}`}
-                src={`./colormap_icons/${val}.webp`}
-                alt={val}
-                height={100}
-                width={256}
-                onMouseEnter={() => setHoveredCmap(val)}
-                onMouseLeave={() => setHoveredCmap(null)}
+        <style>{`\n.colormaps {\n  scrollbar-width: none;\n}\n.colormaps::-webkit-scrollbar {\n  display: none;\n}\n.colormaps .rendered-cmap, .colormaps .cmap-trigger, .colormaps .search-input {\n  border: 1px solid rgba(0,0,0,0.08);\n}\n@media (prefers-color-scheme: dark) {\n  .colormaps .rendered-cmap, .colormaps .cmap-trigger, .colormaps .search-input {\n    border: 1px solid rgba(255,255,255,0.12);\n  }\n}\n`}</style>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.6rem', width: '100%', padding: '0.75rem 0.75rem 0' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', width: '100%', flexWrap: 'wrap', padding: 0 }}>
+            <ButtonGroup className="justify-start gap-0.25">
+              <Button
+                type="button"
+                onClick={() => setFlipColormap(!flipColormap)}
+                size="sm"
+                variant="secondary"
+                className="cursor-pointer"
+              >
+                {flipColormap ? 'Unflip' : 'Flip'}
+              </Button>
+              <Button
+                type="button"
                 onClick={() => {
-                  setColormapName(val);
+                  setColormapName(prevColormapName);
+                  setFlipColormap(false);
                   setHoveredCmap(null);
                 }}
+                size="sm"
+                variant="secondary"
+                className="cursor-pointer"
+              >
+                Revert
+              </Button>
+            </ButtonGroup>
+
+            <Select
+              value={selectedCategory === 'None' ? '' : selectedCategory}
+              onValueChange={(value) => setSelectedCategory(value === 'None' ? '' : value)}
+            >
+              <SelectTrigger size="sm" className="w-[110px] cursor-pointer">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat} className="cursor-pointer">
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div style={{ marginRight: 'auto', display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="cursor-pointer"
+                    onClick={() => setShowNames(prev => !prev)}
+                  >
+                    {showNames ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center">
+                  <span>{showNames ? "Hide names" : "Show names"}</span>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="border-b-1 border-amber-400"
+                  >
+                    <span className="max-w-[188px] truncate">
+                      {colormapName}
+                    </span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center">
+                  <span>{colormapName}</span>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+          <Separator/>
+          <InputGroup className="w-full">
+            <InputGroupInput 
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search..."
+            />
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            {searchQuery ? (
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 p-0"
+            onClick={() => setSearchQuery('')}
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        ) : null}
+        </InputGroup>
+        <Separator/>
+        </div>
+        {(searchQuery.trim() || selectedCategory !== 'None') && (
+          <div className="search-results-summary" style={{ margin: '0 0.75rem 0.75rem', fontSize: '0.85rem', color: 'var(--ui-text-muted)' }}>
+            Showing <strong>{visibleMatches.length}</strong> of <strong>{filteredColormaps.length}</strong>
+            {selectedCategory && selectedCategory !== 'None' && !searchQuery.trim() && <> in <strong>{selectedCategory}</strong></>}
+            {searchQuery.trim() && <> matching &quot;{searchQuery}&quot;</>}
+            {hasMoreResults && ' — first 64 shown'}
+          </div>
+        )}
+
+        <div className="colormap-list-container" style={{ marginTop: '0.5rem', width: '100%', padding: '0 0.75rem 0.75rem' }}>
+          <div style={{ maxHeight: 'min(50vh, 360px)', overflowY: 'auto', paddingRight: 0, width: '100%', boxSizing: 'border-box' }}>
+            <div className="colormaps-grid" style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(1, minmax(0, 1fr))', width: '100%', boxSizing: 'border-box' }}>
+          {visibleMatches.map((val) => (
+            <button
+              key={val}
+              className="cmap rendered-cmap"
+              type="button"
+              onClick={() => {
+                setPrevColormapName(colormapName);
+                setColormapName(val);
+                setHoveredCmap(null);
+              }}
+              onMouseEnter={() => setHoveredCmap(val)}
+              onMouseLeave={() => setHoveredCmap(null)}
+              style={{
+                width: '96%',
+                minWidth: 0,
+                height: '34px',
+                borderRadius: '0.5rem',
+                color: 'var(--ui-text-highlighted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                padding: '0',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                textShadow: '0 1px 3px rgba(0,0,0,0.45)',
+                overflow: 'hidden',
+                position: 'relative',
+              }}
+            >
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: 'inherit',
+                  backgroundImage: getColormapGradientCss(val),
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'center',
+                  backgroundSize: '100% 100%',
+                  transform: flipColormap ? 'scaleX(-1)' : undefined,
+                  pointerEvents: 'none',
+                }}
               />
-            ))}
-        <MdOutlineSwapVert
-            className="flipper"
-            style={{
-              position: "absolute",
-              top:"-2rem",
-              right: "80%",
-              bottom: "90%",
-              height: "50px",
-              width: "50px",
-              cursor: "pointer",
-              transform: `${flipColormap ? "rotate(270deg)" : "rotate(90deg)"}`,
-              transition: ".25s",
-            }}
-            onClick={() => setFlipColormap(!flipColormap)}
-        />
+              {showNames && (
+                <span
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    padding: '0.05rem 0.75rem',
+                    marginLeft: 0,
+                    borderRadius: '0.38rem',
+                    background: 'rgba(244, 237, 237, 0.13)',
+                    backdropFilter: 'blur(8px) saturate(140%)',
+                    WebkitBackdropFilter: 'blur(8px) saturate(140%)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
+                    fontWeight: 400,
+                    color: 'rgba(241, 237, 237, 0.96)',
+                  }}
+                >
+                  {val}
+                </span>
+              )}
+            </button>
+          ))}
+            </div>
+        </div>
+        {filteredColormaps.length === 0 && (
+          <div style={{ padding: '1rem 0', color: 'var(--ui-text-muted)' }}>
+            No colormaps found. Try a different search term.
+          </div>
+        )}
+        </div>
       </PopoverContent>
       
       </Popover>

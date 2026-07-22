@@ -45,7 +45,7 @@
 .cmap{
     padding: 0px 0px;
     cursor: pointer;
-    max-width: 200px;
+    max-width: 95%;
     height: 36px;
     border-radius: 6px;
     transition: 0.25s;
@@ -62,7 +62,7 @@
 }
 
 .colormaps{
-    max-height: 50vh;
+    max-height: 70vh;
     width: 234px;
     display:grid;
     gap:3px;
