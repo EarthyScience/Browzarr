@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useMemo, useEffect, useRef, useState} from 'react'
+import React, {useMemo, useEffect, useRef} from 'react'
 import * as THREE from 'three'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
@@ -9,7 +9,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { vertShader } from '@/components/computation/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
-import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad, sample2D } from '@/utils/HelperFuncs';
 import { evaluate_cmap } from 'js-colormaps-es';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { flatFrag } from '../textures/shaders';
@@ -92,7 +92,6 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
     const infoRef = useRef<boolean>(false)
-    const lastUV = useRef<THREE.Vector2>(new THREE.Vector2(0,0))
     const rotateMap = analysisMode && axis == 2;
     const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
     const analysisDims = useMemo(() => {
@@ -117,9 +116,22 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     const eventRef = useRef<ThreeEvent<PointerEvent> | null>(null);
     const handleMove = (e: ThreeEvent<PointerEvent>) => {
       if (infoRef.current && e.uv) {
+        let {uv} = e;
+        if (!uv) return;
         eventRef.current = e;
+        if (remapTexture){
+          const [thisUV, isValid] = sample2D(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
+          if (flipY) thisUV.y = 1-thisUV.y
+          if (isValid) uv = thisUV;
+          else{
+            val.current = NaN;
+            setLoc([e.clientX, e.clientY]);
+            return;
+          }
+        }
+        
         setLoc([e.clientX, e.clientY]);
-        lastUV.current = e.uv;
+
         const { x, y } = e.uv;
         const zSliceIdx = dimSlices.length > 2 ? 2 : 1;
         const ySliceIdx = dimSlices.length > 2 ? 1 : 0;
@@ -132,10 +144,9 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         dataIdx += isFlat ? 0 : Math.floor((dimSlices[0].length-1) * animProg) * xSize*ySize
         const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
         val.current = dataVal;
-        coords.current = isFlat ? analysisMode ? [analysisDims[0][yIdx], analysisDims[1][xIdx]] : [dimSlices[0][yIdx], dimSlices[1][xIdx]] : [dimSlices[ySliceIdx][yIdx], dimSlices[zSliceIdx][xIdx]]
+        coords.current = [y,x]
       }
     }
-
 
     // ----- TIMESERIES ----- //
     function HandleTimeSeries(event: THREE.Intersection){
@@ -223,7 +234,10 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         uniforms.fillValue.value = fillValue?? NaN
       }
     },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange])
-
+    useEffect(()=>{
+      // This is duplicated. Probably shoud just move it to Plot.tsx
+      useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
+    },[remapTexture])
   return (
     <>
     <SquareMeshes />

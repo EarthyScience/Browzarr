@@ -8,25 +8,28 @@ import { parseLoc } from '@/utils/HelperFuncs'
 
 
 const AnalysisInfo = ({loc, show, info, } : {loc: number[], show: boolean, info: number[]}) => {
-    const {dimNames, dimUnits} = useGlobalStore(useShallow(state=>({dimNames: state.dimNames, dimUnits: state.dimUnits})))
+    const {axisDimNames, axisDimArrays, axisDimUnits} = useGlobalStore(useShallow(state=>({axisDimNames: state.axisDimNames, axisDimArrays:state.axisDimArrays, axisDimUnits: state.axisDimUnits})))
     const axis = useAnalysisStore(state=> state.axis)
-    const plotNames = useMemo(()=>{
-        if (dimNames.length < 3){
-            return [dimNames[0], dimNames[1]]
+    // This logic is weak and May not hold up with >3 dimensions
+    const plotInfo = useMemo(()=>{
+        let plotNames, plotUnits, plotArrays;
+        if (axisDimNames.length < 3){
+            plotNames = [axisDimNames[0], axisDimNames[1]]
+            plotUnits = [axisDimUnits[0], axisDimUnits[1]]
+            plotArrays = [axisDimArrays[0], axisDimArrays[1]]
         }
         else{
-            return dimNames.filter((_val,idx)=> idx != axis)
+            plotNames = axisDimNames.filter((_val,idx)=> idx != axis)
+            plotUnits = axisDimUnits.filter((_val,idx)=> idx != axis)
+            plotArrays = axisDimArrays.filter((_val,idx)=> idx != axis)
         }
-    },[dimNames,  axis]) 
-
-    const plotUnits = useMemo(()=>{
-        if (dimNames.length < 3){
-            return [dimUnits[0], dimUnits[1]]
-        }
-        else{
-            return dimUnits.filter((_val,idx)=> idx != axis)
-        }
-    },[dimUnits, axis])
+        return {plotNames, plotUnits, plotArrays}
+    },[axisDimNames, axisDimUnits, axisDimArrays, axis]) 
+    const {plotNames, plotUnits, plotArrays} = plotInfo;
+    const yArray = plotArrays[0]
+    const xArray = plotArrays[1]
+    const yCoord = yArray[Math.floor(info[0] * yArray.length)]
+    const xCoord = xArray[Math.floor(info[1] * xArray.length)]
 
   return (
     <div className='analysis-overlay'
@@ -36,8 +39,8 @@ const AnalysisInfo = ({loc, show, info, } : {loc: number[], show: boolean, info:
             display: show ? '' : 'none'
         }}
     >
-        {`${plotNames[0]}: ${show && parseLoc(info[0],plotUnits[0])}`}<br/>
-        {`${plotNames[1]}: ${show && parseLoc(info[1],plotUnits[1])}`}<br/>
+        {`${plotNames[0]}: ${show && parseLoc(yCoord,plotUnits[0])}`}<br/>
+        {`${plotNames[1]}: ${show && parseLoc(xCoord,plotUnits[1])}`}<br/>
         {`Value: ${Math.round(info[2] * 100)/100}`}
     </div>
     )

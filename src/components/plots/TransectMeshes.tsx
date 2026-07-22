@@ -66,20 +66,20 @@ function normalToScale(normal:THREE.Vector3, ratios:{depthRatio:number, aspectRa
 }
 
 export const SquareMeshes = () => {
-	const {timeSeries, dataShape, shape, flipY} = useGlobalStore(useShallow(state=>({
+	const {timeSeries, dataShape, shape} = useGlobalStore(useShallow(state=>({
 		timeSeries:state.timeSeries,
 		dataShape: state.dataShape,
-		shape: state.shape, flipY:state.flipY
+		shape: state.shape
 	})))
 	const {plotType} = usePlotStore(useShallow(state=>({
 		plotType: state.plotType
 	})))
 	const {lonBounds, latBounds} = useCoordBounds()
+	const {xIdx, yIdx} = useAxisIndices()
 	const meshes: THREE.Mesh[] = useMemo(() =>{
 		const meshes = []
-		const dataLen = dataShape.length;
-		const xSteps = dataShape[dataLen-1];
-		const ySteps = dataShape[dataLen-2];
+		const xSteps = dataShape[xIdx];
+		const ySteps = dataShape[yIdx];
 		const normedXExtent = (lonBounds[1]-lonBounds[0])/360
 		const normedYExtent = (latBounds[1]-latBounds[0])/180
 		const isSphere = plotType == "sphere";
@@ -158,9 +158,8 @@ export const ColumnMeshes = () => {
 		const aspectRatio = ySteps/xSteps; // This is not aspect ratio
 		const depthRatio = zSteps/xSteps;
 
-		for (const [tsID, tsObj] of Object.entries(timeSeries)){
-			const {normal, uv, newUV, color} = tsObj
-			const thisUV = remapTexture ? uv : newUV?? uv;
+		for (const [_tsID, tsObj] of Object.entries(timeSeries)){
+			const {normal, uv, color} = tsObj
 			const position = normalToPos(uv, normal, {aspectRatio,depthRatio})
 			const meshScale = normalToScale(normal, {aspectRatio, depthRatio}, {xSteps, ySteps, zSteps})
 			const thisColor = color.map((c: number) => Math.pow((c/255), 2.2)) // Gamma correct the color
@@ -173,7 +172,7 @@ export const ColumnMeshes = () => {
 		}
 		return meshes
 
-	},[timeSeries, plotType, remapTexture])
+	},[timeSeries, plotType])
 	useEffect(() => {
 		return () => {
 			meshes.forEach(mesh => {

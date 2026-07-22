@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
+import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray, sample2D } from '@/utils/HelperFuncs';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
@@ -24,23 +24,6 @@ function updateFace(
     uvs.setX(i,newX)
     uvs.setY(i,newY)
   }
-}
-
-function sample2D(tex: THREE.DataTexture, u:number, v:number): [THREE.Vector2, boolean] {
-  const { data, width, height } = tex.image;
-  if (!data) return [new THREE.Vector2(u, v), true];
-
-  const x = Math.floor(u * (width - 1));
-  const y = Math.floor(v * (height - 1));
-
-  const idx = (y * width + x) * 4; // RGBA
-  const newU = THREE.DataUtils.fromHalfFloat(data[idx + 0])
-  const newV = THREE.DataUtils.fromHalfFloat(data[idx + 1])
-  const valid = THREE.DataUtils.fromHalfFloat(data[idx + 2])
-  return [
-    new THREE.Vector2(newU,newV),
-    valid > 0.5
-  ];
 }
 
 
@@ -75,7 +58,7 @@ const UpdateUVs = (
   //Z-
   updateFace(20, {pos:xPos, scale:xScale}, {pos:yPos, scale:yScale}, uvs)
 
-  }
+}
 
 
 export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
@@ -118,9 +101,8 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
 
   function HandleTimeSeries(event: THREE.Intersection){
     const uv = event.uv!;
-    let valid = true;
-    let newUV: THREE.Vector2 | undefined;
     const normal = event.normal!;
+    let newUV: THREE.Vector2 | undefined;
     if (remapTexture && Math.abs(normal.z) > 0.5){ // Get new UV if reprojected and along z Axis
       const [thisUV, isValid] = sample2D(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
       if (flipY) thisUV.y = 1-thisUV.y
@@ -135,10 +117,10 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       setDimCoords({});
     }
     lastNormal.current = dimAxis;
-    const tempTS = valid ? GetTimeSeries(
+    const tempTS = GetTimeSeries(
       { data: analysisMode ? analysisArray : GetCurrentArray(), shape: dataShape, stride: strides },
       { uv: newUV ?? uv, normal }
-    ) : []
+    )
     const plotDim = (normal.toArray()).map((val, idx) => {
       if (Math.abs(val) > 0) {
         return idx;
@@ -146,7 +128,7 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       return null;}).filter(idx => idx !== null);
     setPlotDim(2-plotDim[0]) //I think this 2 is only if there are 3-dims. Need to rework the logic
 
-    const coordUV = valid ? parseUVCoords({normal:normal,uv}) : [null]
+    const coordUV = parseUVCoords({normal:normal,uv})
     let dimCoords = coordUV.map((val,idx)=>val ? axisDimArrays[idx][Math.round(val*axisDimArrays[idx].length)] : null)
     const thisDimNames = axisDimNames.filter((_,idx)=> dimCoords[idx] !== null)
     const thisDimUnits = axisDimUnits.filter((_,idx)=> dimCoords[idx] !== null)
@@ -156,7 +138,7 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       color:evaluate_cmap(getColorIdx()/10,"Paired"),
       normal,
       uv,
-      newUV,
+      newUV, // Delete this if never solve moving between projections. ATM is redundant
       data:tempTS
     }
     updateTimeSeries({ [tsID] : tsObj})
@@ -179,20 +161,24 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     updateDimCoords({[tsID] : dimObj})
   }
 
-  // useEffect(()=>{
-  //   // This effect gets the reprojected UVs for all points after reprojecting
-    
-  //   if (remapTexture){
-  //     const {timeSeries} = useGlobalStore.getState()
-  //     for (const [tsID, tsObj] of Object.entries(timeSeries)){
-  //       const {uv} = tsObj
-  //       const [thisUV, _isValid] = sample2D(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Should always be valid as either was plotted from original CRS, or invalid are not added in new CRS
-  //       if (flipY) thisUV.y = 1-thisUV.y
-  //       const newTSObj = {...tsObj, newUV:thisUV}
-  //       updateTimeSeries({ [tsID] : newTSObj})
-  //     }
-  //   }
-  // },[remapTexture])
+  useEffect(()=>{
+    // This effect gets the reprojected UVs for all points after reprojecting to move columns when switching to projection
+    // I can't quite get it to work so I will just clear the timeSeries for now. 
+    // if (remapTexture){
+    //   const newTimeSeries: Record<string, Record<string, any>> = {}
+    //   const {timeSeries} = useGlobalStore.getState()
+    //   for (const [tsID, tsObj] of Object.entries(timeSeries)){
+    //     const {uv} = tsObj
+    //     const [thisUV, _isValid] = sample2D(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Should always be valid as either was plotted from original CRS, or invalid are not added in new CRS
+        
+    //     if (flipY) thisUV.y = 1-thisUV.y
+    //     const newTSObj = {...tsObj, newUV:thisUV}
+    //     newTimeSeries[tsID] = newTSObj
+    //   }
+    //   useGlobalStore.setState({timeSeries:newTimeSeries})
+    // }
+    useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
+  },[remapTexture])
 
   const {geometry, position} = useMemo(() => {
     const xScale = (xRange[1] - xRange[0])/2
