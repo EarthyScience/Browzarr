@@ -51,11 +51,12 @@ vec3 givePosition(vec3 texCoord) {
 
     float px = (texCoord.x - 0.5);
     float py =  (texCoord.y - 0.5) / aspect;
-    float pz = (texCoord.z - 0.5) * timeScale;
+    float pz = mod(texCoord.z - animateProg, 1.0);
+    pz = (pz - 0.5) * timeScale;
 
     return vec3(px, py, pz) * GLOBAL_SCALE;
 }
-
+    
 float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
     if (index == 0) return texture(map[0], p).r;
     else if (index == 1) return texture(map[1], p).r;
