@@ -3,6 +3,40 @@ import { colorschemes, get, findColorScheme } from 'color-schemes-js';
 
 export const colormaps = ['magma', 'inferno', 'plasma', 'viridis', 'cividis', 'twilight', 'twilight_shifted', 'turbo', 'Blues', 'BrBG', 'BuGn', 'BuPu', 'CMRmap', 'GnBu', 'Greens', 'Greys', 'OrRd', 'Oranges', 'PRGn', 'PiYG', 'PuBu', 'PuBuGn', 'PuOr', 'PuRd', 'Purples', 'RdBu', 'RdGy', 'RdPu', 'RdYlBu', 'RdYlGn', 'Reds', 'Spectral', 'Wistia', 'YlGn', 'YlGnBu', 'YlOrBr', 'YlOrRd', 'afmhot', 'autumn', 'binary', 'bone', 'brg', 'bwr', 'cool', 'coolwarm', 'copper', 'cubehelix', 'flag', 'gist_earth', 'gist_gray', 'gist_heat', 'gist_ncar', 'gist_rainbow', 'gist_stern', 'gist_yarg', 'gnuplot', 'gnuplot2', 'gray', 'hot', 'hsv', 'jet', 'nipy_spectral', 'ocean', 'pink', 'prism', 'rainbow', 'seismic', 'spring', 'summer', 'terrain', 'winter', 'Accent', 'Dark2', 'Paired', 'Pastel1', 'Pastel2', 'Set1', 'Set2', 'Set3', 'tab10', 'tab20', 'tab20b', 'tab20c'];
 
+export const COLOR_SCALE_OPTIONS = [
+  { label: 'x (Linear)', value: 'identity' },
+  { label: 'log(x)', value: 'log(x)' },
+  { label: 'log(1+x)', value: 'log(1+x)' },
+  { label: 'sign(x)*sqrt(abs(x))', value: 'sign(x)*sqrt(abs(x))' },
+  { label: 'exp(x)/100', value: 'exp(x)/100' },
+] as const;
+
+export function colorScaleToId(colorScale: string): number {
+  switch (colorScale) {
+    case 'log(x)': return 1;
+    case 'log(1+x)': return 2;
+    case 'sign(x)*sqrt(abs(x))': return 3;
+    case 'exp(x)/100': return 4;
+    case 'identity':
+    default: return 0;
+  }
+}
+
+export function applyColorScale(x: number, scaleType: string): number {
+  if (scaleType === 'log(x)') {
+    const eps = 0.000001;
+    const clamped = Math.max(x, eps);
+    return (Math.log(clamped) - Math.log(eps)) / (Math.log(1.0 + eps) - Math.log(eps));
+  } else if (scaleType === 'log(1+x)') {
+    return Math.log(1.0 + Math.max(x, 0.0)) / Math.log(2.0);
+  } else if (scaleType === 'sign(x)*sqrt(abs(x))') {
+    return Math.sign(x) * Math.sqrt(Math.abs(x));
+  } else if (scaleType === 'exp(x)/100') {
+    return (Math.exp(x) - 1.0) / (Math.exp(1.0) - 1.0);
+  }
+  return x;
+}
+
 export const availableColorMapNames = Object.keys(colorschemes).sort();
 
 export type ColormapEntry = {

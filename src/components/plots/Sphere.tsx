@@ -5,12 +5,23 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
-import { evaluateColorMap } from '@/components/textures';
+import { evaluateColorMap, colorScaleToId } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
+
+function parseColorToVec4(hex: string, alpha = 1.0): THREE.Vector4 {
+  if (!hex) return new THREE.Vector4(0, 0, 0, alpha);
+  const cleanHex = hex.replace('#', '');
+  const bigint = parseInt(cleanHex, 16);
+  if (isNaN(bigint)) return new THREE.Vector4(0, 0, 0, alpha);
+  const r = ((bigint >> 16) & 255) / 255;
+  const g = ((bigint >> 8) & 255) / 255;
+  const b = (bigint & 255) / 255;
+  return new THREE.Vector4(r, g, b, alpha);
+}
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -64,7 +75,12 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
         fillValue:state.fillValue, maskValue:state.maskValue,
         borderTexture:state.borderTexture, maskTexture:state.maskTexture,
         getColorIdx: state.getColorIdx,
-        incrementColorIdx: state.incrementColorIdx
+        incrementColorIdx: state.incrementColorIdx,
+        colorScale: state.colorScale,
+        lowclip: state.lowclip,
+        highclip: state.highclip,
+        useLowclip: state.useLowclip,
+        useHighclip: state.useHighclip,
     })))
 
     const {xIdx, yIdx, zIdx} = useAxisIndices()
@@ -102,6 +118,11 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
                 displaceZero: {value: -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)},
                 displacement: {value: sphereDisplacement},
                 fillValue: {value: NaN},
+                colorScale: {value: colorScaleToId(colorScale)},
+                lowclip: {value: parseColorToVec4(lowclip)},
+                highclip: {value: parseColorToVec4(highclip)},
+                useLowclip: {value: useLowclip},
+                useHighclip: {value: useHighclip},
             },
             defines:{
                 ...(isFlat ? { IS_FLAT: true } : {}),
@@ -146,6 +167,11 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
       uniforms.displacement.value = sphereDisplacement
       uniforms.fillValue.value = fillValue?? NaN
+      uniforms.colorScale.value = colorScaleToId(colorScale)
+      uniforms.lowclip.value = parseColorToVec4(lowclip)
+      uniforms.highclip.value = parseColorToVec4(highclip)
+      uniforms.useLowclip.value = useLowclip
+      uniforms.useHighclip.value = useHighclip
     }
 
     useEffect(()=>{
@@ -155,7 +181,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       if (backMaterial){
         updateMaterial(backMaterial)
       }
-    },[textures, remapTexture, animProg, colormap, cOffset, cScale, animate, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement,valueRange, fillValue, maskValue, valueScales])
+    },[textures, remapTexture, animProg, colormap, cOffset, cScale, animate, lonBounds, latBounds, nanColor, nanTransparency, sphereDisplacement,valueRange, fillValue, maskValue, valueScales, colorScale, lowclip, highclip, useLowclip, useHighclip])
     
     
     function HandleTimeSeries(event: THREE.Intersection){

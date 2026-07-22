@@ -24,9 +24,29 @@ uniform vec3 nanColor;
 uniform float nanAlpha;
 uniform float fillValue;
 uniform int maskValue;
+uniform int colorScale;
+uniform vec4 lowclip;
+uniform vec4 highclip;
+uniform bool useLowclip;
+uniform bool useHighclip;
 
 #define pi 3.141592653
 #define epsilon 0.0001
+
+float applyColorScale(float x, int scaleType) {
+    if (scaleType == 1) {
+        float eps = 0.000001;
+        float clamped = max(x, eps);
+        return (log(clamped) - log(eps)) / (log(1.0 + eps) - log(eps));
+    } else if (scaleType == 2) {
+        return log(1.0 + max(x, 0.0)) / log(2.0);
+    } else if (scaleType == 3) {
+        return sign(x) * sqrt(abs(x));
+    } else if (scaleType == 4) {
+        return (exp(x) - 1.0) / (exp(1.0) - 1.0);
+    }
+    return x;
+}
 
 vec2 giveUV(vec3 position){
     vec3 n = normalize(position);
@@ -113,18 +133,21 @@ void main(){
         #endif
         localCoord = fract(localCoord);
         float strength = sample1(localCoord, textureIdx);
-        bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
-        if (!valid){
-            color = vec4(0.);
-            return;
+        bool isNaN = (strength == 1.) || (abs(strength - fillValue) < 0.005);
+        if (isNaN) {
+            color = vec4(nanColor, nanAlpha);
+        } else if (strength < threshold.x) {
+            color = useLowclip ? lowclip : vec4(0.);
+        } else if (strength > threshold.y) {
+            color = useHighclip ? highclip : vec4(0.);
+        } else {
+            float range = max(threshold.y - threshold.x, 0.0001);
+            float normS = clamp((strength - threshold.x) / range, 0.0, 1.0);
+            float scaledS = applyColorScale(normS, colorScale);
+            float sampLoc = min(scaledS * cScale + cOffset, 0.99);
+            color = vec4(texture(cmap, vec2(sampLoc, 0.5)).rgb, 1.0);
         }
-        bool isNaN = strength == 1. || abs(strength - fillValue) < 0.005;
-        strength = isNaN ? strength : (strength)*cScale;
-        strength = isNaN ? strength : min(strength+cOffset,0.99);
-        color = isNaN ? vec4(nanColor, nanAlpha) : texture(cmap, vec2(strength, 0.5));
-        if (!isNaN){
-            color.a = 1.;
-        }
+
         if (maskValue != 0){
             vec2 maskUV = giveMaskUV(aPosition);
             float mask = texture(maskTexture, maskUV).r;

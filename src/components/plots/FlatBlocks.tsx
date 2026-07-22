@@ -11,6 +11,18 @@ import { deg2rad } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
+import { colorScaleToId } from '@/components/textures';
+
+function parseColorToVec4(hex: string, alpha = 1.0): THREE.Vector4 {
+  if (!hex) return new THREE.Vector4(0, 0, 0, alpha);
+  const cleanHex = hex.replace('#', '');
+  const bigint = parseInt(cleanHex, 16);
+  if (isNaN(bigint)) return new THREE.Vector4(0, 0, 0, alpha);
+  const r = ((bigint >> 16) & 255) / 255;
+  const g = ((bigint >> 8) & 255) / 255;
+  const b = (bigint & 255) / 255;
+  return new THREE.Vector4(r, g, b, alpha);
+}
 
 const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
@@ -26,12 +38,14 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
         remapTexture: state.remapTexture
     })))
     const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, fillValue, valueRange, offsetNegatives, rotateFlat, maskTexture, maskValue,
-        } = usePlotStore(useShallow(state=> ({
+        colorScale, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state=> ({
         animate: state.animate, animProg: state.animProg, cOffset: state.cOffset,
         cScale: state.cScale, nanColor: state.nanColor, nanTransparency: state.nanTransparency,
         displacement: state.displacement, valueRange:state.valueRange, sphereResolution: state.sphereResolution,
         offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat,
         maskTexture:state.maskTexture, maskValue:state.maskValue, fillValue:state.fillValue,
+        colorScale: state.colorScale, lowclip: state.lowclip, highclip: state.highclip,
+        useLowclip: state.useLowclip, useHighclip: state.useHighclip,
     })))
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
         analysisMode: state.analysisMode, axis:state.axis
@@ -103,6 +117,11 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
                 displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal)) },
                 displacement: {value: displacement},
                 fillValue: {value: fillValue?? NaN},
+                colorScale: {value: colorScaleToId(colorScale)},
+                lowclip: {value: parseColorToVec4(lowclip)},
+                highclip: {value: parseColorToVec4(highclip)},
+                useLowclip: {value: useLowclip},
+                useHighclip: {value: useHighclip},
             },
             defines:{
                 ...(isFlat ? { IS_FLAT: true } : {}),
@@ -134,9 +153,14 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
             uniforms.aspect.value = width/height;
             uniforms.maskValue.value = maskValue;
             uniforms.fillValue.value = fillValue?? NaN;
+            uniforms.colorScale.value = colorScaleToId(colorScale);
+            uniforms.lowclip.value = parseColorToVec4(lowclip);
+            uniforms.highclip.value = parseColorToVec4(highclip);
+            uniforms.useLowclip.value = useLowclip;
+            uniforms.useHighclip.value = useHighclip;
         }
         invalidate();
-    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, valueRange, textures, fillValue, analysisMode, axis, width, height, latBounds, lonBounds, maskValue])
+    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, valueRange, textures, fillValue, analysisMode, axis, width, height, latBounds, lonBounds, maskValue, colorScale, lowclip, highclip, useLowclip, useHighclip])
 
   return (
 

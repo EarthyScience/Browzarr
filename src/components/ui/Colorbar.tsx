@@ -12,6 +12,8 @@ import './css/Colorbar.css'
 import { linspace } from '@/utils/HelperFuncs';
 import Metadata from "./MetaData";
 
+import { applyColorScale } from "@/components/textures";
+
 const operationMap = {
     // Reductions
     Mean: "Mean",
@@ -54,11 +56,16 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         variable: state.variable,
         scalingFactor: state.scalingFactor
     })))
-    const {cScale, cOffset, setCScale, setCOffset} = usePlotStore(useShallow(state => ({ 
+    const {cScale, cOffset, setCScale, setCOffset, colorScale, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({ 
         cScale: state.cScale,
         cOffset: state.cOffset,
         setCScale: state.setCScale,
-        setCOffset: state.setCOffset
+        setCOffset: state.setCOffset,
+        colorScale: state.colorScale,
+        lowclip: state.lowclip,
+        highclip: state.highclip,
+        useLowclip: state.useLowclip,
+        useHighclip: state.useHighclip,
     })))
     const {variable2, analysisMode, operation, kernelOperation, execute} = useAnalysisStore(useShallow(state => ({
         variable2: state.variable2,
@@ -101,10 +108,14 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     },[colormap])
 
     const [locs, vals] = useMemo(()=>{
-        const locs = linspace(0, 100, tickCount)
-        const vals = linspace(newMin, newMax, tickCount)
+        const locs = linspace(0, 100, tickCount);
+        const vals = locs.map(loc => {
+          const t = loc / 100;
+          const scaledT = applyColorScale(t, colorScale);
+          return newMin + (newMax - newMin) * scaledT;
+        });
         return [locs, vals]
-    },[ tickCount, newMin, newMax])
+    },[ tickCount, newMin, newMax, colorScale])
 
     // Mouse move handler
     const handleMouseMove = (e: MouseEvent) => {
@@ -169,17 +180,39 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     },[origMax, origMin, scalingFactor])
 
     useEffect(() => {
-        if (canvasRef.current) {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
-            if (ctx){
-                colors.forEach((color, index) => {
-                ctx.fillStyle = color;
-                ctx.fillRect(index*2, 0, 2, 24); // Each color is 1px wide and 50px tall
-                });
+        if (canvasRef.current && colors.length > 0) {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+                const width = canvas.width;
+                const height = canvas.height;
+                ctx.clearRect(0, 0, width, height);
+
+                const clipWidth = 14;
+                const startX = useLowclip ? clipWidth : 0;
+                const endX = useHighclip ? width - clipWidth : width;
+                const mainWidth = endX - startX;
+
+                if (useLowclip) {
+                    ctx.fillStyle = lowclip;
+                    ctx.fillRect(0, 0, clipWidth, height);
+                }
+
+                for (let x = 0; x < mainWidth; x++) {
+                    const normX = x / mainWidth;
+                    const scaledT = applyColorScale(normX, colorScale);
+                    const colorIndex = Math.min(Math.floor(scaledT * (colors.length - 1)), colors.length - 1);
+                    ctx.fillStyle = colors[colorIndex] || '#000';
+                    ctx.fillRect(startX + x, 0, 1, height);
+                }
+
+                if (useHighclip) {
+                    ctx.fillStyle = highclip;
+                    ctx.fillRect(endX, 0, clipWidth, height);
+                }
             }     
         }
-    }, [colors]);
+    }, [colors, colorScale, lowclip, highclip, useLowclip, useHighclip]);
     const analysisString = useMemo(()=>{
         if (analysisMode){
             const twoVar = variable2 != "Default";

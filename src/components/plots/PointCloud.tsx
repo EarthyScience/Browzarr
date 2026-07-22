@@ -10,6 +10,18 @@ import { UVCube } from './UVCube';
 import { ColumnMeshes } from './TransectMeshes';
 
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
+import { colorScaleToId } from '@/components/textures';
+
+function parseColorToVec4(hex: string, alpha = 1.0): THREE.Vector4 {
+  if (!hex) return new THREE.Vector4(0, 0, 0, alpha);
+  const cleanHex = hex.replace('#', '');
+  const bigint = parseInt(cleanHex, 16);
+  if (isNaN(bigint)) return new THREE.Vector4(0, 0, 0, alpha);
+  const r = ((bigint >> 16) & 255) / 255;
+  const g = ((bigint >> 8) & 255) / 255;
+  const b = (bigint & 255) / 255;
+  return new THREE.Vector4(r, g, b, alpha);
+}
 
 interface PCProps {
   texture: THREE.Data3DTexture[] | null,
@@ -52,7 +64,8 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
     })))
     const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, 
       timeScale, xRange, yRange, zRange, fillValue,
-      maskTexture, maskValue, disablePointScale} = usePlotStore(useShallow(state => ({
+      maskTexture, maskValue, disablePointScale,
+      colorScale, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({
       scalePoints: state.scalePoints,
       scaleIntensity: state.scaleIntensity,
       pointSize: state.pointSize,
@@ -67,7 +80,12 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       fillValue:state.fillValue,
       maskTexture: state.maskTexture,
       maskValue: state.maskValue,
-      disablePointScale: state.disablePointScale
+      disablePointScale: state.disablePointScale,
+      colorScale: state.colorScale,
+      lowclip: state.lowclip,
+      highclip: state.highclip,
+      useLowclip: state.useLowclip,
+      useHighclip: state.useHighclip,
     })))
 
     //Extract data and shape from Data3DTexture
@@ -132,7 +150,12 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         shape: {value: new THREE.Vector3(depth, height, width)},
         flatBounds:{value: new THREE.Vector4(xRange[0], xRange[1], zRange[0], zRange[1])},
         vertBounds:{value: new THREE.Vector2(yRange[0], yRange[1])},
-        fillValue: {value: fillValue?? NaN}
+        fillValue: {value: fillValue?? NaN},
+        colorScale: {value: colorScaleToId(colorScale)},
+        lowclip: {value: parseColorToVec4(lowclip)},
+        highclip: {value: parseColorToVec4(highclip)},
+        useLowclip: {value: useLowclip},
+        useHighclip: {value: useHighclip},
       },
       defines: {
         GLOBAL_SCALE: globalscale*2,
@@ -172,8 +195,13 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       uniforms.fillValue.value = fillValue?? NaN
       uniforms.maskValue.value = maskValue
       uniforms.aspect.value = shape.x/shape.y;
+      uniforms.colorScale.value = colorScaleToId(colorScale);
+      uniforms.lowclip.value = parseColorToVec4(lowclip);
+      uniforms.highclip.value = parseColorToVec4(highclip);
+      uniforms.useLowclip.value = useLowclip;
+      uniforms.useHighclip.value = useHighclip;
     }
-  }, [volTexture, depthRatio, depth, height, shape, width, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue]);
+  }, [volTexture, depthRatio, depth, height, shape, width, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue, colorScale, lowclip, highclip, useLowclip, useHighclip]);
   
   return (
     <group>

@@ -21,11 +21,31 @@ uniform vec2 lonBounds;
 uniform vec2 threshold;
 uniform int maskValue;
 uniform float fillValue;
+uniform int colorScale;
+uniform vec4 lowclip;
+uniform vec4 highclip;
+uniform bool useLowclip;
+uniform bool useHighclip;
 
 in vec2 vUv;
 out vec4 Color;
 #define epsilon 0.0001
 #define PI 3.14159265
+
+float applyColorScale(float x, int scaleType) {
+    if (scaleType == 1) {
+        float eps = 0.000001;
+        float clamped = max(x, eps);
+        return (log(clamped) - log(eps)) / (log(1.0 + eps) - log(eps));
+    } else if (scaleType == 2) {
+        return log(1.0 + max(x, 0.0)) / log(2.0);
+    } else if (scaleType == 3) {
+        return sign(x) * sqrt(abs(x));
+    } else if (scaleType == 4) {
+        return (exp(x) - 1.0) / (exp(1.0) - 1.0);
+    }
+    return x;
+}
 
 vec2 realCoords(vec2 uv){
     vec2 normalizedLon = lonBounds/2./PI+0.5;
@@ -103,15 +123,27 @@ void main() {
     localCoord = fract(localCoord);
 
     float strength = sample1(localCoord, textureIdx);
-    bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
-    if (!valid || abs(strength - fillValue) < 0.005){
-        Color = vec4(0.);
+    bool isNaN = (strength == 1.) || (abs(strength - fillValue) < 0.005);
+    if (isNaN) {
+        Color = vec4(nanColor, nanAlpha);
         return;
     }
-    bool isNaN = strength == 1.;
-    float sampLoc = isNaN ? strength: (strength)*cScale;
-    sampLoc = isNaN ? strength : min(sampLoc+cOffset,0.995);
-    Color = isNaN ? vec4(nanColor, nanAlpha) : vec4(texture2D(cmap, vec2(sampLoc, 0.5)).rgb, 1.);
+    if (strength < threshold.x) {
+        if (useLowclip) Color = lowclip;
+        else Color = vec4(0.);
+        return;
+    }
+    if (strength > threshold.y) {
+        if (useHighclip) Color = highclip;
+        else Color = vec4(0.);
+        return;
+    }
+
+    float range = max(threshold.y - threshold.x, 0.0001);
+    float normS = clamp((strength - threshold.x) / range, 0.0, 1.0);
+    float scaledS = applyColorScale(normS, colorScale);
+    float sampLoc = min(scaledS * cScale + cOffset, 0.995);
+    Color = vec4(texture(cmap, vec2(sampLoc, 0.5)).rgb, 1.0);
     // float check = float(texture(remapTexture,texCoord.xy).g >= 0.);
     // Color = vec4(check, 0., 0. , 1.);
     // Color = vec4(texture(remapTexture,texCoord.xy).rg, 0. , 1.);

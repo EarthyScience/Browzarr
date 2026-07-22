@@ -67,6 +67,11 @@ type PlotState ={
   camera: THREE.Camera | undefined;
   nativeCRS: string | undefined;
   destCRS: string | undefined;
+  colorScale: string;
+  lowclip: string;
+  highclip: string;
+  useLowclip: boolean;
+  useHighclip: boolean;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -91,6 +96,11 @@ type PlotState ={
   setAnimProg: (animProg: number) => void; 
   setCOffset: (cOffset: number) => void;
   setCScale: (cScale: number) => void;
+  setColorScale: (colorScale: string) => void;
+  setLowclip: (lowclip: string) => void;
+  setHighclip: (highclip: string) => void;
+  setUseLowclip: (useLowclip: boolean) => void;
+  setUseHighclip: (useHighclip: boolean) => void;
   setUseFragOpt: (useFragOpt: boolean) => void;
   setResetCamera: (resetCamera: boolean) => void;
   setUseCustomColor: (useCustomColor: boolean) => void;
@@ -193,6 +203,11 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   camera: undefined,
   nativeCRS: undefined,
   destCRS: undefined,
+  colorScale: "identity",
+  lowclip: "#000000",
+  highclip: "#ffffff",
+  useLowclip: false,
+  useHighclip: false,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
@@ -219,6 +234,11 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setAnimProg: (animProg) => set({ animProg }),
   setCOffset: (cOffset) => set({ cOffset }),
   setCScale: (cScale) => set({ cScale }),
+  setColorScale: (colorScale) => set({ colorScale }),
+  setLowclip: (lowclip) => set({ lowclip }),
+  setHighclip: (highclip) => set({ highclip }),
+  setUseLowclip: (useLowclip) => set({ useLowclip }),
+  setUseHighclip: (useHighclip) => set({ useHighclip }),
   setUseFragOpt: (useFragOpt) => set({ useFragOpt }),
   setResetCamera: (resetCamera) => set({ resetCamera }),
   setUseCustomColor: (useCustomColor) => set({ useCustomColor }),

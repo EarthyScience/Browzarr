@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from 'react'
-import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss, colormapIndex } from '@/components/textures';
+import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss, colormapIndex, COLOR_SCALE_OPTIONS } from '@/components/textures';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
 import { MdOutlineSwapVert } from "react-icons/md";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -45,6 +46,20 @@ const Colormaps = () => {
       flipColormap: state.flipColormap,
       setColormapName: state.setColormapName,
       setFlipColormap: state.setFlipColormap,
+    }))
+  );
+  const { colorScale, setColorScale, lowclip, setLowclip, highclip, setHighclip, useLowclip, setUseLowclip, useHighclip, setUseHighclip } = usePlotStore(
+    useShallow((state) => ({
+      colorScale: state.colorScale,
+      setColorScale: state.setColorScale,
+      lowclip: state.lowclip,
+      setLowclip: state.setLowclip,
+      highclip: state.highclip,
+      setHighclip: state.setHighclip,
+      useLowclip: state.useLowclip,
+      setUseLowclip: state.setUseLowclip,
+      useHighclip: state.useHighclip,
+      setUseHighclip: state.setUseHighclip,
     }))
   );
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
@@ -275,6 +290,62 @@ const Colormaps = () => {
                   <span>{colormapName}</span>
                 </TooltipContent>
               </Tooltip>
+            </div>
+          </div>
+          <Separator/>
+          <div className="flex flex-col gap-2 w-full text-xs py-1">
+            <div className="flex items-center justify-between gap-2 w-full">
+              <span className="font-semibold whitespace-nowrap">Color Scale:</span>
+              <Select value={colorScale} onValueChange={setColorScale}>
+                <SelectTrigger size="sm" className="w-[140px] cursor-pointer">
+                  <SelectValue placeholder="Scale" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLOR_SCALE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value} className="cursor-pointer">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between gap-2 w-full">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useLowclip}
+                  onChange={(e) => setUseLowclip(e.target.checked)}
+                  className="cursor-pointer"
+                />
+                <span>Lowclip Color</span>
+              </label>
+              {useLowclip && (
+                <input
+                  type="color"
+                  value={lowclip}
+                  onChange={(e) => setLowclip(e.target.value)}
+                  className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                />
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-2 w-full">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useHighclip}
+                  onChange={(e) => setUseHighclip(e.target.checked)}
+                  className="cursor-pointer"
+                />
+                <span>Highclip Color</span>
+              </label>
+              {useHighclip && (
+                <input
+                  type="color"
+                  value={highclip}
+                  onChange={(e) => setHighclip(e.target.value)}
+                  className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                />
+              )}
             </div>
           </div>
           <Separator/>
