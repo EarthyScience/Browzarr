@@ -24,24 +24,31 @@ export function colorScaleToId(colorScale: string): number {
   }
 }
 
-export function applyColorScale(x: number, scaleType: string, c = 1.0, logEps = 0.000001): number {
+export function applyColorScale(x: number, scaleType: string, c = 1.0, logEps = 0.000001, dataRange = 100.0): number {
+  const safeRange = Math.max(dataRange, 1.0);
   if (scaleType === 'log(x)') {
     const eps = Math.max(logEps, 0.000001);
     if (x < eps) return 0.0;
     const clamped = Math.max(x, eps);
     return (Math.log(clamped) - Math.log(eps)) / (Math.log(1.0) - Math.log(eps));
   } else if (scaleType === 'log(1+x)') {
-    return Math.log(1.0 + Math.max(x, 0.0)) / Math.log(2.0);
+    const clampedX = Math.max(x, 0.0);
+    const num = Math.log(1.0 + clampedX * safeRange);
+    const denom = Math.log(1.0 + safeRange);
+    return denom !== 0 ? num / denom : x;
   } else if (scaleType === 'log(x+c)') {
     const safeC = Math.max(c, 0.00001);
-    const clamped = Math.max(x + safeC, 0.000001);
-    const num = Math.log(clamped) - Math.log(safeC);
-    const denom = Math.log(1.0 + safeC) - Math.log(safeC);
+    const clampedX = Math.max(x, 0.0);
+    const num = Math.log(safeC + clampedX * safeRange) - Math.log(safeC);
+    const denom = Math.log(safeC + safeRange) - Math.log(safeC);
     return denom !== 0 ? num / denom : x;
   } else if (scaleType === 'sign(x)*sqrt(abs(x))') {
     return Math.sign(x) * Math.sqrt(Math.abs(x));
   } else if (scaleType === 'exp(x)/100') {
-    return (Math.exp(x) - 1.0) / (Math.exp(1.0) - 1.0);
+    const clampedX = Math.max(x, 0.0);
+    const num = Math.exp(clampedX * Math.min(safeRange, 10.0)) - 1.0;
+    const denom = Math.exp(Math.min(safeRange, 10.0)) - 1.0;
+    return denom !== 0 ? num / denom : x;
   }
   return x;
 }

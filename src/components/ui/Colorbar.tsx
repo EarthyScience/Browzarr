@@ -117,16 +117,18 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         return newMin;
     }, [colorScale, origMin, newMin, logEps, range]);
 
+    const dataRange = useMemo(() => Math.max(range, 1.0), [range]);
+
     const [locs, vals] = useMemo(()=>{
         const locs = linspace(0, 100, tickCount);
         const startVal = (colorScale === 'log(x)' && origMin <= 0) ? effectiveMin : newMin;
         const vals = locs.map(loc => {
           const t = loc / 100;
-          const scaledT = applyColorScale(t, colorScale, logConstant, logEps);
+          const scaledT = applyColorScale(t, colorScale, logConstant, logEps, dataRange);
           return startVal + (newMax - startVal) * scaledT;
         });
         return [locs, vals]
-    },[ tickCount, newMin, newMax, colorScale, logConstant, logEps, effectiveMin, origMin])
+    },[ tickCount, newMin, newMax, colorScale, logConstant, logEps, dataRange, effectiveMin, origMin])
 
     // Mouse move handler
     const handleMouseMove = (e: MouseEvent) => {
@@ -212,7 +214,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
 
                 for (let x = 0; x < mainWidth; x++) {
                     const normX = x / mainWidth;
-                    const scaledT = applyColorScale(normX, colorScale, logConstant, logEps);
+                    const scaledT = applyColorScale(normX, colorScale, logConstant, logEps, dataRange);
                     const colorIndex = Math.min(Math.floor(scaledT * (colors.length - 1)), colors.length - 1);
                     ctx.fillStyle = colors[colorIndex] || '#000';
                     ctx.fillRect(startX + x, 0, 1, height);
@@ -224,7 +226,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 }
             }     
         }
-    }, [colors, colorScale, logConstant, logEps, lowclip, highclip, useLowclip, useHighclip]);
+    }, [colors, colorScale, logConstant, logEps, dataRange, lowclip, highclip, useLowclip, useHighclip]);
     const analysisString = useMemo(()=>{
         if (analysisMode){
             const twoVar = variable2 != "Default";

@@ -95,6 +95,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
           colorScale: {value: colorScaleToId(colorScale)},
           logConstant: {value: logConstant},
           logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
+          dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 1.0)},
           lowclip: {value: parseColorToVec4(lowclip)},
           highclip: {value: parseColorToVec4(highclip)},
           useLowclip: {value: useLowclip},
@@ -138,11 +139,12 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
         uniforms.colorScale.value = colorScaleToId(colorScale);
         uniforms.logConstant.value = logConstant;
         uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
+        uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 1.0);
         uniforms.lowclip.value = parseColorToVec4(lowclip);
         uniforms.highclip.value = parseColorToVec4(highclip);
         uniforms.useLowclip.value = useLowclip;
         uniforms.useHighclip.value = useHighclip;
-        invalidate() // Needed because Won't trigger re-render if camera is stationary. 
+        invalidate(); // Needed because Won't trigger re-render if camera is stationary. 
       }
     }, [colormap, cOffset, cScale, valueRange, shape, xRange, timeRatio, yRange, aspectRatio, quality, animProg, transparency, nanTransparency, nanColor, vTransferScale, vTransferRange, fillValue, maskValue, latBounds, lonBounds, colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip]);
     useFrame(({camera})=>{ // This calculates InverseModel matrix for the orthographic raymarcher

@@ -240,6 +240,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
               colorScale: {value: colorScaleToId(colorScale)},
               logConstant: {value: logConstant},
               logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
+              dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 1.0)},
               lowclip: {value: parseColorToVec4(lowclip)},
               highclip: {value: parseColorToVec4(highclip)},
               useLowclip: {value: useLowclip},
@@ -271,6 +272,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         uniforms.colorScale.value = colorScaleToId(colorScale);
         uniforms.logConstant.value = logConstant;
         uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
+        uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 1.0);
         uniforms.lowclip.value = parseColorToVec4(lowclip);
         uniforms.highclip.value = parseColorToVec4(highclip);
         uniforms.useLowclip.value = useLowclip;
