@@ -162,7 +162,7 @@ export function getUnitAxis(vec: THREE.Vector3) { //Takes the normal of a cube i
   return null;
 }
 
-export function ArrayMinMax(array:number[] | TypedArray | TypedArrayBufferLike){
+export function ArrayMinMax(array:number[] | TypedArray | TypedArrayBufferLike): [number, number, number | undefined] {
   let minVal = Infinity;
   let maxVal = -Infinity;
   let minPosVal = Infinity;
