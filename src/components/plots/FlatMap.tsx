@@ -127,6 +127,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
           else{
             val.current = NaN;
             setLoc([e.clientX, e.clientY]);
+            coords.current = [thisUV.y,thisUV.x]
             return;
           }
         }
