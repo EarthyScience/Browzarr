@@ -117,7 +117,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         return newMin;
     }, [colorScale, origMin, newMin, logEps, range]);
 
-    const dataRange = useMemo(() => Math.max(range, 1.0), [range]);
+    const dataRange = useMemo(() => Math.max(range, 0.000001), [range]);
 
     const [locs, vals] = useMemo(()=>{
         const locs = linspace(0, 100, tickCount);
@@ -185,13 +185,13 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         setCScale(scale)
     },[newMin, newMax])
 
-    useEffect(()=>{ // Update internal vals when global vals change
-        const startMin = (colorScale === 'log(x)' && origMin <= 0) ? effectiveMin : origMin;
+    useEffect(()=>{ // Update internal vals when global dataset bounds change
+        const startMin = (colorScale === 'log(x)' && origMin <= 0) ? (origMin + logEps * range) : origMin;
         setDisplayMin(Num2String(startMin*Math.pow(10, scalingFactor??0)))
         setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0)))
         setNewMin(origMin)
         setNewMax(origMax)
-    },[origMax, origMin, scalingFactor, colorScale, effectiveMin])
+    },[origMax, origMin, scalingFactor, colorScale, logEps, range])
 
     useEffect(() => {
         if (canvasRef.current && colors.length > 0) {
@@ -254,7 +254,11 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                     minWidth:'30px'
                 }}
                 value={displayMin} 
-                onChange={e=>{setDisplayMin(e.target.value); setNewMin(parseFloat(e.target.value)/Math.pow(10, scalingFactor??0))}}
+                onChange={e=>{
+                    setDisplayMin(e.target.value);
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val)) setNewMin(val / Math.pow(10, scalingFactor ?? 0));
+                }}
                 onBlur={e=>setDisplayMin(Num2String(newMin*Math.pow(10, scalingFactor??0)))}
             />
             {Array.from({length: tickCount}).map((_val,idx)=>{
@@ -286,7 +290,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 value={displayMax}
                 onChange={e=>{
                     setDisplayMax(e.target.value); 
-                    setNewMax(parseFloat(e.target.value)/Math.pow(10, scalingFactor??0))
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val)) setNewMax(val / Math.pow(10, scalingFactor ?? 0));
                 }}
                 onBlur={e=>setDisplayMax(Num2String(newMax*Math.pow(10, scalingFactor??0)))}
             />
