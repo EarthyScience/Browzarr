@@ -10,7 +10,6 @@ uniform sampler2D cmap;
 uniform sampler2D remapTexture;
 uniform vec3 textureDepths;
 
-
 uniform float cOffset;
 uniform float cScale;
 uniform float animateProg;
@@ -70,22 +69,15 @@ float sample1(
     else if (index == 9) return texture(map[9], p).r;
     else if (index == 10) return texture(map[10], p).r;
     else if (index == 11) return texture(map[11], p).r;
-    // else if (index == 12) return texture(map[12], p).r;
-    // else if (index == 13) return texture(map[13], p).r;
     else return 0.0;
 }
 
 void main() {
-    if (maskValue != 0){
-        vec2 maskUV = realCoords(vUv);
-        float mask = texture(maskTexture, maskUV).r;
-        bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
-        if (cond){
-            Color = vec4(nanColor, 1.);
-            Color.a = nanAlpha;  
-            return;
-        }
+    if (isMasked(texture(maskTexture, realCoords(vUv)).r, maskValue)) {
+        Color = vec4(nanColor, nanAlpha);
+        return;
     }
+
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     #ifdef IS_FLAT
@@ -114,48 +106,10 @@ void main() {
     localCoord = fract(localCoord);
 
     float strength = sample1(localCoord, textureIdx);
-    bool isNaN = (strength == 1.) || (abs(strength - fillValue) < 0.005);
-    if (isNaN) {
-        Color = vec4(nanColor, nanAlpha);
-        return;
-    }
-    if (strength < threshold.x) {
-        if (useLowclip) Color = lowclip;
-        else Color = vec4(0.);
-        return;
-    }
-    if (strength > threshold.y) {
-        if (useHighclip) Color = highclip;
-        else Color = vec4(0.);
-        return;
-    }
 
-    float range = max(threshold.y - threshold.x, 0.0001);
-    float normS = clamp((strength - threshold.x) / range, 0.0, 1.0);
-
-    if (colorScale == 1 && normS < logEps) {
-        if (useLowclip) Color = lowclip;
-        else Color = vec4(texture(cmap, vec2(0.0, 0.5)).rgb, 1.0);
-        return;
-    }
-
-    float scaledS = applyColorScale(normS, colorScale, logConstant, logEps, dataRange, minVal);
-    float rawSampLoc = scaledS * cScale + cOffset;
-
-    if (rawSampLoc < 0.0) {
-        if (useLowclip) Color = lowclip;
-        else Color = vec4(texture(cmap, vec2(0.0, 0.5)).rgb, 1.0);
-        return;
-    }
-    if (rawSampLoc > 1.0) {
-        if (useHighclip) Color = highclip;
-        else Color = vec4(texture(cmap, vec2(0.995, 0.5)).rgb, 1.0);
-        return;
-    }
-
-    float sampLoc = clamp(rawSampLoc, 0.0, 0.995);
-    Color = vec4(texture(cmap, vec2(sampLoc, 0.5)).rgb, 1.0);
-    // float check = float(texture(remapTexture,texCoord.xy).g >= 0.);
-    // Color = vec4(check, 0., 0. , 1.);
-    // Color = vec4(texture(remapTexture,texCoord.xy).rg, 0. , 1.);
+    Color = evaluateColorScale(
+        strength, threshold, fillValue, nanColor, nanAlpha,
+        cmap, cScale, cOffset, colorScale, logConstant, logEps,
+        dataRange, minVal, lowclip, highclip, useLowclip, useHighclip
+    );
 }

@@ -124,44 +124,17 @@ void main(){
         #endif
         localCoord = fract(localCoord);
         float strength = sample1(localCoord, textureIdx);
-        bool isNaN = (strength == 1.) || (abs(strength - fillValue) < 0.005);
-        if (isNaN) {
-            color = vec4(nanColor, nanAlpha);
-        } else if (strength < threshold.x) {
-            color = useLowclip ? lowclip : vec4(0.);
-        } else if (strength > threshold.y) {
-            color = useHighclip ? highclip : vec4(0.);
-        } else {
-            float range = max(threshold.y - threshold.x, 0.0001);
-            float normS = clamp((strength - threshold.x) / range, 0.0, 1.0);
-            if (colorScale == 1 && normS < logEps) {
-                color = useLowclip ? lowclip : vec4(texture(cmap, vec2(0.0, 0.5)).rgb, 1.0);
-            } else {
-                float scaledS = applyColorScale(normS, colorScale, logConstant, logEps, dataRange, minVal);
-                float rawSampLoc = scaledS * cScale + cOffset;
-                if (rawSampLoc < 0.0) {
-                    color = useLowclip ? lowclip : vec4(texture(cmap, vec2(0.0, 0.5)).rgb, 1.0);
-                } else if (rawSampLoc > 1.0) {
-                    color = useHighclip ? highclip : vec4(texture(cmap, vec2(0.995, 0.5)).rgb, 1.0);
-                } else {
-                    float sampLoc = clamp(rawSampLoc, 0.0, 0.995);
-                    color = vec4(texture(cmap, vec2(sampLoc, 0.5)).rgb, 1.0);
-                }
-            }
-        }
 
-        if (maskValue != 0){
-            vec2 maskUV = giveMaskUV(aPosition);
-            float mask = texture(maskTexture, maskUV).r;
-            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
-            if (cond){
-                color = vec4(nanColor, 1.);
-                color.a = nanAlpha;  
-            }
+        color = evaluateColorScale(
+            strength, threshold, fillValue, nanColor, nanAlpha,
+            cmap, cScale, cOffset, colorScale, logConstant, logEps,
+            dataRange, minVal, lowclip, highclip, useLowclip, useHighclip
+        );
+
+        if (isMasked(texture(maskTexture, giveMaskUV(aPosition)).r, maskValue)) {
+            color = vec4(nanColor, nanAlpha);
         }
     } else {
-        color = vec4(nanColor, 1.);
-        color.a = nanAlpha;
+        color = vec4(nanColor, nanAlpha);
     }
-
 }

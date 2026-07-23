@@ -52,3 +52,77 @@ float applyColorScale(float x, int scaleType, float c, float eps, float range, f
     }
     return x;
 }
+
+bool isMasked(float maskSample, int maskVal) {
+    if (maskVal == 0) return false;
+    return maskVal == 1 ? (maskSample < 0.5) : (maskSample >= 0.5);
+}
+
+vec4 getLowclipColor(bool useLow, vec4 lowclipVal, vec4 fallbackVal) {
+    return useLow ? lowclipVal : fallbackVal;
+}
+
+vec4 getHighclipColor(bool useHigh, vec4 highclipVal, vec4 fallbackVal) {
+    return useHigh ? highclipVal : fallbackVal;
+}
+
+void accumulateSample(inout vec4 accumColor, inout float alphaAcc, vec4 colorSample) {
+    if (colorSample.a > 0.0) {
+        accumColor.rgb += (1.0 - alphaAcc) * colorSample.a * colorSample.rgb;
+        alphaAcc += colorSample.a * (1.0 - alphaAcc);
+    }
+}
+
+vec4 evaluateColorScale(
+    float val,
+    vec2 bounds,
+    float fillVal,
+    vec3 nanC,
+    float nanA,
+    sampler2D colormap,
+    float cScaleVal,
+    float cOffsetVal,
+    int scaleType,
+    float logC,
+    float eps,
+    float dataR,
+    float minV,
+    vec4 lowClipVal,
+    vec4 highClipVal,
+    bool useLow,
+    bool useHigh
+) {
+    bool isNaN = (val == 1.0) || (abs(val - fillVal) < 0.005);
+    if (isNaN) {
+        return vec4(nanC, nanA);
+    }
+    if (val < bounds.x) {
+        return getLowclipColor(useLow, lowClipVal, vec4(0.0));
+    }
+    if (val > bounds.y) {
+        return getHighclipColor(useHigh, highClipVal, vec4(0.0));
+    }
+
+    float range = max(bounds.y - bounds.x, 0.0001);
+    float normS = clamp((val - bounds.x) / range, 0.0, 1.0);
+
+    vec4 cmapMinColor = vec4(texture(colormap, vec2(0.0, 0.5)).rgb, 1.0);
+    vec4 cmapMaxColor = vec4(texture(colormap, vec2(0.995, 0.5)).rgb, 1.0);
+
+    if (scaleType == 1 && normS < eps) {
+        return getLowclipColor(useLow, lowClipVal, cmapMinColor);
+    }
+
+    float scaledS = applyColorScale(normS, scaleType, logC, eps, dataR, minV);
+    float rawSampLoc = scaledS * cScaleVal + cOffsetVal;
+
+    if (rawSampLoc < 0.0) {
+        return getLowclipColor(useLow, lowClipVal, cmapMinColor);
+    }
+    if (rawSampLoc > 1.0) {
+        return getHighclipColor(useHigh, highClipVal, cmapMaxColor);
+    }
+
+    float sampLoc = clamp(rawSampLoc, 0.0, 0.995);
+    return vec4(texture(colormap, vec2(sampLoc, 0.5)).rgb, 1.0);
+}
