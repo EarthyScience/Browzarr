@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { colorschemes, get, findColorScheme } from 'color-schemes-js';
+import { colorschemes, get, findColorScheme, resample } from 'color-schemes-js';
 
 export const colormaps = ['magma', 'inferno', 'plasma', 'viridis', 'cividis', 'twilight', 'twilight_shifted', 'turbo', 'Blues', 'BrBG', 'BuGn', 'BuPu', 'CMRmap', 'GnBu', 'Greens', 'Greys', 'OrRd', 'Oranges', 'PRGn', 'PiYG', 'PuBu', 'PuBuGn', 'PuOr', 'PuRd', 'Purples', 'RdBu', 'RdGy', 'RdPu', 'RdYlBu', 'RdYlGn', 'Reds', 'Spectral', 'Wistia', 'YlGn', 'YlGnBu', 'YlOrBr', 'YlOrRd', 'afmhot', 'autumn', 'binary', 'bone', 'brg', 'bwr', 'cool', 'coolwarm', 'copper', 'cubehelix', 'flag', 'gist_earth', 'gist_gray', 'gist_heat', 'gist_ncar', 'gist_rainbow', 'gist_stern', 'gist_yarg', 'gnuplot', 'gnuplot2', 'gray', 'hot', 'hsv', 'jet', 'nipy_spectral', 'ocean', 'pink', 'prism', 'rainbow', 'seismic', 'spring', 'summer', 'terrain', 'winter', 'Accent', 'Dark2', 'Paired', 'Pastel1', 'Pastel2', 'Set1', 'Set2', 'Set3', 'tab10', 'tab20', 'tab20b', 'tab20c'];
 
@@ -206,17 +206,49 @@ export function minMax(values: number[]): { min: number | undefined, max: number
     return { min, max };
 }
 
+export function detectUniqueCategories(data: ArrayLike<number>, maxCategories = 50): number[] {
+  const set = new Set<number>();
+  for (let i = 0; i < data.length; i++) {
+    const val = data[i];
+    if (!isNaN(val) && isFinite(val)) {
+      set.add(val);
+      if (set.size > maxCategories) break;
+    }
+  }
+  return Array.from(set).sort((a, b) => a - b);
+}
+
 export function GetColorMapTexture(
   texture: THREE.DataTexture | null = null, 
   palette: string = "Spectral", 
   alpha: number = 1, 
   nan_color: string = "#000000", 
   nan_alpha: number = 0,
-  reverse: boolean = false
+  reverse: boolean = false,
+  isCategorical: boolean = false,
+  numBins: number = 10
 ): THREE.DataTexture {
   let unitInterval = Array.from({ length: 255 }, (_, index) => index / 254);
-  unitInterval = reverse ? unitInterval.reverse() : unitInterval
-  const rgbv = unitInterval.map(value => evaluateColorMap(value, palette, false));
+  unitInterval = reverse ? unitInterval.reverse() : unitInterval;
+  
+  let rgbv: [number, number, number][];
+  if (isCategorical) {
+    const bins = Math.max(2, Math.min(50, numBins));
+    const schemeName = resolveColorSchemeName(palette);
+    const scheme = colorschemes[schemeName] || colorschemes['viridis'];
+    const resampled = resample(scheme, bins).colors;
+    const catColors: [number, number, number][] = resampled.map((c: any) => {
+      const rgb = c.toRgb255();
+      return [rgb.r, rgb.g, rgb.b];
+    });
+    
+    rgbv = unitInterval.map(value => {
+      const idx = Math.min(bins - 1, Math.floor(value * bins));
+      return catColors[idx];
+    });
+  } else {
+    rgbv = unitInterval.map(value => evaluateColorMap(value, palette, false));
+  }
   const colData = new Uint8Array((rgbv.length + 1) * 4);
 
   for (let i = 0; i < rgbv.length; i++) {

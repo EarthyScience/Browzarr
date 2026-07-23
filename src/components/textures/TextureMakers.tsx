@@ -8,10 +8,18 @@ interface Array {
     shape: number[];
 }
 
+import { detectUniqueCategories } from './colormap';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
+
 function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number, minPosVal?: number}): {minVal: number, maxVal: number, minPosVal?: number}{
     const { setTextureData} = useGlobalStore.getState()
     const data = array.data;
     const [minVal, maxVal, minPosVal] = valueScales ? [valueScales.minVal, valueScales.maxVal, valueScales.minPosVal] : ArrayMinMax(data);
+    
+    // Auto-detect unique categories in dataset
+    const uniques = detectUniqueCategories(data as any, 50);
+    usePlotStore.getState().setUniqueCategories(uniques);
+
     const textureData = new Uint8Array(data.length)
     const range = (maxVal - minVal)
     for (let i = 0; i < data.length; i++){

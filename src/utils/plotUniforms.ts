@@ -26,6 +26,7 @@ export interface CommonUniformParams {
   fillValue?: number;
   maskValue?: number;
   maskTexture?: THREE.Texture | null;
+  isCategorical?: boolean;
 }
 
 export function useCommonPlotState() {
@@ -60,6 +61,7 @@ export function useCommonPlotState() {
       highclip: state.highclip,
       useLowclip: state.useLowclip,
       useHighclip: state.useHighclip,
+      isCategorical: state.isCategorical,
     }))
   );
 
@@ -81,6 +83,8 @@ export function createCommonUniforms(p: CommonUniformParams) {
   const lonB = p.lonBounds ?? [0, 0];
   const valR = p.valueRange ?? [0, 1];
 
+  const scaleId = p.isCategorical ? 0 : colorScaleToId(p.colorScale);
+
   return {
     cmap: { value: p.colormap },
     cOffset: { value: p.cOffset },
@@ -95,15 +99,15 @@ export function createCommonUniforms(p: CommonUniformParams) {
     valueRange: { value: new THREE.Vector2(valR[0], valR[1]) },
     latBounds: { value: new THREE.Vector2(deg2rad(latB[0]), deg2rad(latB[1])) },
     lonBounds: { value: new THREE.Vector2(deg2rad(lonB[0]), deg2rad(lonB[1])) },
-    colorScale: { value: colorScaleToId(p.colorScale) },
+    colorScale: { value: scaleId },
     logConstant: { value: p.logConstant },
     logEps: { value: getLogEps(minV, maxV, minPosV) },
     dataRange: { value: Math.max(maxV - minV, 0.000001) },
     minVal: { value: minV },
     lowclip: { value: parseColorToVec4(p.lowclip) },
     highclip: { value: parseColorToVec4(p.highclip) },
-    useLowclip: { value: p.useLowclip },
-    useHighclip: { value: p.useHighclip },
+    useLowclip: { value: p.isCategorical ? false : p.useLowclip },
+    useHighclip: { value: p.isCategorical ? false : p.useHighclip },
   };
 }
 
@@ -133,7 +137,7 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial, p: CommonUn
   if (u.latBounds && latB) u.latBounds.value.set(deg2rad(latB[0]), deg2rad(latB[1]));
   if (u.lonBounds && lonB) u.lonBounds.value.set(deg2rad(lonB[0]), deg2rad(lonB[1]));
 
-  const scaleId = colorScaleToId(p.colorScale);
+  const scaleId = p.isCategorical ? 0 : colorScaleToId(p.colorScale);
   if (u.colorScale) u.colorScale.value = scaleId;
   const customDef = scaleId === 6 ? exprToGLSL(p.colorScale) : '(val)';
   if (material.defines['CUSTOM_EXPR(val)'] !== customDef) {
@@ -147,6 +151,6 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial, p: CommonUn
   if (u.minVal) u.minVal.value = minV;
   if (u.lowclip) u.lowclip.value = parseColorToVec4(p.lowclip);
   if (u.highclip) u.highclip.value = parseColorToVec4(p.highclip);
-  if (u.useLowclip) u.useLowclip.value = p.useLowclip;
-  if (u.useHighclip) u.useHighclip.value = p.useHighclip;
+  if (u.useLowclip) u.useLowclip.value = p.isCategorical ? false : p.useLowclip;
+  if (u.useHighclip) u.useHighclip.value = p.isCategorical ? false : p.useHighclip;
 }

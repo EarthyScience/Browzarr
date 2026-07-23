@@ -73,6 +73,15 @@ type PlotState ={
   highclip: string;
   useLowclip: boolean;
   useHighclip: boolean;
+  isCategorical: boolean;
+  categoricalMode: 'unique' | 'bins';
+  numBins: number;
+  uniqueCategories: number[];
+
+  setIsCategorical: (isCategorical: boolean) => void;
+  setCategoricalMode: (categoricalMode: 'unique' | 'bins') => void;
+  setNumBins: (numBins: number) => void;
+  setUniqueCategories: (uniqueCategories: number[]) => void;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -211,6 +220,15 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   highclip: "#ffffff",
   useLowclip: false,
   useHighclip: false,
+  isCategorical: false,
+  categoricalMode: 'bins',
+  numBins: 10,
+  uniqueCategories: [],
+
+  setIsCategorical: (isCategorical) => set({ isCategorical }),
+  setCategoricalMode: (categoricalMode) => set({ categoricalMode }),
+  setNumBins: (numBins) => set({ numBins }),
+  setUniqueCategories: (uniqueCategories) => set({ uniqueCategories }),
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
