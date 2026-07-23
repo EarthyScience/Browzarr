@@ -11,6 +11,7 @@ import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
+import { createCommonUniforms, updateCommonUniforms } from '@/utils/plotUniforms';
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -91,32 +92,17 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
+                ...createCommonUniforms({
+                  colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
+                  colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
+                  latBounds, lonBounds, valueRange, fillValue, maskValue
+                }),
                 map: { value: textures },
                 remapTexture: { value: remapTexture },
                 maskTexture: { value: maskTexture},
-                maskValue: { value: maskValue },
-                threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
                 textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
-                cmap:{value: colormap},
-                cOffset:{value: cOffset},
-                cScale: {value: cScale},
-                animateProg: {value: animProg},
-                latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
-                lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
-                nanColor: {value: new THREE.Color(nanColor)},
-                nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)},
                 displacement: {value: sphereDisplacement},
-                fillValue: {value: NaN},
-                colorScale: {value: colorScaleToId(colorScale)},
-                logConstant: {value: logConstant},
-                logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
-                dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 0.000001)},
-                minVal: {value: valueScales.minVal},
-                lowclip: {value: parseColorToVec4(lowclip)},
-                highclip: {value: parseColorToVec4(highclip)},
-                useLowclip: {value: useLowclip},
-                useHighclip: {value: useHighclip},
             },
             defines:{
                 ...(isFlat ? { IS_FLAT: true } : {}),
@@ -148,35 +134,14 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       } else {
         delete material.defines.REPROJECT;
       }
-      const scaleId = colorScaleToId(colorScale);
-      uniforms.colorScale.value = scaleId;
-      const customDef = scaleId === 6 ? exprToGLSL(colorScale) : '(val)';
-      if (material.defines['CUSTOM_EXPR(val)'] !== customDef) {
-        material.defines['CUSTOM_EXPR(val)'] = customDef;
-        material.needsUpdate = true;
-      }
-      material.needsUpdate = true;
-      uniforms.cmap.value =  colormap
-      uniforms.maskValue.value = maskValue
-      uniforms.cOffset.value =  cOffset
-      uniforms.cScale.value =  cScale
-      uniforms.animateProg.value =  animProg
-      uniforms.threshold.value.set(valueRange[0], valueRange[1])
-      uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
-      uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
-      uniforms.nanColor.value =  new THREE.Color(nanColor)
-      uniforms.nanAlpha.value =  1 - nanTransparency
+      updateCommonUniforms(material, {
+        colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
+        colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
+        latBounds, lonBounds, valueRange, fillValue, maskValue
+      });
       uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
       uniforms.displacement.value = sphereDisplacement
-      uniforms.fillValue.value = fillValue?? NaN
-      uniforms.logConstant.value = logConstant
-      uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)
-      uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 0.000001)
-      uniforms.minVal.value = valueScales.minVal
-      uniforms.lowclip.value = parseColorToVec4(lowclip)
-      uniforms.highclip.value = parseColorToVec4(highclip)
-      uniforms.useLowclip.value = useLowclip
-      uniforms.useHighclip.value = useHighclip
+      material.needsUpdate = true;
     }
 
     useEffect(()=>{

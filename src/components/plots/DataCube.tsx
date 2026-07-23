@@ -11,6 +11,7 @@ import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from '@/components/plots'
 import { ColumnMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
+import { createCommonUniforms, updateCommonUniforms } from '@/utils/plotUniforms';
 
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
@@ -58,38 +59,22 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
+          ...createCommonUniforms({
+            colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
+            colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
+            latBounds, lonBounds, valueRange, fillValue, maskValue
+          }),
           modelViewMatrixInverse: { value: new THREE.Matrix4() }, // Used for Orthographic RayMarcher
           map: { value: volTexture},
-          maskTexture: { value: maskTexture },
-          maskValue: {value: maskValue },
           textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
-          cmap:{value: colormap},
           remapTexture: { value: remapTexture},
-          cOffset:{value: cOffset},
-          cScale: {value: cScale},
-          threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
           scale: {value: shape},
           flatBounds:{value: new THREE.Vector4(-xRange[1],-xRange[0],zRange[0] * timeRatio, zRange[1] * timeRatio)},
           vertBounds:{value: new THREE.Vector2(yRange[0]*aspectRatio,yRange[1]*aspectRatio)},
-          latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
-          lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
           steps: { value: quality },
-          animateProg: {value: animProg},
           transparency: {value: transparency},
           opacityMag: {value: vTransferScale},
           useClipScale: {value: vTransferRange},
-          nanAlpha: {value: 1-nanTransparency},
-          nanColor: {value: new THREE.Color(nanColor)},
-          fillValue: {value: fillValue?? NaN},
-          colorScale: {value: colorScaleToId(colorScale)},
-          logConstant: {value: logConstant},
-          logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
-          dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 0.000001)},
-          minVal: {value: valueScales.minVal},
-          lowclip: {value: parseColorToVec4(lowclip)},
-          highclip: {value: parseColorToVec4(highclip)},
-          useLowclip: {value: useLowclip},
-          useHighclip: {value: useHighclip},
       },
       defines: {
         USE_VORIGIN: 1,
@@ -108,40 +93,25 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
     useEffect(() => {
       if (shaderMaterial) {
+        updateCommonUniforms(shaderMaterial, {
+          colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
+          colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
+          latBounds, lonBounds, valueRange, fillValue, maskValue
+        });
         const uniforms = shaderMaterial.uniforms
-        uniforms.cmap.value = colormap;
-        uniforms.cOffset.value = cOffset;
-        uniforms.cScale.value = cScale;
-        uniforms.threshold.value.set(valueRange[0], valueRange[1]);
         uniforms.scale.value = shape;
         uniforms.flatBounds.value.set(-xRange[1], -xRange[0], zRange[0] * timeRatio, zRange[1] * timeRatio);
         uniforms.vertBounds.value.set(yRange[0] * aspectRatio, yRange[1] * aspectRatio);
-        uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
-        uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
         uniforms.steps.value = quality;
-        uniforms.animateProg.value = animProg;
         uniforms.transparency.value = transparency;
-        uniforms.nanAlpha.value = 1 - nanTransparency;
-        uniforms.nanColor.value.set(nanColor);
         uniforms.opacityMag.value = vTransferScale;
         uniforms.useClipScale.value = vTransferRange;
-        uniforms.fillValue.value = fillValue?? NaN;
-        uniforms.maskValue.value = maskValue;
         const scaleId = colorScaleToId(colorScale);
-        uniforms.colorScale.value = scaleId;
         const customDef = scaleId === 6 ? exprToGLSL(colorScale) : '(val)';
         if (shaderMaterial.defines['CUSTOM_EXPR(val)'] !== customDef) {
           shaderMaterial.defines['CUSTOM_EXPR(val)'] = customDef;
           shaderMaterial.needsUpdate = true;
         }
-        uniforms.logConstant.value = logConstant;
-        uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
-        uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 0.000001);
-        uniforms.minVal.value = valueScales.minVal;
-        uniforms.lowclip.value = parseColorToVec4(lowclip);
-        uniforms.highclip.value = parseColorToVec4(highclip);
-        uniforms.useLowclip.value = useLowclip;
-        uniforms.useHighclip.value = useHighclip;
         invalidate(); // Needed because Won't trigger re-render if camera is stationary. 
       }
     }, [colormap, cOffset, cScale, valueRange, shape, xRange, timeRatio, yRange, aspectRatio, quality, animProg, transparency, nanTransparency, nanColor, vTransferScale, vTransferRange, fillValue, maskValue, latBounds, lonBounds, colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip]);

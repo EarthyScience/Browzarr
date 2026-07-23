@@ -17,6 +17,7 @@ import { flatFrag } from '../textures/shaders';
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
+import { createCommonUniforms, updateCommonUniforms } from '@/utils/plotUniforms';
 
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
@@ -211,30 +212,15 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms:{
-              cScale: {value: cScale},
-              cOffset: {value: cOffset},
+              ...createCommonUniforms({
+                colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
+                colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
+                latBounds, lonBounds, valueRange, fillValue, maskValue
+              }),
               map : {value: textures},
               remapTexture: { value: remapTexture},
               maskTexture: {value: maskTexture},
-              maskValue: {value: maskValue},
-              threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
-              latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
-              lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
               textureDepths: {value:  new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
-              cmap : { value : colormap},
-              animateProg: {value:animProg},
-              nanColor: {value : new THREE.Color(nanColor)},
-              nanAlpha: {value: 1 - nanTransparency},
-              fillValue: {value: fillValue?? NaN},
-              colorScale: {value: colorScaleToId(colorScale)},
-              logConstant: {value: logConstant},
-              logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
-              dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 0.000001)},
-              minVal: {value: valueScales.minVal},
-              lowclip: {value: parseColorToVec4(lowclip)},
-              highclip: {value: parseColorToVec4(highclip)},
-              useLowclip: {value: useLowclip},
-              useHighclip: {value: useHighclip},
             },
             defines:{
               ...(isFlat ? { IS_FLAT: true } : {}),
@@ -248,33 +234,11 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     
     useEffect(()=>{
       if(shaderMaterial){
-        const uniforms = shaderMaterial.uniforms
-        uniforms.cOffset.value = cOffset;
-        uniforms.cmap. value = colormap;
-        uniforms.animateProg.value = animProg;
-        uniforms.nanColor.value = new THREE.Color(nanColor);
-        uniforms.nanAlpha.value = 1 - nanTransparency;
-        uniforms.cScale.value = cScale;
-        uniforms.threshold.value.set(valueRange[0], valueRange[1]);
-        uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
-        uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
-        uniforms.maskValue.value = maskValue;
-        uniforms.fillValue.value = fillValue?? NaN;
-        const scaleId = colorScaleToId(colorScale);
-        uniforms.colorScale.value = scaleId;
-        const customDef = scaleId === 6 ? exprToGLSL(colorScale) : '(val)';
-        if (shaderMaterial.defines['CUSTOM_EXPR(val)'] !== customDef) {
-          shaderMaterial.defines['CUSTOM_EXPR(val)'] = customDef;
-          shaderMaterial.needsUpdate = true;
-        }
-        uniforms.logConstant.value = logConstant;
-        uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
-        uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 0.000001);
-        uniforms.minVal.value = valueScales.minVal;
-        uniforms.lowclip.value = parseColorToVec4(lowclip);
-        uniforms.highclip.value = parseColorToVec4(highclip);
-        uniforms.useLowclip.value = useLowclip;
-        uniforms.useHighclip.value = useHighclip;
+        updateCommonUniforms(shaderMaterial, {
+          colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
+          colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
+          latBounds, lonBounds, valueRange, fillValue, maskValue
+        });
       }
     },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange, colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip])
     useEffect(()=>{

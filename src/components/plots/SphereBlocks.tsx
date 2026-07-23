@@ -10,6 +10,8 @@ import { deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { colorScaleToId, exprToGLSL } from '@/components/textures';
+import { createCommonUniforms, updateCommonUniforms } from '@/utils/plotUniforms';
+
 const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
     const {colormap, isFlat, valueScales, 
@@ -89,32 +91,17 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
+                ...createCommonUniforms({
+                  colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
+                  colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
+                  latBounds, lonBounds, valueRange, fillValue, maskValue
+                }),
                 map: { value: textures },
                 remapTexture: { value: remapTexture },
                 maskTexture: {value: maskTexture},
-                maskValue: {value: maskValue},
-                threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
                 textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
-                latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
-                lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
-                cmap:{value: colormap},
-                cOffset:{value: cOffset},
-                cScale: {value: cScale},
-                animateProg: {value: animProg},
-                nanColor: {value: new THREE.Color(nanColor)},
-                nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))},
                 displacement: {value: sphereDisplacement},
-                fillValue: {value: fillValue?? NaN},
-                colorScale: {value: colorScaleToId(colorScale)},
-                logConstant: {value: logConstant},
-                logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
-                dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 0.000001)},
-                minVal: {value: valueScales.minVal},
-                lowclip: {value: parseColorToVec4(lowclip)},
-                highclip: {value: parseColorToVec4(highclip)},
-                useLowclip: {value: useLowclip},
-                useHighclip: {value: useHighclip},
             },
             defines:{
                 ...(isFlat ? { IS_FLAT: true } : {}),
@@ -140,34 +127,14 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             } else {
                 delete shaderMaterial.defines.REPROJECT;
             }
-            const scaleId = colorScaleToId(colorScale);
-            uniforms.colorScale.value = scaleId;
-            const customDef = scaleId === 6 ? exprToGLSL(colorScale) : '(val)';
-            if (shaderMaterial.defines['CUSTOM_EXPR(val)'] !== customDef) {
-              shaderMaterial.defines['CUSTOM_EXPR(val)'] = customDef;
-              shaderMaterial.needsUpdate = true;
-            }
-            shaderMaterial.needsUpdate = true;
-            uniforms.animateProg.value =  animProg
-            uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
-            uniforms.displacement.value = sphereDisplacement
-            uniforms.cmap.value =  colormap
-            uniforms.cOffset.value = cOffset
-            uniforms.cScale.value = cScale
-            uniforms.threshold.value.set(valueRange[0], valueRange[1])
-            uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
-            uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
+            updateCommonUniforms(shaderMaterial, {
+              colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
+              colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
+              latBounds, lonBounds, valueRange, fillValue, maskValue
+            });
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
-            uniforms.fillValue.value = fillValue?? NaN
-            uniforms.maskValue.value = maskValue
-            uniforms.logConstant.value = logConstant;
-            uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
-            uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 0.000001);
-            uniforms.minVal.value = valueScales.minVal;
-            uniforms.lowclip.value = parseColorToVec4(lowclip);
-            uniforms.highclip.value = parseColorToVec4(highclip);
-            uniforms.useLowclip.value = useLowclip;
-            uniforms.useHighclip.value = useHighclip;
+            uniforms.displacement.value = sphereDisplacement
+            shaderMaterial.needsUpdate = true;
         }
         invalidate();
     },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, valueRange, offsetNegatives, textures, remapTexture, maskValue, fillValue, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip])
