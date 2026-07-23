@@ -1,13 +1,10 @@
 import React, { useEffect, useMemo } from 'react'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksFrag, sphereBlocksVert } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
-import { deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
-import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { colorScaleToId, exprToGLSL } from '@/components/textures';
 import { createCommonUniforms, updateCommonUniforms, useCommonPlotState } from '@/utils/plotUniforms';

@@ -1,17 +1,17 @@
-import React, {useRef, useMemo, useState, useEffect} from 'react'
+import React, { useMemo, useEffect} from 'react'
 import * as THREE from 'three'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
-import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
+import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
 import { evaluateColorMap, colorScaleToId, exprToGLSL } from '@/components/textures';
-import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
 import { createCommonUniforms, updateCommonUniforms, useCommonPlotState } from '@/utils/plotUniforms';
+
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);

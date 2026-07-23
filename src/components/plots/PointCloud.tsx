@@ -4,8 +4,6 @@ import { pointFrag, pointVert } from '@/components/textures/shaders'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
-import { deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
-import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from './UVCube';
 import { ColumnMeshes } from './TransectMeshes';
 
