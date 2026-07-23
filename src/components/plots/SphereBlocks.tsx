@@ -9,7 +9,7 @@ import { invalidate } from '@react-three/fiber'
 import { deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
-import { colorScaleToId } from '@/components/textures';
+import { colorScaleToId, exprToGLSL } from '@/components/textures';
 const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
     const {colormap, isFlat, valueScales, 
@@ -109,7 +109,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
                 colorScale: {value: colorScaleToId(colorScale)},
                 logConstant: {value: logConstant},
                 logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
-                dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 1.0)},
+                dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 0.000001)},
                 minVal: {value: valueScales.minVal},
                 lowclip: {value: parseColorToVec4(lowclip)},
                 highclip: {value: parseColorToVec4(highclip)},
@@ -118,7 +118,8 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             },
             defines:{
                 ...(isFlat ? { IS_FLAT: true } : {}),
-                ...(remapTexture ? { REPROJECT: true } : {})
+                ...(remapTexture ? { REPROJECT: true } : {}),
+                'CUSTOM_EXPR(val)': colorScaleToId(colorScale) === 6 ? exprToGLSL(colorScale) : '(val)',
             },
             vertexShader: sphereBlocksVert,
             fragmentShader: sphereBlocksFrag,
@@ -139,6 +140,13 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             } else {
                 delete shaderMaterial.defines.REPROJECT;
             }
+            const scaleId = colorScaleToId(colorScale);
+            uniforms.colorScale.value = scaleId;
+            const customDef = scaleId === 6 ? exprToGLSL(colorScale) : '(val)';
+            if (shaderMaterial.defines['CUSTOM_EXPR(val)'] !== customDef) {
+              shaderMaterial.defines['CUSTOM_EXPR(val)'] = customDef;
+              shaderMaterial.needsUpdate = true;
+            }
             shaderMaterial.needsUpdate = true;
             uniforms.animateProg.value =  animProg
             uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
@@ -152,10 +160,9 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
             uniforms.fillValue.value = fillValue?? NaN
             uniforms.maskValue.value = maskValue
-            uniforms.colorScale.value = colorScaleToId(colorScale);
             uniforms.logConstant.value = logConstant;
             uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
-            uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 1.0);
+            uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 0.000001);
             uniforms.minVal.value = valueScales.minVal;
             uniforms.lowclip.value = parseColorToVec4(lowclip);
             uniforms.highclip.value = parseColorToVec4(highclip);

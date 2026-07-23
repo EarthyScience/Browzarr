@@ -11,7 +11,7 @@ import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
 import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
 import { sampleCRS } from '../textures/ProjectionTexture';
-import { evaluateColorMap, colorScaleToId } from '@/components/textures';
+import { evaluateColorMap, colorScaleToId, exprToGLSL } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { flatFrag } from '../textures/shaders';
 import { SquareMeshes } from './TransectMeshes';
@@ -229,7 +229,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
               colorScale: {value: colorScaleToId(colorScale)},
               logConstant: {value: logConstant},
               logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
-              dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 1.0)},
+              dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 0.000001)},
               minVal: {value: valueScales.minVal},
               lowclip: {value: parseColorToVec4(lowclip)},
               highclip: {value: parseColorToVec4(highclip)},
@@ -238,7 +238,8 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
             },
             defines:{
               ...(isFlat ? { IS_FLAT: true } : {}),
-              ...(remapTexture ? { REPROJECT: true } : {})
+              ...(remapTexture ? { REPROJECT: true } : {}),
+              'CUSTOM_EXPR(val)': colorScaleToId(colorScale) === 6 ? exprToGLSL(colorScale) : '(val)',
             },
             vertexShader: vertShader,
             fragmentShader: flatFrag,
@@ -259,10 +260,16 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
         uniforms.maskValue.value = maskValue;
         uniforms.fillValue.value = fillValue?? NaN;
-        uniforms.colorScale.value = colorScaleToId(colorScale);
+        const scaleId = colorScaleToId(colorScale);
+        uniforms.colorScale.value = scaleId;
+        const customDef = scaleId === 6 ? exprToGLSL(colorScale) : '(val)';
+        if (shaderMaterial.defines['CUSTOM_EXPR(val)'] !== customDef) {
+          shaderMaterial.defines['CUSTOM_EXPR(val)'] = customDef;
+          shaderMaterial.needsUpdate = true;
+        }
         uniforms.logConstant.value = logConstant;
         uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
-        uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 1.0);
+        uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 0.000001);
         uniforms.minVal.value = valueScales.minVal;
         uniforms.lowclip.value = parseColorToVec4(lowclip);
         uniforms.highclip.value = parseColorToVec4(highclip);

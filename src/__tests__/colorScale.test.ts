@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyColorScale } from '../components/textures/colormap';
+import { applyColorScale, colorScaleToId, exprToGLSL } from '../components/textures/colormap';
 
 describe('Color Scale Options', () => {
   describe('1. Linear Scale: identity', () => {
@@ -121,6 +121,43 @@ describe('Color Scale Options', () => {
       expect(applyColorScale(0.0, 'exp(x)/100', 1.0, 0.0001, dataRange)).toBe(0.0);
       expect(applyColorScale(0.5, 'exp(x)/100', 1.0, 0.0001, dataRange)).toBeCloseTo(0.0758, 3);
       expect(applyColorScale(1.0, 'exp(x)/100', 1.0, 0.0001, dataRange)).toBeCloseTo(1.0, 4);
+    });
+  });
+
+  describe('7. Generic Custom Expressions', () => {
+    it('evaluates piecewise ternary "x > 0 ? x/2 : x"', () => {
+      const expr = 'x > 0 ? x/2 : x';
+      expect(colorScaleToId(expr)).toBe(6);
+      expect(applyColorScale(0.0, expr)).toBe(0.0);
+      expect(applyColorScale(0.5, expr)).toBeCloseTo(0.5, 4);
+      expect(applyColorScale(1.0, expr)).toBe(1.0);
+    });
+
+    it('evaluates piecewise ternary "x > 0 ? x*2 : x"', () => {
+      const expr = 'x > 0 ? x*2 : x';
+      expect(colorScaleToId(expr)).toBe(6);
+      expect(applyColorScale(0.0, expr)).toBe(0.0);
+      expect(applyColorScale(0.5, expr)).toBeCloseTo(0.5, 4);
+      expect(applyColorScale(1.0, expr)).toBe(1.0);
+    });
+
+    it('evaluates offset expression "x + 10"', () => {
+      const expr = 'x + 10';
+      expect(applyColorScale(0.0, expr)).toBe(0.0);
+      expect(applyColorScale(0.5, expr)).toBe(0.5);
+      expect(applyColorScale(1.0, expr)).toBe(1.0);
+    });
+
+    it('evaluates power expression "x * x"', () => {
+      const expr = 'x * x';
+      expect(applyColorScale(0.0, expr)).toBe(0.0);
+      expect(applyColorScale(0.5, expr)).toBe(0.25);
+      expect(applyColorScale(1.0, expr)).toBe(1.0);
+    });
+
+    it('converts JS expressions to float-safe GLSL code', () => {
+      expect(exprToGLSL('x > 0 ? x/2 : x')).toBe('(val) > 0.0 ? (val)/2.0 : (val)');
+      expect(exprToGLSL('x + 10')).toBe('(val) + 10.0');
     });
   });
 });

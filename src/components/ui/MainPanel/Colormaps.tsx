@@ -65,6 +65,20 @@ const Colormaps = () => {
       setUseHighclip: state.setUseHighclip,
     }))
   );
+  const isBuiltinScale = useMemo(() => {
+    return COLOR_SCALE_OPTIONS.some((opt) => opt.value === colorScale && opt.value !== 'custom');
+  }, [colorScale]);
+
+  const [customExprInput, setCustomExprInput] = useState<string>(() => {
+    return !isBuiltinScale ? colorScale : 'x > 0 ? x/2 : x';
+  });
+
+  useEffect(() => {
+    if (!isBuiltinScale) {
+      setCustomExprInput(colorScale);
+    }
+  }, [colorScale, isBuiltinScale]);
+
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
   const [prevColormapName, setPrevColormapName] = useState<string>(colormapName || '');
@@ -299,7 +313,16 @@ const Colormaps = () => {
           <div className="flex flex-col gap-2 w-full text-xs py-1">
             <div className="flex items-center justify-between gap-2 w-full">
               <span className="font-semibold whitespace-nowrap">Color Scale:</span>
-              <Select value={colorScale} onValueChange={setColorScale}>
+              <Select
+                value={isBuiltinScale ? colorScale : 'custom'}
+                onValueChange={(val) => {
+                  if (val === 'custom') {
+                    setColorScale(customExprInput || 'x > 0 ? x/2 : x');
+                  } else {
+                    setColorScale(val);
+                  }
+                }}
+              >
                 <SelectTrigger size="sm" className="w-[140px] cursor-pointer">
                   <SelectValue placeholder="Scale" />
                 </SelectTrigger>
@@ -320,6 +343,37 @@ const Colormaps = () => {
                 </SelectContent>
               </Select>
             </div>
+            {(!isBuiltinScale || colorScale === 'custom') && (
+              <div className="flex flex-col gap-1.5 w-full pl-2 py-1">
+                <span className="text-[11px] text-muted-foreground font-mono font-semibold">Custom Expression f(x):</span>
+                <div className="flex items-center gap-1.5 w-full">
+                  <Input
+                    type="text"
+                    value={customExprInput}
+                    onChange={(e) => setCustomExprInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && customExprInput.trim()) {
+                        setColorScale(customExprInput.trim());
+                      }
+                    }}
+                    placeholder="e.g. x > 0 ? x/2 : x"
+                    className="h-7 text-xs font-mono flex-1 px-2"
+                  />
+                  <Button
+                    size="xs"
+                    variant="secondary"
+                    onClick={() => {
+                      if (customExprInput.trim()) {
+                        setColorScale(customExprInput.trim());
+                      }
+                    }}
+                    className="h-7 px-2.5 text-xs whitespace-nowrap cursor-pointer"
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </div>
+            )}
             {colorScale === 'log(x+c)' && (
               <div className="flex items-center justify-between gap-2 w-full pl-2">
                 <span className="text-xs text-muted-foreground font-mono">c =</span>

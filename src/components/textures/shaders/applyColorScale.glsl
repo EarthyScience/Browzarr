@@ -1,3 +1,11 @@
+#ifndef CUSTOM_EXPR
+#define CUSTOM_EXPR(val) (val)
+#endif
+
+float evalCustomExpr(float val) {
+    return CUSTOM_EXPR(val);
+}
+
 float applyColorScale(float x, int scaleType, float c, float eps, float range, float minV) {
     float safeRange = max(range, 0.000001);
     if (scaleType == 1) {
@@ -35,6 +43,12 @@ float applyColorScale(float x, int scaleType, float c, float eps, float range, f
         float num = exp(clampedX * expR) - 1.0;
         float denom = exp(expR) - 1.0;
         return denom != 0.0 ? num / denom : x;
+    } else if (scaleType == 6) {
+        float v0 = evalCustomExpr(0.0);
+        float v1 = evalCustomExpr(1.0);
+        float vx = evalCustomExpr(x);
+        float denom = v1 - v0;
+        return denom != 0.0 ? (vx - v0) / denom : vx;
     }
     return x;
 }

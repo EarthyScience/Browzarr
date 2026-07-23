@@ -10,7 +10,7 @@ import { UVCube } from './UVCube';
 import { ColumnMeshes } from './TransectMeshes';
 
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
-import { colorScaleToId } from '@/components/textures';
+import { colorScaleToId, exprToGLSL } from '@/components/textures';
 
 interface PCProps {
   texture: THREE.Data3DTexture[] | null,
@@ -145,7 +145,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         colorScale: {value: colorScaleToId(colorScale)},
         logConstant: {value: logConstant},
         logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
-        dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 1.0)},
+        dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 0.000001)},
         minVal: {value: valueScales.minVal},
         lowclip: {value: parseColorToVec4(lowclip)},
         highclip: {value: parseColorToVec4(highclip)},
@@ -155,7 +155,8 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       defines: {
         GLOBAL_SCALE: globalscale*2,
         ...(remapTexture ? { REPROJECT: true } : {}),
-        ...(disablePointScale ? { NO_SCALE: true } : {})
+        ...(disablePointScale ? { NO_SCALE: true } : {}),
+        'CUSTOM_EXPR(val)': colorScaleToId(colorScale) === 6 ? exprToGLSL(colorScale) : '(val)',
       },
       vertexShader: pointVert,
       fragmentShader:pointFrag,
@@ -190,10 +191,16 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       uniforms.fillValue.value = fillValue?? NaN
       uniforms.maskValue.value = maskValue
       uniforms.aspect.value = shape.x/shape.y;
-      uniforms.colorScale.value = colorScaleToId(colorScale);
+      const scaleId = colorScaleToId(colorScale);
+      uniforms.colorScale.value = scaleId;
+      const customDef = scaleId === 6 ? exprToGLSL(colorScale) : '(val)';
+      if (shaderMaterial.defines['CUSTOM_EXPR(val)'] !== customDef) {
+        shaderMaterial.defines['CUSTOM_EXPR(val)'] = customDef;
+        shaderMaterial.needsUpdate = true;
+      }
       uniforms.logConstant.value = logConstant;
       uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
-      uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 1.0);
+      uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 0.000001);
       uniforms.minVal.value = valueScales.minVal;
       uniforms.lowclip.value = parseColorToVec4(lowclip);
       uniforms.highclip.value = parseColorToVec4(highclip);

@@ -10,17 +10,53 @@ export const COLOR_SCALE_OPTIONS = [
   { label: 'log(x+c)', value: 'log(x+c)' },
   { label: 'sign(x)*sqrt(abs(x))', value: 'sign(x)*sqrt(abs(x))' },
   { label: 'exp(x)/100', value: 'exp(x)/100' },
+  { label: 'Custom (Expression)', value: 'custom' },
 ] as const;
+
+const customExprCache = new Map<string, (x: number) => number>();
+
+export function evalCustomExprJS(expr: string): ((x: number) => number) | null {
+  if (!expr || typeof expr !== 'string') return null;
+  if (customExprCache.has(expr)) return customExprCache.get(expr)!;
+
+  const sanitized = expr
+    .replace(/\babs\b/g, 'Math.abs')
+    .replace(/\bsqrt\b/g, 'Math.sqrt')
+    .replace(/\blog\b/g, 'Math.log')
+    .replace(/\bexp\b/g, 'Math.exp')
+    .replace(/\bpow\b/g, 'Math.pow')
+    .replace(/\bsign\b/g, 'Math.sign');
+
+  try {
+    const fn = new Function('x', `return ${sanitized};`) as (x: number) => number;
+    const test0 = fn(0);
+    const test1 = fn(1);
+    if (typeof test0 === 'number' && typeof test1 === 'number' && !isNaN(test0) && !isNaN(test1)) {
+      customExprCache.set(expr, fn);
+      return fn;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function exprToGLSL(expr: string): string {
+  if (!expr || typeof expr !== 'string') return '(val)';
+  const valSubbed = expr.replace(/\bx\b/g, '(val)');
+  const floatified = valSubbed.replace(/\b(\d+)(?!\.)\b/g, '$1.0');
+  return floatified.replace(/\bMath\./g, '');
+}
 
 export function colorScaleToId(colorScale: string): number {
   switch (colorScale) {
+    case 'identity': return 0;
     case 'log(x)': return 1;
     case 'log(1+x)': return 2;
     case 'log(x+c)': return 3;
     case 'sign(x)*sqrt(abs(x))': return 4;
     case 'exp(x)/100': return 5;
-    case 'identity':
-    default: return 0;
+    default: return 6; // Custom generic expression (e.g., "x > 0 ? x/2 : x")
   }
 }
 
@@ -60,6 +96,15 @@ export function applyColorScale(x: number, scaleType: string, c = 1.0, logEps = 
     const num = Math.exp(clampedX * Math.min(safeRange, 10.0)) - 1.0;
     const denom = Math.exp(Math.min(safeRange, 10.0)) - 1.0;
     return denom !== 0 ? num / denom : x;
+  } else if (scaleType !== 'identity') {
+    const fn = evalCustomExprJS(scaleType);
+    if (fn) {
+      const v0 = fn(0);
+      const v1 = fn(1);
+      const vx = fn(x);
+      const denom = v1 - v0;
+      return denom !== 0 ? (vx - v0) / denom : vx;
+    }
   }
   return x;
 }

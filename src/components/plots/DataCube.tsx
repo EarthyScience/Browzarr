@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { vertexShader, fragmentShader, fragOpt, orthoVertex } from '@/components/textures/shaders';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { colorScaleToId } from '@/components/textures';
+import { colorScaleToId, exprToGLSL } from '@/components/textures';
 import { useShallow } from 'zustand/shallow';
 import { invalidate, useFrame } from '@react-three/fiber';
 import { deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
@@ -84,7 +84,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
           colorScale: {value: colorScaleToId(colorScale)},
           logConstant: {value: logConstant},
           logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
-          dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 1.0)},
+          dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 0.000001)},
           minVal: {value: valueScales.minVal},
           lowclip: {value: parseColorToVec4(lowclip)},
           highclip: {value: parseColorToVec4(highclip)},
@@ -94,7 +94,8 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
       defines: {
         USE_VORIGIN: 1,
         USE_VDIRECTION: 1,
-        ...(remapTexture ? { REPROJECT: true } : {})
+        ...(remapTexture ? { REPROJECT: true } : {}),
+        'CUSTOM_EXPR(val)': colorScaleToId(colorScale) === 6 ? exprToGLSL(colorScale) : '(val)',
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
       fragmentShader: useFragOpt ?  fragOpt : fragmentShader,
@@ -126,10 +127,16 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
         uniforms.useClipScale.value = vTransferRange;
         uniforms.fillValue.value = fillValue?? NaN;
         uniforms.maskValue.value = maskValue;
-        uniforms.colorScale.value = colorScaleToId(colorScale);
+        const scaleId = colorScaleToId(colorScale);
+        uniforms.colorScale.value = scaleId;
+        const customDef = scaleId === 6 ? exprToGLSL(colorScale) : '(val)';
+        if (shaderMaterial.defines['CUSTOM_EXPR(val)'] !== customDef) {
+          shaderMaterial.defines['CUSTOM_EXPR(val)'] = customDef;
+          shaderMaterial.needsUpdate = true;
+        }
         uniforms.logConstant.value = logConstant;
         uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal);
-        uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 1.0);
+        uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 0.000001);
         uniforms.minVal.value = valueScales.minVal;
         uniforms.lowclip.value = parseColorToVec4(lowclip);
         uniforms.highclip.value = parseColorToVec4(highclip);

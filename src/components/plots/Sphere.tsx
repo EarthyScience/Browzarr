@@ -5,7 +5,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
-import { evaluateColorMap, colorScaleToId } from '@/components/textures';
+import { evaluateColorMap, colorScaleToId, exprToGLSL } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
@@ -111,7 +111,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
                 colorScale: {value: colorScaleToId(colorScale)},
                 logConstant: {value: logConstant},
                 logEps: {value: getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)},
-                dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 1.0)},
+                dataRange: {value: Math.max(valueScales.maxVal - valueScales.minVal, 0.000001)},
                 minVal: {value: valueScales.minVal},
                 lowclip: {value: parseColorToVec4(lowclip)},
                 highclip: {value: parseColorToVec4(highclip)},
@@ -120,7 +120,8 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
             },
             defines:{
                 ...(isFlat ? { IS_FLAT: true } : {}),
-                ...(remapTexture ? { REPROJECT: true } : {})
+                ...(remapTexture ? { REPROJECT: true } : {}),
+                'CUSTOM_EXPR(val)': colorScaleToId(colorScale) === 6 ? exprToGLSL(colorScale) : '(val)',
             },
             vertexShader: sphereVertex,
             fragmentShader: sphereFrag,
@@ -147,6 +148,13 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       } else {
         delete material.defines.REPROJECT;
       }
+      const scaleId = colorScaleToId(colorScale);
+      uniforms.colorScale.value = scaleId;
+      const customDef = scaleId === 6 ? exprToGLSL(colorScale) : '(val)';
+      if (material.defines['CUSTOM_EXPR(val)'] !== customDef) {
+        material.defines['CUSTOM_EXPR(val)'] = customDef;
+        material.needsUpdate = true;
+      }
       material.needsUpdate = true;
       uniforms.cmap.value =  colormap
       uniforms.maskValue.value = maskValue
@@ -161,10 +169,9 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
       uniforms.displacement.value = sphereDisplacement
       uniforms.fillValue.value = fillValue?? NaN
-      uniforms.colorScale.value = colorScaleToId(colorScale)
       uniforms.logConstant.value = logConstant
       uniforms.logEps.value = getLogEps(valueScales.minVal, valueScales.maxVal, (valueScales as any).minPosVal)
-      uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 1.0)
+      uniforms.dataRange.value = Math.max(valueScales.maxVal - valueScales.minVal, 0.000001)
       uniforms.minVal.value = valueScales.minVal
       uniforms.lowclip.value = parseColorToVec4(lowclip)
       uniforms.highclip.value = parseColorToVec4(highclip)
