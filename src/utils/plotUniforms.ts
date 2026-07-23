@@ -41,6 +41,7 @@ export function createCommonUniforms(p: CommonUniformParams) {
     fillValue: { value: p.fillValue ?? NaN },
     maskValue: { value: p.maskValue ?? NaN },
     threshold: { value: new THREE.Vector2(valR[0], valR[1]) },
+    valueRange: { value: new THREE.Vector2(valR[0], valR[1]) },
     latBounds: { value: new THREE.Vector2(deg2rad(latB[0]), deg2rad(latB[1])) },
     lonBounds: { value: new THREE.Vector2(deg2rad(lonB[0]), deg2rad(lonB[1])) },
     colorScale: { value: colorScaleToId(p.colorScale) },
