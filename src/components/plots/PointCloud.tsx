@@ -101,7 +101,6 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         map: { value: volTexture },
         remapTexture: { value: remapTexture },
         textureDepths: { value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0]) },
-        maskTexture: {value: maskTexture},
         pointSize: {value: pointSize},
         scalePoints:{value: scalePoints},
         scaleIntensity: {value: scaleIntensity},

@@ -25,6 +25,7 @@ export interface CommonUniformParams {
   valueRange?: [number, number] | number[];
   fillValue?: number;
   maskValue?: number;
+  maskTexture?: THREE.Texture | null;
 }
 
 export function useCommonPlotState() {
@@ -88,7 +89,8 @@ export function createCommonUniforms(p: CommonUniformParams) {
     nanColor: { value: new THREE.Color(p.nanColor) },
     nanAlpha: { value: 1 - p.nanTransparency },
     fillValue: { value: p.fillValue ?? NaN },
-    maskValue: { value: p.maskValue ?? NaN },
+    maskValue: { value: p.maskValue ?? 0 },
+    maskTexture: { value: p.maskTexture ?? null },
     threshold: { value: new THREE.Vector2(valR[0], valR[1]) },
     valueRange: { value: new THREE.Vector2(valR[0], valR[1]) },
     latBounds: { value: new THREE.Vector2(deg2rad(latB[0]), deg2rad(latB[1])) },
@@ -125,6 +127,7 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial, p: CommonUn
   if (u.nanAlpha) u.nanAlpha.value = 1 - p.nanTransparency;
   if (u.fillValue) u.fillValue.value = p.fillValue ?? NaN;
   if (u.maskValue && p.maskValue !== undefined) u.maskValue.value = p.maskValue;
+  if (u.maskTexture && p.maskTexture !== undefined) u.maskTexture.value = p.maskTexture;
   if (u.threshold && valR) u.threshold.value.set(valR[0], valR[1]);
   if (u.valueRange && valR) u.valueRange.value.set(valR[0], valR[1]);
   if (u.latBounds && latB) u.latBounds.value.set(deg2rad(latB[0]), deg2rad(latB[1]));
