@@ -25,7 +25,7 @@ export function colorScaleToId(colorScale: string): number {
 }
 
 export function applyColorScale(x: number, scaleType: string, c = 1.0, logEps = 0.000001, dataRange = 100.0, minVal = 0.0): number {
-  const safeRange = Math.max(dataRange, 1.0);
+  const safeRange = Math.max(dataRange, 0.000001);
   if (scaleType === 'log(x)') {
     if (minVal > 0) {
       const K = safeRange / minVal;

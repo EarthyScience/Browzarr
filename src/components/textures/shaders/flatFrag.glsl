@@ -37,7 +37,7 @@ out vec4 Color;
 #define PI 3.14159265
 
 float applyColorScale(float x, int scaleType, float c, float eps, float range, float minV) {
-    float safeRange = max(range, 1.0);
+    float safeRange = max(range, 0.000001);
     if (scaleType == 1) {
         if (minV > 0.0) {
             float K = safeRange / minV;

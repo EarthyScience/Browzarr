@@ -44,7 +44,7 @@ uniform bool useHighclip;
 #define pi 3.1415926535
 
 float applyColorScale(float x, int scaleType, float c, float eps, float range, float minV) {
-    float safeRange = max(range, 1.0);
+    float safeRange = max(range, 0.000001);
     if (scaleType == 1) {
         if (minV > 0.0) {
             float K = safeRange / minV;
