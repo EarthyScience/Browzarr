@@ -9,7 +9,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { vertShader } from '@/components/computation/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
-import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad, getLogEps } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
 import { sampleCRS } from '../textures/ProjectionTexture';
 import { evaluateColorMap, colorScaleToId } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
@@ -17,17 +17,6 @@ import { flatFrag } from '../textures/shaders';
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
-
-function parseColorToVec4(hex: string, alpha = 1.0): THREE.Vector4 {
-  if (!hex) return new THREE.Vector4(0, 0, 0, alpha);
-  const cleanHex = hex.replace('#', '');
-  const bigint = parseInt(cleanHex, 16);
-  if (isNaN(bigint)) return new THREE.Vector4(0, 0, 0, alpha);
-  const r = ((bigint >> 16) & 255) / 255;
-  const g = ((bigint >> 8) & 255) / 255;
-  const b = (bigint & 255) / 255;
-  return new THREE.Vector4(r, g, b, alpha);
-}
 
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;

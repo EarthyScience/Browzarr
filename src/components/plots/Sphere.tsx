@@ -4,24 +4,13 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
-import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad, getLogEps } from '@/utils/HelperFuncs';
+import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
 import { evaluateColorMap, colorScaleToId } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
-
-function parseColorToVec4(hex: string, alpha = 1.0): THREE.Vector4 {
-  if (!hex) return new THREE.Vector4(0, 0, 0, alpha);
-  const cleanHex = hex.replace('#', '');
-  const bigint = parseInt(cleanHex, 16);
-  if (isNaN(bigint)) return new THREE.Vector4(0, 0, 0, alpha);
-  const r = ((bigint >> 16) & 255) / 255;
-  const g = ((bigint >> 8) & 255) / 255;
-  const b = (bigint & 255) / 255;
-  return new THREE.Vector4(r, g, b, alpha);
-}
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);

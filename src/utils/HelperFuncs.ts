@@ -454,3 +454,14 @@ export function calculateStrides(
   })
   return newStrides
 }
+
+export function parseColorToVec4(hex: string, alpha = 1.0): THREE.Vector4 {
+  if (!hex) return new THREE.Vector4(0, 0, 0, alpha);
+  const cleanHex = hex.replace('#', '');
+  const bigint = parseInt(cleanHex, 16);
+  if (isNaN(bigint)) return new THREE.Vector4(0, 0, 0, alpha);
+  const r = ((bigint >> 16) & 255) / 255;
+  const g = ((bigint >> 8) & 255) / 255;
+  const b = (bigint & 255) / 255;
+  return new THREE.Vector4(r, g, b, alpha);
+}

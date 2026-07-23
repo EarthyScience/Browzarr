@@ -4,24 +4,13 @@ import { pointFrag, pointVert } from '@/components/textures/shaders'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
-import { deg2rad, getLogEps } from '@/utils/HelperFuncs';
+import { deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from './UVCube';
 import { ColumnMeshes } from './TransectMeshes';
 
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { colorScaleToId } from '@/components/textures';
-
-function parseColorToVec4(hex: string, alpha = 1.0): THREE.Vector4 {
-  if (!hex) return new THREE.Vector4(0, 0, 0, alpha);
-  const cleanHex = hex.replace('#', '');
-  const bigint = parseInt(cleanHex, 16);
-  if (isNaN(bigint)) return new THREE.Vector4(0, 0, 0, alpha);
-  const r = ((bigint >> 16) & 255) / 255;
-  const g = ((bigint >> 8) & 255) / 255;
-  const b = (bigint & 255) / 255;
-  return new THREE.Vector4(r, g, b, alpha);
-}
 
 interface PCProps {
   texture: THREE.Data3DTexture[] | null,

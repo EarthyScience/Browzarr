@@ -7,22 +7,11 @@ import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { flatBlocksVert, sphereBlocksFrag } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
-import { deg2rad, getLogEps } from '@/utils/HelperFuncs';
+import { deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { colorScaleToId } from '@/components/textures';
-
-function parseColorToVec4(hex: string, alpha = 1.0): THREE.Vector4 {
-  if (!hex) return new THREE.Vector4(0, 0, 0, alpha);
-  const cleanHex = hex.replace('#', '');
-  const bigint = parseInt(cleanHex, 16);
-  if (isNaN(bigint)) return new THREE.Vector4(0, 0, 0, alpha);
-  const r = ((bigint >> 16) & 255) / 255;
-  const g = ((bigint >> 8) & 255) / 255;
-  const b = (bigint & 255) / 255;
-  return new THREE.Vector4(r, g, b, alpha);
-}
 
 const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
