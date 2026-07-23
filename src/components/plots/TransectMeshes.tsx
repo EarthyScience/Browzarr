@@ -156,7 +156,7 @@ export const ColumnMeshes = () => {
 						: dataShape[yIdx];
 		const zSteps = dataShape[zIdx];
 		const aspectRatio = ySteps/xSteps; // This is not aspect ratio
-		const depthRatio = zSteps/xSteps;
+		const depthRatio = zSteps/dataShape[xIdx]; // depth of timeaxis is based on datashape. So do that here as well.
 
 		for (const [_tsID, tsObj] of Object.entries(timeSeries)){
 			const {normal, uv, color} = tsObj

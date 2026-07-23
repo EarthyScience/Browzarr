@@ -27,6 +27,40 @@ function updateFace(
   }
 }
 
+function getCRSArrayUVS(remapTexture:THREE.DataTexture, axis:number, frac:number){
+  // Give an axis and the frac along it to grab cooresponding row/column
+  // Axis:0 --> Request Y use Width for frac -- iterate height
+  // Axis:1 --> Request X use Height for frac -- iterate width
+  const {width,height, data} = remapTexture.image;
+  const uvs:number[][] = []
+  const valids:number[] = []
+  if (!data) return {uvs,valids};
+  
+  if (axis == 0){
+    const offset = Math.floor(width*frac)
+    for (let i = 0; i < height; i++){
+      const rowIdx = i*width;
+      const valIdx = (rowIdx + offset) * 4; //4 for RGBA
+      const u = THREE.DataUtils.fromHalfFloat(data[valIdx]);
+      const v = THREE.DataUtils.fromHalfFloat(data[valIdx + 1]);
+      const valid = THREE.DataUtils.fromHalfFloat(data[valIdx + 2]);
+      uvs.push([u,v])
+      valids.push(valid)
+    }
+  }
+  if (axis == 1){
+    const offset = Math.floor(height*frac) * width; //Width * number of rows
+    for (let i = 0; i < width; i++){
+      const valIdx = (i + offset )* 4; //4 for RGBA
+      const u = THREE.DataUtils.fromHalfFloat(data[valIdx]);
+      const v = THREE.DataUtils.fromHalfFloat(data[valIdx + 1]);
+      const valid = THREE.DataUtils.fromHalfFloat(data[valIdx + 2]);
+      uvs.push([u,v])
+      valids.push(valid)
+    }
+  }
+  return {uvs,valids};
+}
 
 const UpdateUVs = (
   geometry: THREE.BoxGeometry, 
@@ -104,6 +138,7 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     const uv = event.uv!;
     const normal = event.normal!;
     let newUV: THREE.Vector2 | undefined;
+    let tempTS;
     if (remapTexture){ // Get new UV if reprojected and along z Axis
       if (Math.abs(normal.z) > 0.5){ // If its along the Z just grab the full timeseries at new UV
         const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
@@ -113,11 +148,21 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
           return;
         } 
       } else if (Math.abs(normal.x) > 0.5){ // If along Either X or y, we need a new function to resample the timeseries into the new CRS
+          const {uvs, valids} = getCRSArrayUVS(remapTexture, 1, flipY ? 1-uv.y: uv.y)
+          console.log(valids)
           // For later
       } else {
+        const {uvs, valids} = getCRSArrayUVS(remapTexture, 0, uv.x)
+        console.log(valids)
         //for later
       }
       
+    }
+    if (!tempTS){ // If it wasn't set from the reprojected methods, do it the normal way
+       tempTS = GetTimeSeries(
+        { data: analysisMode ? analysisArray : GetCurrentArray(), shape: dataShape, stride: strides },
+        { uv: newUV ?? uv, normal }
+      )
     }
     const dimAxis = getUnitAxis(normal);
     if (dimAxis != lastNormal.current){
@@ -125,10 +170,6 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       setDimCoords({});
     }
     lastNormal.current = dimAxis;
-    const tempTS = GetTimeSeries(
-      { data: analysisMode ? analysisArray : GetCurrentArray(), shape: dataShape, stride: strides },
-      { uv: newUV ?? uv, normal }
-    )
     const plotDim = (normal.toArray()).map((val, idx) => {
       if (Math.abs(val) > 0) {
         return idx;
