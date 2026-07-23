@@ -11,7 +11,7 @@ import { ColumnMeshes } from './TransectMeshes';
 
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { colorScaleToId, exprToGLSL } from '@/components/textures';
-import { createCommonUniforms, updateCommonUniforms } from '@/utils/plotUniforms';
+import { createCommonUniforms, updateCommonUniforms, useCommonPlotState } from '@/utils/plotUniforms';
 
 interface PCProps {
   texture: THREE.Data3DTexture[] | null,
@@ -45,39 +45,14 @@ const MappingCube = () =>{
 export const PointCloud = ({textures} : {textures:PCProps} )=>{
     const { colormap } = textures;
     const volTexture = usePaddedTextures(textures.texture);
-    const { flipY, dataShape, remapTexture, textureArrayDepths, shape, valueScales } = useGlobalStore(useShallow(state=>({
-      flipY: state.flipY,
-      dataShape: state.dataShape,
-      remapTexture: state.remapTexture,
-      textureArrayDepths: state.textureArrayDepths,
-      shape: state.shape,
-      valueScales: state.valueScales,
-    })))
-    const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, 
-      timeScale, xRange, yRange, zRange, fillValue,
-      maskTexture, maskValue, disablePointScale,
-      colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({
-      scalePoints: state.scalePoints,
-      scaleIntensity: state.scaleIntensity,
-      pointSize: state.pointSize,
-      cScale: state.cScale, 
-      cOffset:state.cOffset,
-      valueRange: state.valueRange,
-      animProg: state.animProg,
-      timeScale: state.timeScale,
-      xRange: state.xRange,
-      yRange: state.yRange,
-      zRange: state.zRange,
-      fillValue:state.fillValue,
-      maskTexture: state.maskTexture,
-      maskValue: state.maskValue,
-      disablePointScale: state.disablePointScale,
-      colorScale: state.colorScale,
-      logConstant: state.logConstant,
-      lowclip: state.lowclip,
-      highclip: state.highclip,
-      useLowclip: state.useLowclip,
-      useHighclip: state.useHighclip,
+    const commonState = useCommonPlotState();
+    const { valueScales, flipY, dataShape, textureArrayDepths, remapTexture, shape,
+            animProg, cOffset, cScale, nanColor, nanTransparency, fillValue, valueRange, maskTexture, maskValue,
+            colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip, latBounds, lonBounds } = commonState;
+
+    const { scalePoints, scaleIntensity, pointSize, timeScale, xRange, yRange, zRange, disablePointScale } = usePlotStore(useShallow(state => ({
+      scalePoints: state.scalePoints, scaleIntensity: state.scaleIntensity, pointSize: state.pointSize,
+      timeScale: state.timeScale, xRange: state.xRange, yRange: state.yRange, zRange: state.zRange, disablePointScale: state.disablePointScale
     })))
 
     //Extract data and shape from Data3DTexture
@@ -119,16 +94,10 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       return list;
     }, [depth, width, height]);
 
-    const {lonBounds, latBounds} = useCoordBounds() 
-
     const shaderMaterial = useMemo(()=> (new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
-        ...createCommonUniforms({
-          colormap, cOffset, cScale, animProg, nanColor: '#000000', nanTransparency: 0,
-          colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
-          latBounds, lonBounds, valueRange, fillValue, maskValue
-        }),
+        ...createCommonUniforms({ ...commonState, colormap }),
         map: { value: volTexture },
         remapTexture: { value: remapTexture },
         textureDepths: { value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0]) },
@@ -161,11 +130,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       const uniforms = shaderMaterial.uniforms;
       uniforms.map.value = volTexture;
       shaderMaterial.needsUpdate = true;
-      updateCommonUniforms(shaderMaterial, {
-        colormap, cOffset, cScale, animProg, nanColor: '#000000', nanTransparency: 0,
-        colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
-        latBounds, lonBounds, valueRange, fillValue, maskValue
-      });
+      updateCommonUniforms(shaderMaterial, { ...commonState, colormap });
       uniforms.shape.value.set(depth, height, width);
       uniforms.pointSize.value = pointSize;
       uniforms.scalePoints.value = scalePoints;

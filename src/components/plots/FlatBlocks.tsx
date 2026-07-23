@@ -1,42 +1,28 @@
 import React, { useEffect, useMemo } from 'react'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { flatBlocksVert, sphereBlocksFrag } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
-import { deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
-import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { colorScaleToId, exprToGLSL } from '@/components/textures';
 
-import { createCommonUniforms, updateCommonUniforms } from '@/utils/plotUniforms';
+import { createCommonUniforms, updateCommonUniforms, useCommonPlotState } from '@/utils/plotUniforms';
 
 const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
-    const {colormap, isFlat, valueScales, flipY,
-            dataShape, textureArrayDepths, axisDimArrays, remapTexture} = useGlobalStore(useShallow(state=>({
-        colormap: state.colormap,
-        isFlat: state.isFlat,  
-        valueScales: state.valueScales,
-        flipY: state.flipY,
-        dataShape: state.dataShape,
-        textureArrayDepths: state.textureArrayDepths,
-        axisDimArrays: state.axisDimArrays,
-        remapTexture: state.remapTexture
-    })))
-    const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, fillValue, valueRange, offsetNegatives, rotateFlat, maskTexture, maskValue,
-        colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state=> ({
-        animate: state.animate, animProg: state.animProg, cOffset: state.cOffset,
-        cScale: state.cScale, nanColor: state.nanColor, nanTransparency: state.nanTransparency,
-        displacement: state.displacement, valueRange:state.valueRange, sphereResolution: state.sphereResolution,
-        offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat,
-        maskTexture:state.maskTexture, maskValue:state.maskValue, fillValue:state.fillValue,
-        colorScale: state.colorScale, logConstant: state.logConstant, lowclip: state.lowclip, highclip: state.highclip,
-        useLowclip: state.useLowclip, useHighclip: state.useHighclip,
+    const commonState = useCommonPlotState();
+    const { colormap, isFlat, valueScales, flipY, dataShape, textureArrayDepths, axisDimArrays, remapTexture,
+            animProg, cOffset, cScale, nanColor, nanTransparency, fillValue, valueRange, maskTexture, maskValue,
+            colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip, latBounds, lonBounds } = commonState;
+
+    const { displacement, offsetNegatives, rotateFlat } = usePlotStore(useShallow(state => ({
+        displacement: state.displacement,
+        offsetNegatives: state.offsetNegatives,
+        rotateFlat: state.rotateFlat,
     })))
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
         analysisMode: state.analysisMode, axis:state.axis
@@ -85,16 +71,12 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
             );
             return geo
         },[width, height])
-    const {lonBounds, latBounds} = useCoordBounds()
+
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
-                ...createCommonUniforms({
-                  colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
-                  colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
-                  latBounds, lonBounds, valueRange, fillValue, maskValue
-                }),
+                ...createCommonUniforms(commonState),
                 map: { value: textures },
                 remapTexture: { value: remapTexture },
                 maskTexture: {value: maskTexture},
@@ -121,11 +103,7 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
         if (shaderMaterial){
             const uniforms = shaderMaterial.uniforms;
             uniforms.map.value = textures;
-            updateCommonUniforms(shaderMaterial, {
-              colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
-              colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
-              latBounds, lonBounds, valueRange, fillValue, maskValue
-            });
+            updateCommonUniforms(shaderMaterial, commonState);
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
             uniforms.displacement.value = displacement
             uniforms.aspect.value = width/height;

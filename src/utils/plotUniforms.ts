@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useShallow } from 'zustand/shallow';
+import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { deg2rad, getLogEps, parseColorToVec4 } from './HelperFuncs';
 import { colorScaleToId, exprToGLSL } from '@/components/textures';
 
@@ -21,6 +25,51 @@ export interface CommonUniformParams {
   valueRange?: [number, number] | number[];
   fillValue?: number;
   maskValue?: number;
+}
+
+export function useCommonPlotState() {
+  const globalState = useGlobalStore(
+    useShallow((state) => ({
+      colormap: state.colormap,
+      isFlat: state.isFlat,
+      valueScales: state.valueScales,
+      flipY: state.flipY,
+      dataShape: state.dataShape,
+      textureArrayDepths: state.textureArrayDepths,
+      axisDimArrays: state.axisDimArrays,
+      remapTexture: state.remapTexture,
+      shape: state.shape,
+    }))
+  );
+
+  const plotState = usePlotStore(
+    useShallow((state) => ({
+      cOffset: state.cOffset,
+      cScale: state.cScale,
+      animProg: state.animProg,
+      nanColor: state.nanColor,
+      nanTransparency: state.nanTransparency,
+      fillValue: state.fillValue,
+      maskValue: state.maskValue,
+      maskTexture: state.maskTexture,
+      valueRange: state.valueRange,
+      colorScale: state.colorScale,
+      logConstant: state.logConstant,
+      lowclip: state.lowclip,
+      highclip: state.highclip,
+      useLowclip: state.useLowclip,
+      useHighclip: state.useHighclip,
+    }))
+  );
+
+  const { latBounds, lonBounds } = useCoordBounds();
+
+  return {
+    ...globalState,
+    ...plotState,
+    latBounds,
+    lonBounds,
+  };
 }
 
 export function createCommonUniforms(p: CommonUniformParams) {

@@ -11,7 +11,7 @@ import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
-import { createCommonUniforms, updateCommonUniforms } from '@/utils/plotUniforms';
+import { createCommonUniforms, updateCommonUniforms, useCommonPlotState } from '@/utils/plotUniforms';
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -22,56 +22,28 @@ function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number
 
 export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
-    const {setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(state=>({
-      setPlotDim:state.setPlotDim, 
-      updateDimCoords:state.updateDimCoords,
-      updateTimeSeries: state.updateTimeSeries
+    const commonState = useCommonPlotState();
+    const { colormap, isFlat, valueScales, flipY, dataShape, textureArrayDepths, remapTexture,
+            animProg, cOffset, cScale, nanColor, nanTransparency, fillValue, valueRange, maskTexture, maskValue,
+            colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip, latBounds, lonBounds } = commonState;
+
+    const { dimArrays, dimNames, dimUnits, strides, setPlotDim, updateDimCoords, updateTimeSeries } = useGlobalStore(useShallow(state=>({
+      dimArrays: state.dimArrays, dimNames: state.dimNames, dimUnits: state.dimUnits, strides: state.strides,
+      setPlotDim: state.setPlotDim, updateDimCoords: state.updateDimCoords, updateTimeSeries: state.updateTimeSeries
+    })))
+
+    const { animate, sphereDisplacement, sphereResolution, zSlice, ySlice, xSlice, selectTS, borderTexture,
+      getColorIdx, incrementColorIdx } = usePlotStore(useShallow(state=> ({
+        animate: state.animate,
+        sphereDisplacement: state.displacement,
+        sphereResolution: state.sphereResolution,
+        zSlice: state.zSlice, ySlice: state.ySlice, xSlice: state.xSlice,
+        selectTS: state.selectTS, borderTexture: state.borderTexture,
+        getColorIdx: state.getColorIdx, incrementColorIdx: state.incrementColorIdx,
     })))
     const {analysisMode, analysisArray} = useAnalysisStore(useShallow(state => ({
       analysisMode: state.analysisMode,
       analysisArray: state.analysisArray
-    })))
-    const {colormap, isFlat, dimArrays, dimNames, dimUnits, valueScales, 
-          dataShape, strides, flipY, textureArrayDepths, remapTexture} = useGlobalStore(useShallow(state=>({
-        colormap: state.colormap,
-        isFlat: state.isFlat,  
-        dimArrays:state.dimArrays,
-        dimNames:state.dimNames,
-        dimUnits:state.dimUnits,
-        valueScales: state.valueScales,
-        dataShape: state.dataShape,
-        strides: state.strides,
-        flipY: state.flipY,
-        textureArrayDepths: state.textureArrayDepths,
-        remapTexture: state.remapTexture
-    })))
-    
-    const {animate, animProg, cOffset, cScale, valueRange, selectTS, nanColor, nanTransparency, sphereDisplacement, sphereResolution,
-      zSlice, ySlice, xSlice, fillValue, borderTexture, maskTexture, maskValue,
-      getColorIdx, incrementColorIdx, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state=> ({
-        animate: state.animate,
-        animProg: state.animProg,
-        cOffset: state.cOffset,
-        cScale: state.cScale,
-        valueRange: state.valueRange,
-        selectTS: state.selectTS,
-        nanColor: state.nanColor,
-        nanTransparency: state.nanTransparency,
-        sphereDisplacement: state.displacement,
-        sphereResolution: state.sphereResolution,
-        zSlice: state.zSlice,
-        ySlice: state.ySlice,
-        xSlice: state.xSlice,
-        fillValue:state.fillValue, maskValue:state.maskValue,
-        borderTexture:state.borderTexture, maskTexture:state.maskTexture,
-        getColorIdx: state.getColorIdx,
-        incrementColorIdx: state.incrementColorIdx,
-        colorScale: state.colorScale,
-        logConstant: state.logConstant,
-        lowclip: state.lowclip,
-        highclip: state.highclip,
-        useLowclip: state.useLowclip,
-        useHighclip: state.useHighclip,
     })))
 
     const {xIdx, yIdx, zIdx} = useAxisIndices()
@@ -85,18 +57,13 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       ];
     }, [dimArrays, zIdx, yIdx, xIdx, zSlice, ySlice, xSlice]);
 
-    const {lonBounds, latBounds} = useCoordBounds()
-
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
+
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
-                ...createCommonUniforms({
-                  colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
-                  colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
-                  latBounds, lonBounds, valueRange, fillValue, maskValue
-                }),
+                ...createCommonUniforms(commonState),
                 map: { value: textures },
                 remapTexture: { value: remapTexture },
                 maskTexture: { value: maskTexture},
@@ -117,7 +84,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
             depthWrite:true,
         })
         return shader
-    },[isFlat, textures, borderTexture])
+    },[isFlat, textures, borderTexture, commonState, sphereDisplacement, textureArrayDepths, valueScales])
 
     const backMaterial = useMemo(()=>{
       const mat = shaderMaterial.clone()
@@ -134,11 +101,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       } else {
         delete material.defines.REPROJECT;
       }
-      updateCommonUniforms(material, {
-        colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
-        colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
-        latBounds, lonBounds, valueRange, fillValue, maskValue
-      });
+      updateCommonUniforms(material, commonState);
       uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
       uniforms.displacement.value = sphereDisplacement
       material.needsUpdate = true;

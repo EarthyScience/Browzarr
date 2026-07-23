@@ -10,41 +10,18 @@ import { deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { colorScaleToId, exprToGLSL } from '@/components/textures';
-import { createCommonUniforms, updateCommonUniforms } from '@/utils/plotUniforms';
+import { createCommonUniforms, updateCommonUniforms, useCommonPlotState } from '@/utils/plotUniforms';
 
 const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
-    const {colormap, isFlat, valueScales, 
-            dataShape, textureArrayDepths, flipY, remapTexture} = useGlobalStore(useShallow(state=>({
-        colormap: state.colormap,
-        isFlat: state.isFlat,  
-        valueScales: state.valueScales,
-        dataShape: state.dataShape,
-        textureArrayDepths: state.textureArrayDepths, 
-        flipY: state.flipY,
-        remapTexture: state.remapTexture
-    })))
-    const { animProg, cOffset, cScale, nanColor, nanTransparency, sphereDisplacement, offsetNegatives, fillValue, valueRange, maskTexture, maskValue,
-        colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state=> ({
-        animate: state.animate,
-        animProg: state.animProg,
-        cOffset: state.cOffset,
-        cScale: state.cScale,
-        nanColor: state.nanColor,
-        nanTransparency: state.nanTransparency,
+    const commonState = useCommonPlotState();
+    const { colormap, isFlat, valueScales, flipY, dataShape, textureArrayDepths, remapTexture,
+            animProg, cOffset, cScale, nanColor, nanTransparency, fillValue, valueRange, maskTexture, maskValue,
+            colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip, latBounds, lonBounds } = commonState;
+
+    const { sphereDisplacement, offsetNegatives } = usePlotStore(useShallow(state => ({
         sphereDisplacement: state.displacement,
-        sphereResolution: state.sphereResolution,
         offsetNegatives: state.offsetNegatives,
-        fillValue:state.fillValue,
-        valueRange: state.valueRange,
-        maskTexture: state.maskTexture,
-        maskValue: state.maskValue,
-        colorScale: state.colorScale,
-        logConstant: state.logConstant,
-        lowclip: state.lowclip,
-        highclip: state.highclip,
-        useLowclip: state.useLowclip,
-        useHighclip: state.useHighclip,
     })))
 
     const count = useMemo(()=>{
@@ -85,17 +62,12 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
         );
         return geo
     },[dataShape])
-    const {lonBounds, latBounds} = useCoordBounds()
 
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
-                ...createCommonUniforms({
-                  colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
-                  colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
-                  latBounds, lonBounds, valueRange, fillValue, maskValue
-                }),
+                ...createCommonUniforms(commonState),
                 map: { value: textures },
                 remapTexture: { value: remapTexture },
                 maskTexture: {value: maskTexture},
@@ -127,11 +99,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             } else {
                 delete shaderMaterial.defines.REPROJECT;
             }
-            updateCommonUniforms(shaderMaterial, {
-              colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
-              colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
-              latBounds, lonBounds, valueRange, fillValue, maskValue
-            });
+            updateCommonUniforms(shaderMaterial, commonState);
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
             uniforms.displacement.value = sphereDisplacement
             shaderMaterial.needsUpdate = true;

@@ -1,17 +1,14 @@
 import {  useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { vertexShader, fragmentShader, fragOpt, orthoVertex } from '@/components/textures/shaders';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { colorScaleToId, exprToGLSL } from '@/components/textures';
 import { useShallow } from 'zustand/shallow';
 import { invalidate, useFrame } from '@react-three/fiber';
-import { deg2rad, getLogEps, parseColorToVec4 } from '@/utils/HelperFuncs';
-import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from '@/components/plots'
 import { ColumnMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
-import { createCommonUniforms, updateCommonUniforms } from '@/utils/plotUniforms';
+import { createCommonUniforms, updateCommonUniforms, useCommonPlotState } from '@/utils/plotUniforms';
 
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
@@ -19,51 +16,23 @@ interface DataCubeProps {
 
 export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const volTexture = usePaddedTextures(propVolTexture);
-    const {shape, colormap, flipY, textureArrayDepths, remapTexture, valueScales} = useGlobalStore(useShallow(state=>({
-      shape:state.shape, 
-      colormap:state.colormap, 
-      flipY:state.flipY,
-      textureArrayDepths: state.textureArrayDepths,
-      remapTexture: state.remapTexture,
-      valueScales: state.valueScales,
-    }))) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
-    const {
-      valueRange, xRange, yRange, zRange, quality, useOrtho, 
-      animProg, cScale, cOffset, useFragOpt, transparency, maskTexture, maskValue,
-      nanTransparency, nanColor, vTransferRange, vTransferScale, fillValue,
-      colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip} = usePlotStore(useShallow(state => ({
-      valueRange: state.valueRange, xRange: state.xRange,
-      yRange: state.yRange, zRange: state.zRange,
-      quality: state.quality, useOrtho: state.useOrtho,
-      animProg: state.animProg, cScale: state.cScale,
-      cOffset: state.cOffset, useFragOpt: state.useFragOpt,
-      transparency: state.transparency,
-      maskTexture: state.maskTexture,
-      maskValue: state.maskValue,
-      nanTransparency: state.nanTransparency,
-      nanColor: state.nanColor,
-      vTransferRange: state.vTransferRange,
-      vTransferScale: state.vTransferScale,
-      fillValue: state.fillValue,
-      colorScale: state.colorScale,
-      logConstant: state.logConstant,
-      lowclip: state.lowclip,
-      highclip: state.highclip,
-      useLowclip: state.useLowclip,
-      useHighclip: state.useHighclip,
+    const commonState = useCommonPlotState();
+    const { colormap, valueScales, flipY, shape, textureArrayDepths, remapTexture,
+            animProg, cOffset, cScale, nanColor, nanTransparency, fillValue, valueRange, maskTexture, maskValue,
+            colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip, latBounds, lonBounds } = commonState;
+
+    const { xRange, yRange, zRange, quality, useOrtho, useFragOpt, transparency, vTransferRange, vTransferScale } = usePlotStore(useShallow(state => ({
+      xRange: state.xRange, yRange: state.yRange, zRange: state.zRange,
+      quality: state.quality, useOrtho: state.useOrtho, useFragOpt: state.useFragOpt,
+      transparency: state.transparency, vTransferRange: state.vTransferRange, vTransferScale: state.vTransferScale
     })))
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
     const timeRatio = shape.z/shape.x;
-    const {lonBounds, latBounds} = useCoordBounds()
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
-          ...createCommonUniforms({
-            colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
-            colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
-            latBounds, lonBounds, valueRange, fillValue, maskValue
-          }),
+          ...createCommonUniforms(commonState),
           modelViewMatrixInverse: { value: new THREE.Matrix4() }, // Used for Orthographic RayMarcher
           map: { value: volTexture},
           textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
@@ -93,11 +62,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
     useEffect(() => {
       if (shaderMaterial) {
-        updateCommonUniforms(shaderMaterial, {
-          colormap, cOffset, cScale, animProg, nanColor, nanTransparency,
-          colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip,
-          latBounds, lonBounds, valueRange, fillValue, maskValue
-        });
+        updateCommonUniforms(shaderMaterial, commonState);
         const uniforms = shaderMaterial.uniforms
         uniforms.scale.value = shape;
         uniforms.flatBounds.value.set(-xRange[1], -xRange[0], zRange[0] * timeRatio, zRange[1] * timeRatio);
