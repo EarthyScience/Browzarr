@@ -24,9 +24,20 @@ uniform vec3 nanColor;
 uniform float nanAlpha;
 uniform float fillValue;
 uniform int maskValue;
+uniform int colorScale;
+uniform float logConstant;
+uniform float logEps;
+uniform float dataRange;
+uniform float minVal;
+uniform vec4 lowclip;
+uniform vec4 highclip;
+uniform bool useLowclip;
+uniform bool useHighclip;
 
 #define pi 3.141592653
 #define epsilon 0.0001
+
+// APPLY_COLOR_SCALE
 
 vec2 giveUV(vec3 position){
     vec3 n = normalize(position);
@@ -113,30 +124,17 @@ void main(){
         #endif
         localCoord = fract(localCoord);
         float strength = sample1(localCoord, textureIdx);
-        bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
-        if (!valid){
-            color = vec4(0.);
-            return;
-        }
-        bool isNaN = strength == 1. || abs(strength - fillValue) < 0.005;
-        strength = isNaN ? strength : (strength)*cScale;
-        strength = isNaN ? strength : min(strength+cOffset,0.99);
-        color = isNaN ? vec4(nanColor, nanAlpha) : texture(cmap, vec2(strength, 0.5));
-        if (!isNaN){
-            color.a = 1.;
-        }
-        if (maskValue != 0){
-            vec2 maskUV = giveMaskUV(aPosition);
-            float mask = texture(maskTexture, maskUV).r;
-            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
-            if (cond){
-                color = vec4(nanColor, 1.);
-                color.a = nanAlpha;  
-            }
+
+        color = evaluateColorScale(
+            strength, threshold, fillValue, nanColor, nanAlpha,
+            cmap, cScale, cOffset, colorScale, logConstant, logEps,
+            dataRange, minVal, lowclip, highclip, useLowclip, useHighclip
+        );
+
+        if (isMasked(texture(maskTexture, giveMaskUV(aPosition)).r, maskValue)) {
+            color = vec4(nanColor, nanAlpha);
         }
     } else {
-        color = vec4(nanColor, 1.);
-        color.a = nanAlpha;
+        color = vec4(nanColor, nanAlpha);
     }
-
 }

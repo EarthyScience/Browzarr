@@ -1,37 +1,28 @@
 import React, { useEffect, useMemo } from 'react'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { flatBlocksVert, sphereBlocksFrag } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
-import { deg2rad } from '@/utils/HelperFuncs'
-import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
+import { colorScaleToId, exprToGLSL } from '@/components/textures';
+
+import { createCommonUniforms, updateCommonUniforms, useCommonPlotState } from '@/utils/plotUniforms';
 
 const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
-    const {colormap, isFlat, valueScales, flipY,
-            dataShape, textureArrayDepths, axisDimArrays, remapTexture} = useGlobalStore(useShallow(state=>({
-        colormap: state.colormap,
-        isFlat: state.isFlat,  
-        valueScales: state.valueScales,
-        flipY: state.flipY,
-        dataShape: state.dataShape,
-        textureArrayDepths: state.textureArrayDepths,
-        axisDimArrays: state.axisDimArrays,
-        remapTexture: state.remapTexture
-    })))
-    const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, fillValue, valueRange, offsetNegatives, rotateFlat, maskTexture, maskValue,
-        } = usePlotStore(useShallow(state=> ({
-        animate: state.animate, animProg: state.animProg, cOffset: state.cOffset,
-        cScale: state.cScale, nanColor: state.nanColor, nanTransparency: state.nanTransparency,
-        displacement: state.displacement, valueRange:state.valueRange, sphereResolution: state.sphereResolution,
-        offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat,
-        maskTexture:state.maskTexture, maskValue:state.maskValue, fillValue:state.fillValue,
+    const commonState = useCommonPlotState();
+    const { colormap, isFlat, valueScales, flipY, dataShape, textureArrayDepths, axisDimArrays, remapTexture,
+            animProg, cOffset, cScale, nanColor, nanTransparency, fillValue, valueRange, maskTexture, maskValue,
+            colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip, latBounds, lonBounds } = commonState;
+
+    const { displacement, offsetNegatives, rotateFlat } = usePlotStore(useShallow(state => ({
+        displacement: state.displacement,
+        offsetNegatives: state.offsetNegatives,
+        rotateFlat: state.rotateFlat,
     })))
     const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
         analysisMode: state.analysisMode, axis:state.axis
@@ -80,33 +71,23 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
             );
             return geo
         },[width, height])
-    const {lonBounds, latBounds} = useCoordBounds()
+
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
+                ...createCommonUniforms(commonState),
                 map: { value: textures },
                 remapTexture: { value: remapTexture },
-                maskTexture: {value: maskTexture},
-                maskValue: {value: maskValue},
-                threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
-                latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
-                lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
                 aspect: {value: width/height},
                 textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
-                cmap:{value: colormap},
-                cOffset:{value: cOffset},
-                cScale: {value: cScale},
-                animateProg: {value: animProg},
-                nanColor: {value: new THREE.Color(nanColor)},
-                nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal)) },
                 displacement: {value: displacement},
-                fillValue: {value: fillValue?? NaN},
             },
             defines:{
                 ...(isFlat ? { IS_FLAT: true } : {}),
-                ...(remapTexture ? { REPROJECT: true } : {})
+                ...(remapTexture ? { REPROJECT: true } : {}),
+                'CUSTOM_EXPR(val)': colorScaleToId(colorScale) === 6 ? exprToGLSL(colorScale) : '(val)',
             },
             vertexShader: flatBlocksVert,
             fragmentShader: sphereBlocksFrag,
@@ -121,22 +102,13 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
         if (shaderMaterial){
             const uniforms = shaderMaterial.uniforms;
             uniforms.map.value = textures;
-            uniforms.animateProg.value =  animProg
-            uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
-            uniforms.displacement.value = displacement
-            uniforms.cmap.value =  colormap
-            uniforms.cOffset.value = cOffset
-            uniforms.cScale.value = cScale
-            uniforms.threshold.value.set(valueRange[0], valueRange[1])
-            uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
-            uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
+            updateCommonUniforms(shaderMaterial, commonState);
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
+            uniforms.displacement.value = displacement
             uniforms.aspect.value = width/height;
-            uniforms.maskValue.value = maskValue;
-            uniforms.fillValue.value = fillValue?? NaN;
         }
         invalidate();
-    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, valueRange, textures, fillValue, analysisMode, axis, width, height, latBounds, lonBounds, maskValue])
+    },[animProg, valueScales, displacement, colormap, cScale, cOffset, offsetNegatives, valueRange, textures, fillValue, analysisMode, axis, width, height, latBounds, lonBounds, maskValue, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip])
 
   return (
 

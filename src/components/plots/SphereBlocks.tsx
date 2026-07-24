@@ -1,40 +1,24 @@
 import React, { useEffect, useMemo } from 'react'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { sphereBlocksFrag, sphereBlocksVert } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
-import { deg2rad } from '@/utils/HelperFuncs'
-import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
+import { colorScaleToId, exprToGLSL } from '@/components/textures';
+import { createCommonUniforms, updateCommonUniforms, useCommonPlotState } from '@/utils/plotUniforms';
+
 const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
-    const {colormap, isFlat, valueScales, 
-            dataShape, textureArrayDepths, flipY, remapTexture} = useGlobalStore(useShallow(state=>({
-        colormap: state.colormap,
-        isFlat: state.isFlat,  
-        valueScales: state.valueScales,
-        dataShape: state.dataShape,
-        textureArrayDepths: state.textureArrayDepths, 
-        flipY: state.flipY,
-        remapTexture: state.remapTexture
-    })))
-    const { animProg, cOffset, cScale, nanColor, nanTransparency, sphereDisplacement, offsetNegatives, fillValue, valueRange, maskTexture, maskValue} = usePlotStore(useShallow(state=> ({
-        animate: state.animate,
-        animProg: state.animProg,
-        cOffset: state.cOffset,
-        cScale: state.cScale,
-        nanColor: state.nanColor,
-        nanTransparency: state.nanTransparency,
+    const commonState = useCommonPlotState();
+    const { colormap, isFlat, valueScales, flipY, dataShape, textureArrayDepths, remapTexture,
+            animProg, cOffset, cScale, nanColor, nanTransparency, fillValue, valueRange, maskTexture, maskValue,
+            colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip, latBounds, lonBounds } = commonState;
+
+    const { sphereDisplacement, offsetNegatives } = usePlotStore(useShallow(state => ({
         sphereDisplacement: state.displacement,
-        sphereResolution: state.sphereResolution,
         offsetNegatives: state.offsetNegatives,
-        fillValue:state.fillValue,
-        valueRange: state.valueRange,
-        maskTexture: state.maskTexture,
-        maskValue: state.maskValue,
     })))
 
     const count = useMemo(()=>{
@@ -76,33 +60,21 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
         return geo
     },[dataShape])
 
-    const {lonBounds, latBounds} = useCoordBounds()
-
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
+                ...createCommonUniforms(commonState),
                 map: { value: textures },
                 remapTexture: { value: remapTexture },
-                maskTexture: {value: maskTexture},
-                maskValue: {value: maskValue},
-                threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
                 textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
-                latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
-                lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
-                cmap:{value: colormap},
-                cOffset:{value: cOffset},
-                cScale: {value: cScale},
-                animateProg: {value: animProg},
-                nanColor: {value: new THREE.Color(nanColor)},
-                nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))},
                 displacement: {value: sphereDisplacement},
-                fillValue: {value: fillValue?? NaN},
             },
             defines:{
                 ...(isFlat ? { IS_FLAT: true } : {}),
-                ...(remapTexture ? { REPROJECT: true } : {})
+                ...(remapTexture ? { REPROJECT: true } : {}),
+                'CUSTOM_EXPR(val)': colorScaleToId(colorScale) === 6 ? exprToGLSL(colorScale) : '(val)',
             },
             vertexShader: sphereBlocksVert,
             fragmentShader: sphereBlocksFrag,
@@ -123,22 +95,13 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             } else {
                 delete shaderMaterial.defines.REPROJECT;
             }
-            shaderMaterial.needsUpdate = true;
-            uniforms.animateProg.value =  animProg
-            uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
-            uniforms.displacement.value = sphereDisplacement
-            uniforms.cmap.value =  colormap
-            uniforms.cOffset.value = cOffset
-            uniforms.cScale.value = cScale
-            uniforms.threshold.value.set(valueRange[0], valueRange[1])
-            uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
-            uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
+            updateCommonUniforms(shaderMaterial, commonState);
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
-            uniforms.fillValue.value = fillValue?? NaN
-            uniforms.maskValue.value = maskValue
+            uniforms.displacement.value = sphereDisplacement
+            shaderMaterial.needsUpdate = true;
         }
         invalidate();
-    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, valueRange, offsetNegatives, textures, remapTexture, maskValue, fillValue])
+    },[animProg, valueScales, sphereDisplacement, colormap, cScale, cOffset, latBounds, lonBounds, valueRange, offsetNegatives, textures, remapTexture, maskValue, fillValue, colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip])
 
     const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor}),[])
     nanMaterial.transparent = true;

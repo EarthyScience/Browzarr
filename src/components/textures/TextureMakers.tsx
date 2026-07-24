@@ -8,10 +8,18 @@ interface Array {
     shape: number[];
 }
 
-function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number}): {minVal: number, maxVal: number}{
+import { detectUniqueCategories } from './colormap';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
+
+function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number, minPosVal?: number}): {minVal: number, maxVal: number, minPosVal?: number}{
     const { setTextureData} = useGlobalStore.getState()
     const data = array.data;
-    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data )
+    const [minVal, maxVal, minPosVal] = valueScales ? [valueScales.minVal, valueScales.maxVal, valueScales.minPosVal] : ArrayMinMax(data);
+    
+    // Auto-detect unique categories in dataset
+    const uniques = detectUniqueCategories(data as any, 50);
+    usePlotStore.getState().setUniqueCategories(uniques);
+
     const textureData = new Uint8Array(data.length)
     const range = (maxVal - minVal)
     for (let i = 0; i < data.length; i++){
@@ -23,7 +31,7 @@ function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number})
       }
     };
     setTextureData(textureData)
-    return {minVal, maxVal}
+    return {minVal, maxVal, minPosVal}
 }
 
 export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
@@ -75,7 +83,7 @@ export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTe
   }
 }
 
-export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
+export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number, minPosVal?: number}): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number, minPosVal?: number}]{
     const scales = StoreData(array, valueScales);
     const textures = CreateTexture(array.shape)
     return [textures as THREE.Data3DTexture[] | THREE.DataTexture[], scales];

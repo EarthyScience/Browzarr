@@ -30,9 +30,20 @@ uniform float fillValue;
 uniform int maskValue;
 uniform vec2 latBounds;
 uniform vec2 lonBounds;
+uniform int colorScale;
+uniform float logConstant;
+uniform float logEps;
+uniform float dataRange;
+uniform float minVal;
+uniform vec4 lowclip;
+uniform vec4 highclip;
+uniform bool useLowclip;
+uniform bool useHighclip;
 
 #define epsilon 0.000001
 #define pi 3.1415926535
+
+// APPLY_COLOR_SCALE
 
 
 vec2 hitBox(vec3 orig, vec3 dir) {
@@ -117,15 +128,9 @@ void main() {
             continue;
         }
         vec3 texCoord = p / scale + 0.5;
-        if (maskValue != 0){
-            vec2 newV = texCoord.xy; 
-            vec2 realV = realCoords(newV);
-            float mask = texture(maskTexture, realV).r;
-            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
-            if (cond){
-                t += useCoarseStep ? coarseDelta : fineDelta;
-                continue;
-            }
+        if (isMasked(texture(maskTexture, realCoords(texCoord.xy)).r, maskValue)) {
+            t += useCoarseStep ? coarseDelta : fineDelta;
+            continue;
         }
         texCoord.z = mod(texCoord.z + animateProg, 1.0001);
         texCoord = clamp(texCoord, vec3(0.0), 1. - vec3(epsilon)); // This prevents the the very end of the dimensions having floating point errors
@@ -136,7 +141,7 @@ void main() {
         localCoord = fract(localCoord);
         float d = sample1(localCoord, textureIdx);
 
-        bool cond =  (d > threshold.x) && (d < threshold.y+.01); //We skip over nans if the transparency is enabled
+        bool cond = (d >= threshold.x) && (d <= threshold.y + 0.01) || ((d < threshold.x && useLowclip) || (d > threshold.y + 0.01 && useHighclip));
         
         if (cond) {
             // Hit something interesting - switch to fine stepping
@@ -147,24 +152,13 @@ void main() {
                 t -= coarseDelta;
                 continue;
             }
-            if (d == 1. || abs(d - fillValue) < 0.005){
-                accumColor.rgb += (1.0 - alphaAcc) * pow(nanAlpha, 5.) * nanColor.rgb;
-                alphaAcc += pow(nanAlpha, 5.);
-            }
-            else{
-                float sampLoc = d*cScale;
-                sampLoc = min(sampLoc+cOffset,0.99);
-                vec4 col = texture(cmap, vec2(sampLoc, 0.5));
-                float alpha;
-                if (useClipScale){
-                    float normalizedOpacity = clamp((sampLoc - threshold.x) / (threshold.y - threshold.x), 0.0, 1.0);
-                    alpha = pow(max(normalizedOpacity, 0.001), transparency*opacityMag);
-                } else {
-                    alpha = pow(max(sampLoc, 0.001), transparency*opacityMag);
-                }
-                accumColor.rgb += (1.0 - alphaAcc) * alpha * col.rgb;
-                alphaAcc += alpha * (1.0 - alphaAcc);
-            }      
+            vec4 sampleCol = evaluateVolumeColorScale(
+                d, threshold, fillValue, nanColor, nanAlpha,
+                cmap, cScale, cOffset, colorScale, logConstant, logEps,
+                dataRange, minVal, lowclip, highclip, useLowclip, useHighclip,
+                useClipScale, transparency, opacityMag
+            );
+            accumulateSample(accumColor, alphaAcc, sampleCol);      
 
             if (alphaAcc >= 1.0) break;
             

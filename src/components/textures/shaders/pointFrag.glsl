@@ -5,11 +5,26 @@ in float vValue;
 uniform sampler2D cmap;
 uniform float cScale;
 uniform float cOffset;
+uniform vec2 valueRange;
+uniform float fillValue;
+uniform vec3 nanColor;
+uniform float nanAlpha;
+uniform int colorScale;
+uniform float logConstant;
+uniform float logEps;
+uniform float dataRange;
+uniform float minVal;
+uniform vec4 lowclip;
+uniform vec4 highclip;
+uniform bool useLowclip;
+uniform bool useHighclip;
+
+// APPLY_COLOR_SCALE
 
 void main() {
-    float sampLoc = vValue == 1. ? vValue : (vValue - 0.5)*cScale + 0.5;
-    sampLoc = vValue == 1. ? vValue : min(sampLoc+cOffset,0.99);
-    vec4 color = texture(cmap, vec2(sampLoc, 0.5));
-    color.a = 1.;
-    Color = color;    
+    Color = evaluateColorScale(
+        vValue, valueRange, fillValue, nanColor, nanAlpha,
+        cmap, cScale, cOffset, colorScale, logConstant, logEps,
+        dataRange, minVal, lowclip, highclip, useLowclip, useHighclip
+    );
 }

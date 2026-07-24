@@ -10,7 +10,6 @@ uniform sampler2D cmap;
 uniform sampler2D remapTexture;
 uniform vec3 textureDepths;
 
-
 uniform float cOffset;
 uniform float cScale;
 uniform float animateProg;
@@ -21,11 +20,22 @@ uniform vec2 lonBounds;
 uniform vec2 threshold;
 uniform int maskValue;
 uniform float fillValue;
+uniform int colorScale;
+uniform float logConstant;
+uniform float logEps;
+uniform float dataRange;
+uniform float minVal;
+uniform vec4 lowclip;
+uniform vec4 highclip;
+uniform bool useLowclip;
+uniform bool useHighclip;
 
 in vec2 vUv;
 out vec4 Color;
 #define epsilon 0.0001
 #define PI 3.14159265
+
+// APPLY_COLOR_SCALE
 
 vec2 realCoords(vec2 uv){
     vec2 normalizedLon = lonBounds/2./PI+0.5;
@@ -59,22 +69,15 @@ float sample1(
     else if (index == 9) return texture(map[9], p).r;
     else if (index == 10) return texture(map[10], p).r;
     else if (index == 11) return texture(map[11], p).r;
-    // else if (index == 12) return texture(map[12], p).r;
-    // else if (index == 13) return texture(map[13], p).r;
     else return 0.0;
 }
 
 void main() {
-    if (maskValue != 0){
-        vec2 maskUV = realCoords(vUv);
-        float mask = texture(maskTexture, maskUV).r;
-        bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
-        if (cond){
-            Color = vec4(nanColor, 1.);
-            Color.a = nanAlpha;  
-            return;
-        }
+    if (isMasked(texture(maskTexture, realCoords(vUv)).r, maskValue)) {
+        Color = vec4(nanColor, nanAlpha);
+        return;
     }
+
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     #ifdef IS_FLAT
@@ -103,16 +106,10 @@ void main() {
     localCoord = fract(localCoord);
 
     float strength = sample1(localCoord, textureIdx);
-    bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
-    if (!valid || abs(strength - fillValue) < 0.005){
-        Color = vec4(0.);
-        return;
-    }
-    bool isNaN = strength == 1.;
-    float sampLoc = isNaN ? strength: (strength)*cScale;
-    sampLoc = isNaN ? strength : min(sampLoc+cOffset,0.995);
-    Color = isNaN ? vec4(nanColor, nanAlpha) : vec4(texture2D(cmap, vec2(sampLoc, 0.5)).rgb, 1.);
-    // float check = float(texture(remapTexture,texCoord.xy).g >= 0.);
-    // Color = vec4(check, 0., 0. , 1.);
-    // Color = vec4(texture(remapTexture,texCoord.xy).rg, 0. , 1.);
+
+    Color = evaluateColorScale(
+        strength, threshold, fillValue, nanColor, nanAlpha,
+        cmap, cScale, cOffset, colorScale, logConstant, logEps,
+        dataRange, minVal, lowclip, highclip, useLowclip, useHighclip
+    );
 }

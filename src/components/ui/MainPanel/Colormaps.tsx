@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from 'react'
-import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss, colormapIndex } from '@/components/textures';
+import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss, colormapIndex, COLOR_SCALE_OPTIONS } from '@/components/textures';
+import { getLogEps } from '@/utils/HelperFuncs';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
 import { MdOutlineSwapVert } from "react-icons/md";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -37,7 +39,7 @@ const Colormaps = () => {
   const [hoveredCmap, setHoveredCmap] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showNames, setShowNames] = useState(true);
-  const { colormap, setColormap, colormapName, flipColormap, setColormapName, setFlipColormap } = useGlobalStore(
+  const { colormap, setColormap, colormapName, flipColormap, setColormapName, setFlipColormap, valueScales } = useGlobalStore(
     useShallow((state) => ({
       setColormap: state.setColormap,
       colormap: state.colormap,
@@ -45,8 +47,52 @@ const Colormaps = () => {
       flipColormap: state.flipColormap,
       setColormapName: state.setColormapName,
       setFlipColormap: state.setFlipColormap,
+      valueScales: state.valueScales,
     }))
   );
+  const { 
+    colorScale, setColorScale, logConstant, setLogConstant, 
+    lowclip, setLowclip, highclip, setHighclip, 
+    useLowclip, setUseLowclip, useHighclip, setUseHighclip,
+    isCategorical, setIsCategorical, categoricalMode, setCategoricalMode,
+    numBins, setNumBins, uniqueCategories
+  } = usePlotStore(
+    useShallow((state) => ({
+      colorScale: state.colorScale,
+      setColorScale: state.setColorScale,
+      logConstant: state.logConstant,
+      setLogConstant: state.setLogConstant,
+      lowclip: state.lowclip,
+      setLowclip: state.setLowclip,
+      highclip: state.highclip,
+      setHighclip: state.setHighclip,
+      useLowclip: state.useLowclip,
+      setUseLowclip: state.setUseLowclip,
+      useHighclip: state.useHighclip,
+      setUseHighclip: state.setUseHighclip,
+      isCategorical: state.isCategorical,
+      setIsCategorical: state.setIsCategorical,
+      categoricalMode: state.categoricalMode,
+      setCategoricalMode: state.setCategoricalMode,
+      numBins: state.numBins,
+      setNumBins: state.setNumBins,
+      uniqueCategories: state.uniqueCategories,
+    }))
+  );
+  const isBuiltinScale = useMemo(() => {
+    return COLOR_SCALE_OPTIONS.some((opt) => opt.value === colorScale && opt.value !== 'custom');
+  }, [colorScale]);
+
+  const [customExprInput, setCustomExprInput] = useState<string>(() => {
+    return !isBuiltinScale ? colorScale : 'x > 0 ? x/2 : x';
+  });
+
+  useEffect(() => {
+    if (!isBuiltinScale) {
+      setCustomExprInput(colorScale);
+    }
+  }, [colorScale, isBuiltinScale]);
+
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
   const [prevColormapName, setPrevColormapName] = useState<string>(colormapName || '');
@@ -109,6 +155,14 @@ const Colormaps = () => {
     previousTextureRef.current = colormap;
   }, [colormap]);
 
+  const activeBins = useMemo(() => {
+    if (!isCategorical) return 10;
+    if (categoricalMode === 'unique') {
+      return Math.max(2, uniqueCategories.length || 10);
+    }
+    return numBins;
+  }, [isCategorical, categoricalMode, uniqueCategories, numBins]);
+
   useEffect(() => {
     if (hoveredCmap !== null) {
       // Show hovered colormap preview
@@ -119,11 +173,13 @@ const Colormaps = () => {
           1,
           "#000000",
           0,
-          flipColormapRef.current
+          flipColormapRef.current,
+          isCategorical,
+          activeBins
         )
       );
-    } else if (lastHoveredCmap.current !== null) {
-      // Mouse left hover: revert to selected colormap
+    } else {
+      // Revert/update to active colormap
       setColormap(
         GetColorMapTexture(
           previousTextureRef.current,
@@ -131,12 +187,14 @@ const Colormaps = () => {
           1,
           "#000000",
           0,
-          flipColormapRef.current
+          flipColormapRef.current,
+          isCategorical,
+          activeBins
         )
       );
     }
     lastHoveredCmap.current = hoveredCmap;
-  }, [hoveredCmap, setColormap]);
+  }, [hoveredCmap, setColormap, colormapName, flipColormap, isCategorical, activeBins]);
 
   useEffect(() => {
       const handleResize = () => {
@@ -146,6 +204,11 @@ const Colormaps = () => {
       window.addEventListener("resize", handleResize);
       return () => window.removeEventListener("resize", handleResize);
     }, []);
+
+  const minVal = valueScales?.minVal ?? 0;
+  const maxVal = valueScales?.maxVal ?? 1;
+  const dataRange = useMemo(() => Math.max(maxVal - minVal, 0.000001), [maxVal, minVal]);
+  const logEps = useMemo(() => getLogEps(minVal, maxVal, (valueScales as any)?.minPosVal), [minVal, maxVal, valueScales]);
 
   return (
     <div className="relative">
@@ -159,7 +222,9 @@ const Colormaps = () => {
                 size="icon"
                 className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full cmap-trigger'
                 style={{
-                  backgroundImage: getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral'),
+                  backgroundImage: getColormapGradientCss(
+                    (colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral'
+                  ),
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'center',
                   backgroundSize: '100% 100%',
@@ -276,6 +341,186 @@ const Colormaps = () => {
                 </TooltipContent>
               </Tooltip>
             </div>
+          </div>
+          <Separator/>
+          <div className="flex flex-col gap-2 w-full text-xs py-1">
+            {/* Categorical Plotting Section */}
+            <div className="flex flex-col gap-1.5 p-2 rounded bg-muted/40 border border-border/50">
+              <div className="flex items-center justify-between gap-2 w-full">
+                <label className="flex items-center gap-1.5 font-semibold cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isCategorical}
+                    onChange={(e) => setIsCategorical(e.target.checked)}
+                    className="cursor-pointer"
+                  />
+                  <span>Categorical Plotting</span>
+                </label>
+              </div>
+
+              {isCategorical && (
+                <div className="flex flex-col gap-2 pt-1.5 pl-1">
+                  <div className="flex items-center justify-between gap-2 w-full">
+                    <span className="text-muted-foreground whitespace-nowrap">Mode:</span>
+                    <Select
+                      value={categoricalMode}
+                      onValueChange={(val: 'unique' | 'bins') => setCategoricalMode(val)}
+                    >
+                      <SelectTrigger size="sm" className="w-[140px] h-7 text-xs cursor-pointer">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unique" className="cursor-pointer text-xs">Unique Values</SelectItem>
+                        <SelectItem value="bins" className="cursor-pointer text-xs">Interval Bins</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {categoricalMode === 'unique' ? (
+                    <div className="text-[11px] text-muted-foreground font-mono">
+                      {uniqueCategories.length > 0
+                        ? `${uniqueCategories.length} categories auto-detected`
+                        : 'Auto-detecting categories...'}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2 w-full">
+                      <span className="text-muted-foreground whitespace-nowrap">Bins (N):</span>
+                      <input
+                        type="number"
+                        min={2}
+                        max={50}
+                        value={numBins}
+                        onChange={(e) => setNumBins(Math.max(2, Math.min(50, parseInt(e.target.value) || 10)))}
+                        className="w-16 h-7 px-2 text-xs rounded border border-neutral-300 dark:border-neutral-700 bg-transparent text-right font-mono"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Continuous Color Scale & Clipping Controls (Disabled in Categorical Mode) */}
+            {isCategorical ? (
+              <div className="text-[11px] italic text-muted-foreground px-1 py-1">
+                Color scale transformations and low/high clips are disabled in categorical mode.
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-2 w-full">
+                  <span className="font-semibold whitespace-nowrap">Color Scale:</span>
+                  <Select
+                    value={isBuiltinScale ? colorScale : 'custom'}
+                    onValueChange={(val) => {
+                      if (val === 'custom') {
+                        setColorScale(customExprInput || 'x > 0 ? x/2 : x');
+                      } else {
+                        setColorScale(val);
+                      }
+                    }}
+                  >
+                    <SelectTrigger size="sm" className="w-[140px] cursor-pointer">
+                      <SelectValue placeholder="Scale" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COLOR_SCALE_OPTIONS.map((opt) => {
+                        const isDisabled = opt.value === 'log(x)' && valueScales && valueScales.minVal < 0;
+                        return (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            disabled={isDisabled}
+                            className="cursor-pointer"
+                          >
+                            {opt.label} {isDisabled ? '(min < 0)' : ''}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(!isBuiltinScale || colorScale === 'custom') && (
+                  <div className="flex flex-col gap-1.5 w-full pl-2 py-1">
+                    <span className="text-[11px] text-muted-foreground font-mono font-semibold">Custom Expression f(x):</span>
+                    <div className="flex items-center gap-1.5 w-full">
+                      <Input
+                        type="text"
+                        value={customExprInput}
+                        onChange={(e) => setCustomExprInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && customExprInput.trim()) {
+                            setColorScale(customExprInput.trim());
+                          }
+                        }}
+                        placeholder="e.g. x > 0 ? x/2 : x"
+                        className="h-7 text-xs font-mono flex-1 px-2"
+                      />
+                      <Button
+                        size="xs"
+                        variant="secondary"
+                        onClick={() => {
+                          if (customExprInput.trim()) {
+                            setColorScale(customExprInput.trim());
+                          }
+                        }}
+                        className="h-7 px-2.5 text-xs whitespace-nowrap cursor-pointer"
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {colorScale === 'log(x+c)' && (
+                  <div className="flex items-center justify-between gap-2 w-full pl-2">
+                    <span className="text-xs text-muted-foreground font-mono">c =</span>
+                    <input
+                      type="number"
+                      step="any"
+                      value={logConstant}
+                      onChange={(e) => setLogConstant(parseFloat(e.target.value) || 1.0)}
+                      className="w-20 px-2 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-700 bg-transparent"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-2 w-full">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useLowclip}
+                      onChange={(e) => setUseLowclip(e.target.checked)}
+                      className="cursor-pointer"
+                    />
+                    <span>Lowclip Color</span>
+                  </label>
+                  {useLowclip && (
+                    <input
+                      type="color"
+                      value={lowclip}
+                      onChange={(e) => setLowclip(e.target.value)}
+                      className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                    />
+                  )}
+                </div>
+                <div className="flex items-center justify-between gap-2 w-full">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useHighclip}
+                      onChange={(e) => setUseHighclip(e.target.checked)}
+                      className="cursor-pointer"
+                    />
+                    <span>Highclip Color</span>
+                  </label>
+                  {useHighclip && (
+                    <input
+                      type="color"
+                      value={highclip}
+                      onChange={(e) => setHighclip(e.target.value)}
+                      className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                    />
+                  )}
+                </div>
+              </>
+            )}
           </div>
           <Separator/>
           <InputGroup className="w-full">

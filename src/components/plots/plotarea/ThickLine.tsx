@@ -7,14 +7,8 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import vertexShader from '@/components/textures/shaders/thickLineVert.glsl'
 import { PlotPoints } from './PlotPoints';
-import { useThree } from '@react-three/fiber';
-import { invalidate } from '@react-three/fiber';
-
-
-function linspace(start: number, stop: number, num: number): number[] {
-    const step = (stop - start) / (num - 1);
-    return Array.from({ length: num }, (_, i) => start + step * i);
-  }
+import { useThree, invalidate } from '@react-three/fiber';
+import { linspace } from '@/utils/HelperFuncs';
 
 interface pointSetters{
   setPointID:React.Dispatch<React.SetStateAction<[string, number]>>,

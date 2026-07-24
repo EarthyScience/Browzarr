@@ -9,8 +9,10 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import './css/Colorbar.css'
-import { linspace } from '@/utils/HelperFuncs';
+import { linspace, getLogEps } from '@/utils/HelperFuncs';
 import Metadata from "./MetaData";
+
+import { applyColorScale, invertColorScale } from "@/components/textures";
 
 const operationMap = {
     // Reductions
@@ -54,11 +56,27 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         variable: state.variable,
         scalingFactor: state.scalingFactor
     })))
-    const {cScale, cOffset, setCScale, setCOffset} = usePlotStore(useShallow(state => ({ 
+    const {
+        cScale, cOffset, setCScale, setCOffset, 
+        colorScale, logConstant, lowclip, highclip, 
+        useLowclip, useHighclip, isCategorical, categoricalMode, 
+        numBins, setNumBins, uniqueCategories
+    } = usePlotStore(useShallow(state => ({ 
         cScale: state.cScale,
         cOffset: state.cOffset,
         setCScale: state.setCScale,
-        setCOffset: state.setCOffset
+        setCOffset: state.setCOffset,
+        colorScale: state.colorScale,
+        logConstant: state.logConstant,
+        lowclip: state.lowclip,
+        highclip: state.highclip,
+        useLowclip: state.useLowclip,
+        useHighclip: state.useHighclip,
+        isCategorical: state.isCategorical,
+        categoricalMode: state.categoricalMode,
+        numBins: state.numBins,
+        setNumBins: state.setNumBins,
+        uniqueCategories: state.uniqueCategories,
     })))
     const {variable2, analysisMode, operation, kernelOperation, execute} = useAnalysisStore(useShallow(state => ({
         variable2: state.variable2,
@@ -76,6 +94,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         origMax: valueScales.maxVal
     }),[valueScales])
     const range = origMax - origMin
+
+    const logEps = useMemo(() => getLogEps(origMin, origMax, (valueScales as any).minPosVal), [origMin, origMax, valueScales]);
 
     const [tickCount, setTickCount] = useState<number>(5)
     const [newMin, setNewMin] = useState(origMin)
@@ -100,11 +120,25 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         return colors
     },[colormap])
 
+    const effectiveMin = useMemo(() => {
+        if (colorScale === 'log(x)' && origMin <= 0) {
+            return origMin + logEps * range;
+        }
+        return newMin;
+    }, [colorScale, origMin, newMin, logEps, range]);
+
+    const dataRange = useMemo(() => Math.max(range, 0.000001), [range]);
+
     const [locs, vals] = useMemo(()=>{
-        const locs = linspace(0, 100, tickCount)
-        const vals = linspace(newMin, newMax, tickCount)
+        const locs = linspace(0, 100, tickCount);
+        const startVal = (colorScale === 'log(x)' && origMin <= 0) ? effectiveMin : newMin;
+        const vals = locs.map(loc => {
+          const t = loc / 100;
+          const invT = invertColorScale(t, colorScale, logConstant, logEps, dataRange, newMin);
+          return startVal + (newMax - startVal) * invT;
+        });
         return [locs, vals]
-    },[ tickCount, newMin, newMax])
+    },[ tickCount, newMin, newMax, colorScale, logConstant, logEps, dataRange, effectiveMin, origMin])
 
     // Mouse move handler
     const handleMouseMove = (e: MouseEvent) => {
@@ -161,25 +195,83 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         setCScale(scale)
     },[newMin, newMax])
 
-    useEffect(()=>{ // Update internal vals when global vals change
-        setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)))
+    useEffect(()=>{ // Update internal vals when global dataset bounds change
+        const startMin = (colorScale === 'log(x)' && origMin <= 0) ? (origMin + logEps * range) : origMin;
+        setDisplayMin(Num2String(startMin*Math.pow(10, scalingFactor??0)))
         setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0)))
         setNewMin(origMin)
         setNewMax(origMax)
-    },[origMax, origMin, scalingFactor])
+    },[origMax, origMin, scalingFactor, colorScale, logEps, range])
+
+    const catTicks = useMemo(() => {
+        if (!isCategorical) return [];
+        const factor = Math.pow(10, scalingFactor ?? 0);
+        if (categoricalMode === 'unique') {
+            const cats = uniqueCategories.length > 0 ? uniqueCategories : Array.from({ length: 10 }, (_, i) => origMin + (i + 0.5) * (origMax - origMin) / 10);
+            const n = cats.length;
+            return cats.map((catVal, i) => ({
+                left: ((i + 0.5) / n) * 100,
+                label: Num2String(catVal * factor),
+            }));
+        } else {
+            const n = Math.max(2, numBins);
+            const binWidth = (newMax - newMin) / n;
+            return Array.from({ length: n }, (_, i) => {
+                const midVal = newMin + (i + 0.5) * binWidth;
+                return {
+                    left: ((i + 0.5) / n) * 100,
+                    label: Num2String(midVal * factor),
+                };
+            });
+        }
+    }, [isCategorical, categoricalMode, uniqueCategories, numBins, newMin, newMax, origMin, origMax, scalingFactor]);
 
     useEffect(() => {
-        if (canvasRef.current) {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
-            if (ctx){
-                colors.forEach((color, index) => {
-                ctx.fillStyle = color;
-                ctx.fillRect(index*2, 0, 2, 24); // Each color is 1px wide and 50px tall
-                });
+        if (canvasRef.current && colors.length > 0) {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+                const width = canvas.width;
+                const height = canvas.height;
+                ctx.clearRect(0, 0, width, height);
+
+                const numPaletteColors = colors.length > 1 ? colors.length - 1 : colors.length;
+
+                if (isCategorical) {
+                    const N = categoricalMode === 'unique' ? (uniqueCategories.length || 10) : numBins;
+                    const blockWidth = width / N;
+                    for (let i = 0; i < N; i++) {
+                        const t = (i + 0.5) / N;
+                        const colorIndex = Math.min(numPaletteColors - 1, Math.floor(t * numPaletteColors));
+                        ctx.fillStyle = colors[colorIndex] || '#000';
+                        ctx.fillRect(i * blockWidth, 0, blockWidth, height);
+                    }
+                } else {
+                    const clipWidth = 14;
+                    const startX = useLowclip ? clipWidth : 0;
+                    const endX = useHighclip ? width - clipWidth : width;
+                    const mainWidth = endX - startX;
+
+                    if (useLowclip) {
+                        ctx.fillStyle = lowclip;
+                        ctx.fillRect(0, 0, clipWidth, height);
+                    }
+
+                    for (let x = 0; x < mainWidth; x++) {
+                        const normX = x / mainWidth;
+                        const colorIndex = Math.min(numPaletteColors - 1, Math.floor(normX * numPaletteColors));
+                        ctx.fillStyle = colors[colorIndex] || '#000';
+                        ctx.fillRect(startX + x, 0, 1, height);
+                    }
+
+                    if (useHighclip) {
+                        ctx.fillStyle = highclip;
+                        ctx.fillRect(endX, 0, clipWidth, height);
+                    }
+                }
             }     
         }
-    }, [colors]);
+    }, [colors, colorScale, logConstant, logEps, dataRange, newMin, lowclip, highclip, useLowclip, useHighclip, isCategorical, categoricalMode, numBins, uniqueCategories]);
     const analysisString = useMemo(()=>{
         if (analysisMode){
             const twoVar = variable2 != "Default";
@@ -195,54 +287,79 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     return (
         <>
         <div className='colorbar' >
-            <input type="number" 
-                className="text-[16px] font-semibold"
-                style={{
-                    left: `0%`,
-                    top:'100%',
-                    position:'absolute',
-                    width:`${displayMin.length*9+1}px`,
-                    transform:'translateX(-50%)',
-                    textAlign:'right',
-                    minWidth:'30px'
-                }}
-                value={displayMin} 
-                onChange={e=>{setDisplayMin(e.target.value); setNewMin(parseFloat(e.target.value)/Math.pow(10, scalingFactor??0))}}
-                onBlur={e=>setDisplayMin(Num2String(newMin*Math.pow(10, scalingFactor??0)))}
-            />
-            {Array.from({length: tickCount}).map((_val,idx)=>{
-                if (idx == 0 || idx == tickCount-1){
-                    return null
-                }
-                return (<p
-                key={idx}
-                style={{
-                    left: `${locs[idx]}%`,
-                    top:'100%',
-                    position:'absolute',
-                    transform:'translateX(-50%)',
-                }}
-            >{Num2String(vals[idx]*Math.pow(10,scalingFactor??0))}
-            </p>)}
+            {isCategorical ? (
+                catTicks.map((tick, idx) => (
+                    <p
+                        key={idx}
+                        className="text-[14px] font-semibold"
+                        style={{
+                            left: `${tick.left}%`,
+                            top: '100%',
+                            position: 'absolute',
+                            transform: 'translateX(-50%)',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {tick.label}
+                    </p>
+                ))
+            ) : (
+                <>
+                    <input type="number" 
+                        className="text-[16px] font-semibold"
+                        style={{
+                            left: `0%`,
+                            top:'100%',
+                            position:'absolute',
+                            width:`${displayMin.length*9+1}px`,
+                            transform:'translateX(-50%)',
+                            textAlign:'right',
+                            minWidth:'30px'
+                        }}
+                        value={displayMin} 
+                        onChange={e=>{
+                            setDisplayMin(e.target.value);
+                            const val = parseFloat(e.target.value);
+                            if (!isNaN(val)) setNewMin(val / Math.pow(10, scalingFactor ?? 0));
+                        }}
+                        onBlur={e=>setDisplayMin(Num2String(newMin*Math.pow(10, scalingFactor??0)))}
+                    />
+                    {Array.from({length: tickCount}).map((_val,idx)=>{
+                        if (idx == 0 || idx == tickCount-1){
+                            return null
+                        }
+                        return (<p
+                        key={idx}
+                        style={{
+                            left: `${locs[idx]}%`,
+                            top:'100%',
+                            position:'absolute',
+                            transform:'translateX(-50%)',
+                        }}
+                    >{Num2String(vals[idx]*Math.pow(10,scalingFactor??0))}
+                    </p>)}
+                    )}
+                    <input type="number" 
+                        className="text-[16px] font-semibold"
+                        style={{
+                            left: `100%`,
+                            top:'100%',
+                            position:'absolute',
+                            width:`${displayMax.length*9+1}px`,
+                            transform:'translateX(-50%)',
+                            textAlign:'right',
+                            minWidth:'30px'
+                        }}
+                        value={displayMax}
+                        onChange={e=>{
+                            setDisplayMax(e.target.value); 
+                            const val = parseFloat(e.target.value);
+                            if (!isNaN(val)) setNewMax(val / Math.pow(10, scalingFactor ?? 0));
+                        }}
+                        onBlur={e=>setDisplayMax(Num2String(newMax*Math.pow(10, scalingFactor??0)))}
+                    />
+                </>
             )}
-            <input type="number" 
-                className="text-[16px] font-semibold"
-                style={{
-                    left: `100%`,
-                    top:'100%',
-                    position:'absolute',
-                    width:`${displayMax.length*9+1}px`,
-                    transform:'translateX(-50%)',
-                    textAlign:'right',
-                    minWidth:'30px'
-                }}
-                value={displayMax}
-                onChange={e=>{
-                    setDisplayMax(e.target.value); 
-                    setNewMax(parseFloat(e.target.value)/Math.pow(10, scalingFactor??0))
-                }}
-                onBlur={e=>setDisplayMax(Num2String(newMax*Math.pow(10, scalingFactor??0)))}
-            />
             <canvas id="colorbar-canvas" ref={canvasRef} width={512} height={24} onPointerDown={handleMouseDown}/>
             <p className="colorbar-title"
                 style={{

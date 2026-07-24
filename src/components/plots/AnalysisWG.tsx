@@ -154,16 +154,20 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             }
 
             // --- Value scaling logic ---
-            let minVal, maxVal;
+            let minVal = valueScales.minVal;
+            let maxVal = valueScales.maxVal;
             const needsRescale = ['StDev', 'LinearSlope', 'Covariance', 'CUMSUM3D'].some(op => currentOperation.includes(op));
             const isCorrelation = currentOperation.includes('Correlation');
 
             if (needsRescale) {
                 if (!valueScalesOrig) setValueScalesOrig(valueScales);
-                [minVal, maxVal] = ArrayMinMax(newArray);
+                const [calculatedMin, calculatedMax] = ArrayMinMax(newArray);
+                minVal = calculatedMin ?? valueScales.minVal;
+                maxVal = calculatedMax ?? valueScales.maxVal;
             } else if (isCorrelation) {
                 if (!valueScalesOrig) setValueScalesOrig(valueScales);
-                [minVal, maxVal] = [-1, 1];
+                minVal = -1;
+                maxVal = 1;
             } else {
                 ({ minVal, maxVal } = valueScales);
             }

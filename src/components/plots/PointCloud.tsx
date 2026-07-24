@@ -4,12 +4,12 @@ import { pointFrag, pointVert } from '@/components/textures/shaders'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
-import { deg2rad } from '@/utils/HelperFuncs';
-import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from './UVCube';
 import { ColumnMeshes } from './TransectMeshes';
 
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
+import { colorScaleToId, exprToGLSL } from '@/components/textures';
+import { createCommonUniforms, updateCommonUniforms, useCommonPlotState } from '@/utils/plotUniforms';
 
 interface PCProps {
   texture: THREE.Data3DTexture[] | null,
@@ -43,31 +43,14 @@ const MappingCube = () =>{
 export const PointCloud = ({textures} : {textures:PCProps} )=>{
     const { colormap } = textures;
     const volTexture = usePaddedTextures(textures.texture);
-    const { flipY, dataShape, remapTexture, textureArrayDepths, shape } = useGlobalStore(useShallow(state=>({
-      flipY: state.flipY,
-      dataShape: state.dataShape,
-      remapTexture: state.remapTexture,
-      textureArrayDepths: state.textureArrayDepths,
-      shape: state.shape
-    })))
-    const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, 
-      timeScale, xRange, yRange, zRange, fillValue,
-      maskTexture, maskValue, disablePointScale} = usePlotStore(useShallow(state => ({
-      scalePoints: state.scalePoints,
-      scaleIntensity: state.scaleIntensity,
-      pointSize: state.pointSize,
-      cScale: state.cScale, 
-      cOffset:state.cOffset,
-      valueRange: state.valueRange,
-      animProg: state.animProg,
-      timeScale: state.timeScale,
-      xRange: state.xRange,
-      yRange: state.yRange,
-      zRange: state.zRange,
-      fillValue:state.fillValue,
-      maskTexture: state.maskTexture,
-      maskValue: state.maskValue,
-      disablePointScale: state.disablePointScale
+    const commonState = useCommonPlotState();
+    const { valueScales, flipY, dataShape, textureArrayDepths, remapTexture, shape,
+            animProg, cOffset, cScale, nanColor, nanTransparency, fillValue, valueRange, maskTexture, maskValue,
+            colorScale, logConstant, lowclip, highclip, useLowclip, useHighclip, latBounds, lonBounds } = commonState;
+
+    const { scalePoints, scaleIntensity, pointSize, timeScale, xRange, yRange, zRange, disablePointScale } = usePlotStore(useShallow(state => ({
+      scalePoints: state.scalePoints, scaleIntensity: state.scaleIntensity, pointSize: state.pointSize,
+      timeScale: state.timeScale, xRange: state.xRange, yRange: state.yRange, zRange: state.zRange, disablePointScale: state.disablePointScale
     })))
 
     //Extract data and shape from Data3DTexture
@@ -109,35 +92,27 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       return list;
     }, [depth, width, height]);
 
-    const {lonBounds, latBounds} = useCoordBounds() 
-
     const shaderMaterial = useMemo(()=> (new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
+        ...createCommonUniforms({ ...commonState, colormap }),
         map: { value: volTexture },
         remapTexture: { value: remapTexture },
         textureDepths: { value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0]) },
-        maskTexture: {value: maskTexture},
-        maskValue: {value: maskValue},
         pointSize: {value: pointSize},
-        cmap: {value: colormap},
-        cOffset: {value: cOffset},
-        cScale: {value: cScale},
-        valueRange: {value: new THREE.Vector2(valueRange[0], valueRange[1])},
         scalePoints:{value: scalePoints},
         scaleIntensity: {value: scaleIntensity},
         timeScale: {value: depthRatio},
-        animateProg: {value: animProg},
         aspect: {value: shape.x/shape.y},
         shape: {value: new THREE.Vector3(depth, height, width)},
         flatBounds:{value: new THREE.Vector4(xRange[0], xRange[1], zRange[0], zRange[1])},
         vertBounds:{value: new THREE.Vector2(yRange[0], yRange[1])},
-        fillValue: {value: fillValue?? NaN}
       },
       defines: {
         GLOBAL_SCALE: globalscale*2,
         ...(remapTexture ? { REPROJECT: true } : {}),
-        ...(disablePointScale ? { NO_SCALE: true } : {})
+        ...(disablePointScale ? { NO_SCALE: true } : {}),
+        'CUSTOM_EXPR(val)': colorScaleToId(colorScale) === 6 ? exprToGLSL(colorScale) : '(val)',
       },
       vertexShader: pointVert,
       fragmentShader:pointFrag,
@@ -152,16 +127,12 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       const uniforms = shaderMaterial.uniforms;
       uniforms.map.value = volTexture;
       shaderMaterial.needsUpdate = true;
+      updateCommonUniforms(shaderMaterial, { ...commonState, colormap });
       uniforms.shape.value.set(depth, height, width);
       uniforms.pointSize.value = pointSize;
-      uniforms.cmap.value = colormap;
-      uniforms.cOffset.value = cOffset;
-      uniforms.cScale.value = cScale;
-      uniforms.valueRange.value.set(valueRange[0], valueRange[1]);
       uniforms.scalePoints.value = scalePoints;
       uniforms.scaleIntensity.value = scaleIntensity;
       uniforms.timeScale.value = depthRatio;
-      uniforms.animateProg.value = animProg;
       uniforms.flatBounds.value.set(
         xRange[0], xRange[1], 
         zRange[0], zRange[1]
@@ -169,11 +140,9 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       uniforms.vertBounds.value.set(
         yRange[0], yRange[1]
       );
-      uniforms.fillValue.value = fillValue?? NaN
-      uniforms.maskValue.value = maskValue
       uniforms.aspect.value = shape.x/shape.y;
     }
-  }, [volTexture, depthRatio, depth, height, shape, width, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue]);
+  }, [volTexture, depthRatio, depth, height, shape, width, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue, colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip]);
   
   return (
     <group>
