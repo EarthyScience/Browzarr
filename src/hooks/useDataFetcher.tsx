@@ -88,9 +88,11 @@ export const useDataFetcher = () => {
                         shape
                     });
 
+                    useGlobalStore.setState({
+                        valueScales: scaling as { maxVal: number; minVal: number },
+                        scalingFactor: result.scalingFactor
+                    });
                     setTextures(tempTexture);
-                    setValueScales(scaling as { maxVal: number; minVal: number });
-                    useGlobalStore.getState().setScalingFactor(result.scalingFactor);
 
                     const shapeLength = shape.length;
 

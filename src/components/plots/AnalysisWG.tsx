@@ -172,16 +172,19 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
                 ({ minVal, maxVal } = valueScales);
             }
             setValueScales({ minVal, maxVal });
-            let _scales;
             const thisShape = dataShape.length > 2 ? dataShape.filter((_, idx) => idx !== axis) : dataShape;
             const textureData = new Uint8Array(newArray.length)
-            const range = (maxVal - minVal)
+            const range = maxVal - minVal;
+            const safeRange = range > 0 ? range : 1.0;
             for (let i = 0; i < newArray.length; i++){
-                const normed = (newArray[i] - minVal) / range;
-                if (isNaN(normed)){
+                const val = newArray[i];
+                if (isNaN(val) || !isFinite(val)){
                     textureData[i] = 255;
+                } else if (range <= 0) {
+                    textureData[i] = 127;
                 } else {
-                    textureData[i] = normed * 254;
+                    const normed = Math.max(0.0, Math.min(1.0, (val - minVal) / safeRange));
+                    textureData[i] = Math.round(normed * 254);
                 }
             };
             const newTexture = CreateTexture(is3DResult ? dataShape : thisShape, textureData)
@@ -212,13 +215,17 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             const newArray = await CustomShader(dataArray, shapeInfo, kernelParams, axis, customShader?? "") as Float16Array
             const {minVal, maxVal} = valueScales
             const textureData = new Uint8Array(newArray.length)
-            const range = (maxVal - minVal)
+            const range = maxVal - minVal;
+            const safeRange = range > 0 ? range : 1.0;
             for (let i = 0; i < newArray.length; i++){
-                const normed = (newArray[i] - minVal) / range;
-                if (isNaN(normed)){
+                const val = newArray[i];
+                if (isNaN(val) || !isFinite(val)){
                     textureData[i] = 255;
+                } else if (range <= 0) {
+                    textureData[i] = 127;
                 } else {
-                    textureData[i] = normed * 254;
+                    const normed = Math.max(0.0, Math.min(1.0, (val - minVal) / safeRange));
+                    textureData[i] = Math.round(normed * 254);
                 }
             };
             const newTexture = CreateTexture(outputShape, textureData)

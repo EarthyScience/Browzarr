@@ -92,7 +92,7 @@ vec4 evaluateColorScale(
     bool useLow,
     bool useHigh
 ) {
-    bool isNaN = (val == 1.0) || (abs(val - fillVal) < 0.005);
+    bool isNaN = (val >= 254.5 / 255.0) || (fillVal > -900000.0 && abs(val - fillVal) < 0.005);
     if (isNaN) {
         return vec4(nanC, nanA);
     }
@@ -149,7 +149,7 @@ vec4 evaluateVolumeColorScale(
     float transparency,
     float opacityMag
 ) {
-    bool isNaN = (val == 1.0) || (abs(val - fillVal) < 0.005);
+    bool isNaN = (val >= 254.5 / 255.0) || (fillVal > -900000.0 && abs(val - fillVal) < 0.005);
     if (isNaN) {
         return vec4(nanC, pow(nanA, 5.0));
     }
