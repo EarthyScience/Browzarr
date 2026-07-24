@@ -12,7 +12,7 @@ import './css/Colorbar.css'
 import { linspace, getLogEps } from '@/utils/HelperFuncs';
 import Metadata from "./MetaData";
 
-import { applyColorScale } from "@/components/textures";
+import { applyColorScale, invertColorScale } from "@/components/textures";
 
 const operationMap = {
     // Reductions
@@ -134,8 +134,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         const startVal = (colorScale === 'log(x)' && origMin <= 0) ? effectiveMin : newMin;
         const vals = locs.map(loc => {
           const t = loc / 100;
-          const scaledT = applyColorScale(t, colorScale, logConstant, logEps, dataRange, newMin);
-          return startVal + (newMax - startVal) * scaledT;
+          const invT = invertColorScale(t, colorScale, logConstant, logEps, dataRange, newMin);
+          return startVal + (newMax - startVal) * invT;
         });
         return [locs, vals]
     },[ tickCount, newMin, newMax, colorScale, logConstant, logEps, dataRange, effectiveMin, origMin])
@@ -235,12 +235,14 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 const height = canvas.height;
                 ctx.clearRect(0, 0, width, height);
 
+                const numPaletteColors = colors.length > 1 ? colors.length - 1 : colors.length;
+
                 if (isCategorical) {
                     const N = categoricalMode === 'unique' ? (uniqueCategories.length || 10) : numBins;
                     const blockWidth = width / N;
                     for (let i = 0; i < N; i++) {
                         const t = (i + 0.5) / N;
-                        const colorIndex = Math.min(Math.floor(t * (colors.length - 1)), colors.length - 1);
+                        const colorIndex = Math.min(numPaletteColors - 1, Math.floor(t * numPaletteColors));
                         ctx.fillStyle = colors[colorIndex] || '#000';
                         ctx.fillRect(i * blockWidth, 0, blockWidth, height);
                     }
@@ -257,8 +259,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
 
                     for (let x = 0; x < mainWidth; x++) {
                         const normX = x / mainWidth;
-                        const scaledT = applyColorScale(normX, colorScale, logConstant, logEps, dataRange, newMin);
-                        const colorIndex = Math.min(Math.floor(scaledT * (colors.length - 1)), colors.length - 1);
+                        const colorIndex = Math.min(numPaletteColors - 1, Math.floor(normX * numPaletteColors));
                         ctx.fillStyle = colors[colorIndex] || '#000';
                         ctx.fillRect(startX + x, 0, 1, height);
                     }

@@ -9,21 +9,12 @@ float evalCustomExpr(float val) {
 float applyColorScale(float x, int scaleType, float c, float eps, float range, float minV) {
     float safeRange = max(range, 0.000001);
     if (scaleType == 1) {
-        if (minV > 0.0) {
-            float K = safeRange / minV;
-            float clampedX = max(x, 0.0);
-            float num = log(1.0 + clampedX * K);
-            float denom = log(1.0 + K);
-            return denom != 0.0 ? num / denom : x;
-        } else {
-            float safeEps = max(eps, 0.000001);
-            if (x < safeEps) return 0.0;
-            float xRel = (x - safeEps) / (1.0 - safeEps);
-            float K = (1.0 - safeEps) / safeEps;
-            float num = log(1.0 + xRel * K);
-            float denom = log(1.0 + K);
-            return denom != 0.0 ? num / denom : x;
-        }
+        float effMin = minV > 0.0 ? minV : max(0.000001, eps * safeRange);
+        float K = safeRange / effMin;
+        float clampedX = max(x, 0.0);
+        float num = log(1.0 + clampedX * K);
+        float denom = log(1.0 + K);
+        return denom != 0.0 ? num / denom : x;
     } else if (scaleType == 2) {
         float clampedX = max(x, 0.0);
         float num = log(1.0 + clampedX * safeRange);
@@ -106,8 +97,8 @@ vec4 evaluateColorScale(
     float range = max(bounds.y - bounds.x, 0.0001);
     float normS = clamp((val - bounds.x) / range, 0.0, 1.0);
 
-    vec4 cmapMinColor = vec4(texture(colormap, vec2(0.0, 0.5)).rgb, 1.0);
-    vec4 cmapMaxColor = vec4(texture(colormap, vec2(0.995, 0.5)).rgb, 1.0);
+    vec4 cmapMinColor = vec4(texture(colormap, vec2(0.5 / 256.0, 0.5)).rgb, 1.0);
+    vec4 cmapMaxColor = vec4(texture(colormap, vec2(254.5 / 256.0, 0.5)).rgb, 1.0);
 
     if (scaleType == 1 && normS < eps) {
         return getLowclipColor(useLow, lowClipVal, cmapMinColor);
@@ -123,8 +114,8 @@ vec4 evaluateColorScale(
         return getHighclipColor(useHigh, highClipVal, cmapMaxColor);
     }
 
-    float sampLoc = clamp(rawSampLoc, 0.0, 0.995);
-    return vec4(texture(colormap, vec2(sampLoc, 0.5)).rgb, 1.0);
+    float sampU = (0.5 + clamp(rawSampLoc, 0.0, 1.0) * 254.0) / 256.0;
+    return vec4(texture(colormap, vec2(sampU, 0.5)).rgb, 1.0);
 }
 
 vec4 evaluateVolumeColorScale(
@@ -177,14 +168,14 @@ vec4 evaluateVolumeColorScale(
         return useHigh ? highClipVal : vec4(0.0);
     }
 
-    float sampLoc = clamp(rawSampLoc, 0.0, 0.99);
-    vec4 col = texture(colormap, vec2(sampLoc, 0.5));
+    float sampU = (0.5 + clamp(rawSampLoc, 0.0, 1.0) * 254.0) / 256.0;
+    vec4 col = texture(colormap, vec2(sampU, 0.5));
     float alpha;
     if (useClipScale) {
         float normalizedOpacity = clamp(scaledS, 0.0, 1.0);
         alpha = pow(max(normalizedOpacity, 0.001), transparency * opacityMag);
     } else {
-        alpha = pow(max(sampLoc, 0.001), transparency * opacityMag);
+        alpha = pow(max(rawSampLoc, 0.001), transparency * opacityMag);
     }
     return vec4(col.rgb, alpha);
 }

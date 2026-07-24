@@ -63,21 +63,12 @@ export function colorScaleToId(colorScale: string): number {
 export function applyColorScale(x: number, scaleType: string, c = 1.0, logEps = 0.000001, dataRange = 100.0, minVal = 0.0): number {
   const safeRange = Math.max(dataRange, 0.000001);
   if (scaleType === 'log(x)') {
-    if (minVal > 0) {
-      const K = safeRange / minVal;
-      const clampedX = Math.max(x, 0.0);
-      const num = Math.log(1.0 + clampedX * K);
-      const denom = Math.log(1.0 + K);
-      return denom !== 0 ? num / denom : x;
-    } else {
-      const eps = Math.max(logEps, 0.000001);
-      if (x < eps) return 0.0;
-      const xRel = (x - eps) / (1.0 - eps);
-      const K = (1.0 - eps) / eps;
-      const num = Math.log(1.0 + xRel * K);
-      const denom = Math.log(1.0 + K);
-      return denom !== 0 ? num / denom : x;
-    }
+    const effMin = minVal > 0 ? minVal : Math.max(0.000001, logEps * safeRange);
+    const K = safeRange / effMin;
+    const clampedX = Math.max(x, 0.0);
+    const num = Math.log(1.0 + clampedX * K);
+    const denom = Math.log(1.0 + K);
+    return denom !== 0 ? num / denom : x;
   } else if (scaleType === 'log(1+x)') {
     const clampedX = Math.max(x, 0.0);
     const num = Math.log(1.0 + clampedX * safeRange);
@@ -107,6 +98,29 @@ export function applyColorScale(x: number, scaleType: string, c = 1.0, logEps = 
     }
   }
   return x;
+}
+
+export function invertColorScale(t: number, scaleType: string, c = 1.0, logEps = 0.000001, dataRange = 100.0, minVal = 0.0): number {
+  const safeRange = Math.max(dataRange, 0.000001);
+  const clampedT = Math.max(0.0, Math.min(1.0, t));
+  if (scaleType === 'log(x)') {
+    const effMin = minVal > 0 ? minVal : Math.max(0.000001, logEps * safeRange);
+    const K = safeRange / effMin;
+    return (Math.pow(1.0 + K, clampedT) - 1.0) / K;
+  } else if (scaleType === 'log(1+x)') {
+    return (Math.pow(1.0 + safeRange, clampedT) - 1.0) / safeRange;
+  } else if (scaleType === 'log(x+c)') {
+    const safeC = Math.max(c, 0.00001);
+    const ratio = 1.0 + safeRange / safeC;
+    return safeC * (Math.pow(ratio, clampedT) - 1.0) / safeRange;
+  } else if (scaleType === 'sign(x)*sqrt(abs(x))') {
+    return Math.sign(clampedT) * Math.pow(clampedT, 2);
+  } else if (scaleType === 'exp(x)/100') {
+    const expR = Math.min(safeRange, 10.0);
+    const num = Math.log(1.0 + clampedT * (Math.exp(expR) - 1.0));
+    return num / expR;
+  }
+  return clampedT;
 }
 
 export const availableColorMapNames = Object.keys(colorschemes).sort();

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss, colormapIndex, COLOR_SCALE_OPTIONS } from '@/components/textures';
+import { getLogEps } from '@/utils/HelperFuncs';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
@@ -204,6 +205,11 @@ const Colormaps = () => {
       return () => window.removeEventListener("resize", handleResize);
     }, []);
 
+  const minVal = valueScales?.minVal ?? 0;
+  const maxVal = valueScales?.maxVal ?? 1;
+  const dataRange = useMemo(() => Math.max(maxVal - minVal, 0.000001), [maxVal, minVal]);
+  const logEps = useMemo(() => getLogEps(minVal, maxVal, (valueScales as any)?.minPosVal), [minVal, maxVal, valueScales]);
+
   return (
     <div className="relative">
       <Popover>
@@ -216,7 +222,9 @@ const Colormaps = () => {
                 size="icon"
                 className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full cmap-trigger'
                 style={{
-                  backgroundImage: getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral'),
+                  backgroundImage: getColormapGradientCss(
+                    (colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral'
+                  ),
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'center',
                   backgroundSize: '100% 100%',
