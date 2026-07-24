@@ -1,6 +1,7 @@
 "use client";
 
 import React, {useMemo, useEffect, useRef} from 'react'
+import { invalidate } from '@react-three/fiber';
 import * as THREE from 'three'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
@@ -217,6 +218,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     useEffect(()=>{
       if(shaderMaterial){
         updateCommonUniforms(shaderMaterial, commonState);
+        invalidate();
       }
     },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange, colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip])
     useEffect(()=>{

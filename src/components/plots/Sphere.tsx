@@ -6,6 +6,7 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
 import { evaluateColorMap, colorScaleToId, exprToGLSL } from '@/components/textures';
+import { invalidate } from '@react-three/fiber';
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
@@ -104,6 +105,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
       uniforms.displacement.value = sphereDisplacement
       material.needsUpdate = true;
+      invalidate();
     }
 
     useEffect(()=>{
