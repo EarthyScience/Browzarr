@@ -9,12 +9,21 @@ float evalCustomExpr(float val) {
 float applyColorScale(float x, int scaleType, float c, float eps, float range, float minV) {
     float safeRange = max(range, 0.000001);
     if (scaleType == 1) {
-        float effMin = minV > 0.0 ? minV : max(0.000001, eps * safeRange);
-        float K = safeRange / effMin;
-        float clampedX = max(x, 0.0);
-        float num = log(1.0 + clampedX * K);
-        float denom = log(1.0 + K);
-        return denom != 0.0 ? num / denom : x;
+        if (minV > 0.0) {
+            float K = safeRange / minV;
+            float clampedX = max(x, 0.0);
+            float num = log(1.0 + clampedX * K);
+            float denom = log(1.0 + K);
+            return denom != 0.0 ? num / denom : x;
+        } else {
+            float safeEps = max(eps, 0.000001);
+            if (x <= safeEps) return 0.0;
+            float xRel = (x - safeEps) / (1.0 - safeEps);
+            float K = (1.0 - safeEps) / safeEps;
+            float num = log(1.0 + xRel * K);
+            float denom = log(1.0 + K);
+            return denom != 0.0 ? num / denom : x;
+        }
     } else if (scaleType == 2) {
         float clampedX = max(x, 0.0);
         float num = log(1.0 + clampedX * safeRange);
