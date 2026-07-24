@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from 'react'
-import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss, colormapIndex, COLOR_SCALE_OPTIONS } from '@/components/textures';
-import { getLogEps } from '@/utils/HelperFuncs';
+import { GetColorMapTexture, colormaps, getColormapGradientCss, colormapIndex, COLOR_SCALE_OPTIONS } from '@/components/textures';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
-import { MdOutlineSwapVert } from "react-icons/md";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button-enhanced";
@@ -87,11 +85,13 @@ const Colormaps = () => {
     return !isBuiltinScale ? colorScale : 'x > 0 ? x/2 : x';
   });
 
-  useEffect(() => {
+  const [prevColorScale, setPrevColorScale] = useState<string>(colorScale);
+  if (colorScale !== prevColorScale) {
+    setPrevColorScale(colorScale);
     if (!isBuiltinScale) {
       setCustomExprInput(colorScale);
     }
-  }, [colorScale, isBuiltinScale]);
+  }
 
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
@@ -194,7 +194,7 @@ const Colormaps = () => {
       );
     }
     lastHoveredCmap.current = hoveredCmap;
-  }, [hoveredCmap, setColormap, colormapName, flipColormap, isCategorical, activeBins]);
+  }, [hoveredCmap, setColormap, isCategorical, activeBins]);
 
   useEffect(() => {
       const handleResize = () => {
@@ -204,11 +204,6 @@ const Colormaps = () => {
       window.addEventListener("resize", handleResize);
       return () => window.removeEventListener("resize", handleResize);
     }, []);
-
-  const minVal = valueScales?.minVal ?? 0;
-  const maxVal = valueScales?.maxVal ?? 1;
-  const dataRange = useMemo(() => Math.max(maxVal - minVal, 0.000001), [maxVal, minVal]);
-  const logEps = useMemo(() => getLogEps(minVal, maxVal, (valueScales as any)?.minPosVal), [minVal, maxVal, valueScales]);
 
   return (
     <div className="relative">

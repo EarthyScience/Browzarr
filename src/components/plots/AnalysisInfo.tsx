@@ -1,5 +1,5 @@
 'use client';
-import React, {useEffect, useMemo} from 'react'
+import React, {useMemo} from 'react'
 import './Plots.css'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';

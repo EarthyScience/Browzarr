@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
 import { sampleCRS } from '../textures/ProjectionTexture';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
