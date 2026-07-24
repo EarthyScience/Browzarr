@@ -20,18 +20,23 @@ function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number, 
     const uniques = detectUniqueCategories(data as any, 50);
     usePlotStore.getState().setUniqueCategories(uniques);
 
-    const textureData = new Uint8Array(data.length)
-    const range = (maxVal - minVal)
-    for (let i = 0; i < data.length; i++){
-      const normed = (data[i] - minVal) / range;
-      if (isNaN(normed)){
+    const textureData = new Uint8Array(data.length);
+    const range = maxVal - minVal;
+    const safeRange = range > 0 ? range : 1.0;
+
+    for (let i = 0; i < data.length; i++) {
+      const val = data[i];
+      if (isNaN(val) || !isFinite(val)) {
         textureData[i] = 255;
+      } else if (range <= 0) {
+        textureData[i] = 127; // Constant data maps to palette midpoint
       } else {
-        textureData[i] = normed * 254;
+        const normed = Math.max(0.0, Math.min(1.0, (val - minVal) / safeRange));
+        textureData[i] = Math.round(normed * 254);
       }
-    };
-    setTextureData(textureData)
-    return {minVal, maxVal, minPosVal}
+    }
+    setTextureData(textureData);
+    return { minVal, maxVal, minPosVal };
 }
 
 export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
