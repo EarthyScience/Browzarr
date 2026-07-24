@@ -161,13 +161,14 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 }
 
 const Plot = () => {
-  const {colormap, isFlat, DPR, valueScales, setIsFlat, dataShape} = useGlobalStore(useShallow(state=>({
+  const {colormap, isFlat, DPR, valueScales, setIsFlat, dataShape, variable} = useGlobalStore(useShallow(state=>({
     colormap: state.colormap, 
     isFlat: state.isFlat, 
     DPR: state.DPR, 
     valueScales: state.valueScales,
     setIsFlat: state.setIsFlat, 
     dataShape: state.dataShape,
+    variable: state.variable,
   })))
   const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
   const {plotType, displaceSurface, setPlotType} = usePlotStore(useShallow(state => ({
@@ -181,6 +182,7 @@ const Plot = () => {
   })))
   const coords = useRef<number[]>([0,0])
   const val = useRef<number>(0)
+  const displayDims = useRef<{arr: number[]; name: string; units: string | undefined}[]>([])
 
   const [showInfo, setShowInfo] = useState<boolean>(false)
   const [loc, setLoc] = useState<number[]>([0,0])
@@ -215,7 +217,8 @@ const Plot = () => {
     setLoc,
     setShowInfo,
     coords,
-    val
+    val,
+    displayDims,
   }),[])
 
   useEffect(()=>{ // Rotates flat back when changing away
@@ -247,7 +250,7 @@ const Plot = () => {
       <AnalysisWG setTexture={setTextures} />
       {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
       <Nav />
-      {(isFlat || plotType == "flat") && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }
+      {(isFlat || plotType == "flat" || analysisMode) && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]} displayDims={displayDims.current} varName={variable} varUnits={stableMetadata?.units}/> }
       <ShaderEditor visible={useEditor}/>
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
         frameloop={useEditor ? "never" : "demand"}

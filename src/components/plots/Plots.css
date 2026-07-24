@@ -55,14 +55,89 @@
     cursor: pointer;
 }
 
-.analysis-overlay{
+/* ── Hover tooltip card ─────────────────────────────────────────── */
+.analysis-overlay {
     position: fixed;
-    max-width: 200px;
-    z-index: 1;
-    padding: 6px;
-    border-radius: 6px;
-    background-color: var(--background-modal);
+    min-width: 150px;
+    max-width: 210px;
+    z-index: 100;
+    border-radius: 8px;
+    /* Use the app's own modal background variable so light/dark both work */
+    background: var(--background-modal);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
     pointer-events: none;
+    overflow: hidden;
+    font-family: inherit;
+}
+
+/* Variable name – top row */
+.analysis-overlay__var-name {
+    padding: 5px 10px 4px;
+    font-size: 0.62rem;
     font-weight: 700;
-    text-shadow: 0px 0px 3px white;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Value – centre, medium emphasis */
+.analysis-overlay__value {
+    padding: 6px 10px 5px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--foreground);
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+}
+
+/* Units suffix – smaller, muted */
+.analysis-overlay__units {
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    letter-spacing: 0.03em;
+}
+
+/* Coordinates row – bottom */
+.analysis-overlay__coords {
+    padding: 4px 10px 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.analysis-overlay__coord-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--foreground);
+}
+
+.analysis-overlay__coord-label {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    margin-right: 1px;
+}
+
+.analysis-overlay__coord-sep {
+    color: var(--muted-foreground);
+    font-size: 0.7rem;
+    opacity: 0.4;
 }

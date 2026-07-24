@@ -5,7 +5,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { decompressSync } from 'fflate';
-import { copyChunkToArray } from '@/components/zarr/utils';
+import { copyChunkToArray, copyChunkToArray2D } from '@/components/zarr/utils';
 import { GetNCDims } from '@/components/zarr/NCGetters';
 import { GetZarrDims } from '@/components/zarr/ZarrLoaderLRU';
 
@@ -307,13 +307,16 @@ function DecompressArray(compressed : Uint8Array){
 }
 
 export function GetCurrentArray(overrideStore?:string){
-  const { variable, is4D, idx4D, initStore, strides, dataShape }= useGlobalStore.getState()
+  const { variable, idx4D, initStore, strides, dataShape }= useGlobalStore.getState()
   const { arraySize, currentChunks, ndSlices } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
   
-  const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : (idx4D ?? "");
-  const cacheBase = scalarIndices !== "" ? `${store}_${variable}_${scalarIndices}` : `${store}_${variable}`;
+  const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : "";
+  let cacheBase = scalarIndices !== "" ? `${store}_${variable}_${scalarIndices}` : `${store}_${variable}`;
+  if (ndSlices && ndSlices.length >= 4 && idx4D !== undefined && idx4D !== null) {
+      cacheBase = `${cacheBase}_time${idx4D}`;
+  }
   
   if (cache.has(cacheBase)){
       const chunk = cache.get(cacheBase)
@@ -327,6 +330,8 @@ export function GetCurrentArray(overrideStore?:string){
     const [yStartIdx, yEndIdx] = currentChunks.y
     const [zStartIdx, zEndIdx] = currentChunks.z
 
+    const hasZ = strides.length > 2;
+
     for (let z = zStartIdx; z < zEndIdx; z++) {
       for (let y = yStartIdx; y < yEndIdx; y++) {
         for (let x = xStartIdx; x < xEndIdx; x++) {
@@ -336,24 +341,37 @@ export function GetCurrentArray(overrideStore?:string){
           if (!chunk) continue;
           const compressed = chunk.compressed
           const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
-          copyChunkToArray(
-            thisData,
-            chunk.shape,
-            chunk.stride,
-            typedArray,
-            dataShape,
-            strides as [number, number, number], 
-            [z, y, x], 
-            chunk.fullChunkDim || [1, 1, 1],
-            chunk.sliceStart || [0, 0, 0]
-          )
+          if (hasZ) {
+            copyChunkToArray(
+              thisData,
+              chunk.shape,
+              chunk.stride,
+              typedArray,
+              dataShape,
+              strides as [number, number, number], 
+              [z, y, x], 
+              chunk.fullChunkDim || [1, 1, 1],
+              chunk.sliceStart || [0, 0, 0]
+            )
+          } else {
+            copyChunkToArray2D(
+              thisData,
+              chunk.shape,
+              chunk.stride,
+              typedArray,
+              dataShape,
+              strides as [number, number], 
+              [y, x], 
+              chunk.fullChunkDim ? chunk.fullChunkDim.slice(-2) : [1, 1],
+              chunk.sliceStart ? chunk.sliceStart.slice(-2) : [0, 0]
+            )
+          }
         }
       }
     }
     return typedArray
   }
 }
-
 
 export function TwoDecimals(val: number){
     return Math.round(val * 100)/100

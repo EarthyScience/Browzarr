@@ -24,11 +24,12 @@ interface InfoSettersProps{
   setShowInfo: React.Dispatch<React.SetStateAction<boolean>>;
   val: React.RefObject<number>;
   coords: React.RefObject<number[]>;
+  displayDims: React.RefObject<{arr: number[]; name: string; units: string | undefined}[]>;
 }
 
 const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
     const textures = usePaddedTextures(propTextures);
-    const {setLoc, setShowInfo, val, coords} = infoSetters;
+    const {setLoc, setShowInfo, val, coords, displayDims} = infoSetters;
     const commonState = useCommonPlotState();
     const { colormap, isFlat, valueScales, flipY, dataShape, textureArrayDepths, remapTexture, shape,
             animProg, cOffset, cScale, nanColor, nanTransparency, fillValue, valueRange, maskTexture, maskValue,
@@ -116,7 +117,6 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       if (infoRef.current && e.uv) {
         let {uv} = e;
         if (!uv) return;
-        setLoc([e.clientX, e.clientY]);
         eventRef.current = e;
         if (remapTexture){
           const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
@@ -125,6 +125,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
           else{
             val.current = NaN;
             coords.current = [thisUV.y,thisUV.x]
+            setLoc([e.clientX, e.clientY]);
             return;
           }
         }
@@ -135,13 +136,54 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[zSliceIdx].length;
         const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[ySliceIdx].length;
 
-        const xId = Math.round(x*xSize-.5)
-        const yId = Math.round(y*ySize-.5)
-        let dataIdx = xSize * yId + xId;
-        dataIdx += isFlat ? 0 : Math.floor((dimSlices[zIdx].length-1) * animProg) * xSize*ySize
-        const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
+        const xId = Math.round(x*xSize-.5);
+        const yId = Math.round(y*ySize-.5);
+        const zLen = (!isFlat && dimSlices.length > 2) ? (dimSlices[0]?.length ?? 1) : 1;
+        const zStep = (!isFlat && zLen > 1) ? Math.floor((zLen - 1) * animProg) : 0;
+        const dataIdx = zStep * xSize * ySize + yId * xSize + xId;
+        const currentData = analysisMode ? analysisArray : GetCurrentArray();
+        const dataVal = (currentData && dataIdx >= 0 && dataIdx < currentData.length) ? currentData[dataIdx] : 0;
+        // Write refs BEFORE setLoc so the re-render triggered by setLoc always
+        // reads up-to-date values (R3F can flush renders synchronously inside
+        // pointer events in React 18 Concurrent Mode).
         val.current = dataVal;
-        coords.current = [y,x]
+        coords.current = [y, x];
+
+        // Build the two display dimension arrays exactly as this frame uses them,
+        // so AnalysisInfo doesn't have to re-derive them independently.
+        const activeDimSlices = analysisMode ? analysisDims : dimSlices;
+        const rowArr = isFlat ? activeDimSlices[0] : activeDimSlices[ySliceIdx];
+        const colArr = isFlat ? activeDimSlices[1] : activeDimSlices[zSliceIdx];
+
+        let rowName: string, colName: string, rowUnits: string | undefined, colUnits: string | undefined;
+        if (analysisMode) {
+          const axisOrder = [
+            { name: dimNames[zIdx], units: dimUnits[zIdx] },
+            { name: dimNames[yIdx], units: dimUnits[yIdx] },
+            { name: dimNames[xIdx], units: dimUnits[xIdx] },
+          ].filter((_, i) => i !== axis);
+          rowName = axisOrder[0]?.name ?? '';
+          rowUnits = axisOrder[0]?.units ?? undefined;
+          colName = axisOrder[1]?.name ?? '';
+          colUnits = axisOrder[1]?.units ?? undefined;
+        } else if (isFlat) {
+          rowName = dimNames[yIdx] ?? '';
+          rowUnits = dimUnits[yIdx] ?? undefined;
+          colName = dimNames[xIdx] ?? '';
+          colUnits = dimUnits[xIdx] ?? undefined;
+        } else {
+          // 3D non-flat: dimSlices = [z, y, x]; row=y (idx 1), col=x (idx 2)
+          rowName = dimNames[yIdx] ?? '';
+          rowUnits = dimUnits[yIdx] ?? undefined;
+          colName = dimNames[xIdx] ?? '';
+          colUnits = dimUnits[xIdx] ?? undefined;
+        }
+
+        displayDims.current = [
+          { arr: Array.from(rowArr), name: rowName, units: rowUnits as string | undefined },
+          { arr: Array.from(colArr), name: colName, units: colUnits as string | undefined },
+        ];
+        setLoc([e.clientX, e.clientY]);
       }
     }
 
