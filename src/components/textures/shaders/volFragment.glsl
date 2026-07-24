@@ -140,35 +140,13 @@ void main() {
         localCoord = fract(localCoord);
         float d = sample1(localCoord, textureIdx);
 
-        if (d == 1. || abs(d - fillValue) < 0.005) {
-            accumulateSample(accumColor, alphaAcc, vec4(nanColor, pow(nanAlpha, 5.)));
-        } else {
-            float range = max(threshold.y - threshold.x, 0.0001);
-            float normD = clamp((d - threshold.x) / range, 0.0, 1.0);
-            if (colorScale == 1 && normD < logEps) {
-                if (useLowclip) accumulateSample(accumColor, alphaAcc, lowclip);
-            } else {
-                float scaledD = applyColorScale(normD, colorScale, logConstant, logEps, dataRange, minVal);
-                float rawSampLoc = scaledD * cScale + cOffset;
-
-                if (d < threshold.x || rawSampLoc < 0.0) {
-                    if (useLowclip) accumulateSample(accumColor, alphaAcc, lowclip);
-                } else if (d > threshold.y || rawSampLoc > 1.0) {
-                    if (useHighclip) accumulateSample(accumColor, alphaAcc, highclip);
-                } else {
-                    float sampLoc = clamp(rawSampLoc, 0.0, 0.99);
-                    vec4 col = texture(cmap, vec2(sampLoc, 0.5));
-                    float alpha;
-                    if (useClipScale) {
-                        float normalizedOpacity = clamp(scaledD, 0.0, 1.0);
-                        alpha = pow(max(normalizedOpacity, 0.001), transparency * opacityMag);
-                    } else {
-                        alpha = pow(max(sampLoc, 0.001), transparency * opacityMag);
-                    }
-                    accumulateSample(accumColor, alphaAcc, vec4(col.rgb, alpha));
-                }
-            }
-        }
+        vec4 sampleCol = evaluateVolumeColorScale(
+            d, threshold, fillValue, nanColor, nanAlpha,
+            cmap, cScale, cOffset, colorScale, logConstant, logEps,
+            dataRange, minVal, lowclip, highclip, useLowclip, useHighclip,
+            useClipScale, transparency, opacityMag
+        );
+        accumulateSample(accumColor, alphaAcc, sampleCol);
 
         if (alphaAcc >= 1.0) break;
     }

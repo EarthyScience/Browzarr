@@ -1,4 +1,4 @@
-import applyColorScaleChunk from './applyColorScale.glsl';
+import colorPipelineChunk from './colorPipeline.glsl';
 import pointFragRaw from './pointFrag.glsl';
 import pointVert from './pointVertex.glsl';
 import vertexShader from './vertex.glsl';
@@ -14,7 +14,7 @@ import orthoVertex from './orthoVertex.glsl';
 import flatBlocksVert from './flatBlocksVert.glsl';
 
 function injectColorScale(shaderStr: string): string {
-  return shaderStr.replace('// APPLY_COLOR_SCALE', applyColorScaleChunk);
+  return shaderStr.replace('// APPLY_COLOR_SCALE', colorPipelineChunk);
 }
 
 const pointFrag = injectColorScale(pointFragRaw);

@@ -1,4 +1,4 @@
-import applyColorScaleChunk from '@/components/textures/shaders/applyColorScale.glsl';
+import colorPipelineChunk from '@/components/textures/shaders/colorPipeline.glsl';
 import MaxFrag from './Max.glsl'
 import MinFrag from './Min.glsl'
 import MeanFrag from './Mean.glsl'
@@ -7,7 +7,7 @@ import vertShader from './vert.glsl'
 import fragShaderRaw from './frag.glsl'
 import correlateFrag from './Correlation.glsl'
 
-const fragShader = fragShaderRaw.replace('// APPLY_COLOR_SCALE', applyColorScaleChunk);
+const fragShader = fragShaderRaw.replace('// APPLY_COLOR_SCALE', colorPipelineChunk);
 
 export {
     MaxFrag,

@@ -126,3 +126,65 @@ vec4 evaluateColorScale(
     float sampLoc = clamp(rawSampLoc, 0.0, 0.995);
     return vec4(texture(colormap, vec2(sampLoc, 0.5)).rgb, 1.0);
 }
+
+vec4 evaluateVolumeColorScale(
+    float val,
+    vec2 bounds,
+    float fillVal,
+    vec3 nanC,
+    float nanA,
+    sampler2D colormap,
+    float cScaleVal,
+    float cOffsetVal,
+    int scaleType,
+    float logC,
+    float eps,
+    float dataR,
+    float minV,
+    vec4 lowClipVal,
+    vec4 highClipVal,
+    bool useLow,
+    bool useHigh,
+    bool useClipScale,
+    float transparency,
+    float opacityMag
+) {
+    bool isNaN = (val == 1.0) || (abs(val - fillVal) < 0.005);
+    if (isNaN) {
+        return vec4(nanC, pow(nanA, 5.0));
+    }
+    if (val < bounds.x) {
+        return useLow ? lowClipVal : vec4(0.0);
+    }
+    if (val > bounds.y) {
+        return useHigh ? highClipVal : vec4(0.0);
+    }
+
+    float range = max(bounds.y - bounds.x, 0.0001);
+    float normS = clamp((val - bounds.x) / range, 0.0, 1.0);
+
+    if (scaleType == 1 && normS < eps) {
+        return useLow ? lowClipVal : vec4(0.0);
+    }
+
+    float scaledS = applyColorScale(normS, scaleType, logC, eps, dataR, minV);
+    float rawSampLoc = scaledS * cScaleVal + cOffsetVal;
+
+    if (rawSampLoc < 0.0) {
+        return useLow ? lowClipVal : vec4(0.0);
+    }
+    if (rawSampLoc > 1.0) {
+        return useHigh ? highClipVal : vec4(0.0);
+    }
+
+    float sampLoc = clamp(rawSampLoc, 0.0, 0.99);
+    vec4 col = texture(colormap, vec2(sampLoc, 0.5));
+    float alpha;
+    if (useClipScale) {
+        float normalizedOpacity = clamp(scaledS, 0.0, 1.0);
+        alpha = pow(max(normalizedOpacity, 0.001), transparency * opacityMag);
+    } else {
+        alpha = pow(max(sampLoc, 0.001), transparency * opacityMag);
+    }
+    return vec4(col.rgb, alpha);
+}
