@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Trash2 } from 'lucide-react';
 import {
@@ -10,7 +10,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { DimSlicerAxisToggle } from './DimSlicerAxisToggle';
 import { DimSlicerModeToggle } from './DimSlicerModeToggle';
 import { DimSlicerNumericControl } from './DimSlicerNumericControl';
 import { DimSlicerTimeControl } from './DimSlicerTimeControl';
@@ -78,7 +77,6 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
   lockMode,
   allowedAxes,
 }) => {
-  // const [currentAxis, setCurrentAxis] = useState<Axis>(propAxis);
   const effectiveDimSize = values ? values.length : dimSize;
   const rawSel = selection ?? defaultSelection(effectiveDimSize);
   const sel = lockMode ? { ...rawSel, mode: lockMode } : rawSel;
