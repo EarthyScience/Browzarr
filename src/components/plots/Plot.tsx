@@ -10,7 +10,7 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar, ExportExtent, ShaderEditor, KeyFrames } from '../ui';
-import AnalysisInfo from './AnalysisInfo';
+import AnalysisInfo, { DisplayDim } from './AnalysisInfo';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import AnalysisWG from './AnalysisWG';
 import ExportCanvas from '@/utils/ExportCanvas';
@@ -182,7 +182,7 @@ const Plot = () => {
   })))
   const coords = useRef<number[]>([0,0])
   const val = useRef<number>(0)
-  const displayDims = useRef<{arr: number[]; name: string; units: string | undefined}[]>([])
+  const displayDims = useRef<DisplayDim[]>([])
 
   const [showInfo, setShowInfo] = useState<boolean>(false)
   const [loc, setLoc] = useState<number[]>([0,0])

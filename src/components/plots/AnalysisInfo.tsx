@@ -18,10 +18,11 @@ function formatValue(v: number): string {
     return parseFloat(v.toPrecision(4)).toString();
 }
 
-interface DisplayDim {
-    arr: number[];
+export interface DisplayDim {
+    arr?: number[];
+    val?: number;
     name: string;
-    units: string | undefined;
+    units?: string;
 }
 
 const AnalysisInfo = ({
@@ -35,20 +36,19 @@ const AnalysisInfo = ({
     loc: number[];
     show: boolean;
     info: number[];
-    /** The two coordinate axes as written by FlatMap.handleMove — already sliced
-     *  and coarsened, guaranteed to match the rendered frame. */
+    /** The coordinate axes as written by FlatMap.handleMove — already sliced
+     *  and coarsened. displayDims[0] = row (Y), displayDims[1] = col (X),
+     *  displayDims.slice(2) = Z / extra collapsed dimensions. */
     displayDims: DisplayDim[];
     varName?: string;
     varUnits?: string;
 }) => {
-    // info[0] = UV-y fraction, info[1] = UV-x fraction — in [0,1] within
-    // the rendered (sliced/coarsened) texture. displayDims[0] is the row axis,
-    // displayDims[1] is the column axis.
-    const rowDim = displayDims[0];
-    const colDim = displayDims[1];
+    const rowDim = displayDims?.[0];
+    const colDim = displayDims?.[1];
+    const extraDims = displayDims ? displayDims.slice(2) : [];
 
-    const rowCoord = rowDim ? rowDim.arr[Math.floor(info[0] * rowDim.arr.length)] : undefined;
-    const colCoord = colDim ? colDim.arr[Math.floor(info[1] * colDim.arr.length)] : undefined;
+    const rowCoord = rowDim && rowDim.arr ? rowDim.arr[Math.floor(info[0] * rowDim.arr.length)] : undefined;
+    const colCoord = colDim && colDim.arr ? colDim.arr[Math.floor(info[1] * colDim.arr.length)] : undefined;
 
     const rawValue = info[2];
     const valueStr = show ? formatValue(rawValue) : '—';
@@ -74,7 +74,19 @@ const AnalysisInfo = ({
             {unitsStr && <span className='analysis-overlay__units'>{unitsStr}</span>}
         </div>
 
-        {/* ── Coordinate location row ────────────────────────── */}
+        {/* ── Z & extra dimensions row (time, level, etc.) ───── */}
+        {show && extraDims.length > 0 && (
+            <div className='analysis-overlay__z-coords'>
+                {extraDims.map((dim, idx) => (
+                    <span key={dim.name || idx} className='analysis-overlay__coord-item'>
+                        <span className='analysis-overlay__coord-label'>{dim.name}:</span>
+                        {dim.val !== undefined ? parseLoc(dim.val, dim.units) : '—'}
+                    </span>
+                ))}
+            </div>
+        )}
+
+        {/* ── Spatial coordinate location row ────────────────── */}
         <div className='analysis-overlay__coords'>
             {rowDim && (
                 <span className='analysis-overlay__coord-item'>

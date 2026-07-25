@@ -18,13 +18,14 @@ import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { createCommonUniforms, updateCommonUniforms, useCommonPlotState } from '@/utils/plotUniforms';
+import { DisplayDim } from './AnalysisInfo';
 
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
   setShowInfo: React.Dispatch<React.SetStateAction<boolean>>;
   val: React.RefObject<number>;
   coords: React.RefObject<number[]>;
-  displayDims: React.RefObject<{arr: number[]; name: string; units: string | undefined}[]>;
+  displayDims: React.RefObject<DisplayDim[]>;
 }
 
 const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
@@ -139,7 +140,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         const xId = Math.round(x*xSize-.5);
         const yId = Math.round(y*ySize-.5);
         const zLen = (!isFlat && dimSlices.length > 2) ? (dimSlices[0]?.length ?? 1) : 1;
-        const zStep = (!isFlat && zLen > 1) ? Math.floor((zLen - 1) * animProg) : 0;
+        const zStep = (!isFlat && zLen > 1) ? Math.min(zLen - 1, Math.round(animProg * (zLen - 1))) : 0;
         const dataIdx = zStep * xSize * ySize + yId * xSize + xId;
         const currentData = analysisMode ? analysisArray : GetCurrentArray();
         const dataVal = (currentData && dataIdx >= 0 && dataIdx < currentData.length) ? currentData[dataIdx] : 0;
@@ -179,9 +180,50 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
           colUnits = dimUnits[xIdx] ?? undefined;
         }
 
+        const extraDimsList: DisplayDim[] = [];
+
+        // 1. Include the active Z dimension and its current value if non-flat / 3D
+        if (!isFlat && dimSlices.length > 2) {
+          const zArr = dimSlices[0];
+          const zVal = zArr && zArr.length > 0 ? zArr[Math.min(zStep, zArr.length - 1)] : undefined;
+          const zName = dimNames[zIdx] ?? 'Z';
+          const zUnits = dimUnits[zIdx];
+          if (zVal !== undefined) {
+            extraDimsList.push({ name: zName, val: zVal, units: zUnits });
+          }
+        }
+
+        // 2. Include collapsed dimensions from ndSlices
+        const { ndSlices } = useZarrStore.getState();
+        if (ndSlices && ndSlices.length > 0) {
+          ndSlices.forEach((slice, dimIdx) => {
+            if (typeof slice === 'number') {
+              const name = dimNames[dimIdx];
+              if (name && name !== rowName && name !== colName && !extraDimsList.some(d => d.name === name)) {
+                const val = dimArrays[dimIdx]?.[slice];
+                const units = dimUnits[dimIdx];
+                if (val !== undefined) {
+                  extraDimsList.push({ name, val, units });
+                }
+              }
+            }
+          });
+        } else if (isFlat && zIdx >= 0 && dimNames[zIdx]) {
+          const name = dimNames[zIdx];
+          if (name !== rowName && name !== colName && !extraDimsList.some(d => d.name === name)) {
+            const zSliceStart = zSlice ? zSlice[0] : 0;
+            const val = dimArrays[zIdx]?.[zSliceStart];
+            const units = dimUnits[zIdx];
+            if (val !== undefined) {
+              extraDimsList.push({ name, val, units });
+            }
+          }
+        }
+
         displayDims.current = [
           { arr: Array.from(rowArr), name: rowName, units: rowUnits as string | undefined },
           { arr: Array.from(colArr), name: colName, units: colUnits as string | undefined },
+          ...extraDimsList,
         ];
         setLoc([e.clientX, e.clientY]);
       }

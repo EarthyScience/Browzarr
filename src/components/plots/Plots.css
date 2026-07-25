@@ -109,6 +109,17 @@
     letter-spacing: 0.03em;
 }
 
+/* Z & extra dimensions row */
+.analysis-overlay__z-coords {
+    padding: 3px 10px 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.04);
+}
+
 /* Coordinates row – bottom */
 .analysis-overlay__coords {
     padding: 4px 10px 6px;
