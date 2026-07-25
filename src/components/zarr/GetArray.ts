@@ -218,5 +218,6 @@ export async function GetArray(varOveride?: string) {
             }
     }
     setProgress(0);
+    cache.set(cacheBase, { data: typedArray, compressed: false });
     return { data: typedArray, shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor };
 }

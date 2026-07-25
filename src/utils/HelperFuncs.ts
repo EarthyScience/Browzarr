@@ -369,6 +369,7 @@ export function GetCurrentArray(overrideStore?:string){
         }
       }
     }
+    cache.set(cacheBase, { data: typedArray, compressed: false })
     return typedArray
   }
 }

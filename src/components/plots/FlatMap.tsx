@@ -221,8 +221,8 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         }
 
         displayDims.current = [
-          { arr: Array.from(rowArr), name: rowName, units: rowUnits as string | undefined },
-          { arr: Array.from(colArr), name: colName, units: colUnits as string | undefined },
+          { arr: rowArr, name: rowName, units: rowUnits as string | undefined },
+          { arr: colArr, name: colName, units: colUnits as string | undefined },
           ...extraDimsList,
         ];
         setLoc([e.clientX, e.clientY]);

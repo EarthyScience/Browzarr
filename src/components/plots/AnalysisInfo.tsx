@@ -19,7 +19,7 @@ function formatValue(v: number): string {
 }
 
 export interface DisplayDim {
-    arr?: number[];
+    arr?: ArrayLike<number>;
     val?: number;
     name: string;
     units?: string;
