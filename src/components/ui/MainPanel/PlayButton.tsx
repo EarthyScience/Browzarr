@@ -187,9 +187,10 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
   }, [animate, fps])
 
   // LABELS
-  const currentLabel = parseLoc(zArraySlice?.[Math.round(animProg * sliceDist)], dimUnits[zIdx], true)
+  const maxSliceIdx = zArraySlice && zArraySlice.length > 1 ? zArraySlice.length - 1 : 0
+  const currentLabel = parseLoc(zArraySlice?.[Math.min(maxSliceIdx, Math.round(animProg * maxSliceIdx))], dimUnits[zIdx], true)
   const firstLabel = parseLoc(zArraySlice?.[0], dimUnits[zIdx], true)
-  const lastLabel = parseLoc(zArraySlice?.[sliceDist-1], dimUnits[zIdx], true)
+  const lastLabel = parseLoc(zArraySlice?.[maxSliceIdx], dimUnits[zIdx], true)
 
   // RESET ON FETCH
   useEffect(()=>{
@@ -264,14 +265,15 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
           <span className='text-xs'>{firstLabel}</span>
 
           <Slider
-            value={[Math.round(animProg * zLength)]}
+            value={[Math.round(animProg * (zLength > 1 ? zLength - 1 : 1))]}
             min={0}
-            max={zLength - 1}
+            max={zLength > 1 ? zLength - 1 : 0}
             step={1}
             className='flex-1'
             onValueChange={(vals: number[]) => {
               const v = Array.isArray(vals) ? vals[0] : 0
-              setAnimProg(v / zLength)
+              const denom = zLength > 1 ? zLength - 1 : 1
+              setAnimProg(v / denom)
               previousVal.current = v
             }}
           />
