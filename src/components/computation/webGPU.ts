@@ -54,6 +54,97 @@ const InitializeDevice = async () => {
     }
 }
 
+/**
+ * Helper to allocate a GPU storage buffer and write input data.
+ * Ensures buffer sizes and write offsets are aligned to WebGPU's 4-byte requirement.
+ */
+function createAndWriteInputBuffer(
+    device: GPUDevice,
+    label: string,
+    array: ArrayBufferView,
+    hasF16: boolean
+): GPUBuffer {
+    // WebGPU requires buffer byte lengths to be a multiple of 4 bytes
+    const rawByteLength = array.byteLength * (hasF16 ? 1 : 2);
+    const paddedByteLength = Math.ceil(rawByteLength / 4) * 4;
+
+    const buffer = device.createBuffer({
+        label,
+        size: paddedByteLength,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+
+    let writeData: GPUAllowSharedBufferSource;
+    if (!hasF16) {
+        // Fallback to Float32Array when Float16 shader feature is unavailable
+        writeData = new Float32Array(array as Float16Array);
+    } else if (array.byteLength % 4 !== 0) {
+        // Pad Float16 byte array to 4-byte alignment so device.queue.writeBuffer does not fail
+        const paddedBuf = new Uint8Array(paddedByteLength);
+        paddedBuf.set(new Uint8Array(array.buffer, array.byteOffset, array.byteLength));
+        writeData = paddedBuf;
+    } else {
+        writeData = array as GPUAllowSharedBufferSource;
+    }
+
+    // Write input buffer to GPU memory
+    device.queue.writeBuffer(buffer, 0, writeData);
+    return buffer;
+}
+
+/**
+ * Helper to submit GPU compute encoder, copy results to a mapped staging buffer with 4-byte alignment,
+ * and read back typed results.
+ */
+async function executeAndReadResults(
+    device: GPUDevice,
+    encoder: GPUCommandEncoder,
+    outputBuffer: GPUBuffer,
+    outputElementCount: number,
+    hasF16: boolean
+): Promise<Float16Array> {
+    const elementByteSize = hasF16 ? 2 : 4;
+    const rawOutputBytes = outputElementCount * elementByteSize;
+    // Align read buffer copy size to 4 bytes for WebGPU copyBufferToBuffer validation
+    const paddedOutputBytes = Math.ceil(rawOutputBytes / 4) * 4;
+
+    const readBuffer = device.createBuffer({
+        label: 'Read Buffer',
+        size: paddedOutputBytes,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+
+    // Copy computed GPU output buffer to staging read buffer
+    encoder.copyBufferToBuffer(
+        outputBuffer, 0,
+        readBuffer, 0,
+        paddedOutputBytes
+    );
+
+    // Submit work to GPU queue
+    device.queue.submit([encoder.finish()]);
+
+    // Map staging buffer to read computed result data from GPU
+    await readBuffer.mapAsync(GPUMapMode.READ);
+    const mappedRange = readBuffer.getMappedRange();
+
+    let results: Float16Array;
+    if (hasF16) {
+        // Slice mapped range back to unpadded output byte count
+        const slice = mappedRange.slice(0, rawOutputBytes);
+        results = new Float16Array(slice);
+    } else {
+        // Convert Float32 result array back to Float16Array expected by rendering pipeline
+        const slice = mappedRange.slice(0, rawOutputBytes);
+        const f32 = new Float32Array(slice);
+        results = new Float16Array(f32);
+    }
+
+    // Clean up mapped buffer
+    readBuffer.unmap();
+    return results;
+}
+
 export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, reduceDim: number, operation: string, ){
     const {device, hasF16} = await InitializeDevice();
     if (!device) { // Redundant check but needed to satisfy typescript that device is not undefined
@@ -99,31 +190,22 @@ export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {sha
         dimLength
     });
 
-    // Create buffers
-    const inputBuffer = device.createBuffer({
-        label: 'Input Buffer',
-        size: inputArray.byteLength * (hasF16 ? 1 : 2),
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
+    const elementByteSize = hasF16 ? 2 : 4;
+    const paddedOutputBytes = Math.ceil((outputSize * elementByteSize) / 4) * 4;
+
+    const inputBuffer = createAndWriteInputBuffer(device, 'Input Buffer', inputArray, hasF16);
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
+        size: paddedOutputBytes,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
     const uniformBuffer = device.createBuffer({
+        label: 'Uniform Buffer',
         size: myUniformValues.arrayBuffer.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
-    const readBuffer = device.createBuffer({
-        label:'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-    // Write Buffers to GPU
-    device.queue.writeBuffer(inputBuffer, 0, (hasF16 ? inputArray : new Float32Array(inputArray as Float16Array)) as GPUAllowSharedBufferSource);
     device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
 
     const bindGroup = device.createBindGroup({
@@ -146,24 +228,8 @@ export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {sha
     pass.setBindGroup(0, bindGroup);
     pass.dispatchWorkgroups(workGroups[0], workGroups[1]);
     pass.end();
-    encoder.copyBufferToBuffer(
-    outputBuffer, 0,
-    readBuffer, 0,
-    outputSize * (hasF16 ? 2 : 4)
-    );
 
-    // Submit work to GPU
-    device.queue.submit([encoder.finish()]);
-
-    // Map staging buffer to read results
-    await readBuffer.mapAsync(GPUMapMode.READ);
-    const resultArrayBuffer = readBuffer.getMappedRange();
-    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
-
-    // Clean up
-    readBuffer.unmap();
-    return results;
-
+    return await executeAndReadResults(device, encoder, outputBuffer, outputSize, hasF16);
 }
 
 export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, operation: string, kernel: {kernelSize: number, kernelDepth: number}){
@@ -210,16 +276,14 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
         kernelSize
     });
 
-    // Create buffers
-    const inputBuffer = device.createBuffer({
-        label: 'Input Buffer',
-        size: inputArray.byteLength * (hasF16 ? 1 : 2), 
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
+    const elementByteSize = hasF16 ? 2 : 4;
+    const paddedOutputBytes = Math.ceil((outputSize * elementByteSize) / 4) * 4;
+
+    const inputBuffer = createAndWriteInputBuffer(device, 'Input Buffer', inputArray, hasF16);
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
+        size: paddedOutputBytes,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -228,15 +292,6 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
         size: myUniformValues.arrayBuffer.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
-    const readBuffer = device.createBuffer({
-        label:'Read Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-
-    // Write Buffers to GPU
-    device.queue.writeBuffer(inputBuffer, 0, (hasF16 ? inputArray : new Float32Array(inputArray as Float16Array)) as GPUAllowSharedBufferSource);
     device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
 
     const bindGroup = device.createBindGroup({
@@ -259,23 +314,7 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
     pass.dispatchWorkgroups(workGroups[2], workGroups[1], workGroups[0]);
     pass.end();
 
-    encoder.copyBufferToBuffer(
-    outputBuffer, 0,
-    readBuffer, 0,
-    outputSize * (hasF16 ? 2 : 4)
-    );
-
-    // Submit work to GPU
-    device.queue.submit([encoder.finish()]);
-
-    // Map staging buffer to read results
-    await readBuffer.mapAsync(GPUMapMode.READ);
-    const resultArrayBuffer = readBuffer.getMappedRange();
-    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
-
-    // Clean up
-    readBuffer.unmap();
-    return results;
+    return await executeAndReadResults(device, encoder, outputBuffer, outputSize, hasF16);
 }
 
 export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, reduceDim: number, operation:string){
@@ -323,22 +362,15 @@ export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: A
         dimLength
     });
 
-    // Create buffers
-    const firstInputBuffer = device.createBuffer({
-        label: 'First Input Buffer',
-        size: firstArray.byteLength * (hasF16 ? 1 : 2), 
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
+    const elementByteSize = hasF16 ? 2 : 4;
+    const paddedOutputBytes = Math.ceil((outputSize * elementByteSize) / 4) * 4;
 
-    const secondInputBuffer = device.createBuffer({
-        label: 'Second Input Buffer',
-        size: secondArray.byteLength * (hasF16 ? 1 : 2), 
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
+    const firstInputBuffer = createAndWriteInputBuffer(device, 'First Input Buffer', firstArray, hasF16);
+    const secondInputBuffer = createAndWriteInputBuffer(device, 'Second Input Buffer', secondArray, hasF16);
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
+        size: paddedOutputBytes,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -346,16 +378,6 @@ export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: A
         size: myUniformValues.arrayBuffer.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
-    const readBuffer = device.createBuffer({
-        label:'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-
-    // Write Buffers to GPU
-    device.queue.writeBuffer(firstInputBuffer, 0, (hasF16 ? firstArray : new Float32Array(firstArray as Float16Array)) as GPUAllowSharedBufferSource);
-    device.queue.writeBuffer(secondInputBuffer, 0, (hasF16 ? secondArray : new Float32Array(secondArray as Float16Array)) as GPUAllowSharedBufferSource);
     device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
 
     const bindGroup = device.createBindGroup({
@@ -380,23 +402,7 @@ export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: A
     pass.dispatchWorkgroups(workGroups[0], workGroups[1]);
     pass.end();
 
-    encoder.copyBufferToBuffer(
-    outputBuffer, 0,
-    readBuffer, 0,
-    outputSize * (hasF16 ? 2 : 4)
-    );
-
-    // Submit work to GPU
-    device.queue.submit([encoder.finish()]);
-
-    // Map staging buffer to read results
-    await readBuffer.mapAsync(GPUMapMode.READ);
-    const resultArrayBuffer = readBuffer.getMappedRange();
-    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
-
-    // Clean up
-    readBuffer.unmap();
-    return results;
+    return await executeAndReadResults(device, encoder, outputBuffer, outputSize, hasF16);
 }
 
 export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, kernel: {kernelSize: number, kernelDepth: number}, operation: string){
@@ -445,22 +451,15 @@ export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: A
         kernelSize
     });
 
-    // Create buffers
-    const firstInputBuffer = device.createBuffer({
-        label: 'First Input Buffer',
-        size: firstArray.byteLength * (hasF16 ? 1 : 2), 
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
+    const elementByteSize = hasF16 ? 2 : 4;
+    const paddedOutputBytes = Math.ceil((outputSize * elementByteSize) / 4) * 4;
 
-    const secondInputBuffer = device.createBuffer({
-        label: 'Second Input Buffer',
-        size: secondArray.byteLength * (hasF16 ? 1 : 2),
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
+    const firstInputBuffer = createAndWriteInputBuffer(device, 'First Input Buffer', firstArray, hasF16);
+    const secondInputBuffer = createAndWriteInputBuffer(device, 'Second Input Buffer', secondArray, hasF16);
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
+        size: paddedOutputBytes,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -468,16 +467,6 @@ export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: A
         size: myUniformValues.arrayBuffer.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
-    const readBuffer = device.createBuffer({
-        label:'Read Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-
-    // Write Buffers to GPU
-    device.queue.writeBuffer(firstInputBuffer, 0, (hasF16 ? firstArray : new Float32Array(firstArray as Float16Array)) as GPUAllowSharedBufferSource);
-    device.queue.writeBuffer(secondInputBuffer, 0, (hasF16 ? secondArray : new Float32Array(secondArray as Float16Array)) as GPUAllowSharedBufferSource);
     device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
 
     const bindGroup = device.createBindGroup({
@@ -502,23 +491,7 @@ export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: A
     pass.dispatchWorkgroups(workGroups[2], workGroups[1], workGroups[0]);
     pass.end();
 
-    encoder.copyBufferToBuffer(
-    outputBuffer, 0,
-    readBuffer, 0,
-    outputSize * (hasF16 ? 2 : 4)
-    );
-
-    // Submit work to GPU
-    device.queue.submit([encoder.finish()]);
-
-    // Map staging buffer to read results
-    await readBuffer.mapAsync(GPUMapMode.READ);
-    const resultArrayBuffer = readBuffer.getMappedRange();
-    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
-
-    // Clean up
-    readBuffer.unmap();
-    return results;
+    return await executeAndReadResults(device, encoder, outputBuffer, outputSize, hasF16);
 }
 
 export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, reduceDim: number, reverse: number){
@@ -535,7 +508,7 @@ export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: 
 
     const precision = hasF16 ? 'f16' : 'f32';
     const shaders = createShaders(precision);
-    const shader = shaders['CUMSUM3D']
+    const shader = shaders['CUMSUM3D'];
 
     const computeModule = device.createShaderModule({
         label: 'cumsum3d compute module',
@@ -563,16 +536,14 @@ export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: 
         workGroups:[workGroups[2], workGroups[1], workGroups[0]],
     });
 
-    // Create buffers
-    const inputBuffer = device.createBuffer({
-        label: 'Input Buffer',
-        size: inputArray.byteLength * (hasF16 ? 1 : 2), 
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
+    const elementByteSize = hasF16 ? 2 : 4;
+    const paddedOutputBytes = Math.ceil((outputSize * elementByteSize) / 4) * 4;
+
+    const inputBuffer = createAndWriteInputBuffer(device, 'Input Buffer', inputArray, hasF16);
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
+        size: paddedOutputBytes,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -581,15 +552,6 @@ export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: 
         size: myUniformValues.arrayBuffer.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
-    const readBuffer = device.createBuffer({
-        label:'Read Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-
-    // Write Buffers to GPU
-    device.queue.writeBuffer(inputBuffer, 0, (hasF16  ? inputArray : new Float32Array(inputArray as Float16Array)) as GPUAllowSharedBufferSource);
     device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
 
     const bindGroup = device.createBindGroup({
@@ -613,23 +575,7 @@ export async function CUMSUM3D(inputArray :  ArrayBufferView, dimInfo : {shape: 
     pass.dispatchWorkgroups(workGroups[2], workGroups[1], workGroups[0]);
     pass.end();
 
-    encoder.copyBufferToBuffer(
-    outputBuffer, 0,
-    readBuffer, 0,
-    outputSize * (hasF16 ? 2 : 4)
-    );
-
-    // Submit work to GPU
-    device.queue.submit([encoder.finish()]);
-
-    // Map staging buffer to read results
-    await readBuffer.mapAsync(GPUMapMode.READ);
-    const resultArrayBuffer = readBuffer.getMappedRange();
-    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
-
-    // Clean up
-    readBuffer.unmap();
-    return results;
+    return await executeAndReadResults(device, encoder, outputBuffer, outputSize, hasF16);
 }
 
 export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, operation: string, kernelSize: number){
@@ -646,7 +592,7 @@ export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape
     const precision = hasF16 ? 'f16' : 'f32';
     const shaders = createShaders(precision);
     const shaderKey = ShaderMap[operation as keyof typeof ShaderMap] as keyof typeof shaders;
-    const shader = shaders[shaderKey]
+    const shader = shaders[shaderKey];
 
     const computeModule = device.createShaderModule({
         label: 'convolution2d compute module',
@@ -670,16 +616,15 @@ export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape
         ySize: shape[0],
         kernelSize
     });
-    // Create buffers
-    const inputBuffer = device.createBuffer({
-        label: 'Input Buffer',
-        size: inputArray.byteLength * (hasF16 ? 1 : 2), 
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
+
+    const elementByteSize = hasF16 ? 2 : 4;
+    const paddedOutputBytes = Math.ceil((outputSize * elementByteSize) / 4) * 4;
+
+    const inputBuffer = createAndWriteInputBuffer(device, 'Input Buffer', inputArray, hasF16);
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
+        size: paddedOutputBytes,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -688,15 +633,6 @@ export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape
         size: myUniformValues.arrayBuffer.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
-    const readBuffer = device.createBuffer({
-        label:'Read Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-
-    // Write Buffers to GPU
-    device.queue.writeBuffer(inputBuffer, 0, (hasF16 ? inputArray : new Float32Array(inputArray as Float16Array)) as GPUAllowSharedBufferSource);
     device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
 
     const bindGroup = device.createBindGroup({
@@ -720,23 +656,7 @@ export async function Convolve2D(inputArray :  ArrayBufferView, dimInfo : {shape
     pass.dispatchWorkgroups(workGroups[0], workGroups[1], 1);
     pass.end();
 
-    encoder.copyBufferToBuffer(
-    outputBuffer, 0,
-    readBuffer, 0,
-    outputSize * (hasF16 ? 2 : 4)
-    );
-
-    // Submit work to GPU
-    device.queue.submit([encoder.finish()]);
-
-    // Map staging buffer to read results
-    await readBuffer.mapAsync(GPUMapMode.READ);
-    const resultArrayBuffer = readBuffer.getMappedRange();
-    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
-
-    // Clean up
-    readBuffer.unmap();
-    return results;
+    return await executeAndReadResults(device, encoder, outputBuffer, outputSize, hasF16);
 }
 
 export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dataShape: number[], outputShape: number[], strides: number[]}, kernel: {kernelSize: number, kernelDepth: number}, reduceDim: number, shaderCode: string){
@@ -773,49 +693,42 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
     });
 
     const defs = makeShaderDataDefinitions(shaderCode);
-    const myUniformValues = makeStructuredView(defs.uniforms.params);
-    myUniformValues.set({
-        xStride,
-        yStride,
-        zStride,
-        xSize: shape[2], 
-        ySize: shape[1],
-        zSize: shape[0],
-        workGroups:[workGroups[2], workGroups[1], workGroups[0]],
-        kernelDepth,
-        kernelSize,
-        reduceDim,
-        dimLength
-    });
+    const myUniformValues = makeStructuredView(defs.uniforms?.params ?? defs.uniforms);
+    if (myUniformValues) {
+        myUniformValues.set({
+            xStride,
+            yStride,
+            zStride,
+            xSize: shape[2], 
+            ySize: shape[1],
+            zSize: shape[0],
+            workGroups:[workGroups[2], workGroups[1], workGroups[0]],
+            kernelDepth,
+            kernelSize,
+            reduceDim,
+            dimLength
+        });
+    }
     
-    // Create buffers
-    const inputBuffer = device.createBuffer({
-        label: 'Input Buffer',
-        size: inputArray.byteLength * (hasF16 ? 1 : 2), 
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
+    const elementByteSize = hasF16 ? 2 : 4;
+    const paddedOutputBytes = Math.ceil((outputSize * elementByteSize) / 4) * 4;
+
+    const inputBuffer = createAndWriteInputBuffer(device, 'Input Buffer', inputArray, hasF16);
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
+        size: paddedOutputBytes,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
     const uniformBuffer = device.createBuffer({
         label: 'Uniform Buffer',
-        size: myUniformValues.arrayBuffer.byteLength,
+        size: myUniformValues?.arrayBuffer.byteLength ?? 16,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
-    const readBuffer = device.createBuffer({
-        label:'Read Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-
-    // Write Buffers to GPU
-    device.queue.writeBuffer(inputBuffer, 0, (hasF16 ? inputArray : new Float32Array(inputArray as Float16Array)) as GPUAllowSharedBufferSource);
-    device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
+    if (myUniformValues) {
+        device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
+    }
 
     const bindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
@@ -840,21 +753,5 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
     }
     pass.end();
 
-    encoder.copyBufferToBuffer(
-        outputBuffer, 0,
-        readBuffer, 0,
-        outputSize * (hasF16 ? 2 : 4)
-    );
-
-    // Submit work to GPU
-    device.queue.submit([encoder.finish()]);
-
-    // Map staging buffer to read results
-    await readBuffer.mapAsync(GPUMapMode.READ);
-    const resultArrayBuffer = readBuffer.getMappedRange();
-    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
-
-    // Clean up
-    readBuffer.unmap();
-    return results;
+    return await executeAndReadResults(device, encoder, outputBuffer, outputSize, hasF16);
 }
