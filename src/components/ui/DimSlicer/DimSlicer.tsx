@@ -148,7 +148,9 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
     [values, effectiveDimSize, formatValue]
   );
 
-  const isTimeDimension = dimName.toLowerCase().includes('time');
+  const isTimeDimension =
+    /time|date|hour|hr|step|lead|period/i.test(dimName) ||
+    Boolean(values && values.length > 0 && formatValue && /\b(h|hr|hrs|hours|min|sec|s|d|days|ms|since)\b/i.test(formatValue(values[0]) || ''));
   const isDateDimension = isTimeDimension || dimName.toLowerCase().includes('date');
   const showTimeControls = Boolean(values && isTimeDimension);
 

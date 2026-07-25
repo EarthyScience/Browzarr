@@ -155,7 +155,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
           size: values.length,
           values,
           formatValue: (v: number): string =>
-            String(parseLoc(values[v] ?? v, dimUnits[idx] || undefined)),
+            String(parseLoc(v, dimUnits[idx] || undefined)),
         };
       }),
     [dimArrays, dimNames, dimUnits],

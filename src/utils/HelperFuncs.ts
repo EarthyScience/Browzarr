@@ -21,6 +21,58 @@ export type TypedArrayBufferLike =
   | Int32Array<ArrayBufferLike> | Uint32Array<ArrayBufferLike> 
   | Float32Array<ArrayBufferLike> | Float64Array<ArrayBufferLike>
 
+// Map of CF time unit names and short aliases (h, hr, hrs, s, min, etc.) to milliseconds per unit.
+export const unitToMilliseconds: Record<string, number> = {
+  millisecond: 1,
+  milliseconds: 1,
+  msec: 1,
+  msecs: 1,
+  ms: 1,
+  second: 1000,
+  seconds: 1000,
+  sec: 1000,
+  secs: 1000,
+  s: 1000,
+  minute: 60 * 1000,
+  minutes: 60 * 1000,
+  min: 60 * 1000,
+  mins: 60 * 1000,
+  hour: 60 * 60 * 1000,
+  hours: 60 * 60 * 1000,
+  hr: 60 * 60 * 1000,
+  hrs: 60 * 60 * 1000,
+  h: 60 * 60 * 1000,
+  day: 24 * 60 * 60 * 1000,
+  days: 24 * 60 * 60 * 1000,
+  d: 24 * 60 * 60 * 1000,
+};
+
+// Short display suffix mapping for relative time duration labels (e.g., 'hours' -> 'h').
+const timeUnitSuffix: Record<string, string> = {
+  millisecond: 'ms',
+  milliseconds: 'ms',
+  msec: 'ms',
+  msecs: 'ms',
+  ms: 'ms',
+  second: 's',
+  seconds: 's',
+  sec: 's',
+  secs: 's',
+  s: 's',
+  minute: 'min',
+  minutes: 'min',
+  min: 'min',
+  mins: 'min',
+  hour: 'h',
+  hours: 'h',
+  hr: 'h',
+  hrs: 'h',
+  h: 'h',
+  day: 'd',
+  days: 'd',
+  d: 'd',
+};
+
 export function parseTimeUnit(units: string | undefined): [number, number] {
     if (units === "Default"){
         return [1, 0];
@@ -30,40 +82,41 @@ export function parseTimeUnit(units: string | undefined): [number, number] {
       return [1, 0]; 
     }
     
+    const trimmedUnits = units.trim();
     // Regular expression to match CF time units (e.g., "seconds since 1970-01-01")
-    const match = units.match(/^(\w+)\s+since\s+(.+)$/i);
+    const match = trimmedUnits.match(/^(\w+)\s+since\s+(.+)$/i);
     if (!match) {
+      // Handle bare time duration units without a "since" clause (e.g. "hours", "h", "lead_time" units)
+      const bareUnit = trimmedUnits.toLowerCase();
+      const singularBare = bareUnit.endsWith('s') ? bareUnit.slice(0, -1) : bareUnit;
+      const effectiveBare = unitToMilliseconds[bareUnit] !== undefined ? bareUnit : singularBare;
+      if (effectiveBare in unitToMilliseconds) {
+        return [unitToMilliseconds[effectiveBare], 0];
+      }
       throw new Error(`Invalid time unit format: expected "<unit> since <date>", got "${units}"`);
     }
     
     const [_, unit, referenceDate] = match;
     const normalizedUnit = unit.toLowerCase();
     
-    // Map of time units to milliseconds per unit
-    const unitToMilliseconds: Record<string, number> = {
-      millisecond: 1,
-      milliseconds: 1,
-      second: 1000,
-      seconds: 1000,
-      minute: 60 * 1000,
-      minutes: 60 * 1000,
-      hour: 60 * 60 * 1000,
-      hours: 60 * 60 * 1000,
-      day: 24 * 60 * 60 * 1000,
-      days: 24 * 60 * 60 * 1000,
-    };
-    // Handle singular/plural variations (e.g., "second" vs "seconds")
     const singularUnit = normalizedUnit.endsWith('s') ? normalizedUnit.slice(0, -1) : normalizedUnit;
     const effectiveUnit = unitToMilliseconds[normalizedUnit] !== undefined ? normalizedUnit : singularUnit;
-    let baseDate;
-    if (referenceDate.length <= 10){
-      const [year, month, day] = referenceDate.split('-');
-      baseDate = new Date(Date.UTC(parseInt(year),parseInt(month)-1,parseInt(day)))
-    } else {
-     baseDate = referenceDate ? new Date(referenceDate) : new Date();
-    }
     if (!(effectiveUnit in unitToMilliseconds)) {
       throw new Error(`Unsupported time unit: "${unit}". Supported units: ${Object.keys(unitToMilliseconds).join(', ')}`);
+    }
+
+    let baseDate: Date;
+    let s = referenceDate.trim().replace(" ", "T");
+    // Ensure ISO date-times without explicit timezone parse as UTC per CF convention instead of local time
+    const hasTz = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(s);
+    if (!hasTz && s.includes("T")) s += "Z";
+
+    if (referenceDate.length <= 10 && !referenceDate.includes("T")){
+      const [year, month, day] = referenceDate.split('-');
+      baseDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+    } else {
+      const parsedMs = Date.parse(s);
+      baseDate = !isNaN(parsedMs) ? new Date(parsedMs) : new Date(referenceDate);
     }
     return [unitToMilliseconds[effectiveUnit], baseDate.getTime()];
 }
@@ -74,22 +127,21 @@ const months = [
 ];
   
 export function parseLoc(input: any, units: string | undefined, verbose: boolean = false) {
-    if (!units){
-      if (typeof(input) == 'bigint'){
-        return input;
-      } else if (typeof(input) == 'number'){
-        return input?.toFixed(2);
-      } else {
-        return input
-      }
-        
+    if (input === null || input === undefined) return input;
+    if (!units || typeof units !== 'string' || units.trim() === '') {
+      if (typeof input === 'bigint') return input;
+      if (typeof input === 'number') return input.toFixed(2);
+      return input;
     }
-    if (typeof(input) === 'bigint' || units.match(/^(\w+)\s+since\s+(.+)$/i)){
-      if (!units){
-        return Number(input)
-      }
-      try{
-        const [scale, offset] = parseTimeUnit(units)
+
+    const trimmedUnits = units.trim();
+    const lowerUnits = trimmedUnits.toLowerCase();
+
+    // 1. Check for CF time unit with "since" (absolute datetime)
+    const sinceMatch = trimmedUnits.match(/^(\w+)\s+since\s+(.+)$/i);
+    if (typeof input === 'bigint' || sinceMatch) {
+      try {
+        const [scale, offset] = parseTimeUnit(trimmedUnits);
         const timeStamp = Number(input) * scale;
         const date = new Date(timeStamp + offset);
         
@@ -100,21 +152,23 @@ export function parseLoc(input: any, units: string | undefined, verbose: boolean
         const mins = date.getUTCMinutes();
         const secs = date.getUTCSeconds();
         
-        const lowerUnits = units.toLowerCase();
-        const showTime = lowerUnits.includes('hour') || lowerUnits.includes('min') || lowerUnits.includes('sec') || hours !== 0 || mins !== 0 || secs !== 0;
+        const unitName = sinceMatch ? sinceMatch[1].toLowerCase() : '';
+        // Include hour/min/sec aliases so time (HH:mm) is displayed for sub-day absolute datetimes
+        const isSubDayUnit = ['hour', 'hours', 'hr', 'hrs', 'h', 'minute', 'minutes', 'min', 'mins', 'second', 'seconds', 'sec', 'secs', 's', 'ms', 'msec', 'msecs'].includes(unitName);
+        const showTime = isSubDayUnit || lowerUnits.includes('hour') || lowerUnits.includes('hr') || lowerUnits.includes('h') || lowerUnits.includes('min') || lowerUnits.includes('sec') || hours !== 0 || mins !== 0 || secs !== 0;
         
         if (verbose) {
           let dateStr = `${day} ${months[month - 1]} ${year}`;
           if (showTime) {
              dateStr += ` ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-             if (secs !== 0 || lowerUnits.includes('sec')) dateStr += `:${String(secs).padStart(2, '0')}`;
+             if (secs !== 0 || ['second', 'seconds', 'sec', 'secs', 's'].includes(unitName)) dateStr += `:${String(secs).padStart(2, '0')}`;
           }
           return dateStr;
         } else {
           let dateStr = `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
           if (showTime) {
              dateStr += ` ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-             if (secs !== 0 || lowerUnits.includes('sec')) dateStr += `:${String(secs).padStart(2, '0')}`;
+             if (secs !== 0 || ['second', 'seconds', 'sec', 'secs', 's'].includes(unitName)) dateStr += `:${String(secs).padStart(2, '0')}`;
           }
           return dateStr;
         }
@@ -123,16 +177,38 @@ export function parseLoc(input: any, units: string | undefined, verbose: boolean
         return input;
       }
     }
-    if ( units && units.match(/(degree|degrees|deg|°)/i) ){
+
+    // 2. Format relative duration coordinates into coarsest human time unit (e.g. 3600 s -> 1 h, 7200 s -> 2 h)
+    const singularBare = lowerUnits.endsWith('s') ? lowerUnits.slice(0, -1) : lowerUnits;
+    const effectiveBare = unitToMilliseconds[lowerUnits] !== undefined ? lowerUnits : singularBare;
+    if (effectiveBare in unitToMilliseconds) {
+      const num = Number(input);
+      if (isNaN(num)) return input;
+      const perUnitMs = unitToMilliseconds[effectiveBare];
+      const ms = num * perUnitMs;
+
+      if (Number.isInteger(ms)) {
+        if (ms % 86_400_000 === 0 && ms !== 0) return `${ms / 86_400_000} d`;
+        if (ms % 3_600_000 === 0) return `${ms / 3_600_000} h`;
+        if (ms % 60_000 === 0) return `${ms / 60_000} min`;
+        if (ms % 1000 === 0) return `${ms / 1000} s`;
+        return `${ms} ms`;
+      }
+      const suffix = timeUnitSuffix[effectiveBare] || 's';
+      return `${num.toFixed(2)} ${suffix}`;
+    }
+
+    // 3. Degrees
+    if (lowerUnits.match(/(degree|degrees|deg|°)/i)) {
         if (input !== undefined && input !== null){
           return `${Number(input).toFixed(2)}°`
         } else{
           return input
         } 
     }
-    else {
-        return (input !== undefined && input !== null && typeof input !== 'string') ? Number(input).toFixed(2) : input;
-    }
+
+    // 4. Default fallback
+    return (input !== undefined && input !== null && typeof input !== 'string') ? Number(input).toFixed(2) : input;
 }
 
 export function parseUVCoords({normal,uv}:{normal:THREE.Vector3,uv:THREE.Vector2}){
