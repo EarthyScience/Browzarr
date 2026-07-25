@@ -178,7 +178,7 @@ export function parseLoc(input: any, units: string | undefined, verbose: boolean
       }
     }
 
-    // 2. Format relative duration coordinates into coarsest human time unit (e.g. 3600 s -> 1 h, 7200 s -> 2 h)
+    // 2. Format relative duration coordinates into clean human time unit labels
     const singularBare = lowerUnits.endsWith('s') ? lowerUnits.slice(0, -1) : lowerUnits;
     const effectiveBare = unitToMilliseconds[lowerUnits] !== undefined ? lowerUnits : singularBare;
     if (effectiveBare in unitToMilliseconds) {
@@ -187,8 +187,23 @@ export function parseLoc(input: any, units: string | undefined, verbose: boolean
       const perUnitMs = unitToMilliseconds[effectiveBare];
       const ms = num * perUnitMs;
 
+      const isHourUnit = ['hour', 'hours', 'hr', 'hrs', 'h'].includes(effectiveBare);
+      const isDayUnit = ['day', 'days', 'd'].includes(effectiveBare);
+      const isMinUnit = ['minute', 'minutes', 'min', 'mins'].includes(effectiveBare);
+
+      if (isDayUnit) {
+        return Number.isInteger(num) ? `${num} d` : `${num.toFixed(2)} d`;
+      }
+      if (isHourUnit) {
+        return Number.isInteger(num) ? `${num} h` : `${num.toFixed(2)} h`;
+      }
+      if (isMinUnit) {
+        if (ms % 3_600_000 === 0 && ms !== 0) return `${ms / 3_600_000} h`;
+        return Number.isInteger(num) ? `${num} min` : `${num.toFixed(2)} min`;
+      }
+
+      // For sub-minute units (e.g. seconds, ms), upconvert whole hours to "h" and whole minutes to "min"
       if (Number.isInteger(ms)) {
-        if (ms % 86_400_000 === 0 && ms !== 0) return `${ms / 86_400_000} d`;
         if (ms % 3_600_000 === 0) return `${ms / 3_600_000} h`;
         if (ms % 60_000 === 0) return `${ms / 60_000} min`;
         if (ms % 1000 === 0) return `${ms / 1000} s`;
