@@ -65,13 +65,16 @@ function normalizeArray(array: Array<number>){
 }
 
 function isUniformStep(array: Array<number>): boolean {
-    const len = array.length;
+    const len = array ? array.length : 0;
     if (len < 3) return true; // any 0–2 element array trivially qualifies
 
     const step = array[1] - array[0];
+    // Allow floating-point step tolerance (1e-3 relative) so float NetCDF grids qualify as regular
+    const tol = Math.abs(step) * 1e-3;
 
     for (let i = 2; i < len; i++) {
-        if (array[i] - array[i - 1] !== step) {
+        const diff = array[i] - array[i - 1];
+        if (Math.abs(diff - step) > tol) {
             return false;
         }
     }
@@ -82,31 +85,33 @@ function createRemapTexture(xArray: Array<number>, yArray: Array<number>) {
   const width = xArray.length;
   const height = yArray.length;
 
-  const normX = normalizeArray(xArray);
-  const normY = normalizeArray(yArray);
-
-  const data = new Float32Array(width * height * 2);
+  // Allocate 4 channels per pixel (RGBA) so blue channel (remap.b) provides valid pixel flag for GLSL
+  const data = new Float32Array(width * height * 4);
   let ptr = 0;
   for (let j = 0; j < height; j++) {
-    const y = normY[j];
+    const y = height > 1 ? j / (height - 1) : 0.5;
     for (let i = 0; i < width; i++) {
-      const x = normX[i];
+      const x = width > 1 ? i / (width - 1) : 0.5;
       data[ptr++] = x;
       data[ptr++] = y;
+      data[ptr++] = 1.0; // Write 1.0 to blue channel so GLSL (remap.b < 0.5) does not discard valid fragments
+      data[ptr++] = 1.0;
     }
   }
 
+  // Use RGBAFormat to supply blue valid channel to shaders
   const texture = new THREE.DataTexture(
     data,
     width,
     height,
-    THREE.RGFormat,
+    THREE.RGBAFormat,
     THREE.FloatType
   );
 
   texture.needsUpdate = true;
-  texture.magFilter = THREE.LinearFilter;
-  texture.minFilter = THREE.LinearFilter;
+  // Use NearestFilter for FloatType textures to comply with WebGL2 linear filtering restrictions
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
 
@@ -114,12 +119,24 @@ function createRemapTexture(xArray: Array<number>, yArray: Array<number>) {
 }
 
 export function SetReprojectionTexture(dimArrays: Array<number>[]){
-    const dimCount = dimArrays.length;
-    const {xIdx, yIdx} = getAxisIndices()
+    // Reset remapTexture if dimension arrays are missing or empty
+    if (!dimArrays || dimArrays.length === 0) {
+        useGlobalStore.setState({ remapTexture: undefined });
+        return;
+    }
+    const {xIdx, yIdx} = getAxisIndices();
     const xArray = dimArrays[xIdx];
     const yArray = dimArrays[yIdx];
-    const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
-    if (isRegular) return;
+    if (!xArray || !yArray) {
+        useGlobalStore.setState({ remapTexture: undefined });
+        return;
+    }
+    // Check grid regularity and clear remapTexture for regular grids to disable shader reprojection
+    const isRegular = isUniformStep(xArray) && isUniformStep(yArray);
+    if (isRegular) {
+        useGlobalStore.setState({ remapTexture: undefined });
+        return;
+    }
     //Dispose of remaptexture if you use this function
     const remapTexture = createRemapTexture(xArray, yArray);
     useGlobalStore.setState({remapTexture});
@@ -131,17 +148,28 @@ export function sampleCRS(tex: THREE.DataTexture | null | undefined, u: number, 
   const { data, width, height } = tex.image;
   if (!data) return [new THREE.Vector2(u, v), true];
 
-  const x = Math.floor(u * (width - 1));
-  const y = Math.floor(v * (height - 1));
+  const x = Math.min(width - 1, Math.max(0, Math.floor(u * width)));
+  const y = Math.min(height - 1, Math.max(0, Math.floor(v * height)));
 
-  const idx = (y * width + x) * 4; // RGBA
-  const newU = THREE.DataUtils.fromHalfFloat(data[idx + 0])
-  const newV = THREE.DataUtils.fromHalfFloat(data[idx + 1])
-  const valid = THREE.DataUtils.fromHalfFloat(data[idx + 2])
-  return [
-    new THREE.Vector2(newU,newV),
-    valid > 0.5
-  ];
+  // Handle Float32Array remap textures using format-based stride (4 for RGBAFormat, 2 for RGFormat)
+  if (data instanceof Float32Array) {
+    const stride = tex.format === THREE.RGBAFormat ? 4 : 2;
+    const idx = (y * width + x) * stride;
+    const newU = data[idx];
+    const newV = data[idx + 1];
+    const validVal = stride === 4 ? data[idx + 2] : 1.0;
+    const isValid = !isNaN(newU) && !isNaN(newV) && isFinite(newU) && isFinite(newV) && validVal >= 0.5;
+    return [new THREE.Vector2(newU ?? u, newV ?? v), isValid];
+  } else {
+    const idx = (y * width + x) * 4; // RGBA
+    const newU = THREE.DataUtils.fromHalfFloat(data[idx + 0]);
+    const newV = THREE.DataUtils.fromHalfFloat(data[idx + 1]);
+    const valid = THREE.DataUtils.fromHalfFloat(data[idx + 2]);
+    return [
+      new THREE.Vector2(newU, newV),
+      valid > 0.5
+    ];
+  }
 }
 
 export function reproject(resolution: number = 256){

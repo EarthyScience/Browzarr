@@ -26,7 +26,8 @@ export async function loadNetCDF(file: Blob, filename: string) {
         description: attrs.history ?? '',
       },
     });
-    useZarrStore.setState({ useNC: true, ncModule: data });
+    // Enable fetchNC alongside useNC so GetArray routes data fetching to NCFetcher
+    useZarrStore.setState({ useNC: true, fetchNC: true, ncModule: data });
   } finally {
     setStatus(null);
   }

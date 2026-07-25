@@ -64,6 +64,8 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
       if (shaderMaterial) {
         updateCommonUniforms(shaderMaterial, commonState);
         const uniforms = shaderMaterial.uniforms
+        // Re-assign volTexture uniform on fetch state updates so shader binds latest 3D texture
+        uniforms.map.value = volTexture;
         uniforms.scale.value = shape;
         uniforms.flatBounds.value.set(-xRange[1], -xRange[0], zRange[0] * timeRatio, zRange[1] * timeRatio);
         uniforms.vertBounds.value.set(yRange[0] * aspectRatio, yRange[1] * aspectRatio);
@@ -91,7 +93,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     <group >
       <ColumnMeshes />
       <UVCube />  
-      <mesh ref={meshRef} scale={[1,flipY ? -1 : 1,1]} geometry={geometry} material={shaderMaterial} />
+      <mesh ref={meshRef} scale={[1, flipY ? -1 : 1, 1]} geometry={geometry} material={shaderMaterial} />
     </group>
   )
 }

@@ -27,6 +27,7 @@ export interface CommonUniformParams {
   maskValue?: number;
   maskTexture?: THREE.Texture | null;
   isCategorical?: boolean;
+  flipY?: boolean;
 }
 
 export function useCommonPlotState() {
@@ -108,6 +109,7 @@ export function createCommonUniforms(p: CommonUniformParams) {
     highclip: { value: parseColorToVec4(p.highclip) },
     useLowclip: { value: p.isCategorical ? false : p.useLowclip },
     useHighclip: { value: p.isCategorical ? false : p.useHighclip },
+    flipY: { value: p.flipY ?? false },
   };
 }
 
@@ -136,6 +138,7 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial, p: CommonUn
   if (u.valueRange && valR) u.valueRange.value.set(valR[0], valR[1]);
   if (u.latBounds && latB) u.latBounds.value.set(deg2rad(latB[0]), deg2rad(latB[1]));
   if (u.lonBounds && lonB) u.lonBounds.value.set(deg2rad(lonB[0]), deg2rad(lonB[1]));
+  if (u.flipY) u.flipY.value = p.flipY ?? false;
 
   const scaleId = p.isCategorical ? 0 : colorScaleToId(p.colorScale);
   if (u.colorScale) u.colorScale.value = scaleId;

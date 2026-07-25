@@ -302,6 +302,8 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     useEffect(()=>{
       if(shaderMaterial){
         updateCommonUniforms(shaderMaterial, commonState);
+        // Re-assign textures uniform on fetch state updates so shader binds latest 2D data textures
+        shaderMaterial.uniforms.map.value = textures;
         invalidate();
       }
     },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange, colorScale, logConstant, valueScales, lowclip, highclip, useLowclip, useHighclip])
