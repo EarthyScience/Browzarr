@@ -62,7 +62,7 @@ export interface DimSlicerProps {
   allowedAxes?: Axis[];
 }
 
-const DimSlicer: React.FC<DimSlicerProps> = ({
+const DimSlicerComponent: React.FC<DimSlicerProps> = ({
   availableDims,
   dimName,
   onDimChange,
@@ -406,5 +406,5 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   );
 };
 
-export { DimSlicer };
+export const DimSlicer = React.memo(DimSlicerComponent);
 export default DimSlicer;

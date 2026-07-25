@@ -59,12 +59,16 @@ export const useDataFetcher = () => {
             setShow(false);
             try {
                 //---- Texture Cleanup ----//
+                const { remapTexture } = useGlobalStore.getState();
+                if (remapTexture) {
+                    remapTexture.dispose();
+                    useGlobalStore.setState({ remapTexture: undefined });
+                }
                 if (textures) {
                     const oldTextures = textures;
                     setTimeout(() => {
                         oldTextures.forEach((tex) => {
                             tex.dispose();
-                            if (tex.source) (tex.source as any).data = null;
                         });
                     }, 0);
                     setTextures(null);
@@ -161,8 +165,10 @@ export const useDataFetcher = () => {
         clone.minFilter = THREE.NearestFilter;
         clone.magFilter = THREE.NearestFilter;
       }
-      clone.needsUpdate = true; 
-      return clone ;
+      if (clone.image && (clone.image as any).data) {
+        clone.needsUpdate = true;
+      }
+      return clone;
     });
     setTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
   },[interpPixels])

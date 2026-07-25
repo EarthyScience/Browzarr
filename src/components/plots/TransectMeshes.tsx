@@ -148,10 +148,10 @@ export const ColumnMeshes = () => {
 	const {xIdx, yIdx, zIdx} = useAxisIndices()
 	const meshes: THREE.Mesh[] = useMemo(()=>{
 		const meshes: THREE.Mesh[] = []
-		const xSteps = remapTexture 
+		const xSteps = (remapTexture && remapTexture.image) 
 						? remapTexture.image.width 
 						: dataShape[xIdx];
-		const ySteps = remapTexture
+		const ySteps = (remapTexture && remapTexture.image)
 						? remapTexture.image.height 
 						: dataShape[yIdx];
 		const zSteps = dataShape[zIdx];

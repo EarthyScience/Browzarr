@@ -125,8 +125,9 @@ export function SetReprojectionTexture(dimArrays: Array<number>[]){
     useGlobalStore.setState({remapTexture});
 }
 
-export function sampleCRS(tex: THREE.DataTexture, u:number, v:number): [THREE.Vector2, boolean] {
+export function sampleCRS(tex: THREE.DataTexture | null | undefined, u: number, v: number): [THREE.Vector2, boolean] {
   // Samples an array given UVs
+  if (!tex || !tex.image) return [new THREE.Vector2(u, v), true];
   const { data, width, height } = tex.image;
   if (!data) return [new THREE.Vector2(u, v), true];
 
