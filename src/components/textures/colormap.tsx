@@ -39,12 +39,36 @@ export const colormaps = ['magma', 'inferno', 'plasma', 'viridis', 'cividis', 't
  *    - Behavior: Allows arbitrary user mathematical functions (e.g. `x*x`), translated to GLSL float operations.
  */
 export const COLOR_SCALE_OPTIONS = [
-  { label: 'x (Linear)', value: 'identity' },
-  { label: 'log(x)', value: 'log(x)' },
-  { label: 'log(x+c)', value: 'log(x+c)' },
-  { label: 'sign(x)*sqrt(abs(x))', value: 'sign(x)*sqrt(abs(x))' },
-  { label: 'exp(x)/100', value: 'exp(x)/100' },
-  { label: 'Custom (Expression)', value: 'custom' },
+  { 
+    label: 'x (Linear)', 
+    value: 'identity', 
+    description: 'Direct linear mapping of data values across the colormap.' 
+  },
+  { 
+    label: 'log(x)', 
+    value: 'log(x)', 
+    description: 'Logarithmic scaling to expand low-end details (requires positive values).' 
+  },
+  { 
+    label: 'log(x+c)', 
+    value: 'log(x+c)', 
+    description: 'Offset log scale where c controls non-linear contrast (smaller c boosts low-end contrast; safe for negative data).' 
+  },
+  { 
+    label: 'sign(x)*sqrt(abs(x))', 
+    value: 'sign(x)*sqrt(abs(x))', 
+    description: 'Symmetric square-root transform centered at domain midpoint.' 
+  },
+  { 
+    label: 'exp(x)/100', 
+    value: 'exp(x)/100', 
+    description: 'Exponential scaling compressing low values and highlighting high peaks.' 
+  },
+  { 
+    label: 'Custom (Expression)', 
+    value: 'custom', 
+    description: 'Custom expression f(x) evaluated and normalized across range [0, 1].' 
+  },
 ] as const;
 
 const customExprCache = new Map<string, (x: number) => number>();

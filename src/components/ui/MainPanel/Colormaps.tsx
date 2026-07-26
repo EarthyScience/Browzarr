@@ -87,6 +87,12 @@ const Colormaps = () => {
     return COLOR_SCALE_OPTIONS.some((opt) => opt.value === colorScale && opt.value !== 'custom');
   }, [colorScale]);
 
+  const activeScaleDescription = useMemo(() => {
+    const currentKey = isBuiltinScale ? colorScale : 'custom';
+    const opt = COLOR_SCALE_OPTIONS.find((o) => o.value === currentKey);
+    return opt?.description || '';
+  }, [colorScale, isBuiltinScale]);
+
   const [customExprInput, setCustomExprInput] = useState<string>(() => {
     return !isBuiltinScale ? colorScale : 'x > 0 ? x/2 : x';
   });
@@ -467,6 +473,11 @@ const Colormaps = () => {
                           </SelectContent>
                         </Select>
                       </div>
+                      {activeScaleDescription && (
+                        <div className="text-[11px] text-muted-foreground italic px-1 py-0.5 leading-snug">
+                          {activeScaleDescription}
+                        </div>
+                      )}
                       {(!isBuiltinScale || colorScale === 'custom') && (
                         <div className="flex flex-col gap-1.5 w-full pl-2 py-1">
                           <span className="text-[11px] text-muted-foreground font-mono font-semibold">Custom Expression f(x):</span>
