@@ -25,25 +25,21 @@ float applyColorScale(float x, int scaleType, float c, float eps, float range, f
             return denom != 0.0 ? num / denom : x;
         }
     } else if (scaleType == 2) {
-        float clampedX = max(x, 0.0);
-        float num = log(1.0 + clampedX * safeRange);
-        float denom = log(1.0 + safeRange);
-        return denom != 0.0 ? num / denom : x;
-    } else if (scaleType == 3) {
         float safeC = max(c, 0.00001);
         float clampedX = max(x, 0.0);
         float num = log(safeC + clampedX * safeRange) - log(safeC);
         float denom = log(safeC + safeRange) - log(safeC);
         return denom != 0.0 ? num / denom : x;
+    } else if (scaleType == 3) {
+        float xCentered = 2.0 * x - 1.0;
+        return 0.5 + 0.5 * sign(xCentered) * sqrt(abs(xCentered));
     } else if (scaleType == 4) {
-        return sign(x) * sqrt(abs(x));
-    } else if (scaleType == 5) {
         float clampedX = max(x, 0.0);
         float expR = min(safeRange, 10.0);
         float num = exp(clampedX * expR) - 1.0;
         float denom = exp(expR) - 1.0;
         return denom != 0.0 ? num / denom : x;
-    } else if (scaleType == 6) {
+    } else if (scaleType == 5) {
         float v0 = evalCustomExpr(0.0);
         float v1 = evalCustomExpr(1.0);
         float vx = evalCustomExpr(x);

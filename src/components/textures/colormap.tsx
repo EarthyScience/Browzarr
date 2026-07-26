@@ -3,10 +3,44 @@ import { colorschemes, get, findColorScheme, resample } from 'color-schemes-js';
 
 export const colormaps = ['magma', 'inferno', 'plasma', 'viridis', 'cividis', 'twilight', 'twilight_shifted', 'turbo', 'Blues', 'BrBG', 'BuGn', 'BuPu', 'CMRmap', 'GnBu', 'Greens', 'Greys', 'OrRd', 'Oranges', 'PRGn', 'PiYG', 'PuBu', 'PuBuGn', 'PuOr', 'PuRd', 'Purples', 'RdBu', 'RdGy', 'RdPu', 'RdYlBu', 'RdYlGn', 'Reds', 'Spectral', 'Wistia', 'YlGn', 'YlGnBu', 'YlOrBr', 'YlOrRd', 'afmhot', 'autumn', 'binary', 'bone', 'brg', 'bwr', 'cool', 'coolwarm', 'copper', 'cubehelix', 'flag', 'gist_earth', 'gist_gray', 'gist_heat', 'gist_ncar', 'gist_rainbow', 'gist_stern', 'gist_yarg', 'gnuplot', 'gnuplot2', 'gray', 'hot', 'hsv', 'jet', 'nipy_spectral', 'ocean', 'pink', 'prism', 'rainbow', 'seismic', 'spring', 'summer', 'terrain', 'winter', 'Accent', 'Dark2', 'Paired', 'Pastel1', 'Pastel2', 'Set1', 'Set2', 'Set3', 'tab10', 'tab20', 'tab20b', 'tab20c'];
 
+/**
+ * COLOR SCALE BEHAVIOR DESCRIPTIONS:
+ * 
+ * 1. 'identity' (Linear Scale):
+ *    - Formula: f(x) = x
+ *    - Behavior: Directly maps normalized data range [0, 1] linearly to colormap coordinates.
+ * 
+ * 2. 'log(x)' (Strict Log Scale):
+ *    - Formula:
+ *        If minVal > 0: f(x) = log(1 + x*K) / log(1 + K), where K = (v_max - v_min) / v_min.
+ *        If minVal <= 0: Thresholded via logEps; maps [eps, 1] logarithmically, clipping <= eps to 0.
+ *    - Behavior: Maps data proportional to log(V). Expands several orders of magnitude for strictly positive datasets.
+ * 
+ * 3. 'log(x+c)' (Custom Offset Log Scale - Default with c=1):
+ *    - Formula: f(x) = [log(c + x * dataRange) - log(c)] / [log(c + dataRange) - log(c)]
+ *      where `x` is the normalized coordinate in [0, 1] (x = (V - V_min) / dataRange).
+ *    - Domain & Negative Values: Works robustly for negative data domains (e.g. V = -100) because `x`
+ *      is normalized relative to V_min (V = V_min maps to x = 0). The term inside the log evaluates to
+ *      c + x * dataRange >= c > 0 (log(c) at minimum), avoiding NaN or negative log inputs.
+ *    - Behavior: Acts as a non-linear contrast control parameter `c` relative to dataRange. Smaller `c`
+ *      enhances contrast for values near V_min, while large `c >> dataRange` approaches linear scaling.
+ * 
+ * 4. 'sign(x)*sqrt(abs(x))' (Symmetric Centered Square Root):
+ *    - Formula: f(x) = 0.5 + 0.5 * sign(2x - 1) * sqrt(|2x - 1|)
+ *    - Behavior: Scale-invariant power transform (exponent 0.5) centered around the domain midpoint x=0.5.
+ *      Preserves center symmetry (0 -> 0, 0.5 -> 0.5, 1 -> 1) and expands values near the center symmetrically.
+ * 
+ * 5. 'exp(x)/100' (Exponential Scale):
+ *    - Formula: f(x) = [exp(x * E) - 1] / [exp(E) - 1], where E = min(dataRange, 10.0)
+ *    - Behavior: Inverse logarithmic transform. Compresses lower-end values and expands high-end highlights without float overflow.
+ * 
+ * 6. 'custom' (Custom Expression):
+ *    - Formula: Re-normalized user JavaScript expression f(x) = [expr(x) - expr(0)] / [expr(1) - expr(0)]
+ *    - Behavior: Allows arbitrary user mathematical functions (e.g. `x*x`), translated to GLSL float operations.
+ */
 export const COLOR_SCALE_OPTIONS = [
   { label: 'x (Linear)', value: 'identity' },
   { label: 'log(x)', value: 'log(x)' },
-  { label: 'log(1+x)', value: 'log(1+x)' },
   { label: 'log(x+c)', value: 'log(x+c)' },
   { label: 'sign(x)*sqrt(abs(x))', value: 'sign(x)*sqrt(abs(x))' },
   { label: 'exp(x)/100', value: 'exp(x)/100' },
@@ -15,6 +49,7 @@ export const COLOR_SCALE_OPTIONS = [
 
 const customExprCache = new Map<string, (x: number) => number>();
 
+// This bit needs more work. TODO in a different pull request.
 export function evalCustomExprJS(expr: string): ((x: number) => number) | null {
   if (!expr || typeof expr !== 'string') return null;
   if (customExprCache.has(expr)) return customExprCache.get(expr)!;
@@ -40,7 +75,7 @@ export function evalCustomExprJS(expr: string): ((x: number) => number) | null {
   }
   return null;
 }
-
+// TODO: check regex, and if it's even needed.
 export function exprToGLSL(expr: string): string {
   if (!expr || typeof expr !== 'string') return '(val)';
   const valSubbed = expr.replace(/\bx\b/g, '(val)');
@@ -52,11 +87,11 @@ export function colorScaleToId(colorScale: string): number {
   switch (colorScale) {
     case 'identity': return 0;
     case 'log(x)': return 1;
-    case 'log(1+x)': return 2;
-    case 'log(x+c)': return 3;
-    case 'sign(x)*sqrt(abs(x))': return 4;
-    case 'exp(x)/100': return 5;
-    default: return 6; // Custom generic expression (e.g., "x > 0 ? x/2 : x")
+    case 'log(1+x)':
+    case 'log(x+c)': return 2;
+    case 'sign(x)*sqrt(abs(x))': return 3;
+    case 'exp(x)/100': return 4;
+    default: return 5; // Custom generic expression (e.g., "x > 0 ? x/2 : x")
   }
 }
 
@@ -78,19 +113,15 @@ export function applyColorScale(x: number, scaleType: string, c = 1.0, logEps = 
       const denom = Math.log(1.0 + K);
       return denom !== 0 ? num / denom : x;
     }
-  } else if (scaleType === 'log(1+x)') {
-    const clampedX = Math.max(x, 0.0);
-    const num = Math.log(1.0 + clampedX * safeRange);
-    const denom = Math.log(1.0 + safeRange);
-    return denom !== 0 ? num / denom : x;
-  } else if (scaleType === 'log(x+c)') {
+  } else if (scaleType === 'log(1+x)' || scaleType === 'log(x+c)') {
     const safeC = Math.max(c, 0.00001);
     const clampedX = Math.max(x, 0.0);
     const num = Math.log(safeC + clampedX * safeRange) - Math.log(safeC);
     const denom = Math.log(safeC + safeRange) - Math.log(safeC);
     return denom !== 0 ? num / denom : x;
   } else if (scaleType === 'sign(x)*sqrt(abs(x))') {
-    return Math.sign(x) * Math.sqrt(Math.abs(x));
+    const xCentered = 2.0 * x - 1.0;
+    return 0.5 + 0.5 * Math.sign(xCentered) * Math.sqrt(Math.abs(xCentered));
   } else if (scaleType === 'exp(x)/100') {
     const clampedX = Math.max(x, 0.0);
     const num = Math.exp(clampedX * Math.min(safeRange, 10.0)) - 1.0;
@@ -122,14 +153,13 @@ export function invertColorScale(t: number, scaleType: string, c = 1.0, logEps =
       const xRel = (Math.pow(1.0 + K, clampedT) - 1.0) / K;
       return eps + xRel * (1.0 - eps);
     }
-  } else if (scaleType === 'log(1+x)') {
-    return (Math.pow(1.0 + safeRange, clampedT) - 1.0) / safeRange;
-  } else if (scaleType === 'log(x+c)') {
+  } else if (scaleType === 'log(1+x)' || scaleType === 'log(x+c)') {
     const safeC = Math.max(c, 0.00001);
     const ratio = 1.0 + safeRange / safeC;
     return safeC * (Math.pow(ratio, clampedT) - 1.0) / safeRange;
   } else if (scaleType === 'sign(x)*sqrt(abs(x))') {
-    return Math.sign(clampedT) * Math.pow(clampedT, 2);
+    const tCentered = 2.0 * clampedT - 1.0;
+    return 0.5 + 0.5 * Math.sign(tCentered) * Math.pow(Math.abs(tCentered), 2);
   } else if (scaleType === 'exp(x)/100') {
     const expR = Math.min(safeRange, 10.0);
     const num = Math.log(1.0 + clampedT * (Math.exp(expR) - 1.0));
