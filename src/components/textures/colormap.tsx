@@ -204,12 +204,12 @@ const legacySchemeMap: Record<string, string> = {
 const resolutionCache = new Map<string, string>();
 export function resolveColorSchemeName(name: string): string {
   const trimmed = name?.trim();
-  if (!trimmed) return 'viridis';
+  if (!trimmed) return 'plasma';
 
   const cached = resolutionCache.get(trimmed);
   if (cached) return cached;
 
-  let resolved = 'viridis';
+  let resolved = 'plasma';
   if (legacySchemeMap[trimmed]) {
     resolved = legacySchemeMap[trimmed];
   } else if (colorschemes[trimmed]) {

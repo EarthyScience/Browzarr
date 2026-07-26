@@ -105,7 +105,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   valueScales: { maxVal: 1, minVal: -1 },
   colormap: GetColorMapTexture(),
   remapTexture: undefined,
-  colormapName: "Spectral",
+  colormapName: "plasma",
   flipColormap: false,
   timeSeries: {},
   strides: [10368,144,1],
@@ -146,12 +146,12 @@ const createStore = () => create<StoreState>((set, get) => ({
   setColormap: (colormap) => set({ colormap }),
   setColormapName: (colormapName) => {
     const prev = get().colormap;
-    const palette = (colormapName === 'Default') ? 'Spectral' : colormapName;
+    const palette = (colormapName === 'Default') ? 'plasma' : colormapName;
     const tex = GetColorMapTexture(prev, palette, 1, '#000000', 0, get().flipColormap);
     set({ colormapName, colormap: tex });
   },
   setFlipColormap: (flipColormap) => {
-    const palette = (get().colormapName === 'Default') ? 'Spectral' : get().colormapName;
+    const palette = (get().colormapName === 'Default') ? 'plasma' : get().colormapName;
     const prev = get().colormap;
     const tex = GetColorMapTexture(prev, palette, 1, '#000000', 0, flipColormap);
     set({ flipColormap, colormap: tex });
