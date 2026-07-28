@@ -4,7 +4,7 @@ THREE.Cache.enabled = true;
 import { GetZarrMetadata, GetTitleDescription } from '@/components/zarr/ZarrLoaderLRU';
 import { GetVariableNames } from './zarr/utils';
 import { GetStore } from '@/components/zarr/ZarrLoaderLRU';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
 import { MainPanel } from '@/components/ui';
 import { Loading, Error as ErrorComponent } from '@/components/ui';
@@ -40,33 +40,38 @@ export function LandingHome() {
     setStoreFromURL: state.setStoreFromURL,
   })))
 
-  const { currentStore, fetchKey,
+  const { currentStore, fetchKey, useNC,
     setCurrentStore, setZSlice, setYSlice, setXSlice, setUseNC 
   } = useZarrStore(useShallow(state => ({
     currentStore: state.currentStore,
-    fetchKey: state.fetchKey,
+    fetchKey: state.fetchKey, useNC: state.useNC,
     setCurrentStore: state.setCurrentStore,
     setZSlice: state.setZSlice,
     setYSlice: state.setYSlice,
     setXSlice: state.setXSlice,
     setUseNC: state.setUseNC
   })))
-
+  const firstLoad = useRef(true)
   useEffect(() => {
+    if (firstLoad.current){
+      firstLoad.current = false;
+      return
+    }
     void fetchKey;
-    setZSlice([0, null]);
-    setYSlice([0, null]);
-    setXSlice([0, null]);
-    if (initStore.startsWith('local:')) {
-      const path = initStore.replace('local:', '');
-      if (!NETCDF_EXT_REGEX.test(path)) return;
+    console.log(`initStore: ${initStore}`)
+    console.log(`useNC: ${useNC}`)
+    if (useNC) {
+      const path = initStore;  
       const filename = path.split('/').pop() ?? 'file.nc';
-      fetch(`/file?path=${encodeURIComponent(path)}`)
+      console.log(`filename: ${filename}`)
+      fetch(`file?path=${encodeURIComponent(path)}`)
         .then(res => {
+          console.log("First blob fetch")
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.blob();
         })
         .then(async blob => {
+          console.log(blob)
           await loadNetCDF(blob, filename);
           if (storeFromURL) {
             setOpenVariables(true);
@@ -75,10 +80,8 @@ export function LandingHome() {
           return;
         })
         .catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
-      return;
     }
-    if (initStore.startsWith('local')) return; // local_ set by LocalNetCDF/LocalZarr after load
-    setUseNC(false)
+
     const { icechunkOptions, fetchOptions } = useZarrStore.getState();
     const newStore = GetStore(
       initStore,
@@ -95,8 +98,7 @@ export function LandingHome() {
   }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice, storeFromURL, setOpenVariables, setStoreFromURL]);
 
   useEffect(() => {
-    const { initStore } = useGlobalStore.getState();
-    if (initStore.startsWith('local:')) return;
+    if (useNC) return;
 
     let isMounted = true;
     const activeStore = currentStore;

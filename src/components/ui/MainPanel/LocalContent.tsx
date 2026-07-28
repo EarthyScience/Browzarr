@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
 import LocalZarr from './LocalZarr';
@@ -20,7 +20,7 @@ const LocalContent = ({
   onOpenDescription,
   isSafari,
 }: Props) => {
-  const { useNC } = useZarrStore(useShallow(state => ({ useNC: state.fetchNC })));
+  const [useNC, setUseNC] = useState(false);
 
   return (
     <div className="mt-2">
@@ -28,7 +28,7 @@ const LocalContent = ({
         leftText='Zarr'
         rightText='NetCDF'
         state={!useNC}
-        onClick={() => useZarrStore.setState({ fetchNC: !useNC })}
+        onClick={() => setUseNC(x => !x)}
       />
       {useNC ? (
         <LocalNetCDF setOpenVariables={onOpenDescription} />

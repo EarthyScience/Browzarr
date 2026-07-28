@@ -14,9 +14,8 @@ function StoreInitializerInner() {
   const searchParams = useSearchParams();
   const setInitStore = useGlobalStore(s => s.setInitStore);
   const setStoreFromURL = useGlobalStore(s => s.setStoreFromURL);
-  const { setUseNC, setFetchNC } = useZarrStore(useShallow(s => ({
+  const { setUseNC } = useZarrStore(useShallow(s => ({
     setUseNC: s.setUseNC,
-    setFetchNC: s.setFetchNC,
   })));
 
   useEffect(() => {
@@ -25,7 +24,8 @@ function StoreInitializerInner() {
     if (data){
 		try{
 			const fullObj = JSON.parse(data);
-			if (fullObj.zarrState.blobKey){ // If NC local must load file beforehand
+      console.log(fullObj)
+			if (fullObj.zarrState && fullObj.zarrState.blobKey){ // If NC local must load file beforehand
 				const blobKey = fullObj.zarrState.blobKey
 				const isNC = fullObj.zarrState.useNC
 				loadFile(blobKey).then(cache =>{
@@ -45,25 +45,14 @@ function StoreInitializerInner() {
 				useZarrStore.setState(fullObj.zarrState)
 				useGlobalStore.setState(fullObj.globalState)
 				usePlotStore.setState(fullObj.plotState)
+        const isNC = searchParams.get("format") === "nc";
+        setUseNC(isNC);
 			}
 		} catch {
 			console.error('Something Failed :/')
 		}
     }
-    if (!store) {
-      setStoreFromURL(false);
-      return;
-    }
-    
-    const isNC = searchParams.get("format") === "nc";
-    setUseNC(isNC);
-    setFetchNC(isNC);
-    const initValue = isRemoteStore(store) ? store : `local:${store}`;
-    setInitStore(initValue);
-    // mark that a store was provided in the URL; LandingHome will open variables once
-    // the custom store is actually loaded.
-    setStoreFromURL(true);
-  }, [searchParams, setUseNC, setFetchNC, setInitStore, setStoreFromURL]);
+  }, [searchParams]);
 
   return null;
 }
