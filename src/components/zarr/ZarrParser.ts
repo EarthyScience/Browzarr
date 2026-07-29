@@ -38,7 +38,6 @@ function is_v3(meta: any) {
     return "zarr_format" in meta && meta.zarr_format === 3;
 }
 async function ZarrParser(files: any, store: any){
-    console.log(store)
     const fileCount = files.length;
     const vars = []
     const metadata: { [key: string]: any } = {}

@@ -91,15 +91,6 @@ export function getColormapGradientCss(name: string): string {
   return `linear-gradient(to right, ${stops.join(', ')})`;
 }
 
-export function minMax(values: number[]): { min: number | undefined, max: number | undefined } {
-    // Filter out NaN values
-    const validValues = values.filter(value => !isNaN(value));
-    // Calculate min and max
-    const min = validValues.length > 0 ? validValues.reduce((a,b) => Math.min(a,b)) : undefined;
-    const max = validValues.length > 0 ? validValues.reduce((a,b) => Math.max(a,b)) : undefined;
-    return { min, max };
-}
-
 export function GetColorMapTexture(
   texture: THREE.DataTexture | null = null, 
   palette: string = "Spectral", 
@@ -136,22 +127,6 @@ export function GetColorMapTexture(
     newTexture.needsUpdate = true;
     return newTexture;
 }
-
-// export function genRand(count: number) {
-//   const data = Array.from({ length: count }, () =>
-//       Array.from({ length: count }, () =>
-//           Array.from({ length: count }, () => {
-//               // Randomly insert NaN values (e.g., 10% chance)
-//               if (Math.random() < 0.6) {
-//                   return NaN;
-//               }
-//               return Math.random();
-//           })
-//       )
-//   );
-//   const nested = new NestedArray(data, [count, count, count], '<f4');
-//   return nested;
-// }
 
 export function hexToRgb(hex: string) {
   // Remove the hash at the start if it's there
