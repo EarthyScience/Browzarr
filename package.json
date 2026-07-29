@@ -126,5 +126,11 @@
     "typescript": "^5",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.1.8"
+  },
+  "pnpm": {
+    "overrides": {
+      "@emnapi/core": "^1.7.1",
+      "@emnapi/runtime": "^1.7.1"
+    }
   }
 }
