@@ -195,7 +195,6 @@ const Plot = () => {
       setPlotType("flat")
       setIsFlat(true)
     } else if (!isEffectivelyFlat && plotType != "volume" && plotType != "isosurface") {
-      setPlotType("volume")
       setIsFlat(false)
     }
   },[dataShape, analysisMode])

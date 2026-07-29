@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/';
 import { Button } from '@/components/ui/button-enhanced';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { initializeStore } from '@/components/StoreInitializer';
 
 type HeaderRow  = { key: string; value: string };
 type AuthPreset = 'none' | 'bearer' | 'basic' | 'apikey';
@@ -86,14 +87,16 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription, selectedUrl = 
           ...(fetchHandler && { fetch: fetchHandler }),
         };
 
-        useZarrStore.getState().setIcechunkOptions(null);
-        useZarrStore.getState().setFetchOptions(
-          fetchOptions.fetch !== undefined ? fetchOptions : null
-        );
+        useZarrStore.setState({
+          icechunkOptions:null,
+          fetchOptions: fetchOptions.fetch !== undefined ? fetchOptions : null,
+          useNC: false
+        })
         useGlobalStore.getState().setStatus('Fetching...');
 
-        useZarrStore.getState().bumpFetchKey();
         setInitStore(urlValue);
+
+        initializeStore();
         onOpenDescription();
       }}
     >
