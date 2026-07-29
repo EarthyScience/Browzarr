@@ -172,26 +172,6 @@ export function ArrayMinMax(array:number[] | TypedArray | TypedArrayBufferLike){
   return [minVal,maxVal]
 }
 
-export async function getVariablesOptions(variablesPromise: Promise<string[]> | undefined) {
-    if (!variablesPromise) return [{ text: 'Default', value: 'Default' }];
-    
-    try {
-        const variables = await variablesPromise;
-        if (!Array.isArray(variables)) return [{ text: 'Default', value: 'Default' }];
-        
-        return [
-            { text: 'Default', value: 'Default' },
-            ...variables.map((element: string) => ({
-                text: element,
-                value: element
-            }))
-        ];
-    } catch (error) {
-        console.error('Error getting variables:', error);
-        return [{ text: 'Default', value: 'Default' }];
-    }
-}
-
 export function linspace(start: number, stop: number, num: number): number[] {
     const step = (stop - start) / (num - 1);
     return Array.from({ length: num }, (_, i) => start + step * i);
@@ -337,12 +317,6 @@ export function GetCurrentArray(overrideStore?:string){
     return typedArray
   }
 }
-
-
-export function TwoDecimals(val: number){
-    return Math.round(val * 100)/100
-}
-
 
 export async function GetDimInfo(variable:string){
   const {useNC} = useZarrStore.getState()
