@@ -51,7 +51,7 @@ export const useDataFetcher = () => {
 
     //---- Local State ----//
     const [textures, setTextures] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null);
-    const [show, setShow] = useState<boolean>(true);
+    const [show, setShow] = useState<boolean>(false);
     const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
 
     useEffect(() => {

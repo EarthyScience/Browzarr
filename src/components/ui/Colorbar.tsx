@@ -281,4 +281,4 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     )
 }
 
-export default Colorbar
+export default React.memo(Colorbar)

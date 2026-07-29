@@ -67,6 +67,7 @@ type PlotState ={
   camera: THREE.Camera | undefined;
   nativeCRS: string | undefined;
   destCRS: string | undefined;
+  overRideCamera: boolean; // Prevent Camera from resetting until initial position is set. 
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -193,6 +194,8 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   camera: undefined,
   nativeCRS: undefined,
   destCRS: undefined,
+  overRideCamera: false,
+
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),

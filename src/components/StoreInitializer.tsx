@@ -14,9 +14,6 @@ import { GetStore } from "./zarr/ZarrLoaderLRU";
 export function initializeStore(){
 	const {initStore} = useGlobalStore.getState()
 	const {useNC, ReFetch, setCurrentStore} = useZarrStore.getState()
-	console.log("initializing Store")
-	console.log(`useNC: ${useNC}`)
-	console.log(`initStore: ${initStore}`)
 	// ---- Handle Code Inputs ---- //
 	if (initStore.startsWith("local:")) {
 		const path = initStore.replace('local:', '');  
@@ -108,6 +105,7 @@ function StoreInitializerInner() {
       const isRemoteZarr = isRemoteStore(store);
       setInitStore(isRemoteZarr ? store : "local:" + store)
     }
+	usePlotStore.setState({overRideCamera:true})
 	initializeStore();
   }, [searchParams]);
 
