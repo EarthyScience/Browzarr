@@ -8,19 +8,23 @@ import { useShallow } from 'zustand/shallow';
 import { useFrame } from '@react-three/fiber';
 import {vertexShader, bordersFrag} from '../textures/shaders'
 import { invalidate } from '@react-three/fiber';
+import proj4, { Converter } from 'proj4';
+import { useAxisIndices } from '@/hooks';
 
-function Reproject([lon, lat] : [number, number], lonBounds: [number, number], latBounds: [number, number]){
+function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds: [number, number], proj : Converter | undefined, aspect: number){ 
     const {remapTexture} = useGlobalStore.getState()
-    let newLon = (lon-lonBounds[0])/(lonBounds[1]-lonBounds[0]);
-    let newLat = (lat-latBounds[0])/(latBounds[1]-latBounds[0]);
-    if (remapTexture){
-        
+	let [newX, newY] = [x, y];
+	if (remapTexture && proj){
+        [newX, newY]= proj.forward([x,y])
     }
-    newLon -= 0.5
-    newLon *= 2;
-    newLat -= 0.5;
-    newLat *= 2;
-    return [newLon, newLat/2, 0]
+    newX = (newX-xBounds[0])/(xBounds[1]-xBounds[0]);
+    newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);	
+
+    newX -= 0.5
+    newX *= 2;
+    newY -= 0.5;
+    newY *= 2;
+    return [newX, newY/2, 0] // I don't know why this 2 (which was for the original lat/lon aspect) also works for new CRS
 }
 
 function Spherize([lon, lat] : [number, number]){
@@ -34,30 +38,23 @@ function Spherize([lon, lat] : [number, number]){
 }
 
 function Borders({features}:{features: any}){
-    const {xRange, yRange, plotType, borderColor, lonExtent, latExtent, lonResolution, latResolution, is360Deg} = usePlotStore(useShallow(state => ({
+    const {xRange, yRange, plotType, borderColor, is360Deg, nativeCRS, destCRS, } = usePlotStore(useShallow(state => ({
         xRange: state.xRange, yRange: state.yRange,
         plotType: state.plotType, borderColor: state.borderColor,
-        lonExtent: state.lonExtent, latExtent: state.latExtent,
-        lonResolution: state.lonResolution, latResolution: state.latResolution,
-        is360Deg:state.is360Deg
+        is360Deg:state.is360Deg, nativeCRS: state.nativeCRS, destCRS: state.destCRS
     })))
-    const {flipY, shape } = useGlobalStore(useShallow(state => ({
-        flipY: state.flipY,
-        shape: state.shape
+    const {shape, axisDimArrays, remapTexture } = useGlobalStore(useShallow(state => ({
+		remapTexture: state.remapTexture,
+        shape: state.shape, axisDimArrays: state.axisDimArrays,
     })))
-
-    const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
-          const newLatStep = latResolution/2;
-          const newLonStep = lonResolution/2;
-          const minLat = Math.min(latExtent[0], latExtent[1]);
-          const maxLat = Math.max(latExtent[0], latExtent[1]);
-          const minLon = Math.min(lonExtent[0], lonExtent[1]);
-          const maxLon = Math.max(lonExtent[0], lonExtent[1]);
-          const newLonBounds = [Math.max(minLon-newLonStep, -180), Math.min(maxLon+newLonStep, 180)]
-          let newLatBounds = [Math.max(minLat-newLatStep, -90), Math.min(maxLat+newLatStep, 90)]
-          newLatBounds = flipY ? [newLatBounds[1], newLatBounds[0]] : newLatBounds
-          return [newLonBounds as [number, number], newLatBounds as [number, number]]
-        },[latExtent, lonExtent, lonResolution, latResolution, flipY])
+    const {xIdx, yIdx} = useAxisIndices()
+    const [xBounds, yBounds] = useMemo(()=>{ 
+        const minX = axisDimArrays[xIdx][0]
+        const maxX = axisDimArrays[xIdx].at(-1)
+		const minY = axisDimArrays[yIdx][0]
+        const maxY = axisDimArrays[yIdx].at(-1)
+        return [[minX, maxX] as [number, number], [minY, maxY] as [number, number]]
+    },[axisDimArrays, xIdx, yIdx ])
 
     const [spherize, setSpherize] = useState<boolean>(false)
 
@@ -70,6 +67,16 @@ function Borders({features}:{features: any}){
         }
 
     },[plotType])
+
+	const proj = useMemo(()=>{
+		try{
+			const proj = proj4(nativeCRS as string, destCRS as string)
+			return proj
+		} catch (err) {
+			return undefined
+		}
+	},[nativeCRS, destCRS])
+	const aspect = shape.x/shape.y
 
     const lineShaderMat = useMemo(() => {
         const shapeX = (shape && shape.x > 0) ? shape.x : 1;
@@ -104,76 +111,72 @@ function Borders({features}:{features: any}){
     },[xRange, yRange, borderColor, spherize, shape])
 
     const lineGeometries = useMemo(() => {
-    return features.flatMap((feature: any, i: number) => {
-        const lines = [];
+    	return features.flatMap((feature: any, i: number) => {
+			const lines = [];
+			if (feature.geometry.type === 'LineString') {
+				const points: THREE.Vector3[] = [];
+				feature.geometry.coordinates.forEach(([lon, lat]: [number, number]) => {
+					const [x, y, z] = spherize
+					? Spherize([ -lon, lat])
+					: Reproject([lon, lat],xBounds,yBounds, proj, aspect);
+					points.push(new THREE.Vector3(x, y, z));
+				});
+				const positions = new Float32Array(points.length * 3);
+				points.forEach((point, i) => {
+					positions.set([point.x, point.y, point.z], i * 3);
+				});
+				const geometry = new THREE.BufferGeometry();
+				geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+				lines.push(geometry);
+			} else if (feature.geometry.type === 'MultiPolygon') {
+				const islands = feature.geometry.coordinates;
+				islands.forEach((island: number[][][], idx: number) => {
+					let thisIdx = idx;
+					const ring = island[0]; // outer ring
+					const islandPoints: THREE.Vector3[] = [];
+					ring.forEach(([lon, lat]) => {
+						thisIdx ++;
+					const [x, y, z] = spherize
+						? Spherize([ -lon, lat])
+						: Reproject([lon, lat],xBounds,yBounds, proj, aspect);
+						islandPoints.push(new THREE.Vector3(x, y, z));
+					});
+					const positions = new Float32Array(islandPoints.length * 3);
+					islandPoints.forEach((point, i) => {
+						positions.set([point.x, point.y, point.z], i * 3);
+					});
+					const geometry = new THREE.BufferGeometry();
+					geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+					lines.push(geometry);
+				});
+			} else {
+				const polygons =
+					feature.geometry.type === 'Polygon'
+					? [feature.geometry.coordinates]
+					: feature.geometry.coordinates;
 
-        if (feature.geometry.type === 'LineString') {
-            const points: THREE.Vector3[] = [];
-            feature.geometry.coordinates.forEach(([lon, lat]: [number, number]) => {
-                const [x, y, z] = spherize
-                ? Spherize([ -lon, lat])
-                : Reproject([lon, lat],lonBounds,latBounds);
-                points.push(new THREE.Vector3(x, y, z));
-            });
-            const positions = new Float32Array(points.length * 3);
-            points.forEach((point, i) => {
-                positions.set([point.x, point.y, point.z], i * 3);
-            });
-            const geometry = new THREE.BufferGeometry();
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            lines.push(geometry);
-        }
-        else if (feature.geometry.type === 'MultiPolygon') {
-            const islands = feature.geometry.coordinates;
-            islands.forEach((island: number[][][], idx: number) => {
-                let thisIdx = idx;
-                const ring = island[0]; // outer ring
-                const islandPoints: THREE.Vector3[] = [];
-                ring.forEach(([lon, lat]) => {
-                    thisIdx ++;
-                const [x, y, z] = spherize
-                    ? Spherize([ -lon, lat])
-                    : Reproject([lon, lat],lonBounds,latBounds);
-                    islandPoints.push(new THREE.Vector3(x, y, z));
-                });
-                const positions = new Float32Array(islandPoints.length * 3);
-                islandPoints.forEach((point, i) => {
-                    positions.set([point.x, point.y, point.z], i * 3);
-                });
-                const geometry = new THREE.BufferGeometry();
-                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                lines.push(geometry);
-            });
-        }
-        else {
-            const polygons =
-                feature.geometry.type === 'Polygon'
-                ? [feature.geometry.coordinates]
-                : feature.geometry.coordinates;
-
-            polygons.forEach((polygon: number[][][]) => {
-                const points: THREE.Vector3[] = [];
-                polygon.forEach((ring: number[][]) => {
-                ring.forEach(([lon, lat]) => {
-                    const [x, y, z] = spherize
-                    ? Spherize([ -lon, lat])
-                    : Reproject([lon, lat],lonBounds,latBounds);
-                    points.push(new THREE.Vector3(x, y, z));
-                });
-                });
-                const positions = new Float32Array(points.length * 3);
-                points.forEach((point, i) => {
-                    positions.set([point.x, point.y, point.z], i * 3);
-                });
-                const geometry = new THREE.BufferGeometry();
-                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                lines.push(geometry);
-            });
+				polygons.forEach((polygon: number[][][]) => {
+					const points: THREE.Vector3[] = [];
+					polygon.forEach((ring: number[][]) => {
+					ring.forEach(([lon, lat]) => {
+						const [x, y, z] = spherize
+						? Spherize([ -lon, lat])
+						: Reproject([lon, lat],xBounds,yBounds, proj, aspect);
+						points.push(new THREE.Vector3(x, y, z));
+					});
+					});
+					const positions = new Float32Array(points.length * 3);
+					points.forEach((point, i) => {
+						positions.set([point.x, point.y, point.z], i * 3);
+					});
+					const geometry = new THREE.BufferGeometry();
+					geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+					lines.push(geometry);
+			});
         }
         return lines;
     });
-    }, [features, spherize, flipY, lonBounds, latBounds]);
-
+    }, [features, spherize, xBounds, remapTexture, yBounds]);
 
     const lines = useMemo(() => {
         const results: any[] = []
@@ -201,7 +204,6 @@ function Borders({features}:{features: any}){
         });
         return results
     }, [lineGeometries, lineShaderMat]);
-
     return (
         <>
             {lines}
