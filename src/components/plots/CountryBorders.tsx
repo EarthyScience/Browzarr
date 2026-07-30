@@ -10,8 +10,12 @@ import {vertexShader, bordersFrag} from '../textures/shaders'
 import { invalidate } from '@react-three/fiber';
 
 function Reproject([lon, lat] : [number, number], lonBounds: [number, number], latBounds: [number, number]){
+    const {remapTexture} = useGlobalStore.getState()
     let newLon = (lon-lonBounds[0])/(lonBounds[1]-lonBounds[0]);
     let newLat = (lat-latBounds[0])/(latBounds[1]-latBounds[0]);
+    if (remapTexture){
+        
+    }
     newLon -= 0.5
     newLon *= 2;
     newLat -= 0.5;
