@@ -29,10 +29,10 @@ const TransectNotice = () =>{
 }
 
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
-  const {resetCamera, useOrtho, displaceSurface, cameraPosition, overRideCamera} = usePlotStore(useShallow(state => ({
+  const {resetCamera, useOrtho, displaceFaces, cameraPosition, overRideCamera} = usePlotStore(useShallow(state => ({
       resetCamera: state.resetCamera,
       useOrtho: state.useOrtho,
-      displaceSurface: state.displaceSurface,
+      displaceFaces: state.displaceFaces,
       cameraPosition:state.cameraPosition,
       overRideCamera: state.overRideCamera
     })))
@@ -156,7 +156,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   return (
     <OrbitControls 
       ref={orbitRef} 
-      enableRotate={!isFlat || !useOrtho || !displaceSurface} 
+      enableRotate={!isFlat || !useOrtho || !displaceFaces} 
       enablePan={true} 
       maxDistance={50}
       minZoom={1} 
@@ -177,9 +177,9 @@ const Plot = () => {
     dataShape: state.dataShape,
   })))
   const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
-  const {plotType, displaceSurface, setPlotType} = usePlotStore(useShallow(state => ({
+  const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(state => ({
     plotType: state.plotType,
-    displaceSurface: state.displaceSurface,
+    displaceFaces: state.displaceFaces,
     setPlotType: state.setPlotType,
   })))
   const {analysisMode, useEditor} = useAnalysisStore(useShallow(state => ({
@@ -275,13 +275,13 @@ const Plot = () => {
         }
         {plotType == "sphere" && show && 
           <>
-            {displaceSurface ? <Sphere textures={textures} /> : <SphereBlocks textures={textures} />}
+            {displaceFaces ? <SphereBlocks textures={textures} /> : <Sphere textures={textures} /> }
           </>
         }
         <MemoOrbit isFlat={plotType == "flat"} />
         {plotType == "flat" && show && <>
-          {displaceSurface && <FlatMap textures={textures as THREE.DataTexture[] | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
-          {!displaceSurface && <FlatBlocks textures={textures} />}
+          {!displaceFaces && <FlatMap textures={textures as THREE.DataTexture[] | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
+          {displaceFaces && <FlatBlocks textures={textures} />}
         </>
         }
 

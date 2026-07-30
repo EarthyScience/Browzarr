@@ -70,7 +70,7 @@ export const useDataFetcher = () => {
                     }, 0);
                     setTextures(null);
                 }
-                //----- TS Cleanup ----//
+                //----- TimeSeries Cleanup ----//
                 useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
                 //---- Set Plot Slicez ----//
                 const { setZSlice, setYSlice, setXSlice } = usePlotStore.getState();

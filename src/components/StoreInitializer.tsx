@@ -40,10 +40,8 @@ export function initializeStore(){
 			setCurrentStore(newStore);
 			return;
 		}
-		} else {
-		console.log("Made it past local: check")
-		if (!isRemoteStore(initStore)) return; // Localzarr and LocalNetCDF create custom stores that bypasses this step
-		console.log(`Past remote check \n initStore: ${initStore}`)
+	} else {
+		if (!isRemoteStore(initStore)) return; // Localzarr and LocalNetCDF create & set custom stores that bypasses this step
 		// ---- Remote Zarr ---- //
 		const { icechunkOptions, fetchOptions } = useZarrStore.getState();
 		const newStore = GetStore(
@@ -52,13 +50,14 @@ export function initializeStore(){
 			icechunkOptions ?? undefined
 		);
 		setCurrentStore(newStore);
-		}
-		// ---- Clear after use ---- //
-		const {remapTexture} = useGlobalStore.getState();
-		if (remapTexture) remapTexture.dispose();
-		useZarrStore.setState({icechunkOptions: null, fetchOptions:null});
-		useGlobalStore.setState({remapTexture: undefined });
-		usePlotStore.setState({nativeCRS:undefined, destCRS:undefined});
+	}
+	// ---- Clear after use ---- //
+	const {remapTexture} = useGlobalStore.getState();
+	if (remapTexture) remapTexture.dispose();
+	useZarrStore.setState({icechunkOptions: null, fetchOptions:null});
+	useGlobalStore.setState({remapTexture: undefined });
+	/* This comment out is temporary. For now only way to keep CRS passed from params */
+	// usePlotStore.setState({nativeCRS:undefined, destCRS:undefined});
 }
 
 function StoreInitializerInner() {
@@ -71,6 +70,7 @@ function StoreInitializerInner() {
 	if (data){
 		try{
 		const fullObj = JSON.parse(data);
+		console.log(fullObj)
 		if (fullObj.zarrState?.blobKey){ // If NC local must load file beforehand
 			const blobKey = fullObj.zarrState.blobKey
 			const isNC = fullObj.zarrState.useNC
