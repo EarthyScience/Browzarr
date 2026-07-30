@@ -4,7 +4,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import React from 'react'
 import { useShallow } from 'zustand/shallow'
 
-export const ExportExtent = () => {
+export const ExportExtent = React.memo(function ExportExtent(){
     const {customRes, previewExtent} = useImageExportStore(useShallow(state=> ({
         customRes:state.customRes, previewExtent:state.previewExtent
     })))
@@ -81,4 +81,4 @@ export const ExportExtent = () => {
 
   )
 }
-
+)

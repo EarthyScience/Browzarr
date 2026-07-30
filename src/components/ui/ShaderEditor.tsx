@@ -116,7 +116,7 @@ const ConfigureUniforms = ({variables} : {variables:string[]})=>{
     )
 }
 
-export const ShaderEditor = ({visible} : {visible: boolean}) => {
+const ShaderEditor = React.memo(function ShaderEditor ({visible} : {visible: boolean}){
     const [shader, setShader] = useState<string | undefined>()
     const [showUniforms, setShowUniforms] = useState(false)
     const [newDim, setNewDim] = useState(0)
@@ -268,5 +268,6 @@ export const ShaderEditor = ({visible} : {visible: boolean}) => {
         </div>
 
     )
-}
+})
 
+export {ShaderEditor}
