@@ -205,7 +205,7 @@ const Plot = () => {
       setPlotType("volume")
       setIsFlat(false)
     }
-  },[dataShape, analysisMode])
+  },[analysisMode])
 
   useEffect(()=>{ // Reset after analysis mode
     if(!analysisMode && show){
