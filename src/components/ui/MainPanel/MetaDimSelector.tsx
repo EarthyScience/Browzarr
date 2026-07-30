@@ -535,7 +535,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
 
     useZarrStore.getState().setNdSlices(ndSlices);
     useZarrStore.getState().setAxisMapping(axisMapping);
-    console.log(ndSlices)
+
     if (collapsedDims.length > 0) {
       const firstCollapsed = collapsedDims[0];
       const sel = collapsedSels[firstCollapsed.name];

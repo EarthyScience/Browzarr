@@ -10,7 +10,7 @@ import { coarsen3DArray } from "@/utils/HelperFuncs";
 
 export async function GetArray(varOveride?: string) {
     const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
-    const { compress, xSlice, ySlice, zSlice, ndSlices, axisMapping, coarsen, kernelSize, kernelDepth, useNC, setCurrentChunks, setArraySize } = useZarrStore.getState();
+    const { compress, ndSlices, axisMapping, coarsen, kernelSize, kernelDepth, useNC, setCurrentChunks, setArraySize } = useZarrStore.getState();
     const { cache } = useCacheStore.getState();
     const fetcher = useNC ? NCFetcher() : zarrFetcher()
     const targetVariable = varOveride ?? variable;
@@ -28,7 +28,6 @@ export async function GetArray(varOveride?: string) {
     for (let i = rank - 1; i >= 0; i--) {
         if (!mappedDims.has(i)) unmappedDims.push(i);
     }
-    console.log(ndSlices, xSlice, ySlice, zSlice)
     const xDimIndex = mappedX >= 0 ? mappedX : (unmappedDims.length > 0 ? unmappedDims.shift()! : rank - 1);
     const yDimIndex = mappedY >= 0 ? mappedY : (unmappedDims.length > 0 ? unmappedDims.shift()! : rank - 2);
     const zDimIndex = mappedZ >= 0 ? mappedZ : (unmappedDims.length > 0 ? unmappedDims.shift()! : -1);
