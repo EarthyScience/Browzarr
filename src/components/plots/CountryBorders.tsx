@@ -11,7 +11,7 @@ import { invalidate } from '@react-three/fiber';
 import proj4, { Converter } from 'proj4';
 import { useAxisIndices } from '@/hooks';
 
-function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds: [number, number], proj : Converter | undefined, aspect: number){ 
+function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds: [number, number], proj : Converter | undefined, aspect: number){ // May use this aspect later. I'll keep for now
     const {remapTexture} = useGlobalStore.getState()
 	let [newX, newY] = [x, y];
 	if (remapTexture && proj){
