@@ -9,6 +9,7 @@ import { loadFile } from "@/utils/IndexDB";
 import { LoadLocalZarr } from "./ui/MainPanel/LocalZarr";
 import { isRemoteStore } from "@/utils/isRemoteStore";
 import { GetStore } from "./zarr/ZarrLoaderLRU";
+import { useImageExportStore } from "@/GlobalStates/ImageExportStore";
 
 
 export function initializeStore(){
@@ -66,7 +67,10 @@ function StoreInitializerInner() {
 
   useEffect(() => {
 	const store = searchParams.get("store");
-	let data = searchParams.get("data")
+	const data = searchParams.get("data");
+	const keyFramesPath = searchParams.get("keyFramesPath");
+	const exportPlot = searchParams.get("export")
+	// ---- Handle States ---- //
 	if (data){
 		try{
 		const fullObj = JSON.parse(data);
@@ -97,14 +101,38 @@ function StoreInitializerInner() {
 		console.error('Something Failed :/')
 		}
 	}
+	// ---- Handle KeyFrames ---- //
+	if (keyFramesPath){
+		// Fetch JSON 
+		const encodedPath = encodeURIComponent(keyFramesPath);
+		const jsonPath = `${window.location.origin}/file?path=${encodedPath}`;
+		fetch(jsonPath)
+		.then(response => {
+			if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			return response.json();
+		})
+		.then(data => {
+			const keyFrames = new Map<number, any>(
+			Object.entries(data).map(([key, value]) => [Number(key), value])
+			);
+			useImageExportStore.setState({keyFrames});
+		})
+		.catch(error => {
+			console.error('Error fetching keyFrames JSON:', error);
+		});
+  	}
+	// ---- Handle Export ---- //
+	if (exportPlot)useImageExportStore.setState({exportOnLoad:true})
 	// ---- Julia fallback ---- //
 	/* Remove this if Julia package does not stay maintained */
 	if (searchParams.get("format") === "nc") useZarrStore.setState({useNC:true});
-    // ---- Establish local marker ---- //
-    if (store){
-      const isRemoteZarr = isRemoteStore(store);
-      setInitStore(isRemoteZarr ? store : "local:" + store)
-    }
+  // ---- Establish local marker ---- //
+  if (store){
+    const isRemoteZarr = isRemoteStore(store);
+    setInitStore(isRemoteZarr ? store : "local:" + store)
+  }
 	usePlotStore.setState({overRideCamera:true})
 	initializeStore();
   }, [searchParams]);
