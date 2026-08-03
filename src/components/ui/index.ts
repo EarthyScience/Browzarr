@@ -139,3 +139,4 @@ export {
 } from "./table";
 
 export { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
+export {QuickTip} from "./Widgets/QuickTip"
