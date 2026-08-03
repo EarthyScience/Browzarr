@@ -24,7 +24,8 @@ const Footer = () => {
       </a>
     </div>
     <div className="expandable-text">
-      <span>Ⓒ <a href="https://www.bgc-jena.mpg.de/person/jpoehls/2206" target='_blank' rel="noreferrer">Jeran Poehls</a>&<a href="https://lazarusa.github.io/" target='_blank' rel="noreferrer">Lazaro Alonso</a>
+      <span>Ⓒ <a href="https://www.bgc-jena.mpg.de/person/jpoehls/2206" target='_blank' rel="noreferrer">Jeran Poehls</a>
+      {/* &<a href="https://lazarusa.github.io/" target='_blank' rel="noreferrer">Lazaro Alonso</a> */}
       </span>
 
     </div>

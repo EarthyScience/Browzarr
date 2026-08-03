@@ -61,7 +61,7 @@ export function BrowZarrPopover() {
             >
               Jeran Poehls
             </a>{" "}
-            &{" "}
+            {/* &{" "}
             <a
               href="https://lazarusa.github.io/"
               target="_blank"
@@ -69,7 +69,7 @@ export function BrowZarrPopover() {
               className="underline underline-offset-2"
             >
               Lazaro Alonso
-            </a>
+            </a> */}
           </p>
 
           <div className="space-y-2">
