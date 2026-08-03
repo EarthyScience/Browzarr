@@ -3,6 +3,7 @@ import React from "react";
 import {
 	ExportImageSettings,
 	PlotLineButton,
+	QuickTip,
 	useCSSVariable,
 } from "@/components/ui";
 import "../css/Navbar.css";
@@ -11,11 +12,6 @@ import { MdFlipCameraIos } from "react-icons/md";
 import { RiCloseLargeLine, RiMenu2Line } from "react-icons/ri";
 import { useShallow } from "zustand/shallow";
 import { Button, AxisBars } from "@/components/ui";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
@@ -43,36 +39,30 @@ const Navbar = React.memo(function Navbar() {
 	const [isOpen, setIsOpen] = useState<boolean>(true);
 	const navRef = useRef<HTMLElement | null>(null);
 	const iconCol = useCSSVariable("--text-plot");
-
+	{isOpen ? "Close navigation" : "Open navigation"}
 	return (
 		<nav className="navbar" ref={navRef}>
-			<Tooltip delayDuration={500}>
-				<TooltipTrigger asChild>
-					{plotOn && (
-						<Button
-							variant="ghost"
-							size="icon"
-							className="navbar-trigger size-10"
-							aria-expanded={isOpen}
-							onClick={() => setIsOpen((prev) => !prev)}
-						>
-							{isOpen ? (
-								<RiCloseLargeLine className="size-4" />
-							) : (
-								<RiMenu2Line className="size-6" />
-							)}
-						</Button>
-					)}
-				</TooltipTrigger>
-				<TooltipContent side="right" align="start">
-					{isOpen ? "Close navigation" : "Open navigation"}
-				</TooltipContent>
-			</Tooltip>
+			<QuickTip message={isOpen ? "Close navigation" : "Open navigation"}>
+				{plotOn && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="navbar-trigger size-10"
+						aria-expanded={isOpen}
+						onClick={() => setIsOpen((prev) => !prev)}
+					>
+						{isOpen ? (
+							<RiCloseLargeLine className="size-4" />
+						) : (
+							<RiMenu2Line className="size-6" />
+						)}
+					</Button>
+				)}
+			</QuickTip>
 			<div className={cn("navbar-content", isOpen ? "open" : "closed")}>
 				{/* <LogoDrawer /> */}
 				<div className="navbar-left">
-					<Tooltip delayDuration={500}>
-						<TooltipTrigger asChild>
+						<QuickTip message='Reset camera view'>
 							<Button
 								variant="ghost"
 								size="icon"
@@ -84,28 +74,28 @@ const Navbar = React.memo(function Navbar() {
 							>
 								<MdFlipCameraIos className="size-8" />
 							</Button>
-						</TooltipTrigger>
-						<TooltipContent side="right" align="start">
-							<span>Reset camera view</span>
-						</TooltipContent>
-					</Tooltip>
+						</QuickTip>
 					<Button
 						variant="ghost"
 						size="icon"
 						className="cursor-pointer"
 						onClick={() => setUseOrtho(!useOrtho)}
 					>
-						{useOrtho ? (
-							<Orthographic
-								color={iconCol}
-								className="size-8"
-							/>
-						) : (
-							<Perspective
-								color={iconCol}
-								className="size-8"
-							/>
-						)}
+					<QuickTip message={`Change camera to use ${useOrtho ? "Perspective" : "Orthographic"} view`}>
+						<div>
+							{useOrtho ? (
+								<Orthographic
+									color={iconCol}
+									className="size-8"
+								/>
+							) : (
+								<Perspective
+									color={iconCol}
+									className="size-8"
+								/>
+							)}
+						</div>
+					</QuickTip>
 					</Button>
 					<PlotLineButton />
 					<ExportImageSettings />

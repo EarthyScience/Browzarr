@@ -34,7 +34,7 @@ const AboutInfo = () => {
 
       <div>
         <span>
-          <a href="https://lazarusa.github.io/" target="_blank" rel="noreferrer"><strong>Lazaro Alonso</strong></a> &
+          {/* <a href="https://lazarusa.github.io/" target="_blank" rel="noreferrer"><strong>Lazaro Alonso</strong></a> & */}
           <a href="https://www.bgc-jena.mpg.de/person/jpoehls/2206" target="_blank" rel="noreferrer"><strong> Jeran Poehls</strong></a>
         </span>
       </div>
