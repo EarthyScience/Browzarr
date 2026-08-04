@@ -236,7 +236,7 @@ export async function getIcechunkDims(
 		nodeData.dimensionNames?.length > 0
 			? nodeData.dimensionNames
 			: undefined;
-
+	console.log("Being called here for some reason?")
 	cache.set(`${initStore}_${variable}_meta`, {
 		...meta,
 		shape,
