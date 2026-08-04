@@ -11,7 +11,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 export function checkProjString(projString: string){
     const {setError} = useErrorStore.getState()
     try{
-        const proj = proj4(projString)
+        proj4(projString)
         return true
     } catch{
         setError('badProj')
@@ -23,7 +23,6 @@ export function resetProjection(){
     const {dimArrays, dimNames, dimUnits, shape} = useGlobalStore.getState()
     const {xSlice, ySlice} = useZarrStore.getState()
     const {xIdx, yIdx} = getAxisIndices()
-
     const xLength = dimArrays[xIdx].length;
     const yLength = dimArrays[yIdx].length;
     const aspectRatio = xLength/yLength;
@@ -41,6 +40,26 @@ export function resetProjection(){
         ySlice
     })
 
+}
+
+function normalizePixels(array: number[] ): number[]{
+    // Normalizes an array to the range [0.5/len, 1-1/len] for use in pixel sampling
+    const len = array.length;
+    let min = Infinity, max = -Infinity;
+    for (let i = 0; i < len; i++){
+        const v = array[i];
+        if (v < min) min = v;
+        if (v > max) max = v;
+    }
+    const range = max - min;
+    const out = new Array<number>(len);
+    const half = 0.5 / len;
+    const span = 1 - 1 / len;
+    for (let i = 0; i < len; i++) {
+        const t = range === 0 ? 0 : (array[i] - min) / range; 
+        out[i] = half + t * span;
+    }
+    return out;
 }
 
 function normalizeArray(array: number[] ): number[]{
@@ -61,6 +80,8 @@ function normalizeArray(array: number[] ): number[]{
     return out;
 }
 
+
+
 function isUniformStep(array: number[]): boolean {
     const len = array.length;
     if (len < 3) return true; // any 0–2 element array trivially qualifies
@@ -80,8 +101,8 @@ function createIrregularUV(xArray: number[], yArray: number[], flipY: boolean) {
 	const width = xArray.length;
 	const height = yArray.length;
 
-	const normX = normalizeArray(xArray);
-	const normY = normalizeArray(yArray);
+	const normX = normalizePixels(xArray);
+	const normY = normalizePixels(yArray);
 
 	const data = new Uint16Array(width * height * 4); //4 for RGBA
 	let ptr = 0;
@@ -113,6 +134,7 @@ function createIrregularUV(xArray: number[], yArray: number[], flipY: boolean) {
 }
 
 export function setIrregularGridTexture(dimArrays: Array<number>[]){
+    // This is needed for Sphere and other projections where the grid is not uniform. It creates a texture that maps the irregular grid to a regular grid for sampling in the shader.
     const {xIdx, yIdx} = getAxisIndices()
 	const {remapTexture, flipY} = useGlobalStore.getState();
 	if (remapTexture) remapTexture.dispose();
@@ -123,7 +145,7 @@ export function setIrregularGridTexture(dimArrays: Array<number>[]){
     //Dispose of remaptexture if exists
 	const {plotType} = usePlotStore.getState();
 	const isSphere = plotType == 'sphere';
-	const texture = isSphere ? createInverseUV(xArray, yArray, flipY, 2048) :  createIrregularUV(xArray, yArray, flipY)
+	const texture = isSphere ? createInverseUV(xArray, yArray, flipY, 1024) :  createIrregularUV(xArray, yArray, flipY)
     useGlobalStore.setState({remapTexture:texture});
 }
 
