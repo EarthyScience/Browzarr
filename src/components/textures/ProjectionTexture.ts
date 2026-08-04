@@ -31,7 +31,6 @@ export function resetProjection(){
     const newShape = new THREE.Vector3().copy(shape)
     newShape.y = 2/aspectRatio;
     
-
     useGlobalStore.setState({
         axisDimArrays: dimArrays,
         axisDimUnits: dimUnits,
@@ -67,62 +66,64 @@ function normalizeArray(array: Array<number>){
 function isUniformStep(array: Array<number>): boolean {
     const len = array.length;
     if (len < 3) return true; // any 0–2 element array trivially qualifies
-
     const step = array[1] - array[0];
 
     for (let i = 2; i < len; i++) {
-        if (array[i] - array[i - 1] !== step) {
+        const diff = array[i] - array[i - 1]
+        if (Math.abs(diff - step) > 1e-4) {
             return false;
         }
     }
     return true;
 }
 
-function createRemapTexture(xArray: Array<number>, yArray: Array<number>) {
-  const width = xArray.length;
-  const height = yArray.length;
+function createIrregularUV(xArray: Array<number>, yArray: Array<number>, flipY: boolean) {
+	// Creates a UV map if the grids of a dataset don't increase uniformly
+	const width = xArray.length;
+	const height = yArray.length;
 
-  const normX = normalizeArray(xArray);
-  const normY = normalizeArray(yArray);
+	const normX = normalizeArray(xArray);
+	const normY = normalizeArray(yArray);
 
-  const data = new Float32Array(width * height * 2);
-  let ptr = 0;
-  for (let j = 0; j < height; j++) {
-    const y = normY[j];
-    for (let i = 0; i < width; i++) {
-      const x = normX[i];
-      data[ptr++] = x;
-      data[ptr++] = y;
-    }
-  }
+	const data = new Uint16Array(width * height * 4); //4 for RGBA
+	let ptr = 0;
+	for (let j = 0; j < height; j++) {
+		const y = flipY ? 1 - normY[j] : normY[j];
+		for (let i = 0; i < width; i++) {
+		const x = normX[i];
+		data[ptr++] = THREE.DataUtils.toHalfFloat(x);
+		data[ptr++] = THREE.DataUtils.toHalfFloat(y);
+		data[ptr++] = THREE.DataUtils.toHalfFloat(1.); // Set Valid so can be used in same shader logic
+		ptr++;
+		
+		}
+	}
+	const texture = new THREE.DataTexture(
+		data,
+		width,
+		height,
+		THREE.RGBAFormat,
+		THREE.HalfFloatType
+	);
+	texture.needsUpdate = true;
+	texture.magFilter = THREE.LinearFilter;
+	texture.minFilter = THREE.LinearFilter;
+	texture.wrapS = THREE.ClampToEdgeWrapping;
+	texture.wrapT = THREE.ClampToEdgeWrapping;
 
-  const texture = new THREE.DataTexture(
-    data,
-    width,
-    height,
-    THREE.RGFormat,
-    THREE.FloatType
-  );
-
-  texture.needsUpdate = true;
-  texture.magFilter = THREE.LinearFilter;
-  texture.minFilter = THREE.LinearFilter;
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-
-  return texture;
+	return texture;
 }
 
-export function SetReprojectionTexture(dimArrays: Array<number>[]){
-    const dimCount = dimArrays.length;
+export function setIrregularGridTexture(dimArrays: Array<number>[]){
     const {xIdx, yIdx} = getAxisIndices()
     const xArray = dimArrays[xIdx];
     const yArray = dimArrays[yIdx];
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
     if (isRegular) return;
-    //Dispose of remaptexture if you use this function
-    const remapTexture = createRemapTexture(xArray, yArray);
-    useGlobalStore.setState({remapTexture});
+    //Dispose of remaptexture if exists
+	const {remapTexture, flipY} = useGlobalStore.getState()
+	if (remapTexture) remapTexture.dispose()
+    useGlobalStore.setState({remapTexture: createIrregularUV(xArray, yArray, flipY)});
 }
 
 export function sampleCRS(tex: THREE.DataTexture, u:number, v:number): [THREE.Vector2, boolean] {
@@ -148,7 +149,7 @@ export function reproject(resolution: number = 256){
     if (!nativeCRS || !destCRS) return; // This shouldn't trigger as the button will be disabled for this same condition
     if (!checkProjString(destCRS)) return; // nativeCRS will already be checked when the user sets it, so we don't need to check it here
 
-    const {dimArrays, remapTexture, flipY, dataShape } = useGlobalStore.getState()
+    const {dimArrays, remapTexture, flipY } = useGlobalStore.getState()
     if (remapTexture) remapTexture.dispose();
 
     const {xIdx, yIdx} = getAxisIndices()
@@ -313,4 +314,79 @@ export function reproject(resolution: number = 256){
     })
     ParseExtent(newAxisDimUnits, newAxisDimArrays);
 
+}
+
+export function createInverseUV(
+	xArray: Array<number>,
+	yArray: Array<number>,
+	flipY: boolean,
+	resolution : number
+) {
+	// Creates an inverse UV map: for each normalized (x, y) position,
+	// stores the (i, j) index into xArray/yArray that best matches it.
+	const width = resolution*2; 
+	const height = resolution;
+
+	const normX = normalizeArray(xArray);
+	const normY = normalizeArray(yArray);
+
+	const data = new Uint16Array(width * height * 4); // 4 for RGBA
+	let ptr = 0;
+	for (let j = 0; j < height; j++) {
+		const vRaw = height > 1 ? j / (height - 1) : 0;
+		const v = flipY ? 1 - vRaw : vRaw;
+		const jIdx = findNearestIndex(normY, v);
+		const jNorm = yArray.length > 1 ? jIdx / (yArray.length - 1) : 0;
+
+		for (let i = 0; i < width; i++) {
+			const u = width > 1 ? i / (width - 1) : 0;
+			const iIdx = findNearestIndex(normX, u);
+			const iNorm = xArray.length > 1 ? iIdx / (xArray.length - 1) : 0;
+
+			data[ptr++] = THREE.DataUtils.toHalfFloat(iNorm);
+			data[ptr++] = THREE.DataUtils.toHalfFloat(jNorm);
+			data[ptr++] = THREE.DataUtils.toHalfFloat(1.); // Set Valid so can be used in same shader logic
+			ptr++;
+		}
+	}
+
+	const texture = new THREE.DataTexture(
+		data,
+		width,
+		height,
+		THREE.RGBAFormat,
+		THREE.HalfFloatType
+	);
+	texture.needsUpdate = true;
+	texture.magFilter = THREE.LinearFilter;
+	texture.minFilter = THREE.LinearFilter;
+	texture.wrapS = THREE.ClampToEdgeWrapping;
+	texture.wrapT = THREE.ClampToEdgeWrapping;
+
+	return texture;
+}
+
+// Binary search for the index of the value in a monotonic (increasing or
+// decreasing) array closest to `target`.
+function findNearestIndex(arr: Float32Array, target: number): number {
+	const n = arr.length;
+	if (n === 0) return 0;
+	if (n === 1) return 0;
+
+	const ascending = arr[0] <= arr[n - 1];
+	let lo = 0;
+	let hi = n - 1;
+
+	while (hi - lo > 1) {
+		const mid = (lo + hi) >> 1;
+		const midVal = arr[mid];
+		if (ascending ? midVal < target : midVal > target) {
+			lo = mid;
+		} else {
+			hi = mid;
+		}
+	}
+
+	// lo and hi now bracket target; pick whichever is closer
+	return Math.abs(arr[lo] - target) <= Math.abs(arr[hi] - target) ? lo : hi;
 }

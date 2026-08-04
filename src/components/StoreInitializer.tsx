@@ -11,7 +11,6 @@ import { isRemoteStore } from "@/utils/isRemoteStore";
 import { GetStore } from "./zarr/ZarrLoaderLRU";
 import { useImageExportStore } from "@/GlobalStates/ImageExportStore";
 
-
 export function initializeStore(){
 	const {initStore} = useGlobalStore.getState()
 	const {useNC, ReFetch, setCurrentStore} = useZarrStore.getState()
@@ -105,7 +104,7 @@ function StoreInitializerInner() {
 	if (keyFramesPath){
 		// Fetch JSON 
 		const encodedPath = encodeURIComponent(keyFramesPath);
-		const jsonPath = `${window.location.origin}/file?path=${encodedPath}`;
+		const jsonPath = `file?path=${encodedPath}`;
 		fetch(jsonPath)
 		.then(response => {
 			if (!response.ok) {
@@ -124,7 +123,7 @@ function StoreInitializerInner() {
 		});
   	}
 	// ---- Handle Export ---- //
-	if (exportPlot)useImageExportStore.setState({exportOnLoad:true})
+	if (exportPlot) useImageExportStore.setState({exportOnLoad:true})
 	// ---- Julia fallback ---- //
 	/* Remove this if Julia package does not stay maintained */
 	if (searchParams.get("format") === "nc") useZarrStore.setState({useNC:true});

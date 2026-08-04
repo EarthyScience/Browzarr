@@ -229,6 +229,7 @@ const Plot = () => {
     usePlotStore.setState({rotateFlat: false})
     const { remapTexture } = useGlobalStore.getState();
     if (remapTexture) {
+      console.log("called")
       reproject();
     }
   },[plotType])

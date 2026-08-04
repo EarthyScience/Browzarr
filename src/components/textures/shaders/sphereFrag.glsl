@@ -32,7 +32,6 @@ vec2 giveUV(vec3 position){
     vec3 n = normalize(position);
     float latitude = asin(n.y);
     float longitude = -atan(n.z, n.x);
-
     latitude = (latitude - latBounds.x)/(latBounds.y - latBounds.x);
     longitude = (longitude - lonBounds.x)/(lonBounds.y - lonBounds.x);
 
@@ -97,7 +96,7 @@ void main(){
             }
         #endif
     #endif
-   
+
     if (inBounds) {
         int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
         int yStepSize = int(textureDepths.x); 
@@ -138,5 +137,5 @@ void main(){
         color = vec4(nanColor, 1.);
         color.a = nanAlpha;
     }
-
+    // color = vec4( texCoord.x, 0. , 0., 1.);
 }

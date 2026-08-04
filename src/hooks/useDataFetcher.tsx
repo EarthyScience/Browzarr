@@ -8,7 +8,7 @@ import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
 import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
 import { GetArray } from '@/components/zarr/GetArray';
 import { ArrayToTexture } from '@/components/textures';
-import { SetReprojectionTexture } from '@/components/textures/ProjectionTexture';
+import { setIrregularGridTexture } from '@/components/textures/ProjectionTexture';
 
 export const useDataFetcher = () => {
     const {
@@ -144,7 +144,7 @@ export const useDataFetcher = () => {
                 setFlipY(shouldFlip);
 
                 ParseExtent(dimUnits, dimArrays);
-                SetReprojectionTexture(dimArrays);
+                setIrregularGridTexture(dimArrays);
             });
 
         } else {
