@@ -51,11 +51,12 @@ export const useDataFetcher = () => {
 
     //---- Local State ----//
     const [textures, setTextures] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null);
-    const [show, setShow] = useState<boolean>(true);
+    const [show, setShow] = useState<boolean>(false);
     const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
 
     useEffect(() => {
         if (variable !== "Default") {
+            // Could remove this. But I think it looks better to just wipe then have an empty texture.
             setShow(false);
             try {
                 //---- Texture Cleanup ----//
@@ -69,7 +70,7 @@ export const useDataFetcher = () => {
                     }, 0);
                     setTextures(null);
                 }
-                //----- TS Cleanup ----//
+                //----- TimeSeries Cleanup ----//
                 useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
                 //---- Set Plot Slicez ----//
                 const { setZSlice, setYSlice, setXSlice } = usePlotStore.getState();
@@ -79,6 +80,7 @@ export const useDataFetcher = () => {
 
                 //---- Main Fetch ----//
                 GetArray().then((result) => {
+                    setDataShape(result.shape);
                     const shape = result.shape.filter((val) => val != 1);
                     const activeIndices = result.indices.filter((_, idx) => result.shape[idx] != 1);
                     useGlobalStore.getState().setActiveIndices(activeIndices);
@@ -90,7 +92,7 @@ export const useDataFetcher = () => {
 
                     setTextures(tempTexture);
                     setValueScales(scaling as { maxVal: number; minVal: number });
-                    useGlobalStore.getState().setScalingFactor(result.scalingFactor);
+                    useGlobalStore.setState({scalingFactor: result.scalingFactor});
 
                     const shapeLength = shape.length;
 
@@ -107,12 +109,14 @@ export const useDataFetcher = () => {
                     const timeRatio = shape[shapeLength - 3] / shape[shapeLength - 1];
                     
                     setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio, 2)));
-                    setDataShape(result.shape);
                     
-                    setShow(true);
+
                     setPlotOn(true);
                     setStatus(null);
-                });
+                }).then(()=>
+                    // We don't show/mount any components until all of the essential data has been set
+                    setShow(true)
+                );
             } catch (error) {
                 console.error(error);
                 setStatus(null);

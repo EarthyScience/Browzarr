@@ -317,12 +317,12 @@ const PointOptions = () =>{
 }
 
 const FlatOptions = () =>{
-  const {displacement, displaceSurface, offsetNegatives, rotateFlat,
-    setDisplacement, setDisplaceSurface, setOffsetNegatives,
+  const {displacement, displaceFaces, offsetNegatives, rotateFlat,
+    setDisplacement, setDisplaceFaces, setOffsetNegatives,
     setResetCamera} = usePlotStore(useShallow(state=> ({
-      displacement: state.displacement, displaceSurface: state.displaceSurface,
+      displacement: state.displacement, displaceFaces: state.displaceFaces,
       offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat, setDisplacement: state.setDisplacement,
-      setDisplaceSurface: state.setDisplaceSurface, setOffsetNegatives: state.setOffsetNegatives,
+      setDisplaceFaces: state.setDisplaceFaces, setOffsetNegatives: state.setOffsetNegatives,
       setResetCamera: state.setResetCamera
   })))
    return(
@@ -330,21 +330,21 @@ const FlatOptions = () =>{
    <div className='grid gap-2 mb-2'>
     <div 
       className='relative w-full text-center h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
-      onClick={() => {if (!displaceSurface){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceSurface(!displaceSurface); usePlotStore.setState({rotateFlat: false}) }}  
+      onClick={() => {if (!displaceFaces){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceFaces(!displaceFaces); usePlotStore.setState({rotateFlat: false}) }}  
     >
-      <span className={`z-10 font-semibold transition-colors ${displaceSurface ? 'text-primary' : 'text-secondary'}`}>
+      <span className={`z-10 font-semibold transition-colors ${displaceFaces ? 'text-primary' : 'text-secondary'}`}>
         Flat
       </span>
-      <span className={`z-10 font-semibold transition-colors ${!displaceSurface ? 'text-primary' : 'text-secondary'}`}>
+      <span className={`z-10 font-semibold transition-colors ${!displaceFaces ? 'text-primary' : 'text-secondary'}`}>
         Displace
       </span>
       <div 
         className={`absolute top-1 h-8 w-[calc(50%-8px)] bg-secondary shadow-xs hover:bg-secondary/80 rounded-full transition-all duration-300 ${
-          displaceSurface ? 'left-1' : 'left-[calc(50%+4px)]'
+          displaceFaces ? 'left-1' : 'left-[calc(50%+4px)]'
         }`}
       />
     </div>
-    <Hider show={!displaceSurface}>
+    <Hider show={!displaceFaces}>
       <div className='grid gap-2'>
 
         <b>Displacement</b>
@@ -371,15 +371,15 @@ const FlatOptions = () =>{
 }
 
 const SphereOptions = () =>{
-  const {sphereResolution, displacement, displaceSurface, offsetNegatives,
-    setSphereResolution, setDisplacement, setDisplaceSurface, setOffsetNegatives} = usePlotStore(useShallow(state => ({
+  const {sphereResolution, displacement, displaceFaces, offsetNegatives,
+    setSphereResolution, setDisplacement, setDisplaceFaces, setOffsetNegatives} = usePlotStore(useShallow(state => ({
     sphereResolution: state.sphereResolution,
     displacement: state.displacement,
-    displaceSurface: state.displaceSurface,
+    displaceFaces: state.displaceFaces,
     offsetNegatives: state.offsetNegatives,
     setSphereResolution: state.setSphereResolution,
     setDisplacement: state.setDisplacement,
-    setDisplaceSurface: state.setDisplaceSurface,
+    setDisplaceFaces: state.setDisplaceFaces,
     setOffsetNegatives: state.setOffsetNegatives
   })))
   const maxSurfaceDisp = 2;
@@ -388,39 +388,30 @@ const SphereOptions = () =>{
   return(<>
   <div className='grid gap-y-[5px] items-center w-50 text-center mb-2'>
     <b>Displacement Mode</b>
-    <div 
-      className='relative w-full h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
-      onClick={() => {setDisplaceSurface(!displaceSurface); setDisplacement(displacement * (displaceSurface ? maxFaceDisplacement/maxSurfaceDisp : maxSurfaceDisp/maxFaceDisplacement))}}  
-    >
-      <span className={`z-10 font-semibold transition-colors ${displaceSurface ? 'text-primary' : 'text-secondary'}`}>
-        Surface
-      </span>
-      <span className={`z-10 font-semibold transition-colors ${!displaceSurface ? 'text-primary' : 'text-secondary'}`}>
-        Faces
-      </span>
-      <div 
-        className={`absolute top-1 h-8 w-[calc(50%-8px)] bg-secondary shadow-xs hover:bg-secondary/80 rounded-full transition-all duration-300 ${
-          displaceSurface ? 'left-1' : 'left-[calc(50%+4px)]'
-        }`}
-      />
-    </div>
+    <Switcher 
+      leftText='Surface' 
+      rightText='Faces' state={!displaceFaces} 
+      onClick={() => {
+        setDisplaceFaces(!displaceFaces); 
+        setDisplacement(displacement * (!displaceFaces ? maxFaceDisplacement/maxSurfaceDisp : maxSurfaceDisp/maxFaceDisplacement))}}
+    />
     
     <b>Displacement</b>
     <UISlider
       min={0}
-      max={displaceSurface ? maxSurfaceDisp : maxFaceDisplacement}
+      max={!displaceFaces ? maxSurfaceDisp : maxFaceDisplacement}
       step={0.2}
       value={[displacement]}
       className='w-full mb-2'
       onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
     />
-    {!displaceSurface && 
+    {!displaceFaces && 
     <div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
       <label htmlFor="offset-switch">Offset Negatives</label>
       <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
     </div>
     }
-    {displaceSurface && <>
+    {displaceFaces && <>
       <b>Displacement Resolution</b>
       <UISlider
         min={4}
@@ -652,7 +643,7 @@ function resetViz(){
     vTransferScale: 1,
     sphereResolution: 10,
     displacement: 0,
-    displaceSurface: true,
+    displaceFaces: true,
     fillValue: undefined, 
     maskValue: 0,
     disablePointScale: false,

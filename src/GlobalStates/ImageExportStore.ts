@@ -34,6 +34,7 @@ type ImageExportState = {
   cameraRef: React.RefObject<THREE.Camera | null> | null
   currentFrame: number;
   previewExtent: boolean;
+  exportOnLoad: boolean;
 
   ExportImg: () => void;
   EnableExport: () => void;
@@ -108,6 +109,7 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   currentFrame: 1,
   cameraRef: null,
   previewExtent: false,
+  exportOnLoad: false,
   
   setCameraRef: (ref) => set({ cameraRef: ref }),
 

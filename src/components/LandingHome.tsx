@@ -3,16 +3,13 @@ import * as THREE from 'three'
 THREE.Cache.enabled = true;
 import { GetZarrMetadata, GetTitleDescription } from '@/components/zarr/ZarrLoaderLRU';
 import { GetVariableNames } from './zarr/utils';
-import { GetStore } from '@/components/zarr/ZarrLoaderLRU';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
 import { MainPanel } from '@/components/ui';
 import { Loading, Error as ErrorComponent } from '@/components/ui';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
-import { loadNetCDF, NETCDF_EXT_REGEX } from '@/utils/loadNetCDF';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
 
 async function sendPing() {
   const url = "https://www.bgc-jena.mpg.de/~jpoehls/browzarr/visitor_logger.php";
@@ -26,13 +23,11 @@ async function sendPing() {
 
 export function LandingHome() {
   const {
-    initStore, timeSeries, variable, storeFromURL,
+    timeSeries, variable,
     setZMeta, setVariables, setTitleDescription, setOpenVariables, setStoreFromURL,
   } = useGlobalStore(useShallow(state => ({
-    initStore: state.initStore,
     timeSeries: state.timeSeries,
     variable: state.variable,
-    storeFromURL: state.storeFromURL,
     setZMeta: state.setZMeta,
     setVariables: state.setVariables,
     setTitleDescription: state.setTitleDescription,
@@ -40,64 +35,15 @@ export function LandingHome() {
     setStoreFromURL: state.setStoreFromURL,
   })))
 
-  const { currentStore, fetchKey,
-    setCurrentStore, setZSlice, setYSlice, setXSlice, setUseNC 
+  const { currentStore, useNC,
   } = useZarrStore(useShallow(state => ({
     currentStore: state.currentStore,
-    fetchKey: state.fetchKey,
-    setCurrentStore: state.setCurrentStore,
-    setZSlice: state.setZSlice,
-    setYSlice: state.setYSlice,
-    setXSlice: state.setXSlice,
-    setUseNC: state.setUseNC
+    useNC: state.useNC,
   })))
 
   useEffect(() => {
-    void fetchKey;
-    setZSlice([0, null]);
-    setYSlice([0, null]);
-    setXSlice([0, null]);
-    if (initStore.startsWith('local:')) {
-      const path = initStore.replace('local:', '');
-      if (!NETCDF_EXT_REGEX.test(path)) return;
-      const filename = path.split('/').pop() ?? 'file.nc';
-      fetch(`/file?path=${encodeURIComponent(path)}`)
-        .then(res => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.blob();
-        })
-        .then(async blob => {
-          await loadNetCDF(blob, filename);
-          if (storeFromURL) {
-            setOpenVariables(true);
-            setStoreFromURL(false);
-          }
-          return;
-        })
-        .catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
-      return;
-    }
-    if (initStore.startsWith('local')) return; // local_ set by LocalNetCDF/LocalZarr after load
-    setUseNC(false)
-    const { icechunkOptions, fetchOptions } = useZarrStore.getState();
-    const newStore = GetStore(
-      initStore,
-      fetchOptions   ?? undefined,
-      icechunkOptions ?? undefined
-    );
-    setCurrentStore(newStore);
-    // Clear after use
-    const {remapTexture} = useGlobalStore.getState();
-    if (remapTexture) remapTexture.dispose();
-    useZarrStore.setState({icechunkOptions: null, fetchOptions:null});
-    useGlobalStore.setState({remapTexture: undefined });
-    usePlotStore.setState({nativeCRS:undefined, destCRS:undefined});
-  }, [initStore, fetchKey, setCurrentStore, setUseNC, setZSlice, setYSlice, setXSlice, storeFromURL, setOpenVariables, setStoreFromURL]);
-
-  useEffect(() => {
-    const { initStore } = useGlobalStore.getState();
-    if (initStore.startsWith('local:')) return;
-
+    // LocalNetCDF --> loadNetCDF grabs metadata during loading. Maybe move this logic to GetStore. 
+    if (useNC) return;
     let isMounted = true;
     const activeStore = currentStore;
 
@@ -121,7 +67,6 @@ export function LandingHome() {
         }
       }
     });
-
     return () => {
       isMounted = false;
     };

@@ -29,20 +29,25 @@ const TransectNotice = () =>{
 }
 
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
-  const {resetCamera, useOrtho, displaceSurface, cameraPosition} = usePlotStore(useShallow(state => ({
+  const {resetCamera, useOrtho, displaceFaces, cameraPosition, overRideCamera} = usePlotStore(useShallow(state => ({
       resetCamera: state.resetCamera,
       useOrtho: state.useOrtho,
-      displaceSurface: state.displaceSurface,
-      cameraPosition:state.cameraPosition
+      displaceFaces: state.displaceFaces,
+      cameraPosition:state.cameraPosition,
+      overRideCamera: state.overRideCamera
     })))
   const {setCameraRef} = useImageExportStore(useShallow(state=>({setCameraRef:state.setCameraRef})))
   const orbitRef = useRef<OrbitControlsImpl | null>(null)
   const hasMounted = useRef(false);
   const cameraRef = useRef<THREE.Camera | null>(null)
   const {set, camera, size} = useThree()
-
   // Reset Camera Position and Target
   useEffect(()=>{
+    /* cameraPosition from StoreInitializer is set before this component is mounted. 
+    /* overRideCamera is set when Browzarr is accessed via code. On this component mount, setCameraPosition
+    /* sets the cameraPosition based either on value from code or default. Then overRideCamera
+    /* is disabled and reset can function normally */
+    if (overRideCamera) return;
     if (!hasMounted.current) {
       hasMounted.current = true;
       return; // skip reset when changing between flat or not flat cameras
@@ -78,7 +83,6 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       };
 
       frameId = requestAnimationFrame(animate);
-
       return () => cancelAnimationFrame(frameId);
     }
   },[resetCamera, isFlat])
@@ -138,6 +142,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       controls.enableDamping = wasDamping
       invalidate()
     }
+    usePlotStore.setState({overRideCamera: false}) // Allow camera updating
   },[cameraPosition])
 
   // ---- Camera Ref for state saves ---- //
@@ -151,7 +156,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   return (
     <OrbitControls 
       ref={orbitRef} 
-      enableRotate={!isFlat || !useOrtho || !displaceSurface} 
+      enableRotate={!isFlat || !useOrtho || !displaceFaces} 
       enablePan={true} 
       maxDistance={50}
       minZoom={1} 
@@ -159,6 +164,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
     />
   );
 }
+
+const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
   const {colormap, isFlat, DPR, valueScales, setIsFlat, dataShape} = useGlobalStore(useShallow(state=>({
@@ -170,9 +177,9 @@ const Plot = () => {
     dataShape: state.dataShape,
   })))
   const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
-  const {plotType, displaceSurface, setPlotType} = usePlotStore(useShallow(state => ({
+  const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(state => ({
     plotType: state.plotType,
-    displaceSurface: state.displaceSurface,
+    displaceFaces: state.displaceFaces,
     setPlotType: state.setPlotType,
   })))
   const {analysisMode, useEditor} = useAnalysisStore(useShallow(state => ({
@@ -189,7 +196,7 @@ const Plot = () => {
   const {textures, show, stableMetadata, setTextures} = useDataFetcher()
   
   useEffect(()=>{
-    if (analysisMode) return;
+    if (analysisMode || !show) return;
     const isEffectivelyFlat = dataShape.length === 2 || (dataShape.length === 3 && dataShape.includes(1));
     if (isEffectivelyFlat && plotType != "flat" && plotType != "sphere"){
       setPlotType("flat")
@@ -198,7 +205,7 @@ const Plot = () => {
       setPlotType("volume")
       setIsFlat(false)
     }
-  },[dataShape, analysisMode])
+  },[analysisMode])
 
   useEffect(()=>{ // Reset after analysis mode
     if(!analysisMode && show){
@@ -268,13 +275,13 @@ const Plot = () => {
         }
         {plotType == "sphere" && show && 
           <>
-            {displaceSurface ? <Sphere textures={textures} /> : <SphereBlocks textures={textures} />}
+            {displaceFaces ? <SphereBlocks textures={textures} /> : <Sphere textures={textures} /> }
           </>
         }
-        <Orbiter isFlat={plotType == "flat"} />
+        <MemoOrbit isFlat={plotType == "flat"} />
         {plotType == "flat" && show && <>
-          {displaceSurface && <FlatMap textures={textures as THREE.DataTexture[] | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
-          {!displaceSurface && <FlatBlocks textures={textures} />}
+          {!displaceFaces && <FlatMap textures={textures as THREE.DataTexture[] | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
+          {displaceFaces && <FlatBlocks textures={textures} />}
         </>
         }
 

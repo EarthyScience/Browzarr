@@ -11,17 +11,17 @@ import { Button } from "@/components/ui/button-enhanced"
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
 const PlotLineButton = () => {
-    const {selectTS, resetAnim, animate, displaceSurface, setSelectTS, setResetAnim} = usePlotStore(useShallow(state => ({
+    const {selectTS, resetAnim, animate, displaceFaces, setSelectTS, setResetAnim} = usePlotStore(useShallow(state => ({
         selectTS: state.selectTS,
         resetAnim: state.resetAnim,
         animate: state.animate,
         plotType: state.plotType,
-        displaceSurface: state.displaceSurface,
+        displaceFaces: state.displaceFaces,
         setSelectTS: state.setSelectTS,
         setResetAnim: state.setResetAnim
     })))
     const {isFlat} = useGlobalStore(useShallow(state => ({isFlat: state.isFlat})))
-    const exception = !displaceSurface || isFlat
+    const exception = !displaceFaces || isFlat
     const {setError} = useErrorStore.getState()
     useEffect(()=>{//Disable TS mode if switching to Flat mode and already enabled
       if (isFlat && selectTS){
@@ -32,7 +32,7 @@ const PlotLineButton = () => {
     const tooltipMsg = () =>{
       if (isFlat){
         return "Data is flat. No timeseries available"
-      } else if (!displaceSurface){
+      } else if (!displaceFaces){
         return "Transect select doesn't work when using instancing (Displacement of faces)"
       } else{
         return "While active, click the volume to view 1D transects through the given dimension."

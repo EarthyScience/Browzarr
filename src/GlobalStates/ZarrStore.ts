@@ -13,7 +13,6 @@ type ZarrState = {
   currentChunks: {x:number[], y:number[], z:number[]};
   arraySize: number,
   useNC: boolean, // This one is more static and so toggling switch doesn't break all other logic
-  fetchNC: boolean,
   ncModule: any,
   coarsen: boolean,
   kernelSize: number,
@@ -39,7 +38,6 @@ type ZarrState = {
   setCurrentChunks: (currentChunks: {x:number[], y:number[], z:number[]}) => void;
   setArraySize: (arraySize: number) => void;
   setUseNC: (useNC: boolean) => void;
-  setFetchNC: (fetchNC: boolean) => void;
   setCoarsen: (coarsen: boolean) => void;
   setKernelSize: (kernelSize: number) => void;
   setKernelDepth: (kernelDepth: number) => void;
@@ -61,7 +59,6 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   currentChunks: {x:[], y:[], z:[]},
   arraySize: 0,
   useNC: false,
-  fetchNC: false,
   ncModule: null,
   coarsen: false,
   kernelSize: 2,
@@ -84,7 +81,6 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   setCurrentChunks: (currentChunks) => set({ currentChunks }),
   setArraySize: (arraySize) => set({ arraySize }),
   setUseNC: (useNC) => set({ useNC }),
-  setFetchNC: (fetchNC) => set({ fetchNC }),
   setCoarsen: (coarsen) => set({ coarsen }),
   setKernelSize: (kernelSize) => set({ kernelSize }),
   setKernelDepth: (kernelDepth) => set({ kernelDepth }),

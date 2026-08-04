@@ -226,12 +226,12 @@ async function DrawTextOverlay(
 
 const ExportCanvas = ({show}:{show: boolean}) => {
     const {exportImg, enableExport, animate, frames, frameRate, useTime, timeRate, orbit, orbitDeg, orbitDir, loopTime,
-        preview, useCustomRes, customRes, doubleSize, setHideAxis, setHideAxisControls
+        preview, useCustomRes, customRes, doubleSize, exportOnLoad, setHideAxis, setHideAxisControls
     } = useImageExportStore(useShallow(state => ({
         exportImg: state.exportImg, enableExport:state.enableExport, animate:state.animate,
         frames:state.frames, frameRate:state.frameRate, useTime:state.useTime, timeRate:state.timeRate,
         orbit:state.orbit, orbitDeg:state.orbitDeg, orbitDir:state.orbitDir, loopTime:state.loopTime, preview:state.preview, 
-        useCustomRes:state.useCustomRes, customRes:state.customRes, doubleSize:state.doubleSize, 
+        useCustomRes:state.useCustomRes, customRes:state.customRes, doubleSize:state.doubleSize, exportOnLoad: state.exportOnLoad,
         setHideAxis:state.setHideAxis, setHideAxisControls:state.setHideAxisControls
     })))
     const {setAnimProg, setQuality} = usePlotStore.getState()
@@ -244,6 +244,16 @@ const ExportCanvas = ({show}:{show: boolean}) => {
     const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const ffmpegRef = useRef(new FFmpeg());
 
+    useEffect(()=>{
+        //The first time show is true, this will trigger an export if coming from code
+        if (show && exportOnLoad){
+            useImageExportStore.setState({
+                enableExport: true,
+                exportImg: !exportImg,
+                exportOnLoad: false
+            })
+        }
+    },[show])
     useEffect(()=>{   
         if (!show || !enableExport) return;
         const {animProg} = usePlotStore.getState()
