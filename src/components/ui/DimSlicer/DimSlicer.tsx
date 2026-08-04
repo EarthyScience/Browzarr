@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Trash2 } from 'lucide-react';
 import {
@@ -10,7 +10,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { DimSlicerAxisToggle } from './DimSlicerAxisToggle';
 import { DimSlicerModeToggle } from './DimSlicerModeToggle';
 import { DimSlicerNumericControl } from './DimSlicerNumericControl';
 import { DimSlicerTimeControl } from './DimSlicerTimeControl';
@@ -62,7 +61,7 @@ export interface DimSlicerProps {
   allowedAxes?: Axis[];
 }
 
-const DimSlicer: React.FC<DimSlicerProps> = ({
+const DimSlicerComponent: React.FC<DimSlicerProps> = ({
   availableDims,
   dimName,
   onDimChange,
@@ -78,7 +77,6 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   lockMode,
   allowedAxes,
 }) => {
-  // const [currentAxis, setCurrentAxis] = useState<Axis>(propAxis);
   const effectiveDimSize = values ? values.length : dimSize;
   const rawSel = selection ?? defaultSelection(effectiveDimSize);
   const sel = lockMode ? { ...rawSel, mode: lockMode } : rawSel;
@@ -148,7 +146,9 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
     [values, effectiveDimSize, formatValue]
   );
 
-  const isTimeDimension = dimName.toLowerCase().includes('time');
+  const isTimeDimension =
+    /time|date|hour|hr|step|lead|period/i.test(dimName) ||
+    Boolean(values && values.length > 0 && formatValue && /\b(h|hr|hrs|hours|min|sec|s|d|days|ms|since)\b/i.test(formatValue(values[0]) || ''));
   const isDateDimension = isTimeDimension || dimName.toLowerCase().includes('date');
   const showTimeControls = Boolean(values && isTimeDimension);
 
@@ -404,5 +404,5 @@ const DimSlicer: React.FC<DimSlicerProps> = ({
   );
 };
 
-export { DimSlicer };
+export const DimSlicer = React.memo(DimSlicerComponent);
 export default DimSlicer;
