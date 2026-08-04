@@ -20,8 +20,7 @@ export function checkProjString(projString: string){
 }
 
 export function resetProjection(){
-    const {dimArrays, dimNames, dimUnits, shape, remapTexture} = useGlobalStore.getState()
-    if (remapTexture) remapTexture.dispose()
+    const {dimArrays, dimNames, dimUnits, shape} = useGlobalStore.getState()
     const {xSlice, ySlice} = useZarrStore.getState()
     const {xIdx, yIdx} = getAxisIndices()
 
@@ -30,13 +29,12 @@ export function resetProjection(){
     const aspectRatio = xLength/yLength;
     const newShape = new THREE.Vector3().copy(shape)
     newShape.y = 2/aspectRatio;
-    
+    setIrregularGridTexture(dimArrays)
     useGlobalStore.setState({
         axisDimArrays: dimArrays,
         axisDimUnits: dimUnits,
         axisDimNames: dimNames,
         shape: newShape,
-        remapTexture: undefined
     })
     usePlotStore.setState({
         xSlice, 
@@ -45,7 +43,7 @@ export function resetProjection(){
 
 }
 
-function normalizeArray(array: Array<number>){
+function normalizeArray(array: number[] ): number[]{
     const len = array.length;
     let min = Infinity;
     let max = -Infinity;
@@ -56,14 +54,14 @@ function normalizeArray(array: Array<number>){
     }
     const range = max - min;
     const scaler = range === 0 ? 0 : 1 / range;
-    const out = new Float32Array(len);
+    const out = new Array<number>(len);
     for (let i = 0; i < array.length; i++){
         out[i] = (array[i]-min)* scaler;
     }
     return out;
 }
 
-function isUniformStep(array: Array<number>): boolean {
+function isUniformStep(array: number[]): boolean {
     const len = array.length;
     if (len < 3) return true; // any 0–2 element array trivially qualifies
     const step = array[1] - array[0];
@@ -77,7 +75,7 @@ function isUniformStep(array: Array<number>): boolean {
     return true;
 }
 
-function createIrregularUV(xArray: Array<number>, yArray: Array<number>, flipY: boolean) {
+function createIrregularUV(xArray: number[], yArray: number[], flipY: boolean) {
 	// Creates a UV map if the grids of a dataset don't increase uniformly
 	const width = xArray.length;
 	const height = yArray.length;
@@ -116,14 +114,17 @@ function createIrregularUV(xArray: Array<number>, yArray: Array<number>, flipY: 
 
 export function setIrregularGridTexture(dimArrays: Array<number>[]){
     const {xIdx, yIdx} = getAxisIndices()
+	const {remapTexture, flipY} = useGlobalStore.getState();
+	if (remapTexture) remapTexture.dispose();
     const xArray = dimArrays[xIdx];
     const yArray = dimArrays[yIdx];
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
     if (isRegular) return;
     //Dispose of remaptexture if exists
-	const {remapTexture, flipY} = useGlobalStore.getState()
-	if (remapTexture) remapTexture.dispose()
-    useGlobalStore.setState({remapTexture: createIrregularUV(xArray, yArray, flipY)});
+	const {plotType} = usePlotStore.getState();
+	const isSphere = plotType == 'sphere';
+	const texture = isSphere ? createInverseUV(xArray, yArray, flipY, 2048) :  createIrregularUV(xArray, yArray, flipY)
+    useGlobalStore.setState({remapTexture:texture});
 }
 
 export function sampleCRS(tex: THREE.DataTexture, u:number, v:number): [THREE.Vector2, boolean] {
@@ -145,26 +146,35 @@ export function sampleCRS(tex: THREE.DataTexture, u:number, v:number): [THREE.Ve
 }
 
 export function reproject(resolution: number = 256){
-    const {nativeCRS, destCRS, plotType} = usePlotStore.getState()
-    if (!nativeCRS || !destCRS) return; // This shouldn't trigger as the button will be disabled for this same condition
-    if (!checkProjString(destCRS)) return; // nativeCRS will already be checked when the user sets it, so we don't need to check it here
+    const {nativeCRS, destCRS, plotType, is360Deg} = usePlotStore.getState()
+	const {dimArrays, remapTexture, flipY } = useGlobalStore.getState()
+	const insufficientCRS = !nativeCRS || !destCRS
 
-    const {dimArrays, remapTexture, flipY } = useGlobalStore.getState()
+	if (remapTexture && insufficientCRS){
+		// If remapTexture already exists but not nativeCRS then this could be from irregular grid. In that case remake irrgular grid when CRS are missing
+		// Will be disposesd in setIrregularGridTexture
+		setIrregularGridTexture(dimArrays)
+		return;
+	}
+    if (insufficientCRS) return; 
+    if (!checkProjString(destCRS) || !checkProjString(destCRS)) return; 
     if (remapTexture) remapTexture.dispose();
 
     const {xIdx, yIdx} = getAxisIndices()
-    const xArray = dimArrays[xIdx];
+    let xArray = dimArrays[xIdx] as number[];
     const yArray = dimArrays[yIdx];
     const width = xArray.length;
     const height = yArray.length;
 
-
+	if (is360Deg) {
+		xArray = remap360to180Monotonic(xArray) 
+	}
     const [xMin, xMax] = ArrayMinMax(xArray);
     const [yMin, yMax] = ArrayMinMax(yArray);
     // We need the border points as the min/max of the old CRS won't always be the min/max of the new CRS
+	
     const boundaryPoints: [number, number][] = [];
-
-    
+	
     for (let i = 0; i < width; i++) {
         boundaryPoints.push([xArray[i], yArray[0]]);
     }
@@ -183,12 +193,12 @@ export function reproject(resolution: number = 256){
     let [maxX, maxY] = [-Infinity, -Infinity];
 
     // Get min/max of new CRS for new Axis'
-    for (const [lon, lat] of boundaryPoints) {
-        const [px, py] = proj.forward([lon, lat]);
+    for (const [x, y] of boundaryPoints) {
+        const [px, py] = proj.forward([x, y]);
         minX = Math.min(minX, px); maxX = Math.max(maxX, px);
         minY = Math.min(minY, py); maxY = Math.max(maxY, py);
     }    
- 
+	
     const xDiff = Math.abs(maxX - minX);
     const yDiff = Math.abs(maxY - minY);
     const aspectRatio = yDiff > 0 ? xDiff / yDiff : 1;
@@ -242,8 +252,17 @@ export function reproject(resolution: number = 256){
     } else {
         targetWidth = Math.ceil(adjustedResolution * aspectRatio);
         targetHeight = adjustedResolution;
-        xTicks = linspace(minX, maxX, targetWidth);
-        yTicks = flipY ? linspace(maxY, minY, targetHeight) : linspace(minY, maxY, targetHeight);
+        xTicks = isUniformStep(xArray) 
+			? linspace(minX, maxX, targetWidth) 
+			: irregularTicks(minX, maxX, targetWidth, normalizeArray(xArray) as unknown as number[]);
+
+        yTicks = flipY 
+		?(isUniformStep(yArray) 
+			? linspace(maxY, minY, targetHeight)
+			:  irregularTicks(maxY, minY, targetHeight, normalizeArray(yArray) as unknown as number[]))
+		:(isUniformStep(yArray) 
+			? linspace(minY, maxY, targetHeight)
+			: irregularTicks(minY, maxY, targetHeight, normalizeArray(yArray) as unknown as number[]));
 
         // Detect if coordinate axes are descending
         const isXDescending = xArray.length > 1 ? xArray[0] > xArray[xArray.length - 1] : false;
@@ -262,7 +281,7 @@ export function reproject(resolution: number = 256){
                 const validVal = (valid === 1 && inBounds) ? 1 : 0;
 
                 const idx = (j * targetWidth + i) * 4;
-                data[idx]     = THREE.DataUtils.toHalfFloat(u);  
+                data[idx]     = THREE.DataUtils.toHalfFloat(u); 
                 data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
                 data[idx + 2] = THREE.DataUtils.toHalfFloat(validVal);
             }  
@@ -368,7 +387,7 @@ export function createInverseUV(
 
 // Binary search for the index of the value in a monotonic (increasing or
 // decreasing) array closest to `target`.
-function findNearestIndex(arr: Float32Array, target: number): number {
+function findNearestIndex(arr: number[], target: number): number {
 	const n = arr.length;
 	if (n === 0) return 0;
 	if (n === 1) return 0;
@@ -389,4 +408,42 @@ function findNearestIndex(arr: Float32Array, target: number): number {
 
 	// lo and hi now bracket target; pick whichever is closer
 	return Math.abs(arr[lo] - target) <= Math.abs(arr[hi] - target) ? lo : hi;
+}
+
+function remap360to180Monotonic(arr: number[]) {
+    const wrapped = arr.map(v => ((v + 180) % 360 + 360) % 360 - 180);
+    const sorted = wrapped.sort((a, b) => a - b);
+
+    return sorted;
+}
+
+function resampleLinear(data: number[], newLength: number): number[] {
+  const oldLength = data.length;
+  const result = []
+  // Maps output index range [0, newLength - 1] onto input index range [0, oldLength - 1]
+  const scale = (oldLength - 1) / (newLength - 1);
+
+  for (let i = 0; i < newLength; i++) {
+    const inPos = i * scale;
+    const lowerIdx = Math.floor(inPos);
+    const upperIdx = Math.min(lowerIdx + 1, oldLength - 1);
+    const frac = inPos - lowerIdx;
+
+    result[i] = data[lowerIdx] * (1 - frac) + data[upperIdx] * frac;
+  }
+
+  return result;
+}
+
+function irregularTicks(maxVal: number, minVal: number, resolution: number, normalizedArray: number[]){
+	// Takes an irregular array from [0, 1] and mixes that with min/max 
+	const newFracs = resampleLinear(normalizedArray, resolution)
+	const newTicks = []
+	for (let i = 0; i < resolution; i++){
+		const maxFrac = newFracs[i]
+		const minFrac = 1 - maxFrac
+		const tick = minVal * minFrac + maxVal * maxFrac
+		newTicks.push(tick)
+	}
+	return newTicks
 }
