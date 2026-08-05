@@ -68,6 +68,8 @@ type PlotState ={
   nativeCRS: string | undefined;
   destCRS: string | undefined;
   overRideCamera: boolean; // Prevent Camera from resetting until initial position is set. 
+  irregularX: number[] | undefined, // Use for getting pixel information
+  irregularY: number[] | undefined,
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -195,6 +197,8 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   nativeCRS: undefined,
   destCRS: undefined,
   overRideCamera: false,
+  irregularX: undefined,
+  irregularY: undefined,
 
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),

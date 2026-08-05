@@ -3,7 +3,6 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { ArrayMinMax, linspace, ParseExtent } from '@/utils/HelperFuncs';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import * as THREE from 'three';
-
 import proj4 from 'proj4';
 import { getAxisIndices } from '@/hooks/useAxisIndices';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
@@ -42,8 +41,7 @@ export function resetProjection(){
 
 }
 
-function normalizePixels(array: number[], min?: number, max?: number): number[]{
-    // Normalizes an array to the range [0.5/len, 1-1/len] for use in pixel sampling
+function normalizeArray(array: number[], min?: number, max?: number): number[]{
     const len = array.length;
     if (!min || !max){
         min = Infinity, max = -Infinity;
@@ -52,26 +50,6 @@ function normalizePixels(array: number[], min?: number, max?: number): number[]{
             if (v < min) min = v;
             if (v > max) max = v;
         }
-    }
-    const range = max - min;
-    const out = new Array<number>(len);
-    const half = 0.5 / len;
-    const span = 1 - 1 / len;
-    for (let i = 0; i < len; i++) {
-        const t = range === 0 ? 0 : (array[i] - min) / range; 
-        out[i] = half + t * span;
-    }
-    return out;
-}
-
-function normalizeArray(array: number[] ): number[]{
-    const len = array.length;
-    let min = Infinity;
-    let max = -Infinity;
-    for (let i = 0; i < len; i++){
-        const v = array[i];
-        if (v < min) min = v;
-        if (v > max) max = v;
     }
     const range = max - min;
     const scaler = range === 0 ? 0 : 1 / range;
@@ -101,15 +79,21 @@ function createIrregularUV(xArray: number[], yArray: number[], flipY: boolean) {
 	const width = xArray.length;
 	const height = yArray.length;
 
-	const normX = normalizePixels(xArray);
-	const normY = normalizePixels(yArray);
-
-	const data = new Uint16Array(width * height * 4); //4 for RGBA
+	const normX = normalizeArray(xArray);
+	const normY = normalizeArray(yArray);
+    usePlotStore.setState({
+        irregularX: normX,
+        irregularY: normY
+    })
+	const data = new Uint16Array((width) * (height) * 4); //4 for RGBA
+    const xStep = 0.5/width;
+    const yStep = 0.5/height;
 	let ptr = 0;
 	for (let j = 0; j < height; j++) {
-		const y = flipY ? 1 - normY[j] : normY[j];
+		let y = flipY ? 1 - normY[j] : normY[j];
+        y += yStep;
 		for (let i = 0; i < width; i++) {
-		const x = normX[i];
+		const x = normX[i] + xStep;
 		data[ptr++] = THREE.DataUtils.toHalfFloat(x);
 		data[ptr++] = THREE.DataUtils.toHalfFloat(y);
 		data[ptr++] = THREE.DataUtils.toHalfFloat(1.); // Set Valid so can be used in same shader logic
@@ -146,8 +130,8 @@ export function createInverseUV(
 	const height = resolution;
 
     //We assume all irregular grids are in degrees for now. 
-	const normX = normalizePixels(xArray, is360? 0 : -180 , is360 ? 360 : 180);
-	const normY = normalizePixels(yArray, -90, 90);
+	const normX = normalizeArray(xArray, is360? 0 : -180 , is360 ? 360 : 180);
+	const normY = normalizeArray(yArray, -90, 90);
 
 	const data = new Uint16Array(width * height * 4); // 4 for RGBA
 	let ptr = 0;
@@ -207,8 +191,8 @@ export function sampleCRS(tex: THREE.DataTexture, u:number, v:number): [THREE.Ve
   const { data, width, height } = tex.image;
   if (!data) return [new THREE.Vector2(u, v), true];
 
-  const x = Math.floor(u * (width - 1));
-  const y = Math.floor(v * (height - 1));
+  const x = Math.round((u ) * (width - 0.5));
+  const y = Math.round((v ) * (height - 0.5));
 
   const idx = (y * width + x) * 4; // RGBA
   const newU = THREE.DataUtils.fromHalfFloat(data[idx + 0])
@@ -221,11 +205,11 @@ export function sampleCRS(tex: THREE.DataTexture, u:number, v:number): [THREE.Ve
 }
 
 export function reproject(resolution: number = 256){
-    const {nativeCRS, destCRS, plotType, is360Deg} = usePlotStore.getState()
+    const {nativeCRS, destCRS, plotType, is360Deg, irregularX, irregularY} = usePlotStore.getState()
 	const {dimArrays, remapTexture, flipY } = useGlobalStore.getState()
 	const insufficientCRS = !nativeCRS || !destCRS
 
-	if (remapTexture && insufficientCRS){
+	if ((remapTexture && insufficientCRS) || plotType == 'sphere'){
 		// If remapTexture already exists but not CRS then this could be from irregular grid. In that case remake irrgular grid when CRS are missing
 		// Texture will be disposesd in setIrregularGridTexture
 		setIrregularGridTexture(dimArrays)
@@ -233,7 +217,6 @@ export function reproject(resolution: number = 256){
 	}
     if (insufficientCRS) return; 
     if (!checkProjString(destCRS) || !checkProjString(destCRS)) return; 
-    if (remapTexture) remapTexture.dispose();
 
     const {xIdx, yIdx} = getAxisIndices()
     let xArray = dimArrays[xIdx] as number[];
@@ -312,11 +295,11 @@ export function reproject(resolution: number = 256){
         const yDiff = Math.abs(maxY - minY);
 
         for (let j = 0; j < targetHeight; j++) {
-            const lat = yArray[j];
+            const y = yArray[j];
             for (let i = 0; i < targetWidth; i++) {
-                const lon = xArray[i];
-                const [px, py] = proj.forward([lon, lat]);
-                const valid = (isFinite(px) && isFinite(py)) ? 1 : 0;
+                const x = xArray[i];
+                const [px, py] = proj.forward([x, y]);
+                const valid = Number(isFinite(px) && isFinite(py))
 
                 const u = (px - minX) / xDiff;
                 const v = (py - minY) / yDiff;
@@ -330,41 +313,38 @@ export function reproject(resolution: number = 256){
     } else {
         targetWidth = Math.ceil(adjustedResolution * aspectRatio);
         targetHeight = adjustedResolution;
-        xTicks = isUniformStep(xArray) 
-			? linspace(minX, maxX, targetWidth) 
-			: irregularTicks(minX, maxX, targetWidth, normalizeArray(xArray) as unknown as number[]);
+        xTicks = linspace(minX, maxX, targetWidth) 
 
         yTicks = flipY 
-		?(isUniformStep(yArray) 
 			? linspace(maxY, minY, targetHeight)
-			:  irregularTicks(maxY, minY, targetHeight, normalizeArray(yArray) as unknown as number[]))
-		:(isUniformStep(yArray) 
-			? linspace(minY, maxY, targetHeight)
-			: irregularTicks(minY, maxY, targetHeight, normalizeArray(yArray) as unknown as number[]));
-
-        // Detect if coordinate axes are descending
-        const isXDescending = xArray.length > 1 ? xArray[0] > xArray[xArray.length - 1] : false;
-        const isYDescending = yArray.length > 1 ? yArray[0] > yArray[yArray.length - 1] : false;
+			: linspace(minY, maxY, targetHeight)
 
         data = new Uint16Array(targetWidth * targetHeight * 4);
-        const xRangeDiff = xMax - xMin;
-        const yRangeDiff = yMax - yMin;
         for (let j = 0; j < targetHeight; j++) {
             for (let i = 0; i < targetWidth; i++) {
-                const [lon, lat, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
-                const u = xRangeDiff > 0 ? (isXDescending ? (xMax - lon) / xRangeDiff : (lon - xMin) / xRangeDiff) : 0;
-                const v = (isYDescending ? (yMax - lat) / yRangeDiff : (lat - yMin) / yRangeDiff)
-                // Check boundary bounds to avoid displaying clamped blocks outside the dataset area
-                const inBounds = lon >= xMin && lon <= xMax && lat >= yMin && lat <= yMax;
-                const validVal = (valid === 1 && inBounds) ? 1 : 0;
+                const [x, y, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
 
+                // Get interpolated Index in the OG coords that matches new X, Y
+                // This is kinda expensive
+                const xi = fractionalIndex(xArray, x);
+                const yi = fractionalIndex(yArray, y);
+
+                const inBounds = valid === 1 &&
+                    xi !== null &&yi !== null &&
+                    Number.isFinite(xi) && Number.isFinite(yi);
+                let u = 0, v = 0;
+                if (inBounds) {
+                    u = (xi + 0.5) / xArray.length;
+                    v = (yi + 0.5) / yArray.length;
+                }
                 const idx = (j * targetWidth + i) * 4;
                 data[idx]     = THREE.DataUtils.toHalfFloat(u); 
                 data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
-                data[idx + 2] = THREE.DataUtils.toHalfFloat(validVal);
+                data[idx + 2] = THREE.DataUtils.toHalfFloat(Number(inBounds));
             }  
         }
     }
+    
     const texture = new THREE.DataTexture(
         data,
         targetWidth,
@@ -378,7 +358,13 @@ export function reproject(resolution: number = 256){
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
 
+    //Clear texture before setting
+    if (remapTexture) remapTexture.dispose();
     useGlobalStore.setState({remapTexture: texture})
+    usePlotStore.setState({ // Using a structured grid. Never irregular
+        irregularX: undefined,
+        irregularY: undefined
+    })
 
     // ---- Update Axis and Shape information ----//
     const crsCheck = proj4(destCRS);
@@ -413,30 +399,6 @@ export function reproject(resolution: number = 256){
 
 }
 
-// Binary search for the index of the value in a monotonic (increasing or
-// decreasing) array closest to `target`.
-function findNearestIndex(arr: number[], target: number): number {
-	const n = arr.length;
-	if (n === 0) return 0;
-	if (n === 1) return 0;
-
-	const ascending = arr[0] <= arr[n - 1];
-	let lo = 0;
-	let hi = n - 1;
-
-	while (hi - lo > 1) {
-		const mid = (lo + hi) >> 1;
-		const midVal = arr[mid];
-		if (ascending ? midVal < target : midVal > target) {
-			lo = mid;
-		} else {
-			hi = mid;
-		}
-	}
-
-	// lo and hi now bracket target; pick whichever is closer
-	return Math.abs(arr[lo] - target) <= Math.abs(arr[hi] - target) ? lo : hi;
-}
 
 function remap360to180Monotonic(arr: number[]) {
     const wrapped = arr.map(v => ((v + 180) % 360 + 360) % 360 - 180);
@@ -445,32 +407,54 @@ function remap360to180Monotonic(arr: number[]) {
     return sorted;
 }
 
-function resampleLinear(data: number[], newLength: number): number[] {
-  const oldLength = data.length;
-  const result = []
-  const scale = (oldLength - 1) / (newLength - 1);
+function bracketInterval(arr: number[], value: number) {
+    // Gets indices in an array that border a value within that arrays bounds
+    const n = arr.length;
+    if (n <= 1) return { lo: 0, hi: 0 };
 
-  for (let i = 0; i < newLength; i++) {
-    const inPos = i * scale;
-    const lowerIdx = Math.floor(inPos);
-    const upperIdx = Math.min(lowerIdx + 1, oldLength - 1);
-    const frac = inPos - lowerIdx;
+    const ascending = arr[0] <= arr[n - 1];
+    let lo = 0;
+    let hi = n - 1;
 
-    result[i] = data[lowerIdx] * (1 - frac) + data[upperIdx] * frac;
-  }
+    while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        const midVal = arr[mid];
 
-  return result;
+        if (ascending ? midVal < value : midVal > value) {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+
+    return { lo, hi };
 }
 
-function irregularTicks(maxVal: number, minVal: number, resolution: number, normalizedArray: number[]){
-	// Takes a normalized irregular array and mixes that with min/max 
-	const newFracs = resampleLinear(normalizedArray, resolution)
-	const newTicks = []
-	for (let i = 0; i < resolution; i++){
-		const maxFrac = newFracs[i]
-		const minFrac = 1 - maxFrac
-		const tick = minVal * minFrac + maxVal * maxFrac
-		newTicks.push(tick)
-	}
-	return newTicks
+function findNearestIndex(arr: number[], target: number): number {
+	const { lo, hi } = bracketInterval(arr, target);
+
+    return Math.abs(arr[lo] - target) <= Math.abs(arr[hi] - target)
+        ? lo
+        : hi;
 }
+
+function fractionalIndex(coords: number[], value: number) {
+    const n = coords.length;
+    if (n === 1) return 0;
+
+    const ascending = coords[0] <= coords[n - 1];
+    // Bounds check
+    if (ascending) {
+        if (value < coords[0] || value > coords[n - 1]) return null;
+    } else {
+        if (value > coords[0] || value < coords[n - 1]) return null;
+    }
+
+    const { lo, hi } = bracketInterval(coords, value);
+
+    const a = coords[lo];
+    const b = coords[hi];
+
+    return lo + (value - a) / (b - a);
+}
+

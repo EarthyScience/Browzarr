@@ -122,24 +122,24 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         setLoc([e.clientX, e.clientY]);
         eventRef.current = e;
         if (remapTexture){
-          const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
-          if (flipY) thisUV.y = 1-thisUV.y
-          if (isValid) uv = thisUV;
-          else{
+          const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
+          uv = thisUV;
+          if (!isValid){
+            console.log(thisUV.y)
             val.current = NaN;
             coords.current = [thisUV.y,thisUV.x]
             return;
           }
         }
-      
+        console.log(uv.y)
         const { x, y } = uv;
         const zSliceIdx = dimSlices.length > 2 ? 2 : 1;
         const ySliceIdx = dimSlices.length > 2 ? 1 : 0;
         const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[zSliceIdx].length;
         const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[ySliceIdx].length;
-
-        const xId = Math.round(x*xSize-.5)
-        const yId = Math.round(y*ySize-.5)
+        const xId = Math.floor(x*xSize-.5)
+        const yId = Math.floor(y*ySize-.5)
+        console.log(xId, yId)
         let dataIdx = xSize * yId + xId;
         dataIdx += isFlat ? 0 : Math.floor((dimSlices[zIdx].length-1) * animProg) * xSize*ySize
         const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
@@ -162,8 +162,8 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
           else{
             return;
           }
-        }
-      
+      }
+
       const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:newUV ?? tsUV,normal})
       setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
         

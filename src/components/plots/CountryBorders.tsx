@@ -10,6 +10,7 @@ import {vertexShader, bordersFrag} from '../textures/shaders'
 import { invalidate } from '@react-three/fiber';
 import proj4, { Converter } from 'proj4';
 import { useAxisIndices } from '@/hooks';
+import { sampleCRS } from '../textures/ProjectionTexture';
 
 function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds: [number, number], proj : Converter | undefined, aspect: number){ // May use this aspect later. I'll keep for now
     const {remapTexture} = useGlobalStore.getState()
@@ -19,11 +20,18 @@ function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds
     }
     newX = (newX-xBounds[0])/(xBounds[1]-xBounds[0]);
     newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);	
-
+    
+    if (remapTexture){
+        const [newV, _valid] = sampleCRS(remapTexture, newX, newY)
+        
+        newX += newX-newV.x;
+        newY += newY-newV.y;
+    }
     newX -= 0.5
     newX *= 2;
     newY -= 0.5;
     newY *= 2;
+   
     return [newX, newY/2, 0] // I don't know why this 2 (which was for the original lat/lon aspect) also works for new CRS
 }
 
@@ -55,7 +63,6 @@ function Borders({features}:{features: any}){
         const maxY = axisDimArrays[yIdx].at(-1)
         return [[minX, maxX] as [number, number], [minY, maxY] as [number, number]]
     },[axisDimArrays, xIdx, yIdx ])
-
     const [spherize, setSpherize] = useState<boolean>(false)
 
     useEffect(()=>{
