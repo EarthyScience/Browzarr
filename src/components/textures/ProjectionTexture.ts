@@ -42,14 +42,16 @@ export function resetProjection(){
 
 }
 
-function normalizePixels(array: number[] ): number[]{
+function normalizePixels(array: number[], min?: number, max?: number): number[]{
     // Normalizes an array to the range [0.5/len, 1-1/len] for use in pixel sampling
     const len = array.length;
-    let min = Infinity, max = -Infinity;
-    for (let i = 0; i < len; i++){
-        const v = array[i];
-        if (v < min) min = v;
-        if (v > max) max = v;
+    if (!min || !max){
+        min = Infinity, max = -Infinity;
+        for (let i = 0; i < len; i++){
+            const v = array[i];
+            if (v < min) min = v;
+            if (v > max) max = v;
+        }
     }
     const range = max - min;
     const out = new Array<number>(len);
@@ -79,8 +81,6 @@ function normalizeArray(array: number[] ): number[]{
     }
     return out;
 }
-
-
 
 function isUniformStep(array: number[]): boolean {
     const len = array.length;
@@ -133,10 +133,63 @@ function createIrregularUV(xArray: number[], yArray: number[], flipY: boolean) {
 	return texture;
 }
 
+export function createInverseUV(
+	xArray: Array<number>,
+	yArray: Array<number>,
+	flipY: boolean,
+    is360: boolean,
+	resolution : number
+) {
+	// Creates an inverse UV map: for each normalized (x, y) position,
+	// stores the (i, j) index into xArray/yArray that best matches it.
+	const width = resolution*2; 
+	const height = resolution;
+
+    //We assume all irregular grids are in degrees for now. 
+	const normX = normalizePixels(xArray, is360? 0 : -180 , is360 ? 360 : 180);
+	const normY = normalizePixels(yArray, -90, 90);
+
+	const data = new Uint16Array(width * height * 4); // 4 for RGBA
+	let ptr = 0;
+	for (let j = 0; j < height; j++) {
+		const vRaw = height > 1 ? j / (height - 1) : 0;
+		const v = flipY ? 1 - vRaw : vRaw;
+		const jIdx = findNearestIndex(normY, v);
+		const jNorm = yArray.length > 1 ? jIdx / (yArray.length - 1) : 0;
+
+		for (let i = 0; i < width; i++) {
+			const u = width > 1 ? i / (width - 1) : 0;
+			const iIdx = findNearestIndex(normX, u);
+			const iNorm = xArray.length > 1 ? iIdx / (xArray.length - 1) : 0;
+
+			data[ptr++] = THREE.DataUtils.toHalfFloat(iNorm);
+			data[ptr++] = THREE.DataUtils.toHalfFloat(jNorm);
+			data[ptr++] = THREE.DataUtils.toHalfFloat(1.); // Set Valid so can be used in same shader logic
+			ptr++;
+		}
+	}
+
+	const texture = new THREE.DataTexture(
+		data,
+		width,
+		height,
+		THREE.RGBAFormat,
+		THREE.HalfFloatType
+	);
+	texture.needsUpdate = true;
+	texture.magFilter = THREE.LinearFilter;
+	texture.minFilter = THREE.LinearFilter;
+	texture.wrapS = THREE.ClampToEdgeWrapping;
+	texture.wrapT = THREE.ClampToEdgeWrapping;
+
+	return texture;
+}
+
 export function setIrregularGridTexture(dimArrays: Array<number>[]){
     // This is needed for Sphere and other projections where the grid is not uniform. It creates a texture that maps the irregular grid to a regular grid for sampling in the shader.
     const {xIdx, yIdx} = getAxisIndices()
 	const {remapTexture, flipY} = useGlobalStore.getState();
+    const {is360Deg} = usePlotStore.getState()
 	if (remapTexture) remapTexture.dispose();
     const xArray = dimArrays[xIdx];
     const yArray = dimArrays[yIdx];
@@ -145,7 +198,7 @@ export function setIrregularGridTexture(dimArrays: Array<number>[]){
     //Dispose of remaptexture if exists
 	const {plotType} = usePlotStore.getState();
 	const isSphere = plotType == 'sphere';
-	const texture = isSphere ? createInverseUV(xArray, yArray, flipY, 1024) :  createIrregularUV(xArray, yArray, flipY)
+	const texture = isSphere ? createInverseUV(xArray, yArray, flipY, is360Deg, 1024) :  createIrregularUV(xArray, yArray, flipY)
     useGlobalStore.setState({remapTexture:texture});
 }
 
@@ -173,8 +226,8 @@ export function reproject(resolution: number = 256){
 	const insufficientCRS = !nativeCRS || !destCRS
 
 	if (remapTexture && insufficientCRS){
-		// If remapTexture already exists but not nativeCRS then this could be from irregular grid. In that case remake irrgular grid when CRS are missing
-		// Will be disposesd in setIrregularGridTexture
+		// If remapTexture already exists but not CRS then this could be from irregular grid. In that case remake irrgular grid when CRS are missing
+		// Texture will be disposesd in setIrregularGridTexture
 		setIrregularGridTexture(dimArrays)
 		return;
 	}
@@ -184,13 +237,15 @@ export function reproject(resolution: number = 256){
 
     const {xIdx, yIdx} = getAxisIndices()
     let xArray = dimArrays[xIdx] as number[];
+    if (is360Deg) {
+		xArray = remap360to180Monotonic(xArray) 
+	}
+
     const yArray = dimArrays[yIdx];
     const width = xArray.length;
     const height = yArray.length;
 
-	if (is360Deg) {
-		xArray = remap360to180Monotonic(xArray) 
-	}
+	
     const [xMin, xMax] = ArrayMinMax(xArray);
     const [yMin, yMax] = ArrayMinMax(yArray);
     // We need the border points as the min/max of the old CRS won't always be the min/max of the new CRS
@@ -225,6 +280,7 @@ export function reproject(resolution: number = 256){
     const yDiff = Math.abs(maxY - minY);
     const aspectRatio = yDiff > 0 ? xDiff / yDiff : 1;
     function safeInverse(proj: any, xy: [number, number], tol = 1e-6) {
+        // Proj4 clamps new CRS, won't return invalid values. Need to do an inverse run instead
         //This function checks if the coordinates are valid and returns 0 or 1 based on conditions
         const [lon, lat] = proj.inverse(xy);
         if (!isFinite(lon) || !isFinite(lat)) return [lon, lat, 0];
@@ -357,56 +413,6 @@ export function reproject(resolution: number = 256){
 
 }
 
-export function createInverseUV(
-	xArray: Array<number>,
-	yArray: Array<number>,
-	flipY: boolean,
-	resolution : number
-) {
-	// Creates an inverse UV map: for each normalized (x, y) position,
-	// stores the (i, j) index into xArray/yArray that best matches it.
-	const width = resolution*2; 
-	const height = resolution;
-
-	const normX = normalizeArray(xArray);
-	const normY = normalizeArray(yArray);
-
-	const data = new Uint16Array(width * height * 4); // 4 for RGBA
-	let ptr = 0;
-	for (let j = 0; j < height; j++) {
-		const vRaw = height > 1 ? j / (height - 1) : 0;
-		const v = flipY ? 1 - vRaw : vRaw;
-		const jIdx = findNearestIndex(normY, v);
-		const jNorm = yArray.length > 1 ? jIdx / (yArray.length - 1) : 0;
-
-		for (let i = 0; i < width; i++) {
-			const u = width > 1 ? i / (width - 1) : 0;
-			const iIdx = findNearestIndex(normX, u);
-			const iNorm = xArray.length > 1 ? iIdx / (xArray.length - 1) : 0;
-
-			data[ptr++] = THREE.DataUtils.toHalfFloat(iNorm);
-			data[ptr++] = THREE.DataUtils.toHalfFloat(jNorm);
-			data[ptr++] = THREE.DataUtils.toHalfFloat(1.); // Set Valid so can be used in same shader logic
-			ptr++;
-		}
-	}
-
-	const texture = new THREE.DataTexture(
-		data,
-		width,
-		height,
-		THREE.RGBAFormat,
-		THREE.HalfFloatType
-	);
-	texture.needsUpdate = true;
-	texture.magFilter = THREE.LinearFilter;
-	texture.minFilter = THREE.LinearFilter;
-	texture.wrapS = THREE.ClampToEdgeWrapping;
-	texture.wrapT = THREE.ClampToEdgeWrapping;
-
-	return texture;
-}
-
 // Binary search for the index of the value in a monotonic (increasing or
 // decreasing) array closest to `target`.
 function findNearestIndex(arr: number[], target: number): number {
@@ -442,7 +448,6 @@ function remap360to180Monotonic(arr: number[]) {
 function resampleLinear(data: number[], newLength: number): number[] {
   const oldLength = data.length;
   const result = []
-  // Maps output index range [0, newLength - 1] onto input index range [0, oldLength - 1]
   const scale = (oldLength - 1) / (newLength - 1);
 
   for (let i = 0; i < newLength; i++) {
@@ -458,7 +463,7 @@ function resampleLinear(data: number[], newLength: number): number[] {
 }
 
 function irregularTicks(maxVal: number, minVal: number, resolution: number, normalizedArray: number[]){
-	// Takes an irregular array from [0, 1] and mixes that with min/max 
+	// Takes a normalized irregular array and mixes that with min/max 
 	const newFracs = resampleLinear(normalizedArray, resolution)
 	const newTicks = []
 	for (let i = 0; i < resolution; i++){
