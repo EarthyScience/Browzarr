@@ -14,7 +14,6 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { parseLoc } from '@/utils/HelperFuncs';
 import { ChevronDown, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
-
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
@@ -22,26 +21,22 @@ import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 
-// Maximum allowed active dimensions shown in the slicer panel
 const MAX_ACTIVE_DIMS = 3;
 
-// Helper to format byte counts into human-readable strings (KB, MB, GB)
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 };
 
-// Metadata payload shape for dimension arrays, names, and units
 interface DimInfo {
   dimArrays: ArrayLike<number>[];
   dimNames: string[];
   dimUnits: (string | null)[];
 }
 
-// Props accepted by MetaDimSelector
 type Props = {
   meta: {
     name?: string;
@@ -57,7 +52,6 @@ type Props = {
   onApply?: (sels: SliceSelectionState[], axes: Axis[], dimNames: string[]) => void;
 };
 
-// Color mapping badges for standard coordinate axes
 const AXIS_COLOR: Record<Axis, string> = {
   x: 'text-pink-500',
   y: 'text-green-500',
@@ -65,32 +59,26 @@ const AXIS_COLOR: Record<Axis, string> = {
   c: 'text-yellow-500',
 };
 
-// Internal active slicer row state storing name and selection
 interface SlicerRow {
   dimName: string;
   sel: SliceSelectionState;
 }
 
-// Parses original dimension index from formatted name string (e.g. "lat::1" -> 1)
-const getOrigIdx = (dimName: string) => {
-  const parts = dimName.split('::');
-  return parseInt(parts[parts.length - 1]);
-};
+// "lat::1" -> 1
+const getOrigIdx = (dimName: string) => parseInt(dimName.split('::').pop() ?? '');
 
-// Positionally derives spatial axis name ('z', 'y', 'x') based on active row index
+// Positionally derives spatial axis ('z' | 'y' | 'x') from a row's index among active rows
 const getActiveAxis = (index: number, totalRows: number): Axis => {
   const axes: Axis[] = ['z', 'y', 'x'];
   return axes[axes.length - totalRows + index] ?? 'x';
 };
 
-// Extracted numeric slice range bounds for slicing calculation
 interface ParsedSliceRange {
   first: number;
   last: number;
   steps: number;
 }
 
-// Helper parsing selection state into numerical start, stop, and step counts
 const parseSliceRange = (sel: SliceSelectionState | undefined, defaultSize: number): ParsedSliceRange => {
   if (!sel) return { first: 0, last: defaultSize, steps: Math.max(1, defaultSize) };
   if (sel.mode === 'scalar') {
@@ -104,7 +92,28 @@ const parseSliceRange = (sel: SliceSelectionState | undefined, defaultSize: numb
   return { first: start, last: stop, steps: Math.max(1, stop - start) };
 };
 
+// Shared by MetaStatusBadges, the cache-status effect, and handlePlot — all three
+// need "which row is currently z/y/x" plus each row's original dim index.
+const getRowByAxis = (rows: SlicerRow[], axis: Axis) => {
+  const idx = rows.findIndex((_, i) => getActiveAxis(i, rows.length) === axis);
+  return idx >= 0 ? rows[idx] : undefined;
+};
+
+const getAxisRows = (rows: SlicerRow[]) => {
+  const rowZ = getRowByAxis(rows, 'z');
+  const rowY = getRowByAxis(rows, 'y');
+  const rowX = getRowByAxis(rows, 'x');
+  return {
+    rowZ, rowY, rowX,
+    origIdxZ: rowZ ? getOrigIdx(rowZ.dimName) : -1,
+    origIdxY: rowY ? getOrigIdx(rowY.dimName) : -1,
+    origIdxX: rowX ? getOrigIdx(rowX.dimName) : -1,
+  };
+};
+
 // --- SCOPED STATE ISOLATION STORE ---
+// Slider drags update this store, not the parent's React state, so dragging a
+// slice range doesn't re-render the whole panel — only the isolated sub-components below.
 interface SelectorStoreState {
   rows: SlicerRow[];
   collapsedSels: Record<string, SliceSelectionState>;
@@ -182,9 +191,8 @@ const useMetaSelectorStore = <T,>(selector: (state: SelectorStoreState) => T): T
   return useStore(store, selector);
 };
 
-// --- ISOLATED SUB-COMPONENTS (Zero Parent Re-renders) ---
+// --- ISOLATED SUB-COMPONENTS ---
 
-// Status badges for size, cache, and texture counts
 const MetaStatusBadges: React.FC<{
   meta: Props['meta'];
   availableDims: DimOption[];
@@ -207,24 +215,10 @@ const MetaStatusBadges: React.FC<{
   const max3DTextureSize = usePlotStore((s) => s.max3DTextureSize);
 
   const dataShape = meta?.shape || [];
-  const chunkShape = meta?.chunks || [];
 
-  // Compute size data
   const sizeData = useMemo(() => {
-    const getRowByAxis = (axis: Axis) => {
-      const idx = rows.findIndex((_, i) => getActiveAxis(i, rows.length) === axis);
-      return idx >= 0 ? rows[idx] : undefined;
-    };
-
-    const rowZ = getRowByAxis('z');
-    const rowY = getRowByAxis('y');
-    const rowX = getRowByAxis('x');
-
+    const { rowZ, rowY, rowX, origIdxZ, origIdxY, origIdxX } = getAxisRows(rows);
     const is2D = dataShape.length === 2 || !rowZ;
-
-    const origIdxZ = rowZ ? getOrigIdx(rowZ.dimName) : -1;
-    const origIdxY = rowY ? getOrigIdx(rowY.dimName) : -1;
-    const origIdxX = rowX ? getOrigIdx(rowX.dimName) : -1;
 
     const lenZ = origIdxZ >= 0 ? dataShape[origIdxZ] : 1;
     const lenY = origIdxY >= 0 ? dataShape[origIdxY] : 1;
@@ -264,7 +258,7 @@ const MetaStatusBadges: React.FC<{
     }
 
     return { size: calculatedSize, thisCount, depths };
-  }, [meta, rows, collapsedSels, availableDims, dataShape, chunkShape, coarsen, kernelSize, kernelDepth, maxTextureSize, max3DTextureSize]);
+  }, [meta, rows, collapsedSels, availableDims, dataShape, coarsen, kernelSize, kernelDepth, maxTextureSize, max3DTextureSize]);
 
   useEffect(() => {
     setTextureArrayDepths(sizeData.depths);
@@ -275,16 +269,12 @@ const MetaStatusBadges: React.FC<{
   const tooBig = texCount > 14;
 
   const cachedSize = useMemo(() => {
-    const thisDtype = (meta?.dtype as string) || '';
-    if (thisDtype.includes("32") || thisDtype.includes("f4")) {
-      return currentSize / 2;
-    } else if (thisDtype.includes("64") || thisDtype.includes("f8")) {
-      return currentSize / 4;
-    } else if (thisDtype.includes("8") || thisDtype.includes("i1")) {
-      return currentSize * 2;
-    } else {
-      return currentSize;
-    }
+    const dtype = (meta?.dtype as string) || '';
+    const scale = dtype.includes("32") || dtype.includes("f4") ? 0.5
+      : dtype.includes("64") || dtype.includes("f8") ? 0.25
+        : dtype.includes("8") || dtype.includes("i1") ? 2
+          : 1;
+    return currentSize * scale;
   }, [currentSize, meta]);
 
   const smallCache = cachedSize > cacheSize;
@@ -304,44 +294,29 @@ const MetaStatusBadges: React.FC<{
           return [range.first, range.last] as [number, number];
         }
         const colSel = collapsedSels[d.name];
-        if (colSel && colSel.mode === 'scalar') return parseInt(colSel.scalar) || 0;
-        return 0;
+        return colSel && colSel.mode === 'scalar' ? parseInt(colSel.scalar) || 0 : 0;
       });
 
       const scalarIndices = ndSlicesTemp.filter((s) => typeof s === "number").join("_");
       let cacheBase = scalarIndices !== "" ? `${initStore}_${meta.name}_${scalarIndices}` : `${initStore}_${meta.name}`;
-      if (meta.shape && meta.shape.length >= 4 && idx4D !== undefined && idx4D !== null) {
+      if (meta.shape.length >= 4 && idx4D !== undefined && idx4D !== null) {
         cacheBase = `${cacheBase}_time${idx4D}`;
       }
 
-      const getRowByAxis = (axis: Axis) => {
-        const idx = rows.findIndex((_, i) => getActiveAxis(i, rows.length) === axis);
-        return idx >= 0 ? rows[idx] : undefined;
-      };
+      const { rowZ, rowY, rowX, origIdxZ, origIdxY, origIdxX } = getAxisRows(rows);
 
-      const rowZ = getRowByAxis('z');
-      const rowY = getRowByAxis('y');
-      const rowX = getRowByAxis('x');
-
-      const origIdxZ = rowZ ? getOrigIdx(rowZ.dimName) : -1;
-      const origIdxY = rowY ? getOrigIdx(rowY.dimName) : -1;
-      const origIdxX = rowX ? getOrigIdx(rowX.dimName) : -1;
-
-      const zSlice = parseSliceRange(rowZ?.sel, origIdxZ >= 0 ? meta.shape?.[origIdxZ] ?? 1 : 1);
-      const ySlice = parseSliceRange(rowY?.sel, origIdxY >= 0 ? meta.shape?.[origIdxY] ?? 1 : 1);
-      const xSlice = parseSliceRange(rowX?.sel, origIdxX >= 0 ? meta.shape?.[origIdxX] ?? 1 : 1);
-
-      const calcDim = (slice: { first: number; last: number }, dimIdx: number) => {
+      // Which chunk indices (in dim units, not element units) a slice range touches
+      const calcDim = (sel: SliceSelectionState | undefined, dimIdx: number) => {
         if (dimIdx < 0) return { start: 0, end: 1 };
         const chunkDim = meta.chunks?.[dimIdx];
         if (!chunkDim) return { start: 0, end: 1 };
-        const start = Math.floor(slice.first / chunkDim);
-        return { start, end: Math.ceil(slice.last / chunkDim) };
+        const { first, last } = parseSliceRange(sel, meta.shape?.[dimIdx] ?? 1);
+        return { start: Math.floor(first / chunkDim), end: Math.ceil(last / chunkDim) };
       };
 
-      const zDim = calcDim(zSlice, origIdxZ);
-      const yDim = calcDim(ySlice, origIdxY);
-      const xDim = calcDim(xSlice, origIdxX);
+      const zDim = calcDim(rowZ?.sel, origIdxZ);
+      const yDim = calcDim(rowY?.sel, origIdxY);
+      const xDim = calcDim(rowX?.sel, origIdxX);
 
       let accum = 0;
       let total = 0;
@@ -349,11 +324,7 @@ const MetaStatusBadges: React.FC<{
         for (let y = yDim.start; y < yDim.end; y++) {
           for (let x = xDim.start; x < xDim.end; x++) {
             total++;
-            const chunkID = `z${z}_y${y}_x${x}`;
-            const cacheName = `${cacheBase}_chunk_${chunkID}`;
-            if (cache.has(cacheName)) {
-              accum++;
-            }
+            if (cache.has(`${cacheBase}_chunk_z${z}_y${y}_x${x}`)) accum++;
           }
         }
       }
@@ -443,7 +414,6 @@ const MetaStatusBadges: React.FC<{
   );
 });
 
-// Dimension Table isolated sub-component
 const MetaDimTable: React.FC<{
   availableDims: DimOption[];
   dataShape: number[];
@@ -492,7 +462,6 @@ const MetaDimTable: React.FC<{
   );
 });
 
-// Active Slicers list isolated sub-component
 const MetaActiveSlicers: React.FC<{
   availableDims: DimOption[];
   dataShape: number[];
@@ -530,7 +499,6 @@ const MetaActiveSlicers: React.FC<{
   );
 });
 
-// Collapsed Slicers list isolated sub-component
 const MetaCollapsedSlicers: React.FC<{
   availableDims: DimOption[];
 }> = React.memo(({ availableDims }) => {
@@ -579,7 +547,6 @@ const MetaCollapsedSlicers: React.FC<{
   );
 });
 
-// Controls for adding dimensions
 const MetaAddDimensionControl: React.FC<{
   availableDims: DimOption[];
   dataShape: number[];
@@ -626,29 +593,17 @@ const MetaAddDimensionControl: React.FC<{
   );
 });
 
-// --- MAIN PANEL CONTAINER (Zero Re-renders during Slider Movements) ---
 export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
-
-  // Set mounted state after initial client render
   useEffect(() => setMounted(true), []);
 
-  // Extract dimension coordinate arrays from metadata props
-  const dimArrays = useMemo(
-    () => (meta?.dimInfo?.dimArrays ?? []).map((a) => Array.from(a)),
-    [meta?.dimInfo?.dimArrays]
-  );
-  // Extract dimension unit strings from metadata props
-  const dimUnits = useMemo(
-    () => (meta?.dimInfo?.dimUnits ?? []).map((u) => u ?? ''),
-    [meta?.dimInfo?.dimUnits]
-  );
-  // Extract dimension names from metadata props
-  const dimNames = useMemo(
-    () => meta?.dimInfo?.dimNames ?? [],
-    [meta?.dimInfo?.dimNames]
-  );
+  const { dimArrays, dimNames, dimUnits } = useMemo(() => ({
+    dimArrays: (meta?.dimInfo?.dimArrays ?? []).map((a) => Array.from(a)),
+    dimNames: meta?.dimInfo?.dimNames ?? [],
+    dimUnits: (meta?.dimInfo?.dimUnits ?? []).map((u) => u ?? ''),
+  }), [meta?.dimInfo]);
+
   const dataShape = meta?.shape || [];
   const chunkShape = meta?.chunks || [];
 
@@ -668,7 +623,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
   );
   const [cacheSize, setCacheSize] = useState(maxSize);
 
-  // Bind Zarr dataset store state
   const { ndSlices, axisMapping, setZSlice, setYSlice, setXSlice, ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(
     useShallow((state) => ({
       ndSlices: state.ndSlices,
@@ -687,7 +641,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
       setKernelDepth: state.setKernelDepth,
     }))
   );
-
+  console.log(ndSlices)
   const [displaySpat, setDisplaySpat] = useState(String(kernelSize));
   const [displayDepth, setDisplayDepth] = useState(String(kernelDepth));
 
@@ -765,34 +719,24 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
     });
   }, [availableDims, variable, meta.name, ndSlices, axisMapping, dataShape]);
 
-  // Create isolated store instance per variable key
+  // Re-created (clean slate) whenever the active variable's dimensions change
   const selectorStore = useMemo(
     () => createMetaSelectorStore(initialRows, initialCollapsed),
-    [dimsKey] // Re-create clean store instance when dimensions change
+    [dimsKey]
   );
 
-  // Reset compression state when variable name changes
   useEffect(() => {
     setCompress(false);
   }, [meta?.name, setCompress]);
 
-  // Plot handler executed ONLY when user clicks the Plot button
   const handlePlot = () => {
     const { rows, collapsedSels } = selectorStore.getState();
 
-    // Update global store dimension arrays, names, and units on explicit plot action
     setDimArrays(dimArrays);
     setDimNames(dimNames);
     setDimUnits(dimUnits);
 
-    const getRowByAxis = (axis: Axis) => {
-      const idx = rows.findIndex((_, i) => getActiveAxis(i, rows.length) === axis);
-      return idx >= 0 ? rows[idx] : undefined;
-    };
-
-    const rowZ = getRowByAxis('z');
-    const rowY = getRowByAxis('y');
-    const rowX = getRowByAxis('x');
+    const { rowZ, rowY, rowX } = getAxisRows(rows);
 
     const getSliceArray = (row?: SlicerRow, defaultLast = 0): [number, number | null] => {
       if (!row) return [0, null];
@@ -859,7 +803,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
     <MetaSelectorContext.Provider value={selectorStore}>
       <div className="flex flex-col gap-2 min-w-0">
         <div className="flex flex-col gap-4 mb-2 min-w-0">
-          {/* Top Header: Name, Attributes, Options, and Plot button */}
           <div className="flex flex-col gap-3 w-full min-w-0">
             <div className="flex items-center gap-2">
               <b className="text-base">{`${meta.long_name ?? meta.name ?? ''} `}</b>
@@ -896,15 +839,12 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
               )}
             </div>
 
-            {/* Options */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm w-full min-w-0">
-              {/* Coarsen Toggle */}
               <div className="flex items-center gap-2">
                 <label htmlFor="coarsen" className="font-semibold cursor-pointer">Coarsen</label>
                 <Switch id="coarsen" checked={coarsen} onCheckedChange={(e) => setCoarsen(e)} />
               </div>
 
-              {/* Compress Toggle */}
               <div className="flex items-center gap-2">
                 <label htmlFor="compress-data" className="font-semibold cursor-pointer flex items-center">
                   Compress
@@ -920,7 +860,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
                 <Switch id="compress-data" checked={compress} onCheckedChange={(e) => setCompress(e)} />
               </div>
 
-              {/* Plot Button */}
               <div className="flex items-center justify-end ml-auto min-w-0">
                 <Button
                   variant={'pink'}
@@ -932,7 +871,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
               </div>
             </div>
 
-            {/* Status Information (Isolated Sub-component) */}
             <MetaStatusBadges
               meta={meta}
               availableDims={availableDims}
@@ -941,7 +879,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
             />
           </div>
 
-          {/* Coarsen Expand UI */}
           <Hider show={coarsen}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 bg-background p-3 rounded-md border text-sm">
               <div
@@ -987,7 +924,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
             </div>
           </Hider>
 
-          {/* Dimension Table (Isolated Sub-component) */}
           <MetaDimTable
             availableDims={availableDims}
             dataShape={dataShape}
@@ -995,18 +931,13 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
           />
         </div>
 
-        {/* DimSlicers Area */}
         <div className="px-1">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-foreground/80">Active Dimensions</h3>
-            {/* Add Dimension Control (Isolated Sub-component) */}
             <MetaAddDimensionControl availableDims={availableDims} dataShape={dataShape} />
           </div>
 
-          {/* Active Slicers (Isolated Sub-component) */}
           <MetaActiveSlicers availableDims={availableDims} dataShape={dataShape} />
-
-          {/* Collapsed Dimensions (Isolated Sub-component) */}
           <MetaCollapsedSlicers availableDims={availableDims} />
         </div>
       </div>
