@@ -187,25 +187,25 @@ export function setIrregularGridTexture(dimArrays: Array<number>[]){
 }
 
 export function sampleCRS(tex: THREE.DataTexture, u:number, v:number): [THREE.Vector2, boolean] {
-  // Samples an array given UVs
-  const { data, width, height } = tex.image;
-  if (!data) return [new THREE.Vector2(u, v), true];
+    // Samples an array given UVs
+    const { data, width, height } = tex.image;
+    if (!data) return [new THREE.Vector2(u, v), true];
 
-  const x = Math.round((u ) * (width - 0.5));
-  const y = Math.round((v ) * (height - 0.5));
+    const x = Math.max(0, Math.min(width - 1, Math.round(u * (width - 1))));
+    const y = Math.max(0, Math.min(height - 1, Math.round(v * (height - 1))));
 
-  const idx = (y * width + x) * 4; // RGBA
-  const newU = THREE.DataUtils.fromHalfFloat(data[idx + 0])
-  const newV = THREE.DataUtils.fromHalfFloat(data[idx + 1])
-  const valid = THREE.DataUtils.fromHalfFloat(data[idx + 2])
-  return [
-    new THREE.Vector2(newU,newV),
-    valid > 0.5
-  ];
+    const idx = (y * width + x) * 4; // RGBA
+    const newU = THREE.DataUtils.fromHalfFloat(data[idx + 0])
+    const newV = THREE.DataUtils.fromHalfFloat(data[idx + 1])
+    const valid = THREE.DataUtils.fromHalfFloat(data[idx + 2])
+    return [
+        new THREE.Vector2(newU,newV),
+        valid > 0.5
+    ];
 }
 
 export function reproject(resolution: number = 256){
-    const {nativeCRS, destCRS, plotType, is360Deg, irregularX, irregularY} = usePlotStore.getState()
+    const {nativeCRS, destCRS, plotType, is360Deg} = usePlotStore.getState()
 	const {dimArrays, remapTexture, flipY } = useGlobalStore.getState()
 	const insufficientCRS = !nativeCRS || !destCRS
 

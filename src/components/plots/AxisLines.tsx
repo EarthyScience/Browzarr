@@ -455,16 +455,16 @@ const FlatAxis = () =>{
     let irregArray = isX ? irregularX : irregularY;
     if (!irregArray){
       const length = dimLengths[isX ? xIdx : yIdx]
-      return Math.floor(fac * (length - 1))
+      return Math.round(fac * (length - 1))
     } ;
     if (!isX && flipY) {
       irregArray = [...irregArray]
       irregArray.reverse()
     }
     const length = irregArray.length
-    const idx = Math.floor(fac * (length - 1));
+    const idx = Math.round(fac * (length - 1));
     fac = irregArray[idx]
-    return Math.floor(fac * (length - 1))
+    return Math.round(fac * (length - 1))
   }
   return (
     <group 

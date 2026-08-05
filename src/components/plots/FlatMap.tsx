@@ -25,44 +25,18 @@ interface InfoSettersProps{
 }
 
 const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
+    // ---- Imports ---- //
     const textures = usePaddedTextures(propTextures);
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, colormap, dimArrays, dimNames, dimUnits, 
       isFlat, dataShape, textureArrayDepths, strides, remapTexture, shape,
-      setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(state => ({
-      flipY: state.flipY, colormap: state.colormap, 
-      dimArrays: state.dimArrays, strides: state.strides, 
-      dimNames:state.dimNames, dimUnits: state.dimUnits,
-      isFlat: state.isFlat, dataShape: state.dataShape,
-      textureArrayDepths: state.textureArrayDepths,
-      remapTexture:state.remapTexture, shape: state.shape,
-      setPlotDim:state.setPlotDim, 
-      updateDimCoords:state.updateDimCoords,
-      updateTimeSeries: state.updateTimeSeries
-    })))
+      setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
 
     const {cScale, cOffset, animProg, nanTransparency, nanColor, 
       zSlice, ySlice, xSlice, selectTS, fillValue, coarsen, maskTexture, maskValue, valueRange,
-      getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
-      cOffset: state.cOffset, cScale: state.cScale,
-      resetAnim: state.resetAnim, animate: state.animate,
-      animProg: state.animProg, nanTransparency: state.nanTransparency,
-      nanColor: state.nanColor, zSlice: state.zSlice,
-      ySlice: state.ySlice, xSlice: state.xSlice, valueRange:state.valueRange,
-      selectTS: state.selectTS, coarsen: state.coarsen,
-      maskTexture:state.maskTexture, maskValue:state.maskValue, fillValue: state.fillValue,
-      getColorIdx: state.getColorIdx,
-      incrementColorIdx: state.incrementColorIdx
-    })))
-    const {axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(state=> ({
-      axis: state.axis,
-      analysisMode: state.analysisMode,
-      analysisArray: state.analysisArray
-    })))
-    const {kernelSize, kernelDepth} = useZarrStore(useShallow(state => ({
-      kernelSize: state.kernelSize,
-      kernelDepth: state.kernelDepth,
-    })))
+      getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
+    const {axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
+    const {kernelSize, kernelDepth} = useZarrStore(useShallow(s => s))
 
     const {xIdx, yIdx, zIdx} = useAxisIndices()
 
@@ -80,6 +54,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
       return slices
     } ,[dimArrays, zSlice, ySlice, xSlice, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
+
     const shapeRatio = useMemo(()=> {
       if (dataShape.length == 2){
         return shape.y/shape.x
@@ -125,21 +100,18 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
           const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
           uv = thisUV;
           if (!isValid){
-            console.log(thisUV.y)
             val.current = NaN;
             coords.current = [thisUV.y,thisUV.x]
             return;
           }
         }
-        console.log(uv.y)
         const { x, y } = uv;
         const zSliceIdx = dimSlices.length > 2 ? 2 : 1;
         const ySliceIdx = dimSlices.length > 2 ? 1 : 0;
         const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[zSliceIdx].length;
         const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[ySliceIdx].length;
-        const xId = Math.floor(x*xSize-.5)
-        const yId = Math.floor(y*ySize-.5)
-        console.log(xId, yId)
+        const xId = Math.max(0, Math.min(xSize - 1, Math.round(x * (xSize - 1))));
+        const yId = Math.max(0, Math.min(ySize - 1, Math.round(y * (ySize - 1))));
         let dataIdx = xSize * yId + xId;
         dataIdx += isFlat ? 0 : Math.floor((dimSlices[zIdx].length-1) * animProg) * xSize*ySize
         const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
