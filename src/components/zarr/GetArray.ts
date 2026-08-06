@@ -109,7 +109,7 @@ export async function GetArray(varOveride?: string) {
 
     setStatus("Downloading...");
     setProgress(0);
-
+    console.log(zDim)
     for (let z = zDim.start; z < zDim.end; z++) {
         for (let y = yDim.start; y < yDim.end; y++) {
             for (let x = xDim.start; x < xDim.end; x++) {
@@ -180,7 +180,7 @@ export async function GetArray(varOveride?: string) {
 
                     cache.set(cacheName, {
                         data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-                        shape: thisShape.filter((val)=> val > 1), stride: chunkStride,
+                        shape: thisShape.slice(-3), stride: chunkStride.slice(-3),
                         scaling: scalingFactor, compressed: compress, coarsened: coarsen,
                         kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined },
                         fullChunkDim: [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
