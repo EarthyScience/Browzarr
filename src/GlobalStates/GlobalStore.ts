@@ -23,7 +23,7 @@ type StoreState = {
   valueScales: { maxVal: number; minVal: number };
   colormap: THREE.DataTexture;
   remapTexture: THREE.DataTexture | undefined;
-  irregularTexture: THREE.DataTexture | undefined;
+  remapBorders: THREE.DataTexture | undefined;
   colormapName: string;
   flipColormap: boolean;
   timeSeries: Record<string, Record<string, any>>;
@@ -106,7 +106,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   valueScales: { maxVal: 1, minVal: -1 },
   colormap: GetColorMapTexture(),
   remapTexture: undefined,
-  irregularTexture: undefined,
+  remapBorders: undefined,
   colormapName: "Spectral",
   flipColormap: false,
   timeSeries: {},

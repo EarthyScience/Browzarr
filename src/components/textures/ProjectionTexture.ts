@@ -74,7 +74,56 @@ function isUniformStep(array: number[]): boolean {
     return true;
 }
 
-export function createInverseUV(
+function createIrregularUV(
+    xArray: Array<number>,
+	yArray: Array<number>,
+    flipY: boolean,
+) {
+    const width = xArray.length;
+    const height = yArray.length;
+
+    const data = new Int16Array(width * height * 4);
+
+    const [xMin, xMax] = ArrayMinMax(xArray)
+    const [yMin, yMax] = ArrayMinMax(yArray)
+
+    const xSpace = linspace(xMin, xMax, width);
+    const ySpace = linspace(yMin, yMax, height);
+
+    for (let j = 0; j < height; j++) {
+        for (let i = 0; i < width; i++) {
+            const x = xSpace[i]
+            const y = ySpace[j]
+
+            const xi = fractionalIndex(xArray, x);
+            const yi = fractionalIndex(yArray, y);
+
+            const u = (xi??0 + 0.5) / xArray.length;
+            const v = (yi??0 + 0.5) / yArray.length;
+            const idx = (j * width + i) * 4;
+            data[idx]     = THREE.DataUtils.toHalfFloat(u); 
+            data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
+            data[idx + 2] = 1; 
+        }
+    }
+    const texture = new THREE.DataTexture(
+		data,
+		width,
+		height,
+		THREE.RGBAFormat,
+		THREE.HalfFloatType,
+	);
+	texture.needsUpdate = true;
+	texture.magFilter = THREE.LinearFilter;
+	texture.minFilter = THREE.LinearFilter;
+	texture.wrapS = THREE.ClampToEdgeWrapping;
+	texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.flipY = flipY;
+
+    useGlobalStore.setState({remapBorders: texture})
+}
+
+function createInverseUV(
 	xArray: Array<number>,
 	yArray: Array<number>,
 	flipY: boolean,
@@ -94,7 +143,7 @@ export function createInverseUV(
 	let ptr = 0;
 	for (let j = 0; j < height; j++) {
 		const vRaw = height > 1 ? j / (height - 1) : 0;
-		const v = flipY ? 1 - vRaw : vRaw;
+		const v = vRaw;
 		const jIdx = findNearestIndex(normY, v);
 		const jNorm = yArray.length > 1 ? jIdx / (yArray.length - 1) : 0;
 
@@ -122,6 +171,7 @@ export function createInverseUV(
 	texture.minFilter = THREE.LinearFilter;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.flipY = flipY
 	return texture;
 }
 
@@ -137,7 +187,7 @@ export function handleIrregularGrid(dimArrays: Array<number>[]){
 	if(plotType == 'sphere') {
         const texture = createInverseUV(xArray, yArray, flipY, is360Deg, 1024);
         useGlobalStore.setState({remapTexture:texture});
-    } 
+    } else createIrregularUV(xArray, yArray, flipY)
     return
 }
 
@@ -196,12 +246,13 @@ export function reproject(resolution: number = 256){
     const {nativeCRS, destCRS, plotType, is360Deg} = usePlotStore.getState()
 	const {dimArrays, remapTexture, flipY } = useGlobalStore.getState()
 	const insufficientCRS = !nativeCRS || !destCRS
-	if (plotType == 'sphere'){
+    if (remapTexture) remapTexture.dispose();
+    useGlobalStore.setState({
+        remapTexture:undefined
+    })
+	if (insufficientCRS || plotType == 'sphere'){
 		// If sphere, we check if irregularGrid. If so then create new texture. 
-		if (remapTexture) remapTexture.dispose();
-        useGlobalStore.setState({
-            remapTexture:undefined
-        })
+		console.log("Help?")
 		handleIrregularGrid(dimArrays)
 		return;
 	}

@@ -12,20 +12,18 @@ import proj4, { Converter } from 'proj4';
 import { useAxisIndices } from '@/hooks';
 import { sampleCRS } from '../textures/ProjectionTexture';
 
-function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds: [number, number], proj : Converter | undefined, aspect: number){ // May use this aspect later. I'll keep for now
-    const {remapTexture} = useGlobalStore.getState()
+function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds: [number, number], proj : Converter | undefined){ // May use this aspect later. I'll keep for now
+    const {remapTexture, remapBorders} = useGlobalStore.getState()
 	let [newX, newY] = [x, y];
 	if (remapTexture && proj){
         [newX, newY]= proj.forward([x,y])
     }
     newX = (newX-xBounds[0])/(xBounds[1]-xBounds[0]);
     newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);	
-    
-    if (remapTexture){
-        const [newV, _valid] = sampleCRS(remapTexture, newX, newY)
-        
-        newX += newX-newV.x;
-        newY += newY-newV.y;
+    if (remapBorders && !remapTexture){
+        const [newV, _valid] = sampleCRS(remapBorders, newX, newY)
+        newX = newV.x;
+        newY = newV.y;
     }
     newX -= 0.5
     newX *= 2;
@@ -46,15 +44,8 @@ function Spherize([lon, lat] : [number, number]){
 }
 
 function Borders({features}:{features: any}){
-    const {xRange, yRange, plotType, borderColor, is360Deg, nativeCRS, destCRS, } = usePlotStore(useShallow(state => ({
-        xRange: state.xRange, yRange: state.yRange,
-        plotType: state.plotType, borderColor: state.borderColor,
-        is360Deg:state.is360Deg, nativeCRS: state.nativeCRS, destCRS: state.destCRS
-    })))
-    const {shape, axisDimArrays, remapTexture } = useGlobalStore(useShallow(state => ({
-		remapTexture: state.remapTexture,
-        shape: state.shape, axisDimArrays: state.axisDimArrays,
-    })))
+    const {xRange, yRange, plotType, borderColor, is360Deg, nativeCRS, destCRS } = usePlotStore(useShallow(s => s))
+    const {shape, axisDimArrays, remapTexture } = useGlobalStore(useShallow(s => s))
     const {xIdx, yIdx} = useAxisIndices()
     const [xBounds, yBounds] = useMemo(()=>{ 
         const minX = axisDimArrays[xIdx][0]
@@ -63,17 +54,7 @@ function Borders({features}:{features: any}){
         const maxY = axisDimArrays[yIdx].at(-1)
         return [[minX, maxX] as [number, number], [minY, maxY] as [number, number]]
     },[axisDimArrays, xIdx, yIdx ])
-    const [spherize, setSpherize] = useState<boolean>(false)
-
-    useEffect(()=>{
-        if (plotType === 'sphere'){
-            setSpherize(true)
-        }
-        else{
-            setSpherize(false)
-        }
-
-    },[plotType])
+    const spherize = plotType ==='sphere'
 
 	const proj = useMemo(()=>{
 		try{
@@ -83,7 +64,6 @@ function Borders({features}:{features: any}){
 			return undefined
 		}
 	},[nativeCRS, destCRS])
-	const aspect = shape.x/shape.y
 
     const lineShaderMat = useMemo(() => {
         const shapeX = (shape && shape.x > 0) ? shape.x : 1;
@@ -125,7 +105,7 @@ function Borders({features}:{features: any}){
 				feature.geometry.coordinates.forEach(([lon, lat]: [number, number]) => {
 					const [x, y, z] = spherize
 					? Spherize([ -lon, lat])
-					: Reproject([lon, lat],xBounds,yBounds, proj, aspect);
+					: Reproject([lon, lat],xBounds,yBounds, proj);
 					points.push(new THREE.Vector3(x, y, z));
 				});
 				const positions = new Float32Array(points.length * 3);
@@ -145,7 +125,7 @@ function Borders({features}:{features: any}){
 						thisIdx ++;
 					const [x, y, z] = spherize
 						? Spherize([ -lon, lat])
-						: Reproject([lon, lat],xBounds,yBounds, proj, aspect);
+						: Reproject([lon, lat],xBounds,yBounds, proj);
 						islandPoints.push(new THREE.Vector3(x, y, z));
 					});
 					const positions = new Float32Array(islandPoints.length * 3);
@@ -168,7 +148,7 @@ function Borders({features}:{features: any}){
 					ring.forEach(([lon, lat]) => {
 						const [x, y, z] = spherize
 						? Spherize([ -lon, lat])
-						: Reproject([lon, lat],xBounds,yBounds, proj, aspect);
+						: Reproject([lon, lat],xBounds,yBounds, proj);
 						points.push(new THREE.Vector3(x, y, z));
 					});
 					});
@@ -222,22 +202,9 @@ const CountryBorders = () => {
     const [borders, setBorders] = useState<any>(null)
     const [swapSides, setSwapSides] = useState<boolean>(false)
 
-    const {dataShape, is4D, flipY, shape} = useGlobalStore(useShallow(state => ({
-        dataShape: state.dataShape,
-        is4D: state.is4D,
-        flipY: state.flipY,
-        shape: state.shape
-    })))
-    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, is360Deg} = usePlotStore(useShallow(state => ({
-        zRange: state.zRange, plotType: state.plotType,
-        showBorders: state.showBorders, timeScale: state.timeScale,
-        rotateFlat: state.rotateFlat, pointSize:state.pointSize,
-        is360Deg: state.is360Deg
-    })))
-    const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
-        analysisMode: state.analysisMode,
-        axis: state.axis
-    })))
+    const {dataShape, shape} = useGlobalStore(useShallow(s => s))
+    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, is360Deg} = usePlotStore(useShallow(s => s))
+    const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
 
     const [spherize, setSpherize] = useState<boolean>(false)
 
@@ -282,7 +249,7 @@ const CountryBorders = () => {
     return(
         <group
             rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
-            scale={[globalScale, globalScale * (spherize ? 1 : (2 / aspectRatio) * (flipY ? -1 : 1)), globalScale]}
+            scale={[globalScale, globalScale * (spherize ? 1 : (2 / aspectRatio)), globalScale]}
         >
             <group 
                 visible={showBorders && !(analysisMode && axis != 0)} 
