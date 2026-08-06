@@ -27,7 +27,7 @@ export function resetProjection(){
     const aspectRatio = xLength/yLength;
     const newShape = new THREE.Vector3().copy(shape)
     newShape.y = 2/aspectRatio;
-    setIrregularGridTexture(dimArrays)
+    handleIrregularGrid(dimArrays)
     useGlobalStore.setState({
         axisDimArrays: dimArrays,
         axisDimUnits: dimUnits,
@@ -74,49 +74,6 @@ function isUniformStep(array: number[]): boolean {
     return true;
 }
 
-function createIrregularUV(xArray: number[], yArray: number[], flipY: boolean) {
-	// Creates a UV map if the grids of a dataset don't increase uniformly
-	const width = xArray.length;
-	const height = yArray.length;
-
-	const normX = normalizeArray(xArray);
-	const normY = normalizeArray(yArray);
-    usePlotStore.setState({
-        irregularX: normX,
-        irregularY: normY
-    })
-	const data = new Uint16Array((width) * (height) * 4); //4 for RGBA
-    const xStep = 0.5/width;
-    const yStep = 0.5/height;
-	let ptr = 0;
-	for (let j = 0; j < height; j++) {
-		let y = flipY ? 1 - normY[j] : normY[j];
-        y += yStep;
-		for (let i = 0; i < width; i++) {
-		const x = normX[i] + xStep;
-		data[ptr++] = THREE.DataUtils.toHalfFloat(x);
-		data[ptr++] = THREE.DataUtils.toHalfFloat(y);
-		data[ptr++] = THREE.DataUtils.toHalfFloat(1.); // Set Valid so can be used in same shader logic
-		ptr++;
-		
-		}
-	}
-	const texture = new THREE.DataTexture(
-		data,
-		width,
-		height,
-		THREE.RGBAFormat,
-		THREE.HalfFloatType
-	);
-	texture.needsUpdate = true;
-	texture.magFilter = THREE.LinearFilter;
-	texture.minFilter = THREE.LinearFilter;
-	texture.wrapS = THREE.ClampToEdgeWrapping;
-	texture.wrapT = THREE.ClampToEdgeWrapping;
-
-	return texture;
-}
-
 export function createInverseUV(
 	xArray: Array<number>,
 	yArray: Array<number>,
@@ -158,61 +115,94 @@ export function createInverseUV(
 		width,
 		height,
 		THREE.RGBAFormat,
-		THREE.HalfFloatType
+		THREE.HalfFloatType,
 	);
 	texture.needsUpdate = true;
 	texture.magFilter = THREE.LinearFilter;
 	texture.minFilter = THREE.LinearFilter;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;
-
 	return texture;
 }
 
-export function setIrregularGridTexture(dimArrays: Array<number>[]){
-    // This is needed for Sphere and other projections where the grid is not uniform. It creates a texture that maps the irregular grid to a regular grid for sampling in the shader.
+export function handleIrregularGrid(dimArrays: Array<number>[]){
+    // This is needed for Sphere and other projections where the grid is not uniform. It creates an array for the ticks and update for sphere
     const {xIdx, yIdx} = getAxisIndices()
-	const {remapTexture, flipY} = useGlobalStore.getState();
-    const {is360Deg} = usePlotStore.getState()
-	if (remapTexture) remapTexture.dispose();
+    const {flipY} = useGlobalStore.getState();
     const xArray = dimArrays[xIdx];
     const yArray = dimArrays[yIdx];
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
     if (isRegular) return;
-    //Dispose of remaptexture if exists
-	const {plotType} = usePlotStore.getState();
-	const isSphere = plotType == 'sphere';
-	const texture = isSphere ? createInverseUV(xArray, yArray, flipY, is360Deg, 1024) :  createIrregularUV(xArray, yArray, flipY)
-    useGlobalStore.setState({remapTexture:texture});
+    const {is360Deg, plotType} = usePlotStore.getState();
+	if(plotType == 'sphere') {
+        const texture = createInverseUV(xArray, yArray, flipY, is360Deg, 1024);
+        useGlobalStore.setState({remapTexture:texture});
+    } 
+    return
 }
 
-export function sampleCRS(tex: THREE.DataTexture, u:number, v:number): [THREE.Vector2, boolean] {
-    // Samples an array given UVs
+export function sampleCRS(tex: THREE.DataTexture, u: number, v: number): [THREE.Vector2, boolean] {
+    // Linearly interpolates a texture given UV
     const { data, width, height } = tex.image;
     if (!data) return [new THREE.Vector2(u, v), true];
 
-    const x = Math.max(0, Math.min(width - 1, Math.round(u * (width - 1))));
-    const y = Math.max(0, Math.min(height - 1, Math.round(v * (height - 1))));
+    const facX = u * width - 1;
+    const facY = v * height - 1;
 
-    const idx = (y * width + x) * 4; // RGBA
-    const newU = THREE.DataUtils.fromHalfFloat(data[idx + 0])
-    const newV = THREE.DataUtils.fromHalfFloat(data[idx + 1])
-    const valid = THREE.DataUtils.fromHalfFloat(data[idx + 2])
-    return [
-        new THREE.Vector2(newU,newV),
-        valid > 0.5
-    ];
+    const x0 = Math.floor(facX);
+    const y0 = Math.floor(facY);
+    const x1 = x0 + 1;
+    const y1 = y0 + 1;
+
+    // Interpolation weights [0-1]
+    const wx = facX - x0;
+    const wy = facY - y0;
+
+    // Clamp each corner to the texture bounds
+    const clampX = (x: number) => Math.min(Math.max(x, 0), width - 1);
+    const clampY = (y: number) => Math.min(Math.max(y, 0), height - 1);
+
+    const cx0 = clampX(x0);
+    const cx1 = clampX(x1);
+    const cy0 = clampY(y0);
+    const cy1 = clampY(y1);
+
+    const getValues = (x: number, y: number) => {
+        const idx = (y * width + x) * 4;
+        return {
+            u: THREE.DataUtils.fromHalfFloat(data[idx]),
+            v: THREE.DataUtils.fromHalfFloat(data[idx + 1]),
+            valid: THREE.DataUtils.fromHalfFloat(data[idx + 2]),
+        };
+    };
+
+    const t00 = getValues(cx0, cy0);
+    const t10 = getValues(cx1, cy0);
+    const t01 = getValues(cx0, cy1);
+    const t11 = getValues(cx1, cy1);
+
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    const newU = lerp(lerp(t00.u, t10.u, wx), lerp(t01.u, t11.u, wx), wy);
+    const newV = lerp(lerp(t00.v, t10.v, wx), lerp(t01.v, t11.v, wx), wy);
+
+    // Valid only if all four corners are valid
+    const valid = t00.valid > 0 && t10.valid > 0 && t01.valid > 0 && t11.valid > 0;
+
+    return [new THREE.Vector2(newU, newV), valid];
 }
 
 export function reproject(resolution: number = 256){
     const {nativeCRS, destCRS, plotType, is360Deg} = usePlotStore.getState()
 	const {dimArrays, remapTexture, flipY } = useGlobalStore.getState()
 	const insufficientCRS = !nativeCRS || !destCRS
-
-	if ((remapTexture && insufficientCRS) || plotType == 'sphere'){
-		// If remapTexture already exists but not CRS then this could be from irregular grid. In that case remake irrgular grid when CRS are missing
-		// Texture will be disposesd in setIrregularGridTexture
-		setIrregularGridTexture(dimArrays)
+	if (plotType == 'sphere'){
+		// If sphere, we check if irregularGrid. If so then create new texture. 
+		if (remapTexture) remapTexture.dispose();
+        useGlobalStore.setState({
+            remapTexture:undefined
+        })
+		handleIrregularGrid(dimArrays)
 		return;
 	}
     if (insufficientCRS) return; 
@@ -228,9 +218,6 @@ export function reproject(resolution: number = 256){
     const width = xArray.length;
     const height = yArray.length;
 
-	
-    const [xMin, xMax] = ArrayMinMax(xArray);
-    const [yMin, yMax] = ArrayMinMax(yArray);
     // We need the border points as the min/max of the old CRS won't always be the min/max of the new CRS
 	
     const boundaryPoints: [number, number][] = [];
@@ -361,11 +348,6 @@ export function reproject(resolution: number = 256){
     //Clear texture before setting
     if (remapTexture) remapTexture.dispose();
     useGlobalStore.setState({remapTexture: texture})
-    usePlotStore.setState({ // Using a structured grid. Never irregular
-        irregularX: undefined,
-        irregularY: undefined
-    })
-
     // ---- Update Axis and Shape information ----//
     const crsCheck = proj4(destCRS);
     const {axisDimArrays, axisDimUnits, axisDimNames, shape} = useGlobalStore.getState()

@@ -227,10 +227,7 @@ const Plot = () => {
 
   useEffect(()=>{ // Rotates flat back when changing away
     usePlotStore.setState({rotateFlat: false})
-    const { remapTexture } = useGlobalStore.getState();
-    if (remapTexture) {
-      reproject();
-    }
+    reproject();
   },[plotType])
 
   useEffect(()=>{

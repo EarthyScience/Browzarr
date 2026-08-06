@@ -9,7 +9,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { vertShader } from '@/components/computation/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
-import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad, ArrayMinMax } from '@/utils/HelperFuncs';
 import { sampleCRS } from '../textures/ProjectionTexture';
 import { evaluateColorMap } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
@@ -83,21 +83,17 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     }, [analysisMode, dimSlices, dimArrays, zSlice, ySlice, xSlice, axis, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
 
     const {lonBounds, latBounds} = useCoordBounds()
-
     useEffect(()=>{
         geometry.dispose()
     },[geometry])
-
     // ----- MOUSE MOVE ----- //
-    const eventRef = useRef<ThreeEvent<PointerEvent> | null>(null);
     const handleMove = (e: ThreeEvent<PointerEvent>) => {
       if (infoRef.current && e.uv) {
         let {uv} = e;
         if (!uv) return;
         setLoc([e.clientX, e.clientY]);
-        eventRef.current = e;
         if (remapTexture){
-          const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
+          const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, uv.y)
           uv = thisUV;
           if (!isValid){
             val.current = NaN;
@@ -110,10 +106,11 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         const ySliceIdx = dimSlices.length > 2 ? 1 : 0;
         const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[zSliceIdx].length;
         const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[ySliceIdx].length;
-        const xId = Math.max(0, Math.min(xSize - 1, Math.round(x * (xSize - 1))));
-        const yId = Math.max(0, Math.min(ySize - 1, Math.round(y * (ySize - 1))));
+        const xId = Math.round(x * xSize - 0.5);
+        const yId = Math.floor(y * ySize);
         let dataIdx = xSize * yId + xId;
-        dataIdx += isFlat ? 0 : Math.floor((dimSlices[zIdx].length-1) * animProg) * xSize*ySize
+        const zOffset = isFlat ? 0 : Math.floor((dimSlices[zIdx].length-1) * animProg)
+        dataIdx += zOffset * xSize*ySize
         const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
         val.current = dataVal;
         coords.current = [y,x]

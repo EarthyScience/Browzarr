@@ -42,7 +42,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     shape: state.shape
   })))
 
-  const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice, irregularX, irregularY, coarsen} = usePlotStore(useShallow(s => s))
+  const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice, coarsen} = usePlotStore(useShallow(s => s))
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow(s => s))
 
   const {xIdx, yIdx, zIdx} = useAxisIndices()
@@ -109,20 +109,9 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const yTitleOffset = useMemo(() => ((axisDimNames[yIdx]?.length || 0) * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [axisDimNames, globalScale, yIdx]);
   const zTitleOffset = useMemo(() => ((axisDimNames[zIdx]?.length || 0) * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [axisDimNames, globalScale, zIdx]);
   
-  function getIrregularFactor(fac:number, isX=false){
-    let irregArray = isX ? irregularX : irregularY;
-    if (!irregArray){
+  function getFactor(fac:number, isX=false){
       const length = dimLengths[isX ? xIdx : yIdx]
       return Math.floor(fac * (length - 1))
-    } ;
-    if (!isX && revY) {
-      irregArray = [...irregArray]
-      irregArray.reverse()
-    }
-    const length = irregArray.length
-    const idx = Math.floor(fac * (length - 1));
-    fac = irregArray[idx]
-    return Math.floor(fac * (length - 1))
   }
   return (
     <group visible={plotType != 'sphere' && plotType != 'flat' && !hideAxis}>
@@ -146,7 +135,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]}
               position={[0, 0, flipX ? -AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale : AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale]}
-            >{parseLoc(dimSlices[2]?.[getIrregularFactor(idx*xValDelta, true)] || 0,axisDimUnits[xIdx])}</Text>
+            >{parseLoc(dimSlices[2]?.[getFactor(idx*xValDelta, true)] || 0,axisDimUnits[xIdx])}</Text>
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]} position={[(xRange[0]+xRange[1])/2*globalScale, 0, flipX ? -AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale : AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale]}>
@@ -276,7 +265,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[0, flipX ? Math.PI : 0, 0]}
               position={[flipY ? -0.07*globalScale : 0.07*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[1]?.[getIrregularFactor(idx*yValDelta)] || 0,axisDimUnits[yIdx])}</Text>
+            >{parseLoc(dimSlices[1]?.[getFactor(idx*yValDelta)] || 0,axisDimUnits[yIdx])}</Text>
           </group>
         ))}
         <group rotation={[0, flipX ? Math.PI : 0 , 0]} position={[flipY ? -0.32*globalScale : 0.32*globalScale, (yRange[0]+yRange[1])/2*shapeRatio*globalScale, 0]}>
@@ -349,14 +338,13 @@ const FLAT_AXIS_CONSTANTS = {
 
 const FlatAxis = () =>{
   const {axisDimArrays, axisDimNames, axisDimUnits, flipY} = useGlobalStore(useShallow(s => s))
-  const {plotType,  zSlice, ySlice, xSlice, rotateFlat, irregularX, irregularY} = usePlotStore(useShallow(s => s))
+  const {plotType,  zSlice, ySlice, xSlice, rotateFlat} = usePlotStore(useShallow(s => s))
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow(s => s))
   const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
 
   const originallyFlat = axisDimArrays.length == 2;
   const slices = originallyFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
   const {xIdx, yIdx, zIdx} = useAxisIndices()
-
   const dimSlices = useMemo(()=> {
     return originallyFlat ? 
     [
@@ -451,20 +439,9 @@ const FlatAxis = () =>{
   const xTitleOffset = useMemo(() => ((axisNames[widthIdx]?.length || 0) * FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE / 2 + 0.1), [axisNames, widthIdx]);
   const yTitleOffset = useMemo(() => ((axisNames[heightIdx]?.length || 0) * FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE / 2 + 0.1), [axisNames, heightIdx]);
 
-  function getIrregularFactor(fac:number, isX=false){
-    let irregArray = isX ? irregularX : irregularY;
-    if (!irregArray){
+  function getFactor(fac:number, isX=false){
       const length = dimLengths[isX ? xIdx : yIdx]
       return Math.round(fac * (length - 1))
-    } ;
-    if (!isX && flipY) {
-      irregArray = [...irregArray]
-      irregArray.reverse()
-    }
-    const length = irregArray.length
-    const idx = Math.round(fac * (length - 1));
-    fac = irregArray[idx]
-    return Math.round(fac * (length - 1))
   }
   return (
     <group 
@@ -487,7 +464,7 @@ const FlatAxis = () =>{
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, 0]}
               position={[0, 0, FLAT_AXIS_CONSTANTS.TICK_LENGTH]}
-            >{parseLoc(axisArrays[widthIdx][getIrregularFactor(idx*xValDelta, true)],axisUnits[widthIdx])}</Text>
+            >{parseLoc(axisArrays[widthIdx][getFactor(idx*xValDelta, true)],axisUnits[widthIdx])}</Text>
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, 0]} position={[0, 0, FLAT_AXIS_CONSTANTS.X_TITLE_OFFSET]}>
@@ -549,7 +526,7 @@ const FlatAxis = () =>{
               material-depthTest={false}
               rotation={[0,  0, -Math.PI]}
               position={[FLAT_AXIS_CONSTANTS.TICK_LENGTH*1.4, 0, 0]}
-            >{parseLoc(axisArrays[heightIdx][getIrregularFactor(idx*yValDelta)],axisUnits[heightIdx])}</Text>
+            >{parseLoc(axisArrays[heightIdx][getFactor(idx*yValDelta)],axisUnits[heightIdx])}</Text>
           </group>
         ))}
         <group rotation={[0, 0, 0]} position={[-FLAT_AXIS_CONSTANTS.Y_TITLE_OFFSET, 0, 0]}>
