@@ -109,7 +109,6 @@ export async function GetArray(varOveride?: string) {
 
     setStatus("Downloading...");
     setProgress(0);
-    console.log(zDim)
     for (let z = zDim.start; z < zDim.end; z++) {
         for (let y = yDim.start; y < yDim.end; y++) {
             for (let x = xDim.start; x < xDim.end; x++) {
