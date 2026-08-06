@@ -13,10 +13,11 @@ import { useAxisIndices } from '@/hooks';
 import { sampleCRS } from '../textures/ProjectionTexture';
 
 function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds: [number, number], proj : Converter | undefined){ // May use this aspect later. I'll keep for now
-    const {remapTexture, remapBorders} = useGlobalStore.getState()
+    const {remapTexture, remapBorders, flipY} = useGlobalStore.getState()
 	let [newX, newY] = [x, y];
 	if (remapTexture && proj){
         [newX, newY]= proj.forward([x,y])
+        newY = flipY ? 1 - newY : newY
     }
     newX = (newX-xBounds[0])/(xBounds[1]-xBounds[0]);
     newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);	
