@@ -27,13 +27,16 @@ export function resetProjection(){
     const aspectRatio = xLength/yLength;
     const newShape = new THREE.Vector3().copy(shape)
     newShape.y = 2/aspectRatio;
-    handleIrregularGrid(dimArrays)
-    useGlobalStore.setState({
+        useGlobalStore.setState({
         axisDimArrays: dimArrays,
         axisDimUnits: dimUnits,
         axisDimNames: dimNames,
         shape: newShape,
+        remapTexture: undefined,
+        remapBorders: undefined,
     })
+    handleIrregularGrid(dimArrays)
+
     usePlotStore.setState({
         xSlice, 
         ySlice
@@ -252,7 +255,6 @@ export function reproject(resolution: number = 256){
     })
 	if (insufficientCRS || plotType == 'sphere'){
 		// If sphere, we check if irregularGrid. If so then create new texture. 
-		console.log("Help?")
 		handleIrregularGrid(dimArrays)
 		return;
 	}
