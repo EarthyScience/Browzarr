@@ -81,6 +81,7 @@ function createIrregularUV(
     xArray: Array<number>,
 	yArray: Array<number>,
     flipY: boolean,
+    is360: boolean,
 ) {
     const width = xArray.length;
     const height = yArray.length;
@@ -101,8 +102,8 @@ function createIrregularUV(
             const xi = fractionalIndex(xArray, x);
             const yi = fractionalIndex(yArray, y);
 
-            const u = (xi??0 + 0.5) / xArray.length;
-            const v = (yi??0 + 0.5) / yArray.length;
+            let u = (xi??0 + 0.5) / xArray.length;
+            let v = (yi??0 + 0.5) / yArray.length;
             const idx = (j * width + i) * 4;
             data[idx]     = THREE.DataUtils.toHalfFloat(u); 
             data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
@@ -190,7 +191,7 @@ export function handleIrregularGrid(dimArrays: Array<number>[]){
 	if(plotType == 'sphere') {
         const texture = createInverseUV(xArray, yArray, flipY, is360Deg, 1024);
         useGlobalStore.setState({remapTexture:texture});
-    } else createIrregularUV(xArray, yArray, flipY)
+    } else createIrregularUV(xArray, yArray, flipY, is360Deg)
     return
 }
 

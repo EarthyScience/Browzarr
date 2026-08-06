@@ -21,11 +21,11 @@ function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds
     }
     newX = (newX-xBounds[0])/(xBounds[1]-xBounds[0]);
     newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);	
-    if (remapBorders && !remapTexture){
-        const [newV, _valid] = sampleCRS(remapBorders, newX, newY)
-        newX = newV.x;
-        newY = newV.y;
-    }
+    // if (remapBorders && !remapTexture){
+    //     const [newV, _valid] = sampleCRS(remapBorders, newX, newY)
+    //     newX = newV.x;
+    //     newY = newV.y;
+    // }
     newX -= 0.5
     newX *= 2;
     newY -= 0.5;
@@ -44,6 +44,8 @@ function Spherize([lon, lat] : [number, number]){
     return [x * radius, y * radius, z * radius]
 }
 
+
+
 function Borders({features}:{features: any}){
     const {xRange, yRange, plotType, borderColor, is360Deg, nativeCRS, destCRS } = usePlotStore(useShallow(s => s))
     const {shape, axisDimArrays, remapTexture } = useGlobalStore(useShallow(s => s))
@@ -57,6 +59,13 @@ function Borders({features}:{features: any}){
     },[axisDimArrays, xIdx, yIdx ])
     const spherize = plotType ==='sphere'
 
+    function toXYZ(lon: number, lat: number){
+        const [x, y, z] = spherize
+        ? Spherize([ -lon, lat])
+        : Reproject([lon, lat],xBounds,yBounds, proj);
+        
+        return new THREE.Vector3(x, y, z);
+    }
 	const proj = useMemo(()=>{
 		try{
 			const proj = proj4(nativeCRS as string, destCRS as string)
@@ -103,12 +112,8 @@ function Borders({features}:{features: any}){
 			const lines = [];
 			if (feature.geometry.type === 'LineString') {
 				const points: THREE.Vector3[] = [];
-				feature.geometry.coordinates.forEach(([lon, lat]: [number, number]) => {
-					const [x, y, z] = spherize
-					? Spherize([ -lon, lat])
-					: Reproject([lon, lat],xBounds,yBounds, proj);
-					points.push(new THREE.Vector3(x, y, z));
-				});
+				feature.geometry.coordinates.
+                    forEach(([lon, lat]: [number, number]) =>	points.push(toXYZ(lon, lat)));
 				const positions = new Float32Array(points.length * 3);
 				points.forEach((point, i) => {
 					positions.set([point.x, point.y, point.z], i * 3);
@@ -124,10 +129,7 @@ function Borders({features}:{features: any}){
 					const islandPoints: THREE.Vector3[] = [];
 					ring.forEach(([lon, lat]) => {
 						thisIdx ++;
-					const [x, y, z] = spherize
-						? Spherize([ -lon, lat])
-						: Reproject([lon, lat],xBounds,yBounds, proj);
-						islandPoints.push(new THREE.Vector3(x, y, z));
+						islandPoints.push(toXYZ(lon, lat));
 					});
 					const positions = new Float32Array(islandPoints.length * 3);
 					islandPoints.forEach((point, i) => {
@@ -146,12 +148,7 @@ function Borders({features}:{features: any}){
 				polygons.forEach((polygon: number[][][]) => {
 					const points: THREE.Vector3[] = [];
 					polygon.forEach((ring: number[][]) => {
-					ring.forEach(([lon, lat]) => {
-						const [x, y, z] = spherize
-						? Spherize([ -lon, lat])
-						: Reproject([lon, lat],xBounds,yBounds, proj);
-						points.push(new THREE.Vector3(x, y, z));
-					});
+                        ring.forEach(([lon, lat]) => points.push(toXYZ(lon, lat)));
 					});
 					const positions = new Float32Array(points.length * 3);
 					points.forEach((point, i) => {
@@ -168,30 +165,23 @@ function Borders({features}:{features: any}){
 
     const lines = useMemo(() => {
         const results: any[] = []
-        lineGeometries.map((geom: THREE.BufferGeometry, idx: number) => {
-            if (is360Deg && !spherize) {
-                const wrappedGeom = geom.clone()
-                const {count, array} = geom.attributes.position
-                for (let i = 0; i < count; i++){
-                    const idx = i*3;
-                    array[idx] = array[idx]+0.5
-                }
-                const wrappedArray = wrappedGeom.attributes.position.array
-                for (let i = 0; i < count; i++){
-                    const idx = i*3;
-                    wrappedArray[idx] = wrappedArray[idx]-1
-                }
+            lineGeometries.forEach((geom: THREE.BufferGeometry, idx: number) => {
                 const line = new THREE.Line(geom, lineShaderMat);
-                const wrappedLine = new THREE.Line(wrappedGeom, lineShaderMat);
-                results.push(<primitive key={`border-${idx}`} object={line} />)
-                results.push(<primitive key={`border-${idx}_wrap`} object={wrappedLine} />)
-            } else {
-                const line = new THREE.Line(geom, lineShaderMat);
-                results.push(<primitive key={`border-${idx}`} object={line} />);
-            }
-        });
-        return results
-    }, [lineGeometries, lineShaderMat]);
+                if (is360Deg && !spherize) {
+                    const lineL = line.clone();
+                    // lineL.position.x = -1;
+                    const lineR = line.clone();
+                    lineR.position.x = 1;
+                    results.push(
+                        <primitive key={`border-${idx}_l`} object={lineL} />,
+                        <primitive key={`border-${idx}_r`} object={lineR} />
+                    );
+                } else {
+                    results.push(<primitive key={`border-${idx}`} object={line} />);
+                }
+            });
+            return results
+    }, [lineGeometries, lineShaderMat, is360Deg, spherize]);
     return (
         <>
             {lines}
