@@ -19,7 +19,12 @@ function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=
         const newPos = toXYZ(lon, lat)
         const newLon = newPos.x
         if (prevLon !== null && Math.abs(newLon - prevLon) > span) {
+            const closerToOne = Math.abs(newLon - 1) < Math.abs(newLon + 1);
+            newPos.x = closerToOne ? -1 : 1
+            segments[segments.length - 1].push(newPos);
             segments.push([]); // jump detected -> start new line
+            prevLon = newLon;
+            continue;
         }
         segments[segments.length - 1].push(newPos);
         prevLon = newLon;
@@ -237,10 +242,9 @@ const CountryBorders = () => {
     const globalScale = isPC ? dataShape[2]/500 : 1
     const depthScale = isPC ? depthRatio : timeRatio/2
     const aspectRatio = (shape && shape.y > 0) ? (shape.x / shape.y) : 1;
-
     return(
         <group
-            rotation={[rotateFlat ? -Math.PI/2 : 0, is360Deg ? Math.PI :  0, 0]}
+            rotation={[rotateFlat ? -Math.PI/2 : 0, spherize && is360Deg ? Math.PI : 0, 0]}
             scale={[globalScale, globalScale * (spherize ? 1 : (2 / aspectRatio)), globalScale]}
         >
             <group 
