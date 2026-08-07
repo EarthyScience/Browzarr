@@ -20,7 +20,7 @@ interface TimeComboboxProps {
   includeEnd?: boolean
 }
 
-export default function TimeCombobox({
+const TimeCombobox = React.memo(({
   currentIndex,
   onIndexChange,
   ariaLabel,
@@ -29,7 +29,7 @@ export default function TimeCombobox({
   effectiveDimSize,
   formattedValue,
   includeEnd = false,
-}: TimeComboboxProps) {
+}: TimeComboboxProps) => {
   const selectedLabel =
     includeEnd && currentIndex === effectiveDimSize
       ? formattedValue(Math.max(effectiveDimSize - 1, 0))
@@ -111,10 +111,7 @@ export default function TimeCombobox({
     }
   }, [filteredData]);
 
-  const targetWidth = Math.min(
-    Math.max(Math.max(selectedLabel.length, placeholder.length) + 2, 12),
-    40
-  )
+  const targetWidth = 11
 
   return (
     <Combobox
@@ -130,7 +127,7 @@ export default function TimeCombobox({
         style={{ width: `${targetWidth}ch` }}
         placeholder={placeholder}
         aria-label={ariaLabel}
-        showClear
+        showTrigger={false}
       />
       <ComboboxContent>
         {filtered.length === 0 ? <ComboboxEmpty>No items found.</ComboboxEmpty> : null}
@@ -192,4 +189,6 @@ export default function TimeCombobox({
       </ComboboxContent>
     </Combobox>
   )
-}
+})
+
+export default TimeCombobox

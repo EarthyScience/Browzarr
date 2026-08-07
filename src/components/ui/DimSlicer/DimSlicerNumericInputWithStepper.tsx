@@ -9,8 +9,8 @@ interface DimSlicerNumericInputWithStepperProps {
   value: string;
   placeholder: string;
   onValueChange: (value: string) => void;
-  onIncrement: () => void;
-  onDecrement: () => void;
+  onIncrement: (delta: number) => void;
+  onDecrement: (delta: number) => void;
   ariaLabel: string;
   showInput?: boolean;
 }
@@ -73,10 +73,10 @@ export const DimSlicerNumericInputWithStepper: React.FC<DimSlicerNumericInputWit
         )}
         {expanded ? (
           <ButtonGroup orientation="horizontal" aria-label={ariaLabel} className="h-fit">
-            <Button variant="outline" size="icon-sm" className="h-7 w-7 p-0 cursor-pointer" onClick={onDecrement}>
+            <Button variant="outline" size="icon-sm" className="h-7 w-7 p-0 cursor-pointer" onClick={()=>onDecrement(-1)}>
               <MinusIcon className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon-sm" className="h-7 w-7 p-0 cursor-pointer" onClick={onIncrement}>
+            <Button variant="outline" size="icon-sm" className="h-7 w-7 p-0 cursor-pointer" onClick={()=>onIncrement(+1)}>
               <PlusIcon className="h-4 w-4" />
             </Button>
           </ButtonGroup>
