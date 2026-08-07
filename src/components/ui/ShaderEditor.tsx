@@ -28,17 +28,8 @@ const selectedPlates = {
 }
 
 const ConfigureUniforms = ({variables} : {variables:string[]})=>{
-    const {reduceOnAxis, axis, setKernelDepth, setKernelSize, setVariable2, setReduceOnAxis, setAxis} = useAnalysisStore(useShallow(state => ({
-        reduceOnAxis: state.reduceOnAxis,
-        axis: state.axis,
-        variable2: state.variable2,
-        setKernelDepth: state.setKernelDepth,
-        setKernelSize: state.setKernelSize,
-        setVariable2: state.setVariable2,
-        setReduceOnAxis: state.setReduceOnAxis,
-        setAxis: state.setAxis,
-    })))
-    const {dimNames, variable} = useGlobalStore(useShallow(state => ({dimNames: state.dimNames, variable:state.variable})))
+    const {reduceOnAxis, axis, setKernelDepth, setKernelSize, setVariable2, setReduceOnAxis, setAxis} = useAnalysisStore(useShallow(s => s))
+    const {dimNames, variable} = useGlobalStore(useShallow(s => s))
     const [thisKernelSize, setThisKernelSize] = useState(String(useAnalysisStore.getState().kernelSize))
     const [thisKernelDepth, setThisKernelDepth] = useState(String(useAnalysisStore.getState().kernelDepth))
 
@@ -122,23 +113,8 @@ const ShaderEditor = React.memo(function ShaderEditor ({visible} : {visible: boo
     const [newDim, setNewDim] = useState(0)
     const [boilerPlate, setBoilerPlate] = useState("")
     const {resolvedTheme} = useTheme()
-    const {executeCustom, kernelDepth, kernelSize, axis, reduceOnAxis, variable2, setKernelDepth, setKernelSize, setReduceOnAxis} = useAnalysisStore(useShallow(state => ({
-        executeCustom: state.executeCustom,
-        kernelSize: state.kernelSize,
-        kernelDepth: state.kernelDepth,
-        reduceOnAxis: state.reduceOnAxis,
-        axis: state.axis,
-        variable2: state.variable2,
-        setKernelDepth: state.setKernelDepth,
-        setKernelSize: state.setKernelSize,
-        setReduceOnAxis: state.setReduceOnAxis
-    })))
-    const {dimNames, dataShape, variable, variables,} = useGlobalStore(useShallow(state=>({
-        dimNames: state.dimNames,
-        dataShape: state.dataShape,
-        variable: state.variable,
-        variables: state.variables
-    })))
+    const {executeCustom, kernelDepth, kernelSize, axis, reduceOnAxis, variable2} = useAnalysisStore(useShallow(s => s))
+    const {dimNames, dataShape, variable, variables,} = useGlobalStore(useShallow(s => s))
     const [outputShape, setOutPutShape] = useState(dataShape)
 
     useEffect(()=>{

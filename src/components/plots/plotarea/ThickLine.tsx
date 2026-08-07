@@ -30,17 +30,9 @@ interface ThickLineProps {
 }
 
 const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
-    const {valueScales, timeSeries, colormap} = useGlobalStore(useShallow(state=>({valueScales:state.valueScales, timeSeries:state.timeSeries, colormap:state.colormap})))
-    const {lineWidth, useLineColor, lineColor, showPoints, lineResolution, useCustomColor} = usePlotStore(useShallow(state =>({
-    lineWidth: state.lineWidth,
-    linePointSize: state.linePointSize,
-    showPoints: state.showPoints,
-    useLineColor: state.useLineColor,
-    lineColor: state.lineColor,
-		lineResolution: state.lineResolution,
-    useCustomColor: state.useCustomColor
-  })))
-	const {camera} = useThree()
+    const {valueScales, timeSeries, colormap} = useGlobalStore(useShallow(s => s))
+    const {lineWidth, useLineColor, lineColor, showPoints, lineResolution, useCustomColor} = usePlotStore(useShallow(s => s))
+	  const {camera} = useThree()
 
   const {maxVal, minVal} = valueScales
   const materials = useMemo(()=>{

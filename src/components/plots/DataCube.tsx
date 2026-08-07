@@ -17,31 +17,11 @@ interface DataCubeProps {
 
 export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const volTexture = usePaddedTextures(propVolTexture);
-    const {shape, colormap, flipY, textureArrayDepths, remapTexture} = useGlobalStore(useShallow(state=>({
-      shape:state.shape, 
-      colormap:state.colormap, 
-      flipY:state.flipY,
-      textureArrayDepths: state.textureArrayDepths,
-      remapTexture: state.remapTexture
-    }))) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
+    const {shape, colormap, flipY, textureArrayDepths, remapTexture} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const {
       valueRange, xRange, yRange, zRange, quality, useOrtho, 
       animProg, cScale, cOffset, useFragOpt, transparency, maskTexture, maskValue,
-      nanTransparency, nanColor, vTransferRange, vTransferScale, fillValue} = usePlotStore(useShallow(state => ({
-      valueRange: state.valueRange, xRange: state.xRange,
-      yRange: state.yRange, zRange: state.zRange,
-      quality: state.quality, useOrtho: state.useOrtho,
-      animProg: state.animProg, cScale: state.cScale,
-      cOffset: state.cOffset, useFragOpt: state.useFragOpt,
-      transparency: state.transparency,
-      maskTexture: state.maskTexture,
-      maskValue: state.maskValue,
-      nanTransparency: state.nanTransparency,
-      nanColor: state.nanColor,
-      vTransferRange: state.vTransferRange,
-      vTransferScale: state.vTransferScale,
-      fillValue: state.fillValue,
-    })))
+      nanTransparency, nanColor, vTransferRange, vTransferScale, fillValue} = usePlotStore(useShallow(s => s))
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
     const timeRatio = shape.z/shape.x;

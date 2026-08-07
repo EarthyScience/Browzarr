@@ -65,14 +65,10 @@ const SetKeyFrame = (frame: number) =>{
 
 export const KeyFrames = () => {
 
-    const {animProg, setAnimProg} = usePlotStore(useShallow(state => ({
-        animProg:state.animProg, setAnimProg:state.setAnimProg
-    })))
+    const {animProg, setAnimProg} = usePlotStore(useShallow(s => s))
 
-    const {keyFrames, frames, useTime, frameRate, timeRate, orbit, currentFrame, previewKeyFrames, setCurrentFrame, setFrames} = useImageExportStore(useShallow(state=>({
-        keyFrames:state.keyFrames, frames:state.frames, orbit:state.orbit, currentFrame:state.currentFrame,
-        useTime:state.useTime, frameRate:state.frameRate, timeRate:state.timeRate, previewKeyFrames:state.previewKeyFrames, setCurrentFrame:state.setCurrentFrame, setFrames:state.setFrames
-    })))
+    const {keyFrames, frames, useTime, frameRate, timeRate, orbit, currentFrame, previewKeyFrames, setCurrentFrame, setFrames} = useImageExportStore(
+        useShallow(s => s))
     const timeRatio = timeRate/frameRate
     const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
     const originalAnimProg = useRef<number | null>(null)

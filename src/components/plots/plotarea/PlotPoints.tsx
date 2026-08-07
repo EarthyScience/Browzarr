@@ -18,16 +18,9 @@ function PlotPoints({ points, tsID, pointSetters, scalers }: { points: THREE.Vec
   const [_reRender,setreRender] = useState<boolean>(false);
   const {setPointID, setPointLoc,setShowPointInfo} = pointSetters;
   const [zoom,setZoom] = useState<number>(1);
-  const {pointColor, pointSize, useCustomPointColor} = usePlotStore(useShallow(state => ({
-    pointColor: state.pointColor, 
-    pointSize: state.linePointSize, 
-    showPoints: state.showPoints, 
-    useCustomPointColor: state.useCustomPointColor
-  })))
+  const {pointColor, pointSize, useCustomPointColor} = usePlotStore(useShallow(s => s))
   const {xScale, yScale} = scalers;
-  const {timeSeries} = useGlobalStore(useShallow(state =>({
-    timeSeries: state.timeSeries
-  })))
+  const {timeSeries} = useGlobalStore(useShallow(s => s))
   const [r, g, b] = timeSeries[tsID]['color']
   const geometry = useMemo(() => new THREE.SphereGeometry(pointSize), [pointSize])
   const material = useMemo(()=> new THREE.MeshBasicMaterial({color: new THREE.Color().setRGB(r/300, g/300, b/300).convertSRGBToLinear()}),[pointColor, useCustomPointColor, timeSeries])  // It was converting to sRGB colorspace while the line shader uses linear

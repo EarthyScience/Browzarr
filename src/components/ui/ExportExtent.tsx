@@ -5,9 +5,7 @@ import React from 'react'
 import { useShallow } from 'zustand/shallow'
 
 export const ExportExtent = React.memo(function ExportExtent(){
-    const {customRes, previewExtent} = useImageExportStore(useShallow(state=> ({
-        customRes:state.customRes, previewExtent:state.previewExtent
-    })))
+    const {customRes, previewExtent} = useImageExportStore(useShallow(s => s))
 
     const dpr = useGlobalStore.getState().DPR || window.devicePixelRatio || 1;
 

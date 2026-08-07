@@ -5,9 +5,7 @@ import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 
 export const AxisBars = () => {
-    const {setCameraPosition} = usePlotStore(useShallow(state =>({
-        setCameraPosition: state.setCameraPosition
-    })))
+    const {setCameraPosition} = usePlotStore(useShallow(s => s))
 
   return (
     <div className="axis-panel">

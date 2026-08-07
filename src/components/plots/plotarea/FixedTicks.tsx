@@ -42,17 +42,8 @@ export function FixedTicks({
   const initSize = useRef(size)
   const [bounds, setBounds] = useState<ViewportBounds>({ left: 0, right: 0, top: 0, bottom: 0 })
   const {dimCoords, axisDimArrays, plotDim, valueScales} = useGlobalStore(
-    useShallow(state=>({
-      dimCoords:state.dimCoords,
-      axisDimArrays:state.axisDimArrays,
-      plotDim:state.plotDim,
-      valueScales:state.valueScales
-    })))
-  const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
-                zSlice: state.zSlice,
-                ySlice: state.ySlice,
-                xSlice: state.xSlice
-      })))
+    useShallow(s => s))
+  const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(s => s))
   const {xIdx, yIdx, zIdx} = useAxisIndices()
 
   const dimSlices = useMemo(() => {

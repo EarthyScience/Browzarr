@@ -20,14 +20,7 @@ const MIN_HEIGHT = 10;
 
 function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
   const {plotDim, axisDimArrays, axisDimNames, axisDimUnits, timeSeries} = useGlobalStore(
-    useShallow(state=>({
-      plotDim:state.plotDim,
-      axisDimArrays:state.axisDimArrays,
-      axisDimNames:state.axisDimNames,
-      axisDimUnits:state.axisDimUnits,
-      timeSeries:state.timeSeries,
-    }))
-  );
+    useShallow(s => s));
   let pointY = 0;
   let pointX = 0;
   if (Object.entries(pointID).length > 0 && Object.entries(timeSeries).length > 0){
@@ -67,19 +60,14 @@ function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
 }
 
 function PointCoords({open, height} : {open:boolean, height:number}){
-  const {coords, timeSeries, setDimCoords, setTimeSeries} = useGlobalStore(useShallow(state=>({
-    coords: state.dimCoords, 
-    timeSeries: state.timeSeries, 
-    setDimCoords: state.setDimCoords, 
-    setTimeSeries: state.setTimeSeries}
-  )))
+  const {dimCoords, timeSeries, setDimCoords, setTimeSeries} = useGlobalStore(useShallow(s => s))
   const [moving,setMoving] = useState<boolean>(false)
   const initialMouse = useRef<number[]>([0,Math.round(window.innerHeight*0.255)])
   const initialDiv = useRef<number[]>([0,Math.round(window.innerHeight*0.255)])
   const [xy, setXY] = useState<number[]>([0,Math.round(window.innerHeight*0.255)])
 
   function RemoveLine (keyID : string){
-    const { [keyID]: _coord, ...rest } = coords;
+    const { [keyID]: _coord, ...rest } = dimCoords;
     setDimCoords(rest);
     const { [keyID]: _ts, ...tsRest } = timeSeries;
     setTimeSeries(tsRest);
@@ -130,8 +118,8 @@ function PointCoords({open, height} : {open:boolean, height:number}){
         }}
     >
     { //Only show coords when coords exist
-      Object.keys(coords).length > 0 && 
-      Object.keys(coords).reverse().map((val,idx)=>(
+      Object.keys(dimCoords).length > 0 && 
+      Object.keys(dimCoords).reverse().map((val,idx)=>(
         <div className='plot-coords'
         key={val}   
         style={{
@@ -139,11 +127,11 @@ function PointCoords({open, height} : {open:boolean, height:number}){
           justifyContent:'space-between'
         }}
       >
-        <b>{`${coords[val]['first'].name}: `}</b>
-        {`${parseLoc(coords[val]['first'].loc,coords[val]['first'].units)}`}
+        <b>{`${dimCoords[val]['first'].name}: `}</b>
+        {`${parseLoc(dimCoords[val]['first'].loc,dimCoords[val]['first'].units)}`}
         <br/>
-        <b>{`${coords[val]['second'].name}: `}</b>
-        {`${parseLoc(coords[val]['second'].loc,coords[val]['second'].units)}`}
+        <b>{`${dimCoords[val]['second'].name}: `}</b>
+        {`${parseLoc(dimCoords[val]['second'].loc,dimCoords[val]['second'].units)}`}
         <IoCloseCircleSharp 
         onClick={()=>RemoveLine(val)}
           style={{
@@ -165,10 +153,7 @@ export function PlotArea() {
   const [pointLoc, setPointLoc] = useState<number[]>([0,0])
   const [showPointInfo,setShowPointInfo] = useState<boolean>(false)
   const [height, setHeight] = useState<number>(Math.round(window.innerHeight-(window.innerHeight*0.25)))
-  const {metadata, timeSeries} = useGlobalStore(useShallow(state=>({
-    metadata: state.metadata,
-    timeSeries: state.timeSeries
-  })))
+  const {metadata, timeSeries} = useGlobalStore(useShallow(s => s))
   const plotUnits = (metadata as any)?.units 
   const [open, setOpen] = useState(true);
   const [pinned, setPinned] = useState<boolean>(false);

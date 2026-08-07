@@ -15,15 +15,7 @@ import { Slider } from "@/components/ui/slider"
 
 // Memoized Point Options
 const PointOptions = React.memo(function PointOptions(){
-  const { showPoints, linePointSize, pointColor, useCustomPointColor, setLinePointSize, setPointColor, setUseCustomPointColor } = usePlotStore(useShallow(state => ({
-    showPoints: state.showPoints,
-    linePointSize: state.linePointSize,
-    pointColor: state.pointColor,
-    useCustomPointColor: state.useCustomPointColor,
-    setLinePointSize: state.setLinePointSize,
-    setPointColor: state.setPointColor,
-    setUseCustomPointColor: state.setUseCustomPointColor
-  })))
+  const { showPoints, linePointSize, pointColor, useCustomPointColor, setLinePointSize, setPointColor, setUseCustomPointColor } = usePlotStore(useShallow(s => s))
   if (!showPoints) return null
   return (
     <>
@@ -63,18 +55,7 @@ const PointOptions = React.memo(function PointOptions(){
 // Memoized Line Options
 const LineOptions = React.memo(function LineOptions(){
   const { lineWidth, lineColor, useLineColor, lineResolution, useCustomColor, 
-    setLineWidth, setLineColor, setUseLineColor, setLineResolution, setUseCustomColor,  } = usePlotStore(useShallow(state => ({
-    lineWidth: state.lineWidth,
-    lineColor: state.lineColor,
-    useLineColor: state.useLineColor,
-    lineResolution: state.lineResolution,
-    useCustomColor: state.useCustomColor,
-    setLineWidth: state.setLineWidth,
-    setLineColor: state.setLineColor,
-    setUseLineColor: state.setUseLineColor,
-    setLineResolution: state.setLineResolution,
-    setUseCustomColor: state.setUseCustomColor,
-  })))
+    setLineWidth, setLineColor, setUseLineColor, setLineResolution, setUseCustomColor,  } = usePlotStore(useShallow(s => s))
   return (
     <>
       <div className='w-full flex items-center mb-2'>
@@ -132,10 +113,7 @@ const LineOptions = React.memo(function LineOptions(){
 })
 
 const PlotLineOptions = React.memo(function PlotLineOptions({menuRef} : {menuRef: React.RefObject<boolean>}){
-  const { showPoints, setShowPoints } = usePlotStore(useShallow(state => ({
-    showPoints: state.showPoints,
-    setShowPoints: state.setShowPoints,
-  })))
+  const { showPoints, setShowPoints } = usePlotStore(useShallow(s => s))
 
   return (
     <div className='plotline-options'>

@@ -18,7 +18,7 @@ import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/components/textures/ProjectionTexture';
 
 const TransectNotice = () =>{
-  const {selectTS} = usePlotStore(useShallow(state => ({selectTS: state.selectTS})))
+  const {selectTS} = usePlotStore(useShallow(s => s))
   return (
     <>
     {selectTS && <div className="transect-notice">
@@ -29,14 +29,8 @@ const TransectNotice = () =>{
 }
 
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
-  const {resetCamera, useOrtho, displaceFaces, cameraPosition, overRideCamera} = usePlotStore(useShallow(state => ({
-      resetCamera: state.resetCamera,
-      useOrtho: state.useOrtho,
-      displaceFaces: state.displaceFaces,
-      cameraPosition:state.cameraPosition,
-      overRideCamera: state.overRideCamera
-    })))
-  const {setCameraRef} = useImageExportStore(useShallow(state=>({setCameraRef:state.setCameraRef})))
+  const {resetCamera, useOrtho, displaceFaces, cameraPosition, overRideCamera} = usePlotStore(useShallow(s => s))
+  const {setCameraRef} = useImageExportStore(useShallow(s => s))
   const orbitRef = useRef<OrbitControlsImpl | null>(null)
   const hasMounted = useRef(false);
   const cameraRef = useRef<THREE.Camera | null>(null)
@@ -168,24 +162,10 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {colormap, isFlat, DPR, valueScales, setIsFlat, dataShape} = useGlobalStore(useShallow(state=>({
-    colormap: state.colormap, 
-    isFlat: state.isFlat, 
-    DPR: state.DPR, 
-    valueScales: state.valueScales,
-    setIsFlat: state.setIsFlat, 
-    dataShape: state.dataShape,
-  })))
-  const {keyFrameEditor} = useImageExportStore(useShallow(state => ({ keyFrameEditor:state.keyFrameEditor})))
-  const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(state => ({
-    plotType: state.plotType,
-    displaceFaces: state.displaceFaces,
-    setPlotType: state.setPlotType,
-  })))
-  const {analysisMode, useEditor} = useAnalysisStore(useShallow(state => ({
-    analysisMode: state.analysisMode,
-    useEditor: state.useEditor
-  })))
+  const {colormap, isFlat, DPR, valueScales, setIsFlat, dataShape} = useGlobalStore(useShallow(s => s))
+  const {keyFrameEditor} = useImageExportStore(useShallow(s => s))
+  const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => s))
+  const {analysisMode, useEditor} = useAnalysisStore(useShallow(s => s))
   const coords = useRef<number[]>([0,0])
   const val = useRef<number>(0)
 

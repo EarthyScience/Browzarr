@@ -26,21 +26,11 @@ const plotIcons = {
 }
 
 const PlotType = () => {
-  const { plotType, setPlotType, setUseOrtho } = usePlotStore(useShallow(state => ({
-    plotType: state.plotType,
-    setPlotType: state.setPlotType,
-    setUseOrtho: state.setUseOrtho
-  })))
-  const {isFlat, variable} = useGlobalStore(useShallow(state => ({
-    isFlat: state.isFlat,
-    variable: state.variable
-  })))
+  const { plotType, setPlotType, setUseOrtho } = usePlotStore(useShallow(s => s))
+  const {isFlat, variable} = useGlobalStore(useShallow(s => s))
   // Responsive popover side
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
-  const {dataShape, is4D} = useGlobalStore(useShallow(state => ({
-    dataShape: state.dataShape,
-    is4D: state.is4D
-  })))
+  const {dataShape, is4D} = useGlobalStore(useShallow(s => s))
   const dataSize = useMemo(()=>{
     if (is4D){
       const product = dataShape.reduce((accum, val) => accum * val, 1)

@@ -11,11 +11,7 @@ import { deg2rad } from '@/utils/HelperFuncs';
 
 export const KeyFramePreviewer = () => {
     const {keyFrames, currentFrame, previewKeyFrames, frames, 
-        frameRate, useTime, timeRate, orbit, orbitDeg, orbitDir, loopTime,} = useImageExportStore(useShallow(state => ({
-        keyFrames:state.keyFrames, currentFrame:state.currentFrame, previewKeyFrames:state.previewKeyFrames,
-        frames:state.frames, frameRate:state.frameRate, useTime:state.useTime, timeRate:state.timeRate, 
-        orbit:state.orbit, orbitDeg:state.orbitDeg, orbitDir:state.orbitDir, loopTime:state.loopTime
-    })))
+        frameRate, useTime, timeRate, orbit, orbitDeg, orbitDir, loopTime,} = useImageExportStore(useShallow(s => s))
 
     const {camera} = useThree();
     const isAnimating = useRef(false)

@@ -14,40 +14,10 @@ export const useDataFetcher = () => {
     const {
     setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
     setDimNames, setDimUnits, setPlotOn, setStatus} = useGlobalStore(
-    useShallow(state => ({  
-        setShape:state.setShape,
-        setDataShape: state.setDataShape,
-        setFlipY:state.setFlipY,
-        setValueScales:state.setValueScales,
-        setMetadata: state.setMetadata,
-        setDimArrays:state.setDimArrays, 
-        setDimNames:state.setDimNames,
-        setDimUnits:state.setDimUnits,
-        setPlotOn: state.setPlotOn,
-        setStatus: state.setStatus  
-    })))
-    const {variable, is4D, setIsFlat} = useGlobalStore(
-        useShallow(state=>({
-            variable: state.variable, 
-            is4D: state.is4D,
-            setIsFlat: state.setIsFlat, 
-    })))
-    const {plotType, interpPixels, setPlotType} = usePlotStore(
-        useShallow(state => ({
-            plotType: state.plotType,
-            interpPixels:state.interpPixels,
-            setPlotType: state.setPlotType
-    })))
-    const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(
-        useShallow(state=> ({
-            zSlice: state.zSlice,
-            ySlice: state.ySlice,
-            xSlice: state.xSlice,
-            reFetch: state.reFetch,
-            coarsen: state.coarsen,
-            kernelDepth: state.kernelDepth,
-            kernelSize: state.kernelSize
-    })))
+    useShallow(s => s))
+    const {variable, is4D, setIsFlat} = useGlobalStore(useShallow(s => s))
+    const {plotType, interpPixels, setPlotType} = usePlotStore(useShallow(s => s))
+    const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(useShallow(s => s))
 
     //---- Local State ----//
     const [textures, setTextures] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null);

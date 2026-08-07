@@ -18,14 +18,8 @@ interface PCProps {
 
 const MappingCube = () =>{
 
-  const {dataShape, shape} = useGlobalStore(useShallow(state => ({
-    dataShape: state.dataShape,
-    shape: state.shape
-  })))
-
-  const {timeScale} = usePlotStore(useShallow(state=> ({
-    timeScale: state.timeScale,
-  })))
+  const {dataShape, shape} = useGlobalStore(useShallow(s => s))
+  const {timeScale} = usePlotStore(useShallow(s => s))
 
   const globalScale = dataShape[2]/500
   const offset = 1/500; //I don't really understand that. But the cube is off by one pixel in each dimension
@@ -43,32 +37,10 @@ const MappingCube = () =>{
 export const PointCloud = ({textures} : {textures:PCProps} )=>{
     const { colormap } = textures;
     const volTexture = usePaddedTextures(textures.texture);
-    const { flipY, dataShape, remapTexture, textureArrayDepths, shape } = useGlobalStore(useShallow(state=>({
-      flipY: state.flipY,
-      dataShape: state.dataShape,
-      remapTexture: state.remapTexture,
-      textureArrayDepths: state.textureArrayDepths,
-      shape: state.shape
-    })))
+    const { flipY, dataShape, remapTexture, textureArrayDepths, shape } = useGlobalStore(useShallow(s => s))
     const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, 
       timeScale, xRange, yRange, zRange, fillValue,
-      maskTexture, maskValue, disablePointScale} = usePlotStore(useShallow(state => ({
-      scalePoints: state.scalePoints,
-      scaleIntensity: state.scaleIntensity,
-      pointSize: state.pointSize,
-      cScale: state.cScale, 
-      cOffset:state.cOffset,
-      valueRange: state.valueRange,
-      animProg: state.animProg,
-      timeScale: state.timeScale,
-      xRange: state.xRange,
-      yRange: state.yRange,
-      zRange: state.zRange,
-      fillValue:state.fillValue,
-      maskTexture: state.maskTexture,
-      maskValue: state.maskValue,
-      disablePointScale: state.disablePointScale
-    })))
+      maskTexture, maskValue, disablePointScale} = usePlotStore(useShallow(s => s))
 
     //Extract data and shape from Data3DTexture
     const { width, height, depth } = useMemo(() => {
@@ -108,8 +80,6 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       }
       return list;
     }, [depth, width, height]);
-
-    const {lonBounds, latBounds} = useCoordBounds() 
 
     const shaderMaterial = useMemo(()=> (new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,

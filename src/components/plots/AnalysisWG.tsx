@@ -45,30 +45,13 @@ type Operation = keyof typeof ShaderMap;
 const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture[] | THREE.DataTexture[] | null>> }) => {
 
     // Global state hooks remain the same
-    const { strides, dataShape, valueScales, isFlat, plotOn, setIsFlat, setStatus, setValueScales } = useGlobalStore(useShallow(state => ({
-        strides: state.strides, dataShape: state.dataShape, valueScales: state.valueScales,
-        isFlat: state.isFlat, plotOn:state.plotOn, setIsFlat: state.setIsFlat, setStatus: state.setStatus,
-         setValueScales: state.setValueScales,
-    })));
+    const { strides, dataShape, valueScales, isFlat, plotOn, setIsFlat, setStatus, setValueScales } = useGlobalStore(useShallow(s => s));
 
     const setPlotType = usePlotStore(state => state.setPlotType);
 
     const { axis, execute, operation, useTwo, variable2, executeCustom, valueScalesOrig, kernelOperation, kernelSize, kernelDepth, reverseDirection, outputShape, analysisStore, analysisMode, analysisArray, analysisDim,
-        setValueScalesOrig, setAnalysisArray, setAnalysisMode, customShader } = useAnalysisStore(useShallow(state => ({
-            axis: state.axis, execute: state.execute, operation: state.operation, useTwo: state.useTwo, variable2: state.variable2,
-            valueScalesOrig: state.valueScalesOrig, kernelOperation: state.kernelOperation, kernelSize: state.kernelSize, kernelDepth: state.kernelDepth,
-            reverseDirection: state.reverseDirection, analysisStore: state.analysisStore, analysisMode: state.analysisMode,
-            analysisArray: state.analysisArray, analysisDim: state.analysisDim, outputShape:state.outputShape,
-            executeCustom: state.executeCustom, setValueScalesOrig: state.setValueScalesOrig,
-            setAnalysisArray: state.setAnalysisArray, setAnalysisMode: state.setAnalysisMode, customShader: state.customShader
-        })));
+        setValueScalesOrig, setAnalysisArray, setAnalysisMode, customShader } = useAnalysisStore(useShallow(s => s));
 
-    const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(state => ({
-        zSlice: state.zSlice,
-        ySlice: state.ySlice,
-        xSlice: state.xSlice
-    })));
-    const isMounted = useRef(false)
     useEffect(() => {
         if (!plotOn){
             return

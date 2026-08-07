@@ -80,25 +80,11 @@ const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueSca
 })
 
 const DimSlicer = () =>{
-  const {xRange, yRange, zRange, setXRange, setYRange, setZRange} = usePlotStore(useShallow(state => ({
-          valueRange: state.valueRange,
-          xRange: state.xRange,
-          yRange: state.yRange,
-          zRange: state.zRange,
-          setValueRange: state.setValueRange,
-          setXRange: state.setXRange,
-          setYRange: state.setYRange,
-          setZRange: state.setZRange,
-      })))
+  const {xRange, yRange, zRange, setXRange, setYRange, setZRange} = usePlotStore(useShallow(s => s))
 
       const defaultScales = {minVal: 0, maxVal: 0} //This is fed into MinMax as it is required but overwritten if an array is present
   
-      const {axisDimArrays, axisDimNames, axisDimUnits, is4D} = useGlobalStore(useShallow(state => ({
-        axisDimArrays : state.axisDimArrays, 
-        axisDimNames: state.axisDimNames,
-        axisDimUnits: state.axisDimUnits,
-        is4D: state.is4D
-      })))
+      const {axisDimArrays, axisDimNames, axisDimUnits} = useGlobalStore(useShallow(s => s))
       const {xIdx, yIdx, zIdx} = useAxisIndices()
       const [isSpatialOpen, setIsSpatialOpen] = useState(false);
   return (
@@ -165,22 +151,7 @@ const DimSlicer = () =>{
 }
 
 const VolumeOptions = ()=>{
-  const { useFragOpt, quality, transparency, vTransferRange, vTransferScale, setQuality, setUseFragOpt, setTransparency, setVTransferRange, setVTransferScale} = usePlotStore(useShallow(state => ({
-          useFragOpt: state.useFragOpt,
-          quality: state.quality,
-          transparency: state.transparency,
-          nanTransparency: state.nanTransparency,
-          nanColor: state.nanColor,
-          vTransferRange: state.vTransferRange,
-          vTransferScale: state.vTransferScale,
-          setQuality: state.setQuality,
-          setUseFragOpt: state.setUseFragOpt,
-          setTransparency: state.setTransparency,
-          setNanTransparency: state.setNanTransparency,
-          setNanColor: state.setNanColor,
-          setVTransferRange: state.setVTransferRange,
-          setVTransferScale: state.setVTransferScale
-      })))
+  const { useFragOpt, quality, transparency, vTransferRange, vTransferScale, setQuality, setUseFragOpt, setTransparency, setVTransferRange, setVTransferScale} = usePlotStore(useShallow(s => s))
   return(
     <>
     <div className='grid gap-y-[5px] items-center w-50 text-center mb-8'>
@@ -252,20 +223,8 @@ const VolumeOptions = ()=>{
 }
 
 const PointOptions = () =>{
-  const {setPointSize, setScaleIntensity, setScalePoints, setTimeScale} = usePlotStore(useShallow(
-          (state => ({
-              setPointSize: state.setPointSize, 
-              setScaleIntensity: state.setScaleIntensity, 
-              setScalePoints: state.setScalePoints,
-              setTimeScale: state.setTimeScale,
-          }))))
-  
-      const {scalePoints, scaleIntensity, pointSize, timeScale, disablePointScale} = usePlotStore(useShallow(state => ({
-        scalePoints: state.scalePoints,
-        scaleIntensity: state.scaleIntensity,
-        pointSize: state.pointSize,
-        timeScale: state.timeScale, disablePointScale: state.disablePointScale,
-      })))
+  const {setPointSize, setScaleIntensity, setScalePoints, setTimeScale} = usePlotStore(useShallow(s => s))
+  const {scalePoints, scaleIntensity, pointSize, timeScale, disablePointScale} = usePlotStore(useShallow(s => s))
 
   return(
     <>
@@ -319,12 +278,7 @@ const PointOptions = () =>{
 const FlatOptions = () =>{
   const {displacement, displaceFaces, offsetNegatives, rotateFlat,
     setDisplacement, setDisplaceFaces, setOffsetNegatives,
-    setResetCamera} = usePlotStore(useShallow(state=> ({
-      displacement: state.displacement, displaceFaces: state.displaceFaces,
-      offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat, setDisplacement: state.setDisplacement,
-      setDisplaceFaces: state.setDisplaceFaces, setOffsetNegatives: state.setOffsetNegatives,
-      setResetCamera: state.setResetCamera
-  })))
+    setResetCamera} = usePlotStore(useShallow(s => s))
    return(
    <>
    <div className='grid gap-2 mb-2'>
@@ -372,16 +326,7 @@ const FlatOptions = () =>{
 
 const SphereOptions = () =>{
   const {sphereResolution, displacement, displaceFaces, offsetNegatives,
-    setSphereResolution, setDisplacement, setDisplaceFaces, setOffsetNegatives} = usePlotStore(useShallow(state => ({
-    sphereResolution: state.sphereResolution,
-    displacement: state.displacement,
-    displaceFaces: state.displaceFaces,
-    offsetNegatives: state.offsetNegatives,
-    setSphereResolution: state.setSphereResolution,
-    setDisplacement: state.setDisplacement,
-    setDisplaceFaces: state.setDisplaceFaces,
-    setOffsetNegatives: state.setOffsetNegatives
-  })))
+    setSphereResolution, setDisplacement, setDisplaceFaces, setOffsetNegatives} = usePlotStore(useShallow(s => s))
   const maxSurfaceDisp = 2;
   const maxFaceDisplacement = 15*maxSurfaceDisp; 
 
@@ -429,17 +374,7 @@ const SphereOptions = () =>{
 const SpatialExtent = () =>{
 
   const {lonExtent, latExtent, lonResolution, latResolution, originalExtent,
-        setLonExtent, setLatExtent, setLonResolution, setLatResolution} = usePlotStore(useShallow(state => ({
-    lonExtent: state.lonExtent,
-    latExtent: state.latExtent,
-    lonResolution: state.lonResolution,
-    latResolution: state.latResolution,
-    originalExtent: state.originalExtent,
-    setLonExtent: state.setLonExtent,
-    setLatExtent: state.setLatExtent,
-    setLonResolution: state.setLonResolution,
-    setLatResolution: state.setLatResolution
-  })))
+        setLonExtent, setLatExtent, setLonResolution, setLatResolution} = usePlotStore(useShallow(s => s))
   return (
     <div className='grid gap-2 mb-4 justify-items-center '>
       <h1>Spatial Extent</h1>
@@ -491,27 +426,12 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {valueRange, showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture, nativeCRS,
-    setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(state => ({
-    showBorders: state.showBorders, borderColor: state.borderColor,
-    nanColor: state.nanColor, nanTransparency: state.nanTransparency,
-    plotType: state.plotType, interpPixels: state.interpPixels,
-    fillValue: state.fillValue, useBorderTexture:state.useBorderTexture, nativeCRS: state.nativeCRS,
-    valueRange: state.valueRange, setValueRange: state.setValueRange,
-    setShowBorders: state.setShowBorders, setBorderColor: state.setBorderColor,
-    setNanColor: state.setNanColor, setNanTransparency: state.setNanTransparency,
-    setInterpPixels: state.setInterpPixels, setFillValue:state.setFillValue
-  })))
-  const {analysisMode, axis} = useAnalysisStore(useShallow(state =>({
-    analysisMode: state.analysisMode,
-    axis: state.axis
-  })))
-  const {valueScales} = useGlobalStore(useShallow(state =>({
-    valueScales:state.valueScales
-  })))
+  const {valueRange, showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
+    setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(s => s))
+  const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
+  const {valueScales} = useGlobalStore(useShallow(s => s))
   const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
   const [showMasks, setShowMasks] = useState(false)
-  const [showRepro, setShowRepro] = useState(false)
   const masks = ["None", "Land", "Water"]
   const isPC = plotType == 'point-cloud'
 
@@ -655,15 +575,8 @@ const AdjustPlot = () => {
     const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
     const [open, setOpen] = useState(false);
 
-    const {plotOn} = useGlobalStore(
-        useShallow(state=>({
-          plotOn: state.plotOn,
-        })))
-    const {plotType} = usePlotStore(
-        useShallow(state=> ({
-          plotType: state.plotType,
-        })))
-    
+    const {plotOn} = useGlobalStore(useShallow(s => s))
+    const {plotType} = usePlotStore(useShallow(s => s))
 
   useEffect(() => {
       const handleResize = () => {

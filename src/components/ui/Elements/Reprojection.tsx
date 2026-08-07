@@ -10,10 +10,7 @@ import { TbReplace } from "react-icons/tb";
 import { RxReset } from "react-icons/rx";
 
 export const Reprojection = () => {
-    const {destCRS, nativeCRS} = usePlotStore(useShallow(state => ({
-        destCRS: state.destCRS,
-        nativeCRS: state.nativeCRS
-    })))
+    const {destCRS, nativeCRS} = usePlotStore(useShallow(s => s))
     const [showRepro, setShowRepro] = useState(false)
     const [changeNativeCRS, setChangeNativeCRS] = useState(false)
 

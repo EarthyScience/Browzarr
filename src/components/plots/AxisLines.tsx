@@ -33,14 +33,8 @@ const AXIS_CONSTANTS = {
 };
 
 const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, flipDown: boolean}) =>{
-  const {axisDimArrays, axisDimNames, axisDimUnits, dataShape, revY, shape} = useGlobalStore(useShallow(state => ({
-    axisDimArrays: state.axisDimArrays,
-    axisDimNames: state.axisDimNames,
-    axisDimUnits: state.axisDimUnits,
-    dataShape: state.dataShape,
-    revY: state.flipY,
-    shape: state.shape
-  })))
+  const {axisDimArrays, axisDimNames, axisDimUnits, dataShape, shape} = useGlobalStore(useShallow(s => s))
+  const revY = useGlobalStore(useShallow(s => s.flipY))
 
   const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice, coarsen} = usePlotStore(useShallow(s => s))
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow(s => s))
@@ -583,12 +577,8 @@ export const AxisLines = () => {
   const [flipY, setFlipY] = useState<boolean>(false)
   const [flipDown, setFlipDown] = useState<boolean>(false)
 
-  const {isFlat} = useGlobalStore(useShallow(state => ({
-    isFlat: state.isFlat
-  })))
-  const {plotType} = usePlotStore(useShallow(state=>({
-    plotType:state.plotType
-  })))
+  const {isFlat} = useGlobalStore(useShallow(s => s))
+  const {plotType} = usePlotStore(useShallow(s => s))
   useFrame(({camera})=>{
       const shouldFlipX = Math.abs(camera.rotation.z) > Math.PI / 2
       if (flipX !== shouldFlipX) {

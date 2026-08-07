@@ -6,9 +6,7 @@ import { useImageExportStore } from "@/GlobalStates/ImageExportStore";
 import { useShallow } from "zustand/shallow";
 
 const Footer = () => {
-  const {previewExtent} = useImageExportStore(useShallow(state => ({
-    previewExtent:state.previewExtent,
-  })))
+  const {previewExtent} = useImageExportStore(useShallow(s => s))
   return(
   <div className="footer"
     style={{visibility: previewExtent ? 'hidden' : 'visible'}}

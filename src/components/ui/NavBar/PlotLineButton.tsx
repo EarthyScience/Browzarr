@@ -3,7 +3,6 @@
 import React, { useEffect } from 'react'
 import { VscGraphLine } from "react-icons/vsc"; //Use this if you hate the svg
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useShallow } from 'zustand/shallow';
 import '../css/PlotLineButton.css'
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -11,18 +10,9 @@ import { Button } from "@/components/ui/button-enhanced"
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
 const PlotLineButton = () => {
-    const {selectTS, resetAnim, animate, displaceFaces, setSelectTS, setResetAnim} = usePlotStore(useShallow(state => ({
-        selectTS: state.selectTS,
-        resetAnim: state.resetAnim,
-        animate: state.animate,
-        plotType: state.plotType,
-        displaceFaces: state.displaceFaces,
-        setSelectTS: state.setSelectTS,
-        setResetAnim: state.setResetAnim
-    })))
-    const {isFlat} = useGlobalStore(useShallow(state => ({isFlat: state.isFlat})))
+    const {selectTS, resetAnim, displaceFaces, setSelectTS, setResetAnim} = usePlotStore(useShallow(s => s))
+    const {isFlat} = useGlobalStore(useShallow(s => s))
     const exception = !displaceFaces || isFlat
-    const {setError} = useErrorStore.getState()
     useEffect(()=>{//Disable TS mode if switching to Flat mode and already enabled
       if (isFlat && selectTS){
         setSelectTS(false)

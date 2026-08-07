@@ -11,10 +11,7 @@ import {
 } from "@/components/ui/dialog";
 
 export const Error = () => {
-    const {error, setError} = useErrorStore(useShallow(state => ({
-        error: state.error,
-        setError: state.setError
-    })))
+    const {error, setError} = useErrorStore(useShallow(s => s))
   return (
     <>
     {error && <Dialog open={true} onOpenChange={e=>setError(null)}>
