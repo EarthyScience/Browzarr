@@ -227,16 +227,10 @@ async function DrawTextOverlay(
 const ExportCanvas = ({show}:{show: boolean}) => {
     const {exportImg, enableExport, animate, frames, frameRate, useTime, timeRate, orbit, orbitDeg, orbitDir, loopTime,
         preview, useCustomRes, customRes, doubleSize, exportOnLoad, setHideAxis, setHideAxisControls
-    } = useImageExportStore(useShallow(state => ({
-        exportImg: state.exportImg, enableExport:state.enableExport, animate:state.animate,
-        frames:state.frames, frameRate:state.frameRate, useTime:state.useTime, timeRate:state.timeRate,
-        orbit:state.orbit, orbitDeg:state.orbitDeg, orbitDir:state.orbitDir, loopTime:state.loopTime, preview:state.preview, 
-        useCustomRes:state.useCustomRes, customRes:state.customRes, doubleSize:state.doubleSize, exportOnLoad: state.exportOnLoad,
-        setHideAxis:state.setHideAxis, setHideAxisControls:state.setHideAxisControls
-    })))
+    } = useImageExportStore(useShallow(s => s))
     const {setAnimProg, setQuality} = usePlotStore.getState()
     const {setStatus, setProgress} = useGlobalStore.getState()
-    const {dataShape} = useGlobalStore(useShallow(state=>({dataShape:state.dataShape})));
+    const {dataShape} = useGlobalStore(useShallow(s => s));
     const timeFrames = dataShape[dataShape.length-3]
     const { gl, scene, camera, invalidate } = useThree();
     const textColor = useCSSVariable('--text-plot')

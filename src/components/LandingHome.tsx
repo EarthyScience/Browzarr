@@ -22,24 +22,11 @@ async function sendPing() {
 }
 
 export function LandingHome() {
-  const {
-    timeSeries, variable,
+  const {timeSeries, variable,
     setZMeta, setVariables, setTitleDescription, setOpenVariables, setStoreFromURL,
-  } = useGlobalStore(useShallow(state => ({
-    timeSeries: state.timeSeries,
-    variable: state.variable,
-    setZMeta: state.setZMeta,
-    setVariables: state.setVariables,
-    setTitleDescription: state.setTitleDescription,
-    setOpenVariables: state.setOpenVariables,
-    setStoreFromURL: state.setStoreFromURL,
-  })))
+  } = useGlobalStore(useShallow(s => s))
 
-  const { currentStore, useNC,
-  } = useZarrStore(useShallow(state => ({
-    currentStore: state.currentStore,
-    useNC: state.useNC,
-  })))
+  const { currentStore, useNC} = useZarrStore(useShallow(s => s))
 
   useEffect(() => {
     // LocalNetCDF --> loadNetCDF grabs metadata during loading. Maybe move this logic to GetStore. 

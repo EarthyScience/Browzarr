@@ -27,14 +27,7 @@ const ExportImageSettings = () => {
         includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum, keyFrames,
         useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, cbarUnits, animate, timeRate,
         frames, frameRate, orbit, useTime, loopTime, orbitDeg, orbitDir, preview, pingpong  
-    } = useImageExportStore(useShallow(state => ({
-          includeBackground: state.includeBackground, includeColorbar: state.includeColorbar, keyFrames: state.keyFrames,
-          doubleSize: state.doubleSize, cbarLoc: state.cbarLoc, cbarNum: state.cbarNum, useCustomRes: state.useCustomRes,
-          customRes: state.customRes, includeAxis: state.includeAxis, mainTitle: state.mainTitle, cbarLabel: state.cbarLabel,
-          cbarUnits:state.cbarUnits, animate: state.animate, timeRate:state.timeRate, frames: state.frames, frameRate: state.frameRate, 
-          orbit: state.orbit, useTime:state.useTime, loopTime: state.loopTime, orbitDeg:state.orbitDeg, orbitDir:state.orbitDir,
-          preview:state.preview, pingpong:state.pingpong
-      })))
+    } = useImageExportStore(useShallow(s => s))
 
     const {ExportImg, EnableExport, setIncludeBackground, setIncludeColorbar, 
         setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis, 
@@ -46,13 +39,8 @@ const ExportImageSettings = () => {
         (str: string): string;
     }
 
-    const {plotType, zSlice} = usePlotStore(useShallow(state=>({
-        plotType: state.plotType, zSlice:state.zSlice,
-    })))
-    const {variable, metadata, dimArrays} = useGlobalStore(useShallow(state=>({
-        variable: state.variable, metadata: state.metadata, dimArrays:state.dimArrays,
-        dimUnits:state.dimUnits
-    })))
+    const {plotType, zSlice} = usePlotStore(useShallow(s => s))
+    const {variable, metadata, dimArrays} = useGlobalStore(useShallow(s => s))
     const capitalize: CapitalizeFn = str => str.charAt(0).toUpperCase() + str.slice(1);
     const [showTitles, setShowTitles] = useState(false)
     const [showAnimation, setShowAnimation] = useState(false)
@@ -60,9 +48,7 @@ const ExportImageSettings = () => {
 	const [previewState, setPreviewState] = useState(false)
     const [copied, setCopied] = useState(false);
 
-    const { axisMapping } = useZarrStore(useShallow(state => ({
-        axisMapping: state.axisMapping
-    })));
+    const { axisMapping } = useZarrStore(useShallow(s => s));
 
     useEffect(()=>{
         const shapeLength = dimArrays?.length || 3;

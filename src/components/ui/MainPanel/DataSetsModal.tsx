@@ -46,13 +46,7 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
   const [activeTab, setActiveTab] = useState<Tab>('remote');
 
   const { initStore, setInitStore, setOpenVariables, status } = useGlobalStore(
-    useShallow(state => ({
-      setInitStore: state.setInitStore,
-      setOpenVariables: state.setOpenVariables,
-      initStore: state.initStore,
-      status: state.status,
-    }))
-  );
+    useShallow(s => s));
 
   const showDescription = hasFetched && status === null;
   const openDescription = () => setHasFetched(true);

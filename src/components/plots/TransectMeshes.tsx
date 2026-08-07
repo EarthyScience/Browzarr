@@ -66,14 +66,8 @@ function normalToScale(normal:THREE.Vector3, ratios:{depthRatio:number, aspectRa
 }
 
 export const SquareMeshes = () => {
-	const {timeSeries, dataShape, shape} = useGlobalStore(useShallow(state=>({
-		timeSeries:state.timeSeries,
-		dataShape: state.dataShape,
-		shape: state.shape
-	})))
-	const {plotType} = usePlotStore(useShallow(state=>({
-		plotType: state.plotType
-	})))
+	const {timeSeries, dataShape, shape} = useGlobalStore(useShallow(s => s))
+	const {plotType} = usePlotStore(useShallow(s => s))
 	const {lonBounds, latBounds} = useCoordBounds()
 	const {xIdx, yIdx} = useAxisIndices()
 	const meshes: THREE.Mesh[] = useMemo(() =>{
@@ -136,15 +130,8 @@ export const SquareMeshes = () => {
 }
 
 export const ColumnMeshes = () => {
-	const {timeSeries, dataShape, remapTexture} = useGlobalStore(useShallow(state=>({
-		timeSeries:state.timeSeries,
-		dataShape: state.dataShape,
-		shape: state.shape,
-		remapTexture: state.remapTexture
-	})))
-	const {plotType} = usePlotStore(useShallow(state=>({
-		plotType: state.plotType
-	})))
+	const {timeSeries, dataShape, remapTexture} = useGlobalStore(useShallow(s => s))
+	const {plotType} = usePlotStore(useShallow(s => s))
 	const {xIdx, yIdx, zIdx} = useAxisIndices()
 	const meshes: THREE.Mesh[] = useMemo(()=>{
 		const meshes: THREE.Mesh[] = []

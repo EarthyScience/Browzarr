@@ -15,27 +15,10 @@ import { useAxisIndices } from '@/hooks';
 const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
     const {colormap, isFlat, valueScales, flipY,
-            dataShape, textureArrayDepths, axisDimArrays, remapTexture} = useGlobalStore(useShallow(state=>({
-        colormap: state.colormap,
-        isFlat: state.isFlat,  
-        valueScales: state.valueScales,
-        flipY: state.flipY,
-        dataShape: state.dataShape,
-        textureArrayDepths: state.textureArrayDepths,
-        axisDimArrays: state.axisDimArrays,
-        remapTexture: state.remapTexture
-    })))
+            dataShape, textureArrayDepths, axisDimArrays, remapTexture} = useGlobalStore(useShallow(s => s))
     const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, fillValue, valueRange, offsetNegatives, rotateFlat, maskTexture, maskValue,
-        } = usePlotStore(useShallow(state=> ({
-        animate: state.animate, animProg: state.animProg, cOffset: state.cOffset,
-        cScale: state.cScale, nanColor: state.nanColor, nanTransparency: state.nanTransparency,
-        displacement: state.displacement, valueRange:state.valueRange, sphereResolution: state.sphereResolution,
-        offsetNegatives: state.offsetNegatives, rotateFlat:state.rotateFlat,
-        maskTexture:state.maskTexture, maskValue:state.maskValue, fillValue:state.fillValue,
-    })))
-    const {analysisMode, axis} = useAnalysisStore(useShallow(state => ({
-        analysisMode: state.analysisMode, axis:state.axis
-    })))
+        } = usePlotStore(useShallow(s => s))
+    const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
     const {xIdx, yIdx} = useAxisIndices()
     const {width, height} = useMemo(()=>{
         if (analysisMode){

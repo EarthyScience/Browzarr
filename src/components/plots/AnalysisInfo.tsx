@@ -8,7 +8,7 @@ import { parseLoc } from '@/utils/HelperFuncs'
 
 
 const AnalysisInfo = ({loc, show, info, } : {loc: number[], show: boolean, info: number[]}) => {
-    const {axisDimNames, axisDimArrays, axisDimUnits} = useGlobalStore(useShallow(state=>({axisDimNames: state.axisDimNames, axisDimArrays:state.axisDimArrays, axisDimUnits: state.axisDimUnits})))
+    const {axisDimNames, axisDimArrays, axisDimUnits} = useGlobalStore(useShallow(s => s))
     const axis = useAnalysisStore(state=> state.axis)
     // This logic is weak and May not hold up with >3 dimensions
     const plotInfo = useMemo(()=>{

@@ -66,37 +66,14 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
 
   const {setTimeSeries,setPlotDim,setDimCoords, updateTimeSeries, 
     updateDimCoords} = useGlobalStore(
-    useShallow(state=>({
-      setTimeSeries:state.setTimeSeries, 
-      setPlotDim:state.setPlotDim, 
-      setDimCoords:state.setDimCoords,
-      updateTimeSeries: state.updateTimeSeries,
-      updateDimCoords: state.updateDimCoords
-    })))
+    useShallow(s => s))
 
-  const {analysisMode, analysisArray} = useAnalysisStore(useShallow(state=>({
-    analysisMode: state.analysisMode,
-    analysisArray: state.analysisArray
-  })))
+  const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
 
   const {shape, dataShape, strides, axisDimArrays,axisDimNames,axisDimUnits, remapTexture, flipY} = useGlobalStore(
-    useShallow(state=>({
-      shape:state.shape,
-      dataShape: state.dataShape,
-      strides: state.strides,
-      axisDimArrays:state.axisDimArrays,
-      axisDimNames:state.axisDimNames,
-      axisDimUnits:state.axisDimUnits,
-      remapTexture: state.remapTexture,
-      flipY: state.flipY
-    })))
+    useShallow(s => s))
   
-  const {selectTS, xRange, yRange, zRange,getColorIdx, incrementColorIdx} = usePlotStore(useShallow(state => ({
-    xRange: state.xRange, yRange: state.yRange, zRange:state.zRange,
-    selectTS: state.selectTS,
-    getColorIdx: state.getColorIdx,
-    incrementColorIdx: state.incrementColorIdx
-  })))
+  const {selectTS, xRange, yRange, zRange,getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
 
   const lastNormal = useRef<number | null>( 0 )
 

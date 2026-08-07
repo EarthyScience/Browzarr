@@ -81,17 +81,7 @@ const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center
   </div>
 
 const AnalysisOptions = () => {
-  const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(state => ({
-    plotOn: state.plotOn, 
-    variable: state.variable,
-    variables: state.variables,
-    dimNames: state.dimNames,
-    activeIndices: state.activeIndices,
-    initStore: state.initStore,
-    isFlat: state.isFlat,
-    setTimeSeries: state.setTimeSeries,
-    setValueScales: state.setValueScales
-  })));
+  const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(s => s));
 
   const previousStore = useRef<string>(initStore)
   const [incompatible, setIncompatible] = useState(false); 
@@ -105,23 +95,9 @@ const AnalysisOptions = () => {
     setKernelOperation, setAnalysisMode,
     setReverseDirection, setAnalysisStore,
     setAnalysisDim
-  } = useAnalysisStore(useShallow(state => ({
-    execute: state.execute, operation: state.operation,
-    useTwo: state.useTwo, kernelSize: state.kernelSize,
-    kernelDepth: state.kernelDepth, kernelOperation: state.kernelOperation,
-    axis: state.axis, variable2: state.variable2, valueScalesOrig: state.valueScalesOrig,
-    analysisMode: state.analysisMode, reverseDirection: state.reverseDirection,
-    setExecute: state.setExecute, setAxis: state.setAxis,
-    setOperation: state.setOperation, setUseTwo: state.setUseTwo,
-    setVariable2: state.setVariable2, setKernelSize: state.setKernelSize,
-    setKernelDepth: state.setKernelDepth, setKernelOperation: state.setKernelOperation,
-    setAnalysisMode: state.setAnalysisMode, setReverseDirection: state.setReverseDirection,
-    setAnalysisStore: state.setAnalysisStore, setAnalysisDim: state.setAnalysisDim
-    })));
+  } = useAnalysisStore(useShallow(s => s));
 
-  const {reFetch} = useZarrStore(useShallow(state => ({
-    reFetch: state.reFetch,
-  })))
+  const {reFetch} = useZarrStore(useShallow(s => s))
 
   const [showError, setShowError] = useState<boolean>(false);
   

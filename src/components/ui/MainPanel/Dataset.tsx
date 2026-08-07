@@ -32,12 +32,7 @@ const Dataset = () => {
   const [useIcechunk, setUseIcechunk] = useState(false);
 
   const { initStore, setInitStore, setOpenVariables } = useGlobalStore(
-    useShallow(state => ({
-      setInitStore: state.setInitStore,
-      setOpenVariables: state.setOpenVariables,
-      initStore: state.initStore,
-    }))
-  );
+    useShallow(s => s));
 
   useEffect(() => {
     const handleResize = () => {

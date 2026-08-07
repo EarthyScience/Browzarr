@@ -33,10 +33,7 @@ const MorphingPoints = () => {
   const pointsRef = useRef<THREE.Points>(null);
   const count = 15625; // Total number of points
   const {gl} = useThree();
-  const { setMaxTextureSize, setMax3DTextureSize } = usePlotStore(useShallow(state => ({
-    setMaxTextureSize: state.setMaxTextureSize,
-    setMax3DTextureSize: state.setMax3DTextureSize
-  })))
+  const { setMaxTextureSize, setMax3DTextureSize } = usePlotStore(useShallow(s => s))
 
   useEffect(()=>{
     const context = gl.getContext()
@@ -45,10 +42,7 @@ const MorphingPoints = () => {
     setMaxTextureSize(context.getParameter(context.MAX_TEXTURE_SIZE))
   },[])
 
-
-  const {colormap} = useGlobalStore(useShallow(state => ({
-    colormap: state.colormap
-  })))
+  const {colormap} = useGlobalStore(useShallow(s => s))
   // Pre-calculate the point positions for each shape using useMemo for performance
   const { spherePositions, cubePositions, planePositions } = useMemo(() => {
     const spherePositions = new Float32Array(count * 3);

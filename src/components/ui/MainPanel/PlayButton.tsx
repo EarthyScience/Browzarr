@@ -93,28 +93,9 @@ const ChunkVisualizer = ({zSlice, timeLength, chunkWidth, showNext, showPrev, an
 }
 
 const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, setKeepOpen: React.Dispatch<React.SetStateAction<boolean>>, setShowSelf: React.Dispatch<React.SetStateAction<boolean>>}) => {
-  const {animate, animProg, zSlice, coarsen, kernel, setAnimate, setAnimProg} = usePlotStore(useShallow(state => ({
-      animate: state.animate,
-      animProg: state.animProg,
-      zSlice: state.zSlice,
-      coarsen: state.coarsen,
-      kernel: state.kernel,
-      setAnimate: state.setAnimate,
-      setAnimProg: state.setAnimProg
-  })))
-
-  const {dimArrays, dimUnits, zMeta, variable} = useGlobalStore(useShallow(state => ({
-      dimArrays: state.dimArrays,
-      dimUnits: state.dimUnits,
-      zMeta: state.zMeta,
-      variable: state.variable,
-  })))
-  const {reFetch, setZSlice, ReFetch, axisMapping} = useZarrStore(useShallow(state => ({
-    reFetch: state.reFetch,
-    setZSlice: state.setZSlice,
-    ReFetch: state.ReFetch,
-    axisMapping: state.axisMapping
-  })))
+  const {animate, animProg, zSlice, coarsen, kernel, setAnimate, setAnimProg} = usePlotStore(useShallow(s => s))
+  const {dimArrays, dimUnits, zMeta, variable} = useGlobalStore(useShallow(s => s))
+  const {reFetch, setZSlice, ReFetch, axisMapping} = useZarrStore(useShallow(s => s))
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const previousVal = useRef<number>(0)
@@ -370,14 +351,8 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
   )
 }
 const PlayButton = () => {
-    const {isFlat, plotOn, dimArrays} = useGlobalStore(useShallow(state => ({
-        isFlat: state.isFlat,
-        plotOn: state.plotOn,
-        dimArrays: state.dimArrays
-    })))
-    const {reFetch} = useZarrStore(useShallow(state => ({
-      reFetch: state.reFetch
-    })))
+    const {isFlat, plotOn, dimArrays} = useGlobalStore(useShallow(s => s))
+    const {reFetch} = useZarrStore(useShallow(s => s))
 
     const [showOptions, setShowOptions] = useState<boolean>(false)
     const enableCond = useMemo(() => {

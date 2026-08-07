@@ -6,15 +6,8 @@ import { useShallow } from "zustand/shallow";
 import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 
 export const useCoordBounds = ()=>{
-    const {lonExtent, latExtent, lonResolution, latResolution} = usePlotStore(useShallow(state=>({
-        lonExtent: state.lonExtent,
-        latExtent: state.latExtent,
-        lonResolution: state.lonResolution,
-        latResolution: state.latResolution,
-    })))
-    const {flipY} = useGlobalStore(useShallow(state => ({
-        flipY: state.flipY
-    })))
+    const {lonExtent, latExtent, lonResolution, latResolution} = usePlotStore(useShallow(s => s))
+    const {flipY} = useGlobalStore(useShallow(s => s))
     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
         const newLatStep = latResolution/2;
         const newLonStep = lonResolution/2;

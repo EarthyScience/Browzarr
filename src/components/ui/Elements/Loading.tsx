@@ -4,10 +4,7 @@ import { Progress } from "@/components/ui/progress"
 import { useGlobalStore } from "@/GlobalStates/GlobalStore"
 
 export function Loading() {
-  const { progress, status } = useGlobalStore(useShallow(state => ({
-    progress: state.progress,
-    status: state.status
-  })))
+  const { progress, status } = useGlobalStore(useShallow(s => s))
 
   if (!status) return null
 

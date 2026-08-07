@@ -58,24 +58,12 @@ function HandleCustomSteps(e: string, chunkSize: number){
 
 
 const MetaDataInfo = ({ meta, metadata, setShowMeta, setOpenVariables, popoverSide }: { meta: any, metadata: Record<string, any>, setShowMeta: React.Dispatch<React.SetStateAction<boolean>>, setOpenVariables: (open: boolean) => void, popoverSide: string  }) => {
-  const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(state => ({
-    is4D: state.is4D, idx4D: state.idx4D, variable: state.variable,
-    initStore: state.initStore,
-    setIs4D: state.setIs4D, setIdx4D: state.setIdx4D, setVariable: state.setVariable,
-    setTextureArrayDepths: state.setTextureArrayDepths,
-  })))
-  const {maxSize, cache, setMaxSize} = useCacheStore(useShallow(state => ({maxSize: state.maxSize, cache:state.cache, setMaxSize:state.setMaxSize})))
+  const {is4D, idx4D, variable, initStore, setIs4D, setIdx4D, setVariable, setTextureArrayDepths} = useGlobalStore(useShallow(s => s))
+  const {maxSize, cache, setMaxSize} = useCacheStore(useShallow(s => s))
   const [cacheSize, setCacheSize] = useState(maxSize)
-  const { zSlice, ySlice, xSlice, compress, coarsen, kernelSize, kernelDepth, setZSlice, setYSlice, setXSlice, ReFetch, setCompress, setCoarsen, setKernelSize, setKernelDepth } = useZarrStore(useShallow(state => ({
-    zSlice: state.zSlice, ySlice: state.ySlice, xSlice: state.xSlice,
-    compress: state.compress, coarsen: state.coarsen, kernelSize: state.kernelSize,
-    kernelDepth: state.kernelDepth,
-    setZSlice: state.setZSlice, setYSlice: state.setYSlice, setXSlice: state.setXSlice,
-    ReFetch: state.ReFetch, setCompress: state.setCompress,
-    setCoarsen: state.setCoarsen, setKernelSize: state.setKernelSize,
-    setKernelDepth: state.setKernelDepth
-  })))
-  const {maxTextureSize, max3DTextureSize} = usePlotStore(useShallow(state => ({maxTextureSize: state.maxTextureSize, max3DTextureSize: state.max3DTextureSize})))
+  const { zSlice, ySlice, xSlice, compress, coarsen, kernelSize, kernelDepth, setZSlice, setYSlice, setXSlice, ReFetch, setCompress, setCoarsen, setKernelSize, setKernelDepth } = useZarrStore(
+    useShallow(s => s))
+  const {maxTextureSize, max3DTextureSize} = usePlotStore(useShallow(s => s))
 
   const [tooBig, setTooBig] = useState(false)
   const [cached, setCached] = useState(false)
