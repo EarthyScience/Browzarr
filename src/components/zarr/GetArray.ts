@@ -53,10 +53,12 @@ export async function GetArray(varOveride?: string) {
         if (Array.isArray(sel)) return sel as [number, number | null];
         return [0, 1]; // Safe fallback to scalar
     };
-
-    const xDim = calcDim(getEffectiveSlice(axisMapping.x, xDimIndex), xDimIndex);
-    const yDim = calcDim(getEffectiveSlice(axisMapping.y, yDimIndex), yDimIndex);
-    const zDim = calcDim(getEffectiveSlice(axisMapping.z, zDimIndex), zDimIndex);
+    const xSlice = getEffectiveSlice(axisMapping.x, xDimIndex);
+    const ySlice = getEffectiveSlice(axisMapping.y, yDimIndex);
+    const zSlice = getEffectiveSlice(axisMapping.z, zDimIndex);
+    const xDim = calcDim(xSlice, xDimIndex);
+    const yDim = calcDim(ySlice, yDimIndex);
+    const zDim = calcDim(zSlice, zDimIndex);
 
     let outputShape = hasZ ? [zDim.size, yDim.size, xDim.size] : [yDim.size, xDim.size];
     if (coarsen) {
@@ -107,7 +109,6 @@ export async function GetArray(varOveride?: string) {
 
     setStatus("Downloading...");
     setProgress(0);
-
     for (let z = zDim.start; z < zDim.end; z++) {
         for (let y = yDim.start; y < yDim.end; y++) {
             for (let x = xDim.start; x < xDim.end; x++) {
@@ -128,7 +129,7 @@ export async function GetArray(varOveride?: string) {
                         outputShape, 
                         destStride as any, [z, y, x], 
                         [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
-                        [zDim.start, yDim.start, xDim.start]
+                        [zSlice[0], ySlice[0], xSlice[0]]
                     )
                 } else {
                     const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, ndSlices, axisMapping });
@@ -172,17 +173,17 @@ export async function GetArray(varOveride?: string) {
                         chunkF16, thisShape.slice(-3), chunkStride.slice(-3) as any, 
                         typedArray, outputShape, destStride as any, [z, y, x], 
                         [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
-                        [zDim.start, yDim.start, xDim.start]
+                        [zSlice[0], ySlice[0], xSlice[0]]
                     );
  
 
                     cache.set(cacheName, {
                         data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-                        shape: thisShape.filter((val)=> val > 1), stride: chunkStride,
+                        shape: thisShape.slice(-3), stride: chunkStride.slice(-3),
                         scaling: scalingFactor, compressed: compress, coarsened: coarsen,
                         kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined },
                         fullChunkDim: [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
-                        sliceStart: [zDim.start, yDim.start, xDim.start]
+                        sliceStart: [zSlice[0], ySlice[0], xSlice[0]]
                     });
                     rescaleIDs.push(chunkID);
                 }

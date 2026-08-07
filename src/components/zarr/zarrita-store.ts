@@ -95,6 +95,8 @@ export async function getFetchStoreAttributes(
   const meta = {
         ...outVar.attrs as Record<string, unknown>,
         shape: outVar.shape,
+        dimensionNames: outVar.dimensionNames,
+        _ARRAY_DIMENSIONS: outVar.attrs._ARRAY_DIMENSIONS, // explicit for TS on line 114
     };
   useCacheStore.getState().cache.set(cacheName, meta);
   return meta;
@@ -109,13 +111,10 @@ export async function getFetchStoreDims(
   const dimArrays: unknown[] = [];
   const dimUnits: unknown[] = [];
 
-  const outVar = await zarr.open(group.resolve(variable), { kind: 'array' });
-  const meta = outVar.attrs as Record<string, unknown>;
-  meta.shape = outVar.shape;
-  cache.set(`${initStore}_${variable}_meta`, meta);
+  const meta = await getFetchStoreAttributes(group, variable, `${initStore}_${variable}_meta`);
 
   const dimNames = (meta._ARRAY_DIMENSIONS as string[] | undefined)
-    ?? (outVar.dimensionNames as string[] | undefined);
+    ?? (meta.dimensionNames as string[] | undefined);
   
   if (dimNames) {
     for (const dim of dimNames) {
@@ -129,14 +128,14 @@ export async function getFetchStoreDims(
       dimUnits.push((dimMeta as Record<string, unknown>).units ?? null);
     }
   } else {
-    for (const dimLength of outVar.shape) {
+    for (const dimLength of meta.shape) {
       dimArrays.push(Array(dimLength).fill(0));
       dimUnits.push('Default');
     }
   }
 
   return {
-    dimNames: dimNames ?? Array(outVar.shape.length).fill('Default'),
+    dimNames: dimNames ?? Array(meta.shape.length).fill('Default'),
     dimArrays,
     dimUnits,
   };

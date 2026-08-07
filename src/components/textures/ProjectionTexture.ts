@@ -3,7 +3,6 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { ArrayMinMax, linspace, ParseExtent } from '@/utils/HelperFuncs';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import * as THREE from 'three';
-
 import proj4 from 'proj4';
 import { getAxisIndices } from '@/hooks/useAxisIndices';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
@@ -11,7 +10,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 export function checkProjString(projString: string){
     const {setError} = useErrorStore.getState()
     try{
-        const proj = proj4(projString)
+        proj4(projString)
         return true
     } catch{
         setError('badProj')
@@ -20,25 +19,24 @@ export function checkProjString(projString: string){
 }
 
 export function resetProjection(){
-    const {dimArrays, dimNames, dimUnits, shape, remapTexture} = useGlobalStore.getState()
-    if (remapTexture) remapTexture.dispose()
+    const {dimArrays, dimNames, dimUnits, shape} = useGlobalStore.getState()
     const {xSlice, ySlice} = useZarrStore.getState()
     const {xIdx, yIdx} = getAxisIndices()
-
     const xLength = dimArrays[xIdx].length;
     const yLength = dimArrays[yIdx].length;
     const aspectRatio = xLength/yLength;
     const newShape = new THREE.Vector3().copy(shape)
     newShape.y = 2/aspectRatio;
-    
-
-    useGlobalStore.setState({
+        useGlobalStore.setState({
         axisDimArrays: dimArrays,
         axisDimUnits: dimUnits,
         axisDimNames: dimNames,
         shape: newShape,
-        remapTexture: undefined
+        remapTexture: undefined,
+        remapBorders: undefined,
     })
+    handleIrregularGrid(dimArrays)
+
     usePlotStore.setState({
         xSlice, 
         ySlice
@@ -46,124 +44,238 @@ export function resetProjection(){
 
 }
 
-function normalizeArray(array: Array<number>){
+function normalizeArray(array: number[], min?: number, max?: number): number[]{
     const len = array.length;
-    let min = Infinity;
-    let max = -Infinity;
-    for (let i = 0; i < len; i++){
-        const v = array[i];
-        if (v < min) min = v;
-        if (v > max) max = v;
+    if (!min || !max){
+        min = Infinity, max = -Infinity;
+        for (let i = 0; i < len; i++){
+            const v = array[i];
+            if (v < min) min = v;
+            if (v > max) max = v;
+        }
     }
     const range = max - min;
     const scaler = range === 0 ? 0 : 1 / range;
-    const out = new Float32Array(len);
+    const out = new Array<number>(len);
     for (let i = 0; i < array.length; i++){
         out[i] = (array[i]-min)* scaler;
     }
     return out;
 }
 
-function isUniformStep(array: Array<number>): boolean {
+function isUniformStep(array: number[]): boolean {
     const len = array.length;
     if (len < 3) return true; // any 0–2 element array trivially qualifies
-
     const step = array[1] - array[0];
 
     for (let i = 2; i < len; i++) {
-        if (array[i] - array[i - 1] !== step) {
+        const diff = array[i] - array[i - 1]
+        if (Math.abs(diff - step) > 1e-4) {
             return false;
         }
     }
     return true;
 }
 
-function createRemapTexture(xArray: Array<number>, yArray: Array<number>) {
-  const width = xArray.length;
-  const height = yArray.length;
+function createIrregularUV(
+    xArray: Array<number>,
+	yArray: Array<number>,
+    flipY: boolean,
+    is360: boolean,
+) {
+    const width = xArray.length;
+    const height = yArray.length;
 
-  const normX = normalizeArray(xArray);
-  const normY = normalizeArray(yArray);
+    const data = new Int16Array(width * height * 4);
 
-  const data = new Float32Array(width * height * 2);
-  let ptr = 0;
-  for (let j = 0; j < height; j++) {
-    const y = normY[j];
-    for (let i = 0; i < width; i++) {
-      const x = normX[i];
-      data[ptr++] = x;
-      data[ptr++] = y;
+    const [xMin, xMax] = ArrayMinMax(xArray)
+    const [yMin, yMax] = ArrayMinMax(yArray)
+
+    const xSpace = linspace(xMin, xMax, width);
+    const ySpace = linspace(yMin, yMax, height);
+
+    for (let j = 0; j < height; j++) {
+        for (let i = 0; i < width; i++) {
+            const x = xSpace[i]
+            const y = ySpace[j]
+
+            const xi = fractionalIndex(xArray, x);
+            const yi = fractionalIndex(yArray, y);
+
+            let u = (xi??0 + 0.5) / xArray.length;
+            let v = (yi??0 + 0.5) / yArray.length;
+            const idx = (j * width + i) * 4;
+            data[idx]     = THREE.DataUtils.toHalfFloat(u); 
+            data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
+            data[idx + 2] = 1; 
+        }
     }
-  }
+    const texture = new THREE.DataTexture(
+		data,
+		width,
+		height,
+		THREE.RGBAFormat,
+		THREE.HalfFloatType,
+	);
+	texture.needsUpdate = true;
+	texture.magFilter = THREE.LinearFilter;
+	texture.minFilter = THREE.LinearFilter;
+	texture.wrapS = THREE.ClampToEdgeWrapping;
+	texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.flipY = flipY;
 
-  const texture = new THREE.DataTexture(
-    data,
-    width,
-    height,
-    THREE.RGFormat,
-    THREE.FloatType
-  );
-
-  texture.needsUpdate = true;
-  texture.magFilter = THREE.LinearFilter;
-  texture.minFilter = THREE.LinearFilter;
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-
-  return texture;
+    useGlobalStore.setState({remapBorders: texture})
 }
 
-export function SetReprojectionTexture(dimArrays: Array<number>[]){
-    const dimCount = dimArrays.length;
+function createInverseUV(
+	xArray: Array<number>,
+	yArray: Array<number>,
+	flipY: boolean,
+    is360: boolean,
+	resolution : number
+) {
+	// Creates an inverse UV map: for each normalized (x, y) position,
+	// stores the (i, j) index into xArray/yArray that best matches it.
+	const width = resolution*2; 
+	const height = resolution;
+
+    //We assume all irregular grids are in degrees for now. 
+	const normX = normalizeArray(xArray, is360? 0 : -180 , is360 ? 360 : 180);
+	const normY = normalizeArray(yArray, -90, 90);
+
+	const data = new Uint16Array(width * height * 4); // 4 for RGBA
+	let ptr = 0;
+	for (let j = 0; j < height; j++) {
+		const vRaw = height > 1 ? j / (height - 1) : 0;
+		const v = vRaw;
+		const jIdx = findNearestIndex(normY, v);
+		const jNorm = yArray.length > 1 ? jIdx / (yArray.length - 1) : 0;
+
+		for (let i = 0; i < width; i++) {
+			const u = width > 1 ? i / (width - 1) : 0;
+			const iIdx = findNearestIndex(normX, u);
+			const iNorm = xArray.length > 1 ? iIdx / (xArray.length - 1) : 0;
+
+			data[ptr++] = THREE.DataUtils.toHalfFloat(iNorm);
+			data[ptr++] = THREE.DataUtils.toHalfFloat(jNorm);
+			data[ptr++] = THREE.DataUtils.toHalfFloat(1.); // Set Valid so can be used in same shader logic
+			ptr++;
+		}
+	}
+
+	const texture = new THREE.DataTexture(
+		data,
+		width,
+		height,
+		THREE.RGBAFormat,
+		THREE.HalfFloatType,
+	);
+	texture.needsUpdate = true;
+	texture.magFilter = THREE.LinearFilter;
+	texture.minFilter = THREE.LinearFilter;
+	texture.wrapS = THREE.ClampToEdgeWrapping;
+	texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.flipY = flipY
+	return texture;
+}
+
+export function handleIrregularGrid(dimArrays: Array<number>[]){
+    // This is needed for Sphere and other projections where the grid is not uniform. It creates an array for the ticks and update for sphere
     const {xIdx, yIdx} = getAxisIndices()
+    const {flipY} = useGlobalStore.getState();
     const xArray = dimArrays[xIdx];
     const yArray = dimArrays[yIdx];
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
     if (isRegular) return;
-    //Dispose of remaptexture if you use this function
-    const remapTexture = createRemapTexture(xArray, yArray);
-    useGlobalStore.setState({remapTexture});
+    const {is360Deg, plotType} = usePlotStore.getState();
+	if(plotType == 'sphere') {
+        const texture = createInverseUV(xArray, yArray, flipY, is360Deg, 1024);
+        useGlobalStore.setState({remapTexture:texture});
+    } else createIrregularUV(xArray, yArray, flipY, is360Deg)
+    return
 }
 
-export function sampleCRS(tex: THREE.DataTexture, u:number, v:number): [THREE.Vector2, boolean] {
-  // Samples an array given UVs
-  const { data, width, height } = tex.image;
-  if (!data) return [new THREE.Vector2(u, v), true];
+export function sampleCRS(tex: THREE.DataTexture, u: number, v: number): [THREE.Vector2, boolean] {
+    // Linearly interpolates a texture given UV
+    const { data, width, height } = tex.image;
+    if (!data) return [new THREE.Vector2(u, v), true];
 
-  const x = Math.floor(u * (width - 1));
-  const y = Math.floor(v * (height - 1));
+    const facX = u * width - 1;
+    const facY = v * height - 1;
 
-  const idx = (y * width + x) * 4; // RGBA
-  const newU = THREE.DataUtils.fromHalfFloat(data[idx + 0])
-  const newV = THREE.DataUtils.fromHalfFloat(data[idx + 1])
-  const valid = THREE.DataUtils.fromHalfFloat(data[idx + 2])
-  return [
-    new THREE.Vector2(newU,newV),
-    valid > 0.5
-  ];
+    const x0 = Math.floor(facX);
+    const y0 = Math.floor(facY);
+    const x1 = x0 + 1;
+    const y1 = y0 + 1;
+
+    // Interpolation weights [0-1]
+    const wx = facX - x0;
+    const wy = facY - y0;
+
+    // Clamp each corner to the texture bounds
+    const clampX = (x: number) => Math.min(Math.max(x, 0), width - 1);
+    const clampY = (y: number) => Math.min(Math.max(y, 0), height - 1);
+
+    const cx0 = clampX(x0);
+    const cx1 = clampX(x1);
+    const cy0 = clampY(y0);
+    const cy1 = clampY(y1);
+
+    const getValues = (x: number, y: number) => {
+        const idx = (y * width + x) * 4;
+        return {
+            u: THREE.DataUtils.fromHalfFloat(data[idx]),
+            v: THREE.DataUtils.fromHalfFloat(data[idx + 1]),
+            valid: THREE.DataUtils.fromHalfFloat(data[idx + 2]),
+        };
+    };
+
+    const t00 = getValues(cx0, cy0);
+    const t10 = getValues(cx1, cy0);
+    const t01 = getValues(cx0, cy1);
+    const t11 = getValues(cx1, cy1);
+
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    const newU = lerp(lerp(t00.u, t10.u, wx), lerp(t01.u, t11.u, wx), wy);
+    const newV = lerp(lerp(t00.v, t10.v, wx), lerp(t01.v, t11.v, wx), wy);
+
+    // Valid only if all four corners are valid
+    const valid = t00.valid > 0 && t10.valid > 0 && t01.valid > 0 && t11.valid > 0;
+
+    return [new THREE.Vector2(newU, newV), valid];
 }
 
 export function reproject(resolution: number = 256){
-    const {nativeCRS, destCRS, plotType} = usePlotStore.getState()
-    if (!nativeCRS || !destCRS) return; // This shouldn't trigger as the button will be disabled for this same condition
-    if (!checkProjString(destCRS)) return; // nativeCRS will already be checked when the user sets it, so we don't need to check it here
-
-    const {dimArrays, remapTexture, flipY, dataShape } = useGlobalStore.getState()
+    const {nativeCRS, destCRS, plotType, is360Deg} = usePlotStore.getState()
+	const {dimArrays, remapTexture, flipY } = useGlobalStore.getState()
+	const insufficientCRS = !nativeCRS || !destCRS
     if (remapTexture) remapTexture.dispose();
+    useGlobalStore.setState({
+        remapTexture:undefined
+    })
+	if (insufficientCRS || plotType == 'sphere'){
+		// If sphere, we check if irregularGrid. If so then create new texture. 
+		handleIrregularGrid(dimArrays)
+		return;
+	}
+    if (insufficientCRS) return; 
+    if (!checkProjString(destCRS) || !checkProjString(destCRS)) return; 
 
     const {xIdx, yIdx} = getAxisIndices()
-    const xArray = dimArrays[xIdx];
+    let xArray = dimArrays[xIdx] as number[];
+    if (is360Deg) {
+		xArray = remap360to180Monotonic(xArray) 
+	}
+
     const yArray = dimArrays[yIdx];
     const width = xArray.length;
     const height = yArray.length;
 
-
-    const [xMin, xMax] = ArrayMinMax(xArray);
-    const [yMin, yMax] = ArrayMinMax(yArray);
     // We need the border points as the min/max of the old CRS won't always be the min/max of the new CRS
+	
     const boundaryPoints: [number, number][] = [];
-
-    
+	
     for (let i = 0; i < width; i++) {
         boundaryPoints.push([xArray[i], yArray[0]]);
     }
@@ -182,16 +294,17 @@ export function reproject(resolution: number = 256){
     let [maxX, maxY] = [-Infinity, -Infinity];
 
     // Get min/max of new CRS for new Axis'
-    for (const [lon, lat] of boundaryPoints) {
-        const [px, py] = proj.forward([lon, lat]);
+    for (const [x, y] of boundaryPoints) {
+        const [px, py] = proj.forward([x, y]);
         minX = Math.min(minX, px); maxX = Math.max(maxX, px);
         minY = Math.min(minY, py); maxY = Math.max(maxY, py);
     }    
- 
+	
     const xDiff = Math.abs(maxX - minX);
     const yDiff = Math.abs(maxY - minY);
     const aspectRatio = yDiff > 0 ? xDiff / yDiff : 1;
     function safeInverse(proj: any, xy: [number, number], tol = 1e-6) {
+        // Proj4 clamps new CRS, won't return invalid values. Need to do an inverse run instead
         //This function checks if the coordinates are valid and returns 0 or 1 based on conditions
         const [lon, lat] = proj.inverse(xy);
         if (!isFinite(lon) || !isFinite(lat)) return [lon, lat, 0];
@@ -223,11 +336,11 @@ export function reproject(resolution: number = 256){
         const yDiff = Math.abs(maxY - minY);
 
         for (let j = 0; j < targetHeight; j++) {
-            const lat = yArray[j];
+            const y = yArray[j];
             for (let i = 0; i < targetWidth; i++) {
-                const lon = xArray[i];
-                const [px, py] = proj.forward([lon, lat]);
-                const valid = (isFinite(px) && isFinite(py)) ? 1 : 0;
+                const x = xArray[i];
+                const [px, py] = proj.forward([x, y]);
+                const valid = Number(isFinite(px) && isFinite(py))
 
                 const u = (px - minX) / xDiff;
                 const v = (py - minY) / yDiff;
@@ -241,32 +354,38 @@ export function reproject(resolution: number = 256){
     } else {
         targetWidth = Math.ceil(adjustedResolution * aspectRatio);
         targetHeight = adjustedResolution;
-        xTicks = linspace(minX, maxX, targetWidth);
-        yTicks = flipY ? linspace(maxY, minY, targetHeight) : linspace(minY, maxY, targetHeight);
+        xTicks = linspace(minX, maxX, targetWidth) 
 
-        // Detect if coordinate axes are descending
-        const isXDescending = xArray.length > 1 ? xArray[0] > xArray[xArray.length - 1] : false;
-        const isYDescending = yArray.length > 1 ? yArray[0] > yArray[yArray.length - 1] : false;
+        yTicks = flipY 
+			? linspace(maxY, minY, targetHeight)
+			: linspace(minY, maxY, targetHeight)
 
         data = new Uint16Array(targetWidth * targetHeight * 4);
-        const xRangeDiff = xMax - xMin;
-        const yRangeDiff = yMax - yMin;
         for (let j = 0; j < targetHeight; j++) {
             for (let i = 0; i < targetWidth; i++) {
-                const [lon, lat, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
-                const u = xRangeDiff > 0 ? (isXDescending ? (xMax - lon) / xRangeDiff : (lon - xMin) / xRangeDiff) : 0;
-                const v = (isYDescending ? (yMax - lat) / yRangeDiff : (lat - yMin) / yRangeDiff)
-                // Check boundary bounds to avoid displaying clamped blocks outside the dataset area
-                const inBounds = lon >= xMin && lon <= xMax && lat >= yMin && lat <= yMax;
-                const validVal = (valid === 1 && inBounds) ? 1 : 0;
+                const [x, y, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
 
+                // Get interpolated Index in the OG coords that matches new X, Y
+                // This is kinda expensive
+                const xi = fractionalIndex(xArray, x);
+                const yi = fractionalIndex(yArray, y);
+
+                const inBounds = valid === 1 &&
+                    xi !== null &&yi !== null &&
+                    Number.isFinite(xi) && Number.isFinite(yi);
+                let u = 0, v = 0;
+                if (inBounds) {
+                    u = (xi + 0.5) / xArray.length;
+                    v = (yi + 0.5) / yArray.length;
+                }
                 const idx = (j * targetWidth + i) * 4;
-                data[idx]     = THREE.DataUtils.toHalfFloat(u);  
+                data[idx]     = THREE.DataUtils.toHalfFloat(u); 
                 data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
-                data[idx + 2] = THREE.DataUtils.toHalfFloat(validVal);
+                data[idx + 2] = THREE.DataUtils.toHalfFloat(Number(inBounds));
             }  
         }
     }
+    
     const texture = new THREE.DataTexture(
         data,
         targetWidth,
@@ -280,8 +399,9 @@ export function reproject(resolution: number = 256){
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
 
+    //Clear texture before setting
+    if (remapTexture) remapTexture.dispose();
     useGlobalStore.setState({remapTexture: texture})
-
     // ---- Update Axis and Shape information ----//
     const crsCheck = proj4(destCRS);
     const {axisDimArrays, axisDimUnits, axisDimNames, shape} = useGlobalStore.getState()
@@ -314,3 +434,63 @@ export function reproject(resolution: number = 256){
     ParseExtent(newAxisDimUnits, newAxisDimArrays);
 
 }
+
+
+function remap360to180Monotonic(arr: number[]) {
+    const wrapped = arr.map(v => ((v + 180) % 360 + 360) % 360 - 180);
+    const sorted = wrapped.sort((a, b) => a - b);
+
+    return sorted;
+}
+
+function bracketInterval(arr: number[], value: number) {
+    // Gets indices in an array that border a value within that arrays bounds
+    const n = arr.length;
+    if (n <= 1) return { lo: 0, hi: 0 };
+
+    const ascending = arr[0] <= arr[n - 1];
+    let lo = 0;
+    let hi = n - 1;
+
+    while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        const midVal = arr[mid];
+
+        if (ascending ? midVal < value : midVal > value) {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+
+    return { lo, hi };
+}
+
+function findNearestIndex(arr: number[], target: number): number {
+	const { lo, hi } = bracketInterval(arr, target);
+
+    return Math.abs(arr[lo] - target) <= Math.abs(arr[hi] - target)
+        ? lo
+        : hi;
+}
+
+function fractionalIndex(coords: number[], value: number) {
+    const n = coords.length;
+    if (n === 1) return 0;
+
+    const ascending = coords[0] <= coords[n - 1];
+    // Bounds check
+    if (ascending) {
+        if (value < coords[0] || value > coords[n - 1]) return null;
+    } else {
+        if (value > coords[0] || value < coords[n - 1]) return null;
+    }
+
+    const { lo, hi } = bracketInterval(coords, value);
+
+    const a = coords[lo];
+    const b = coords[hi];
+
+    return lo + (value - a) / (b - a);
+}
+
