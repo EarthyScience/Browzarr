@@ -20,6 +20,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
+import { resetProjection } from '@/components/textures/ProjectionTexture';
 
 const MAX_ACTIVE_DIMS = 3;
 
@@ -536,6 +537,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     useZarrStore.getState().setNdSlices(ndSlices);
     useZarrStore.getState().setAxisMapping(axisMapping);
 
+
     if (collapsedDims.length > 0) {
       const firstCollapsed = collapsedDims[0];
       const sel = collapsedSels[firstCollapsed.name];
@@ -549,6 +551,7 @@ export default function MetaDimSelector({ meta, metadata, onApply, setShowMeta, 
     } else {
       setMaxSize(cacheSize);
       setVariable(meta.name || '');
+      resetProjection()
       ReFetch();
     }
 
