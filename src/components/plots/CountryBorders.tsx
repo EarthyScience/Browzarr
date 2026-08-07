@@ -66,7 +66,7 @@ function wrapLon(lon: number, bounds: [number, number]) {
 }
 
 function Borders({features}:{features: any}){
-    const {xRange, yRange, plotType, borderColor, nativeCRS, destCRS } = usePlotStore(useShallow(s => s))
+    const {xRange, yRange, plotType, borderColor, is360Deg, nativeCRS, destCRS } = usePlotStore(useShallow(s => s))
     const {shape, axisDimArrays, remapTexture } = useGlobalStore(useShallow(s => s))
     const {xIdx, yIdx} = useAxisIndices()
     const [xBounds, yBounds] = useMemo(()=>{ 
@@ -240,7 +240,7 @@ const CountryBorders = () => {
 
     return(
         <group
-            rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
+            rotation={[rotateFlat ? -Math.PI/2 : 0, is360Deg ? Math.PI :  0, 0]}
             scale={[globalScale, globalScale * (spherize ? 1 : (2 / aspectRatio)), globalScale]}
         >
             <group 
