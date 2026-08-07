@@ -203,7 +203,7 @@ const MetaStatusBadges: React.FC<{
 }> = React.memo(({ meta, availableDims, cacheSize, setCacheSize }) => {
   const {rows, collapsedSels} = useMetaSelectorStore((s) => s);
 
-  const {initStore, idx4D, setTextureArrayDepths} = useGlobalStore((s) => s);
+  const {initStore, idx4D} = useGlobalStore((s) => s);
   const {cache, maxSize} = useCacheStore((s) => s);
   const {compress, coarsen, kernelSize, kernelDepth} = useZarrStore((s) => s);
   const {maxTextureSize, max3DTextureSize} = usePlotStore((s) => s);
@@ -214,15 +214,18 @@ const MetaStatusBadges: React.FC<{
   const sizeData = useMemo(()=>{
 	let prod = 1;
 	const sizes = []
+	// ---- Get total Size ----//
 	for (const [_key, value] of Object.entries(rows)) {
 		if (value.sel.mode != 'slice') continue;
+		const idx = getOrigIdx(value.dimName)
 		const start = parseInt(value.sel.start)
-		const stop = parseInt(value.sel.stop)
+		let stop = parseInt(value.sel.stop)
+		stop = Number.isFinite(stop) ? stop : dataShape[idx]
 		const size = Math.abs(stop-start)
 		sizes.push(size)
 		prod *= size
 	}
-
+	// ---- Get Texture Counts ---- //
 	const is2D = sizes.length == 2;
 	const texSize = is2D ? maxTextureSize : max3DTextureSize;
 	let texProd = 1;
@@ -230,22 +233,25 @@ const MetaStatusBadges: React.FC<{
 		const texCount = Math.ceil(size/texSize);
 		texProd *= texCount;
 	}
+	// ---- Apply Coarsen ---- //
+	if (coarsen){
+		prod /= Math.pow(kernelSize,2)
+		if (!is2D) prod /= kernelDepth
+		prod = Math.round(prod)
+	}
 	return{
 		size: prod * dtype, texCount:texProd
 	}
-  },[rows])
+  },[rows, coarsen, kernelSize, kernelDepth])
 
   const currentSize = sizeData.size;
   const texCount = sizeData.texCount;
   const tooBig = texCount > 12;
-
   const cachedSize = useMemo(() => {
     return currentSize * 2/dtype;
   }, [currentSize, meta]);
 
   const smallCache = cachedSize > cacheSize;
-
-  const [cached, setCached] = useState(false);
   const [cachedChunks, setCachedChunks] = useState<string | null>(null);
 
   useEffect(() => {
@@ -304,8 +310,6 @@ const MetaStatusBadges: React.FC<{
     } else if (meta && cache.has(`${initStore}_${meta.name}`)) {
       newCached = true;
     }
-
-    setCached((prev) => (prev !== newCached ? newCached : prev));
     setCachedChunks((prev) => (prev !== newCachedChunks ? newCachedChunks : prev));
   }, [meta, cache, initStore, rows, collapsedSels, availableDims]);
 
@@ -322,12 +326,12 @@ const MetaStatusBadges: React.FC<{
       <div className="flex flex-col gap-1 text-xs">
         {tooBig && (
           <span className="font-medium text-destructive">
-            Too many textures ({texCount}/14). Won&apos;t fit.
+            Too many textures ({texCount}/12). Won&apos;t fit.
           </span>
         )}
-        {cached && (
+        {cachedChunks && (
           <span className="font-medium text-muted-foreground">
-            {cachedChunks ? `${cachedChunks} chunks already cached` : "Already cached"}
+            {`${cachedChunks} chunks already cached`}
           </span>
         )}
       </div>
@@ -614,8 +618,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
 			};
 		}),
 	[dimArrays, dimNames, dimUnits]);
-	useEffect(()=>console.log("Gotcha")
-	,[availableDims])
 	const dimsKey = availableDims.map((d) => `${d.name}:${d.size}`).join('|');
 
 	const initialCollapsed = useMemo(() => {
