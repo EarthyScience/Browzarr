@@ -8,8 +8,8 @@ interface DimSlicerNumericControlProps {
   placeholder: string
   ariaLabel: string
   onValueChange: (value: string) => void
-  onIncrement: () => void
-  onDecrement: () => void
+  onIncrement: (delta: number) => void
+  onDecrement: (delta: number) => void
   showInput: boolean
 }
 

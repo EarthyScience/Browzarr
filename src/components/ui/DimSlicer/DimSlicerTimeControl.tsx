@@ -14,14 +14,14 @@ interface DimSlicerTimeControlProps {
   effectiveDimSize: number
   formattedValue: (index: number) => string
   onValueChange: (value: string) => void
-  onIncrement: () => void
-  onDecrement: () => void
+  onIncrement: (delta: number) => void
+  onDecrement: (delta: number) => void
   includeEnd?: boolean
   layout?: 'row' | 'column'
   showInput?: boolean
 }
 
-export function DimSlicerTimeControl({
+export const DimSlicerTimeControl = React.memo(({
   currentIndex,
   onIndexChange,
   value,
@@ -36,7 +36,7 @@ export function DimSlicerTimeControl({
   includeEnd = false,
   layout = 'column',
   showInput = true,
-}: DimSlicerTimeControlProps) {
+}: DimSlicerTimeControlProps) => {
   return (
     <div className={`flex gap-1 ${layout === 'row' ? 'items-center flex-wrap' : 'flex-col items-start'}`}>
       <div className={layout === 'row' ? 'min-w-0' : ''}>
@@ -62,4 +62,4 @@ export function DimSlicerTimeControl({
       />
     </div>
   )
-}
+})

@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Trash2 } from 'lucide-react';
 import {
@@ -45,21 +45,24 @@ export interface DimOption {
 export interface DimSlicerProps {
   availableDims: DimOption[];
   dimName: string;
-  onDimChange: (dimName: string) => void;
+  onDimChange: (dimName: string, newName: string) => void;
   onRemove?: () => void;
   dimSize: number;
   selection: SliceSelectionState;
-  onChange: (next: SliceSelectionState) => void;
+  onChange: (dimName: string, next: SliceSelectionState) => void;
   step?: number;
   axis?: Axis;
-  onAxisChange?: (axis: Axis) => void;
   values?: number[];
   formatValue?: (value: number) => string;
   /** If set, locks the mode and hides the mode toggle */
   lockMode?: SelectionMode;
-  /** If set, restricts which axes are shown in the axis toggle */
-  allowedAxes?: Axis[];
 }
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
+
+const parseOr = (v: string, fallback: number) => {
+    const n = parseInt(v, 10);
+    return Number.isNaN(n) ? fallback : n;
+};
 
 const DimSlicerComponent: React.FC<DimSlicerProps> = ({
   availableDims,
@@ -71,11 +74,9 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
   onChange,
   step = 1,
   axis: propAxis = 'x',
-  onAxisChange,
   values,
   formatValue,
   lockMode,
-  allowedAxes,
 }) => {
   const effectiveDimSize = values ? values.length : dimSize;
   const rawSel = selection ?? defaultSelection(effectiveDimSize);
@@ -97,38 +98,33 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
     return closestIndex;
   };
 
-  const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
-
-  const parseOr = (v: string, fallback: number) => {
-    const n = parseInt(v, 10);
-    return Number.isNaN(n) ? fallback : n;
-  };
+  
 
   const maxIndex = Math.max(effectiveDimSize - 1, 0);
 
-  const changeScalarBy = (delta: number) => {
+  const changeScalarBy = useCallback((delta: number) => {
     let val = parseOr(sel.scalar, 0) + delta;
     val = clamp(val, 0, maxIndex);
-    onChange({ ...sel, scalar: String(val) });
-  };
+    onChange(dimName,{ ...sel, scalar: String(val) });
+  },[onChange, clamp, parseOr])
 
-  const changeStartBy = (delta: number) => {
+  const changeStartBy = useCallback((delta: number) => {
     let val = parseOr(sel.start, 0) + delta;
     val = clamp(val, 0, maxIndex);
-    onChange({ ...sel, start: String(val) });
-  };
+    onChange(dimName,{ ...sel, start: String(val) });
+  },[onChange, clamp, parseOr])
 
-  const changeStopBy = (delta: number) => {
+  const changeStopBy = useCallback((delta: number) => {
     let val = parseOr(sel.stop, maxIndex) + delta;
     val = clamp(val, 0, maxIndex);
-    onChange({ ...sel, stop: String(val) });
-  };
+    onChange(dimName,{ ...sel, stop: String(val) });
+  },[onChange, clamp, parseOr])
 
-  const updateSelection = (patch: Partial<SliceSelectionState>) => {
+  const updateSelection = useCallback((patch: Partial<SliceSelectionState>) => {
     const next = { ...sel, ...patch };
     if (lockMode) next.mode = lockMode;
-    onChange(next);
-  };
+    onChange(dimName,next);
+  },[onChange])
 
   const startIndex = clamp(parseOr(sel.start, 0), 0, maxIndex);
   const stopIndex = clamp(parseOr(sel.stop, maxIndex), 0, maxIndex);
@@ -152,6 +148,27 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
   const isDateDimension = isTimeDimension || dimName.toLowerCase().includes('date');
   const showTimeControls = Boolean(values && isTimeDimension);
 
+  const updateScalar = useCallback((newScalar: string | number) => {
+    if (typeof newScalar === 'string') {
+      const parsed = parseFloat(newScalar);
+      if (!Number.isNaN(parsed)) updateSelection({ scalar: String(getIndexFromValue(parsed)) });
+    } else  updateSelection({ scalar: String(newScalar) })
+  },[updateSelection])
+
+  const updateStart = useCallback((newStart: string | number) => {
+    if (typeof newStart === 'string') {
+      const parsed = parseFloat(newStart);
+      if (!Number.isNaN(parsed)) updateSelection({ start: String(getIndexFromValue(parsed))})
+    } else updateSelection({ start: String(newStart)})
+  },[updateSelection])
+
+  const updateStop = useCallback((newStop: string | number) => {
+    if (typeof newStop === 'string') {
+      const parsed = parseFloat(newStop);
+      if (!Number.isNaN(parsed)) updateSelection({ stop: String(getIndexFromValue(parsed))})
+    } else updateSelection({ stop: String(newStop)})
+  },[updateSelection])
+
   return (
     <div className={`relative border border-l-2 rounded-md px-2 py-1.5 space-y-2 bg-muted/20 transition-colors ${MODE_ACCENT[sel.mode]}`}>
 
@@ -167,7 +184,7 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
 
       {/* Top row: dim select + mode toggle + axis toggle */}
       <div className="flex items-center justify-between gap-2 pr-5">
-        <Select value={dimName} onValueChange={onDimChange}>
+        <Select value={dimName} onValueChange={(name) => onDimChange(dimName, name)}>
           <SelectTrigger className="h-6 w-auto min-w-0 text-xs px-2 py-0 border-0 cursor-pointer">
             <SelectValue placeholder="dim…" />
           </SelectTrigger>
@@ -236,62 +253,52 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
               layout="row"
               showInput={false}
               currentIndex={scalarIndex}
-              onIndexChange={(newScalar: number) => updateSelection({ scalar: String(newScalar) })}
+              onIndexChange={updateScalar}
               value={scalarValue}
               placeholder={formattedValue(0)}
               ariaLabel="Scalar value"
               values={values ?? []}
               effectiveDimSize={effectiveDimSize}
               formattedValue={formattedValue}
-              onValueChange={value => {
-                const parsed = parseFloat(value);
-                if (!Number.isNaN(parsed)) updateSelection({ scalar: String(getIndexFromValue(parsed)) });
-              }}
-              onIncrement={() => changeScalarBy(+1)}
-              onDecrement={() => changeScalarBy(-1)}
+              onValueChange={updateScalar}
+              onIncrement={changeScalarBy}
+              onDecrement={changeScalarBy}
             />
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex justify-between">
             <DimSlicerTimeControl
               layout="row"
               showInput={false}
               currentIndex={startIndex}
-              onIndexChange={(newStart: number) => updateSelection({ start: String(newStart) })}
+              onIndexChange={updateStart}
               value={startValue}
               placeholder={formattedValue(0)}
               ariaLabel="Start value"
               values={values ?? []}
               effectiveDimSize={effectiveDimSize}
               formattedValue={formattedValue}
-              onValueChange={value => {
-                const parsed = parseFloat(value);
-                if (!Number.isNaN(parsed)) updateSelection({ start: String(getIndexFromValue(parsed)) });
-              }}
-              onIncrement={() => changeStartBy(+1)}
-              onDecrement={() => changeStartBy(-1)}
+              onValueChange={updateStart}
+              onIncrement={changeStartBy}
+              onDecrement={changeStartBy}
             />
-            <div className="flex justify-end">
-              <DimSlicerTimeControl
-                layout="row"
-                showInput={false}
-                currentIndex={stopIndex}
-                onIndexChange={(newStop: number) => updateSelection({ stop: String(newStop) })}
-                value={stopValue}
-                placeholder={formattedValue(Math.max(effectiveDimSize - 1, 0))}
-                ariaLabel="Stop value"
-                values={values ?? []}
-                effectiveDimSize={effectiveDimSize}
-                formattedValue={formattedValue}
-                onValueChange={value => {
-                  const parsed = parseFloat(value);
-                  if (!Number.isNaN(parsed)) updateSelection({ stop: String(getIndexFromValue(parsed)) });
-                }}
-                onIncrement={() => changeStopBy(+1)}
-                onDecrement={() => changeStopBy(-1)}
-                includeEnd
-              />
-            </div>
+            <DimSlicerTimeControl
+              layout="row"
+              showInput={false}
+              currentIndex={stopIndex}
+              onIndexChange={updateStop}
+              value={stopValue}
+              placeholder={formattedValue(Math.max(effectiveDimSize - 1, 0))}
+              ariaLabel="Stop value"
+              values={values ?? []}
+              effectiveDimSize={effectiveDimSize}
+              formattedValue={formattedValue}
+              onValueChange={updateStop}
+              onIncrement={changeStopBy}
+              onDecrement={changeStopBy}
+              includeEnd
+            />
+
           </div>
         )
       ) : (
@@ -300,30 +307,24 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
             showTimeControls ? (
               <DimSlicerTimeControl
                 currentIndex={startIndex}
-                onIndexChange={(newStart: number) => updateSelection({ start: String(newStart) })}
+                onIndexChange={updateStart}
                 value={startValue}
                 placeholder={formattedValue(0)}
                 ariaLabel="Start value"
                 values={values ?? []}
                 effectiveDimSize={effectiveDimSize}
                 formattedValue={formattedValue}
-                onValueChange={value => {
-                  const parsed = parseFloat(value);
-                  if (!Number.isNaN(parsed)) updateSelection({ start: String(getIndexFromValue(parsed)) });
-                }}
-                onIncrement={() => changeStartBy(+1)}
-                onDecrement={() => changeStartBy(-1)}
+                onValueChange={updateStart}
+                onIncrement={changeStartBy}
+                onDecrement={changeStartBy}
               />
             ) : (
               <DimSlicerNumericControl
                 value={startValue}
                 placeholder={formattedValue(0)}
-                onValueChange={value => {
-                  const parsed = parseFloat(value);
-                  if (!Number.isNaN(parsed)) updateSelection({ start: String(getIndexFromValue(parsed)) });
-                }}
-                onIncrement={() => changeStartBy(+1)}
-                onDecrement={() => changeStartBy(-1)}
+                onValueChange={updateStart}
+                onIncrement={changeStartBy}
+                onDecrement={changeStartBy}
                 ariaLabel="Start value"
                 showInput={!isDateDimension}
               />
@@ -338,31 +339,25 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
                 layout="row"
                 showInput={false}
                 currentIndex={stopIndex}
-                onIndexChange={(newStop: number) => updateSelection({ stop: String(newStop) })}
+                onIndexChange={updateStop}
                 value={stopValue}
                 placeholder={formattedValue(Math.max(effectiveDimSize - 1, 0))}
                 ariaLabel="Stop value"
                 values={values ?? []}
                 effectiveDimSize={effectiveDimSize}
                 formattedValue={formattedValue}
-                onValueChange={value => {
-                  const parsed = parseFloat(value);
-                  if (!Number.isNaN(parsed)) updateSelection({ stop: String(getIndexFromValue(parsed)) });
-                }}
-                onIncrement={() => changeStopBy(+1)}
-                onDecrement={() => changeStopBy(-1)}
+                onValueChange={updateStop}
+                onIncrement={changeStopBy}
+                onDecrement={changeStopBy}
                 includeEnd
               />
             ) : (
               <DimSlicerNumericControl
                 value={stopValue}
                 placeholder={formattedValue(Math.max(effectiveDimSize - 1, 0))}
-                onValueChange={value => {
-                  const parsed = parseFloat(value);
-                  if (!Number.isNaN(parsed)) updateSelection({ stop: String(getIndexFromValue(parsed)) });
-                }}
-                onIncrement={() => changeStopBy(+1)}
-                onDecrement={() => changeStopBy(-1)}
+                onValueChange={updateStop}
+                onIncrement={changeStopBy}
+                onDecrement={changeStopBy}
                 ariaLabel="Stop value"
                 showInput={!isDateDimension}
               />
@@ -370,30 +365,24 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
           ) : showTimeControls ? (
             <DimSlicerTimeControl
               currentIndex={scalarIndex}
-              onIndexChange={(newScalar: number) => updateSelection({ scalar: String(newScalar) })}
+              onIndexChange={updateScalar}
               value={scalarValue}
               placeholder={formattedValue(0)}
               ariaLabel="Scalar value"
               values={values ?? []}
               effectiveDimSize={effectiveDimSize}
               formattedValue={formattedValue}
-              onValueChange={value => {
-                const parsed = parseFloat(value);
-                if (!Number.isNaN(parsed)) updateSelection({ scalar: String(getIndexFromValue(parsed)) });
-              }}
-              onIncrement={() => changeScalarBy(+1)}
-              onDecrement={() => changeScalarBy(-1)}
+              onValueChange={updateScalar}
+              onIncrement={changeScalarBy}
+              onDecrement={changeScalarBy}
             />
           ) : (
             <DimSlicerNumericControl
               value={scalarValue}
               placeholder={formattedValue(0)}
-              onValueChange={value => {
-                const parsed = parseFloat(value);
-                if (!Number.isNaN(parsed)) updateSelection({ scalar: String(getIndexFromValue(parsed)) });
-              }}
-              onIncrement={() => changeScalarBy(+1)}
-              onDecrement={() => changeScalarBy(-1)}
+              onValueChange={updateScalar}
+              onIncrement={changeScalarBy}
+              onDecrement={changeScalarBy}
               ariaLabel="Scalar value"
               showInput={!isDateDimension}
             />

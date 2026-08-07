@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, createContext, useContext } from 'react';
+import React, { useMemo, useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { createStore, useStore } from 'zustand';
 import DimSlicer, { Axis, defaultSelection, DimOption, SliceSelectionState } from '@/components/ui/DimSlicer';
 import { defaultAttributes, renderAttributes } from "@/components/ui/MetaData";
@@ -127,61 +127,62 @@ interface SelectorStoreState {
 
 type SelectorStore = ReturnType<typeof createMetaSelectorStore>;
 
+const getDimShape = (availableDims: DimOption[], dataShape: number[], dimName: string): number => {
+  const idx = availableDims.findIndex((d) => d.name === dimName);
+  return dataShape[idx] ?? availableDims[idx]?.size ?? 0;
+};
+
 const createMetaSelectorStore = (initialRows: SlicerRow[], initialCollapsed: Record<string, SliceSelectionState>) =>
   createStore<SelectorStoreState>((set) => ({
     rows: initialRows,
     collapsedSels: initialCollapsed,
+
     updateDimName: (oldDimName, newDimName, availableDims, dataShape) => {
       if (oldDimName === newDimName) return;
       set((state) => {
-        const existingIdx = state.rows.findIndex((r) => r.dimName === newDimName);
-        const newDimIndex = availableDims.findIndex((d) => d.name === newDimName);
-        const newDim = availableDims[newDimIndex];
-        const newDimShape = dataShape[newDimIndex] ?? newDim?.size ?? 0;
+        const newShape = getDimShape(availableDims, dataShape, newDimName);
+        const isSwap = state.rows.some((r) => r.dimName === newDimName);
 
-        if (existingIdx >= 0) {
-          const oldDimIndex = availableDims.findIndex((d) => d.name === oldDimName);
-          const oldDim = availableDims[oldDimIndex];
-          const oldDimShape = dataShape[oldDimIndex] ?? oldDim?.size ?? 0;
-
+        if (!isSwap) {
           return {
-            rows: state.rows.map((r) => {
-              if (r.dimName === oldDimName) return { dimName: newDimName, sel: defaultSelection(newDimShape) };
-              if (r.dimName === newDimName) return { dimName: oldDimName, sel: defaultSelection(oldDimShape) };
-              return r;
-            }),
+            rows: state.rows.map((r) =>
+              r.dimName === oldDimName ? { dimName: newDimName, sel: defaultSelection(newShape) } : r
+            ),
           };
         }
 
+        const oldShape = getDimShape(availableDims, dataShape, oldDimName);
         return {
-          rows: state.rows.map((r) => (r.dimName === oldDimName ? { dimName: newDimName, sel: defaultSelection(newDimShape) } : r)),
+          rows: state.rows.map((r) => {
+            if (r.dimName === oldDimName) return { dimName: newDimName, sel: defaultSelection(newShape) };
+            if (r.dimName === newDimName) return { dimName: oldDimName, sel: defaultSelection(oldShape) };
+            return r;
+          }),
         };
       });
     },
-    updateSel: (dimName, sel) => {
+
+    updateSel: (dimName, sel) =>
       set((state) => ({
         rows: state.rows.map((r) => (r.dimName === dimName ? { ...r, sel: { ...sel, mode: 'slice' } } : r)),
-      }));
-    },
-    updateCollapsedSel: (dimName, sel) => {
+      })),
+
+    updateCollapsedSel: (dimName, sel) =>
       set((state) => ({
         collapsedSels: { ...state.collapsedSels, [dimName]: { ...sel, mode: 'scalar' } },
-      }));
-    },
-    addRow: (availableDims, dataShape) => {
+      })),
+
+    addRow: (availableDims, dataShape) =>
       set((state) => {
         if (state.rows.length >= MAX_ACTIVE_DIMS) return state;
-        const usedNames = new Set(state.rows.map((r) => r.dimName));
-        const dimName = availableDims.find((d) => !usedNames.has(d.name))?.name;
-        if (!dimName) return state;
-        const dim = availableDims.find((d) => d.name === dimName)!;
-        const dimShape = dataShape[availableDims.indexOf(dim)] ?? dim.size;
-        return { rows: [...state.rows, { dimName, sel: defaultSelection(dimShape) }] };
-      });
-    },
-    removeLastRow: () => {
-      set((state) => ({ rows: state.rows.slice(0, -1) }));
-    },
+        const used = new Set(state.rows.map((r) => r.dimName));
+        const dim = availableDims.find((d) => !used.has(d.name));
+        if (!dim) return state;
+        const shape = getDimShape(availableDims, dataShape, dim.name);
+        return { rows: [...state.rows, { dimName: dim.name, sel: defaultSelection(shape) }] };
+      }),
+
+    removeLastRow: () => set((state) => ({ rows: state.rows.slice(0, -1) })),
   }));
 
 const MetaSelectorContext = createContext<SelectorStore | null>(null);
@@ -200,82 +201,46 @@ const MetaStatusBadges: React.FC<{
   cacheSize: number;
   setCacheSize: React.Dispatch<React.SetStateAction<number>>;
 }> = React.memo(({ meta, availableDims, cacheSize, setCacheSize }) => {
-  const rows = useMetaSelectorStore((s) => s.rows);
-  const collapsedSels = useMetaSelectorStore((s) => s.collapsedSels);
+  const {rows, collapsedSels} = useMetaSelectorStore((s) => s);
 
-  const initStore = useGlobalStore((s) => s.initStore);
-  const idx4D = useGlobalStore((s) => s.idx4D);
-  const cache = useCacheStore((s) => s.cache);
-  const maxSize = useCacheStore((s) => s.maxSize);
-  const compress = useZarrStore((s) => s.compress);
-  const coarsen = useZarrStore((s) => s.coarsen);
-  const kernelSize = useZarrStore((s) => s.kernelSize);
-  const kernelDepth = useZarrStore((s) => s.kernelDepth);
-  const setTextureArrayDepths = useGlobalStore((s) => s.setTextureArrayDepths);
-  const maxTextureSize = usePlotStore((s) => s.maxTextureSize);
-  const max3DTextureSize = usePlotStore((s) => s.max3DTextureSize);
+  const {initStore, idx4D, setTextureArrayDepths} = useGlobalStore((s) => s);
+  const {cache, maxSize} = useCacheStore((s) => s);
+  const {compress, coarsen, kernelSize, kernelDepth} = useZarrStore((s) => s);
+  const {maxTextureSize, max3DTextureSize} = usePlotStore((s) => s);
 
   const dataShape = meta?.shape || [];
+  const dtype = meta.totalSize ? Math.round(meta.totalSize/dataShape.reduce((a,b) => a * b, 1)) : 4
 
-  const sizeData = useMemo(() => {
-    const { rowZ, rowY, rowX, origIdxZ, origIdxY, origIdxX } = getAxisRows(rows);
-    const is2D = dataShape.length === 2 || !rowZ;
+  const sizeData = useMemo(()=>{
+	let prod = 1;
+	const sizes = []
+	for (const [_key, value] of Object.entries(rows)) {
+		if (value.sel.mode != 'slice') continue;
+		const start = parseInt(value.sel.start)
+		const stop = parseInt(value.sel.stop)
+		const size = Math.abs(stop-start)
+		sizes.push(size)
+		prod *= size
+	}
 
-    const lenZ = origIdxZ >= 0 ? dataShape[origIdxZ] : 1;
-    const lenY = origIdxY >= 0 ? dataShape[origIdxY] : 1;
-    const lenX = origIdxX >= 0 ? dataShape[origIdxX] : 1;
-
-    const z = is2D ? { first: 0, last: 1, steps: 1 } : parseSliceRange(rowZ?.sel, lenZ);
-    const y = parseSliceRange(rowY?.sel, lenY);
-    const x = parseSliceRange(rowX?.sel, lenX);
-
-    const maxSizeLimit = is2D ? maxTextureSize : max3DTextureSize;
-    const texCounts = [z.steps / maxSizeLimit, y.steps / maxSizeLimit, x.steps / maxSizeLimit];
-
-    const depths = texCounts.some((count) => count > 1)
-      ? texCounts.map((val) => Math.ceil(val))
-      : [1, 1, 1];
-
-    const thisCount = texCounts.reduce((prod, val) => prod * Math.ceil(val), 1);
-
-    const getSelSteps = (dimName: string, defaultLast: number) => {
-      const row = rows.find((r) => r.dimName === dimName);
-      if (row) return parseSliceRange(row.sel, defaultLast).steps;
-
-      const collSel = collapsedSels[dimName];
-      if (collSel) return parseSliceRange(collSel, defaultLast).steps;
-      return defaultLast;
-    };
-
-    const totalSteps = availableDims.reduce((prod, d, idx) => {
-      const dimShape = dataShape[idx] ?? d.size;
-      return prod * getSelSteps(d.name, dimShape);
-    }, 1);
-    const sizeRatio = totalSteps / (dataShape.reduce((a, b) => a * b, 1) || 1);
-    let calculatedSize = (meta.totalSize || 0) * sizeRatio;
-
-    if (!is2D) {
-      calculatedSize = calculatedSize / (coarsen ? kernelDepth * Math.pow(kernelSize, 2) : 1);
-    }
-
-    return { size: calculatedSize, thisCount, depths };
-  }, [meta, rows, collapsedSels, availableDims, dataShape, coarsen, kernelSize, kernelDepth, maxTextureSize, max3DTextureSize]);
-
-  useEffect(() => {
-    setTextureArrayDepths(sizeData.depths);
-  }, [sizeData.depths, setTextureArrayDepths]);
+	const is2D = sizes.length == 2;
+	const texSize = is2D ? maxTextureSize : max3DTextureSize;
+	let texProd = 1;
+	for (const size of sizes){
+		const texCount = Math.ceil(size/texSize);
+		texProd *= texCount;
+	}
+	return{
+		size: prod * dtype, texCount:texProd
+	}
+  },[rows])
 
   const currentSize = sizeData.size;
-  const texCount = sizeData.thisCount;
-  const tooBig = texCount > 14;
+  const texCount = sizeData.texCount;
+  const tooBig = texCount > 12;
 
   const cachedSize = useMemo(() => {
-    const dtype = (meta?.dtype as string) || '';
-    const scale = dtype.includes("32") || dtype.includes("f4") ? 0.5
-      : dtype.includes("64") || dtype.includes("f8") ? 0.25
-        : dtype.includes("8") || dtype.includes("i1") ? 2
-          : 1;
-    return currentSize * scale;
+    return currentSize * 2/dtype;
   }, [currentSize, meta]);
 
   const smallCache = cachedSize > cacheSize;
@@ -420,8 +385,7 @@ const MetaDimTable: React.FC<{
   dataShape: number[];
   chunkShape: number[];
 }> = React.memo(({ availableDims, dataShape, chunkShape }) => {
-  const rows = useMetaSelectorStore((s) => s.rows);
-  const collapsedSels = useMetaSelectorStore((s) => s.collapsedSels);
+  const {rows, collapsedSels} = useMetaSelectorStore((s) => s);
 
   return (
     <div className="mt-2 border rounded-md overflow-hidden text-xs bg-background shadow-sm w-full min-w-0">
@@ -467,51 +431,68 @@ const MetaActiveSlicers: React.FC<{
   availableDims: DimOption[];
   dataShape: number[];
 }> = React.memo(({ availableDims, dataShape }) => {
-  const rows = useMetaSelectorStore((s) => s.rows);
-  const updateDimNameAction = useMetaSelectorStore((s) => s.updateDimName);
-  const updateSelAction = useMetaSelectorStore((s) => s.updateSel);
-  const removeLastRow = useMetaSelectorStore((s) => s.removeLastRow);
+	const rows = useMetaSelectorStore((s) => s.rows);
+	const updateDimNameAction = useMetaSelectorStore((s) => s.updateDimName);
+	const updateSelAction = useMetaSelectorStore((s) => s.updateSel);
+	const removeLastRow = useMetaSelectorStore((s) => s.removeLastRow);
 
-  return (
-    <div className="space-y-3">
-      {rows.map((row, i) => {
-        const dim = availableDims.find((d) => d.name === row.dimName);
-        const isLast = i === rows.length - 1;
-        const axis = getActiveAxis(i, rows.length);
-        return (
-          <DimSlicer
-            key={row.dimName}
-            availableDims={availableDims}
-            dimName={row.dimName}
-            onDimChange={(name) => updateDimNameAction(row.dimName, name, availableDims, dataShape)}
-            onRemove={isLast && rows.length > 1 ? removeLastRow : undefined}
-            dimSize={dim?.size ?? 0}
-            selection={row.sel}
-            axis={axis}
-            onChange={(sel) => updateSelAction(row.dimName, sel)}
-            values={dim?.values}
-            formatValue={dim?.formatValue}
-            lockMode="slice"
-            allowedAxes={['z', 'y', 'x']}
-          />
-        );
-      })}
-    </div>
-  );
+	const handleDimChange = useCallback(
+		(dimName: string, newName: string) =>
+			updateDimNameAction(dimName, newName, availableDims, dataShape),
+		[availableDims, dataShape]
+	);
+
+	const handleSelChange = useCallback(
+		(dimName: string, sel: SliceSelectionState) => updateSelAction(dimName, sel),
+		[] // updateSelAction should itself be stable
+	);
+
+	const dimByName = useMemo(
+		() => new Map(availableDims.map((d) => [d.name, d])),
+		[availableDims]
+	);
+
+	return (
+		<div className="space-y-3">
+		{rows.map((row, i) => {
+			const dim = dimByName.get(row.dimName);
+			const isLast = i === rows.length - 1;
+			const axis = getActiveAxis(i, rows.length);
+			return (
+			<DimSlicer
+				key={row.dimName}
+				availableDims={availableDims}
+				dimName={row.dimName}
+				onDimChange={handleDimChange}
+				onRemove={isLast && rows.length > 1 ? removeLastRow : undefined}
+				dimSize={dim?.size ?? 0}
+				selection={row.sel}
+				axis={axis}
+				onChange={handleSelChange}
+				values={dim?.values}
+				formatValue={dim?.formatValue}
+				lockMode="slice"
+			/>
+			);
+		})}
+		</div>
+	);
 });
 
 const MetaCollapsedSlicers: React.FC<{
   availableDims: DimOption[];
 }> = React.memo(({ availableDims }) => {
-  const rows = useMetaSelectorStore((s) => s.rows);
-  const collapsedSels = useMetaSelectorStore((s) => s.collapsedSels);
-  const updateCollapsedSelAction = useMetaSelectorStore((s) => s.updateCollapsedSel);
 
-  const [collapsedOpen, setCollapsedOpen] = useState(false);
+	const {rows, collapsedSels, updateCollapsedSel} = useMetaSelectorStore(s=>s)
 
-  const activeDimNames = new Set(rows.map((r) => r.dimName));
-  const collapsedDims = availableDims.filter((d) => !activeDimNames.has(d.name));
+	const [collapsedOpen, setCollapsedOpen] = useState(false);
 
+	const activeDimNames = new Set(rows.map((r) => r.dimName));
+	const collapsedDims = availableDims.filter((d) => !activeDimNames.has(d.name));
+	const handleSelChange = useCallback(
+		(dimName: string, sel: SliceSelectionState) => updateCollapsedSel(dimName, sel),
+		[updateCollapsedSel] 
+	);
   if (collapsedDims.length === 0) return null;
 
   return (
@@ -536,7 +517,7 @@ const MetaCollapsedSlicers: React.FC<{
               dimSize={dim.size}
               selection={collapsedSels[dim.name] ?? { ...defaultSelection(dim.size), mode: 'scalar' }}
               axis="c"
-              onChange={(sel) => updateCollapsedSelAction(dim.name, sel)}
+              onChange={handleSelChange}
               values={dim.values}
               formatValue={dim.formatValue}
               lockMode="scalar"
@@ -595,140 +576,134 @@ const MetaAddDimensionControl: React.FC<{
 });
 
 export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
-  const isMobile = useIsMobile();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+	const isMobile = useIsMobile();
+	const [mounted, setMounted] = useState(false);
+	useEffect(() => setMounted(true), []);
 
-  const { dimArrays, dimNames, dimUnits } = useMemo(() => ({
-    dimArrays: (meta?.dimInfo?.dimArrays ?? []).map((a) => Array.from(a)),
-    dimNames: meta?.dimInfo?.dimNames ?? [],
-    dimUnits: (meta?.dimInfo?.dimUnits ?? []).map((u) => u ?? ''),
-  }), [meta?.dimInfo]);
+	const { dimArrays, dimNames, dimUnits } = useMemo(() => ({
+		dimArrays: (meta?.dimInfo?.dimArrays ?? []).map((a) => Array.from(a)),
+		dimNames: meta?.dimInfo?.dimNames ?? [],
+		dimUnits: (meta?.dimInfo?.dimUnits ?? []).map((u) => u ?? ''),
+	}), [meta?.dimInfo]);
 
-  const dataShape = meta?.shape || [];
-  const chunkShape = meta?.chunks || [];
+	const dataShape = meta?.shape || [];
+	const chunkShape = meta?.chunks || [];
+	
+	const { setDimArrays, setDimNames, setDimUnits, setVariable, variable } = useGlobalStore(useShallow(s => s));
+	const { maxSize, setMaxSize } = useCacheStore(useShallow(s => s))
+	const { ndSlices, axisMapping, ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(
+    useShallow(s => s))
+	const [cacheSize, setCacheSize] = useState(maxSize);
 
-  const { setDimArrays, setDimNames, setDimUnits, setVariable, variable, idx4D } = useGlobalStore(
-    useShallow((state) => ({
-      setDimArrays: state.setDimArrays,
-      setDimNames: state.setDimNames,
-      setDimUnits: state.setDimUnits,
-      setVariable: state.setVariable,
-      variable: state.variable,
-      idx4D: state.idx4D,
-    }))
-  );
+	const [displaySpat, setDisplaySpat] = useState(String(kernelSize));
+	const [displayDepth, setDisplayDepth] = useState(String(kernelDepth));
 
-  const { maxSize, setMaxSize } = useCacheStore(
-    useShallow((state) => ({ maxSize: state.maxSize, setMaxSize: state.setMaxSize }))
-  );
-  const [cacheSize, setCacheSize] = useState(maxSize);
+	const availableDims: DimOption[] = useMemo(
+		() =>
+		dimArrays.map((values, idx) => {
+			const baseName = dimNames[idx] ?? `dim${idx}`;
+			const name = `${baseName}::${idx}`;
+			const label = baseName;
+			const unit = dimUnits[idx] || undefined;
+			return {
+			name,
+			label,
+			size: values.length,
+			values,
+			formatValue: (v: number): string => String(parseLoc(v, unit)),
+			};
+		}),
+	[dimArrays, dimNames, dimUnits]);
+	useEffect(()=>console.log("Gotcha")
+	,[availableDims])
+	const dimsKey = availableDims.map((d) => `${d.name}:${d.size}`).join('|');
 
-  const { ndSlices, axisMapping, setZSlice, setYSlice, setXSlice, ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(
-    useShallow((state) => ({
-      ndSlices: state.ndSlices,
-      axisMapping: state.axisMapping,
-      setZSlice: state.setZSlice,
-      setYSlice: state.setYSlice,
-      setXSlice: state.setXSlice,
-      ReFetch: state.ReFetch,
-      compress: state.compress,
-      setCompress: state.setCompress,
-      coarsen: state.coarsen,
-      setCoarsen: state.setCoarsen,
-      kernelSize: state.kernelSize,
-      setKernelSize: state.setKernelSize,
-      kernelDepth: state.kernelDepth,
-      setKernelDepth: state.setKernelDepth,
-    }))
-  );
-  console.log(ndSlices)
-  const [displaySpat, setDisplaySpat] = useState(String(kernelSize));
-  const [displayDepth, setDisplayDepth] = useState(String(kernelDepth));
+	const initialCollapsed = useMemo(() => {
+		const isCurrentVar = variable === meta.name && ndSlices && ndSlices.length === availableDims.length;
+		return Object.fromEntries(
+		availableDims.map((d, i) => {
+			let sel: SliceSelectionState = { ...defaultSelection(d.size), mode: 'scalar' };
+			if (isCurrentVar) {
+			const s = ndSlices[i];
+			if (typeof s === 'number') {
+				sel = { start: '', stop: '', scalar: String(s), mode: 'scalar' };
+			}
+			}
+			return [d.name, sel];
+		})
+		);
+	}, [availableDims, variable, meta.name, ndSlices]);
 
-  const availableDims: DimOption[] = useMemo(
-    () =>
-      dimArrays.map((values, idx) => {
-        const baseName = dimNames[idx] ?? `dim${idx}`;
-        const name = `${baseName}::${idx}`;
-        const label = baseName;
-        const unit = dimUnits[idx] || undefined;
-        return {
-          name,
-          label,
-          size: values.length,
-          values,
-          formatValue: (v: number): string => String(parseLoc(v, unit)),
-        };
-      }),
-    [dimArrays, dimNames, dimUnits],
-  );
+	const initialRows = useMemo(() => {
+		const isCurrentVar = variable === meta.name && ndSlices && ndSlices.length === availableDims.length && axisMapping;
 
-  const dimsKey = availableDims.map((d) => `${d.name}:${d.size}`).join('|');
+		if (isCurrentVar) {
+		const initRows: SlicerRow[] = [];
+		const axes: Axis[] = ['z', 'y', 'x'];
+		const seenNames = new Set<string>();
 
-  const initialCollapsed = useMemo(() => {
-    const isCurrentVar = variable === meta.name && ndSlices && ndSlices.length === availableDims.length;
-    return Object.fromEntries(
-      availableDims.map((d, i) => {
-        let sel: SliceSelectionState = { ...defaultSelection(d.size), mode: 'scalar' };
-        if (isCurrentVar) {
-          const s = ndSlices[i];
-          if (typeof s === 'number') {
-            sel = { start: '', stop: '', scalar: String(s), mode: 'scalar' };
-          }
-        }
-        return [d.name, sel];
-      })
-    );
-  }, [availableDims, variable, meta.name, ndSlices]);
+		for (const axis of axes) {
+			const mappedIdx = (axisMapping as Record<string, number>)[axis];
+			if (mappedIdx !== undefined && mappedIdx >= 0 && mappedIdx < availableDims.length) {
+			const dim = availableDims[mappedIdx];
+			if (!seenNames.has(dim.name)) {
+				seenNames.add(dim.name);
+				const s = ndSlices[mappedIdx];
+				const dimShape = dataShape[mappedIdx] ?? dim.size;
+				let sel = defaultSelection(dimShape);
+				if (Array.isArray(s)) {
+				sel = { start: String(s[0]), stop: s[1] !== null ? String(s[1]) : '', scalar: '', mode: 'slice' };
+				}
+				initRows.push({ dimName: dim.name, sel });
+			}
+			}
+		}
 
-  const initialRows = useMemo(() => {
-    const isCurrentVar = variable === meta.name && ndSlices && ndSlices.length === availableDims.length && axisMapping;
+		if (initRows.length > 0) return initRows;
+		}
 
-    if (isCurrentVar) {
-      const initRows: SlicerRow[] = [];
-      const axes: Axis[] = ['z', 'y', 'x'];
-      const seenNames = new Set<string>();
+		const activeDims = availableDims.slice(-Math.min(MAX_ACTIVE_DIMS, availableDims.length));
+		return activeDims.map((d) => {
+			const dimShape = dataShape[availableDims.indexOf(d)] ?? d.size;
+		return {
+			dimName: d.name,
+			sel: defaultSelection(dimShape),
+		};
+		});
+		}, [availableDims, variable, meta.name, ndSlices, axisMapping, dataShape]);
 
-      for (const axis of axes) {
-        const mappedIdx = (axisMapping as Record<string, number>)[axis];
-        if (mappedIdx !== undefined && mappedIdx >= 0 && mappedIdx < availableDims.length) {
-          const dim = availableDims[mappedIdx];
-          if (!seenNames.has(dim.name)) {
-            seenNames.add(dim.name);
-            const s = ndSlices[mappedIdx];
-            const dimShape = dataShape[mappedIdx] ?? dim.size;
-            let sel = defaultSelection(dimShape);
-            if (Array.isArray(s)) {
-              sel = { start: String(s[0]), stop: s[1] !== null ? String(s[1]) : '', scalar: '', mode: 'slice' };
-            }
-            initRows.push({ dimName: dim.name, sel });
-          }
-        }
-      }
+	// Re-created (clean slate) whenever the active variable's dimensions change
+	const selectorStore = useMemo(
+		() => createMetaSelectorStore(initialRows, initialCollapsed),
+		[dimsKey]
+	);
 
-      if (initRows.length > 0) return initRows;
-    }
+	useEffect(() => {
+		setCompress(false);
+	}, [meta?.name, setCompress]);
 
-    const activeDims = availableDims.slice(-Math.min(MAX_ACTIVE_DIMS, availableDims.length));
-    return activeDims.map((d) => {
-      const dimShape = dataShape[availableDims.indexOf(d)] ?? d.size;
-      return {
-        dimName: d.name,
-        sel: defaultSelection(dimShape),
-      };
-    });
-  }, [availableDims, variable, meta.name, ndSlices, axisMapping, dataShape]);
+	function setTextureDepths(){
+		const {rows} = selectorStore.getState()
+		const {maxTextureSize, max3DTextureSize} = usePlotStore.getState()
+		const { rowZ, rowY, rowX, origIdxZ, origIdxY, origIdxX } = getAxisRows(rows);
+		const is2D = dataShape.length === 2 || !rowZ;
 
-  // Re-created (clean slate) whenever the active variable's dimensions change
-  const selectorStore = useMemo(
-    () => createMetaSelectorStore(initialRows, initialCollapsed),
-    [dimsKey]
-  );
+		const lenZ = origIdxZ >= 0 ? dataShape[origIdxZ] : 1;
+		const lenY = origIdxY >= 0 ? dataShape[origIdxY] : 1;
+		const lenX = origIdxX >= 0 ? dataShape[origIdxX] : 1;
 
-  useEffect(() => {
-    setCompress(false);
-  }, [meta?.name, setCompress]);
+		const z = is2D ? { first: 0, last: 1, steps: 1 } : parseSliceRange(rowZ?.sel, lenZ);
+		const y = parseSliceRange(rowY?.sel, lenY);
+		const x = parseSliceRange(rowX?.sel, lenX);
+
+		const maxSizeLimit = is2D ? maxTextureSize : max3DTextureSize;
+		const texCounts = [z.steps / maxSizeLimit, y.steps / maxSizeLimit, x.steps / maxSizeLimit];
+
+		const depths = texCounts.some((count) => count > 1)
+		? texCounts.map((val) => Math.ceil(val))
+		: [1, 1, 1];
+		useGlobalStore.setState({textureArrayDepths:depths})
+  	}
 
   const handlePlot = () => {
     const { rows, collapsedSels } = selectorStore.getState();
@@ -738,17 +713,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
     setDimUnits(dimUnits);
 
     const { rowZ, rowY, rowX } = getAxisRows(rows);
-
-    const getSliceArray = (row?: SlicerRow, defaultLast = 0): [number, number | null] => {
-      if (!row) return [0, null];
-      const range = parseSliceRange(row.sel, defaultLast);
-      if (row.sel.mode === 'scalar') return [range.first, range.last];
-      return [range.first, range.last === defaultLast ? null : range.last];
-    };
-
-    setZSlice(getSliceArray(rowZ, dataShape ? dataShape[getOrigIdx(rowZ?.dimName || '')] : 0));
-    setYSlice(getSliceArray(rowY, dataShape ? dataShape[getOrigIdx(rowY?.dimName || '')] : 0));
-    setXSlice(getSliceArray(rowX, dataShape ? dataShape[getOrigIdx(rowX?.dimName || '')] : 0));
 
     const ndSlices: (number | [number, number | null])[] = availableDims.map((dim, idx) => {
       const dimShape = dataShape ? dataShape[idx] ?? dim.size : dim.size;
@@ -769,8 +733,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
       z: getOrigIdx(rowZ?.dimName || '')
     };
 
-    useZarrStore.getState().setNdSlices(ndSlices);
-    useZarrStore.getState().setAxisMapping(axisMapping);
+    useZarrStore.setState({ndSlices, axisMapping})
 
     const activeDimNames = new Set(rows.map((r) => r.dimName));
     const collapsedDims = availableDims.filter((d) => !activeDimNames.has(d.name));
@@ -793,7 +756,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
     }
 
     usePlotStore.setState({ coarsen, kernel: { kernelDepth, kernelSize } });
-
+	setTextureDepths();
     onApply?.(
       rows.map((r) => r.sel),
       rows.map((_, i) => getActiveAxis(i, rows.length)),
