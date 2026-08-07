@@ -20,7 +20,7 @@ export async function loadNetCDF(file: Blob, filename: string) {
     useGlobalStore.setState({
       variables: Object.keys(variables),
       zMeta: metadata,
-      initStore: `local_${filename}`,
+      initStore: `local:${filename}`,
       titleDescription: {
         title: attrs.title ?? filename,
         description: attrs.history ?? '',
