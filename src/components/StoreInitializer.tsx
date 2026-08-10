@@ -65,6 +65,7 @@ function StoreInitializerInner() {
   const setInitStore = useGlobalStore(s => s.setInitStore);
 
   useEffect(() => {
+	if (searchParams.size === 0) {initializeStore(); return;}
 	const store = searchParams.get("store");
 	const data = searchParams.get("data");
 	const keyFramesPath = searchParams.get("keyFramesPath");
