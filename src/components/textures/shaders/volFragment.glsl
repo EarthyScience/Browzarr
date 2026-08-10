@@ -7,7 +7,7 @@ in vec3 vDirection;
 
 out vec4 color;
 
-uniform sampler3D map[12]; // We are limited to 16 textures. Cmap counts as one. 15 is weird so we use 14. 
+uniform sampler3D map[12]; // We are limited to 16 textures. Cmap counts as one. 15 is weird so we use 12. 
 uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform sampler2D remapTexture;
@@ -98,6 +98,7 @@ void main() {
 
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
+    vec3 scaler = 1.0/scale; // Avoid division in loops
 
     for (float t = bounds.x; t < bounds.y; t += delta) {
         p = vOrigin + rayDir * t;
@@ -110,7 +111,7 @@ void main() {
         if (p.y < vertBounds.x || p.y > vertBounds.y) {
             continue;
         }
-        vec3 texCoord = p / scale + 0.5;
+        vec3 texCoord = p * scaler + 0.5;
         #ifdef REPROJECT
             vec3 remap = texture2D(remapTexture, texCoord.xy).rgb;
             texCoord.xy = remap.rg;
@@ -127,7 +128,7 @@ void main() {
             }
         }
         texCoord.z = mod(texCoord.z + animateProg, 1.0001);
-        texCoord = clamp(texCoord, vec3(0.0), 1. - vec3(epsilon)); // This prevents the the very end of the dimensions having floating point errors
+        texCoord = clamp(texCoord, vec3(0.0), 1. - vec3(epsilon)); // This prevents the very end of the dimensions having floating point errors
 
         ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
         int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
@@ -138,7 +139,8 @@ void main() {
         bool cond = (d >= threshold.x) && (d <= threshold.y); 
 
         if (cond) {
-            if (d == 1. || abs(d - fillValue) < 0.005){
+            bool isNan = d == 1. || abs(d - fillValue) < 0.005;
+            if (isNan && nanAlpha > 0.0){
                 accumColor.rgb += (1.0 - alphaAcc) * pow(nanAlpha, 5.) * nanColor.rgb;
                 alphaAcc += pow(nanAlpha, 5.);
             }

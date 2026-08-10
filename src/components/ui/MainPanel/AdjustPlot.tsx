@@ -9,7 +9,7 @@ import { SliderThumbs } from '@/components/ui/Widgets/SliderThumbs';
 import { LuSettings } from "react-icons/lu";
 import { RxReset } from "react-icons/rx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Input, Switch, Hider, Button, Slider as UISlider, Switcher, Slider } from '@/components/ui';
+import { Input, Switch, Hider, Button, Slider as UISlider, Switcher, Slider, QuickTip } from '@/components/ui';
 import {
   Tooltip,
   TooltipContent,
@@ -151,34 +151,44 @@ const DimSlicer = () =>{
 }
 
 const VolumeOptions = ()=>{
-  const { useFragOpt, quality, transparency, vTransferRange, vTransferScale, setQuality, setUseFragOpt, setTransparency, setVTransferRange, setVTransferScale} = usePlotStore(useShallow(s => s))
+  const { useRayMarch, quality, transparency, vTransferRange, vTransferScale, interpPixels, setQuality, setUseRayMarch, setTransparency, setVTransferRange, setVTransferScale} = usePlotStore(useShallow(s => s))
+  useEffect(()=>{
+    if (!useRayMarch && interpPixels) setUseRayMarch(true)
+  }, [interpPixels, useRayMarch])
   return(
     <>
     <div className='grid gap-y-[5px] items-center w-50 text-center mb-8'>
-      <b>Quality</b>
-      <div className='w-full flex justify-between text-xs items-center gap-2'>
-          Worse
-          <UISlider
-              min={50}
-              max={1000}
-              step={50}
-              value={[quality]}
-              className='flex-1 mb-2'
-              onValueChange={(vals:number[]) => setQuality(vals[0])}
-          />
-          Better
-      </div>
-      <Tooltip delayDuration={500} >
-        <TooltipTrigger asChild>
-          <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => setUseFragOpt(!useFragOpt)}>
-            {useFragOpt ? "Revert to Normal" : "Use Optimized Shader"}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side='left'>
-          Enable this for better performance while navigating. Switch back for exports or still images. 
-        </TooltipContent>
-      </Tooltip>
-      
+      <b className='flex justify-center'>Renderer
+        <QuickTip message={<div className='flex flex-col'>
+          <span>Change between DDA or Raymarching render method.</span>
+          <span>DDA is more performant than Raymarching and doesn't produce artifacts.</span>
+          <span>Raymarching can interpolate and show smoother animations</span>
+        </div>}>
+          <BsFillQuestionCircleFill/>
+        </QuickTip>
+
+      </b>
+      <Hider show={useRayMarch}>
+        <b className='flex pb-1 justify-center font-mono'>Quality 
+          <QuickTip message='Increase the accuracy of Raymarching steps. Reduces performance'>
+            <BsFillQuestionCircleFill/>
+          </QuickTip>
+        </b>
+
+        <div className='w-full flex justify-between text-xs items-center gap-2'>
+            Worse
+            <UISlider
+                min={50}
+                max={1000}
+                step={50}
+                value={[quality]}
+                className='flex-1 mb-2'
+                onValueChange={(vals:number[]) => setQuality(vals[0])}
+            />
+            Better
+        </div>
+      </Hider>
+      <Switcher className={interpPixels ? 'opacity-40 !cursor-default' : undefined} leftText='DDA' rightText='Raymarch' state={!useRayMarch} onClick={()=> setUseRayMarch(!useRayMarch)}/>
       <b>Transparency</b>
       <UISlider
               min={0}
@@ -189,32 +199,24 @@ const VolumeOptions = ()=>{
           onValueChange={(vals:number[]) => setTransparency(vals[0])}
       />
       <div className='grid grid-cols-[auto_60px] items-center text-left'>
-        <h1><span>Transparency Scale </span> 
-        <Tooltip>
-          <TooltipTrigger>
-            <BsFillQuestionCircleFill/>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-60 break-words whitespace-normal">
-            {`This is the raised power for transparency. Higher values "Squash" lower values while lower values help bring them out. 1 is linear.`}  
-          </TooltipContent>
-        </Tooltip>
+        <h1 className='flex'><span>Transparency Scale </span> 
+        <QuickTip message='This is the raised power for transparency. Higher values "Squash" lower values while lower values help bring them out. 1 is linear.'>
+          <BsFillQuestionCircleFill/>
+        </QuickTip>
         </h1>
         <Input type='number' value={vTransferScale} step={0.1} min={0} onChange={e => setVTransferScale(parseFloat(e.target.value))} />
       </div>
       <div className="grid grid-cols-[auto_20%] items-center gap-2 mt-2 text-left">
         <label htmlFor="compress-data"> 
-          <h1> <span>Scale by clip </span> 
-            <Tooltip>
-              <TooltipTrigger>
-                <BsFillQuestionCircleFill/>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-60 break-words whitespace-normal">
-                Transparency is scaled from dataset minimum to maximum. Lower values are more transparent. When enabled - transparency scales based on the cropped values below. 
-              </TooltipContent>
-            </Tooltip>
+          <h1 className='flex'> <span>Scale by clip </span> 
+            <QuickTip 
+              className='max-w-80'
+              message='Transparency is scaled from dataset minimum to maximum. Lower values are more transparent. When enabled - transparency scales based on the cropped values below. '>
+              <BsFillQuestionCircleFill/>
+            </QuickTip>
           </h1> 
         </label>
-        <Switch className='h-5'  id="compress-data" checked={vTransferRange} onCheckedChange={e=>setVTransferRange(e)}/>
+        <Switch className='h-5 cursor-pointer'  id="compress-data" checked={vTransferRange} onCheckedChange={e=>setVTransferRange(e)}/>
       </div>
       
     </div>

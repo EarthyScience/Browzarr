@@ -1,6 +1,6 @@
 import {  useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { vertexShader, fragmentShader, fragOpt, orthoVertex } from '@/components/textures/shaders';
+import { vertexShader, fragmentShader, fragOpt, orthoVertex , ddaFrag} from '@/components/textures/shaders';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
@@ -17,10 +17,10 @@ interface DataCubeProps {
 
 export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const volTexture = usePaddedTextures(propVolTexture);
-    const {shape, colormap, flipY, textureArrayDepths, remapTexture} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
+    const {shape, colormap, flipY, textureArrayDepths, remapTexture, dataShape} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const {
-      valueRange, xRange, yRange, zRange, quality, useOrtho, 
-      animProg, cScale, cOffset, useFragOpt, transparency, maskTexture, maskValue,
+      valueRange, xRange, yRange, zRange, quality, useOrtho, interpPixels,
+      animProg, cScale, cOffset, useRayMarch, transparency, maskTexture, maskValue,
       nanTransparency, nanColor, vTransferRange, vTransferScale, fillValue} = usePlotStore(useShallow(s => s))
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
@@ -33,6 +33,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
           map: { value: volTexture},
           maskTexture: { value: maskTexture },
           maskValue: {value: maskValue },
+          dataShape: {value: new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])},
           textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
           cmap:{value: colormap},
           remapTexture: { value: remapTexture},
@@ -59,12 +60,12 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
         ...(remapTexture ? { REPROJECT: true } : {})
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
-      fragmentShader: useFragOpt ?  fragOpt : fragmentShader,
+      fragmentShader: useRayMarch ? fragmentShader : ddaFrag,
       transparent: true,
       blending: THREE.NormalBlending,
       depthWrite: false,
       side: useOrtho ? THREE.FrontSide : THREE.BackSide,
-    }),[useFragOpt, useOrtho, volTexture, remapTexture]);
+    }),[useRayMarch, useOrtho, volTexture, remapTexture]);
 
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
     useEffect(() => {

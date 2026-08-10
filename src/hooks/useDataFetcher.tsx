@@ -82,6 +82,10 @@ export const useDataFetcher = () => {
 
                     setPlotOn(true);
                     setStatus(null);
+                }).then(()=>{
+                    // For larger datasets this will fire last.
+                    setShow(true)
+
                 })
             } catch (error) {
                 console.error(error);
@@ -109,7 +113,7 @@ export const useDataFetcher = () => {
                 ParseExtent(dimUnits, dimArrays);
                 if(preProject)reproject();
                 else handleIrregularGrid(dimArrays);
-                // We don't show/mount any components until all of the essential data has been set
+                // For smaller datasets this will fire last.
                 setShow(true)
             });
 

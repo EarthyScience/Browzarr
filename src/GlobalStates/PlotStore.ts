@@ -25,7 +25,7 @@ type PlotState ={
   animProg: number;
   cOffset: number;
   cScale: number;
-  useFragOpt: boolean;
+  useRayMarch: boolean;
   resetCamera: boolean;
   useCustomColor: boolean;
   useCustomPointColor: boolean;
@@ -93,7 +93,7 @@ type PlotState ={
   setAnimProg: (animProg: number) => void; 
   setCOffset: (cOffset: number) => void;
   setCScale: (cScale: number) => void;
-  setUseFragOpt: (useFragOpt: boolean) => void;
+  setUseRayMarch: (useRayMarch: boolean) => void;
   setResetCamera: (resetCamera: boolean) => void;
   setUseCustomColor: (useCustomColor: boolean) => void;
   setUseCustomPointColor: (useCustomPointColor: boolean) => void;
@@ -152,7 +152,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   animProg: 0,
   cOffset: 0,
   cScale: 1,
-  useFragOpt: false,
+  useRayMarch: false,
   resetCamera: false,
   useCustomColor: false,
   useCustomPointColor: false,
@@ -223,7 +223,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setAnimProg: (animProg) => set({ animProg }),
   setCOffset: (cOffset) => set({ cOffset }),
   setCScale: (cScale) => set({ cScale }),
-  setUseFragOpt: (useFragOpt) => set({ useFragOpt }),
+  setUseRayMarch: (useRayMarch) => set({ useRayMarch }),
   setResetCamera: (resetCamera) => set({ resetCamera }),
   setUseCustomColor: (useCustomColor) => set({ useCustomColor }),
   setUseCustomPointColor: (useCustomPointColor) => set({ useCustomPointColor}),
