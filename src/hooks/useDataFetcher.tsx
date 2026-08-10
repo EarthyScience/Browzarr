@@ -8,15 +8,14 @@ import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
 import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
 import { GetArray } from '@/components/zarr/GetArray';
 import { ArrayToTexture } from '@/components/textures';
-import { handleIrregularGrid } from '@/components/textures/ProjectionTexture';
+import { handleIrregularGrid, reproject } from '@/components/textures/ProjectionTexture';
 
 export const useDataFetcher = () => {
     const {
-    setShape, setDataShape, setFlipY, setValueScales, setMetadata, setDimArrays, 
-    setDimNames, setDimUnits, setPlotOn, setStatus} = useGlobalStore(
+    setShape, setDataShape, setFlipY, setValueScales, setMetadata, setPlotOn, setStatus} = useGlobalStore(
     useShallow(s => s))
-    const {variable, is4D, setIsFlat} = useGlobalStore(useShallow(s => s))
-    const {plotType, interpPixels, setPlotType} = usePlotStore(useShallow(s => s))
+    const {variable, setIsFlat} = useGlobalStore(useShallow(s => s))
+    const {plotType, interpPixels, preProject, setPlotType} = usePlotStore(useShallow(s => s))
     const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(useShallow(s => s))
 
     //---- Local State ----//
@@ -83,10 +82,7 @@ export const useDataFetcher = () => {
 
                     setPlotOn(true);
                     setStatus(null);
-                }).then(()=>
-                    // We don't show/mount any components until all of the essential data has been set
-                    setShow(true)
-                );
+                })
             } catch (error) {
                 console.error(error);
                 setStatus(null);
@@ -102,19 +98,19 @@ export const useDataFetcher = () => {
             //---- DimInfo ----//
             GetDimInfo(variable).then((arrays) => {
                 let { dimArrays, dimUnits, dimNames } = arrays;
-                setDimArrays(dimArrays);
-                setDimNames(dimNames);
-                setDimUnits(dimUnits);
-                useGlobalStore.setState({axisDimArrays: dimArrays, axisDimNames: dimNames, axisDimUnits: dimUnits});
+                useGlobalStore.setState({dimArrays, dimNames, dimUnits, 
+                    axisDimArrays: dimArrays, axisDimNames: dimNames, axisDimUnits: dimUnits});
 
                 const { axisMapping } = useZarrStore.getState();
                 const yIdx = (axisMapping.y >= 0 && axisMapping.y < dimArrays.length) ? axisMapping.y : Math.max(0, dimArrays.length - 2);
                 const targetDim = dimArrays[yIdx] || dimArrays[0];
                 const shouldFlip = (targetDim && targetDim.length >= 2) ? targetDim[1] < targetDim[0] : false;
                 setFlipY(shouldFlip);
-
                 ParseExtent(dimUnits, dimArrays);
-                handleIrregularGrid(dimArrays);
+                if(preProject)reproject();
+                else handleIrregularGrid(dimArrays);
+                // We don't show/mount any components until all of the essential data has been set
+                setShow(true)
             });
 
         } else {

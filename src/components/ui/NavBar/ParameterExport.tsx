@@ -6,6 +6,7 @@ import { BiExport } from "react-icons/bi";
 import { FiCopy } from "react-icons/fi";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from '../button';
+import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
 
 function pick(obj: Record<string, any>, keys: string[]) {
     return Object.fromEntries(
@@ -99,8 +100,8 @@ export const ParameterExport = () => {
     const [copied, setCopied] = useState(false);
 
     function generateURL(){
-        const {camera} = usePlotStore.getState()
-        usePlotStore.setState({cameraPosition:camera?.position}) // Set Camera position first to copy visual state
+        const {cameraRef} = useImageExportStore.getState()
+        usePlotStore.setState({cameraPosition:cameraRef?.current?.position}) // Set Camera position first to copy visual state
         const fullObj = {
             globalState: pick(useGlobalStore.getState(), globalValues),
             plotState: pick(usePlotStore.getState(), plotValues),

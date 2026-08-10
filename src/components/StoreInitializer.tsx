@@ -65,15 +65,16 @@ function StoreInitializerInner() {
   const setInitStore = useGlobalStore(s => s.setInitStore);
 
   useEffect(() => {
+	if (searchParams.size === 0) {initializeStore(); return;}
 	const store = searchParams.get("store");
 	const data = searchParams.get("data");
 	const keyFramesPath = searchParams.get("keyFramesPath");
 	const exportPlot = searchParams.get("export")
+	const reproject = searchParams.get("reproject")
 	// ---- Handle States ---- //
 	if (data){
 		try{
 		const fullObj = JSON.parse(data);
-		console.log(fullObj)
 		if (fullObj.zarrState?.blobKey){ // If NC local must load file beforehand
 			const blobKey = fullObj.zarrState.blobKey
 			const isNC = fullObj.zarrState.useNC
@@ -123,7 +124,9 @@ function StoreInitializerInner() {
 		});
   	}
 	// ---- Handle Export ---- //
-	if (exportPlot) useImageExportStore.setState({exportOnLoad:true})
+	if (exportPlot === 'true') useImageExportStore.setState({exportOnLoad:true})
+	// ---- Reproject data ---- //
+	if (reproject === 'true') usePlotStore.setState({preProject:true})
 	// ---- Julia fallback ---- //
 	/* Remove this if Julia package does not stay maintained */
 	if (searchParams.get("format") === "nc") useZarrStore.setState({useNC:true});

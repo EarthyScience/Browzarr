@@ -68,6 +68,7 @@ type PlotState ={
   nativeCRS: string | undefined;
   destCRS: string | undefined;
   overRideCamera: boolean; // Prevent Camera from resetting until initial position is set. 
+  preProject: boolean;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -195,7 +196,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   nativeCRS: undefined,
   destCRS: undefined,
   overRideCamera: false,
-
+  preProject : false, // reproject data on dataloader before 'show' is true;
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),

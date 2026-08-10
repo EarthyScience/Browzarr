@@ -36,7 +36,6 @@ export function resetProjection(){
         remapBorders: undefined,
     })
     handleIrregularGrid(dimArrays)
-
     usePlotStore.setState({
         xSlice, 
         ySlice
