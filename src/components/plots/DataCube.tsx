@@ -26,6 +26,12 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const aspectRatio = shape.y/shape.x
     const timeRatio = shape.z/shape.x;
     const {lonBounds, latBounds} = useCoordBounds()
+	const gridShape = useMemo(()=>{
+		if (remapTexture){
+			return new THREE.Vector3(remapTexture.image.width, remapTexture.image.height, dataShape[0])
+		} else return new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])
+		
+	},[remapTexture, dataShape])
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
@@ -33,7 +39,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
           map: { value: volTexture},
           maskTexture: { value: maskTexture },
           maskValue: {value: maskValue },
-          dataShape: {value: new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])},
+          dataShape: {value: gridShape},
           textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
           cmap:{value: colormap},
           remapTexture: { value: remapTexture},
@@ -71,6 +77,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     useEffect(() => {
       if (shaderMaterial) {
         const uniforms = shaderMaterial.uniforms
+		uniforms.dataShape.value = gridShape;
         uniforms.cmap.value = colormap;
         uniforms.cOffset.value = cOffset;
         uniforms.cScale.value = cScale;
@@ -91,7 +98,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
         uniforms.maskValue.value = maskValue
         invalidate() // Needed because Won't trigger re-render if camera is stationary. 
       }
-    }, [shape, colormap, cOffset, cScale, valueRange, xRange, yRange, zRange, aspectRatio, latBounds, lonBounds, quality, animProg, transparency, nanTransparency, nanColor, maskValue, fillValue, vTransferScale, vTransferRange]);
+    }, [shape, colormap, gridShape, cOffset, cScale, valueRange, xRange, yRange, zRange, aspectRatio, latBounds, lonBounds, quality, animProg, transparency, nanTransparency, nanColor, maskValue, fillValue, vTransferScale, vTransferRange]);
     useFrame(({camera})=>{ // This calculates InverseModel matrix for the orthographic raymarcher
       if (!useOrtho || !meshRef.current || !shaderMaterial) return;
       meshRef.current.modelViewMatrix.multiplyMatrices(camera.matrixWorldInverse, meshRef.current.matrixWorld);
