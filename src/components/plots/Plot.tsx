@@ -41,80 +41,77 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
     /* overRideCamera is set when Browzarr is accessed via code. On this component mount, setCameraPosition
     /* sets the cameraPosition based either on value from code or default. Then overRideCamera
     /* is disabled and reset can function normally */
-    if (overRideCamera) return;
-    if (!hasMounted.current) {
+    if (!hasMounted.current){
       hasMounted.current = true;
-      return; // skip reset when changing between flat or not flat cameras
+      return; // never animate on the very first mount
     }
-    if (orbitRef.current){
-      const controls = orbitRef.current
-      let frameId: number;
-      const duration = 1000; 
-      const startTime = performance.now();
-      const startPos = controls.object.position.clone();
-      const endPos = isFlat ? new THREE.Vector3(0, 0, 5) : new THREE.Vector3(-4.5, 3, 4.5)
-      const startTarget = controls.target.clone();
-      const endTarget = controls.target0.clone()
+    if (overRideCamera) return // a URL/code-driven position is pending; let the position effect handle it
+    if (!orbitRef.current) return
+    const controls = orbitRef.current
+    let frameId: number;
+    const duration = 1000; 
+    const startTime = performance.now();
+    const startPos = controls.object.position.clone();
+    const endPos = isFlat ? new THREE.Vector3(0, 0, 5) : new THREE.Vector3(-4.5, 3, 4.5)
+    const startTarget = controls.target.clone();
+    const endTarget = controls.target0.clone()
 
-      const startZoom = controls.object.zoom
-      
-      const animate = (time: number) => {
-        invalidate();
-        const elapsed = time - startTime;
-        const t = Math.min(elapsed / duration, 1); // clamp between 0 and 1
-        controls.object.position.lerpVectors(startPos, endPos, t);
-        controls.target.lerpVectors(startTarget,endTarget,t)
+    const startZoom = controls.object.zoom
+    
+    const animate = (time: number) => {
+      invalidate();
+      const elapsed = time - startTime;
+      const t = Math.min(elapsed / duration, 1); // clamp between 0 and 1
+      controls.object.position.lerpVectors(startPos, endPos, t);
+      controls.target.lerpVectors(startTarget,endTarget,t)
 
-        if (isFlat && useOrtho) {
-          controls.object.zoom = THREE.MathUtils.lerp(startZoom, 50, t);
-          controls.object.updateProjectionMatrix();
-          controls.update()
-        } 
+      if (isFlat && useOrtho) {
+        controls.object.zoom = THREE.MathUtils.lerp(startZoom, 50, t);
+        controls.object.updateProjectionMatrix();
+        controls.update()
+      } 
 
-        if (t < 1) {
-          frameId = requestAnimationFrame(animate);
-        }
-      };
+      if (t < 1) {
+        frameId = requestAnimationFrame(animate);
+      }
+    };
 
-      frameId = requestAnimationFrame(animate);
-      return () => cancelAnimationFrame(frameId);
-    }
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
   },[resetCamera, isFlat])
 
   // ---- Switch from Perspective to Orthographic ---- //
   useEffect(()=>{
-    if (hasMounted.current){
-      let newCamera;
-      const aspect = size.width / size.height
-      if (useOrtho){
-        newCamera = new THREE.OrthographicCamera()
-        
-        const frustumSize = 50 
-        newCamera.left = -frustumSize * aspect / 2
-        newCamera.right = frustumSize * aspect / 2
-        newCamera.top = frustumSize / 2
-        newCamera.bottom = -frustumSize / 2
-        newCamera.zoom = 10;
-        
-        // For orthographic, use the target direction but normalize the position
-        const target = orbitRef.current?.target || new THREE.Vector3(0, 0, 0)
-        const direction = camera.position.clone().sub(target).normalize()
-        newCamera.position.copy(target).add(direction.multiplyScalar(10)) // Fixed distance
-        newCamera.lookAt(target)
-        
-        newCamera.updateProjectionMatrix()
-      } else {
-        newCamera = new THREE.PerspectiveCamera(50, aspect)
-        newCamera.position.copy(camera.position.normalize().multiply(new THREE.Vector3(4, 4, 4))) // 4 seems like good distance
-        newCamera.rotation.copy(camera.rotation)
-      }
-    cameraRef.current = newCamera
-    setCameraRef(cameraRef)
-    set({ camera: newCamera})
-    if (orbitRef.current) {
-      orbitRef.current.object = newCamera
-      orbitRef.current.update()
+    let newCamera;
+    const aspect = size.width / size.height
+    if (useOrtho){
+      newCamera = new THREE.OrthographicCamera()
+      
+      const frustumSize = 50 
+      newCamera.left = -frustumSize * aspect / 2
+      newCamera.right = frustumSize * aspect / 2
+      newCamera.top = frustumSize / 2
+      newCamera.bottom = -frustumSize / 2
+      newCamera.zoom = 10;
+      
+      // For orthographic, use the target direction but normalize the position
+      const target = orbitRef.current?.target || new THREE.Vector3(0, 0, 0)
+      const direction = camera.position.clone().sub(target).normalize()
+      newCamera.position.copy(target).add(direction.multiplyScalar(10)) // Fixed distance
+      newCamera.lookAt(target)
+      
+      newCamera.updateProjectionMatrix()
+    } else {
+      newCamera = new THREE.PerspectiveCamera(50, aspect)
+      newCamera.position.copy(camera.position.normalize().multiply(new THREE.Vector3(4, 4, 4))) // 4 seems like good distance
+      newCamera.rotation.copy(camera.rotation)
     }
+  cameraRef.current = newCamera
+  setCameraRef(cameraRef)
+  set({ camera: newCamera})
+  if (orbitRef.current) {
+    orbitRef.current.object = newCamera
+    orbitRef.current.update()
   }
   },[useOrtho])
 
@@ -138,14 +135,6 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
     }
     usePlotStore.setState({overRideCamera: false}) // Allow camera updating
   },[cameraPosition])
-
-  // ---- Camera Ref for state saves ---- //
-  useEffect(()=>{
-    usePlotStore.setState({camera})
-    return () => {
-      usePlotStore.setState({camera: undefined})
-    }
-  },[camera])
 
   return (
     <OrbitControls 
