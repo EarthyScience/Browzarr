@@ -113,7 +113,7 @@ export const useDataFetcher = () => {
                 ParseExtent(dimUnits, dimArrays);
                 if(preProject)reproject();
                 else handleIrregularGrid(dimArrays);
-                // For smaller datasets this will fire last.
+                // We don't show/mount any components until all of the essential data has been set
                 setShow(true)
             });
 
