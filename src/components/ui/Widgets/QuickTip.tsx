@@ -12,12 +12,14 @@ export const QuickTip = ({
     message,
     side = 'right',
     delay = 500,
+    className,
     ...props
 }: {
     children: React.ReactNode;
-    message: string;
+    message: string | React.ReactNode;
     side?: Side;
     delay?: number;
+    className?: string
 } & React.ComponentPropsWithoutRef<typeof TooltipTrigger>) => {
   return (
     <Tooltip 
@@ -25,7 +27,7 @@ export const QuickTip = ({
         <TooltipTrigger asChild {...props}>
             {children}
         </TooltipTrigger>
-        <TooltipContent side={side} align="start">
+        <TooltipContent className={className} side={side} align="start">
             {message}
         </TooltipContent>
     </Tooltip>

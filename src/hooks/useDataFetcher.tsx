@@ -82,6 +82,10 @@ export const useDataFetcher = () => {
 
                     setPlotOn(true);
                     setStatus(null);
+                }).then(()=>{
+                    // For larger datasets this will fire last.
+                    setShow(true)
+
                 })
             } catch (error) {
                 console.error(error);
