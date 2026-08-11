@@ -227,7 +227,7 @@ const Plot = () => {
         gl={{ preserveDrawingBuffer: true }}
         dpr={[DPR,DPR]}
       >
-        <KeyFramePreviewer/>
+        {/* <KeyFramePreviewer/> */}
         <CountryBorders/>
         <ExportCanvas show={show}/>
         {show && <AxisLines />}

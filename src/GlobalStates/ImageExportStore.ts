@@ -29,12 +29,14 @@ type ImageExportState = {
   loopTime: boolean;
   keyFrameEditor: boolean;
   keyFrames: Map<number, any> | undefined;
+  stateFrames: Map<string, any> | undefined;
   previewKeyFrames: boolean; // This previews the keyframes in the main view
   preview: boolean; // This exports the animation as a preview/low quality
   cameraRef: React.RefObject<THREE.Camera | null> | null
   currentFrame: number;
   previewExtent: boolean;
   exportOnLoad: boolean;
+  defaultStates: Record<string, any>;
 
   ExportImg: () => void;
   EnableExport: () => void;
@@ -67,7 +69,8 @@ type ImageExportState = {
   setTimeRate: (timeRate: number) => void;
   setLoopTime: (loopTime: boolean) => void;
   setKeyFrameEditor: (keyFrameEditor: boolean) => void;
-  addKeyFrame: (frame:number, keyFrame: Record<number, any>) => void;
+  addKeyFrame: (frame:number, keyFrame: Record<string, any>) => void;
+  addStateFrame: (property:string, keyFrame: [number, any]) => void;
   removeKeyFrame: (frame:number) => void;
   setPreview: (preview : boolean) => void;
   PreviewKeyFrames: () => void;
@@ -104,12 +107,14 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   loopTime: false,
   keyFrameEditor: false,
   keyFrames: undefined,
+  stateFrames: undefined,
   previewKeyFrames: false,
   preview: true,
   currentFrame: 1,
   cameraRef: null,
   previewExtent: false,
   exportOnLoad: false,
+  defaultStates: {},
   
   setCameraRef: (ref) => set({ cameraRef: ref }),
 
@@ -149,6 +154,16 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
     const newKeyFrames = new Map(currentKeyFrames);
     newKeyFrames.set(frame, value);
     set({ keyFrames: newKeyFrames });
+  },
+  addStateFrame: (property: string, stateFrame: [number, any]) => {
+    const currentStateFrames = get().stateFrames || new Map();
+    const newStateFrames = new Map(currentStateFrames);
+    const propertyFrames = newStateFrames.get(property) || {};
+    newStateFrames.set(property, {
+    ...propertyFrames,
+    [stateFrame[0]]: stateFrame[1],
+    });
+    set({ stateFrames: newStateFrames });
   },
   removeKeyFrame: (frame: number) => {
     const currentKeyFrames = get().keyFrames || new Map();

@@ -1,6 +1,19 @@
 import { create } from "zustand";
 import * as THREE from "three";
 
+export function getDefaultStates(){
+  const result = {} as any;
+  const state = usePlotStore.getState()
+  for (const key of Object.keys(state)) {
+    const value = state[key as keyof typeof state];
+    if (typeof value !== "function") {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+
 type PlotState ={
   plotType: string;
   pointSize: number;

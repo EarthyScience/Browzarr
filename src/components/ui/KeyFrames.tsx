@@ -16,57 +16,55 @@ import { TbKeyframeFilled } from "react-icons/tb";
 import { TbKeyframesFilled } from "react-icons/tb";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner"
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { QuickTip } from './Widgets/QuickTip';
 
-function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
-  return keys.reduce((acc, key) => {
-    if (key in obj) {
-      acc[key] = obj[key];
-    }
-    return acc;
-  }, {} as Pick<T, K>);
+function floorClosest(arr: number[], target: number) {
+  return arr.reduce((best, n) => {
+    return n <= target && n > best ? n : best;
+  }, -Infinity);
 }
 
 const SetKeyFrame = (frame: number) =>{
-    const {plotType} = usePlotStore.getState()
-    const {addKeyFrame} = useImageExportStore.getState()
-    let vizStates = []
-    if (plotType === "volume"){
-        vizStates=["transparency", "vTransferRange", "vTransferScale"];
-    } else if (plotType === "point-cloud"){
-        vizStates=["scaleIntensity", "pointSize", "timeScale"];
-    } else {
-        vizStates=["displacement"]
+    const plotState = usePlotStore.getState()
+    const {stateFrames,defaultStates, addKeyFrame, addStateFrame} = useImageExportStore.getState()
+    const keyedProps = stateFrames ? Object.keys(stateFrames) : []
+    const keyRing: Record<string,any> = {}
+    // ---- Grab Changed States ---- //
+    for (const [key, defaultValue] of Object.entries(defaultStates)) {
+        const thisVal = plotState[key as keyof typeof plotState]
+        const wasKeyed = keyedProps.includes(key)
+        const changedFromDefault = thisVal != defaultValue
+
+        if (!wasKeyed && !changedFromDefault) continue // never keyed, still default, nothing to do
+
+        if (wasKeyed) {
+            const keyedFrames = Object.keys(stateFrames?.get(key))
+            const lastFrame = floorClosest(keyedFrames.map(s => parseInt(s)), frame)
+            if (lastFrame < 0 || thisVal != stateFrames?.get(key)[lastFrame]) { // If frame is first or is different from last frame
+                addStateFrame(key, [frame, thisVal])
+                keyRing[key] = thisVal
+            }
+        } else { // Changed from default and yet to be keyed
+            addStateFrame(key, [frame, thisVal])
+            keyRing[key] = thisVal
+        }
     }
-    if (["point-cloud", "volume"].includes(plotType)){
-        vizStates.push("valueRange", "xRange", "yRange", "zRange")
-    }
-    if (plotType != "pointCloud") {
-        vizStates.push("nanColor", "nanTransparency")
-    }
-    const currentVizState = usePlotStore.getState()
-    const keyState = pick(currentVizState, vizStates as (keyof typeof currentVizState)[])
+    // ---- Camera State ---- //
     const currentCamState = useImageExportStore.getState().cameraRef?.current?.clone()
     const cameraState = {
-        position: currentCamState?.position,
+        position:currentCamState?.position,
         rotation:currentCamState?.rotation,
     }
-    const thisState = {
-        visual : keyState,
-        camera: cameraState,
-        time: usePlotStore.getState().animProg
-    }
-    addKeyFrame(frame, thisState)
+    console.log(cameraState)
+    console.log(stateFrames)
+    console.log(keyRing)
+    addStateFrame('camera', [frame, cameraState])
+    keyRing['camera'] = cameraState
+    addKeyFrame(frame, keyRing)
 }
 
 export const KeyFrames = () => {
-
     const {animProg, setAnimProg} = usePlotStore(useShallow(s => s))
-
     const {keyFrames, frames, useTime, frameRate, timeRate, orbit, currentFrame, previewKeyFrames, setCurrentFrame, setFrames} = useImageExportStore(
         useShallow(s => s))
     const timeRatio = timeRate/frameRate
@@ -134,9 +132,8 @@ export const KeyFrames = () => {
 
   return (
    <Card className='keyframes-container'>
-    <Tooltip delayDuration={500}>
-				<TooltipTrigger asChild>
-    <IoCloseCircleSharp 
+    <QuickTip message='Close Keyframe Editor'>
+        <IoCloseCircleSharp 
 			style={{
 				position:'absolute',
 				top:'10px',
@@ -146,17 +143,12 @@ export const KeyFrames = () => {
 			size={20}
 			onClick={()=>useImageExportStore.getState().setKeyFrameEditor(false)}
 		/>
-        </TooltipTrigger>
-                <TooltipContent side="top" align="start">
-                    Close Keyframe Editor
-                </TooltipContent>
-                </Tooltip>
+    </QuickTip>
       <CardContent className='flex flex-col gap-1 w-full h-full px-1 py-1'>
         <div className='flex flex-wrap justify-center gap-1 ml-6 mr-0 md:ml-8 md:mr-4'>
 			{/* Buttons */}
 			<ButtonGroup>
-				<Tooltip delayDuration={500}>
-				<TooltipTrigger asChild>
+				<QuickTip message='Add new Keyframe'>
                     <Button 
                         className='cursor-pointer'
                         size="sm"
@@ -165,14 +157,9 @@ export const KeyFrames = () => {
                     > 
                         <FaPlusCircle /> { MdLg === "lg" ? 'Keyframe' : <TbKeyframeFilled/>}
                     </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="start">
-                    Add new Keyframe
-                </TooltipContent>
-                </Tooltip>
-                <Tooltip delayDuration={500}>
-                    <TooltipTrigger asChild>
-                        <Button 
+                </QuickTip>
+                <QuickTip message='Clear all Keyframes'>
+                    <Button 
                             disabled={!keyFrameList}
                             className='cursor-pointer'
                             size="sm"
@@ -181,54 +168,34 @@ export const KeyFrames = () => {
                         >
                             <MdDeleteForever className='size-6'/> { MdLg === "lg" ? 'Keyframes' : <TbKeyframesFilled/>}
                         </Button>
-                    </TooltipTrigger>
-                <TooltipContent side="top" align="start">
-                    Clear all Keyframes
-                </TooltipContent>
-                </Tooltip>
-
-                <Tooltip delayDuration={500}>
-                <TooltipTrigger asChild>
-				<Button 
-					disabled={!keyFrameList}
-					className='cursor-pointer'
-                    size="sm"
-                    variant="outline"
-					onClick={()=>{useImageExportStore.getState().PreviewKeyFrames()}}
-				>
-                    <MdPreview className='size-6'/> { MdLg === "lg" ? (previewKeyFrames ? 'Stop Preview' : "Preview") : ''}
-				</Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="start">
-                    Preview full animation
-                </TooltipContent>
-                </Tooltip>
+                </QuickTip>
+                <QuickTip message='Preview full animation'>
+                    <Button 
+                        disabled={!keyFrameList}
+                        className='cursor-pointer'
+                        size="sm"
+                        variant="outline"
+                        onClick={()=>{useImageExportStore.getState().PreviewKeyFrames()}}
+                    >
+                        <MdPreview className='size-6'/> { MdLg === "lg" ? (previewKeyFrames ? 'Stop Preview' : "Preview") : ''}
+                    </Button>
+                </QuickTip>
 			</ButtonGroup>
 			{/* Frame Information */}
             <ButtonGroup >
-                <Tooltip delayDuration={500}>
-                <TooltipTrigger asChild>
-                <Button size="sm" variant="outline">
-                    <TbKeyframesFilled/> { MdLg === "lg" ? 'Frames' : ''}
-                </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="start">
-                    Frames
-                </TooltipContent>
-                </Tooltip>
+                <QuickTip message='Frames'>
+                    <Button size="sm" variant="outline">
+                        <TbKeyframesFilled/> { MdLg === "lg" ? 'Frames' : ''}
+                    </Button>
+                </QuickTip>
                 <Input className='w-[80px] h-[32px]' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(Math.max(parseInt(e.target.value),2))} />
             </ButtonGroup>
             <ButtonGroup >
-                <Tooltip delayDuration={500}>
-                <TooltipTrigger asChild>
-                <Button size="sm" variant="outline">
-                    <TbKeyframeFilled/> { MdLg === "lg" ? 'Frame' : ''}
-                </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="start">
-                    Frame
-                </TooltipContent>
-                </Tooltip>
+                <QuickTip message='Frame'>
+                    <Button size="sm" variant="outline">
+                        <TbKeyframeFilled/> { MdLg === "lg" ? 'Frame' : ''}
+                    </Button>
+                </QuickTip>
                 <Input value={currentFrame} type='number' 
                     className='w-[80px] h-[32px]'
                     min={1} 

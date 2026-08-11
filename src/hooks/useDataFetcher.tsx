@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { usePlotStore, getDefaultStates } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
 import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
@@ -9,6 +9,7 @@ import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
 import { GetArray } from '@/components/zarr/GetArray';
 import { ArrayToTexture } from '@/components/textures';
 import { handleIrregularGrid, reproject } from '@/components/textures/ProjectionTexture';
+import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
 
 export const useDataFetcher = () => {
     const {
@@ -83,7 +84,7 @@ export const useDataFetcher = () => {
                     setPlotOn(true);
                     setStatus(null);
                 }).then(()=>{
-                    // For larger datasets this will fire last.
+                    useImageExportStore.setState({defaultStates: getDefaultStates()})
                     setShow(true)
 
                 })
