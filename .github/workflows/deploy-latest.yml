@@ -1,39 +1,31 @@
-name: Deploy main → gh-pages/latest
-
+name: Deploy main → gh-pages/latest + python-dist
 on:
   push:
     branches: [main]
-
   # Allows you to run this workflow manually from the Actions tab on GitHub.
   workflow_dispatch:
-
 permissions: write-all
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
     group: pages
     cancel-in-progress: false
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Setup repo 🔧
         uses: ./.github/actions
-
       - name: Build site
         env:
           BASE_PATH: "/latest"
           NEXT_PUBLIC_BASE_PATH: "/latest"
           TARGET_FOLDER: latest
         run: pnpm buildRepo
-
       - name: Deploying latest 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
@@ -41,3 +33,25 @@ jobs:
           folder: out
           target-folder: latest
           clean: false
+
+  build-and-deploy-python-dist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup repo 🔧
+        uses: ./.github/actions
+      - name: Build site (no base path)
+        env:
+          BASE_PATH: ""
+          NEXT_PUBLIC_BASE_PATH: ""
+          TARGET_FOLDER: ""
+        run: pnpm buildRepo
+      - name: Deploying python-dist 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: python-dist
+          folder: out
+          clean: true
