@@ -283,26 +283,13 @@ const FlatOptions = () =>{
     setResetCamera} = usePlotStore(useShallow(s => s))
    return(
    <>
+   
    <div className='grid gap-2 mb-2'>
-    <div 
-      className='relative w-full text-center h-10 bg-primary rounded-full cursor-pointer mb-2 flex items-center justify-between px-4'
-      onClick={() => {if (!displaceFaces){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceFaces(!displaceFaces); usePlotStore.setState({rotateFlat: false}) }}  
-    >
-      <span className={`z-10 font-semibold transition-colors ${displaceFaces ? 'text-primary' : 'text-secondary'}`}>
-        Flat
-      </span>
-      <span className={`z-10 font-semibold transition-colors ${!displaceFaces ? 'text-primary' : 'text-secondary'}`}>
-        Displace
-      </span>
-      <div 
-        className={`absolute top-1 h-8 w-[calc(50%-8px)] bg-secondary shadow-xs hover:bg-secondary/80 rounded-full transition-all duration-300 ${
-          displaceFaces ? 'left-1' : 'left-[calc(50%+4px)]'
-        }`}
-      />
-    </div>
-    <Hider show={!displaceFaces}>
+    <Switcher leftText='Flat' rightText='Displace' state={!displaceFaces} onClick={()=>{
+      if (displaceFaces){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceFaces(!displaceFaces); usePlotStore.setState({rotateFlat: false}) }} 
+    />
+    <Hider show={displaceFaces}>
       <div className='grid gap-2'>
-
         <b>Displacement</b>
         <UISlider
           min={0}
@@ -352,23 +339,23 @@ const SphereOptions = () =>{
       className='w-full mb-2'
       onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
     />
-    {!displaceFaces && 
-    <div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
-      <label htmlFor="offset-switch">Offset Negatives</label>
-      <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
-    </div>
-    }
-    {displaceFaces && <>
-      <b>Displacement Resolution</b>
-      <UISlider
-        min={4}
-        max={100}
-        step={4}
-        value={[sphereResolution]}
-        className='w-full mb-2'
-        onValueChange={(vals:number[]) => (setSphereResolution(vals[0]))}
-      />
-    </>}
+    <Hider show={displaceFaces}>
+        <div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
+          <label htmlFor="offset-switch">Offset Negatives</label>
+          <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
+      </div>
+    </Hider>
+    <Hider show={!displaceFaces}>
+        <b>Displacement Resolution</b>
+        <UISlider
+          min={4}
+          max={100}
+          step={4}
+          value={[sphereResolution]}
+          className='w-full mb-2'
+          onValueChange={(vals:number[]) => (setSphereResolution(vals[0]))}
+        />
+    </Hider>
   </div>
   </>)
 }
