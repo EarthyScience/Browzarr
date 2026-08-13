@@ -10,6 +10,7 @@ import { UVCube } from './UVCube';
 import { ColumnMeshes } from './TransectMeshes';
 
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
+import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 
 interface PCProps {
   texture: THREE.Data3DTexture[] | null,
@@ -80,29 +81,22 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       }
       return list;
     }, [depth, width, height]);
-
+    const uniforms = useCommonUniforms()
     const shaderMaterial = useMemo(()=> (new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
         map: { value: volTexture },
         remapTexture: { value: remapTexture },
-        textureDepths: { value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0]) },
-        maskTexture: {value: maskTexture},
-        maskValue: {value: maskValue},
         pointSize: {value: pointSize},
-        cmap: {value: colormap},
-        cOffset: {value: cOffset},
-        cScale: {value: cScale},
         valueRange: {value: new THREE.Vector2(valueRange[0], valueRange[1])},
         scalePoints:{value: scalePoints},
         scaleIntensity: {value: scaleIntensity},
         timeScale: {value: depthRatio},
-        animateProg: {value: animProg},
         aspect: {value: shape.x/shape.y},
         shape: {value: new THREE.Vector3(depth, height, width)},
         flatBounds:{value: new THREE.Vector4(xRange[0], xRange[1], zRange[0], zRange[1])},
         vertBounds:{value: new THREE.Vector2(yRange[0], yRange[1])},
-        fillValue: {value: fillValue?? NaN}
+        ...uniforms
       },
       defines: {
         GLOBAL_SCALE: globalscale*2,
@@ -116,34 +110,28 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       blending:THREE.NoBlending,
     })
     ),[disablePointScale, remapTexture]);
-  
-   useEffect(() => {
-    if (shaderMaterial) {
-      const uniforms = shaderMaterial.uniforms;
-      uniforms.map.value = volTexture;
-      shaderMaterial.needsUpdate = true;
-      uniforms.shape.value.set(depth, height, width);
-      uniforms.pointSize.value = pointSize;
-      uniforms.cmap.value = colormap;
-      uniforms.cOffset.value = cOffset;
-      uniforms.cScale.value = cScale;
-      uniforms.valueRange.value.set(valueRange[0], valueRange[1]);
-      uniforms.scalePoints.value = scalePoints;
-      uniforms.scaleIntensity.value = scaleIntensity;
-      uniforms.timeScale.value = depthRatio;
-      uniforms.animateProg.value = animProg;
-      uniforms.flatBounds.value.set(
-        xRange[0], xRange[1], 
-        zRange[0], zRange[1]
-      );
-      uniforms.vertBounds.value.set(
-        yRange[0], yRange[1]
-      );
-      uniforms.fillValue.value = fillValue?? NaN
-      uniforms.maskValue.value = maskValue
-      uniforms.aspect.value = shape.x/shape.y;
-    }
-  }, [volTexture, depthRatio, depth, height, shape, width, pointSize, colormap, cOffset, cScale, valueRange, scalePoints, scaleIntensity, animProg, xRange, yRange, fillValue, zRange, maskValue]);
+    updateCommonUniforms(shaderMaterial);
+    useEffect(() => {
+      if (shaderMaterial) {
+        const uniforms = shaderMaterial.uniforms;
+        uniforms.map.value = volTexture;
+        shaderMaterial.needsUpdate = true;
+        uniforms.shape.value.set(depth, height, width);
+        uniforms.pointSize.value = pointSize;
+        uniforms.valueRange.value.set(valueRange[0], valueRange[1]);
+        uniforms.scalePoints.value = scalePoints;
+        uniforms.scaleIntensity.value = scaleIntensity;
+        uniforms.timeScale.value = depthRatio;
+        uniforms.flatBounds.value.set(
+          xRange[0], xRange[1], 
+          zRange[0], zRange[1]
+        );
+        uniforms.vertBounds.value.set(
+          yRange[0], yRange[1]
+        );
+        uniforms.aspect.value = shape.x/shape.y;
+      }
+  }, [volTexture, depthRatio, depth, height, shape, width, pointSize, valueRange, scalePoints, scaleIntensity, xRange, yRange, zRange]);
   
   return (
     <group>
