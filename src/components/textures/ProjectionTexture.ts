@@ -104,6 +104,7 @@ function createIrregularUV(
             const u = (xi??0 + 0.5) / xArray.length;
             const v = (yi??0 + 0.5) / yArray.length;
 
+            // Inverse for border Texture
             const ix = xArray[i]
             const iy = yArray[j]
 
@@ -114,7 +115,7 @@ function createIrregularUV(
             data[idx]     = THREE.DataUtils.toHalfFloat(u); 
             data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
             data[idx + 2] = THREE.DataUtils.toHalfFloat(iu);  
-            data[idx + 1] = THREE.DataUtils.toHalfFloat(iv);
+            data[idx + 3] = THREE.DataUtils.toHalfFloat(iv);
         }
     }
     const texture = new THREE.DataTexture(
