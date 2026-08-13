@@ -80,6 +80,7 @@ function createIrregularUV(
     xArray: Array<number>,
 	yArray: Array<number>,
     flipY: boolean,
+    is360: boolean,
 ) {
     const width = xArray.length;
     const height = yArray.length;
@@ -94,18 +95,26 @@ function createIrregularUV(
 
     for (let j = 0; j < height; j++) {
         for (let i = 0; i < width; i++) {
-            const x = xSpace[i]
-            const y = ySpace[j]
+            let x = xSpace[i]
+            let y = ySpace[j]
 
-            const xi = fractionalIndex(xArray, x);
-            const yi = fractionalIndex(yArray, y);
+            let xi = fractionalIndex(xArray, x);
+            let yi = fractionalIndex(yArray, y);
 
-            let u = (xi??0 + 0.5) / xArray.length;
-            let v = (yi??0 + 0.5) / yArray.length;
+            const u = (xi??0 + 0.5) / xArray.length;
+            const v = (yi??0 + 0.5) / yArray.length;
+
+            const ix = xArray[i]
+            const iy = yArray[j]
+
+            const iu = (ix + (is360 ? 0 : 180)) / 360;
+            const iv = (iy+90) / 180;
+
             const idx = (j * width + i) * 4;
             data[idx]     = THREE.DataUtils.toHalfFloat(u); 
             data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
-            data[idx + 2] = 1; 
+            data[idx + 2] = THREE.DataUtils.toHalfFloat(iu);  
+            data[idx + 1] = THREE.DataUtils.toHalfFloat(iv);
         }
     }
     const texture = new THREE.DataTexture(
@@ -189,7 +198,7 @@ export function handleIrregularGrid(dimArrays: Array<number>[]){
 	if(plotType == 'sphere') {
         const texture = createInverseUV(xArray, yArray, flipY, is360Deg, 1024);
         useGlobalStore.setState({remapTexture:texture});
-    } else createIrregularUV(xArray, yArray, flipY)
+    } else createIrregularUV(xArray, yArray, flipY, is360Deg)
     return
 }
 

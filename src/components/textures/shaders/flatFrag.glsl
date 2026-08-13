@@ -72,7 +72,7 @@ void main() {
     if (maskValue != 0 || useBorderTexture){
         vec2 realUV = realCoords(vUv);
         #ifdef REPROJECT
-            realUV = texture(remapTexture, realUV).rg;
+            realUV = texture(remapTexture, realUV).ba;
         #endif
         if ( maskValue != 0 ){
             float mask = texture(maskTexture, realUV).r;
