@@ -11,6 +11,7 @@ import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
+import { useCommonUniforms } from '@/hooks/useCommonUniforms';
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -24,10 +25,10 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
     const {setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
     const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
     const {colormap, isFlat, dimArrays, dimNames, dimUnits, valueScales, 
-          dataShape, strides, flipY, textureArrayDepths, remapTexture} = useGlobalStore(useShallow(s => s))
+          dataShape, strides, flipY, remapTexture} = useGlobalStore(useShallow(s => s))
     
     const {animate, animProg, cOffset, cScale, valueRange, selectTS, nanColor, nanTransparency, displacement, sphereResolution,
-      zSlice, ySlice, xSlice, fillValue, borderTexture, maskTexture, maskValue,
+      zSlice, ySlice, xSlice, fillValue, borderTexture, maskValue,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
 
     const {xIdx, yIdx, zIdx} = useAxisIndices()
@@ -44,27 +45,16 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
     const {lonBounds, latBounds} = useCoordBounds()
 
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
+    const uniforms = useCommonUniforms()
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
                 map: { value: textures },
                 remapTexture: { value: remapTexture },
-                maskTexture: { value: maskTexture},
-                maskValue: { value: maskValue },
-                threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
-                textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
-                cmap:{value: colormap},
-                cOffset:{value: cOffset},
-                cScale: {value: cScale},
-                animateProg: {value: animProg},
-                latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
-                lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
-                nanColor: {value: new THREE.Color(nanColor)},
-                nanAlpha: {value: 1 - nanTransparency},
                 displaceZero: {value: -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)},
                 displacement: {value: displacement},
-                fillValue: {value: NaN},
+                ...uniforms
             },
             defines:{
                 ...(isFlat ? { IS_FLAT: true } : {}),
@@ -78,7 +68,8 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
             depthWrite:true,
         })
         return shader
-    },[isFlat, textures, borderTexture])
+    },[isFlat, textures])
+    // No reprojection on Sphere. Remains static and can't update
 
     const backMaterial = useMemo(()=>{
       const mat = shaderMaterial.clone()
