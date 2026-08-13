@@ -71,7 +71,7 @@ function wrapLon(lon: number, bounds: [number, number]) {
 }
 
 function Borders({features}:{features: any}){
-    const {xRange, yRange, plotType, borderColor, is360Deg, nativeCRS, destCRS } = usePlotStore(useShallow(s => s))
+    const {xRange, yRange, plotType, borderColor, nativeCRS, destCRS } = usePlotStore(useShallow(s => s))
     const {shape, axisDimArrays, remapTexture } = useGlobalStore(useShallow(s => s))
     const {xIdx, yIdx} = useAxisIndices()
     const [xBounds, yBounds] = useMemo(()=>{ 
@@ -200,7 +200,7 @@ const CountryBorders = () => {
     const [swapSides, setSwapSides] = useState<boolean>(false)
 
     const {dataShape, shape} = useGlobalStore(useShallow(s => s))
-    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, is360Deg} = usePlotStore(useShallow(s => s))
+    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, useBorderTexture, is360Deg} = usePlotStore(useShallow(s => s))
     const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
 
     const [spherize, setSpherize] = useState<boolean>(false)
@@ -242,13 +242,14 @@ const CountryBorders = () => {
     const globalScale = isPC ? dataShape[2]/500 : 1
     const depthScale = isPC ? depthRatio : timeRatio/2
     const aspectRatio = (shape && shape.y > 0) ? (shape.x / shape.y) : 1;
+
     return(
         <group
             rotation={[rotateFlat ? -Math.PI/2 : 0, spherize && is360Deg ? Math.PI : 0, 0]}
             scale={[globalScale, globalScale * (spherize ? 1 : (2 / aspectRatio)), globalScale]}
         >
             <group 
-                visible={showBorders && !(analysisMode && axis != 0)} 
+                visible={showBorders && !(analysisMode && axis != 0) && !useBorderTexture} 
                 position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0)) : zRange[1]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0))]} // I don't know what value to use here. THis seems okay but not perfect
                 rotation={[0, (is360Deg && spherize) ? Math.PI : 0, 0]} 
             >

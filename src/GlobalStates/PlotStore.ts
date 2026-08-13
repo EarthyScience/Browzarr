@@ -61,6 +61,7 @@ type PlotState ={
   maskTexture: THREE.Texture | undefined;
   borderTexture: THREE.Texture | undefined;
   useBorderTexture: boolean;
+  borderWidth:number;
   maskValue: number;
   cameraPosition: THREE.Vector3;
   disablePointScale: boolean;

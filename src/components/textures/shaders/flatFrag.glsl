@@ -8,6 +8,12 @@
 uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform sampler2D remapTexture;
+uniform sampler2D borderTexture;
+uniform bool useBorderTexture;
+uniform float borderWidth;
+uniform vec3 borderColor;
+uniform bool is360;
+uniform bool remapBorders;
 uniform vec3 textureDepths;
 
 
@@ -59,22 +65,37 @@ float sample1(
     else if (index == 9) return texture(map[9], p).r;
     else if (index == 10) return texture(map[10], p).r;
     else if (index == 11) return texture(map[11], p).r;
-    // else if (index == 12) return texture(map[12], p).r;
-    // else if (index == 13) return texture(map[13], p).r;
     else return 0.0;
 }
 
 void main() {
-    if (maskValue != 0){
-        vec2 maskUV = realCoords(vUv);
-        float mask = texture(maskTexture, maskUV).r;
-        bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
-        if (cond){
-            Color = vec4(nanColor, 1.);
-            Color.a = nanAlpha;  
-            return;
+    if (maskValue != 0 || useBorderTexture){
+        vec2 realUV = realCoords(vUv);
+        #ifdef REPROJECT
+            realUV = texture(remapTexture, realUV).rg;
+        #endif
+        if ( maskValue != 0 ){
+            float mask = texture(maskTexture, realUV).r;
+            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
+            if (cond){
+                Color = vec4(nanColor, 1.);
+                Color.a = nanAlpha;  
+                return;
+            }
+        } else {
+            if (is360) realUV.x = fract(realUV.x + 0.5);
+            if (remapBorders){
+                realUV.xy = texture(remapTexture, realUV).rg;
+            }
+            float borderDist = texture(borderTexture, realUV).r;
+            if (borderDist <= borderWidth) {
+                Color = vec4(borderColor, 1.0);
+                return;
+            }
         }
+        
     }
+
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     #ifdef IS_FLAT

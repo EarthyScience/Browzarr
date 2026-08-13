@@ -80,12 +80,11 @@ function createIrregularUV(
     xArray: Array<number>,
 	yArray: Array<number>,
     flipY: boolean,
-    is360: boolean,
 ) {
     const width = xArray.length;
     const height = yArray.length;
 
-    const data = new Int16Array(width * height * 4);
+    const data = new Uint16Array(width * height * 4);
 
     const [xMin, xMax] = ArrayMinMax(xArray)
     const [yMin, yMax] = ArrayMinMax(yArray)
@@ -190,7 +189,7 @@ export function handleIrregularGrid(dimArrays: Array<number>[]){
 	if(plotType == 'sphere') {
         const texture = createInverseUV(xArray, yArray, flipY, is360Deg, 1024);
         useGlobalStore.setState({remapTexture:texture});
-    } else createIrregularUV(xArray, yArray, flipY, is360Deg)
+    } else createIrregularUV(xArray, yArray, flipY)
     return
 }
 

@@ -11,6 +11,10 @@ uniform sampler3D map[12]; // We are limited to 16 textures. Cmap counts as one.
 uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform sampler2D remapTexture;
+uniform sampler2D borderTexture;
+uniform bool useBorderTexture;
+uniform float borderWidth;
+uniform vec3 borderColor;
 uniform vec3 textureDepths;
 
 uniform float cOffset;
@@ -46,7 +50,6 @@ vec2 hitBox(vec3 orig, vec3 dir) {
     float t1 = min(tmax.x, min(tmax.y, tmax.z));
     return vec2(t0, t1);
 }
-
 
 vec2 realCoords(vec2 uv){
     vec2 normalizedLon = lonBounds/2./pi+0.5;
@@ -158,8 +161,16 @@ void main() {
                 accumColor.rgb += (1.0 - alphaAcc) * alpha * col.rgb;
                 alphaAcc += alpha * (1.0 - alphaAcc);
             }      
-
-            if (alphaAcc >= 1.0) break;
+            if (alphaAcc >= 1.0){
+                if (useBorderTexture){
+                    float borderDist = texture(borderTexture, texCoord.xy).r;
+                    if (borderDist <= borderWidth){
+                        color = vec4(borderColor, 1.0);
+                        return;
+                    }
+                }
+                break;
+            }
         }
     }
     accumColor.a = alphaAcc; // Set the final accumulated alpha

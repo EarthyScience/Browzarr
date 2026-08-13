@@ -29,11 +29,12 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     const textures = usePaddedTextures(propTextures);
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, colormap, dimArrays, dimNames, dimUnits, 
-      isFlat, dataShape, textureArrayDepths, strides, remapTexture, shape,
+      isFlat, dataShape, textureArrayDepths, strides, remapTexture, shape, remapBorders,
       setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
 
     const {cScale, cOffset, animProg, nanTransparency, nanColor, 
       zSlice, ySlice, xSlice, selectTS, fillValue, coarsen, maskTexture, maskValue, valueRange,
+      borderTexture, borderWidth, useBorderTexture, borderColor, is360Deg,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
     const {axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
     const {kernelSize, kernelDepth} = useZarrStore(useShallow(s => s))
@@ -116,7 +117,6 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         coords.current = [y,x]
       }
     }
-
     // ----- TIMESERIES ----- //
     function HandleTimeSeries(event: THREE.Intersection){
       const uv = event.uv;
@@ -175,9 +175,15 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
               cScale: {value: cScale},
               cOffset: {value: cOffset},
               map : {value: textures},
-              remapTexture: { value: remapTexture},
+              remapTexture: { value: remapTexture?? remapBorders},
               maskTexture: {value: maskTexture},
               maskValue: {value: maskValue},
+              borderTexture: {value: borderTexture},
+              borderWidth: {value: borderWidth},
+              borderColor: {value: new THREE.Color(borderColor)},
+              useBorderTexture: {value: useBorderTexture},
+              remapBorders: {value: Boolean(remapBorders)},
+              is360: {value: is360Deg},
               threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
               latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
               lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
@@ -195,7 +201,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
             vertexShader: vertShader,
             fragmentShader: flatFrag,
             side: THREE.DoubleSide,
-        }),[isFlat, remapTexture, textures])
+        }),[isFlat, remapTexture, textures, remapBorders])
     
     useEffect(()=>{
       if(shaderMaterial){
@@ -211,8 +217,13 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
         uniforms.maskValue.value = maskValue;
         uniforms.fillValue.value = fillValue?? NaN
+        uniforms.useBorderTexture.value = useBorderTexture;
+        uniforms.borderWidth.value = borderWidth;
+        uniforms.borderColor.value = new THREE.Color(borderColor);
+        uniforms.is360.value = is360Deg;
+        uniforms.remapTexture.value = remapTexture?? remapBorders;
       }
-    },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, latBounds, lonBounds, fillValue, maskValue, valueRange])
+    },[cScale, cOffset, colormap, animProg, nanColor, nanTransparency, is360Deg, remapBorders, remapTexture, latBounds, lonBounds, fillValue, maskValue, valueRange, useBorderTexture, borderWidth, borderColor])
     useEffect(()=>{
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})

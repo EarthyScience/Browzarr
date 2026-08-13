@@ -11,6 +11,11 @@ uniform sampler3D map[12]; // We are limited to 16 textures. Cmap counts as one.
 uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform sampler2D remapTexture;
+uniform sampler2D borderTexture;
+uniform bool useBorderTexture;
+uniform float borderWidth;
+uniform vec3 borderColor;
+
 uniform vec3 textureDepths;
 
 uniform vec3 dataShape;
@@ -99,7 +104,6 @@ bool shouldSkip(vec3 p, out vec3 texCoord) {
         bool masked = maskValue == 1 ? mask < 0.5 : mask >= 0.5;
         if (masked) return true;
     }
-
     texCoord.z = mod(texCoord.z + animateProg, 1.0001);
     texCoord = clamp(texCoord, vec3(0.0), 1.0 - vec3(EPSILON));
 
@@ -182,7 +186,22 @@ void main() {
                     alphaAcc += alpha * (1.0 - alphaAcc);
                 }
 
-                if (alphaAcc >= 1.0) break;
+                if (alphaAcc >= 1.0){
+                    if (useBorderTexture) {
+                        vec3 pHit = vOrigin + t * rayDir;
+                        vec3 localPosContinuous = (pHit - boxMin) / scale;
+                        vec2 borderUV = localPosContinuous.xy;
+                        #ifdef REPROJECT
+                            borderUV = texture(remapTexture, borderUV).rg;
+                        #endif
+                        float borderDist = texture(borderTexture, borderUV).r;
+                        if (borderDist <= borderWidth) {
+                            color = vec4(borderColor, 1.0);
+                            return;
+                        }
+                    }
+                    break;
+                } 
             }
         }
 

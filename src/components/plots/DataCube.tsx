@@ -19,8 +19,8 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const volTexture = usePaddedTextures(propVolTexture);
     const {shape, colormap, flipY, textureArrayDepths, remapTexture, dataShape} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const {
-      valueRange, xRange, yRange, zRange, quality, useOrtho, interpPixels,
-      animProg, cScale, cOffset, useRayMarch, transparency, maskTexture, maskValue,
+      valueRange, xRange, yRange, zRange, quality, useOrtho, borderTexture, borderWidth, useBorderTexture,
+      animProg, cScale, cOffset, useRayMarch, transparency, maskTexture, maskValue, borderColor,
       nanTransparency, nanColor, vTransferRange, vTransferScale, fillValue} = usePlotStore(useShallow(s => s))
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
@@ -39,6 +39,10 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
           map: { value: volTexture},
           maskTexture: { value: maskTexture },
           maskValue: {value: maskValue },
+          borderTexture: {value: borderTexture},
+          borderWidth: {value: borderWidth},
+          borderColor: {value: new THREE.Color(borderColor)},
+          useBorderTexture: {value: useBorderTexture},
           dataShape: {value: gridShape},
           textureDepths: {value: new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
           cmap:{value: colormap},
@@ -77,7 +81,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     useEffect(() => {
       if (shaderMaterial) {
         const uniforms = shaderMaterial.uniforms
-		uniforms.dataShape.value = gridShape;
+		    uniforms.dataShape.value = gridShape;
         uniforms.cmap.value = colormap;
         uniforms.cOffset.value = cOffset;
         uniforms.cScale.value = cScale;
@@ -95,10 +99,18 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
         uniforms.opacityMag.value = vTransferScale;
         uniforms.useClipScale.value = vTransferRange;
         uniforms.fillValue.value = fillValue?? NaN;
-        uniforms.maskValue.value = maskValue
+        uniforms.maskValue.value = maskValue;
+        uniforms.useBorderTexture.value = useBorderTexture;
+        uniforms.borderWidth.value = borderWidth;
+        uniforms.borderColor.value = new THREE.Color(borderColor);
+
         invalidate() // Needed because Won't trigger re-render if camera is stationary. 
       }
-    }, [shape, colormap, gridShape, cOffset, cScale, valueRange, xRange, yRange, zRange, aspectRatio, latBounds, lonBounds, quality, animProg, transparency, nanTransparency, nanColor, maskValue, fillValue, vTransferScale, vTransferRange]);
+    }, [
+      shape, colormap, gridShape, cOffset, cScale, valueRange, xRange, yRange, zRange, aspectRatio, latBounds, lonBounds, quality, 
+      animProg, transparency, nanTransparency, nanColor, maskValue, fillValue, vTransferScale, vTransferRange,
+      useBorderTexture, borderWidth, borderColor
+    ]);
     useFrame(({camera})=>{ // This calculates InverseModel matrix for the orthographic raymarcher
       if (!useOrtho || !meshRef.current || !shaderMaterial) return;
       meshRef.current.modelViewMatrix.multiplyMatrices(camera.matrixWorldInverse, meshRef.current.matrixWorld);
