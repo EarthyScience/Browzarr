@@ -1,8 +1,6 @@
 name: Deploy main docs → gh-pages/docs
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions: write-all
