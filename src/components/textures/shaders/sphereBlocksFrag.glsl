@@ -28,5 +28,5 @@ void main() {
         }
     }
 
-    Color = vec4(vUv, 0., 1.);
+    Color = vec4(sampColor, 1.);
 }

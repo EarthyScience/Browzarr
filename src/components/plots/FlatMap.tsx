@@ -165,6 +165,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     }
     // ----- SHADER MATERIAL ----- //
     const uniforms = useCommonUniforms()
+    
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms:{

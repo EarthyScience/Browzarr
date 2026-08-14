@@ -245,7 +245,7 @@ const CountryBorders = () => {
 
     return(
         <group
-            rotation={[rotateFlat ? -Math.PI/2 : 0, spherize && is360Deg ? Math.PI : 0, 0]}
+            rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
             scale={[globalScale, globalScale * (spherize ? 1 : (2 / aspectRatio)), globalScale]}
         >
             <group 

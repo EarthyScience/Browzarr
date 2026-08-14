@@ -36,16 +36,15 @@ export function useCommonUniforms() {
 	}), [
 		cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
 		textureArrayDepths, colormap, lonBounds, latBounds, useBorderTexture, borderTexture, borderWidth, 
-		borderColor, remapBorders, remapTexture
+		borderColor, remapBorders, remapTexture, is360Deg
 	])
-
 	return uniforms
 
 }
 
 export function updateCommonUniforms(material: THREE.ShaderMaterial){
 	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
-		useBorderTexture, borderColor, borderWidth} = usePlotStore(useShallow(s=>s))
+		useBorderTexture, borderColor, borderWidth, is360Deg} = usePlotStore(useShallow(s=>s))
 	const {textureArrayDepths, colormap} = useGlobalStore(useShallow(s => s))
 	const {lonBounds, latBounds} = useCoordBounds()
 
@@ -66,9 +65,10 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		uniforms.useBorderTexture.value = useBorderTexture;
 		uniforms.borderColor.value = new THREE.Color(borderColor);
 		uniforms.borderWidth.value = borderWidth;
+		uniforms.is360.value = is360Deg;
 	},[[
 		cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
-		textureArrayDepths, colormap, lonBounds, latBounds, useBorderTexture, borderColor, borderWidth
+		textureArrayDepths, colormap, lonBounds, latBounds, useBorderTexture, borderColor, borderWidth, is360Deg
 	]])
 	
 	return;

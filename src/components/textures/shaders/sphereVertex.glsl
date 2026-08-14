@@ -53,25 +53,29 @@ float sample1(
 out vec3 aPosition;
 
 void main() {
-    vec2 texCoord = giveUV(position); // We can't just pass this as a varying because the fragment will try to interpoalte between the seams which looks bad 
-    int yStepSize = int(textureDepths.x); 
-    bool inBounds = all(greaterThanEqual(texCoord, vec2(0.0))) && 
-                all(lessThanEqual(texCoord, vec2(1.0)));
     aPosition = position;
+    vec2 sampleCoord = giveUV(aPosition);
+    #ifdef REPROJECT
+            vec3 remap = texture(remapTexture, sampleCoord).rgb;
+            sampleCoord = remap.rg;
+            if (remap.b < 0.5) sampleCoord = vec2(2.0); // I don't think this is ever the case
+    #endif
+    bool inBounds = all(greaterThanEqual(sampleCoord, vec2(0.0))) &&
+    all(lessThanEqual(sampleCoord, vec2(1.0)));
     if (inBounds){
         vec3 normal = normalize(position);
         int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
+        int yStepSize = int(textureDepths.x); 
         #ifdef IS_FLAT
-            ivec2 idx = clamp(ivec2(uv * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
+            ivec2 idx = clamp(ivec2(sampleCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
             int textureIdx = idx.y * yStepSize + idx.x;
-            vec2 localCoord = uv * (textureDepths.xy); // Scale up
+            vec2 localCoord = sampleCoord * (textureDepths.xy); // Scale up
         #else
-            vec3 texCoord = vec3(uv, animateProg);
-            ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1); // Ivec3 is like running a "floor" operation on all three at once. The clamp is because the very last idx is OOR
+            vec3 texCoord = vec3(sampleCoord, animateProg);
+            ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
             int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
-            vec3 localCoord = texCoord * textureDepths; // Scale up
+            vec3 localCoord = texCoord * (textureDepths); // Scale up
         #endif
-        localCoord = fract(localCoord);
         float dispStrength = sample1(localCoord, textureIdx);
         float noNan = float(dispStrength != 1.0);
         vec3 newPos = position + (normal * (dispStrength-displaceZero) * noNan * displacement);

@@ -10,6 +10,8 @@ attribute vec2 instanceUV;
 uniform sampler2D maskTexture;
 uniform vec3 textureDepths;
 uniform sampler2D remapTexture;
+uniform bool useBorderTexture;
+uniform bool is360;
 
 uniform float displaceZero;
 uniform float displacement;
@@ -83,13 +85,23 @@ out float vStrength;
 out vec2 vUv;
 
 void main() {
-    if (maskValue != 0 ){
-        vec2 newV = realCoords(instanceUV);
-        float mask = texture(maskTexture, newV).r;
-        bool cond = maskValue == 1 ? mask< 0.5 : mask>=0.5;
-        if (cond){
-            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-            return;
+    vec2 lonlat = giveLonLat(instanceUV);
+    float latitudeFactor = cos(lonlat.y); // Maps -1..1 to proper latitude
+    if (maskValue != 0 || useBorderTexture){ // need to pass vUv to frag render bordelines. Hence why useBorderTexture is here
+        // Get Coordinates
+        vec2 realUV = realCoords(instanceUV);
+        vUv = realCoords(instanceUV + (position.xz) / vec2(2.*PI, PI));
+        if (is360){
+            realUV.x = fract(realUV.x + 0.5);
+            vUv.x = fract(vUv.x + 0.5);
+        } 
+        if (maskValue != 0 ){
+            float mask = texture(maskTexture, realUV).r;
+            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
+            if (cond){
+                gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                return;
+            }
         }
     }
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
@@ -128,9 +140,7 @@ void main() {
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     } else {
         vec2 centeredUV = (instanceUV - vec2(0.5, 0.5)) * vec2(2.0, 2.0); 
-        vec2 lonlat = giveLonLat(instanceUV);
         vec3 spherePosition = givePosition(lonlat);
-        float latitudeFactor = cos(lonlat.y); // Maps -1..1 to proper latitude
         float widthFactor = abs(lonBounds.y-lonBounds.x)/(2.0*PI);
         float vertFactor = (latBounds.y-latBounds.x)/PI;
         float heightFactor = (dispStrength - displaceZero) * displacement;
@@ -139,7 +149,6 @@ void main() {
         scaledPosition.z *= vertFactor ;
         scaledPosition.y += 0.025;
         scaledPosition.y *= heightFactor;
-
         vec3 normal = normalize(spherePosition);
         // Create orientation matrix to point cube outward
         vec3 up = vec3(0.0, 1.0, 0.0);
@@ -152,7 +161,6 @@ void main() {
         vec3 worldPosition = spherePosition + oriented;
         // worldPosition = scaledPosition + spherePosition;
         vStrength = dispStrength;
-        vUv = instanceUV;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
 
     }

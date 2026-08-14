@@ -69,7 +69,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
         return shader
     },[isFlat, textures])
     // No reprojection on Sphere. Remains static and can't update
-
+    
     const backMaterial = useMemo(()=>{
       const mat = shaderMaterial.clone()
       mat.side = THREE.BackSide;
