@@ -11,7 +11,7 @@ import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
-import { useCommonUniforms } from '@/hooks/useCommonUniforms';
+import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -24,11 +24,10 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
     const textures = usePaddedTextures(propTextures);
     const {setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
     const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
-    const {colormap, isFlat, dimArrays, dimNames, dimUnits, valueScales, 
+    const {isFlat, dimArrays, dimNames, dimUnits, valueScales, 
           dataShape, strides, flipY, remapTexture} = useGlobalStore(useShallow(s => s))
     
-    const {animate, animProg, cOffset, cScale, valueRange, selectTS, nanColor, nanTransparency, displacement, sphereResolution,
-      zSlice, ySlice, xSlice, fillValue, borderTexture, maskValue,
+    const { selectTS, displacement, sphereResolution, zSlice, ySlice, xSlice, fillValue,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
 
     const {xIdx, yIdx, zIdx} = useAxisIndices()
@@ -80,28 +79,11 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
     const updateMaterial = (material: THREE.ShaderMaterial) => {
       const uniforms = material.uniforms;
       uniforms.map.value = textures;
-      uniforms.remapTexture.value = remapTexture;
-      if (remapTexture) {
-        material.defines.REPROJECT = true;
-      } else {
-        delete material.defines.REPROJECT;
-      }
-      material.needsUpdate = true;
-      uniforms.cmap.value =  colormap
-      uniforms.maskValue.value = maskValue
-      uniforms.cOffset.value =  cOffset
-      uniforms.cScale.value =  cScale
-      uniforms.animateProg.value =  animProg
-      uniforms.threshold.value.set(valueRange[0], valueRange[1])
-      uniforms.latBounds.value =  new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))
-      uniforms.lonBounds.value =  new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))
-      uniforms.nanColor.value =  new THREE.Color(nanColor)
-      uniforms.nanAlpha.value =  1 - nanTransparency
       uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
       uniforms.displacement.value = displacement
-      uniforms.fillValue.value = fillValue?? NaN
     }
-
+    updateCommonUniforms(shaderMaterial);
+    updateCommonUniforms(backMaterial)
     useEffect(()=>{
       if (shaderMaterial){
         updateMaterial(shaderMaterial)
@@ -109,7 +91,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       if (backMaterial){
         updateMaterial(backMaterial)
       }
-    },[textures, remapTexture, animProg, colormap, cOffset, cScale, animate, lonBounds, latBounds, nanColor, nanTransparency, displacement,valueRange, fillValue, maskValue, valueScales])
+    },[textures, displacement, fillValue, valueScales])
     
     
     function HandleTimeSeries(event: THREE.Intersection){

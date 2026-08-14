@@ -80,6 +80,7 @@ float sample1(
 }
 
 out float vStrength;
+out vec2 vUv;
 
 void main() {
     if (maskValue != 0 ){
@@ -151,7 +152,7 @@ void main() {
         vec3 worldPosition = spherePosition + oriented;
         // worldPosition = scaledPosition + spherePosition;
         vStrength = dispStrength;
-        
+        vUv = instanceUV;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
 
     }

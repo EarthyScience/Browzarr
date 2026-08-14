@@ -13,6 +13,11 @@ uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
 uniform sampler2D remapTexture;
+uniform sampler2D borderTexture;
+uniform bool useBorderTexture;
+uniform float borderWidth;
+uniform vec3 borderColor;
+uniform bool is360;
 
 uniform float cOffset;
 uniform float cScale;
@@ -124,13 +129,23 @@ void main(){
         if (!isNaN){
             color.a = 1.;
         }
-        if (maskValue != 0){
+        if (maskValue != 0 || useBorderTexture){
             vec2 maskUV = giveMaskUV(aPosition);
-            float mask = texture(maskTexture, maskUV).r;
-            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
-            if (cond){
-                color = vec4(nanColor, 1.);
-                color.a = nanAlpha;  
+            if (is360) maskUV.x = fract(maskUV.x + 0.5);
+            if (maskValue != 0){
+                float mask = texture(maskTexture, maskUV).r;
+                bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
+                if (cond){
+                    color = vec4(nanColor, 1.);
+                    color.a = nanAlpha;  
+                    return;
+                }
+            } else {
+                float borderDist = texture(borderTexture, maskUV).r;
+                if (borderDist <= borderWidth) {
+                    color = vec4(borderColor, 1.0);
+                    return;
+                }
             }
         }
     } else {

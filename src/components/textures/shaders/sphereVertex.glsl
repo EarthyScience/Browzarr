@@ -14,6 +14,9 @@ uniform vec2 latBounds;
 uniform vec2 lonBounds;
 uniform float animateProg;
 
+uniform sampler2D remapTexture;
+uniform bool is360;
+
 vec2 giveUV(vec3 position){
     vec3 n = normalize(position);
     float latitude = asin(n.y);
@@ -50,7 +53,7 @@ float sample1(
 out vec3 aPosition;
 
 void main() {
-    vec2 texCoord = giveUV(position); // We can't just pass this as a varying because the fragment will try to interpoalte between the seems which looks bad 
+    vec2 texCoord = giveUV(position); // We can't just pass this as a varying because the fragment will try to interpoalte between the seams which looks bad 
     int yStepSize = int(textureDepths.x); 
     bool inBounds = all(greaterThanEqual(texCoord, vec2(0.0))) && 
                 all(lessThanEqual(texCoord, vec2(1.0)));
