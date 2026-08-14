@@ -7,18 +7,14 @@ import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { flatBlocksVert, sphereBlocksFrag } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
-import { deg2rad } from '@/utils/HelperFuncs'
-import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 
 const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
-    const {colormap, isFlat, valueScales, flipY,
-            dataShape, textureArrayDepths, axisDimArrays, remapTexture} = useGlobalStore(useShallow(s => s))
-    const { animProg, cOffset, cScale, nanColor, nanTransparency, displacement, fillValue, valueRange, offsetNegatives, rotateFlat, maskTexture, maskValue,
-        } = usePlotStore(useShallow(s => s))
+    const {isFlat, valueScales, flipY, dataShape, axisDimArrays, remapTexture, remapBorders} = useGlobalStore(useShallow(s => s))
+    const { displacement, offsetNegatives, rotateFlat} = usePlotStore(useShallow(s => s))
     const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
     const {xIdx, yIdx} = useAxisIndices()
     const {width, height} = useMemo(()=>{
@@ -64,14 +60,13 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
             );
             return geo
         },[width, height])
-    const {lonBounds, latBounds} = useCoordBounds()
     const uniforms = useCommonUniforms()
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms: {
                 map: { value: textures },
-                remapTexture: { value: remapTexture },
+                remapTexture: { value: remapTexture?? remapBorders},
                 aspect: {value: width/height},
                 displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal)) },
                 displacement: {value: displacement},
@@ -88,7 +83,8 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
             depthTest:true,
         })
         return shader
-    },[width, height, isFlat, remapTexture])
+    },[isFlat, remapTexture])
+
     updateCommonUniforms(shaderMaterial);
     useEffect(()=>{
         if (shaderMaterial){

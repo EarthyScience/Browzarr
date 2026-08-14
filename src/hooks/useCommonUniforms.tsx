@@ -8,8 +8,9 @@ import { useCoordBounds } from './useCoordBounds'
 import { deg2rad } from '@/utils/HelperFuncs'
 
 export function useCommonUniforms() {
-	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,} = usePlotStore(useShallow(s=>s))
-	const {remapTexture, textureArrayDepths, colormap} = useGlobalStore(useShallow(s => s))
+	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange, 
+		useBorderTexture, borderColor, borderWidth, borderTexture, is360Deg} = usePlotStore(useShallow(s=>s))
+	const { textureArrayDepths, colormap, remapBorders, remapTexture} = useGlobalStore(useShallow(s => s))
 	const {lonBounds, latBounds} = useCoordBounds()
 
 	const uniforms = useMemo(() => ({
@@ -17,6 +18,12 @@ export function useCommonUniforms() {
 		cOffset: {value: cOffset},
 		maskTexture: {value: maskTexture},
 		maskValue: {value: maskValue},
+		useBorderTexture: {value: useBorderTexture},
+		borderTexture: {value: borderTexture},
+		borderWidth: {value: borderWidth},
+		borderColor: {value: new THREE.Color(borderColor)},
+		remapBorders : {value: Boolean(remapBorders) && !Boolean(remapTexture)},
+		is360: {value: is360Deg},
 		threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
 		latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
 		lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
@@ -28,7 +35,8 @@ export function useCommonUniforms() {
 		fillValue: {value: fillValue?? NaN},
 	}), [
 		cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
-		remapTexture, textureArrayDepths, colormap, lonBounds, latBounds
+		textureArrayDepths, colormap, lonBounds, latBounds, useBorderTexture, borderTexture, borderWidth, 
+		borderColor, remapBorders, remapTexture
 	])
 
 	return uniforms
@@ -36,7 +44,8 @@ export function useCommonUniforms() {
 }
 
 export function updateCommonUniforms(material: THREE.ShaderMaterial){
-	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,} = usePlotStore(useShallow(s=>s))
+	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
+		useBorderTexture, borderColor, borderWidth} = usePlotStore(useShallow(s=>s))
 	const {textureArrayDepths, colormap} = useGlobalStore(useShallow(s => s))
 	const {lonBounds, latBounds} = useCoordBounds()
 
@@ -53,10 +62,13 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		uniforms.latBounds.value = new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]));
 		uniforms.lonBounds.value = new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]));
 		uniforms.maskValue.value = maskValue;
-		uniforms.fillValue.value = fillValue?? NaN
+		uniforms.fillValue.value = fillValue?? NaN;
+		uniforms.useBorderTexture.value = useBorderTexture;
+		uniforms.borderColor.value = new THREE.Color(borderColor);
+		uniforms.borderWidth.value = borderWidth;
 	},[[
 		cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
-		textureArrayDepths, colormap, lonBounds, latBounds
+		textureArrayDepths, colormap, lonBounds, latBounds, useBorderTexture, borderColor, borderWidth
 	]])
 	
 	return;

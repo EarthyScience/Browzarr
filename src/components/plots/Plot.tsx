@@ -204,6 +204,9 @@ const Plot = () => {
     async function SetTextures(){
       const maskTexture = await loader.loadAsync('./land_mask.webp');
       const borderTexture = await loader.loadAsync('./border_distance_sdf.png');
+      borderTexture.magFilter = THREE.LinearFilter;
+      borderTexture.minFilter = THREE.LinearFilter;
+      borderTexture.needsUpdate = true;
       usePlotStore.setState({borderTexture, maskTexture});
     }
     SetTextures()

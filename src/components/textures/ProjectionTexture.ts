@@ -125,13 +125,12 @@ function createIrregularUV(
 		THREE.RGBAFormat,
 		THREE.HalfFloatType,
 	);
-	texture.needsUpdate = true;
 	texture.magFilter = THREE.LinearFilter;
 	texture.minFilter = THREE.LinearFilter;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;
     texture.flipY = flipY;
-
+    texture.needsUpdate = true;
     useGlobalStore.setState({remapBorders: texture})
 }
 

@@ -4,7 +4,6 @@ import vertexShader from './vertex.glsl';
 import fragmentShader from './volFragment.glsl';
 import sphereFrag from './sphereFrag.glsl';
 import sphereVertex from './sphereVertex.glsl';
-import fragOpt from './fragmentOpt.glsl';
 import bordersFrag from './bordersFrag.glsl'
 import flatFrag from './flatFrag.glsl'
 import sphereBlocksVert from './sphereBlocksVert.glsl';
@@ -19,7 +18,6 @@ export {
     fragmentShader,
     sphereFrag,
     sphereVertex,
-    fragOpt,
     bordersFrag,
     flatFrag,
     sphereBlocksVert,

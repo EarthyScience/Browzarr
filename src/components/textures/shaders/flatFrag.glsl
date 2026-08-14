@@ -70,9 +70,18 @@ float sample1(
 
 void main() {
     if (maskValue != 0 || useBorderTexture){
+        // Get Coordinates
         vec2 realUV = realCoords(vUv);
+        // Adjust if reproject
         #ifdef REPROJECT
             realUV = texture(remapTexture, realUV).rg;
+        #else
+            // All reprojected data is made -180 to 180. Don't do this if reprojected
+            if (is360) realUV.x = fract(realUV.x + 0.5);
+            if (remapBorders){
+                // All reprojected data is regularly gridded
+                realUV.xy = texture(remapTexture, realUV).ba;
+            }
         #endif
         if ( maskValue != 0 ){
             float mask = texture(maskTexture, realUV).r;
@@ -83,17 +92,12 @@ void main() {
                 return;
             }
         } else {
-            if (is360) realUV.x = fract(realUV.x + 0.5);
-            if (remapBorders){
-                realUV.xy = texture(remapTexture, realUV).ba;
-            }
             float borderDist = texture(borderTexture, realUV).r;
             if (borderDist <= borderWidth) {
                 Color = vec4(borderColor, 1.0);
                 return;
             }
-        }
-        
+        } 
     }
 
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
