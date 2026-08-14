@@ -438,7 +438,7 @@ export function reproject(resolution: number = 256){
         xSlice: [0, null],
         ySlice: [0, null]
     })
-    ParseExtent(newAxisDimUnits, newAxisDimArrays);
+    // ParseExtent(newAxisDimUnits, newAxisDimArrays);
 
 }
 

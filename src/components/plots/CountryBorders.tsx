@@ -12,13 +12,13 @@ import proj4, { Converter } from 'proj4';
 import { useAxisIndices } from '@/hooks';
 import { sampleCRS } from '../textures/ProjectionTexture';
 
-function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=>THREE.Vector3, span = 1.5) {
+function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=>THREE.Vector3, span = 45) {
     const segments: THREE.Vector3[][] = [[]];
     let prevLon: number | null = null;
     for (const [lon, lat] of coords) {
         const newPos = toXYZ(lon, lat)
         const newLon = newPos.x
-        if (prevLon !== null && Math.abs(newLon - prevLon) > span) {
+        if (prevLon !== null && Math.abs(lon - prevLon) > span) {
             const closerToOne = Math.abs(newLon - 1) < Math.abs(newLon + 1);
             newPos.x = closerToOne ? -1 : 1
             segments[segments.length - 1].push(newPos);
@@ -27,7 +27,7 @@ function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=
             continue;
         }
         segments[segments.length - 1].push(newPos);
-        prevLon = newLon;
+        prevLon = lon;
     }
     return segments.filter(seg => seg.length > 1);
 }
@@ -37,10 +37,11 @@ function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds
 	let [newX, newY] = [x, y];
 	if (remapTexture && proj){
         [newX, newY]= proj.forward([x,y])
-        newY = flipY ? 1 - newY : newY
+        //newY = flipY ? 1 - newY : newY
     }
     newX = (newX-xBounds[0])/(xBounds[1]-xBounds[0]);
-    newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);	
+    newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);
+    newY = flipY ? 1 - newY : newY
     if (remapBorders && !remapTexture){
         const [newV, _valid] = sampleCRS(remapBorders, newX, newY)
         newX = newV.x;
@@ -86,7 +87,7 @@ function Borders({features}:{features: any}){
     function toXYZ(lon: number, lat: number){
         const [x, y, z] = spherize
         ? Spherize([ -lon, lat])
-        : Reproject([wrapLon(lon, xBounds), lat],xBounds,yBounds, proj);
+        : Reproject([lon, lat],xBounds,yBounds, proj);
         
         return new THREE.Vector3(x, y, z);
     }
