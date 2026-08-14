@@ -22,7 +22,8 @@ void main() {
 
     if (useBorderTexture){
         float borderDist = texture(borderTexture, vUv).r;
-        if (borderDist <= borderWidth) {
+        float latFac = cos(vUv.y);
+        if (borderDist <= borderWidth * latFac) {
             Color = vec4(borderColor, 1.0);
             return;
         }

@@ -415,7 +415,7 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {valueRange, showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
+  const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
     setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(s => s))
   const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
   const {valueScales} = useGlobalStore(useShallow(s => s))
@@ -511,6 +511,7 @@ const GlobalOptions = () =>{
           <Hider show={useBorderTexture} >
             <b>Border Width</b>
             <Slider className='my-2'
+              value={[borderWidth]}
               min={0.01}
               max={0.4}
               step={0.01}

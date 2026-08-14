@@ -91,7 +91,8 @@ void main(){
             }
         } else {
             float borderDist = texture(borderTexture, maskUV).r;
-            if (borderDist <= borderWidth) {
+            float latFac = cos(maskUV.y);
+            if (borderDist <= borderWidth * latFac) {
                 color = vec4(borderColor, 1.0);
                 return;
             }
