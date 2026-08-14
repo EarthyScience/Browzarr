@@ -203,17 +203,7 @@ const CountryBorders = () => {
     const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, useBorderTexture, is360Deg} = usePlotStore(useShallow(s => s))
     const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
 
-    const [spherize, setSpherize] = useState<boolean>(false)
-
-    useEffect(()=>{
-        if (plotType === 'sphere'){
-            setSpherize(true)
-        }
-        else{
-            setSpherize(false)
-        }
-
-    },[plotType])
+    const spherize = plotType === 'sphere';
 
     useFrame(({camera})=>{
         if (spherize){return;}
