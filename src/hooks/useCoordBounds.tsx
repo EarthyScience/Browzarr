@@ -1,8 +1,6 @@
 import { useMemo } from "react";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
 import { useShallow } from "zustand/shallow";
-
-
 import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 
 export const useCoordBounds = ()=>{
