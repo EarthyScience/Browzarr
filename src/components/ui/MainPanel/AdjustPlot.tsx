@@ -20,7 +20,6 @@ import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
 import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
 import { RiCloseLargeLine } from "react-icons/ri";
-import { reproject } from '@/components/textures/ProjectionTexture';
 import { Reprojection } from '../Elements/Reprojection';
 import { useAxisIndices } from '@/hooks';
 

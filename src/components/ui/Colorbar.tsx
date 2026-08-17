@@ -11,7 +11,9 @@ import { useShallow } from 'zustand/shallow'
 import './css/Colorbar.css'
 import { linspace } from '@/utils/HelperFuncs';
 import Metadata from "./MetaData";
-
+import { LuSettings } from "react-icons/lu";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import ColorAdjuster from "./Elements/ColorAdjuster";
 const operationMap = {
     // Reductions
     Mean: "Mean",
@@ -260,6 +262,23 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
             <FaMinus className='cursor-pointer' onClick={()=>setTickCount(Math.max(tickCount-1, 2))}/>
             <FaPlus className='cursor-pointer' onClick={()=>setTickCount(Math.min(tickCount+1, 10))}/>
         </div>
+        <Popover>
+            <PopoverTrigger asChild>
+                <LuSettings 
+                    style={{
+                        position:'absolute',
+                        left: '0%',
+                        bottom:'100%',
+                        cursor:'pointer'
+                    }}
+                    size={20}
+                />
+            </PopoverTrigger>
+            <PopoverContent>
+                <ColorAdjuster />
+            </PopoverContent>
+        </Popover>
+            
         </div>
         </>
         
