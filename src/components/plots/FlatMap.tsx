@@ -9,10 +9,9 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { vertShader } from '@/components/computation/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
-import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords, deg2rad, ArrayMinMax } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
 import { sampleCRS } from '../textures/ProjectionTexture';
 import { evaluateColorMap } from '@/components/textures';
-import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { flatFrag } from '../textures/shaders';
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
@@ -29,9 +28,8 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     // ---- Imports ---- //
     const textures = usePaddedTextures(propTextures);
     const {setLoc, setShowInfo, val, coords} = infoSetters;
-    const {flipY, dimArrays, dimNames, dimUnits, isFlat, dataShape, strides, remapTexture, shape,
+    const {flipY, dimArrays, dimNames, dimUnits, isFlat, dataShape, strides, remapTexture, remapBorders, shape,
       setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
-
     const {animProg, zSlice, ySlice, xSlice, selectTS, coarsen,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
     const {axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
@@ -114,7 +112,6 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         coords.current = [y,x]
       }
     }
-
     // ----- TIMESERIES ----- //
     function HandleTimeSeries(event: THREE.Intersection){
       const uv = event.uv;
@@ -168,11 +165,12 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     }
     // ----- SHADER MATERIAL ----- //
     const uniforms = useCommonUniforms()
+    
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms:{
               map: {value: textures},
-              remapTexture: {value: remapTexture},
+              remapTexture: {value: remapTexture?? remapBorders},
               ...uniforms
             },
             defines:{

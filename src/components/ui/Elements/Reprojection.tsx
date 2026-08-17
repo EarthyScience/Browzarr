@@ -10,7 +10,7 @@ import { TbReplace } from "react-icons/tb";
 import { RxReset } from "react-icons/rx";
 
 export const Reprojection = () => {
-    const {destCRS, nativeCRS} = usePlotStore(useShallow(s => s))
+    const {destCRS, nativeCRS, is360Deg} = usePlotStore(useShallow(s => s))
     const [showRepro, setShowRepro] = useState(false)
     const [changeNativeCRS, setChangeNativeCRS] = useState(false)
 
@@ -37,9 +37,13 @@ export const Reprojection = () => {
                     }`}
                 />
             </button>
-
             <Hider show={showRepro}>
                 <div className="space-y-3">
+                    { is360Deg && 
+                    <div className='warn-box'>
+                        360° coordinates may behave unexpectedly. 
+                    </div>
+                    }
                     <div className="flex items-center gap-2">
                         <div
                             className="flex-1 rounded-md border border-[#333] bg-[#1e1e1e] px-3 py-2 font-mono text-sm text-[#d4d4d4] whitespace-pre-wrap"

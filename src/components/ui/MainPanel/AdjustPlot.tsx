@@ -415,7 +415,7 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {valueRange, showBorders, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
+  const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
     setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(s => s))
   const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
   const {valueScales} = useGlobalStore(useShallow(s => s))
@@ -505,16 +505,17 @@ const GlobalOptions = () =>{
       <>
         <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
         <Hider show={showBorders}>
-          {/* <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
+          <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
             ()=>usePlotStore.setState({useBorderTexture:!useBorderTexture})
-          } /> */}
+          } />
           <Hider show={useBorderTexture} >
-            <b>Line Width</b>
+            <b>Border Width</b>
             <Slider className='my-2'
+              value={[borderWidth]}
               min={0.01}
               max={0.4}
               step={0.01}
-              onValueChange={e=>console.log(e[0])}
+              onValueChange={e=>usePlotStore.setState({borderWidth:e[0]})}
             />
           </Hider>
           <b>Border Color</b>

@@ -224,6 +224,17 @@ body {
   display: block;
 }
 
+.warn-box {
+  padding: 8px 12px;
+  border: 1px solid #b91c1c;      /* red-700 */
+  background: #fee2e2;            /* red-100 */
+  color: #7f1d1d;                 /* red-800 */
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875rem;
+  border-radius: 4px;
+  margin: 6px
+}
+
 ul {
   list-style-type: disc;
   padding-left: 2rem;

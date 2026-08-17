@@ -1,12 +1,10 @@
 import {  useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { vertexShader, fragmentShader, fragOpt, orthoVertex , ddaFrag} from '@/components/textures/shaders';
+import { vertexShader, fragmentShader, orthoVertex , ddaFrag} from '@/components/textures/shaders';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
 import { invalidate, useFrame } from '@react-three/fiber';
-import { deg2rad } from '@/utils/HelperFuncs';
-import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { UVCube } from '@/components/plots'
 import { ColumnMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
@@ -18,15 +16,12 @@ interface DataCubeProps {
 
 export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const volTexture = usePaddedTextures(propVolTexture);
-    const {shape, colormap, flipY, textureArrayDepths, remapTexture, dataShape} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
-    const {
-      valueRange, xRange, yRange, zRange, quality, useOrtho, interpPixels,
-      animProg, cScale, cOffset, useRayMarch, transparency, maskTexture, maskValue,
-      nanTransparency, nanColor, vTransferRange, vTransferScale, fillValue} = usePlotStore(useShallow(s => s))
+    const {shape, flipY, remapTexture, dataShape} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
+    const {xRange, yRange, zRange, quality, useOrtho, useRayMarch, transparency, 
+      vTransferRange, vTransferScale} = usePlotStore(useShallow(s => s))
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
     const timeRatio = shape.z/shape.x;
-    const {lonBounds, latBounds} = useCoordBounds()
     const gridShape = useMemo(()=>{
       if (remapTexture){
         return new THREE.Vector3(remapTexture.image.width, remapTexture.image.height, dataShape[0])

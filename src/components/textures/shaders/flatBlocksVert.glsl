@@ -9,8 +9,11 @@ attribute vec2 instanceUV;
 #endif
 uniform sampler2D remapTexture;
 uniform sampler2D maskTexture;
-uniform vec3 textureDepths;
+uniform bool useBorderTexture;
+uniform bool is360;
+uniform bool remapBorders;
 
+uniform vec3 textureDepths;
 
 uniform float aspect;
 uniform float displaceZero;
@@ -65,17 +68,39 @@ float sample1(
 }
 
 out float vStrength;
+out vec2 vUv;
 
 void main() {
-    if (maskValue != 0){
-        vec2 maskUV = realCoords(instanceUV);
-        float mask = texture(maskTexture, maskUV).r;
-        bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
-        if (cond){
-            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-            return;
+    if (maskValue != 0 || useBorderTexture){
+        // Get Coordinates
+        vec2 realUV = realCoords(instanceUV);
+        vUv = realCoords(instanceUV + (position.xy / vec2(aspect, 1.0)));
+        // Adjust if reproject
+        #ifdef REPROJECT
+            realUV = texture(remapTexture, realUV).rg;
+            vUv = texture(remapTexture, vUv).rg;
+        #else
+            // All reprojected data is made -180 to 180. Don't do this if reprojected
+            if (is360){
+                realUV.x = fract(realUV.x + 0.5);
+                vUv.x = fract(vUv.x + 0.5);
+            } 
+            if (remapBorders){
+                // All reprojected data is regularly gridded
+                realUV.xy = texture(remapTexture, realUV).ba;
+                vUv.xy = texture(remapTexture, vUv).ba;
+            }
+        #endif
+        if (maskValue != 0 ){
+            float mask = texture(maskTexture, realUV).r;
+            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
+            if (cond){
+                gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                return;
+            }
         }
     }
+    
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     vec3 texCoord = vec3(instanceUV, animateProg);
@@ -113,6 +138,6 @@ void main() {
         vec3 worldPosition = planePosition + scaledPosition;
         
         gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
-
     }
+
 }

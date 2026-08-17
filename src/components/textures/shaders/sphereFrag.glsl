@@ -13,6 +13,11 @@ uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform vec3 textureDepths;
 uniform sampler2D remapTexture;
+uniform sampler2D borderTexture;
+uniform bool useBorderTexture;
+uniform float borderWidth;
+uniform vec3 borderColor;
+uniform bool is360;
 
 uniform float cOffset;
 uniform float cScale;
@@ -73,37 +78,41 @@ float sample1(
 }
 
 void main(){
-    #ifdef IS_FLAT
-        vec2 texCoord = giveUV(aPosition);
-        bool inBounds = all(greaterThanEqual(texCoord, vec2(0.0))) && 
-            all(lessThanEqual(texCoord, vec2(1.0)));
-        #ifdef REPROJECT
-            if (inBounds) {
-                vec3 remap = texture(remapTexture, texCoord.xy).rgb;
-                texCoord.xy = remap.rg;
-                if (remap.b < 0.5) inBounds = false;
+    if (maskValue != 0 || useBorderTexture){
+        vec2 maskUV = giveMaskUV(aPosition);
+        if (is360) maskUV.x = fract(maskUV.x + 0.5);
+        if (maskValue != 0){
+            float mask = texture(maskTexture, maskUV).r;
+            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
+            if (cond){
+                color = vec4(nanColor, 1.);
+                color.a = nanAlpha;  
+                return;
             }
-        #endif
-    #else
-        vec2 sampleCoord = giveUV(aPosition);
-        bool inBounds = all(greaterThanEqual(sampleCoord, vec2(0.0))) && 
-            all(lessThanEqual(sampleCoord, vec2(1.0)));
-        #ifdef REPROJECT
-            if (inBounds) {
-                vec3 remap = texture(remapTexture, sampleCoord.xy).rgb;
-                sampleCoord.xy = remap.rg;
-                if (remap.b < 0.5) inBounds = false;
+        } else {
+            float borderDist = texture(borderTexture, maskUV).r;
+            float latFac = cos(maskUV.y);
+            if (borderDist <= borderWidth * latFac) {
+                color = vec4(borderColor, 1.0);
+                return;
             }
-        #endif
+        }
+    }
+    vec2 sampleCoord = giveUV(aPosition);
+    #ifdef REPROJECT
+            vec3 remap = texture(remapTexture, sampleCoord).rgb;
+            sampleCoord = remap.rg;
+            if (remap.b < 0.5) sampleCoord = vec2(2.0); // I don't think this is ever the case
     #endif
-
+    bool inBounds = all(greaterThanEqual(sampleCoord, vec2(0.0))) &&
+    all(lessThanEqual(sampleCoord, vec2(1.0)));
     if (inBounds) {
         int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
         int yStepSize = int(textureDepths.x); 
         #ifdef IS_FLAT
-            ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
+            ivec2 idx = clamp(ivec2(sampleCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
             int textureIdx = idx.y * yStepSize + idx.x;
-            vec2 localCoord = texCoord * (textureDepths.xy); // Scale up
+            vec2 localCoord = sampleCoord * (textureDepths.xy); // Scale up
         #else
             vec3 texCoord = vec3(sampleCoord, animateProg);
             ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
@@ -123,15 +132,6 @@ void main(){
         color = isNaN ? vec4(nanColor, nanAlpha) : texture(cmap, vec2(strength, 0.5));
         if (!isNaN){
             color.a = 1.;
-        }
-        if (maskValue != 0){
-            vec2 maskUV = giveMaskUV(aPosition);
-            float mask = texture(maskTexture, maskUV).r;
-            bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
-            if (cond){
-                color = vec4(nanColor, 1.);
-                color.a = nanAlpha;  
-            }
         }
     } else {
         color = vec4(nanColor, 1.);

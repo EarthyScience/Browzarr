@@ -37,10 +37,10 @@ function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds
 	let [newX, newY] = [x, y];
 	if (remapTexture && proj){
         [newX, newY]= proj.forward([x,y])
-        newY = flipY ? 1 - newY : newY
     }
     newX = (newX-xBounds[0])/(xBounds[1]-xBounds[0]);
-    newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);	
+    newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);
+    newY = flipY ? 1 - newY : newY
     if (remapBorders && !remapTexture){
         const [newV, _valid] = sampleCRS(remapBorders, newX, newY)
         newX = newV.x;
@@ -50,6 +50,7 @@ function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds
     newX *= 2;
     newY -= 0.5;
     newY *= 2;
+    
    
     return [newX, newY/2, 0] // I don't know why this 2 (which was for the original lat/lon aspect) also works for new CRS
 }
@@ -64,14 +65,15 @@ function Spherize([lon, lat] : [number, number]){
     return [x * radius, y * radius, z * radius]
 }
 
-function wrapLon(lon: number, bounds: [number, number]) {
-    const span = bounds[1] - bounds[0];
+function wrapLon(lon: number, bounds: [number, number], bypass?:boolean) {
+    if (bypass) return lon;
+    const span = 360;
     if (span <= 0) return lon;
     return ((lon - bounds[0]) % span + span) % span + bounds[0];
 }
 
 function Borders({features}:{features: any}){
-    const {xRange, yRange, plotType, borderColor, is360Deg, nativeCRS, destCRS } = usePlotStore(useShallow(s => s))
+    const {xRange, yRange, plotType, borderColor, nativeCRS, destCRS } = usePlotStore(useShallow(s => s))
     const {shape, axisDimArrays, remapTexture } = useGlobalStore(useShallow(s => s))
     const {xIdx, yIdx} = useAxisIndices()
     const [xBounds, yBounds] = useMemo(()=>{ 
@@ -86,7 +88,7 @@ function Borders({features}:{features: any}){
     function toXYZ(lon: number, lat: number){
         const [x, y, z] = spherize
         ? Spherize([ -lon, lat])
-        : Reproject([wrapLon(lon, xBounds), lat],xBounds,yBounds, proj);
+        : Reproject([wrapLon(lon, xBounds, Boolean(remapTexture)), lat],xBounds,yBounds, proj);
         
         return new THREE.Vector3(x, y, z);
     }
@@ -200,20 +202,10 @@ const CountryBorders = () => {
     const [swapSides, setSwapSides] = useState<boolean>(false)
 
     const {dataShape, shape} = useGlobalStore(useShallow(s => s))
-    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, is360Deg} = usePlotStore(useShallow(s => s))
+    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, useBorderTexture, is360Deg} = usePlotStore(useShallow(s => s))
     const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
 
-    const [spherize, setSpherize] = useState<boolean>(false)
-
-    useEffect(()=>{
-        if (plotType === 'sphere'){
-            setSpherize(true)
-        }
-        else{
-            setSpherize(false)
-        }
-
-    },[plotType])
+    const spherize = plotType === 'sphere';
 
     useFrame(({camera})=>{
         if (spherize){return;}
@@ -242,13 +234,14 @@ const CountryBorders = () => {
     const globalScale = isPC ? dataShape[2]/500 : 1
     const depthScale = isPC ? depthRatio : timeRatio/2
     const aspectRatio = (shape && shape.y > 0) ? (shape.x / shape.y) : 1;
+
     return(
         <group
-            rotation={[rotateFlat ? -Math.PI/2 : 0, spherize && is360Deg ? Math.PI : 0, 0]}
+            rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
             scale={[globalScale, globalScale * (spherize ? 1 : (2 / aspectRatio)), globalScale]}
         >
             <group 
-                visible={showBorders && !(analysisMode && axis != 0)} 
+                visible={showBorders && !(analysisMode && axis != 0) && !useBorderTexture} 
                 position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0)) : zRange[1]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0))]} // I don't know what value to use here. THis seems okay but not perfect
                 rotation={[0, (is360Deg && spherize) ? Math.PI : 0, 0]} 
             >
