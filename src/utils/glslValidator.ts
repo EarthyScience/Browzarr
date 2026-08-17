@@ -1,3 +1,15 @@
+const boilerPlate = `
+precision mediump float;
+
+void colorscaler(out float x){
+	//LOGIC;
+}
+
+void main(){
+
+}
+`
+
 export const glslValidator = (source: string, type='fragment') => {
     const canvas = document.createElement("canvas");
 	const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
@@ -11,7 +23,7 @@ export const glslValidator = (source: string, type='fragment') => {
 
 	const shader = gl.createShader(shaderType);
 	if (!shader) return {ok: false, log:null}
-	gl.shaderSource(shader, source);
+	gl.shaderSource(shader, boilerPlate.replace('//LOGIC',source));
 	gl.compileShader(shader);
 
 	const ok = gl.getShaderParameter(shader, gl.COMPILE_STATUS);

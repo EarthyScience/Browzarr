@@ -30,5 +30,9 @@ export const ErrorList = {
     badProj :{
         title: "Unrecognized Projection String",
         description: "The projection string provided is not recognized. Please check the string and try again."
+    },
+    glsl :{
+        title: "Invalid GLSL Code",
+        description: "The given function is invalid. Check the error message for additional information"
     }
 }
