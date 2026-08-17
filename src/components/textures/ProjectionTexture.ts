@@ -38,7 +38,7 @@ export function resetProjection(){
     handleIrregularGrid(dimArrays)
     usePlotStore.setState({
         xSlice, 
-        ySlice
+        ySlice,
     })
 
 }
@@ -274,13 +274,10 @@ export function reproject(resolution: number = 256){
     if (is360Deg) {
 		xArray = remap360to180Monotonic(xArray) 
 	}
-
     const yArray = dimArrays[yIdx];
     const width = xArray.length;
     const height = yArray.length;
-
     // We need the border points as the min/max of the old CRS won't always be the min/max of the new CRS
-	
     const boundaryPoints: [number, number][] = [];
 	
     for (let i = 0; i < width; i++) {
@@ -295,18 +292,15 @@ export function reproject(resolution: number = 256){
     for (let j = 0; j < height; j++) {
         boundaryPoints.push([xArray[width - 1], yArray[j]]);
     }
-
     const proj = proj4(nativeCRS, destCRS);
     let [minX, minY] = [Infinity, Infinity];
     let [maxX, maxY] = [-Infinity, -Infinity];
-
     // Get min/max of new CRS for new Axis'
     for (const [x, y] of boundaryPoints) {
         const [px, py] = proj.forward([x, y]);
         minX = Math.min(minX, px); maxX = Math.max(maxX, px);
         minY = Math.min(minY, py); maxY = Math.max(maxY, py);
     }    
-	
     const xDiff = Math.abs(maxX - minX);
     const yDiff = Math.abs(maxY - minY);
     const aspectRatio = yDiff > 0 ? xDiff / yDiff : 1;
@@ -331,17 +325,14 @@ export function reproject(resolution: number = 256){
     let data: Uint16Array;
     let xTicks: Array<number>;
     let yTicks: Array<number>;
-
     if (plotType === 'point-cloud') {
         targetWidth = width;
         targetHeight = height;
         xTicks = linspace(minX, maxX, targetWidth);
         yTicks = flipY ? linspace(maxY, minY, targetHeight) : linspace(minY, maxY, targetHeight);
         data = new Uint16Array(targetWidth * targetHeight * 4);
-
-        const xDiff = Math.abs(maxX - minX);
-        const yDiff = Math.abs(maxY - minY);
-
+        const xScaler = 1 / (maxX - minX);
+        const yScaler = 1/ (maxY - minY);
         for (let j = 0; j < targetHeight; j++) {
             const y = yArray[j];
             for (let i = 0; i < targetWidth; i++) {
@@ -349,8 +340,8 @@ export function reproject(resolution: number = 256){
                 const [px, py] = proj.forward([x, y]);
                 const valid = Number(isFinite(px) && isFinite(py))
 
-                const u = (px - minX) / xDiff;
-                const v = (py - minY) / yDiff;
+                const u = (px - minX) * xScaler;
+                const v = (py - minY) * yScaler;
 
                 const idx = (j * targetWidth + i) * 4;
                 data[idx]     = THREE.DataUtils.toHalfFloat(u);  
@@ -362,18 +353,14 @@ export function reproject(resolution: number = 256){
         targetWidth = Math.ceil(adjustedResolution * aspectRatio);
         targetHeight = adjustedResolution;
         xTicks = linspace(minX, maxX, targetWidth) 
-
         yTicks = flipY 
-			? linspace(maxY, minY, targetHeight)
-			: linspace(minY, maxY, targetHeight)
+            ? linspace(maxY, minY, targetHeight)
+            : linspace(minY, maxY, targetHeight)
 
         data = new Uint16Array(targetWidth * targetHeight * 4);
         for (let j = 0; j < targetHeight; j++) {
             for (let i = 0; i < targetWidth; i++) {
                 const [x, y, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
-
-                // Get interpolated Index in the OG coords that matches new X, Y
-                // This is kinda expensive
                 const xi = fractionalIndex(xArray, x);
                 const yi = fractionalIndex(yArray, y);
 
@@ -388,10 +375,10 @@ export function reproject(resolution: number = 256){
                 const idx = (j * targetWidth + i) * 4;
                 data[idx]     = THREE.DataUtils.toHalfFloat(u); 
                 data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
-                data[idx + 2] = THREE.DataUtils.toHalfFloat(Number(inBounds));
+                data[idx + 2] = THREE.DataUtils.toHalfFloat(valid);
             }  
         }
-    }
+    }       
     
     const texture = new THREE.DataTexture(
         data,
@@ -400,13 +387,11 @@ export function reproject(resolution: number = 256){
         THREE.RGBAFormat, // Must be RGBA as HalfFloat RGB is not supported
         THREE.HalfFloatType
     );
-    texture.needsUpdate = true;
     texture.magFilter = THREE.LinearFilter;
     texture.minFilter = THREE.LinearFilter;
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
-
-    //Clear texture before setting
+    texture.needsUpdate = true;
     if (remapTexture) remapTexture.dispose();
     useGlobalStore.setState({remapTexture: texture})
     // ---- Update Axis and Shape information ----//
@@ -415,9 +400,9 @@ export function reproject(resolution: number = 256){
     const newAxisDimArrays = [...axisDimArrays];
     newAxisDimArrays[xIdx] = xTicks;
     newAxisDimArrays[yIdx] = yTicks;
-
     const newAxisDimUnits = [...axisDimUnits];
     const targetUnits = (crsCheck.oProj as any)?.units;
+
     //@ts-ignore At this point these are all valid
     newAxisDimUnits[xIdx] = targetUnits;
     //@ts-ignore At this point these are all valid
@@ -436,7 +421,7 @@ export function reproject(resolution: number = 256){
     })
     usePlotStore.setState({
         xSlice: [0, null],
-        ySlice: [0, null]
+        ySlice: [0, null],
     })
     // ParseExtent(newAxisDimUnits, newAxisDimArrays);
 

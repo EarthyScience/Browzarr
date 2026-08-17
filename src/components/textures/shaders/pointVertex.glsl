@@ -2,6 +2,7 @@ attribute float value;
 in int vertexIdx;
 
 out float vValue;
+out vec2 vUv;
 
 uniform sampler2D maskTexture;
 uniform sampler3D map[12];
@@ -110,7 +111,7 @@ void main() {
         vec3 position = givePosition(texCoord);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     #endif
-
+    vUv = texCoord.xy;
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
 

@@ -194,6 +194,7 @@ void main() {
                         #ifdef REPROJECT
                             borderUV = texture(remapTexture, borderUV).rg;
                         #endif
+                        borderUV = realCoords(borderUV);
                         float borderDist = texture(borderTexture, borderUV).r;
                         if (borderDist <= borderWidth) {
                             color = vec4(borderColor, 1.0);

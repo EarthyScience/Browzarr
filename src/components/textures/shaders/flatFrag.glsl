@@ -38,7 +38,6 @@ vec2 realCoords(vec2 uv){
     vec2 normalizedLat = latBounds/PI+0.5;
     float lonScale = normalizedLon.y-normalizedLon.x;
     float latScale = normalizedLat.y-normalizedLat.x;
-    
     float u = uv.x * lonScale + normalizedLon.x;
     float v = uv.y * latScale + normalizedLat.x;
 
@@ -74,7 +73,8 @@ void main() {
         vec2 realUV = realCoords(vUv);
         // Adjust if reproject
         #ifdef REPROJECT
-            realUV = texture(remapTexture, realUV).rg;
+            realUV = texture(remapTexture, vUv).rg;
+            realUV = realCoords(realUV);
         #else
             // All reprojected data is made -180 to 180. Don't do this if reprojected
             if (is360) realUV.x = fract(realUV.x + 0.5);
