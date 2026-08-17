@@ -36,6 +36,7 @@ uniform float fillValue;
 uniform int maskValue;
 uniform vec2 latBounds;
 uniform vec2 lonBounds;
+uniform vec2 valueRange;
 
 #define EPSILON 0.000001
 #define PI 3.1415926535
@@ -53,6 +54,7 @@ vec2 hitBox(vec3 orig, vec3 dir) {
     return vec2(t0, t1);
 }
 
+
 vec2 realCoords(vec2 uv) {
     vec2 normalizedLon = lonBounds / (2.0 * PI) + 0.5;
     vec2 normalizedLat = latBounds / PI + 0.5;
@@ -65,7 +67,21 @@ vec2 realCoords(vec2 uv) {
     return vec2(u, v);
 }
 
-void rescaler(out float x){
+bool isNaN(float x) {
+    return x != x;
+}
+void denorm(out float x){
+    x *= (valueRange.y - valueRange.x);
+    x += valueRange.x;
+    x = isNaN(x) ? 1.0 : x;
+}
+
+void norm(out float x){
+    x -= valueRange.x;
+    x /= (valueRange.y - valueRange.x);
+}
+
+void rescaler(inout float x){
     //LOGIC
 }
 
@@ -124,6 +140,7 @@ bool sampleVoxel(vec3 texCoord, out float d) {
     vec3 localCoord = fract(texCoord * textureDepths);
 
     d = sample1(localCoord, textureIdx);
+    rescaler(d);
     return d >= threshold.x && d <= threshold.y;
 }
 
@@ -173,7 +190,6 @@ void main() {
             float d;
             if (sampleVoxel(texCoord, d)) {
                 bool isNan = (d == 1.0) || (abs(d - fillValue) < 0.005);
-
                 if (isNan) {
                     if (nanAlpha > 0.0) {
                         float nanA = pow(nanAlpha, 5.0);
@@ -182,7 +198,6 @@ void main() {
                     }
                 } else {
                     float sampLoc = min(d * cScale + cOffset, 0.99);
-                    rescaler(sampLoc);
                     vec3 col = texture(cmap, vec2(sampLoc, 0.5)).rgb;
 
                     float alpha = pow(max(sampLoc, 0.001), transparency * opacityMag);

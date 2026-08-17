@@ -9,7 +9,7 @@ import { UVCube } from '@/components/plots'
 import { ColumnMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
-
+import { functionInjector } from '../ui/Elements/ColorAdjuster';
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
 }
@@ -51,9 +51,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
         ...(remapTexture ? { REPROJECT: true } : {})
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
-      fragmentShader: useRayMarch 
-		? fragmentShader.replace('//LOGIC', colorScale?? '//LOGIC') 
-		: ddaFrag.replace('//LOGIC', colorScale?? '//LOGIC') ,
+      fragmentShader: useRayMarch ? functionInjector(fragmentShader, colorScale): functionInjector(ddaFrag, colorScale),
       transparent: true,
       blending: THREE.NormalBlending,
       depthWrite: false,

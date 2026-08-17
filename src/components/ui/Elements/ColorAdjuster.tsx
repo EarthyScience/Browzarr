@@ -34,33 +34,58 @@ const ColorAdjuster = () => {
 			? <p>Current operation: {colorScale}</p>
 			: <p>Apply an operation to the current plot</p>
 			}
-			<QuickTip message='Write operations in GLSL. Click __ for available methods'>
+			<QuickTip message={<div>Write operations in GLSL<br/> example: <b>x / 2.0</b></div>}>
 				<Input type='string' placeholder='apply operations to "x"'
 					onChange={e=>customShader.current = e.target.value}
 				/>
 			</QuickTip>
-			<Button
-				variant='pink'
-				onClick={handleShader}
-			>
-				Apply Operation
-			</Button>
-			<Popover>
-				<PopoverTrigger asChild>
-					<Button variant='secondary'>
-						Functions List
-					</Button>
-				</PopoverTrigger>
-				<PopoverContent>
-					<p>Along with general arithmetic operations. The following globals can also be used:</p>
-					<ul className='columns-2'>
-						<li></li>
-					</ul>
-				</PopoverContent>
-			</Popover>
+			<div className='flex pt-2'>
+				<Button
+					variant='pink'
+					onClick={handleShader}
+				>
+					Apply Operation
+				</Button>
+				<Popover>
+					<PopoverTrigger asChild>
+						<Button variant='secondary'>
+							Functions List
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent>
+						<p>Along with general arithmetic operations. The following globals can also be used:</p>
+						<ul className='columns-2 !list-none bg-gray-100 rounded-lg border-solid border-2'>
+							{[
+								'abs(x)', 'min(x, y)', 'max(x, y)', 'sqrt(x)',
+								'floor(x)', 'ceil(x)', 'pow(x, y)', 'exp(x)','mod(x, y)',
+								'round(x)', 'mix(x, y, a)', 'exp2(x)',
+								'log(x)', 'log2(x)', 'fract(x)', 'inverseqrt(x)',
+							].map((fn)=> (
+								<li key={fn} className='font-mono '>{fn}</li>
+							))}
+						</ul>
+						<p className='warn-box text-center'>Always use <b>FLOAT</b> <br/>
+							<s>50</s> → <b>50.0</b>
+						</p>
+					</PopoverContent>
+				</Popover>
+			</div>
+			
 			
 		</div>
 	)
 }
+
+export const functionInjector = (shader:string, colorScale: string | undefined) => {
+	if (!colorScale) return shader;
+	const functionText = `
+		denorm(x);
+		${colorScale}
+		norm(x);
+	`
+	return shader.replace('//LOGIC' , functionText)
+}
+
+
 
 export default ColorAdjuster

@@ -52,7 +52,7 @@ function Num2String(value: number){
 
 const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Record<string, any>, valueScales: {maxVal: number, minVal:number}}) => {
     const {colormap, variable, scalingFactor} = useGlobalStore(useShallow(s => s));
-    const {cScale, cOffset, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
+    const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
     const {variable2, analysisMode, operation, kernelOperation, execute} = useAnalysisStore(useShallow(s => s));
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -241,12 +241,14 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 {<Metadata data={metadata} variable={variable} isMobile={true} />}
                 {`${analysisString}`}
             </p>
-        {(cScale != 1 || cOffset != 0) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} 
+        {/* RESET */}
+        {(cScale != 1 || cOffset != 0 || colorScale) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} 
             onClick={()=>{
                 setNewMin(origMin); 
                 setNewMax(origMax); 
                 setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0))); 
-                setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)))
+                setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)));
+                setColorScale(undefined)
             }}
         />}
         <div

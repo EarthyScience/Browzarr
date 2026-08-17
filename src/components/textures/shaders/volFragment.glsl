@@ -34,6 +34,7 @@ uniform float fillValue;
 uniform int maskValue;
 uniform vec2 latBounds;
 uniform vec2 lonBounds;
+uniform vec2 valueRange;
 
 #define epsilon 0.000001
 #define pi 3.1415926535
@@ -63,8 +64,6 @@ vec2 realCoords(vec2 uv){
     return vec2(u, v);
 }
 
-
-
 float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
     if (index == 0) return texture(map[0], p).r;
     else if (index == 1) return texture(map[1], p).r;
@@ -81,8 +80,24 @@ float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so
     else return 0.0;
 }
 
+bool isNaN(float x) {
+    return x != x;
+}
 
+void denorm(out float x){
+    x *= (valueRange.y - valueRange.x);
+    x += valueRange.x;
+    x = isNaN(x) ? 1.0 : x;
+}
 
+void norm(out float x){
+    x -= valueRange.x;
+    x /= (valueRange.y - valueRange.x);
+}
+
+void rescaler(inout float x){
+    //LOGIC
+}
 
 void main() {
     vec3 rayDir = normalize(vDirection);
@@ -138,7 +153,7 @@ void main() {
         vec3 localCoord = texCoord * (textureDepths);  
         localCoord = fract(localCoord);
         float d = sample1(localCoord, textureIdx);
-
+        rescaler(d);
         bool cond = (d >= threshold.x) && (d <= threshold.y); 
 
         if (cond) {

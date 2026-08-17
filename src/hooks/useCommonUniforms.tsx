@@ -10,9 +10,9 @@ import { deg2rad } from '@/utils/HelperFuncs'
 export function useCommonUniforms() {
 	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange, 
 		useBorderTexture, borderColor, borderWidth, borderTexture, is360Deg, showBorders} = usePlotStore(useShallow(s=>s))
-	const { textureArrayDepths, colormap, remapBorders, remapTexture} = useGlobalStore(useShallow(s => s))
+	const { textureArrayDepths, colormap, remapBorders, remapTexture, valueScales} = useGlobalStore(useShallow(s => s))
 	const {lonBounds, latBounds} = useCoordBounds()
-
+    
 	const uniforms = useMemo(() => ({
 		cScale: {value: cScale},
 		cOffset: {value: cOffset},
@@ -33,10 +33,11 @@ export function useCommonUniforms() {
 		nanColor: {value : new THREE.Color(nanColor)},
 		nanAlpha: {value: 1 - nanTransparency},
 		fillValue: {value: fillValue?? NaN},
+		valueRange: {value: new THREE.Vector2(valueScales.minVal, valueScales.maxVal)}
 	}), [
 		cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
 		textureArrayDepths, colormap, lonBounds, latBounds, useBorderTexture, borderTexture, borderWidth, 
-		borderColor, remapBorders, remapTexture, is360Deg, showBorders
+		borderColor, remapBorders, remapTexture, is360Deg, showBorders, valueScales
 	])
 	return uniforms
 
@@ -45,7 +46,7 @@ export function useCommonUniforms() {
 export function updateCommonUniforms(material: THREE.ShaderMaterial){
 	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
 		useBorderTexture, borderColor, borderWidth, is360Deg, showBorders} = usePlotStore(useShallow(s=>s))
-	const {textureArrayDepths, colormap} = useGlobalStore(useShallow(s => s))
+	const {textureArrayDepths, colormap, valueScales} = useGlobalStore(useShallow(s => s))
 	const {lonBounds, latBounds} = useCoordBounds()
 
 	useEffect(()=>{
@@ -66,9 +67,11 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		uniforms.borderColor.value = new THREE.Color(borderColor);
 		uniforms.borderWidth.value = borderWidth;
 		uniforms.is360.value = is360Deg;
+		uniforms.valueRange.value = new THREE.Vector2(valueScales.minVal, valueScales.maxVal);
 	},[[
 		cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
-		textureArrayDepths, colormap, lonBounds, latBounds, useBorderTexture, borderColor, borderWidth, is360Deg, showBorders
+		textureArrayDepths, colormap, lonBounds, latBounds, useBorderTexture, borderColor, borderWidth, is360Deg, showBorders,
+		valueScales
 	]])
 	
 	return;

@@ -1,4 +1,4 @@
-const boilerPlate = `
+const boilerPlate = `#version 300 es
 precision mediump float;
 
 void colorscaler(out float x){
