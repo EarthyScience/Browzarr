@@ -17,7 +17,7 @@ interface DataCubeProps {
 export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const volTexture = usePaddedTextures(propVolTexture);
     const {shape, flipY, remapTexture, dataShape} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
-    const {xRange, yRange, zRange, quality, useOrtho, useRayMarch, transparency, 
+    const {xRange, yRange, zRange, quality, useOrtho, useRayMarch, transparency, colorScale,
       vTransferRange, vTransferScale} = usePlotStore(useShallow(s => s))
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
@@ -51,12 +51,14 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
         ...(remapTexture ? { REPROJECT: true } : {})
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
-      fragmentShader: useRayMarch ? fragmentShader : ddaFrag,
+      fragmentShader: useRayMarch 
+		? fragmentShader.replace('//LOGIC', colorScale?? '//LOGIC') 
+		: ddaFrag.replace('//LOGIC', colorScale?? '//LOGIC') ,
       transparent: true,
       blending: THREE.NormalBlending,
       depthWrite: false,
       side: useOrtho ? THREE.FrontSide : THREE.BackSide,
-    }),[useRayMarch, useOrtho, volTexture, remapTexture]);
+    }),[useRayMarch, useOrtho, volTexture, colorScale, remapTexture]);
 
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
 	updateCommonUniforms(shaderMaterial)

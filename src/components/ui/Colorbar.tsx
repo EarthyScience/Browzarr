@@ -267,9 +267,10 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 <LuSettings 
                     style={{
                         position:'absolute',
-                        left: '0%',
-                        bottom:'100%',
-                        cursor:'pointer'
+                        right: '101%',
+                        bottom:'50%',
+                        cursor:'pointer',
+                        transform:'translatey(50%)'
                     }}
                     size={20}
                 />

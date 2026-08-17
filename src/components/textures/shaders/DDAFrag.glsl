@@ -65,6 +65,9 @@ vec2 realCoords(vec2 uv) {
     return vec2(u, v);
 }
 
+void rescaler(out float x){
+    //LOGIC
+}
 
 float sample1(vec3 p, int index) {
     if (index == 0) return texture(map[0], p).r;
@@ -179,6 +182,7 @@ void main() {
                     }
                 } else {
                     float sampLoc = min(d * cScale + cOffset, 0.99);
+                    rescaler(sampLoc);
                     vec3 col = texture(cmap, vec2(sampLoc, 0.5)).rgb;
 
                     float alpha = pow(max(sampLoc, 0.001), transparency * opacityMag);
