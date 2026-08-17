@@ -73,6 +73,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             blending:THREE.NoBlending,
             depthWrite:true,
             depthTest:true,
+            side: THREE.BackSide,
         })
         return shader
     },[count, isFlat])

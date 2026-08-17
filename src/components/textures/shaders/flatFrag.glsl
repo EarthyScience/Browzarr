@@ -137,7 +137,4 @@ void main() {
     float sampLoc = isNaN ? strength: (strength)*cScale;
     sampLoc = isNaN ? strength : min(sampLoc+cOffset,0.995);
     Color = isNaN ? vec4(nanColor, nanAlpha) : vec4(texture2D(cmap, vec2(sampLoc, 0.5)).rgb, 1.);
-    // float check = float(texture(remapTexture,texCoord.xy).g >= 0.);
-    // Color = vec4(check, 0., 0. , 1.);
-    // Color = vec4(1.0, 1.0, 0. , 1.);
 }

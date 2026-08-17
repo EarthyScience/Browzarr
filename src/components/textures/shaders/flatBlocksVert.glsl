@@ -138,13 +138,6 @@ void main() {
         vec3 worldPosition = planePosition + scaledPosition;
         
         gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
-        // vUv = worldPosition.xy;
-        // vUv.x *= 0.5;
-        // vUv.y *= (0.5 * aspect);
-        // vUv += vec2(0.5);
-        // vUv.x = fract(vUv.x + 0.5);
-        // vUv.y = 1.-vUv.y;
-        // vUv.xy = vec2(float(position.x == -1./planeDims.x));
     }
 
 }
