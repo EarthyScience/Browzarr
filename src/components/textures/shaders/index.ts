@@ -24,10 +24,12 @@ const wrappedFlatBlocksVert = wrapShader(flatBlocksVert);
 const wrappedSphereBlocksVert = wrapShader(sphereBlocksVert);
 const wrappedSphereVert = wrapShader(sphereVertex);
 const wrappedSphereFrag = wrapShader(sphereFrag);
+const wrappedPointVert = wrapShader(pointVert);
+const wrappedPointFrag = wrapShader(pointFrag);
 
 export {
-    pointFrag,
-    pointVert,
+    wrappedPointFrag as pointFrag,
+    wrappedPointVert as pointVert,
     vertexShader,
     wrappedRayMarch as rayMarchFrag,
     wrappedSphereFrag as sphereFrag,
