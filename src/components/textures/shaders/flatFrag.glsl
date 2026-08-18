@@ -68,7 +68,7 @@ void main() {
 
     float strength = sample1(localCoord, textureIdx);
     rescaler(strength);
-    bool isNan = useF16 ? isNaNBits(strength) : strength == 1.;
+    bool isNan = isNaNBits(strength) || (!useF16 && strength == 1.);
     if (!isNan){
         strength *= cScale;
         strength = min(strength+cOffset,0.995);

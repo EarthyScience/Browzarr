@@ -13,7 +13,6 @@ uniform vec2 vertBounds;
 uniform vec3 shape;
 uniform float aspect;
 
-
 vec3 computeTexCoord(int vertexID) {
     int depth = int(shape.x);
     int height = int(shape.y);
@@ -93,8 +92,14 @@ void main() {
     localCoord = fract(localCoord);
     vValue = sample1(localCoord, textureIdx);
     rescaler(vValue);
+    bool isnan = isNaNBits(vValue) || (!useF16 && vValue == 1.0);
+    if (isnan){gl_Position = vec4(2.0, 2.0, 2.0, 1.0);return;}
+    vValue *= cScale;
+    vValue = max(min(vValue+cOffset,0.995), 0.0);
+    
     bool fillCheck = abs(vValue - fillValue) < 0.005;
-    if (vValue < valueRange.x || vValue > valueRange.y || fillCheck){ //Hide points that are outside of value range
+    bool valid = (vValue >= threshold.x) && (vValue <= threshold.y); 
+    if (!valid || fillCheck){ //Hide points that are outside of value range
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
         return;
     }
@@ -102,7 +107,7 @@ void main() {
         float pointScale = pointSize/gl_Position.w;
         pointScale = scalePoints ? pointScale*pow(vValue,scaleIntensity) : pointScale;
         
-        if (vValue == 1. || (pointScale*gl_Position.w < 0.75 && scalePoints)){ //Hide points that are invisible or get too small when scaled
+        if (isnan || (pointScale*gl_Position.w < 0.75 && scalePoints)){ //Hide points that are invisible or get too small when scaled
             gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
             return;
         }

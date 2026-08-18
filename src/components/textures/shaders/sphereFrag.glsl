@@ -70,7 +70,7 @@ void main(){
         localCoord = fract(localCoord);
         float strength = sample1(localCoord, textureIdx);
         rescaler(strength);
-        bool isnan = (useF16 ? isNaNBits(strength) : ( strength == 1.0)) 
+        bool isnan = isNaNBits(strength) || (!useF16 && ( strength == 1.0))
             || abs(strength - fillValue) < 0.005;
         if (!isnan){
             strength *= cScale;

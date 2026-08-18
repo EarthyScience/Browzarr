@@ -93,8 +93,10 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
     nanMaterial.transparent = true;
 
     const nanSphereGeometry = useMemo(()=> new THREE.IcosahedronGeometry(1, 9),[])
+
     useEffect(()=>{
         if (nanMaterial ){
+            nanMaterial.dispose();
             nanMaterial.color.set(nanColor)
             nanMaterial.opacity = (1-nanTransparency)
             invalidate();

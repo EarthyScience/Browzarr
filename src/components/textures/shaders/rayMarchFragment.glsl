@@ -84,7 +84,9 @@ void main() {
         localCoord = fract(localCoord);
         float d = sample1(localCoord, textureIdx);
         rescaler(d);
-        bool isnan = (useF16 ? isNaNBits(d) : d == 1.0) || abs(d - fillValue) < 0.005;
+        bool isnan = isNaNBits(d) 
+            || (!useF16 && d == 1.0) 
+            || abs(d - fillValue) < 0.005;
         if (!isnan){
             d *= cScale;
             d = max(min(d+cOffset,0.995), 0.0);

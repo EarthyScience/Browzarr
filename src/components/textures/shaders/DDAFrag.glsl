@@ -57,7 +57,7 @@ bool shouldSkip(vec3 p, out vec3 texCoord) {
     return false;
 }
 
-float sampleVoxel(vec3 texCoord) {
+bool sampleVoxel(vec3 texCoord, out float d, out bool isnan) {
     // This gets the sample value. If d is clipped by value-range return false
     ivec3 depths = ivec3(textureDepths);
     int yStepSize = depths.x;
@@ -66,10 +66,11 @@ float sampleVoxel(vec3 texCoord) {
     ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), depths - 1);
     int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
     vec3 localCoord = fract(texCoord * textureDepths);
-
-    float d = sample1(localCoord, textureIdx);
+    d = sample1(localCoord, textureIdx);
     rescaler(d);
-    return d;
+    isnan = isNaNBits(d);
+    d = max(min(d * cScale + cOffset, 0.995), 0.0);
+    return d >= threshold.x && d <= threshold.y;
 }
 
 void main() {
@@ -113,40 +114,45 @@ void main() {
         vec3 pCenter = boxMin + (vec3(voxel) + 0.5) * voxelSize;
         vec3 texCoord;
         if (!shouldSkip(pCenter, texCoord)) {
-            float d = sampleVoxel(texCoord);
-            bool isNan = (useF16 ? isNaNBits(d) : (d == 1.0)) || (abs(d - fillValue) < 0.005);
-            if (isNan) {
-                float nanA = pow(nanAlpha, 5.0);
-                accumColor += (1.0 - alphaAcc) * nanA * nanColor;
-                alphaAcc += nanA;
-            } else {
-                float sampLoc = max(min(d * cScale + cOffset, 0.995), 0.0);
-                if ((sampLoc < threshold.x) || (sampLoc > threshold.y)) continue;
-
-                vec3 col = texture(cmap, vec2(sampLoc, 0.5)).rgb;
-                float alpha = pow(max(sampLoc, 0.001), transparency * opacityMag);
-                accumColor += (1.0 - alphaAcc) * 1.0 * col;
-                alphaAcc += alpha * (1.0 - alphaAcc);
-            }
-            if (alphaAcc >= 1.0){
-                if (useBorderTexture) {
-                    vec3 pHit = vOrigin + t * rayDir;
-                    vec3 localPosContinuous = (pHit - boxMin) / scale;
-                    vec2 borderUV = localPosContinuous.xy;
-                    #ifdef REPROJECT
-                        borderUV = texture(remapTexture, borderUV).rg;
-                    #endif
-                    borderUV = realCoords(borderUV);
-                    float borderDist = texture(borderTexture, borderUV).r;
-                    if (borderDist <= borderWidth) {
-                        color = vec4(borderColor, 1.0);
-                        return;
+            float d;
+            bool isnan;
+            if (sampleVoxel(texCoord, d, isnan)) {
+                bool isNan =  
+                    isnan 
+                    || (!useF16 && d == 1.0)
+                    || (abs(d - fillValue) < 0.005);
+                if (isNan) {    
+                    if (nanAlpha > 0.0){ 
+                        float nanA = pow(nanAlpha, 5.0);
+                        accumColor += (1.0 - alphaAcc) * nanA * nanColor;
+                        alphaAcc += nanA;
                     }
+                } else {
+                    vec3 col = texture(cmap, vec2(d, 0.5)).rgb;
+                    float alpha = pow(max(d, 0.001), transparency * opacityMag);
+                    accumColor += (1.0 - alphaAcc) * alpha * col;
+                    alphaAcc += alpha * (1.0 - alphaAcc);
                 }
-                break;
-            } 
+            
+                if (alphaAcc >= 1.0){
+                    if (useBorderTexture) {
+                        vec3 pHit = vOrigin + t * rayDir;
+                        vec3 localPosContinuous = (pHit - boxMin) / scale;
+                        vec2 borderUV = localPosContinuous.xy;
+                        #ifdef REPROJECT
+                            borderUV = texture(remapTexture, borderUV).rg;
+                        #endif
+                        borderUV = realCoords(borderUV);
+                        float borderDist = texture(borderTexture, borderUV).r;
+                        if (borderDist <= borderWidth) {
+                            color = vec4(borderColor, 1.0);
+                            return;
+                        }
+                    }
+                    break;
+                } 
+            }
         }
-
         // Advance to next voxel boundary AND update the tracked voxel index.
         if (tMax.x < tMax.y && tMax.x < tMax.z) {
             t = tMax.x;

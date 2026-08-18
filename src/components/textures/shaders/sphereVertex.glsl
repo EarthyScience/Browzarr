@@ -42,7 +42,7 @@ void main() {
         #endif
         float dispStrength = sample1(localCoord, textureIdx);
         rescaler(dispStrength);
-        bool isnan = useF16 ? isNaNBits(dispStrength) : dispStrength == 1.0;
+        bool isnan = isNaNBits(dispStrength) || (!useF16 && dispStrength == 1.);
         if (!isnan){
             vec3 newPos = position + (normal * (dispStrength - displaceZero) * displacement); // <---- Here, using dispStrength doesn't work for float16
             //Pass out position for sphere frag

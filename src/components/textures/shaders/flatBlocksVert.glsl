@@ -74,20 +74,30 @@ void main() {
 
     float dispStrength = sample1(localCoord, textureIdx);
     rescaler(dispStrength);
+
+    bool isnan = isNaNBits(dispStrength)
+        || (!useF16 && dispStrength == 1.0);
+    if (isnan){gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return;}// Invalid value. Just hide it
+
+    dispStrength *= cScale;
+    dispStrength = max(min(dispStrength+cOffset,0.995), 0.0);
+
     bool valid = (dispStrength >= threshold.x) && (dispStrength <= threshold.y); 
-    if (!valid || dispStrength == 1.0 || abs(dispStrength - fillValue) < 0.005){ // Invalid value. Just hide it
+    if (!valid || abs(dispStrength - fillValue) < 0.005){ // Invalid value. Just hide it
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-    } else {
-        vec2 centeredUV = (instanceUV - vec2(0.5, 0.5)); 
-        vec3 planePosition = givePosition(centeredUV);
-        float heightFactor = (dispStrength - displaceZero) * displacement;
-        vec3 scaledPosition = position;
-        scaledPosition.z += 0.005;
-        scaledPosition.z *= heightFactor;
-        vStrength = dispStrength;
-        vec3 worldPosition = planePosition + scaledPosition;
-        
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
+        return;
     }
+
+    vec2 centeredUV = (instanceUV - vec2(0.5, 0.5)); 
+    vec3 planePosition = givePosition(centeredUV);
+    float heightFactor = (dispStrength - displaceZero) * displacement;
+    vec3 scaledPosition = position;
+    scaledPosition.z += 0.005;
+    scaledPosition.z *= heightFactor;
+    vStrength = dispStrength;
+    vec3 worldPosition = planePosition + scaledPosition;
+    
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
+    
 
 }
