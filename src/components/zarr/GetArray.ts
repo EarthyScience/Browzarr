@@ -7,6 +7,7 @@ import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, RescaleArr
 import { NCFetcher, zarrFetcher } from "./dataFetchers";
 import { Convolve, Convolve2D } from "../computation/webGPU";
 import { coarsen3DArray } from "@/utils/HelperFuncs";
+import { usePlotStore } from "@/GlobalStates/PlotStore";
 
 export async function GetArray(varOveride?: string) {
     const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
@@ -56,6 +57,8 @@ export async function GetArray(varOveride?: string) {
     const xSlice = getEffectiveSlice(axisMapping.x, xDimIndex);
     const ySlice = getEffectiveSlice(axisMapping.y, yDimIndex);
     const zSlice = getEffectiveSlice(axisMapping.z, zDimIndex);
+    // Carry slices to plotStore so we know what to slice from the axisDimarrays
+    usePlotStore.setState({zSlice, ySlice, xSlice})
     const xDim = calcDim(xSlice, xDimIndex);
     const yDim = calcDim(ySlice, yDimIndex);
     const zDim = calcDim(zSlice, zDimIndex);

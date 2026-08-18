@@ -14,9 +14,9 @@ export const useDataFetcher = () => {
     const {
     setShape, setDataShape, setFlipY, setValueScales, setMetadata, setPlotOn, setStatus} = useGlobalStore(
     useShallow(s => s))
-    const {variable, setIsFlat} = useGlobalStore(useShallow(s => s))
+    const {variable, setIsFlat, setUseF16Textures} = useGlobalStore(useShallow(s => s))
     const {plotType, interpPixels, preProject, setPlotType} = usePlotStore(useShallow(s => s))
-    const {zSlice, ySlice, xSlice, reFetch} = useZarrStore(useShallow(s => s))
+    const {reFetch} = useZarrStore(useShallow(s => s))
 
     //---- Local State ----//
     const [textures, setTextures] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null);
@@ -27,6 +27,7 @@ export const useDataFetcher = () => {
         if (variable !== "Default") {
             // Could remove this. But I think it looks better to just wipe then have an empty texture.
             setShow(false);
+            setUseF16Textures(false);
             try {
                 //---- Texture Cleanup ----//
                 if (textures) {
@@ -42,10 +43,6 @@ export const useDataFetcher = () => {
                 //----- TimeSeries Cleanup ----//
                 useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
                 //---- Set Plot Slicez ----//
-                const { setZSlice, setYSlice, setXSlice } = usePlotStore.getState();
-                setZSlice(zSlice);
-                setYSlice(ySlice);
-                setXSlice(xSlice);
 
                 //---- Main Fetch ----//
                 GetArray().then((result) => {
@@ -64,7 +61,6 @@ export const useDataFetcher = () => {
                     useGlobalStore.setState({scalingFactor: result.scalingFactor});
 
                     const shapeLength = shape.length;
-
                     if (shapeLength === 2) {
                         setIsFlat(true);
                         if (!["flat", "sphere"].includes(plotType)) {
@@ -73,17 +69,13 @@ export const useDataFetcher = () => {
                     } else {
                         setIsFlat(false);
                     }
-
                     const aspectRatio = shape[shapeLength - 2] / shape[shapeLength - 1];
                     const timeRatio = shape[shapeLength - 3] / shape[shapeLength - 1];
-                    
                     setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio, 2)));
                     
-
                     setPlotOn(true);
                     setStatus(null);
                 }).then(()=>{
-                    // For larger datasets this will fire last.
                     setShow(true)
 
                 })
@@ -114,7 +106,6 @@ export const useDataFetcher = () => {
                 if(preProject)reproject();
                 else handleIrregularGrid(dimArrays);
                 // We don't show/mount any components until all of the essential data has been set
-                setShow(true)
             });
 
         } else {

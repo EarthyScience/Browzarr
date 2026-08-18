@@ -36,11 +36,9 @@ const ColorAdjuster = () => {
 			? <p>Current operation: {colorScale}</p>
 			: <p>Apply an operation to the current plot</p>
 			}
-			<QuickTip message={<div>Write operations in GLSL<br/> example: <b>x / 2.0</b></div>}>
-				<Input type='string' placeholder='e.g; abs(x)'
-					onChange={e=>customShader.current = e.target.value}
-				/>
-			</QuickTip>
+			<Input type='string' placeholder='e.g; abs(x)'
+				onChange={e=>customShader.current = e.target.value}
+			/>
 			<div className='flex pt-2 '>
 				<Button
 				className='flex-grow'

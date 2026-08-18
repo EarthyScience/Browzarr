@@ -108,7 +108,9 @@ void main() {
             alphaAcc += alpha * (1.0 - alphaAcc);
             if (alphaAcc >= 1.0){
                 if (useBorderTexture){
-                    float borderDist = texture(borderTexture, texCoord.xy).r;
+                    vec2 borderUV = texCoord.xy;
+                    if (is360) borderUV.x = fract(borderUV.x + 0.5);
+                    float borderDist = texture(borderTexture, borderUV).r;
                     if (borderDist <= borderWidth){
                         color = vec4(borderColor, 1.0);
                         return;

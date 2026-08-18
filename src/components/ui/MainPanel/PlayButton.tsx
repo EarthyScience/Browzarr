@@ -12,6 +12,7 @@ import { coarsenFlatArray, parseLoc } from '@/utils/HelperFuncs';
 import { Button, Slider, Card, CardContent } from "@/components/ui";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { RiCloseLargeLine } from "react-icons/ri";
+import { useAxisIndices } from '@/hooks';
 
 const frameRates = [1, 2, 4, 6, 8, 12, 16, 24, 36, 48, 54, 60, 80, 120]
 
@@ -94,8 +95,8 @@ const ChunkVisualizer = ({zSlice, timeLength, chunkWidth, showNext, showPrev, an
 
 const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, setKeepOpen: React.Dispatch<React.SetStateAction<boolean>>, setShowSelf: React.Dispatch<React.SetStateAction<boolean>>}) => {
   const {animate, animProg, zSlice, coarsen, kernel, setAnimate, setAnimProg} = usePlotStore(useShallow(s => s))
-  const {dimArrays, dimUnits, zMeta, variable} = useGlobalStore(useShallow(s => s))
-  const {reFetch, setZSlice, ReFetch, axisMapping} = useZarrStore(useShallow(s => s))
+  const {axisDimArrays, dimUnits, zMeta, variable} = useGlobalStore(useShallow(s => s))
+  const {reFetch, setZSlice, ReFetch} = useZarrStore(useShallow(s => s))
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const previousVal = useRef<number>(0)
@@ -104,11 +105,10 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
   const [showNextChunk, setShowNextChunk] = useState(false)
   const [showPrevChunk, setShowPrevChunk] = useState(false)
 
-  const shapeLength = dimArrays?.length || 3;
-  const zIdx = axisMapping?.z >= 0 ? axisMapping.z : Math.max(0, shapeLength - 3);
+  const {zIdx} = useAxisIndices();
 
   // Z-SLICE INFO
-  const zArray = dimArrays[zIdx]
+  const zArray = axisDimArrays[zIdx]
   let zArraySlice = zArray?.slice(zSlice[0], zSlice[1] ?? undefined)
   const zLength = zArray?.length || 1
   let sliceDist = zSlice[1] ? zSlice[1] - zSlice[0] : zLength - zSlice[0]
@@ -117,7 +117,7 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
     zArraySlice = coarsenFlatArray(zArraySlice, kernel.kernelDepth)
     sliceDist = Math.floor(sliceDist/kernel.kernelDepth)
   }
-  
+
   // CHUNK INFO
   const [chunkTimeLength, chunkDivWidth, chunkSize] = useMemo(()=>{
     const meta = (zMeta as {name : string, chunks:number[], chunkSize:number}[])?.find(e => e.name === variable)
