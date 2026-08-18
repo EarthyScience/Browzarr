@@ -1,6 +1,6 @@
 import {  useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { vertexShader, fragmentShader, orthoVertex , ddaFrag} from '@/components/textures/shaders';
+import { vertexShader, rayMarchFrag, orthoVertex , ddaFrag} from '@/components/textures/shaders';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
@@ -51,7 +51,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
         ...(remapTexture ? { REPROJECT: true } : {})
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
-      fragmentShader: useRayMarch ? functionInjector(fragmentShader, colorScale): functionInjector(ddaFrag, colorScale),
+      fragmentShader: useRayMarch ? functionInjector(rayMarchFrag, colorScale): functionInjector(ddaFrag, colorScale),
       transparent: true,
       blending: THREE.NormalBlending,
       depthWrite: false,

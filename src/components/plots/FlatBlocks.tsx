@@ -10,11 +10,12 @@ import { invalidate } from '@react-three/fiber'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
+import { functionInjector } from '../ui/Elements/ColorAdjuster';
 
 const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
     const {isFlat, valueScales, flipY, dataShape, axisDimArrays, remapTexture, remapBorders} = useGlobalStore(useShallow(s => s))
-    const { displacement, offsetNegatives, rotateFlat} = usePlotStore(useShallow(s => s))
+    const { displacement, offsetNegatives, rotateFlat, colorScale} = usePlotStore(useShallow(s => s))
     const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
     const {xIdx, yIdx} = useAxisIndices()
     const {width, height} = useMemo(()=>{
@@ -76,14 +77,14 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
                 ...(isFlat ? { IS_FLAT: true } : {}),
                 ...(remapTexture ? { REPROJECT: true } : {})
             },
-            vertexShader: flatBlocksVert,
+            vertexShader: functionInjector(flatBlocksVert, colorScale),
             fragmentShader: sphereBlocksFrag,
             blending: THREE.NoBlending,
             depthWrite:true,
             depthTest:true,
         })
         return shader
-    },[isFlat, remapTexture])
+    },[isFlat, remapTexture, colorScale])
 
     updateCommonUniforms(shaderMaterial);
     useEffect(()=>{

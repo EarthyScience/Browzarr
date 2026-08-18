@@ -7,37 +7,14 @@ in vec3 vDirection;
 
 out vec4 color;
 
-uniform sampler3D map[12]; // We are limited to 16 textures. Cmap counts as one. 15 is weird so we use 12. 
-uniform sampler2D maskTexture;
-uniform sampler2D cmap;
-uniform sampler2D remapTexture;
-uniform sampler2D borderTexture;
-uniform bool useBorderTexture;
-uniform float borderWidth;
-uniform vec3 borderColor;
-uniform vec3 textureDepths;
-
-uniform float cOffset;
-uniform float cScale;
 uniform vec3 scale;
-uniform vec2 threshold;
 uniform float steps;
 uniform vec4 flatBounds;
 uniform vec2 vertBounds;
-uniform float animateProg;
 uniform float transparency;
-uniform float nanAlpha;
-uniform vec3 nanColor;
 uniform float opacityMag;
 uniform bool useClipScale;
-uniform float fillValue;
-uniform int maskValue;
-uniform vec2 latBounds;
-uniform vec2 lonBounds;
-uniform vec2 valueRange;
 
-#define epsilon 0.000001
-#define pi 3.1415926535
 
 vec2 hitBox(vec3 orig, vec3 dir) {
     vec3 box_min = vec3(-(scale * 0.5));
@@ -50,53 +27,6 @@ vec2 hitBox(vec3 orig, vec3 dir) {
     float t0 = max(tmin.x, max(tmin.y, tmin.z));
     float t1 = min(tmax.x, min(tmax.y, tmax.z));
     return vec2(t0, t1);
-}
-
-vec2 realCoords(vec2 uv){
-    vec2 normalizedLon = lonBounds/2./pi+0.5;
-    vec2 normalizedLat = latBounds/pi+0.5;
-    float lonScale = normalizedLon.y-normalizedLon.x;
-    float latScale = normalizedLat.y-normalizedLat.x;
-    
-    float u = uv.x * lonScale + normalizedLon.x;
-    float v = uv.y * latScale + normalizedLat.x;
-
-    return vec2(u, v);
-}
-
-float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
-    if (index == 0) return texture(map[0], p).r;
-    else if (index == 1) return texture(map[1], p).r;
-    else if (index == 2) return texture(map[2], p).r;
-    else if (index == 3) return texture(map[3], p).r;
-    else if (index == 4) return texture(map[4], p).r;
-    else if (index == 5) return texture(map[5], p).r;
-    else if (index == 6) return texture(map[6], p).r;
-    else if (index == 7) return texture(map[7], p).r;
-    else if (index == 8) return texture(map[8], p).r;
-    else if (index == 9) return texture(map[9], p).r;
-    else if (index == 10) return texture(map[10], p).r;
-    else if (index == 11) return texture(map[11], p).r;
-    else return 0.0;
-}
-
-bool isNaN(float x) {
-    return x != x;
-}
-
-void denorm(out float x){
-    x *= (valueRange.y - valueRange.x);
-    x += valueRange.x;
-    x = isNaN(x) ? 1.0 : x;
-}
-
-void norm(out float x){
-    x -= valueRange.x;
-    x /= (valueRange.y - valueRange.x);
-}
-
-void rescaler(inout float x){
-    //LOGIC
 }
 
 void main() {
@@ -146,7 +76,7 @@ void main() {
             }
         }
         texCoord.z = mod(texCoord.z + animateProg, 1.0001);
-        texCoord = clamp(texCoord, vec3(0.0), 1. - vec3(epsilon)); // This prevents the very end of the dimensions having floating point errors
+        texCoord = clamp(texCoord, vec3(0.0), 1. - vec3(EPSILON)); // This prevents the very end of the dimensions having floating point errors
 
         ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
         int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;

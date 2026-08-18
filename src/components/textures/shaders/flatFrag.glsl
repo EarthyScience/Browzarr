@@ -1,71 +1,10 @@
 //This is for Flat Textures but with 3D textures to sample from i,e; animation
 
-#ifdef IS_FLAT
-    uniform sampler2D map[12];
-#else
-    uniform sampler3D map[12];
-#endif
-uniform sampler2D maskTexture;
-uniform sampler2D cmap;
-uniform sampler2D remapTexture;
-uniform sampler2D borderTexture;
-uniform bool useBorderTexture;
-uniform float borderWidth;
-uniform vec3 borderColor;
 uniform bool is360;
 uniform bool remapBorders;
-uniform vec3 textureDepths;
-
-
-uniform float cOffset;
-uniform float cScale;
-uniform float animateProg;
-uniform float nanAlpha;
-uniform vec3 nanColor;
-uniform vec2 latBounds;
-uniform vec2 lonBounds;
-uniform vec2 threshold;
-uniform int maskValue;
-uniform float fillValue;
 
 in vec2 vUv;
 out vec4 Color;
-#define epsilon 0.0001
-#define PI 3.14159265
-
-vec2 realCoords(vec2 uv){
-    vec2 normalizedLon = lonBounds/2./PI+0.5;
-    vec2 normalizedLat = latBounds/PI+0.5;
-    float lonScale = normalizedLon.y-normalizedLon.x;
-    float latScale = normalizedLat.y-normalizedLat.x;
-    float u = uv.x * lonScale + normalizedLon.x;
-    float v = uv.y * latScale + normalizedLat.x;
-
-    return vec2(u, v);
-}
-
-float sample1(
-     #ifdef IS_FLAT
-        vec2 p,
-    #else
-        vec3 p,
-    #endif
-    int index
-    ) { // Shader doesn't support dynamic indexing so we gotta use switching
-    if (index == 0) return texture(map[0], p).r;
-    else if (index == 1) return texture(map[1], p).r;
-    else if (index == 2) return texture(map[2], p).r;
-    else if (index == 3) return texture(map[3], p).r;
-    else if (index == 4) return texture(map[4], p).r;
-    else if (index == 5) return texture(map[5], p).r;
-    else if (index == 6) return texture(map[6], p).r;
-    else if (index == 7) return texture(map[7], p).r;
-    else if (index == 8) return texture(map[8], p).r;
-    else if (index == 9) return texture(map[9], p).r;
-    else if (index == 10) return texture(map[10], p).r;
-    else if (index == 11) return texture(map[11], p).r;
-    else return 0.0;
-}
 
 void main() {
     if (maskValue != 0 || useBorderTexture){
@@ -109,7 +48,7 @@ void main() {
             texCoord.xy = remap.rg;
             if (remap.b < 0.5) discard;
         #endif
-        texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
+        texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(EPSILON)); // This prevent the very edges from looping around and causing line artifacts
         ivec2 idx = clamp(ivec2(texCoord * textureDepths.xy), ivec2(0), ivec2(textureDepths.xy) - 1);
         int textureIdx = idx.y * yStepSize + idx.x;
         vec2 localCoord = texCoord * (textureDepths.xy); // Scale up
@@ -120,7 +59,7 @@ void main() {
             texCoord.xy = remap.rg;
             if (remap.b < 0.5) discard;
         #endif
-        texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(epsilon)); // This prevent the very edges from looping around and causing line artifacts
+        texCoord.xy = clamp(texCoord.xy, vec2(0.0), 1. - vec2(EPSILON)); // This prevent the very edges from looping around and causing line artifacts
         ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
         int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
         vec3 localCoord = texCoord * (textureDepths); // Scale up
@@ -128,6 +67,7 @@ void main() {
     localCoord = fract(localCoord);
 
     float strength = sample1(localCoord, textureIdx);
+    rescaler(strength);
     bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
     if (!valid || abs(strength - fillValue) < 0.005){
         Color = vec4(0.);
