@@ -37,10 +37,16 @@ bool isNaN(float x) {
     return x != x;
 }
 
+bool isNaNBits(float x) {
+    uint bits = floatBitsToUint(x);
+    uint exponent = bits & 0x7F800000u;
+    uint mantissa = bits & 0x007FFFFFu;
+    return (exponent == 0x7F800000u) && (mantissa != 0u);
+}
+
 void denorm(out float x){
     x *= (valueRange.y - valueRange.x);
     x += valueRange.x;
-    x = isNaN(x) ? 1.0 : x;
 }
 
 void norm(out float x){

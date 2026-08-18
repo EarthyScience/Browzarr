@@ -84,28 +84,26 @@ void main() {
         localCoord = fract(localCoord);
         float d = sample1(localCoord, textureIdx);
         rescaler(d);
+        bool isnan = (useF16 ? isNaNBits(d) : d == 1.0) || abs(d - fillValue) < 0.005;
+        if (!isnan){
+            d *= cScale;
+            d = max(min(d+cOffset,0.995), 0.0);
+        } else {
+            accumColor.rgb += (1.0 - alphaAcc) * pow(nanAlpha, 5.) * nanColor.rgb;
+            alphaAcc += pow(nanAlpha, 5.);
+        }
         bool cond = (d >= threshold.x) && (d <= threshold.y); 
-
         if (cond) {
-            bool isNan = d == 1. || abs(d - fillValue) < 0.005;
-            if (isNan && nanAlpha > 0.0){
-                accumColor.rgb += (1.0 - alphaAcc) * pow(nanAlpha, 5.) * nanColor.rgb;
-                alphaAcc += pow(nanAlpha, 5.);
+            vec4 col = texture(cmap, vec2(d, 0.5));
+            float alpha;
+            if (useClipScale){
+                float normalizedOpacity = clamp((d - threshold.x) / (threshold.y - threshold.x), 0.0, 1.0);
+                alpha = pow(max(normalizedOpacity, 0.001), transparency*opacityMag);
+            } else {
+                alpha = pow(max(d, 0.001), transparency*opacityMag);
             }
-            else{
-                float sampLoc = d*cScale;
-                sampLoc = min(sampLoc+cOffset,0.99);
-                vec4 col = texture(cmap, vec2(sampLoc, 0.5));
-                float alpha;
-                if (useClipScale){
-                    float normalizedOpacity = clamp((sampLoc - threshold.x) / (threshold.y - threshold.x), 0.0, 1.0);
-                    alpha = pow(max(normalizedOpacity, 0.001), transparency*opacityMag);
-                } else {
-                    alpha = pow(max(sampLoc, 0.001), transparency*opacityMag);
-                }
-                accumColor.rgb += (1.0 - alphaAcc) * alpha * col.rgb;
-                alphaAcc += alpha * (1.0 - alphaAcc);
-            }      
+            accumColor.rgb += (1.0 - alphaAcc) * alpha * col.rgb;
+            alphaAcc += alpha * (1.0 - alphaAcc);
             if (alphaAcc >= 1.0){
                 if (useBorderTexture){
                     float borderDist = texture(borderTexture, texCoord.xy).r;

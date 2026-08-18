@@ -63,7 +63,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     useEffect(() => {
       if (shaderMaterial) {
         const uniforms = shaderMaterial.uniforms
-		uniforms.dataShape.value = gridShape;
+		    uniforms.dataShape.value = gridShape;
         uniforms.scale.value = shape;
         uniforms.flatBounds.value.set(-xRange[1], -xRange[0], zRange[0] * timeRatio, zRange[1] * timeRatio);
         uniforms.vertBounds.value.set(yRange[0] * aspectRatio, yRange[1] * aspectRatio);

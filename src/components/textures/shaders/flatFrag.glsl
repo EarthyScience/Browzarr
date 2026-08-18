@@ -68,13 +68,17 @@ void main() {
 
     float strength = sample1(localCoord, textureIdx);
     rescaler(strength);
+    bool isNan = useF16 ? isNaNBits(strength) : strength == 1.;
+    if (!isNan){
+        strength *= cScale;
+        strength = min(strength+cOffset,0.995);
+        Color = vec4(texture2D(cmap, vec2(strength, 0.5)).rgb, 1.);
+    } else {
+        Color = vec4(nanColor, nanAlpha);
+    }
     bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
     if (!valid || abs(strength - fillValue) < 0.005){
         Color = vec4(0.);
         return;
     }
-    bool isNaN = strength == 1.;
-    float sampLoc = isNaN ? strength: (strength)*cScale;
-    sampLoc = isNaN ? strength : min(sampLoc+cOffset,0.995);
-    Color = isNaN ? vec4(nanColor, nanAlpha) : vec4(texture2D(cmap, vec2(sampLoc, 0.5)).rgb, 1.);
 }

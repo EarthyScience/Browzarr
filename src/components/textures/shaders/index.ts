@@ -26,6 +26,7 @@ const wrappedSphereVert = wrapShader(sphereVertex);
 const wrappedSphereFrag = wrapShader(sphereFrag);
 const wrappedPointVert = wrapShader(pointVert);
 const wrappedPointFrag = wrapShader(pointFrag);
+const wrappedDDAFrag = wrapShader(ddaFrag);
 
 export {
     wrappedPointFrag as pointFrag,
@@ -40,5 +41,5 @@ export {
     sphereBlocksFrag,
     orthoVertex,
     wrappedFlatBlocksVert as flatBlocksVert,
-    ddaFrag
+    wrappedDDAFrag as ddaFrag
 }

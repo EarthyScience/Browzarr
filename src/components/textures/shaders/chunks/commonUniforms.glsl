@@ -24,6 +24,7 @@ uniform float fillValue;
 uniform vec2 latBounds;
 uniform vec2 lonBounds;
 uniform vec2 valueRange;
+uniform bool useF16;
 
 #define EPSILON 0.000001
 #define PI 3.1415926535

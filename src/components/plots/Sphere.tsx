@@ -76,9 +76,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
       mat.side = THREE.BackSide;
       return mat;
     },[shaderMaterial])
-    useEffect(()=>{
-      console.log("detected")
-    },[shaderMaterial])
+
     const updateMaterial = (material: THREE.ShaderMaterial) => {
       const uniforms = material.uniforms;
       uniforms.map.value = textures;

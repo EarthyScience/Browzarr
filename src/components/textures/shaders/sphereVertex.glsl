@@ -42,11 +42,17 @@ void main() {
         #endif
         float dispStrength = sample1(localCoord, textureIdx);
         rescaler(dispStrength);
-        float noNan = float(dispStrength != 1.0);
-        vec3 newPos = position + (normal * (dispStrength-displaceZero) * noNan * displacement);
-        //Pass out position for sphere frag
-        vec4 worldPos = modelViewMatrix * vec4( newPos, 1.0 );
-        gl_Position = projectionMatrix * worldPos;
+        bool isnan = useF16 ? isNaNBits(dispStrength) : dispStrength == 1.0;
+        if (!isnan){
+            vec3 newPos = position + (normal * (dispStrength - displaceZero) * displacement); // <---- Here, using dispStrength doesn't work for float16
+            //Pass out position for sphere frag
+            vec4 worldPos = modelViewMatrix * vec4( newPos, 1.0 );
+            gl_Position = projectionMatrix * worldPos;
+        } else{
+            vec4 worldPos = modelViewMatrix * vec4( position, 1.0 );
+            gl_Position = projectionMatrix * worldPos;
+        }
+        
     } else {
         vec4 worldPos = modelViewMatrix * vec4( position, 1.0 );
         gl_Position = projectionMatrix * worldPos;

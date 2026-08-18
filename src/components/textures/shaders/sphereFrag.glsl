@@ -1,6 +1,5 @@
  // by Jeran Poehls
 out vec4 color;
-
 in vec3 aPosition;
 
 uniform bool is360;
@@ -71,21 +70,22 @@ void main(){
         localCoord = fract(localCoord);
         float strength = sample1(localCoord, textureIdx);
         rescaler(strength);
+        bool isnan = (useF16 ? isNaNBits(strength) : ( strength == 1.0)) 
+            || abs(strength - fillValue) < 0.005;
+        if (!isnan){
+            strength *= cScale;
+            strength = max(min(strength+cOffset,0.995), 0.0); // clamp color to [0, 1]
+            color = texture(cmap, vec2(strength, 0.5));
+            color.a = 1.;
+        } else {
+            color = vec4(nanColor, nanAlpha);
+        }
         bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
         if (!valid){
             color = vec4(0.);
             return;
         }
-        bool isNaN = strength == 1. || abs(strength - fillValue) < 0.005;
-        strength = isNaN ? strength : (strength)*cScale;
-        strength = isNaN ? strength : min(strength+cOffset,0.99);
-        color = isNaN ? vec4(nanColor, nanAlpha) : texture(cmap, vec2(strength, 0.5));
-        if (!isNaN){
-            color.a = 1.;
-        }
-    } else {
-        color = vec4(nanColor, 1.);
-        color.a = nanAlpha;
-    }
-    // color = vec4( texCoord.x, 0. , 0., 1.);
+        return;
+    } 
+    color = vec4(nanColor, nanAlpha);
 }

@@ -70,8 +70,14 @@ void main() {
     localCoord = fract(localCoord);
     float dispStrength = sample1(localCoord, textureIdx);
     rescaler(dispStrength);
+    bool isnan = useF16 ? isNaNBits(dispStrength) : dispStrength == 1.0;
+    if (isnan){gl_Position = vec4(2.0, 2.0, 2.0, 1.0); }// Invalid value. Just hide it
+    else {
+        dispStrength *= cScale;
+        dispStrength = max(min(dispStrength+cOffset,0.995), 0.0);
+    }
     bool valid = (dispStrength >= threshold.x) && (dispStrength <= threshold.y); 
-    if (!valid || dispStrength == 1.0 || abs(dispStrength - fillValue) < 0.005){ // Invalid value. Just hide it
+    if (!valid || abs(dispStrength - fillValue) < 0.005){ // Invalid value. Just hide it
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     } else {
         vec2 lonlat = giveLonLat(instanceUV);

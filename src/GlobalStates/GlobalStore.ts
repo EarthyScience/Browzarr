@@ -54,8 +54,9 @@ type StoreState = {
   idx4D: number | null;
   titleDescription: { title: string | null; description: string | null };
   textureArrayDepths: number[];
-  textureData: Uint8Array;
+  textureData: Uint8Array | Uint16Array;
   clampExtremes: boolean;
+  useF16Textures: boolean;
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -93,10 +94,11 @@ type StoreState = {
   setIdx4D: (idx4D: number | null) => void;
   setTitleDescription: (titleDescription: { title: string | null; description: string | null }) => void;
   setTextureArrayDepths: (textureArrayResolution: number[] ) => void;
-  setTextureData: (textureData: Uint8Array ) => void;
+  setTextureData: (textureData: Uint8Array | Uint16Array ) => void;
   setDPR: (DPR: number) => void;
   setScalingFactor: (scalingFactor: number | null) => void;
   setClampExtremes: (clampExtremes: boolean) => void;
+  setUseF16Textures: (useF16Textures: boolean) => void;
 };
 
 const createStore = () => create<StoreState>((set, get) => ({
@@ -139,6 +141,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   DPR: 1,
   scalingFactor: null,
   clampExtremes: false,
+  useF16Textures: false,
   // setters
 
   setDataShape: (dataShape) => set({ dataShape }),
@@ -209,6 +212,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   setDPR: (DPR) => set({ DPR }),
   setScalingFactor: (scalingFactor) => set({ scalingFactor }),
   setClampExtremes: (clampExtremes) => set({ clampExtremes }),
+  setUseF16Textures: (useF16Textures) => set({ useF16Textures })
 }));
 
 declare global {
