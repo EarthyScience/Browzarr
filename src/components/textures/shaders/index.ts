@@ -20,20 +20,23 @@ const wrapShader = (shader: string) => [commonPrefix, shader].join('\n')
 
 const wrappedRayMarch = wrapShader(rayMarchFrag);
 const wrappedFlat = wrapShader(flatFrag);
-const wrappedflatBlocksVert = wrapShader(flatBlocksVert);
+const wrappedFlatBlocksVert = wrapShader(flatBlocksVert);
+const wrappedSphereBlocksVert = wrapShader(sphereBlocksVert);
+const wrappedSphereVert = wrapShader(sphereVertex);
+const wrappedSphereFrag = wrapShader(sphereFrag);
 
 export {
     pointFrag,
     pointVert,
     vertexShader,
     wrappedRayMarch as rayMarchFrag,
-    sphereFrag,
-    sphereVertex,
+    wrappedSphereFrag as sphereFrag,
+    wrappedSphereVert as sphereVertex,
     bordersFrag,
     wrappedFlat as flatFrag,
-    sphereBlocksVert,
+    wrappedSphereBlocksVert as sphereBlocksVert,
     sphereBlocksFrag,
     orthoVertex,
-    wrappedflatBlocksVert as flatBlocksVert,
+    wrappedFlatBlocksVert as flatBlocksVert,
     ddaFrag
 }

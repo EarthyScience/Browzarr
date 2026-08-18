@@ -3,35 +3,7 @@ out vec4 color;
 
 in vec3 aPosition;
 
-#ifdef IS_FLAT
-    uniform sampler2D map[12];
-#else
-    uniform sampler3D map[12];
-#endif
-
-uniform sampler2D maskTexture;
-uniform sampler2D cmap;
-uniform vec3 textureDepths;
-uniform sampler2D remapTexture;
-uniform sampler2D borderTexture;
-uniform bool useBorderTexture;
-uniform float borderWidth;
-uniform vec3 borderColor;
 uniform bool is360;
-
-uniform float cOffset;
-uniform float cScale;
-uniform float animateProg;
-uniform vec2 latBounds;
-uniform vec2 lonBounds;
-uniform vec2 threshold;
-uniform vec3 nanColor;
-uniform float nanAlpha;
-uniform float fillValue;
-uniform int maskValue;
-
-#define pi 3.141592653
-#define epsilon 0.0001
 
 vec2 giveUV(vec3 position){
     vec3 n = normalize(position);
@@ -47,34 +19,11 @@ vec2 giveMaskUV(vec3 position){
     vec3 n = normalize(position);
     float latitude = asin(n.y);
     float longitude = -atan(n.z, n.x);
-    latitude /= pi;
-    longitude /= (2. * pi);
+    latitude /= PI;
+    longitude /= (2. * PI);
     float u = longitude + 0.5;
     float v = latitude + 0.5;
     return vec2(u, v);
-}
-
-float sample1( 
-    #ifdef IS_FLAT
-        vec2 p,
-    #else
-        vec3 p,
-    #endif
-    int index
-    ) { // Shader doesn't support dynamic indexing so we gotta use switching
-    if (index == 0) return texture(map[0], p).r;
-    else if (index == 1) return texture(map[1], p).r;
-    else if (index == 2) return texture(map[2], p).r;
-    else if (index == 3) return texture(map[3], p).r;
-    else if (index == 4) return texture(map[4], p).r;
-    else if (index == 5) return texture(map[5], p).r;
-    else if (index == 6) return texture(map[6], p).r;
-    else if (index == 7) return texture(map[7], p).r;
-    else if (index == 8) return texture(map[8], p).r;
-    else if (index == 9) return texture(map[9], p).r;
-    else if (index == 10) return texture(map[10], p).r;
-    else if (index == 11) return texture(map[11], p).r;
-    else return 0.0;
 }
 
 void main(){
@@ -121,6 +70,7 @@ void main(){
         #endif
         localCoord = fract(localCoord);
         float strength = sample1(localCoord, textureIdx);
+        rescaler(strength);
         bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
         if (!valid){
             color = vec4(0.);
