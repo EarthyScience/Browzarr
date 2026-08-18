@@ -12,6 +12,7 @@ import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
+import { functionInjector } from '../ui/Elements/ColorAdjuster';
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -27,7 +28,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
     const {isFlat, dimArrays, dimNames, dimUnits, valueScales, 
           dataShape, strides, flipY, remapTexture} = useGlobalStore(useShallow(s => s))
     
-    const { selectTS, displacement, sphereResolution, zSlice, ySlice, xSlice, fillValue,
+    const { selectTS, displacement, sphereResolution, zSlice, ySlice, xSlice, fillValue, colorScale,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
 
     const {xIdx, yIdx, zIdx} = useAxisIndices()
@@ -59,15 +60,15 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
                 ...(isFlat ? { IS_FLAT: true } : {}),
                 ...(remapTexture ? { REPROJECT: true } : {})
             },
-            vertexShader: sphereVertex,
-            fragmentShader: sphereFrag,
+            vertexShader: functionInjector(sphereVertex, colorScale),
+            fragmentShader: functionInjector(sphereFrag, colorScale),
             blending: THREE.NormalBlending,
             side:THREE.FrontSide,
             transparent: true,
             depthWrite:true,
         })
         return shader
-    },[isFlat, textures])
+    },[isFlat, colorScale])
     // No reprojection on Sphere. Remains static and can't update
     
     const backMaterial = useMemo(()=>{

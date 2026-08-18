@@ -11,7 +11,9 @@ import { useShallow } from 'zustand/shallow'
 import './css/Colorbar.css'
 import { linspace } from '@/utils/HelperFuncs';
 import Metadata from "./MetaData";
-
+import { LuSettings } from "react-icons/lu";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import ColorAdjuster from "./Elements/ColorAdjuster";
 const operationMap = {
     // Reductions
     Mean: "Mean",
@@ -50,7 +52,7 @@ function Num2String(value: number){
 
 const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Record<string, any>, valueScales: {maxVal: number, minVal:number}}) => {
     const {colormap, variable, scalingFactor} = useGlobalStore(useShallow(s => s));
-    const {cScale, cOffset, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
+    const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
     const {variable2, analysisMode, operation, kernelOperation, execute} = useAnalysisStore(useShallow(s => s));
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -239,12 +241,14 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 {<Metadata data={metadata} variable={variable} isMobile={true} />}
                 {`${analysisString}`}
             </p>
-        {(cScale != 1 || cOffset != 0) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} 
+        {/* RESET */}
+        {(cScale != 1 || cOffset != 0 || colorScale) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} 
             onClick={()=>{
                 setNewMin(origMin); 
                 setNewMax(origMax); 
                 setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0))); 
-                setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)))
+                setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)));
+                setColorScale(undefined)
             }}
         />}
         <div
@@ -260,6 +264,24 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
             <FaMinus className='cursor-pointer' onClick={()=>setTickCount(Math.max(tickCount-1, 2))}/>
             <FaPlus className='cursor-pointer' onClick={()=>setTickCount(Math.min(tickCount+1, 10))}/>
         </div>
+        <Popover>
+            <PopoverTrigger asChild>
+                <LuSettings 
+                    style={{
+                        position:'absolute',
+                        right: '101%',
+                        bottom:'50%',
+                        cursor:'pointer',
+                        transform:'translatey(50%)'
+                    }}
+                    size={20}
+                />
+            </PopoverTrigger>
+            <PopoverContent>
+                <ColorAdjuster />
+            </PopoverContent>
+        </Popover>
+            
         </div>
         </>
         

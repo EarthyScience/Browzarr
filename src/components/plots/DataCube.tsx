@@ -1,6 +1,6 @@
 import {  useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { vertexShader, fragmentShader, orthoVertex , ddaFrag} from '@/components/textures/shaders';
+import { vertexShader, rayMarchFrag, orthoVertex , ddaFrag} from '@/components/textures/shaders';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
@@ -9,7 +9,7 @@ import { UVCube } from '@/components/plots'
 import { ColumnMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
-
+import { functionInjector } from '../ui/Elements/ColorAdjuster';
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
 }
@@ -17,7 +17,7 @@ interface DataCubeProps {
 export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const volTexture = usePaddedTextures(propVolTexture);
     const {shape, flipY, remapTexture, dataShape} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
-    const {xRange, yRange, zRange, quality, useOrtho, useRayMarch, transparency, 
+    const {xRange, yRange, zRange, quality, useOrtho, useRayMarch, transparency, colorScale,
       vTransferRange, vTransferScale} = usePlotStore(useShallow(s => s))
     const meshRef = useRef<THREE.Mesh>(null!);
     const aspectRatio = shape.y/shape.x
@@ -51,19 +51,19 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
         ...(remapTexture ? { REPROJECT: true } : {})
       },
       vertexShader: useOrtho ? orthoVertex : vertexShader,
-      fragmentShader: useRayMarch ? fragmentShader : ddaFrag,
+      fragmentShader: useRayMarch ? functionInjector(rayMarchFrag, colorScale): functionInjector(ddaFrag, colorScale),
       transparent: true,
       blending: THREE.NormalBlending,
       depthWrite: false,
       side: useOrtho ? THREE.FrontSide : THREE.BackSide,
-    }),[useRayMarch, useOrtho, volTexture, remapTexture]);
+    }),[useRayMarch, useOrtho, volTexture, colorScale, remapTexture]);
 
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
 	updateCommonUniforms(shaderMaterial)
     useEffect(() => {
       if (shaderMaterial) {
         const uniforms = shaderMaterial.uniforms
-		uniforms.dataShape.value = gridShape;
+		    uniforms.dataShape.value = gridShape;
         uniforms.scale.value = shape;
         uniforms.flatBounds.value.set(-xRange[1], -xRange[0], zRange[0] * timeRatio, zRange[1] * timeRatio);
         uniforms.vertBounds.value.set(yRange[0] * aspectRatio, yRange[1] * aspectRatio);

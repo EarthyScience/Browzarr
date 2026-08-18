@@ -7,38 +7,14 @@ in vec3 vDirection;
 
 out vec4 color;
 
-uniform sampler3D map[12]; // We are limited to 16 textures. Cmap counts as one. 15 is weird so we use 12.
-uniform sampler2D maskTexture;
-uniform sampler2D cmap;
-uniform sampler2D remapTexture;
-uniform sampler2D borderTexture;
-uniform bool useBorderTexture;
-uniform float borderWidth;
-uniform vec3 borderColor;
-
-uniform vec3 textureDepths;
-
 uniform vec3 dataShape;
-uniform float cOffset;
-uniform float cScale;
 uniform vec3 scale;
-uniform vec2 threshold;
 uniform float steps;
 uniform vec4 flatBounds;
 uniform vec2 vertBounds;
-uniform float animateProg;
 uniform float transparency;
-uniform float nanAlpha;
-uniform vec3 nanColor;
 uniform float opacityMag;
 uniform bool useClipScale;
-uniform float fillValue;
-uniform int maskValue;
-uniform vec2 latBounds;
-uniform vec2 lonBounds;
-
-#define EPSILON 0.000001
-#define PI 3.1415926535
 
 vec2 hitBox(vec3 orig, vec3 dir) {
     vec3 boxMin = -(scale * 0.5);
@@ -51,35 +27,6 @@ vec2 hitBox(vec3 orig, vec3 dir) {
     float t0 = max(tMin.x, max(tMin.y, tMin.z));
     float t1 = min(tMax.x, min(tMax.y, tMax.z));
     return vec2(t0, t1);
-}
-
-vec2 realCoords(vec2 uv) {
-    vec2 normalizedLon = lonBounds / (2.0 * PI) + 0.5;
-    vec2 normalizedLat = latBounds / PI + 0.5;
-    float lonScale = normalizedLon.y - normalizedLon.x;
-    float latScale = normalizedLat.y - normalizedLat.x;
-
-    float u = uv.x * lonScale + normalizedLon.x;
-    float v = uv.y * latScale + normalizedLat.x;
-
-    return vec2(u, v);
-}
-
-
-float sample1(vec3 p, int index) {
-    if (index == 0) return texture(map[0], p).r;
-    if (index == 1) return texture(map[1], p).r;
-    if (index == 2) return texture(map[2], p).r;
-    if (index == 3) return texture(map[3], p).r;
-    if (index == 4) return texture(map[4], p).r;
-    if (index == 5) return texture(map[5], p).r;
-    if (index == 6) return texture(map[6], p).r;
-    if (index == 7) return texture(map[7], p).r;
-    if (index == 8) return texture(map[8], p).r;
-    if (index == 9) return texture(map[9], p).r;
-    if (index == 10) return texture(map[10], p).r;
-    if (index == 11) return texture(map[11], p).r;
-    return 0.0;
 }
 
 bool shouldSkip(vec3 p, out vec3 texCoord) {
@@ -110,7 +57,7 @@ bool shouldSkip(vec3 p, out vec3 texCoord) {
     return false;
 }
 
-bool sampleVoxel(vec3 texCoord, out float d) {
+bool sampleVoxel(vec3 texCoord, out float d, out bool isnan) {
     // This gets the sample value. If d is clipped by value-range return false
     ivec3 depths = ivec3(textureDepths);
     int yStepSize = depths.x;
@@ -119,8 +66,10 @@ bool sampleVoxel(vec3 texCoord, out float d) {
     ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), depths - 1);
     int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
     vec3 localCoord = fract(texCoord * textureDepths);
-
     d = sample1(localCoord, textureIdx);
+    rescaler(d);
+    isnan = isNaNBits(d);
+    d = max(min(d * cScale + cOffset, 0.995), 0.0);
     return d >= threshold.x && d <= threshold.y;
 }
 
@@ -161,31 +110,30 @@ void main() {
 
     for (int i = 0; i < maxSteps; i++) {
         if (t > bounds.y) break;
-
         // Sample at the center of the current voxel. 
         vec3 pCenter = boxMin + (vec3(voxel) + 0.5) * voxelSize;
         vec3 texCoord;
-
         if (!shouldSkip(pCenter, texCoord)) {
             float d;
-            if (sampleVoxel(texCoord, d)) {
-                bool isNan = (d == 1.0) || (abs(d - fillValue) < 0.005);
-
-                if (isNan) {
-                    if (nanAlpha > 0.0) {
+            bool isnan;
+            if (sampleVoxel(texCoord, d, isnan)) {
+                bool isNan =  
+                    isnan 
+                    || (!useF16 && d == 1.0)
+                    || (abs(d - fillValue) < 0.005);
+                if (isNan) {    
+                    if (nanAlpha > 0.0){ 
                         float nanA = pow(nanAlpha, 5.0);
                         accumColor += (1.0 - alphaAcc) * nanA * nanColor;
                         alphaAcc += nanA;
                     }
                 } else {
-                    float sampLoc = min(d * cScale + cOffset, 0.99);
-                    vec3 col = texture(cmap, vec2(sampLoc, 0.5)).rgb;
-
-                    float alpha = pow(max(sampLoc, 0.001), transparency * opacityMag);
+                    vec3 col = texture(cmap, vec2(d, 0.5)).rgb;
+                    float alpha = pow(max(d, 0.001), transparency * opacityMag);
                     accumColor += (1.0 - alphaAcc) * alpha * col;
                     alphaAcc += alpha * (1.0 - alphaAcc);
                 }
-
+            
                 if (alphaAcc >= 1.0){
                     if (useBorderTexture) {
                         vec3 pHit = vOrigin + t * rayDir;
@@ -205,7 +153,6 @@ void main() {
                 } 
             }
         }
-
         // Advance to next voxel boundary AND update the tracked voxel index.
         if (tMax.x < tMax.y && tMax.x < tMax.z) {
             t = tMax.x;

@@ -3,7 +3,7 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
-import { CreateTexture } from '@/components/textures';
+import { ArrayToTexture, CreateTexture } from '@/components/textures';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
@@ -16,6 +16,7 @@ import AnalysisWG from './AnalysisWG';
 import ExportCanvas from '@/utils/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/components/textures/ProjectionTexture';
+import { GetCurrentArray } from '@/utils/HelperFuncs';
 
 const TransectNotice = () =>{
   const {selectTS} = usePlotStore(useShallow(s => s))
@@ -151,7 +152,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {colormap, isFlat, DPR, valueScales, setIsFlat, dataShape} = useGlobalStore(useShallow(s => s))
+  const {colormap, isFlat, DPR, valueScales, setIsFlat, setStatus, dataShape, useF16Textures} = useGlobalStore(useShallow(s => s))
   const {keyFrameEditor} = useImageExportStore(useShallow(s => s))
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => s))
   const {analysisMode, useEditor} = useAnalysisStore(useShallow(s => s))
@@ -186,6 +187,15 @@ const Plot = () => {
       }
     }
   },[analysisMode])
+
+  useEffect(()=>{ // Switch Texture array bit-depth
+    if(!analysisMode && show){
+      const [newText, _valueScales] = ArrayToTexture({data:GetCurrentArray(), shape:dataShape},undefined,useF16Textures);
+      if (newText){
+        setTextures(newText)
+      }
+      setStatus(null)
+  }},[useF16Textures])
 
   const infoSetters = useMemo(()=>({
     setLoc,

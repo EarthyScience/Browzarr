@@ -8,10 +8,11 @@ import { sphereBlocksFrag, sphereBlocksVert } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
+import { functionInjector } from '../ui/Elements/ColorAdjuster';
 const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
     const {isFlat, valueScales, dataShape, remapTexture} = useGlobalStore(useShallow(s => s))
-    const { nanColor, nanTransparency, displacement, offsetNegatives} = usePlotStore(
+    const { nanColor, nanTransparency, displacement, offsetNegatives, colorScale} = usePlotStore(
         useShallow(s => s))
 
     const count = useMemo(()=>{
@@ -68,7 +69,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
                 ...(isFlat ? { IS_FLAT: true } : {}),
                 ...(remapTexture ? { REPROJECT: true } : {})
             },
-            vertexShader: sphereBlocksVert,
+            vertexShader: functionInjector(sphereBlocksVert, colorScale),
             fragmentShader: sphereBlocksFrag,
             blending:THREE.NoBlending,
             depthWrite:true,
@@ -76,7 +77,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             side: THREE.BackSide,
         })
         return shader
-    },[count, isFlat])
+    },[count, isFlat, colorScale])
     updateCommonUniforms(shaderMaterial);
     useEffect(()=>{
         if (shaderMaterial){
@@ -92,8 +93,10 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
     nanMaterial.transparent = true;
 
     const nanSphereGeometry = useMemo(()=> new THREE.IcosahedronGeometry(1, 9),[])
+
     useEffect(()=>{
         if (nanMaterial ){
+            nanMaterial.dispose();
             nanMaterial.color.set(nanColor)
             nanMaterial.opacity = (1-nanTransparency)
             invalidate();

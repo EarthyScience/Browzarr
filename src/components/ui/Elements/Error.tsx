@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 
 export const Error = () => {
-    const {error, setError} = useErrorStore(useShallow(s => s))
+    const {error, customError, setError, setCustomError} = useErrorStore(useShallow(s => s))
   return (
     <>
     {error && <Dialog open={true} onOpenChange={e=>setError(null)}>
@@ -21,12 +21,17 @@ export const Error = () => {
             </DialogTitle>
             <div className='error-message'>
                 {ErrorList[error as keyof typeof ErrorList].description}
+                {customError &&
+                <div className='bg-red-50 p-2 mt-2 rounded-md border-solid border-1'>
+                    {customError}
+                </div>
+                }
             </div>
             <div className='flex justify-center mt-[10px]'>
                 <Button
                 variant='pink'
                     className='cursor-pointer hover:scale-[1.1]'
-                    onClick={e=>setError(null)}
+                    onClick={e=>{setError(null); setCustomError(null)}}
                 >
                 Okay
                 </Button>

@@ -7,36 +7,14 @@ in vec3 vDirection;
 
 out vec4 color;
 
-uniform sampler3D map[12]; // We are limited to 16 textures. Cmap counts as one. 15 is weird so we use 12. 
-uniform sampler2D maskTexture;
-uniform sampler2D cmap;
-uniform sampler2D remapTexture;
-uniform sampler2D borderTexture;
-uniform bool useBorderTexture;
-uniform float borderWidth;
-uniform vec3 borderColor;
-uniform vec3 textureDepths;
-
-uniform float cOffset;
-uniform float cScale;
 uniform vec3 scale;
-uniform vec2 threshold;
 uniform float steps;
 uniform vec4 flatBounds;
 uniform vec2 vertBounds;
-uniform float animateProg;
 uniform float transparency;
-uniform float nanAlpha;
-uniform vec3 nanColor;
 uniform float opacityMag;
 uniform bool useClipScale;
-uniform float fillValue;
-uniform int maskValue;
-uniform vec2 latBounds;
-uniform vec2 lonBounds;
 
-#define epsilon 0.000001
-#define pi 3.1415926535
 
 vec2 hitBox(vec3 orig, vec3 dir) {
     vec3 box_min = vec3(-(scale * 0.5));
@@ -50,39 +28,6 @@ vec2 hitBox(vec3 orig, vec3 dir) {
     float t1 = min(tmax.x, min(tmax.y, tmax.z));
     return vec2(t0, t1);
 }
-
-vec2 realCoords(vec2 uv){
-    vec2 normalizedLon = lonBounds/2./pi+0.5;
-    vec2 normalizedLat = latBounds/pi+0.5;
-    float lonScale = normalizedLon.y-normalizedLon.x;
-    float latScale = normalizedLat.y-normalizedLat.x;
-    
-    float u = uv.x * lonScale + normalizedLon.x;
-    float v = uv.y * latScale + normalizedLat.x;
-
-    return vec2(u, v);
-}
-
-
-
-float sample1(vec3 p, int index) { // Shader doesn't support dynamic indexing so we gotta use switching
-    if (index == 0) return texture(map[0], p).r;
-    else if (index == 1) return texture(map[1], p).r;
-    else if (index == 2) return texture(map[2], p).r;
-    else if (index == 3) return texture(map[3], p).r;
-    else if (index == 4) return texture(map[4], p).r;
-    else if (index == 5) return texture(map[5], p).r;
-    else if (index == 6) return texture(map[6], p).r;
-    else if (index == 7) return texture(map[7], p).r;
-    else if (index == 8) return texture(map[8], p).r;
-    else if (index == 9) return texture(map[9], p).r;
-    else if (index == 10) return texture(map[10], p).r;
-    else if (index == 11) return texture(map[11], p).r;
-    else return 0.0;
-}
-
-
-
 
 void main() {
     vec3 rayDir = normalize(vDirection);
@@ -131,36 +76,36 @@ void main() {
             }
         }
         texCoord.z = mod(texCoord.z + animateProg, 1.0001);
-        texCoord = clamp(texCoord, vec3(0.0), 1. - vec3(epsilon)); // This prevents the very end of the dimensions having floating point errors
+        texCoord = clamp(texCoord, vec3(0.0), 1. - vec3(EPSILON)); // This prevents the very end of the dimensions having floating point errors
 
         ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), ivec3(textureDepths) - 1);
         int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
         vec3 localCoord = texCoord * (textureDepths);  
         localCoord = fract(localCoord);
         float d = sample1(localCoord, textureIdx);
-
+        rescaler(d);
+        bool isnan = isNaNBits(d) 
+            || (!useF16 && d == 1.0) 
+            || abs(d - fillValue) < 0.005;
+        if (!isnan){
+            d *= cScale;
+            d = max(min(d+cOffset,0.995), 0.0);
+        } else {
+            accumColor.rgb += (1.0 - alphaAcc) * pow(nanAlpha, 5.) * nanColor.rgb;
+            alphaAcc += pow(nanAlpha, 5.);
+        }
         bool cond = (d >= threshold.x) && (d <= threshold.y); 
-
         if (cond) {
-            bool isNan = d == 1. || abs(d - fillValue) < 0.005;
-            if (isNan && nanAlpha > 0.0){
-                accumColor.rgb += (1.0 - alphaAcc) * pow(nanAlpha, 5.) * nanColor.rgb;
-                alphaAcc += pow(nanAlpha, 5.);
+            vec4 col = texture(cmap, vec2(d, 0.5));
+            float alpha;
+            if (useClipScale){
+                float normalizedOpacity = clamp((d - threshold.x) / (threshold.y - threshold.x), 0.0, 1.0);
+                alpha = pow(max(normalizedOpacity, 0.001), transparency*opacityMag);
+            } else {
+                alpha = pow(max(d, 0.001), transparency*opacityMag);
             }
-            else{
-                float sampLoc = d*cScale;
-                sampLoc = min(sampLoc+cOffset,0.99);
-                vec4 col = texture(cmap, vec2(sampLoc, 0.5));
-                float alpha;
-                if (useClipScale){
-                    float normalizedOpacity = clamp((sampLoc - threshold.x) / (threshold.y - threshold.x), 0.0, 1.0);
-                    alpha = pow(max(normalizedOpacity, 0.001), transparency*opacityMag);
-                } else {
-                    alpha = pow(max(sampLoc, 0.001), transparency*opacityMag);
-                }
-                accumColor.rgb += (1.0 - alphaAcc) * alpha * col.rgb;
-                alphaAcc += alpha * (1.0 - alphaAcc);
-            }      
+            accumColor.rgb += (1.0 - alphaAcc) * alpha * col.rgb;
+            alphaAcc += alpha * (1.0 - alphaAcc);
             if (alphaAcc >= 1.0){
                 if (useBorderTexture){
                     float borderDist = texture(borderTexture, texCoord.xy).r;

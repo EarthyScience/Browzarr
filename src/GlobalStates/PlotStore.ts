@@ -70,6 +70,7 @@ type PlotState ={
   destCRS: string | undefined;
   overRideCamera: boolean; // Prevent Camera from resetting until initial position is set. 
   preProject: boolean;
+  colorScale: string | undefined;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -125,6 +126,7 @@ type PlotState ={
   setUseOrtho: (useOrtho: boolean) => void;
   setFillValue: (fillValue: number | undefined) => void;
   setCameraPosition: (cameraPosition: THREE.Vector3) => void;
+  setColorScale: (colorScale: string | undefined) => void;
   
 }
 
@@ -198,6 +200,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   destCRS: undefined,
   overRideCamera: false,
   preProject : false, // reproject data on dataloader before 'show' is true;
+  colorScale: undefined,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),
@@ -255,5 +258,5 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setUseOrtho: (useOrtho) => set({ useOrtho }),
   setFillValue: (fillValue) => set({ fillValue }),
   setCameraPosition: (cameraPosition) => set({ cameraPosition }),
-
+  setColorScale: (colorScale) => set({ colorScale })
 }))

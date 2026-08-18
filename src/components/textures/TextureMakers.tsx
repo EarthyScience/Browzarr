@@ -8,25 +8,29 @@ interface Array {
     shape: number[];
 }
 
-function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number}): {minVal: number, maxVal: number}{
-    const { setTextureData} = useGlobalStore.getState()
+function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number}, useF16=false): {minVal: number, maxVal: number}{
+    const { setTextureData } = useGlobalStore.getState()
     const data = array.data;
-    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data )
-    const textureData = new Uint8Array(data.length)
+    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
+    const textureData = useF16 ? new Uint16Array(data.length) : new Uint8Array(data.length)
     const range = (maxVal - minVal)
     for (let i = 0; i < data.length; i++){
       const normed = (data[i] - minVal) / range;
       if (isNaN(normed)){
-        textureData[i] = 255;
+        textureData[i] = useF16 
+			?	THREE.DataUtils.toHalfFloat(NaN)
+			:	255;
       } else {
-        textureData[i] = normed * 254;
+        textureData[i] = useF16
+			?	THREE.DataUtils.toHalfFloat(normed)
+			:	normed * 254;
       }
     };
     setTextureData(textureData)
     return {minVal, maxVal}
 }
 
-export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
+export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, useF16=false) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
   const {textureArrayDepths} = useGlobalStore.getState()
   const textureData = data ? data : useGlobalStore.getState().textureData
   if (!textureData){
@@ -39,7 +43,7 @@ export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTe
         y: Math.floor(height / textureArrayDepths[1]),
         x: Math.floor(width / textureArrayDepths[2])
     };
-    const chunkData = chunkArray2D(textureData as Uint8Array, {y:height, x:width}, chunkSize)
+    const chunkData = chunkArray2D(textureData as Uint8Array, {y:height, x:width}, chunkSize, useF16)
     const chunks = []
     for (const chunk of chunkData){
         const texture = new THREE.DataTexture(
@@ -47,7 +51,7 @@ export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTe
             chunk.dims.x,
             chunk.dims.y,
             THREE.RedFormat,
-            THREE.UnsignedByteType
+            useF16 ? THREE.HalfFloatType : THREE.UnsignedByteType
         );
         texture.needsUpdate = true;
         chunks.push(texture)
@@ -60,7 +64,7 @@ export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTe
         y: Math.floor(ly / textureArrayDepths[1]),
         x: Math.floor(lx / textureArrayDepths[2])
     };
-    const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths)
+    const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths, useF16)
     const chunks = []
     for (const chunk of chunkData){   
         //@ts-ignore stop whining
@@ -68,6 +72,7 @@ export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTe
         volTexture.format = THREE.RedFormat;
         volTexture.minFilter = THREE.NearestFilter;
         volTexture.magFilter = THREE.NearestFilter;
+		volTexture.type = useF16 ? THREE.HalfFloatType : THREE.UnsignedByteType
         volTexture.needsUpdate = true;
         chunks.push(volTexture)
     }
@@ -75,19 +80,20 @@ export function CreateTexture(shape: number[], data?: Uint8Array) : THREE.DataTe
   }
 }
 
-export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
-    const scales = StoreData(array, valueScales);
-    const textures = CreateTexture(array.shape)
+export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}, useF16=false): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
+    const scales = StoreData(array, valueScales, useF16);
+    const textures = CreateTexture(array.shape, undefined, useF16)
     return [textures as THREE.Data3DTexture[] | THREE.DataTexture[], scales];
 }
 
 function chunkArray(
-  arr: Uint8Array,
+  arr: Uint8Array | Uint16Array,
   dims: { z: number; y: number; x: number },
   chunkSize: { z: number; y: number; x: number },
-  resolution: number[]
-): { data: Uint8Array; dims: { x: number; y: number; z: number } }[] {
-  const chunks: { data: Uint8Array; dims: { x: number; y: number; z: number } }[] = [];
+  resolution: number[],
+  useF16=false
+): { data: Uint8Array | Uint16Array; dims: { x: number; y: number; z: number } }[] {
+  const chunks: { data: Uint8Array | Uint16Array; dims: { x: number; y: number; z: number } }[] = [];
  
   // Strides for navigating the source array
   const sourceStride = {
@@ -114,7 +120,7 @@ function chunkArray(
         const chunkHeight = endY - startY;
         
         // Pre-allocate the typed array for this chunk
-        const chunk = new Uint8Array(chunkDepth * chunkHeight * rowLength);
+        const chunk = useF16 ? new Uint16Array(chunkDepth * chunkHeight * rowLength) : new Uint8Array(chunkDepth * chunkHeight * rowLength);
         let chunkOffset = 0;
         
         // Extract row by row
@@ -139,10 +145,11 @@ function chunkArray(
 function chunkArray2D(
   arr: Uint8Array,
   dims: { y: number; x: number },
-  chunkSize: { y: number; x: number }
-): { data: Uint8Array; dims: { x: number; y: number } }[] {
-  const chunks: { data: Uint8Array; dims: { x: number; y: number } }[] = [];
-
+  chunkSize: { y: number; x: number },
+  useF16=false
+): { data: Uint8Array | Uint16Array; dims: { x: number; y: number } }[] {
+  
+  const chunks: { data: Uint8Array | Uint16Array; dims: { x: number; y: number } }[] = [];
   // Calculate how many chunks there will be along each axis
   const numChunksY = Math.ceil(dims.y / chunkSize.y);
   const numChunksX = Math.ceil(dims.x / chunkSize.x);
@@ -168,7 +175,7 @@ function chunkArray2D(
       }
 
       // Pre-allocate the typed array for this chunk's data
-      const chunk = new Uint8Array(chunkHeight * rowLength);
+      const chunk = useF16 ? new Uint16Array(chunkHeight * rowLength) : new Uint8Array(chunkHeight * rowLength);
       let chunkOffset = 0;
 
       // Extract data row by row for this chunk

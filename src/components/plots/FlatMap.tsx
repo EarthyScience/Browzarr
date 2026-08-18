@@ -17,6 +17,7 @@ import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices } from '@/hooks';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
+import { functionInjector } from '../ui/Elements/ColorAdjuster';
 interface InfoSettersProps{
   setLoc: React.Dispatch<React.SetStateAction<number[]>>;
   setShowInfo: React.Dispatch<React.SetStateAction<boolean>>;
@@ -30,7 +31,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     const {setLoc, setShowInfo, val, coords} = infoSetters;
     const {flipY, dimArrays, dimNames, dimUnits, isFlat, dataShape, strides, remapTexture, remapBorders, shape,
       setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
-    const {animProg, zSlice, ySlice, xSlice, selectTS, coarsen,
+    const {animProg, zSlice, ySlice, xSlice, selectTS, coarsen, colorScale,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
     const {axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
     const {kernelSize, kernelDepth} = useZarrStore(useShallow(s => s))
@@ -165,7 +166,6 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     }
     // ----- SHADER MATERIAL ----- //
     const uniforms = useCommonUniforms()
-    
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
             uniforms:{
@@ -178,9 +178,9 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
               ...(remapTexture ? { REPROJECT: true } : {})
             },
             vertexShader: vertShader,
-            fragmentShader: flatFrag,
+            fragmentShader: functionInjector(flatFrag, colorScale),
             side: THREE.DoubleSide,
-        }),[isFlat, textures, remapTexture])
+        }),[isFlat, textures, remapTexture, colorScale])
     updateCommonUniforms(shaderMaterial)
     
     useEffect(()=>{

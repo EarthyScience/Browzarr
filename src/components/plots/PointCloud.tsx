@@ -11,6 +11,7 @@ import { ColumnMeshes } from './TransectMeshes';
 
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
+import { functionInjector } from '../ui/Elements/ColorAdjuster';
 
 interface PCProps {
   texture: THREE.Data3DTexture[] | null,
@@ -36,12 +37,10 @@ const MappingCube = () =>{
 }
 
 export const PointCloud = ({textures} : {textures:PCProps} )=>{
-    const { colormap } = textures;
     const volTexture = usePaddedTextures(textures.texture);
-    const { flipY, dataShape, remapTexture, textureArrayDepths, shape } = useGlobalStore(useShallow(s => s))
-    const {scalePoints, scaleIntensity, pointSize, cScale, cOffset, valueRange, animProg, 
-      timeScale, xRange, yRange, zRange, fillValue,
-      maskTexture, maskValue, disablePointScale} = usePlotStore(useShallow(s => s))
+    const { flipY, dataShape, remapTexture, shape } = useGlobalStore(useShallow(s => s))
+    const {scalePoints, scaleIntensity, pointSize, valueRange, colorScale,
+      timeScale, xRange, yRange, zRange, disablePointScale} = usePlotStore(useShallow(s => s))
 
     //Extract data and shape from Data3DTexture
     const { width, height, depth } = useMemo(() => {
@@ -88,7 +87,6 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         map: { value: volTexture },
         remapTexture: { value: remapTexture },
         pointSize: {value: pointSize},
-        valueRange: {value: new THREE.Vector2(valueRange[0], valueRange[1])},
         scalePoints:{value: scalePoints},
         scaleIntensity: {value: scaleIntensity},
         timeScale: {value: depthRatio},
@@ -103,13 +101,13 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
         ...(remapTexture ? { REPROJECT: true } : {}),
         ...(disablePointScale ? { NO_SCALE: true } : {})
       },
-      vertexShader: pointVert,
+      vertexShader: functionInjector(pointVert, colorScale),
       fragmentShader:pointFrag,
       depthWrite: true,
       depthTest: true,
       blending:THREE.NoBlending,
     })
-    ),[disablePointScale, remapTexture]);
+    ),[disablePointScale, remapTexture, colorScale]);
     updateCommonUniforms(shaderMaterial);
     useEffect(() => {
       if (shaderMaterial) {
