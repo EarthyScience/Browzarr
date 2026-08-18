@@ -49,12 +49,12 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 	const {textureArrayDepths, colormap, valueScales, useF16Textures} = useGlobalStore(useShallow(s => s))
 	const {lonBounds, latBounds} = useCoordBounds()
 
-	// useEffect(()=>{
-	// 	// Cleanup function to dispose materials when they are remade in parent component
-	// 	if (material){
-	// 		material.dispose()
-	// 	}
-	// },[material])
+	useEffect(()=>{
+		// Cleanup function to dispose materials when they are remade in parent component
+		if (material){
+			material.dispose()
+		}
+	},[material])
 
 	useEffect(()=>{
 		if (!material) return;

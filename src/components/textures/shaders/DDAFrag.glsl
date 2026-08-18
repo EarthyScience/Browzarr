@@ -143,6 +143,7 @@ void main() {
                             borderUV = texture(remapTexture, borderUV).rg;
                         #endif
                         borderUV = realCoords(borderUV);
+                        if (is360) borderUV.x = fract(borderUV.x + 0.5);
                         float borderDist = texture(borderTexture, borderUV).r;
                         if (borderDist <= borderWidth) {
                             color = vec4(borderColor, 1.0);
