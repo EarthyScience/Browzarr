@@ -2,8 +2,6 @@
 
 attribute vec2 instanceUV;
 
-uniform bool is360;
-
 uniform float displaceZero;
 uniform float displacement;
 

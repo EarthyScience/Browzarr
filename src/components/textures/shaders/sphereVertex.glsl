@@ -2,7 +2,6 @@
 
 uniform float displaceZero;
 uniform float displacement;
-uniform bool is360;
 
 vec2 giveUV(vec3 position){
     vec3 n = normalize(position);
