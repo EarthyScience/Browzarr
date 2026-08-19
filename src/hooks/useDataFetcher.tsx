@@ -9,6 +9,7 @@ import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
 import { GetArray } from '@/components/zarr/GetArray';
 import { ArrayToTexture } from '@/components/textures';
 import { handleIrregularGrid, reproject } from '@/components/textures/ProjectionTexture';
+import { parseExtent } from '@/utils/parseExtent';
 
 export const useDataFetcher = () => {
     const {
@@ -103,6 +104,7 @@ export const useDataFetcher = () => {
                 const shouldFlip = (targetDim && targetDim.length >= 2) ? targetDim[1] < targetDim[0] : false;
                 setFlipY(shouldFlip);
                 ParseExtent(dimUnits, dimArrays);
+                // parseExtent();
                 if(preProject)reproject();
                 else handleIrregularGrid(dimArrays);
                 // We don't show/mount any components until all of the essential data has been set

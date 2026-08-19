@@ -158,7 +158,6 @@ const Plot = () => {
   const {analysisMode, useEditor} = useAnalysisStore(useShallow(s => s))
   const coords = useRef<number[]>([0,0])
   const val = useRef<number>(0)
-
   const [showInfo, setShowInfo] = useState<boolean>(false)
   const [loc, setLoc] = useState<number[]>([0,0])
   
