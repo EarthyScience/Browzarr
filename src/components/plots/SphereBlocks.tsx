@@ -77,7 +77,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             side: THREE.BackSide,
         })
         return shader
-    },[count, isFlat, colorScale])
+    },[isFlat, colorScale, remapTexture])
     updateCommonUniforms(shaderMaterial);
     useEffect(()=>{
         if (shaderMaterial){
@@ -89,7 +89,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
         invalidate();
     },[valueScales, displacement, offsetNegatives, textures])
 
-    const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor}),[])
+    const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor, opacity:(1-nanTransparency)}),[])
     nanMaterial.transparent = true;
 
     const nanSphereGeometry = useMemo(()=> new THREE.IcosahedronGeometry(1, 9),[])

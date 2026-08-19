@@ -23,12 +23,12 @@ export const useDimAxis = () => {
 }
 
 export const getDimAxis = () => {
-    const {axisDimArrays} = useGlobalStore.getState();
+    const {dimArrays} = useGlobalStore.getState();
     const {zSlice, ySlice, xSlice} = usePlotStore.getState();
     const {zIdx, yIdx, xIdx} = getAxisIndices();
-    const zArray = axisDimArrays[zIdx].slice(zSlice[0], zSlice[1]?? undefined);
-    const yArray = axisDimArrays[yIdx].slice(ySlice[0], ySlice[1]?? undefined);
-    const xArray = axisDimArrays[xIdx].slice(xSlice[0], xSlice[1]?? undefined);
+    const zArray = dimArrays[zIdx].slice(zSlice[0], zSlice[1]?? undefined);
+    const yArray = dimArrays[yIdx].slice(ySlice[0], ySlice[1]?? undefined);
+    const xArray = dimArrays[xIdx].slice(xSlice[0], xSlice[1]?? undefined);
     return {
         zArray,
         yArray,

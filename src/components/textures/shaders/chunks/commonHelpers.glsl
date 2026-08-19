@@ -1,5 +1,7 @@
 vec2 realCoords(vec2 uv){
-    vec2 normalizedLon = lonBounds/2./PI+0.5;
+    vec2 normalizedLon = lonBounds/2./PI;
+    if (!is360)normalizedLon += 0.5;
+    
     vec2 normalizedLat = latBounds/PI+0.5;
     float lonScale = normalizedLon.y-normalizedLon.x;
     float latScale = normalizedLat.y-normalizedLat.x;

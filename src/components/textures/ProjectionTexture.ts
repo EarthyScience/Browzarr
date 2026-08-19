@@ -1,11 +1,12 @@
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { ArrayMinMax, linspace, ParseExtent } from '@/utils/HelperFuncs';
+import { ArrayMinMax, linspace } from '@/utils/HelperFuncs';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import * as THREE from 'three';
 import proj4 from 'proj4';
 import { getAxisIndices } from '@/hooks/useAxisIndices';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { getDimAxis} from '@/hooks';
 
 export function checkProjString(projString: string){
     const {setError} = useErrorStore.getState()
@@ -21,9 +22,9 @@ export function checkProjString(projString: string){
 export function resetProjection(){
     const {dimArrays, dimNames, dimUnits, shape} = useGlobalStore.getState()
     const {xSlice, ySlice} = useZarrStore.getState()
-    const {xIdx, yIdx} = getAxisIndices()
-    const xLength = dimArrays[xIdx].length;
-    const yLength = dimArrays[yIdx].length;
+    const {xArray, yArray} = getDimAxis()
+    const xLength = xArray.length;
+    const yLength = yArray.length;
     const aspectRatio = xLength/yLength;
     const newShape = new THREE.Vector3().copy(shape)
     newShape.y = 2/aspectRatio;
@@ -35,12 +36,11 @@ export function resetProjection(){
         remapTexture: undefined,
         remapBorders: undefined,
     })
-    handleIrregularGrid(dimArrays)
+    handleIrregularGrid()
     usePlotStore.setState({
         xSlice, 
         ySlice,
     })
-
 }
 
 function normalizeArray(array: number[], min?: number, max?: number): number[]{
@@ -66,10 +66,11 @@ function isUniformStep(array: number[]): boolean {
     const len = array.length;
     if (len < 3) return true; // any 0–2 element array trivially qualifies
     const step = array[1] - array[0];
+    if (step < 1e-12) return false; // Rejected really small steps to avod exploding vals
 
     for (let i = 2; i < len; i++) {
         const diff = array[i] - array[i - 1]
-        if (Math.abs(diff - step) > 1e-4) {
+        if ((Math.abs(diff - step) / step) > 0.01) { // If its greater than a 1% divergence we can call it irregular
             return false;
         }
     }
@@ -125,7 +126,7 @@ function createIrregularUV(
 		THREE.RGBAFormat,
 		THREE.HalfFloatType,
 	);
-	texture.magFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
 	texture.minFilter = THREE.LinearFilter;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -177,21 +178,19 @@ function createInverseUV(
 		THREE.RGBAFormat,
 		THREE.HalfFloatType,
 	);
-	texture.needsUpdate = true;
-	texture.magFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
 	texture.minFilter = THREE.LinearFilter;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;
-    texture.flipY = flipY
+    texture.flipY = flipY;
+    texture.needsUpdate = true;
 	return texture;
 }
 
-export function handleIrregularGrid(dimArrays: Array<number>[]){
+export function handleIrregularGrid(){
     // This is needed for Sphere and other projections where the grid is not uniform. It creates an array for the ticks and update for sphere
-    const {xIdx, yIdx} = getAxisIndices()
-    const {flipY} = useGlobalStore.getState();
-    const xArray = dimArrays[xIdx];
-    const yArray = dimArrays[yIdx];
+    const {xArray, yArray} = getDimAxis();
+    const {flipY} = useGlobalStore.getState()
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
     if (isRegular) return;
     const {is360Deg, plotType} = usePlotStore.getState();
@@ -255,7 +254,8 @@ export function sampleCRS(tex: THREE.DataTexture, u: number, v: number): [THREE.
 
 export function reproject(resolution: number = 256){
     const {nativeCRS, destCRS, plotType, is360Deg} = usePlotStore.getState()
-	const {dimArrays, remapTexture, flipY } = useGlobalStore.getState()
+	const {remapTexture, flipY } = useGlobalStore.getState()
+    let {xArray, yArray} = getDimAxis();
 	const insufficientCRS = !nativeCRS || !destCRS
     if (remapTexture) remapTexture.dispose();
     useGlobalStore.setState({
@@ -263,18 +263,15 @@ export function reproject(resolution: number = 256){
     })
 	if (insufficientCRS || plotType == 'sphere'){
 		// If sphere, we check if irregularGrid. If so then create new texture. 
-		handleIrregularGrid(dimArrays)
+		handleIrregularGrid()
 		return;
 	}
     if (insufficientCRS) return; 
     if (!checkProjString(destCRS) || !checkProjString(destCRS)) return; 
-
     const {xIdx, yIdx} = getAxisIndices()
-    let xArray = dimArrays[xIdx] as number[];
     if (is360Deg) {
 		xArray = remap360to180Monotonic(xArray) 
 	}
-    const yArray = dimArrays[yIdx];
     const width = xArray.length;
     const height = yArray.length;
     // We need the border points as the min/max of the old CRS won't always be the min/max of the new CRS

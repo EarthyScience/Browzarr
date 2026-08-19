@@ -35,13 +35,11 @@ const checkForCRS = (metadata: Record<string, string>): string | undefined =>{
 
 export const parseExtent = () => {
 	const {xArray, yArray} = getDimAxis()
-	const {metadata, variables} = useGlobalStore.getState()
+	const {metadata, variables, flipY} = useGlobalStore.getState()
 	const hasCRS = metadata ? hasAny(metadata, COMMON_CRS_NAMES) : false;
 	const hasPointer = metadata ? hasAny(metadata, COMMON_POINTER_NAMES) : false;
 	const hasCRSVar = COMMON_CRS_NAMES.some(k => k in variables);
 	let validCRS = undefined
-	console.log(xArray, yArray)
-	console.log(`hasCRS: ${hasCRS} - hasPointer: ${hasPointer} - hasCRSVar: ${hasCRSVar}`)
 	if (hasCRS && metadata){ // Metadata can't be undefined while hasCRS is true, but whatever
 		validCRS = checkForCRS(metadata)
 	}else if (hasPointer && metadata){
@@ -59,7 +57,6 @@ export const parseExtent = () => {
 			})
 		}
 	}
-	console.log(`validCRS: ${validCRS}`)
 	const xMin = xArray[0];
 	const xMax = xArray[xArray.length-1];
 	const yStart = yArray[0];
@@ -68,13 +65,14 @@ export const parseExtent = () => {
 	const yRes = Math.abs(yArray[1] - yArray[0]);
 
 	const is360Deg = xMax > 180 && xMax <= 360;
-	
+	const yExtent = flipY ? [yEnd, yStart] : [yStart, yEnd]
 	usePlotStore.setState({
 		nativeCRS:validCRS,
 		lonExtent:[xMin, xMax],
-		latExtent:[yStart, yEnd],
+		latExtent:yExtent as [number, number],
 		lonResolution:xRes,
 		latResolution:yRes,
+		originalExtent:[xMin, xMax, yExtent[0], yExtent[1]],
 		is360Deg
 	})
 

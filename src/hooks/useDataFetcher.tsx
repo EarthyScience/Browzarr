@@ -4,7 +4,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
-import { ParseExtent, GetDimInfo } from '@/utils/HelperFuncs';
+import { GetDimInfo } from '@/utils/HelperFuncs';
 import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
 import { GetArray } from '@/components/zarr/GetArray';
 import { ArrayToTexture } from '@/components/textures';
@@ -27,8 +27,12 @@ export const useDataFetcher = () => {
     useEffect(() => {
         if (variable !== "Default") {
             // Could remove this. But I think it looks better to just wipe then have an empty texture.
+            // ---- RESET STATES ---- //
             setShow(false);
             setUseF16Textures(false);
+            usePlotStore.setState({nativeCRS:undefined, destCRS:undefined})
+            useGlobalStore.setState({remapTexture: undefined });
+            // ---- FETCH DATA ---- //
             try {
                 //---- Texture Cleanup ----//
                 if (textures) {
@@ -77,8 +81,10 @@ export const useDataFetcher = () => {
                     setPlotOn(true);
                     setStatus(null);
                 }).then(()=>{
+                    parseExtent();
+                    if(preProject)reproject();
+                    else handleIrregularGrid();
                     setShow(true)
-
                 })
             } catch (error) {
                 console.error(error);
@@ -102,12 +108,7 @@ export const useDataFetcher = () => {
                 const yIdx = (axisMapping.y >= 0 && axisMapping.y < dimArrays.length) ? axisMapping.y : Math.max(0, dimArrays.length - 2);
                 const targetDim = dimArrays[yIdx] || dimArrays[0];
                 const shouldFlip = (targetDim && targetDim.length >= 2) ? targetDim[1] < targetDim[0] : false;
-                setFlipY(shouldFlip);
-                ParseExtent(dimUnits, dimArrays);
-                // parseExtent();
-                if(preProject)reproject();
-                else handleIrregularGrid(dimArrays);
-                // We don't show/mount any components until all of the essential data has been set
+                setFlipY(shouldFlip);                
             });
 
         } else {

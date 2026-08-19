@@ -401,12 +401,12 @@ const SpatialExtent = () =>{
       
       <Button variant='pink'
         disabled={
-          originalExtent.toArray().slice(0,2).every((val, idx) => val == lonExtent[idx]) &&
-          originalExtent.toArray().slice(2).every((val, idx) => val == latExtent[idx])
+          originalExtent.slice(0,2).every((val, idx) => val == lonExtent[idx]) &&
+          originalExtent.slice(2).every((val, idx) => val == latExtent[idx])
         }
         onClick={()=>{
-          setLonExtent([originalExtent.x, originalExtent.y])
-          setLatExtent([originalExtent.z, originalExtent.w])
+          setLonExtent([originalExtent[0], originalExtent[1]])
+          setLatExtent([originalExtent[2], originalExtent[3]])
         }}
       > Reset Extent </Button>
     </div>

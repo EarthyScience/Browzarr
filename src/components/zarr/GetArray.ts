@@ -57,8 +57,9 @@ export async function GetArray(varOveride?: string) {
     const xSlice = getEffectiveSlice(axisMapping.x, xDimIndex);
     const ySlice = getEffectiveSlice(axisMapping.y, yDimIndex);
     const zSlice = getEffectiveSlice(axisMapping.z, zDimIndex);
-    // Carry slices to plotStore so we know what to slice from the axisDimarrays
+    // Carry slices to stores so we know what to slice from the axisDimarrays
     usePlotStore.setState({zSlice, ySlice, xSlice})
+    useZarrStore.setState({zSlice, ySlice, xSlice})
     const xDim = calcDim(xSlice, xDimIndex);
     const yDim = calcDim(ySlice, yDimIndex);
     const zDim = calcDim(zSlice, zDimIndex);
