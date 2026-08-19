@@ -1,6 +1,5 @@
 //This is for Flat Textures but with 3D textures to sample from i,e; animation
 
-uniform bool is360;
 uniform bool remapBorders;
 
 in vec2 vUv;

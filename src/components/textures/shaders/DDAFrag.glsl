@@ -68,7 +68,7 @@ bool sampleVoxel(vec3 texCoord, out float d, out bool isnan) {
     vec3 localCoord = fract(texCoord * textureDepths);
     d = sample1(localCoord, textureIdx);
     rescaler(d);
-    isnan = isNaNBits(d);
+    isnan = isNaNBits(d) || (!useF16 && d == 1.0);
     d = max(min(d * cScale + cOffset, 0.995), 0.0);
     return d >= threshold.x && d <= threshold.y;
 }
@@ -117,10 +117,7 @@ void main() {
             float d;
             bool isnan;
             if (sampleVoxel(texCoord, d, isnan)) {
-                bool isNan =  
-                    isnan 
-                    || (!useF16 && d == 1.0)
-                    || (abs(d - fillValue) < 0.005);
+                bool isNan =  isnan || (abs(d - fillValue) < 0.005);
                 if (isNan) {    
                     if (nanAlpha > 0.0){ 
                         float nanA = pow(nanAlpha, 5.0);

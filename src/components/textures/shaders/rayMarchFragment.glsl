@@ -93,6 +93,7 @@ void main() {
         } else {
             accumColor.rgb += (1.0 - alphaAcc) * pow(nanAlpha, 5.) * nanColor.rgb;
             alphaAcc += pow(nanAlpha, 5.);
+            continue;
         }
         bool cond = (d >= threshold.x) && (d <= threshold.y); 
         if (cond) {

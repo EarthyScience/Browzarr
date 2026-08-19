@@ -2,8 +2,6 @@
 out vec4 color;
 in vec3 aPosition;
 
-uniform bool is360;
-
 vec2 giveUV(vec3 position){
     vec3 n = normalize(position);
     float latitude = asin(n.y);
@@ -75,8 +73,7 @@ void main(){
         if (!isnan){
             strength *= cScale;
             strength = max(min(strength+cOffset,0.995), 0.0); // clamp color to [0, 1]
-            color = texture(cmap, vec2(strength, 0.5));
-            color.a = 1.;
+            color = vec4(texture2D(cmap, vec2(strength, 0.5)).rgb, 1.);
         } else {
             color = vec4(nanColor, nanAlpha);
         }

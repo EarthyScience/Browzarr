@@ -1,8 +1,6 @@
  // by Jeran Poehls
 
 attribute vec2 instanceUV;
-
-uniform bool is360;
 uniform bool remapBorders;
 
 uniform float aspect;
