@@ -201,6 +201,9 @@ export function copyChunkToArray(
 ): void {
 	// ---- This is a vibecoded function and I don't really know how it works. 
 	const ndim = chunkShape.length;
+	chunkGridPos = chunkGridPos.slice(-ndim);
+	fullChunkDim = fullChunkDim.slice(-ndim);
+	sliceStart   = sliceStart.slice(-ndim);
 	const start = new Array<number>(ndim);
 	const end = new Array<number>(ndim);
 	const destBase = new Array<number>(ndim); // abs offset - sliceStart, per dim
