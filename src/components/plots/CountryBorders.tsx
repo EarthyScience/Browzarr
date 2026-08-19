@@ -233,7 +233,6 @@ const CountryBorders = () => {
     const globalScale = isPC ? dataShape[2]/500 : 1
     const depthScale = isPC ? depthRatio : timeRatio/2
     const aspectRatio = (shape && shape.y > 0) ? (shape.x / shape.y) : 1;
-
     return(
         <group
             rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}

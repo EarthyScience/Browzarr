@@ -18,7 +18,9 @@ void main() {
             if (is360) realUV.x = fract(realUV.x + 0.5);
             if (remapBorders){
                 // All reprojected data is regularly gridded
-                realUV.xy = texture(remapTexture, realUV).ba;
+                vec2 remapUV = vUv;
+                remapUV.y = 1.0 - remapUV.y;
+                realUV.xy = texture(remapTexture, remapUV).ba;
             }
         #endif
         if ( maskValue != 0 ){

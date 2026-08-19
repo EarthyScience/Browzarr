@@ -109,7 +109,7 @@ function createIrregularUV(
             const ix = xArray[i]
             const iy = yArray[j]
 
-            const iu = (ix + (is360 ? 0 : 180)) / 360;
+            const iu = ((ix + 180) / 360) % 1;
             const iv = (iy+90) / 180;
 
             const idx = (j * width + i) * 4;
