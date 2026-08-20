@@ -10,11 +10,6 @@ import { LuSettings } from "react-icons/lu";
 import { RxReset } from "react-icons/rx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Input, Switch, Hider, Button, Slider as UISlider, Switcher, Slider, QuickTip } from '@/components/ui';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { parseLoc, normalize, denormalize } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { ChevronDown } from 'lucide-react';
@@ -22,6 +17,12 @@ import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/c
 import { RiCloseLargeLine } from "react-icons/ri";
 import { Reprojection } from '../Elements/Reprojection';
 import { useAxisIndices } from '@/hooks';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { FaLongArrowAltUp } from "react-icons/fa";
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -150,7 +151,8 @@ const DimSlicer = () =>{
 }
 
 const VolumeOptions = ()=>{
-  const { useRayMarch, quality, transparency, vTransferRange, vTransferScale, interpPixels, setQuality, setUseRayMarch, setTransparency, setVTransferRange, setVTransferScale} = usePlotStore(useShallow(s => s))
+  const { useRayMarch, quality, transparency, vTransferRange, vTransferScale, interpPixels, revTransparency,
+    setQuality, setUseRayMarch, setTransparency, setVTransferRange, setVTransferScale, setRevTransparency} = usePlotStore(useShallow(s => s))
   useEffect(()=>{
     if (!useRayMarch && interpPixels) setUseRayMarch(true)
   }, [interpPixels, useRayMarch])
@@ -188,7 +190,33 @@ const VolumeOptions = ()=>{
         </div>
       </Hider>
       <Switcher className={interpPixels ? 'opacity-40 !cursor-default' : undefined} leftText='DDA' rightText='Raymarch' state={!useRayMarch} onClick={()=> setUseRayMarch(!useRayMarch)}/>
-      <b>Transparency</b>
+      <div className='grid grid-cols-3 justify-between place-items-center'>
+        <b>Transparency</b>
+        <Button
+          variant='ghost'
+          className='px-0 w-10'
+          onClick={()=>setRevTransparency(!revTransparency)}
+        >
+          <FaLongArrowAltUp 
+            style={{
+              rotate:revTransparency ? '180deg' : '',
+              transition:'0.2s'
+            }}
+            size={20}
+          />
+        </Button>
+        <QuickTip message='Choose whether to clip higher or lower values first.'>
+            <Button 
+              variant={'outline'}
+              className='px-2'
+              onClick={()=>setRevTransparency(!revTransparency)}
+            >
+              <span className='text-justify'>{`${revTransparency ? 'High' : 'Low'} clip`}</span>
+          </Button>
+        </QuickTip>
+        
+      </div>
+      
       <UISlider
               min={0}
               max={10}
@@ -581,28 +609,18 @@ const AdjustPlot = () => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <div style={enableCond ? {} : { pointerEvents: 'none' } }>
-          <Tooltip delayDuration={500} >
-            <TooltipTrigger asChild>
-              <div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
-                  style={{
-                    color: enableCond ? '' : 'var(--text-disabled)'
-                  }}
-                >
-                  <LuSettings className="size-8" />
-                </Button>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent
-              side={popoverSide === "left" ? "left" : "top"}
-              align={popoverSide === "left" ? "start" : "center"}
+          <QuickTip message={<span>Plot Settings</span>}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
+              style={{
+                color: enableCond ? '' : 'var(--text-disabled)'
+              }}
             >
-              <span>Plot Settings</span>
-            </TooltipContent>
-          </Tooltip>
+              <LuSettings className="size-8" />
+            </Button>
+          </QuickTip>
         </div>
       </PopoverTrigger>
       <PopoverContent
@@ -615,9 +633,8 @@ const AdjustPlot = () => {
           popoverSide === 'top' ? 'mb-1' : ''
         }`}
       >
-        <Tooltip delayDuration={500}>
-          <TooltipTrigger asChild>
-            <Button
+        <QuickTip message='Close settings'>
+          <Button
               variant="ghost"
               size="icon"
               className="absolute top-0 right-1 z-10 cursor-pointer saturate-[180%]"
@@ -626,11 +643,7 @@ const AdjustPlot = () => {
             >
               <RiCloseLargeLine className="size-4" />
             </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            Close settings
-          </TooltipContent>
-        </Tooltip>
+        </QuickTip>
         <div className={`overflow-y-auto no-scrollbar -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          
           <RxReset size={25} 
             style={{

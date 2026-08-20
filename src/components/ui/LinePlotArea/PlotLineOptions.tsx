@@ -9,13 +9,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { useShallow } from 'zustand/shallow'
 import { Slider } from "@/components/ui/slider"
+import { useGraphStore } from '@/GlobalStates/GraphStore'
 
 // Memoized Point Options
 const PointOptions = React.memo(function PointOptions(){
-  const { showPoints, linePointSize, pointColor, useCustomPointColor, setLinePointSize, setPointColor, setUseCustomPointColor } = usePlotStore(useShallow(s => s))
+  const { showPoints, pointSize, pointColor, useCustomPointColor, setLinePointSize, setPointColor, setUseCustomPointColor } = useGraphStore(useShallow(s => s))
   if (!showPoints) return null
   return (
     <>
@@ -25,7 +25,7 @@ const PointOptions = React.memo(function PointOptions(){
           min={1}
           max={10}
           step={0.1}
-          value={[linePointSize]}
+          value={[pointSize]}
           className='flex-1 my-2'
           onValueChange={(vals: number[]) => setLinePointSize(vals[0])}
         />
@@ -55,7 +55,7 @@ const PointOptions = React.memo(function PointOptions(){
 // Memoized Line Options
 const LineOptions = React.memo(function LineOptions(){
   const { lineWidth, lineColor, useLineColor, lineResolution, useCustomColor, 
-    setLineWidth, setLineColor, setUseLineColor, setLineResolution, setUseCustomColor,  } = usePlotStore(useShallow(s => s))
+    setLineWidth, setLineColor, setUseLineColor, setLineResolution, setUseCustomColor,  } = useGraphStore(useShallow(s => s))
   return (
     <>
       <div className='w-full flex items-center mb-2'>
@@ -113,7 +113,7 @@ const LineOptions = React.memo(function LineOptions(){
 })
 
 const PlotLineOptions = React.memo(function PlotLineOptions({menuRef} : {menuRef: React.RefObject<boolean>}){
-  const { showPoints, setShowPoints } = usePlotStore(useShallow(s => s))
+  const { showPoints, setShowPoints } = useGraphStore(useShallow(s => s))
 
   return (
     <div className='plotline-options'>

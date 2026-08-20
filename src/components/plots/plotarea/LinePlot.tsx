@@ -1,7 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import { parseLoc } from '@/utils/HelperFuncs'
 import { FixedTicks, ThickLine } from '@/components/plots'
-import {  RefObject, useEffect, useRef, useState } from 'react'
+import {  useEffect, useRef, useState } from 'react'
 import { ResizeBar, YScaler, XScaler, ShowLinePlot } from '@/components/ui'
 import './LinePlot.css'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
