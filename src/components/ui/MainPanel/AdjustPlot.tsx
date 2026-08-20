@@ -17,11 +17,6 @@ import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/c
 import { RiCloseLargeLine } from "react-icons/ri";
 import { Reprojection } from '../Elements/Reprojection';
 import { useAxisIndices } from '@/hooks';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { FaLongArrowAltUp } from "react-icons/fa";
 
 function DeNorm(val : number, min : number, max : number){
