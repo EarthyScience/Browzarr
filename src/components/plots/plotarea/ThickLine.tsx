@@ -3,12 +3,12 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react'
 import * as THREE from 'three'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import vertexShader from '@/components/textures/shaders/thickLineVert.glsl'
 import { PlotPoints } from './PlotPoints';
 import { useThree } from '@react-three/fiber';
 import { invalidate } from '@react-three/fiber';
+import { useGraphStore } from '@/GlobalStates/GraphStore';
 
 
 function linspace(start: number, stop: number, num: number): number[] {
@@ -31,7 +31,7 @@ interface ThickLineProps {
 
 const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
     const {valueScales, timeSeries, colormap} = useGlobalStore(useShallow(s => s))
-    const {lineWidth, useLineColor, lineColor, showPoints, lineResolution, useCustomColor} = usePlotStore(useShallow(s => s))
+    const {lineWidth, useLineColor, lineColor, showPoints, lineResolution, useCustomColor} = useGraphStore(useShallow(s => s))
 	  const {camera} = useThree()
 
   const {maxVal, minVal} = valueScales

@@ -14,6 +14,7 @@ uniform vec2 vertBounds;
 uniform float transparency;
 uniform float opacityMag;
 uniform bool useClipScale;
+uniform bool revTransparency;
 
 
 vec2 hitBox(vec3 orig, vec3 dir) {
@@ -99,11 +100,12 @@ void main() {
         if (cond) {
             vec4 col = texture(cmap, vec2(d, 0.5));
             float alpha;
+            float alphaFac = revTransparency ? 1.0 - d : d;
             if (useClipScale){
-                float normalizedOpacity = clamp((d - threshold.x) / (threshold.y - threshold.x), 0.0, 1.0);
+                float normalizedOpacity = clamp((alphaFac - threshold.x) / (threshold.y - threshold.x), 0.0, 1.0);
                 alpha = pow(max(normalizedOpacity, 0.001), transparency*opacityMag);
             } else {
-                alpha = pow(max(d, 0.001), transparency*opacityMag);
+                alpha = pow(max(alphaFac, 0.001), transparency*opacityMag);
             }
             accumColor.rgb += (1.0 - alphaAcc) * alpha * col.rgb;
             alphaAcc += alpha * (1.0 - alphaAcc);
