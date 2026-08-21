@@ -61,16 +61,9 @@ void main() {
             continue;
         }
         vec3 texCoord = p * scaler + 0.5;
-        #ifdef REPROJECT
-            vec3 remap = texture2D(remapTexture, texCoord.xy).rgb;
-            texCoord.xy = remap.rg;
-            if (remap.b < 0.5) {continue;}
-        #endif
-
+        vec2 maskUV = reprojector(texCoord);
         if (maskValue != 0){
-            vec2 newV = texCoord.xy; 
-            vec2 realV = realCoords(newV);
-            float mask = texture(maskTexture, realV).r;
+            float mask = texture(maskTexture, maskUV).r;
             bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
             if (cond){
                 continue;
@@ -111,9 +104,7 @@ void main() {
             alphaAcc += alpha * (1.0 - alphaAcc);
             if (alphaAcc >= 1.0){
                 if (useBorderTexture){
-                    vec2 borderUV = texCoord.xy;
-                    if (is360) borderUV.x = fract(borderUV.x + 0.5);
-                    float borderDist = texture(borderTexture, borderUV).r;
+                    float borderDist = texture(borderTexture, maskUV).r;
                     if (borderDist <= borderWidth){
                         color = vec4(borderColor, 1.0);
                         return;

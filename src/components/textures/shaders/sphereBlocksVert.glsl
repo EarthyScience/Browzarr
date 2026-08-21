@@ -47,6 +47,7 @@ void main() {
             }
         }
     }
+    
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
     vec2 sampleCoord = instanceUV;

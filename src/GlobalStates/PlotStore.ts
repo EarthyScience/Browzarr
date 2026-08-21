@@ -28,7 +28,7 @@ type PlotState ={
   borderColor: string;
   lonExtent: [number, number];
   latExtent: [number, number];
-  originalExtent: THREE.Vector4;
+  originalExtent: [number, number, number, number];
   lonResolution: number;
   latResolution: number;
   colorIdx: number;
@@ -90,7 +90,7 @@ type PlotState ={
   setBorderColor: (borderColor: string) => void;
   setLonExtent: (lonExtent: [number, number]) => void;
   setLatExtent: (latExtent: [number, number]) => void;
-  setOriginalExtent: (originalExtent: THREE.Vector4) => void;
+  setOriginalExtent: (originalExtent: [number, number, number, number]) => void;
   setLonResolution: (lonResolution: number) => void;
   setLatResolution: (latResolution: number) => void;
   incrementColorIdx: () => void;
@@ -142,7 +142,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   borderColor: "#000000",
   lonExtent: [-180, 180],
   latExtent: [-90, 90],
-  originalExtent: new THREE.Vector4(-180, 180, -90, 90),
+  originalExtent: [-180, 180, -90, 90],
   lonResolution: 1,
   latResolution: 1,
   colorIdx: 0,

@@ -20,7 +20,7 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { resetProjection } from '@/components/textures/ProjectionTexture';
+import { clearProjectionData } from '@/components/textures/ProjectionTexture';
 
 const MAX_ACTIVE_DIMS = 3;
 
@@ -753,7 +753,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
     } else {
       setMaxSize(cacheSize);
       setVariable(meta.name || '');
-      resetProjection()
+      clearProjectionData()
       ReFetch();
     }
 

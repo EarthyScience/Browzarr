@@ -6,9 +6,12 @@ vec2 giveUV(vec3 position){
     vec3 n = normalize(position);
     float latitude = asin(n.y);
     float longitude = -atan(n.z, n.x);
-    latitude = (latitude - latBounds.x)/(latBounds.y - latBounds.x);
-    longitude = (longitude - lonBounds.x)/(lonBounds.y - lonBounds.x);
 
+    latitude = (latitude - latBounds.x)/(latBounds.y - latBounds.x);
+    float span = lonBounds.y - lonBounds.x;
+    longitude = mod(longitude - lonBounds.x, 2.0*PI); 
+    longitude = longitude / span;
+    
     return vec2(longitude, latitude);
 }
 
@@ -26,7 +29,7 @@ vec2 giveMaskUV(vec3 position){
 void main(){
     if (maskValue != 0 || useBorderTexture){
         vec2 maskUV = giveMaskUV(aPosition);
-        if (is360) maskUV.x = fract(maskUV.x + 0.5);
+        if (is360) maskUV.x = fract(maskUV.x);
         if (maskValue != 0){
             float mask = texture(maskTexture, maskUV).r;
             bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
@@ -46,7 +49,8 @@ void main(){
     }
     vec2 sampleCoord = giveUV(aPosition);
     #ifdef REPROJECT
-            vec3 remap = texture(remapTexture, sampleCoord).rgb;
+            vec2 realUV = realCoords(sampleCoord);
+            vec3 remap = texture(remapTexture, realUV).rgb;
             sampleCoord = remap.rg;
             if (remap.b < 0.5) sampleCoord = vec2(2.0); // I don't think this is ever the case
     #endif

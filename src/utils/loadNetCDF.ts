@@ -17,6 +17,9 @@ export async function loadNetCDF(file: Blob, filename: string) {
       data.getGlobalAttributes(),
       data.getFullMetadata(),
     ]);
+    console.log(data)
+    console.log(metadata)
+    data.getDims().then(e=>console.log(e))
     useGlobalStore.setState({
       variables: Object.keys(variables),
       zMeta: metadata,

@@ -173,14 +173,7 @@ export function buildDimCoordinateResult(
 	};
 }
 
-/** NetCDF-style `_ARRAY_DIMENSIONS` or icechunk `dimensionNames` on cached meta. */
-export function getDimensionNamesFromMeta(
-	meta: Record<string, unknown>,
-): string[] | undefined {
-	const raw = meta._ARRAY_DIMENSIONS ?? meta.dimensionNames;
-	if (!raw) return undefined;
-	return raw as string[];
-}
+
 export function CompressArray(array: Float16Array, level: number) {
 	const uint8View = new Uint8Array(array.buffer);
 	const compressed = gzipSync(uint8View, {
@@ -208,6 +201,9 @@ export function copyChunkToArray(
 ): void {
 	// ---- This is a vibecoded function and I don't really know how it works. 
 	const ndim = chunkShape.length;
+	chunkGridPos = chunkGridPos.slice(-ndim);
+	fullChunkDim = fullChunkDim.slice(-ndim);
+	sliceStart   = sliceStart.slice(-ndim);
 	const start = new Array<number>(ndim);
 	const end = new Array<number>(ndim);
 	const destBase = new Array<number>(ndim); // abs offset - sliceStart, per dim
@@ -249,51 +245,6 @@ export function copyChunkToArray(
 	walk(0, 0, 0);
 }
 
-export function copyChunkToArray2D(
-	chunkData: Float16Array,
-	chunkShape: number[],
-	chunkStride: number[],
-	destArray: Float16Array,
-	destShape: number[],
-	destStride: number[],
-	chunkGridPos: number[],
-	fullChunkDim: number[],
-	sliceStart: number[],
-): void {
-	const [y, x] = chunkGridPos;
-	const [chunkDimY, chunkDimX] = fullChunkDim;
-	const [sliceStartY, sliceStartX] = sliceStart;
-	const [destShapeY, destShapeX] = destShape;
-
-	const absY = y * chunkDimY;
-	const absX = x * chunkDimX;
-
-	const cyStart = Math.max(0, sliceStartY - absY);
-	const cyEnd = Math.min(chunkShape[0], sliceStartY + destShapeY - absY);
-	const cxStart = Math.max(0, sliceStartX - absX);
-	const cxEnd = Math.min(chunkShape[1], sliceStartX + destShapeX - absX);
-
-	for (let cy = cyStart; cy < cyEnd; cy++) {
-		const sourceRowOffset = cy * chunkStride[0];
-		const destY = (absY + cy) - sliceStartY;
-		const destXStart = (absX + cxStart) - sliceStartX;
-		const destRowOffset = destY * destStride[0] + destXStart;
-
-		if (chunkStride[1] === 1) {
-			const rowData = chunkData.subarray(
-				sourceRowOffset + cxStart,
-				sourceRowOffset + cxEnd,
-			);
-			destArray.set(rowData, destRowOffset);
-		} else {
-			for (let cx = cxStart; cx < cxEnd; cx++) {
-				const destX = (absX + cx) - sliceStartX;
-				destArray[destY * destStride[0] + destX] = chunkData[sourceRowOffset + cx * chunkStride[1]];
-			}
-		}
-	}
-}
-
 export function GetSize(outVar: any) {
 	const dtypeSize = getDtypeSize(outVar.dtype);
 	const totalElements = calculateTotalElements(outVar.shape);
@@ -331,9 +282,9 @@ function isOneDimensional(variable: any) {
 }
 
 export async function GetVariableNames(
-	variables: Promise<ZarrMetadata[]>,
+	zarrMeta: Promise<ZarrMetadata[]>,
 ): Promise<string[]> {
-	const metadata = await variables;
+	const metadata = await zarrMeta;
 	return metadata
 		.filter((variable) => !isCoordinateVariable(variable.name))
 		.filter((variable) => !isOneDimensional(variable))

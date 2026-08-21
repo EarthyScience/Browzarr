@@ -55,9 +55,6 @@ export function initializeStore(){
 	const {remapTexture} = useGlobalStore.getState();
 	if (remapTexture) remapTexture.dispose();
 	useZarrStore.setState({icechunkOptions: null, fetchOptions:null});
-	useGlobalStore.setState({remapTexture: undefined });
-	/* This comment out is temporary. For now only way to keep CRS passed from params */
-	// usePlotStore.setState({nativeCRS:undefined, destCRS:undefined});
 }
 
 function StoreInitializerInner() {

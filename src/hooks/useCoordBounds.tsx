@@ -9,13 +9,9 @@ export const useCoordBounds = ()=>{
     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
         const newLatStep = latResolution/2;
         const newLonStep = lonResolution/2;
-        const minLat = Math.min(latExtent[0], latExtent[1]);
-        const maxLat = Math.max(latExtent[0], latExtent[1]);
-        const minLon = Math.min(lonExtent[0], lonExtent[1]);
-        const maxLon = Math.max(lonExtent[0], lonExtent[1]);
-        const newLonBounds = [Math.max(minLon-newLonStep, -180), Math.min(maxLon+newLonStep, 180)]
-        let newLatBounds = [Math.max(minLat-newLatStep, -90), Math.min(maxLat+newLatStep, 90)]
-        newLatBounds = flipY ? [newLatBounds[1], newLatBounds[0]] : newLatBounds
+        const newLonBounds = [lonExtent[0]-newLonStep, lonExtent[1]+newLonStep]
+        let newLatBounds = [latExtent[0]-newLatStep, latExtent[1]+newLatStep]
+        flipY && newLatBounds.reverse()
         return [newLonBounds, newLatBounds]
     },[latExtent, lonExtent, lonResolution, latResolution, flipY])
     return {

@@ -1,5 +1,7 @@
 vec2 realCoords(vec2 uv){
-    vec2 normalizedLon = lonBounds/2./PI+0.5;
+    vec2 normalizedLon = lonBounds/2./PI;
+    if (!is360)normalizedLon += 0.5;
+    
     vec2 normalizedLat = latBounds/PI+0.5;
     float lonScale = normalizedLon.y-normalizedLon.x;
     float latScale = normalizedLat.y-normalizedLat.x;
@@ -11,7 +13,7 @@ vec2 realCoords(vec2 uv){
 }
 
 float sample1(
-     #ifdef IS_FLAT
+    #ifdef IS_FLAT
         vec2 p,
     #else
         vec3 p,
@@ -57,3 +59,30 @@ void norm(out float x){
 void rescaler(inout float x){
     //LOGIC
 }
+
+vec2 reprojector(
+#ifdef IS_FLAT
+    out vec2 texCoord
+#else
+    out vec3 texCoord
+#endif
+) {
+    vec2 originalCoord = texCoord.xy;
+    vec2 maskUV = realCoords(texCoord.xy);
+    #ifdef REPROJECT
+        vec3 remap = texture2D(remapTexture, texCoord.xy).rgb;
+        texCoord.xy = remap.rg;
+        maskUV = realCoords(remap.rg);
+    #else
+         // All reprojected data is made -180 to 180. Don't need to adjust
+        if (remapBorders){
+            // All reprojected data is regularly gridded
+            maskUV = originalCoord;
+            maskUV.y = 1.0 - maskUV.y; // I'm not certain if this is robust
+            maskUV.xy = texture(remapTexture, maskUV).ba;
+        }
+    #endif
+    if (is360) maskUV.x = fract(maskUV.x + 0.5);
+    return maskUV;
+}
+

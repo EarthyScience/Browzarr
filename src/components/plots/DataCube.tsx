@@ -16,7 +16,7 @@ interface DataCubeProps {
 
 export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const volTexture = usePaddedTextures(propVolTexture);
-    const {shape, flipY, remapTexture, dataShape} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
+    const {shape, flipY, remapTexture, remapBorders, dataShape} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const {xRange, yRange, zRange, quality, useOrtho, useRayMarch, transparency, colorScale,
 		vTransferRange, vTransferScale, revTransparency} = usePlotStore(useShallow(s => s))
     const meshRef = useRef<THREE.Mesh>(null!);
@@ -35,7 +35,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
 			modelViewMatrixInverse: { value: new THREE.Matrix4() }, // Used for Orthographic RayMarcher
 			map: { value: volTexture},
 			dataShape: {value: gridShape},
-			remapTexture: { value: remapTexture},
+			remapTexture: { value: remapTexture?? remapBorders},
 			scale: {value: shape},
 			flatBounds:{value: new THREE.Vector4(-xRange[1],-xRange[0],zRange[0] * timeRatio, zRange[1] * timeRatio)},
 			vertBounds:{value: new THREE.Vector2(yRange[0]*aspectRatio,yRange[1]*aspectRatio)},

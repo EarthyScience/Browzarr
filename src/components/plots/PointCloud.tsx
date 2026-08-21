@@ -38,7 +38,7 @@ const MappingCube = () =>{
 
 export const PointCloud = ({textures} : {textures:PCProps} )=>{
     const volTexture = usePaddedTextures(textures.texture);
-    const { flipY, dataShape, remapTexture, shape } = useGlobalStore(useShallow(s => s))
+    const { flipY, dataShape, remapTexture, shape, remapBorders } = useGlobalStore(useShallow(s => s))
     const {scalePoints, scaleIntensity, pointSize, valueRange, colorScale,
       timeScale, xRange, yRange, zRange, disablePointScale} = usePlotStore(useShallow(s => s))
 
@@ -85,7 +85,7 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
       glslVersion: THREE.GLSL3,
       uniforms: {
         map: { value: volTexture },
-        remapTexture: { value: remapTexture },
+        remapTexture: { value: remapTexture?? remapBorders },
         pointSize: {value: pointSize},
         scalePoints:{value: scalePoints},
         scaleIntensity: {value: scaleIntensity},

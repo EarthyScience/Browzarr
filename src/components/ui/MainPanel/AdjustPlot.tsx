@@ -424,12 +424,12 @@ const SpatialExtent = () =>{
       
       <Button variant='pink'
         disabled={
-          originalExtent.toArray().slice(0,2).every((val, idx) => val == lonExtent[idx]) &&
-          originalExtent.toArray().slice(2).every((val, idx) => val == latExtent[idx])
+          originalExtent.slice(0,2).every((val, idx) => val == lonExtent[idx]) &&
+          originalExtent.slice(2).every((val, idx) => val == latExtent[idx])
         }
         onClick={()=>{
-          setLonExtent([originalExtent.x, originalExtent.y])
-          setLatExtent([originalExtent.z, originalExtent.w])
+          setLonExtent([originalExtent[0], originalExtent[1]])
+          setLatExtent([originalExtent[2], originalExtent[3]])
         }}
       > Reset Extent </Button>
     </div>
@@ -440,7 +440,7 @@ const GlobalOptions = () =>{
   const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
     setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(s => s))
   const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
-  const {valueScales} = useGlobalStore(useShallow(s => s))
+  const {valueScales, borderCompatible} = useGlobalStore(useShallow(s => s))
   const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
   const [showMasks, setShowMasks] = useState(false)
   const masks = ["None", "Land", "Water"]
@@ -525,7 +525,17 @@ const GlobalOptions = () =>{
       </Hider>
       {!(analysisMode && axis != 0) && // Hide if Analysismode and Axis != 0
       <>
-        <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
+      <QuickTip 
+        asChild={borderCompatible} // Won't trigger when button below is disabled
+        message={borderCompatible ? 'Show political boundaries' : "Browzarr was unable to parse spatal extent"}>
+        <Button 
+          variant="pink" 
+          size="sm" 
+          className="w-[100%] cursor-[pointer] mb-2 mt-2" 
+          disabled={!borderCompatible}
+          onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
+      </QuickTip>
+        
         <Hider show={showBorders}>
           <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
             ()=>usePlotStore.setState({useBorderTexture:!useBorderTexture})
@@ -551,7 +561,7 @@ const GlobalOptions = () =>{
       }
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="pink" size="sm" className='w-[100%] cursor-pointer mb-2'>
+          <Button variant="secondary" size="sm" className='w-[100%] cursor-pointer mb-2'>
             Adjust Extent
           </Button>
         </PopoverTrigger>

@@ -41,9 +41,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
           : [],
       ];
     }, [dimArrays, zIdx, yIdx, xIdx, zSlice, ySlice, xSlice]);
-
     const {lonBounds, latBounds} = useCoordBounds()
-
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
     const uniforms = useCommonUniforms()
     const shaderMaterial = useMemo(()=>{
@@ -68,7 +66,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
             depthWrite:true,
         })
         return shader
-    },[isFlat, colorScale])
+    },[isFlat, colorScale, remapTexture])
     // No reprojection on Sphere. Remains static and can't update
     
     const backMaterial = useMemo(()=>{

@@ -9,7 +9,7 @@ import { useFrame } from '@react-three/fiber';
 import {vertexShader, bordersFrag} from '../textures/shaders'
 import { invalidate } from '@react-three/fiber';
 import proj4, { Converter } from 'proj4';
-import { useAxisIndices } from '@/hooks';
+import {useDimAxis} from '@/hooks';
 import { sampleCRS } from '../textures/ProjectionTexture';
 
 function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=>THREE.Vector3, span = 1.5) {
@@ -32,7 +32,7 @@ function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=
     return segments.filter(seg => seg.length > 1);
 }
 
-function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds: [number, number], proj : Converter | undefined){ // May use this aspect later. I'll keep for now
+function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds: [number, number], proj : Converter | undefined){
     const {remapTexture, remapBorders, flipY} = useGlobalStore.getState()
 	let [newX, newY] = [x, y];
 	if (remapTexture && proj){
@@ -42,6 +42,7 @@ function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds
     newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);
     newY = flipY ? 1 - newY : newY
     if (remapBorders && !remapTexture){
+        newY = flipY ? 1 - newY : newY // Don't flip when using remapBorders
         const [newV, _valid] = sampleCRS(remapBorders, newX, newY)
         newX = newV.x;
         newY = newV.y;
@@ -49,10 +50,8 @@ function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds
     newX -= 0.5
     newX *= 2;
     newY -= 0.5;
-    newY *= 2;
     
-   
-    return [newX, newY/2, 0] // I don't know why this 2 (which was for the original lat/lon aspect) also works for new CRS
+    return [newX, newY, 0] // I don't know why y is still half x 2 (which was for the original lat/lon aspect) also works for new CRS
 }
 
 function Spherize([lon, lat] : [number, number]){
@@ -75,14 +74,14 @@ function wrapLon(lon: number, bounds: [number, number], bypass?:boolean) {
 function Borders({features}:{features: any}){
     const {xRange, yRange, plotType, borderColor, nativeCRS, destCRS } = usePlotStore(useShallow(s => s))
     const {shape, axisDimArrays, remapTexture } = useGlobalStore(useShallow(s => s))
-    const {xIdx, yIdx} = useAxisIndices()
+    const {xArray, yArray} = useDimAxis()
     const [xBounds, yBounds] = useMemo(()=>{ 
-        const minX = axisDimArrays[xIdx][0]
-        const maxX = axisDimArrays[xIdx].at(-1)
-		const minY = axisDimArrays[yIdx][0]
-        const maxY = axisDimArrays[yIdx].at(-1)
+        const minX = xArray[0]
+        const maxX = xArray.at(-1)
+		const minY = yArray[0]
+        const maxY = yArray.at(-1)
         return [[minX, maxX] as [number, number], [minY, maxY] as [number, number]]
-    },[axisDimArrays, xIdx, yIdx ])
+    },[axisDimArrays, xArray, yArray ])
     const spherize = plotType ==='sphere'
 
     function toXYZ(lon: number, lat: number){
@@ -234,7 +233,6 @@ const CountryBorders = () => {
     const globalScale = isPC ? dataShape[2]/500 : 1
     const depthScale = isPC ? depthRatio : timeRatio/2
     const aspectRatio = (shape && shape.y > 0) ? (shape.x / shape.y) : 1;
-
     return(
         <group
             rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
@@ -243,7 +241,7 @@ const CountryBorders = () => {
             <group 
                 visible={showBorders && !(analysisMode && axis != 0) && !useBorderTexture} 
                 position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0)) : zRange[1]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0))]} // I don't know what value to use here. THis seems okay but not perfect
-                rotation={[0, (is360Deg && spherize) ? Math.PI : 0, 0]} 
+                rotation={[0, 0, 0]} 
             >
                 {coastLines && <Borders features={coastLines} />}
                 {borders && <Borders features={borders} />}

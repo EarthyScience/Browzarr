@@ -14,7 +14,7 @@ import { LineMaterial } from 'three-stdlib';
 import { useFrame } from '@react-three/fiber';
 import { parseLoc, coarsenFlatArray, linspace } from '@/utils/HelperFuncs';
 import { useCSSVariable } from '../ui';
-import { useAxisIndices } from '@/hooks';
+import { useAxisIndices, useDimAxis } from '@/hooks';
 import * as THREE from 'three'
 
 const AXIS_CONSTANTS = {
@@ -331,36 +331,27 @@ const FLAT_AXIS_CONSTANTS = {
 };
 
 const FlatAxis = () =>{
-  const {axisDimArrays, axisDimNames, axisDimUnits, flipY} = useGlobalStore(useShallow(s => s))
-  const {plotType,  zSlice, ySlice, xSlice, rotateFlat} = usePlotStore(useShallow(s => s))
+  const {axisDimArrays, axisDimNames, axisDimUnits} = useGlobalStore(useShallow(s => s))
+  const {plotType, rotateFlat} = usePlotStore(useShallow(s => s))
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow(s => s))
   const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
 
   const originallyFlat = axisDimArrays.length == 2;
-  const slices = originallyFlat ? [ySlice, xSlice] : [zSlice, ySlice, xSlice]
   const {xIdx, yIdx, zIdx} = useAxisIndices()
+  const {xArray, yArray, zArray} = useDimAxis()
   const dimSlices = useMemo(()=> {
     return originallyFlat ? 
-    [
-      flipY ? axisDimArrays[yIdx]?.slice().reverse() ?? [] : axisDimArrays[yIdx] ?? [], 
-      axisDimArrays[xIdx] ?? []
-    ] 
-    :
-    [
-      axisDimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
-      flipY ? axisDimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined).reverse() ?? [] : axisDimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
-      axisDimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
-    ]
-  },[axisDimArrays, flipY, originallyFlat, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
+    [yArray, xArray] :[zArray, yArray, xArray]
+  },[xArray, yArray, zArray])
 
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
-      return dimSlices.map((val, idx) => (slices[idx][1] ? slices[idx][1] : val.length) - slices[idx][0])
+      return dimSlices.map((val) => val.length)
         .filter((_val, idx )=> idx != axis)
     }else{
-      return dimSlices.map((val, idx) => (slices[idx][1] ? slices[idx][1] : val.length) - slices[idx][0])
+      return dimSlices.map((val) => val.length)
     }
-  },[axis, dimSlices, analysisMode])
+  },[axis, dimSlices, analysisMode, originallyFlat])
 
   const swap = useMemo(() => (analysisMode && axis == 2 && !originallyFlat),[axis, analysisMode]) // This is for the horrible case when users plot along the horizontal dimension i.e; Longitude. Everything swaps
   const widthIdx = swap ? dimLengths.length-2 : dimLengths.length-1
@@ -396,7 +387,6 @@ const FlatAxis = () =>{
       };
     }
   }, [analysisMode, axisDimArrays, axisDimUnits, axisDimNames, dimSlices, originallyFlat, axis, xIdx, yIdx, zIdx]);
-  
   const shapeRatio = useMemo(()=>{
     if(analysisMode && axis == 2){
       return dimLengths[heightIdx]/dimLengths[widthIdx]
@@ -434,7 +424,7 @@ const FlatAxis = () =>{
   const yTitleOffset = useMemo(() => ((axisNames[heightIdx]?.length || 0) * FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE / 2 + 0.1), [axisNames, heightIdx]);
 
   function getFactor(fac:number, isX=false){
-      const length = dimLengths[isX ? xIdx : yIdx]
+      const length = dimLengths[isX ? widthIdx : heightIdx]
       return Math.round(fac * (length - 1))
   }
   return (

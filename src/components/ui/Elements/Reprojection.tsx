@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/shallow'
 import { Hider } from '../Widgets/Hider'
 import { ChevronDown } from 'lucide-react'
 import { Input } from '../input'
-import { Button } from '../button'
+import { Button } from '@/components/ui'
 import { checkProjString, reproject, resetProjection } from '@/components/textures/ProjectionTexture'
 import { TbReplace } from "react-icons/tb";
 import { RxReset } from "react-icons/rx";
@@ -44,9 +44,9 @@ export const Reprojection = () => {
                         360° coordinates may behave unexpectedly. 
                     </div>
                     }
-                    <div className="flex items-center gap-2">
+                    <div className="grid grid-cols-[auto_30px] items-center gap-1">
                         <div
-                            className="flex-1 rounded-md border border-[#333] bg-[#1e1e1e] px-3 py-2 font-mono text-sm text-[#d4d4d4] whitespace-pre-wrap"
+                            className="min-w-0 break-all max-h-20 overflow-scroll no-scrollbar rounded-md border border-[#333] bg-[#1e1e1e] px-1 py-2 font-mono text-sm text-[#d4d4d4] whitespace-pre-wrap"
                         >
                             {nativeCRS
                                 ? `Native CRS: ${nativeCRS}`
@@ -104,6 +104,7 @@ export const Reprojection = () => {
                             />
                         </div>
                          <Button
+                            variant='pink'
                             className="cursor-pointer col-span-2"
                             onClick={()=>reproject(repRes.current)}
                             disabled={!destCRS || !nativeCRS || isNaN(repRes.current)}
