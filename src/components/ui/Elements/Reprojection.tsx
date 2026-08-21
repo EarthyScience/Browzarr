@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/shallow'
 import { Hider } from '../Widgets/Hider'
 import { ChevronDown } from 'lucide-react'
 import { Input } from '../input'
-import { Button } from '../button'
+import { Button } from '@/components/ui'
 import { checkProjString, reproject, resetProjection } from '@/components/textures/ProjectionTexture'
 import { TbReplace } from "react-icons/tb";
 import { RxReset } from "react-icons/rx";
@@ -104,6 +104,7 @@ export const Reprojection = () => {
                             />
                         </div>
                          <Button
+                            variant='pink'
                             className="cursor-pointer col-span-2"
                             onClick={()=>reproject(repRes.current)}
                             disabled={!destCRS || !nativeCRS || isNaN(repRes.current)}

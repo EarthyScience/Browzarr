@@ -177,61 +177,6 @@ export function linspace(start: number, stop: number, num: number): number[] {
     return Array.from({ length: num }, (_, i) => start + step * i);
   }
 
-export function ParseExtent(dimUnits: string[], dimArrays: any[][]){
-  const {setLonExtent, setLatExtent, setLonResolution, setLatResolution, setOriginalExtent } = usePlotStore.getState();
-  const {xSlice, ySlice} = usePlotStore.getState();
-  const {axisMapping} = useZarrStore.getState();
-  const shapeLength = dimArrays.length;
-  const xIdx = axisMapping.x >= 0 ? axisMapping.x : shapeLength - 1;
-  const yIdx = axisMapping.y >= 0 ? axisMapping.y : shapeLength - 2;
-
-  let tryParse = false;
-  const xUnit = dimUnits[xIdx];
-  const yUnit = dimUnits[yIdx];
-
-  if ((xUnit && xUnit.match(/(degree|degrees|deg|°)/i)) || (yUnit && yUnit.match(/(degree|degrees|deg|°)/i))) {
-      tryParse = true;
-  }
-
-  if (tryParse){
-    const xArray = dimArrays[xIdx] || [];
-    const yArray = dimArrays[yIdx] || [];
-
-    const minLat = Number(yArray[ySlice[0]]);
-    const maxLatIdx = ySlice[1] !== null ? ySlice[1] - 1 : yArray.length - 1;
-    const maxLat = Number(yArray[maxLatIdx]);
-    
-    let minLon = Number(xArray[xSlice[0]]);
-    const maxLonIdx = xSlice[1] !== null ? xSlice[1] - 1 : xArray.length - 1;
-    let maxLon = Number(xArray[maxLonIdx]);
-
-    let finalMinLon = Math.min(minLon, maxLon);
-    let finalMaxLon = Math.max(minLon, maxLon);
-    let finalMinLat = Math.min(minLat, maxLat);
-    let finalMaxLat = Math.max(minLat, maxLat);
-
-    if (finalMaxLon > 180){
-      finalMaxLon -= 180
-      finalMinLon -= 180
-      usePlotStore.setState({is360Deg:true})
-    } else{
-      usePlotStore.setState({is360Deg:false})
-    }
-    setLonExtent([finalMinLon, finalMaxLon])
-    setLatExtent([finalMinLat, finalMaxLat])
-
-    const latRes = Math.abs(Number(yArray[1] ?? 0) - Number(yArray[0] ?? 0)) || 1;
-    const lonRes = Math.abs(Number(xArray[1] ?? 0) - Number(xArray[0] ?? 0)) || 1;
-    setLonResolution(lonRes)
-    setLatResolution(latRes)
-    setOriginalExtent(new THREE.Vector4(finalMinLon, finalMaxLon, finalMinLat, finalMaxLat))
-  }
-  else{
-    setLonExtent([-180,180])
-    setLatExtent([-90,90])
-  }
-}
-
 interface TimeSeriesInfo{
   uv:THREE.Vector2,
   normal:THREE.Vector3

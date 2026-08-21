@@ -57,6 +57,7 @@ type StoreState = {
   textureData: Uint8Array | Uint16Array;
   clampExtremes: boolean;
   useF16Textures: boolean;
+  borderCompatible: boolean;
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -142,6 +143,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   scalingFactor: null,
   clampExtremes: false,
   useF16Textures: false,
+  borderCompatible: true,
   // setters
 
   setDataShape: (dataShape) => set({ dataShape }),

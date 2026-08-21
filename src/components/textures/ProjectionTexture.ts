@@ -19,6 +19,17 @@ export function checkProjString(projString: string){
     }
 }
 
+export function clearProjectionData(){
+     useGlobalStore.setState({
+        remapTexture: undefined,
+        remapBorders: undefined,
+     })
+     usePlotStore.setState({
+        nativeCRS: undefined,
+        destCRS:undefined,
+     })
+}
+
 export function resetProjection(){
     const {dimArrays, dimNames, dimUnits, shape} = useGlobalStore.getState()
     const {xSlice, ySlice} = useZarrStore.getState()
@@ -28,7 +39,7 @@ export function resetProjection(){
     const aspectRatio = xLength/yLength;
     const newShape = new THREE.Vector3().copy(shape)
     newShape.y = 2/aspectRatio;
-        useGlobalStore.setState({
+    useGlobalStore.setState({
         axisDimArrays: dimArrays,
         axisDimUnits: dimUnits,
         axisDimNames: dimNames,
@@ -65,11 +76,14 @@ function normalizeArray(array: number[], min?: number, max?: number): number[]{
 function isUniformStep(array: number[]): boolean {
     const len = array.length;
     if (len < 3) return true; // any 0–2 element array trivially qualifies
-    const step = array[1] - array[0];
-    if (step < 1e-12) return false; // Rejected really small steps to avod exploding vals
-
+    const step = Math.abs(array[1] - array[0]);
+    if (step < 1e-12)return false; // Rejected really small steps to avod exploding vals
+    let max = 0
+    let min = 100
     for (let i = 2; i < len; i++) {
-        const diff = array[i] - array[i - 1]
+        const diff = Math.abs(array[i] - array[i - 1])
+        max = Math.max(max, diff)
+        min = Math.min(min, diff)
         if ((Math.abs(diff - step) / step) > 0.01) { // If its greater than a 1% divergence we can call it irregular
             return false;
         }
@@ -272,6 +286,7 @@ export function reproject(resolution: number = 256){
     if (is360Deg) {
 		xArray = remap360to180Monotonic(xArray) 
 	}
+    console.log("got through intial checks")
     const width = xArray.length;
     const height = yArray.length;
     // We need the border points as the min/max of the old CRS won't always be the min/max of the new CRS
@@ -313,7 +328,7 @@ export function reproject(resolution: number = 256){
         }
         return [lon, lat, 1];
     }
-
+    console.log("")
     // ---- Construct new CRS axis' ----//
     let adjustedResolution = resolution;
 
@@ -391,6 +406,7 @@ export function reproject(resolution: number = 256){
     texture.needsUpdate = true;
     if (remapTexture) remapTexture.dispose();
     useGlobalStore.setState({remapTexture: texture})
+    console.log("set Texture")
     // ---- Update Axis and Shape information ----//
     const crsCheck = proj4(destCRS);
     const {axisDimArrays, axisDimUnits, axisDimNames, shape} = useGlobalStore.getState()
@@ -420,7 +436,7 @@ export function reproject(resolution: number = 256){
         xSlice: [0, null],
         ySlice: [0, null],
     })
-    // ParseExtent(newAxisDimUnits, newAxisDimArrays);
+    console.log("function completed without issue")
 
 }
 

@@ -9,33 +9,26 @@ import { invalidate } from '@react-three/fiber'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
+import { useDimAxis } from '@/hooks';
 const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
-    const {isFlat, valueScales, dataShape, remapTexture} = useGlobalStore(useShallow(s => s))
+    const {isFlat, valueScales, remapTexture} = useGlobalStore(useShallow(s => s))
     const { nanColor, nanTransparency, displacement, offsetNegatives, colorScale} = usePlotStore(
         useShallow(s => s))
-
+    const {xArray, yArray} = useDimAxis()
+    const width = xArray.length;
+    const height = yArray.length;
     const count = useMemo(()=>{
-        const width = dataShape[dataShape.length-1];
-        const height = dataShape[dataShape.length-1]/2;
         const count = width * height;
         if (count * 16 *4 > 2e9){
             useErrorStore.setState({ error:'largeArray' })
             return 0
         }
         return count
-    },[dataShape])
-    
+    },[width, height])
     const geometry = useMemo(()=>{
-        const width = dataShape[dataShape.length-1];
-        const height = dataShape[dataShape.length-1]/2;
-        const count = width * height;
-        if (count * 16 *4 > 2e9){
-            return undefined
-        }
         const sqWidth = Math.PI*2;
         const geo = new THREE.BoxGeometry(sqWidth/width, .05, sqWidth/height/2);
-
         const uvs = new Float32Array(count * 2);
         let idx = 0;
         for (let i = 0; i < width; i++) {
@@ -52,8 +45,7 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             new THREE.InstancedBufferAttribute(uvs, 2)
         );
         return geo
-    },[dataShape])
-
+    },[count])
     const uniforms = useCommonUniforms()
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({

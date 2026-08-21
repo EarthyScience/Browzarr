@@ -152,7 +152,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {colormap, isFlat, DPR, valueScales, setIsFlat, setStatus, dataShape, useF16Textures} = useGlobalStore(useShallow(s => s))
+  const {colormap, isFlat, DPR, valueScales, setIsFlat, setStatus, dataShape, useF16Textures, remapTexture} = useGlobalStore(useShallow(s => s))
   const {keyFrameEditor} = useImageExportStore(useShallow(s => s))
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => s))
   const {analysisMode, useEditor} = useAnalysisStore(useShallow(s => s))
@@ -202,10 +202,17 @@ const Plot = () => {
     coords,
     val
   }),[])
-
+  const prevUniqueRep = useRef(false);
+    `
+    Point cloud and sphere need unique reprojections. However, reprojecting from volume
+    to flat or vice-versa causes the app to freeze. So this tells us if the last style
+    was a unique projection to know whether or not we should reproject.
+    `
   useEffect(()=>{ // Rotates flat back when changing away
     usePlotStore.setState({rotateFlat: false})
-    reproject();
+    const thisUnique = ['sphere','point-cloud'].includes(plotType)
+    if ((thisUnique || prevUniqueRep.current != thisUnique) && remapTexture)reproject(); // Reproject if unique unless changing from unique to non-unique. Also only if already remapped
+    prevUniqueRep.current = thisUnique;
   },[plotType])
 
   useEffect(()=>{

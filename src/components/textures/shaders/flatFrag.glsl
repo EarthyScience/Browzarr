@@ -1,7 +1,5 @@
 //This is for Flat Textures but with 3D textures to sample from i,e; animation
 
-uniform bool remapBorders;
-
 in vec2 vUv;
 out vec4 Color;
 
@@ -11,15 +9,16 @@ void main() {
         vec2 realUV = realCoords(vUv);
         // Adjust if reproject
         #ifdef REPROJECT
+            // Remap texture is based around the OG UV. So we sample with OG UV and then broadcast to Realcoords
             realUV = texture(remapTexture, vUv).rg;
             realUV = realCoords(realUV);
         #else
-            // All reprojected data is made -180 to 180. Don't do this if reprojected
+            // All reprojected data is made -180 to 180. Don't need to adjust
             if (is360) realUV.x = fract(realUV.x + 0.5);
             if (remapBorders){
                 // All reprojected data is regularly gridded
                 vec2 remapUV = vUv;
-                remapUV.y = 1.0 - remapUV.y;
+                remapUV.y = 1.0 - remapUV.y; // I'm not certain if this is robust
                 realUV.xy = texture(remapTexture, remapUV).ba;
             }
         #endif

@@ -8,7 +8,7 @@ import * as THREE from 'three'
 import { flatBlocksVert, sphereBlocksFrag } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
-import { useAxisIndices } from '@/hooks';
+import { useAxisIndices, useDimAxis } from '@/hooks';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
 
@@ -17,16 +17,15 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
     const {isFlat, valueScales, flipY, dataShape, axisDimArrays, remapTexture, remapBorders} = useGlobalStore(useShallow(s => s))
     const { displacement, offsetNegatives, rotateFlat, colorScale} = usePlotStore(useShallow(s => s))
     const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
-    const {xIdx, yIdx} = useAxisIndices()
+    const {xArray, yArray} = useDimAxis()
     const {width, height} = useMemo(()=>{
         if (analysisMode){
             const thisShape = dataShape.filter((_val, idx) => idx != axis)
             return {width: thisShape[1], height: thisShape[0]}
         } else {
-            return {width: axisDimArrays[xIdx].length, height: axisDimArrays[yIdx].length}
+            return {width: xArray.length, height: yArray.length}
         }
-    },[analysisMode, axis, dataShape, axisDimArrays]) 
-    
+    },[analysisMode, axis, dataShape,xArray, yArray, axisDimArrays]) 
     const rotateMap = analysisMode && axis == 2;
     const count = useMemo(()=>{
         const count = width * height;

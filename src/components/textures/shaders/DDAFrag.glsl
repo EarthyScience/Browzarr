@@ -38,16 +38,9 @@ bool shouldSkip(vec3 p, out vec3 texCoord) {
     if (p.y < vertBounds.x || p.y > vertBounds.y) return true;
 
     texCoord = p / scale + 0.5;
-
-    #ifdef REPROJECT
-        vec3 remap = texture2D(remapTexture, texCoord.xy).rgb;
-        texCoord.xy = remap.rg;
-        if (remap.b < 0.5) return true;
-    #endif
-
+    vec2 maskUV = reprojector(texCoord);
     if (maskValue != 0) {
-        vec2 realV = realCoords(texCoord.xy);
-        float mask = texture(maskTexture, realV).r;
+        float mask = texture(maskTexture, maskUV).r;
         bool masked = maskValue == 1 ? mask < 0.5 : mask >= 0.5;
         if (masked) return true;
     }
@@ -139,8 +132,13 @@ void main() {
                         vec2 borderUV = localPosContinuous.xy;
                         #ifdef REPROJECT
                             borderUV = texture(remapTexture, borderUV).rg;
+                        #else
+                            if (remapBorders){
+                                // All reprojected data is regularly gridded
+                                borderUV.y = 1.0 - borderUV.y; // I'm not certain if this is robust
+                                borderUV.xy = texture(remapTexture, borderUV).ba;
+                            } else borderUV = realCoords(borderUV);
                         #endif
-                        borderUV = realCoords(borderUV);
                         if (is360) borderUV.x = fract(borderUV.x + 0.5);
                         float borderDist = texture(borderTexture, borderUV).r;
                         if (borderDist <= borderWidth) {

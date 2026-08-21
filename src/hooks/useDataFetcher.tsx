@@ -31,7 +31,7 @@ export const useDataFetcher = () => {
             setShow(false);
             setUseF16Textures(false);
             usePlotStore.setState({nativeCRS:undefined, destCRS:undefined})
-            useGlobalStore.setState({remapTexture: undefined });
+            useGlobalStore.setState({remapTexture: undefined, remapBorders:undefined, });
             // ---- FETCH DATA ---- //
             try {
                 //---- Texture Cleanup ----//

@@ -8,10 +8,12 @@ uniform sampler2D maskTexture;
 uniform sampler2D cmap;
 uniform sampler2D remapTexture;
 uniform sampler2D borderTexture;
+uniform bool remapBorders;
 uniform bool useBorderTexture;
 uniform float borderWidth;
 uniform vec3 borderColor;
 uniform vec3 textureDepths;
+
 
 uniform bool is360;
 uniform float cOffset;

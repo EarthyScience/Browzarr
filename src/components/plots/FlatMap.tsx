@@ -52,7 +52,6 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
       return slices
     } ,[dimArrays, zSlice, ySlice, xSlice, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
-
     const shapeRatio = useMemo(()=> {
       if (dataShape.length == 2){
         return shape.y/shape.x

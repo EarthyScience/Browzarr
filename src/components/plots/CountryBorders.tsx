@@ -32,7 +32,7 @@ function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=
     return segments.filter(seg => seg.length > 1);
 }
 
-function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds: [number, number], proj : Converter | undefined){ // May use this aspect later. I'll keep for now
+function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds: [number, number], proj : Converter | undefined){
     const {remapTexture, remapBorders, flipY} = useGlobalStore.getState()
 	let [newX, newY] = [x, y];
 	if (remapTexture && proj){
@@ -40,8 +40,9 @@ function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds
     }
     newX = (newX-xBounds[0])/(xBounds[1]-xBounds[0]);
     newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);
-    // newY = flipY ? 1 - newY : newY
+    newY = flipY ? 1 - newY : newY
     if (remapBorders && !remapTexture){
+        newY = flipY ? 1 - newY : newY // Don't flip when using remapBorders
         const [newV, _valid] = sampleCRS(remapBorders, newX, newY)
         newX = newV.x;
         newY = newV.y;
@@ -49,9 +50,8 @@ function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds
     newX -= 0.5
     newX *= 2;
     newY -= 0.5;
-    newY *= 2;
     
-    return [newX, newY/2, 0] // I don't know why this 2 (which was for the original lat/lon aspect) also works for new CRS
+    return [newX, newY, 0] // I don't know why y is still half x 2 (which was for the original lat/lon aspect) also works for new CRS
 }
 
 function Spherize([lon, lat] : [number, number]){

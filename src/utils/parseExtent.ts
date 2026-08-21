@@ -65,7 +65,9 @@ export const parseExtent = () => {
 	const yRes = Math.abs(yArray[1] - yArray[0]);
 
 	const is360Deg = xMax > 180 && xMax <= 360;
-	const yExtent = flipY ? [yEnd, yStart] : [yStart, yEnd]
+	const borderCompatible = xMax <= 360 || Boolean(validCRS);
+	
+	const yExtent = flipY ? [yEnd, yStart] : [yStart, yEnd];
 	usePlotStore.setState({
 		nativeCRS:validCRS,
 		lonExtent:[xMin, xMax],
@@ -74,6 +76,9 @@ export const parseExtent = () => {
 		latResolution:yRes,
 		originalExtent:[xMin, xMax, yExtent[0], yExtent[1]],
 		is360Deg
+	})
+	useGlobalStore.setState({
+		borderCompatible
 	})
 
 
