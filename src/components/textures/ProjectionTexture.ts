@@ -196,7 +196,7 @@ function createInverseUV(
 	texture.minFilter = THREE.LinearFilter;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;
-    texture.flipY = flipY;
+    // texture.flipY = flipY;
     texture.needsUpdate = true;
 	return texture;
 }
@@ -276,6 +276,7 @@ export function reproject(resolution: number = 256){
         remapTexture:undefined
     })
 	if (insufficientCRS || plotType == 'sphere'){
+        console.log("should be here too")
 		// If sphere, we check if irregularGrid. If so then create new texture. 
 		handleIrregularGrid()
 		return;

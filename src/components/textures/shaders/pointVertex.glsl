@@ -56,32 +56,23 @@ bool boundsCheck(vec3 loc) {
 
 void main() {
     vec3 texCoord = computeTexCoord(vertexIdx);
+    vec2 maskUV = reprojector(texCoord);
+    vUv = maskUV;
     if (maskValue != 0 ){ // If using a mask, quick check if vertex is masked out before doing additional rendering
-        float mask = texture(maskTexture, texCoord.xy).r;
+        float mask = texture(maskTexture, maskUV).r;
         bool cond = maskValue == 1 ? mask< 0.5 : mask>=0.5;
         if (cond){ // Masked out. Move off screen
             gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
             return;
         }
     }
-    #ifdef REPROJECT
-        vec2 remap = texture(remapTexture, texCoord.xy).rg;
-        vec3 newCoord = vec3(remap, texCoord.z);
-        if (boundsCheck(newCoord)){
-            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-            return;
-        }
-        vec3 position = givePosition(newCoord);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    #else
-        if (boundsCheck(texCoord)){
-            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-            return;
-        }
-        vec3 position = givePosition(texCoord);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    #endif
-    vUv = texCoord.xy;
+    if (boundsCheck(texCoord)){
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+        return;
+    }
+    vec3 position = givePosition(texCoord);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    
     int zStepSize = int(textureDepths.y) * int(textureDepths.x); 
     int yStepSize = int(textureDepths.x); 
 

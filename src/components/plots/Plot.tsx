@@ -211,7 +211,7 @@ const Plot = () => {
   useEffect(()=>{ // Rotates flat back when changing away
     usePlotStore.setState({rotateFlat: false})
     const thisUnique = ['sphere','point-cloud'].includes(plotType)
-    if ((thisUnique || prevUniqueRep.current != thisUnique) && remapTexture)reproject(); // Reproject if unique unless changing from unique to non-unique. Also only if already remapped
+    if ((thisUnique || prevUniqueRep.current != thisUnique))reproject(); // Reproject if unique unless changing from unique to non-unique. Also only if already remapped
     prevUniqueRep.current = thisUnique;
   },[plotType])
 

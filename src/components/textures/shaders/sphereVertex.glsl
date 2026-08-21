@@ -22,9 +22,11 @@ void main() {
     aPosition = position;
     vec2 sampleCoord = giveUV(aPosition);
     #ifdef REPROJECT
-            vec3 remap = texture(remapTexture, sampleCoord).rgb;
+            vec2 realUV = realCoords(sampleCoord);
+            vec3 remap = texture(remapTexture, realUV).rgb;
             sampleCoord = remap.rg;
             if (remap.b < 0.5) sampleCoord = vec2(2.0); // I don't think this is ever the case
+            if (remap.x <= 0.0 || remap.x >= 1.0) sampleCoord = vec2(2.0); // Clamp at edges. Temporary solution for now
     #endif
     bool inBounds = all(greaterThanEqual(sampleCoord, vec2(0.0))) &&
     all(lessThanEqual(sampleCoord, vec2(1.0)));

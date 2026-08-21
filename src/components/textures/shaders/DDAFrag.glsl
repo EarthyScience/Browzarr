@@ -29,7 +29,7 @@ vec2 hitBox(vec3 orig, vec3 dir) {
     return vec2(t0, t1);
 }
 
-bool shouldSkip(vec3 p, out vec3 texCoord) {
+bool shouldSkip(vec3 p, out vec3 texCoord, out vec2 maskUV) {
     // This functions creates denormalized texCoord while also checking for early skipping
     texCoord = vec3(0.0);
 
@@ -38,7 +38,7 @@ bool shouldSkip(vec3 p, out vec3 texCoord) {
     if (p.y < vertBounds.x || p.y > vertBounds.y) return true;
 
     texCoord = p / scale + 0.5;
-    vec2 maskUV = reprojector(texCoord);
+    maskUV = reprojector(texCoord);
     if (maskValue != 0) {
         float mask = texture(maskTexture, maskUV).r;
         bool masked = maskValue == 1 ? mask < 0.5 : mask >= 0.5;
@@ -106,7 +106,8 @@ void main() {
         // Sample at the center of the current voxel. 
         vec3 pCenter = boxMin + (vec3(voxel) + 0.5) * voxelSize;
         vec3 texCoord;
-        if (!shouldSkip(pCenter, texCoord)) {
+        vec2 maskUV;
+        if (!shouldSkip(pCenter, texCoord, maskUV)) {
             float d;
             bool isnan;
             if (sampleVoxel(texCoord, d, isnan)) {
@@ -124,22 +125,11 @@ void main() {
                     accumColor += (1.0 - alphaAcc) * alpha * col;
                     alphaAcc += alpha * (1.0 - alphaAcc);
                 }
-            
                 if (alphaAcc >= 1.0){
                     if (useBorderTexture) {
                         vec3 pHit = vOrigin + t * rayDir;
                         vec3 localPosContinuous = (pHit - boxMin) / scale;
-                        vec2 borderUV = localPosContinuous.xy;
-                        #ifdef REPROJECT
-                            borderUV = texture(remapTexture, borderUV).rg;
-                        #else
-                            if (remapBorders){
-                                // All reprojected data is regularly gridded
-                                borderUV.y = 1.0 - borderUV.y; // I'm not certain if this is robust
-                                borderUV.xy = texture(remapTexture, borderUV).ba;
-                            } else borderUV = realCoords(borderUV);
-                        #endif
-                        if (is360) borderUV.x = fract(borderUV.x + 0.5);
+                        vec2 borderUV = reprojector(localPosContinuous);
                         float borderDist = texture(borderTexture, borderUV).r;
                         if (borderDist <= borderWidth) {
                             color = vec4(borderColor, 1.0);

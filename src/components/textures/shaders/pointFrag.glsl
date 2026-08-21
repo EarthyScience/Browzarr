@@ -5,8 +5,7 @@ in vec2 vUv;
 
 void main() {
     if (useBorderTexture){
-        vec2 borderUV = realCoords(vUv);
-        float borderDist = texture(borderTexture, borderUV).r;
+        float borderDist = texture(borderTexture, vUv).r;
         if (borderDist <= borderWidth) {
             Color = vec4(borderColor, 1.0);
             return;

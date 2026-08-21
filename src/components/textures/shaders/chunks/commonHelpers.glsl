@@ -73,10 +73,8 @@ vec2 reprojector(
         vec3 remap = texture2D(remapTexture, texCoord.xy).rgb;
         texCoord.xy = remap.rg;
         maskUV = realCoords(remap.rg);
-        if (remap.b < 0.5) return true;
     #else
          // All reprojected data is made -180 to 180. Don't need to adjust
-        if (is360)texCoord.x = fract(texCoord.x + 0.5);
         if (remapBorders){
             // All reprojected data is regularly gridded
             maskUV = originalCoord;
@@ -84,6 +82,7 @@ vec2 reprojector(
             maskUV.xy = texture(remapTexture, maskUV).ba;
         }
     #endif
+    if (is360) maskUV.x = fract(maskUV.x + 0.5);
     return maskUV;
 }
 
