@@ -9,12 +9,12 @@ out vec4 color;
 
 uniform vec3 dataShape;
 uniform vec3 scale;
-uniform float steps;
 uniform vec4 flatBounds;
 uniform vec2 vertBounds;
 uniform float transparency;
 uniform float opacityMag;
 uniform bool useClipScale;
+uniform bool revTransparency;
 
 vec2 hitBox(vec3 orig, vec3 dir) {
     vec3 boxMin = -(scale * 0.5);
@@ -126,7 +126,8 @@ void main() {
                     }
                 } else {
                     vec3 col = texture(cmap, vec2(d, 0.5)).rgb;
-                    float alpha = pow(max(d, 0.001), transparency * opacityMag);
+                    float alphaFac = revTransparency ? 1.0 - d : d;
+                    float alpha = pow(max(alphaFac, 0.001), transparency * opacityMag);
                     accumColor += (1.0 - alphaAcc) * alpha * col;
                     alphaAcc += alpha * (1.0 - alphaAcc);
                 }

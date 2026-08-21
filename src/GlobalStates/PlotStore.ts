@@ -13,13 +13,6 @@ type PlotState ={
   zRange: number[];
   quality: number;
   selectTS: boolean;
-  showPoints: boolean;
-  linePointSize: number;
-  lineWidth: number;
-  lineColor: string;
-  pointColor: string;
-  useLineColor: boolean;
-  lineResolution: number;
   animate: boolean;
   resetAnim: boolean;
   animProg: number;
@@ -27,9 +20,8 @@ type PlotState ={
   cScale: number;
   useRayMarch: boolean;
   resetCamera: boolean;
-  useCustomColor: boolean;
-  useCustomPointColor: boolean;
   transparency: number;
+  revTransparency: boolean;
   nanTransparency: number;
   nanColor: string;
   showBorders:boolean;
@@ -83,13 +75,6 @@ type PlotState ={
   setScaleIntensity: (scaleIntensity: number) => void;
   setPlotType: (plotType: string) => void;
   setSelectTS: (selectTS: boolean) => void;
-  setShowPoints: (showPoints: boolean) => void;
-  setLinePointSize: (linePointSize: number) => void;
-  setLineWidth: (lineWidth: number) => void;
-  setLineColor: (lineColor: string) => void;
-  setPointColor: (pointColor: string) => void;
-  setUseLineColor: (lineColor: boolean) => void;
-  setLineResolution: (lineResolution: number) => void;
   setAnimate: (animate: boolean) => void;
   setResetAnim: (resetAnim: boolean) => void;
   setAnimProg: (animProg: number) => void; 
@@ -97,9 +82,8 @@ type PlotState ={
   setCScale: (cScale: number) => void;
   setUseRayMarch: (useRayMarch: boolean) => void;
   setResetCamera: (resetCamera: boolean) => void;
-  setUseCustomColor: (useCustomColor: boolean) => void;
-  setUseCustomPointColor: (useCustomPointColor: boolean) => void;
   setTransparency: (transparency: number) => void;
+  setRevTransparency: (revTransparency: boolean) => void;
   setNanTransparency: (nanTraparency: number) => void;
   setNanColor: (nanColor: string) => void;
   setShowBorders: (showBorders: boolean) => void;
@@ -143,13 +127,6 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   yRange: [-1, 1],
   zRange: [-1, 1],
   selectTS: false,
-  showPoints: true,
-  linePointSize: 2,
-  lineWidth: 1.25,
-  lineColor: "#111111",
-  pointColor: "#EA8686",
-  useLineColor: false,
-  lineResolution: 3,
   animate: false,
   resetAnim: false,
   animProg: 0,
@@ -157,9 +134,8 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   cScale: 1,
   useRayMarch: false,
   resetCamera: false,
-  useCustomColor: false,
-  useCustomPointColor: false,
   transparency: 0,
+  revTransparency: false,
   nanTransparency: 1,
   nanColor: "#000000",
   showBorders: false,
@@ -215,13 +191,6 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setScaleIntensity: (scaleIntensity) => set({ scaleIntensity }),
   setPlotType: (plotType) => set({ plotType }),
   setSelectTS: (selectTS) => set({ selectTS }),
-  setShowPoints: (showPoints) => set({ showPoints }),
-  setLinePointSize: (linePointSize) => set({ linePointSize }),
-  setLineWidth: (lineWidth) => set({ lineWidth }),
-  setLineColor: (lineColor) => set({ lineColor }),
-  setPointColor: (pointColor) => set({ pointColor }),
-  setUseLineColor: (useLineColor) => set({ useLineColor }),
-  setLineResolution: (lineResolution) => set({ lineResolution }),
   setAnimate: (animate) => set({ animate }),
   setResetAnim: (resetAnim) => set({ resetAnim }),
   setAnimProg: (animProg) => set({ animProg }),
@@ -229,9 +198,8 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setCScale: (cScale) => set({ cScale }),
   setUseRayMarch: (useRayMarch) => set({ useRayMarch }),
   setResetCamera: (resetCamera) => set({ resetCamera }),
-  setUseCustomColor: (useCustomColor) => set({ useCustomColor }),
-  setUseCustomPointColor: (useCustomPointColor) => set({ useCustomPointColor}),
   setTransparency: (transparency) => set({ transparency}),
+  setRevTransparency: (revTransparency) => set({ revTransparency }),
   setNanTransparency: (nanTransparency) => set({ nanTransparency }),
   setNanColor: (nanColor) => set({ nanColor }),
   setShowBorders: (showBorders) => set({ showBorders }),

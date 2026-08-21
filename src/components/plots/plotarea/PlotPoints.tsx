@@ -2,8 +2,8 @@ import React, {useRef, useMemo, useEffect, useState} from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
+import { useGraphStore } from '@/GlobalStates/GraphStore';
 
 interface pointSetters{
   setPointID:React.Dispatch<React.SetStateAction<[string,number]>>,
@@ -18,7 +18,7 @@ function PlotPoints({ points, tsID, pointSetters, scalers }: { points: THREE.Vec
   const [_reRender,setreRender] = useState<boolean>(false);
   const {setPointID, setPointLoc,setShowPointInfo} = pointSetters;
   const [zoom,setZoom] = useState<number>(1);
-  const {pointColor, pointSize, useCustomPointColor} = usePlotStore(useShallow(s => s))
+  const {pointColor, pointSize, useCustomPointColor} = useGraphStore(useShallow(s => s))
   const {xScale, yScale} = scalers;
   const {timeSeries} = useGlobalStore(useShallow(s => s))
   const [r, g, b] = timeSeries[tsID]['color']
