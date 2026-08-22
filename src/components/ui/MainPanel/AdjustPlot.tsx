@@ -1,5 +1,5 @@
 "use client";
-import React, {useState, useEffect} from 'react'
+import React, {useState, useEffect, useRef, useCallback} from 'react'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
@@ -252,7 +252,6 @@ const PointOptions = () =>{
 
   return(
     <>
-    
     <div className='flex-column items-center w-50 text-center mb-8'>
           <b>Point Size</b>
           <UISlider
@@ -383,7 +382,6 @@ const SphereOptions = () =>{
 }
 
 const SpatialExtent = () =>{
-
   const {lonExtent, latExtent, lonResolution, latResolution, originalExtent,
         setLonExtent, setLatExtent, setLonResolution, setLatResolution} = usePlotStore(useShallow(s => s))
   return (
@@ -440,11 +438,25 @@ const GlobalOptions = () =>{
   const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
     setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(s => s))
   const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
-  const {valueScales, borderCompatible} = useGlobalStore(useShallow(s => s))
+  const {valueScales, borderCompatible} = useGlobalStore(useShallow(s => ({valueScales: s.valueScales, borderCompatible: s.borderCompatible})))
   const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
   const [showMasks, setShowMasks] = useState(false)
   const masks = ["None", "Land", "Water"]
   const isPC = plotType == 'point-cloud'
+
+  const throttleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestValue = useRef(borderColor);
+
+  const handleColorChange = useCallback((setter: (color:string) => void)=>(e: React.ChangeEvent<HTMLInputElement>) => {
+    latestValue.current = e.target.value;
+
+    if (throttleTimeout.current) return; // already scheduled
+
+    throttleTimeout.current = setTimeout(() => {
+      setter(latestValue.current);
+      throttleTimeout.current = null;
+    }, 100);
+  }, []);
 
   return (
     <div className='grid gap-y-[5px] items-center w-50 text-center'>
@@ -472,8 +484,8 @@ const GlobalOptions = () =>{
       <b>NaN Color</b>
       <input type="color"
         className='w-[100%] cursor-pointer'
-        value={nanColor}
-        onChange={e => setNanColor(e.target.value)}
+        defaultValue={nanColor}
+        onChange={handleColorChange(setNanColor)}
       />
       <div className='grid grid-cols-[auto_20%] items-center gap-2 mt-2 text-left'>
         <label>Interpolate Pixels</label>
@@ -553,8 +565,8 @@ const GlobalOptions = () =>{
           <b>Border Color</b>
           <input type="color"
               className='w-[100%] cursor-pointer'
-                  value={borderColor}
-              onChange={e => setBorderColor(e.target.value)}
+              defaultValue={borderColor}
+              onChange={handleColorChange(setBorderColor)}
               />
         </Hider>
       </>

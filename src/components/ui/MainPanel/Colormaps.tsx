@@ -1,14 +1,12 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from 'react'
-import { GetColorMapTexture, colormaps, availableColorMapNames, getColormapGradientCss, colormapIndex } from '@/components/textures';
+import { GetColorMapTexture, colormaps, getColormapGradientCss, colormapIndex } from '@/components/textures';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow';
-import { MdOutlineSwapVert } from "react-icons/md";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button-enhanced";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Search, X, Eye, EyeOff } from "lucide-react"
 import {
