@@ -25,5 +25,4 @@ void main() {
         }
     }
     Color = vec4(sampColor, 1.);
-    // Color = vec4(vec2(vUv.x > 0.55), 0.0 , 1.0);
 }

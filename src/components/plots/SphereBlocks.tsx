@@ -9,7 +9,8 @@ import { invalidate } from '@react-three/fiber'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
-import { useDimAxis } from '@/hooks';
+import { useCoordBounds, useDimAxis } from '@/hooks';
+import { deg2rad } from '@/utils/HelperFuncs';
 const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
     const textures = usePaddedTextures(propTextures);
     const {isFlat, valueScales, remapTexture} = useGlobalStore(useShallow(s => s))
@@ -46,7 +47,9 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
         );
         return geo
     },[count])
+    
     const uniforms = useCommonUniforms()
+    const {lonBounds, latBounds} = useCoordBounds()
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
@@ -55,6 +58,8 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
                 remapTexture: { value: remapTexture },
                 displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))},
                 displacement: {value: displacement},
+                widthFactor: {value: Math.abs(deg2rad(lonBounds[1])-deg2rad(lonBounds[0]))/(2.0*Math.PI)},
+                vertFactor: {value: Math.abs(deg2rad(latBounds[1])-deg2rad(latBounds[0]))/(Math.PI)},
                 ...uniforms
             },
             defines:{
@@ -77,9 +82,11 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             uniforms.map.value = textures;
             uniforms.displacement.value = displacement
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
+            uniforms.widthFactor.value = Math.abs(deg2rad(lonBounds[1])-deg2rad(lonBounds[0]))/(2.0*Math.PI)
+            uniforms.vertFactor.value =  Math.abs(deg2rad(latBounds[1])-deg2rad(latBounds[0]))/(Math.PI)
         }
         invalidate();
-    },[valueScales, displacement, offsetNegatives, textures])
+    },[valueScales, displacement, offsetNegatives, lonBounds, textures])
 
     const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor, opacity:(1-nanTransparency)}),[])
     nanMaterial.transparent = true;
