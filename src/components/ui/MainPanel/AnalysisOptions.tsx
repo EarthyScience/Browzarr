@@ -8,11 +8,7 @@ import { useShallow } from 'zustand/shallow';
 import '../css/MainPanel.css';
 import { PiMathOperationsBold } from "react-icons/pi";
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Input } from '../input';
-import { Button } from '../button-enhanced';
-import { CiUndo } from "react-icons/ci";
-import {KernelVisualizer} from "@/components/ui";
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {Hider, KernelVisualizer, QuickTip, Button, Input} from "@/components/ui";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { Switch } from '../switch';
 import { HandleKernelNums } from '@/utils/HelperFuncs';
@@ -26,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { BsBoxArrowLeft } from "react-icons/bs";
+import { RxReset } from "react-icons/rx";
 
 const singleVarReductionOps = [
   { value: 'Mean', label: 'Mean' },
@@ -81,96 +78,86 @@ const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center
   </div>
 
 const AnalysisOptions = () => {
-  const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(s => s));
+	const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(s => s));
 
-  const previousStore = useRef<string>(initStore)
-  const [incompatible, setIncompatible] = useState(false); 
-  
-  const {
-    execute, operation, useTwo, kernelSize, kernelDepth,
-    kernelOperation, axis, variable2, analysisMode,
-    reverseDirection, valueScalesOrig,
-    setExecute, setAxis, setOperation, setUseTwo,
-    setVariable2, setKernelSize, setKernelDepth,
-    setKernelOperation, setAnalysisMode,
-    setReverseDirection, setAnalysisStore,
-    setAnalysisDim
-  } = useAnalysisStore(useShallow(s => s));
+	const previousStore = useRef<string>(initStore)
+	const [incompatible, setIncompatible] = useState(false); 
+	const [operation, setComponentOperation] = useState(useAnalysisStore.getState().operation)
+	const operationString = useRef('') // #vars:#dims:operation
+	const {
+		useTwo, kernelSize, kernelDepth,
+		kernelOperation, axis, variable2, analysisMode,
+		reverseDirection, valueScalesOrig,
+		setAxis, setOperation, setUseTwo,
+		setVariable2, setKernelSize, setKernelDepth,
+		setKernelOperation, setAnalysisMode,
+		setReverseDirection, setAnalysisStore,
+		setAnalysisDim
+	} = useAnalysisStore(useShallow(s => s));
+	const reFetch = useZarrStore(s => s.reFetch)
+	const setOpString = (operation: string) => {
+		operationString.current = operation
+		setComponentOperation(operation.split(':').at(-1) as string)
+	};
+	const [showError, setShowError] = useState<boolean>(false);
+	useEffect(() => {
+		const checkWebGPU = async () => {
+			if (!navigator.gpu){
+				setShowError(true);
+				return;
+			}
+			try {
+				await navigator.gpu.requestAdapter();
+				setShowError(false);
+			} catch {setShowError(true);}
+		};
+		checkWebGPU();
+	}, [plotOn]);
 
-  const {reFetch} = useZarrStore(useShallow(s => s))
+	useEffect(()=>{ // Changing stores makes it so you can't use two variable operations. 
+		if(initStore != previousStore.current)setIncompatible(true)
+		else setIncompatible(false)
+	},[initStore])
 
-  const [showError, setShowError] = useState<boolean>(false);
-  
-  useEffect(() => {
-    const checkWebGPU = async () => {
-      if (!navigator.gpu) {
-          setShowError(true);
-          return;
-      }
-      try {
-          await navigator.gpu.requestAdapter();
-          setShowError(false);
-      } catch {
-          setShowError(true);
-      }
-    };
-    checkWebGPU();
-  }, [plotOn]);
+	useEffect(()=>{ // When data is downloaded (indicated by changes in refetch) The newly plotted and any future variables are compatible until initStore changes. 
+		setIncompatible(false);
+		previousStore.current = initStore
+		setAnalysisStore(initStore)
+	},[reFetch])
 
+	useEffect(()=>{
+		if (isFlat)setKernelDepth(1)
+		else setKernelDepth(3)
+	},[isFlat])
 
-  useEffect(()=>{ // Changing stores makes it so you can't use two variable operations. 
-    if(initStore != previousStore.current){
-      setIncompatible(true)
-    }
-    else{
-      setIncompatible(false)
-    }
-  },[initStore])
+	useEffect(()=>{
+		setKernelOperation("Default")
+		setOperation("Default")
+		setAnalysisMode(false)
+	},[variable])
 
-  useEffect(()=>{ // When data is downloaded (indicated by changes in refetch) The newly plotted and any future variables are compatible until initStore changes. 
-    setIncompatible(false);
-    previousStore.current = initStore
-    setAnalysisStore(initStore)
-  },[reFetch])
+	const [newDim, setNewDim] = useState(0)
+	useEffect(()=>{
+		setNewDim(axis)
+	},[axis])
 
-  useEffect(()=>{
-    if (isFlat){
-      setKernelDepth(1)
-    }else{
-      setKernelDepth(3)
-    }
-  },[isFlat])
-
-  useEffect(()=>{
-    setKernelOperation("Default")
-    setOperation("Default")
-    setAnalysisMode(false)
-  },[variable])
-
-  const [newDim, setNewDim] = useState(0)
-  useEffect(()=>{
-    setNewDim(axis)
-  },[axis])
-
-  const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
-  useEffect(() => {
-      const handleResize = () => {
-      setPopoverSide(window.innerWidth < 768 ? "top" : "left");
-      };
-      handleResize();
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-  }, []);
+	const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
+	useEffect(() => {
+		const handleResize = () => {
+		setPopoverSide(window.innerWidth < 768 ? "top" : "left");
+		};
+		handleResize();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
 
   return (
     <>
       <Popover>
         <PopoverTrigger asChild>
           <div style={plotOn ? {} : { pointerEvents: 'none' } }>
-            <Tooltip delayDuration={500}>
-              <TooltipTrigger asChild>
-                <div>
-                <Button
+           <QuickTip message='Apply operations'>
+				<Button
                   variant="ghost"
                   size="icon"
                   className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
@@ -178,20 +165,9 @@ const AnalysisOptions = () => {
                       color: plotOn ? '' : 'var(--text-disabled)'
                     }}
                 >
-                  <PiMathOperationsBold className="size-8"/>
+					<PiMathOperationsBold className="size-8"/>
                 </Button>
-                </div>
-              </TooltipTrigger>
-              {popoverSide === "left" ? (
-                <TooltipContent side="left" align="start">
-                  <span>Apply operations</span>
-                </TooltipContent>
-              ) : (
-                <TooltipContent side="top" align="center">
-                  <span>Apply operations</span>
-                </TooltipContent>
-              )}
-            </Tooltip>
+		   </QuickTip>
           </div>
         </PopoverTrigger>
         <PopoverContent
@@ -215,240 +191,191 @@ const AnalysisOptions = () => {
                 {useTwo ? 'Use One \n Variable' : 'Use Two Variables'}
               </Button>}
 
-              <table style={{ textAlign: 'right' }}>
-                <tbody>
-                  {/* Current Plotted Variable */}
-                  <tr>
-                    <th>Current Variable</th>
-                    <td className="text-center w-[100%] align-middle justify-center content-center">
-                      <div className='grid grid-cols-[65%_auto] w-[90%] mx-auto'>
-                        {analysisMode &&
-                        <div className='rounded-[6px] self-center mx-2 relative border border-gray-150 py-[5px] px-1'>
-                          <div className='flex justify-around'>
-                          Current
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <BsFillQuestionCircleFill/>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                Operations will be applied to the newly generated data. 
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </div>}
-                        <button 
-                          className={`rounded-[6px] self-center ${analysisMode ? null : 'col-span-2'} w-[100%] pl-2 relative border border-gray-150 py-[5px] ${analysisMode ?'hover:scale-[0.95]' : ''} transition-[0.2s]`}
-                          style={{
-                            cursor: analysisMode ? 'pointer' : '',
-                          }}
-                          disabled={!analysisMode}
-                          onClick={e=>{useAnalysisStore.setState({ analysisMode: false, analysisDim: null, variable2: 'Default' }); if(valueScalesOrig){setValueScales(valueScalesOrig)}}}
-                        >
-                          {analysisMode && <CiUndo 
-                            size={20}
-                            style={{
-                              position:'absolute',
-                              left:'0%',
-                              top:'10%'
-                            }}
-                          />}
-                          {analysisMode ? 'Reset' : variable}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-              {useTwo && <>
-              <tr>
-                <th>Second Variable</th>
-                <td>
-                    <Select onValueChange={setVariable2}>
-                      <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
-                        <SelectValue placeholder={ "Select..."} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {variables.map((iVar, idx) => { //Dont allow correlation of two variables
-                          if (iVar == variable){
-                            return null;
-                          }
-                          return (
-                          <SelectItem key={idx} value={iVar}>
-                            {iVar}
-                          </SelectItem>)
-                      })}
-                      </SelectContent>
-                    </Select>
-                </td>
-              </tr>
-              </>}
-              
-              <tr>
-                <th>Operation</th>
-                {!useTwo && (
-                  <td>
-                    <Select value={operation} onValueChange={setOperation}>
-                      <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
-                        <SelectValue
-                          placeholder='Select...'
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {!isFlat &&
-                          <SelectGroup>
-                          <SelectLabel>Dimension Reduction</SelectLabel>
-                          {singleVarReductionOps.map((op, idx) => (
-                            <SelectItem key={idx} value={op.value}>
-                              {op.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>}
-                        <SelectGroup>
-                          <SelectLabel>{isFlat ? '' : 'Three Dimensional'}</SelectLabel>
-                          <SelectItem value="Convolution">Convolution</SelectItem>
-                          {!isFlat && !analysisMode &&<SelectItem value="CUMSUM3D">CUMSUM</SelectItem>}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </td>
-                )}
-                {useTwo && (
-                  <td>
-                    <Select 
-                      value={operation} 
-                      onValueChange={setOperation}>
-                      <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
-                        <SelectValue
-                          placeholder='Select...'
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Dimension Reduction</SelectLabel>
-                          {multiVar2DOps.map((op, idx) => (
-                            <SelectItem key={idx} value={op.value}>
-                              {op.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
+			  {/* MAIN GRID */}
+              <div className='grid grid-cols-[70px_auto] place-items-center gap-2'>
+				{/* CURRENT VARIABLE */}
+                <h1>Current Variable</h1>
+				<div className='flex w-full'>
+					{analysisMode ?
+					<>
+					<div className='rounded-[6px] self-center relative border border-gray-150 py-[5px] px-1'>
+						<div className='flex px-4 items-center'>
+							<span className='pr-2'>Current</span> 
+							<QuickTip message='Operations will be applied to the newly generated data. '>
+							<BsFillQuestionCircleFill/>
+							</QuickTip>
+						</div>
+					</div>
+					<Button
+						variant='ghost'
+						className='pl-4 ml-4'
+						onClick={e=>{useAnalysisStore.setState({ analysisMode: false, analysisDim: null, variable2: 'Default' }); if(valueScalesOrig){setValueScales(valueScalesOrig)}}}
+					>
+						<RxReset />
+					</Button>
+					</>
+					:
+					<div className='rounded-[6px] w-full border border-grey-150 py-[5px] justify-center px-2'>
+						{variable}
+					</div>					
+					}
+				</div>
+				<Hider className='col-span-2 w-full' show={useTwo}>
+					<div className='grid grid-cols-[70px_auto] place-items-center gap-2'>
+						<h1>Second Variable</h1>
+						<Select 
+							onValueChange={setVariable2}
+						>
+						<SelectTrigger className='w-full'>
+							<SelectValue placeholder={ "Select..."} />
+						</SelectTrigger>
+						<SelectContent>
+							{variables.map((iVar, idx) => { //Dont allow correlation of two variables
+							if (iVar == variable){
+								return null;
+							}
+							return (
+							<SelectItem key={idx} value={iVar}>
+								{iVar}
+							</SelectItem>)
+						})}
+						</SelectContent>
+						</Select>
+					</div>
+				</Hider>
+				{/* OPERATION TYPE */}
+				<h1>Operation</h1>
+				{useTwo ? 
+				<Select 
+					defaultValue={operation} 
+					onValueChange={setOpString}
+				>
+					<SelectTrigger className='w-full'>
+						<SelectValue
+						placeholder='Select...'
+						/>
+					</SelectTrigger>
+					<SelectContent>
+						<SelectGroup>
+						<SelectLabel>Dimension Reduction</SelectLabel>
+						{multiVar2DOps.map((op, idx) => (
+							<SelectItem key={idx} value={`2:2:${op.value}`}>
+							{op.label}
+							</SelectItem>
+						))}
+						</SelectGroup>
 
-                        <SelectGroup>
-                          <SelectLabel>Three Dimensional</SelectLabel>
-                          <SelectItem value="Convolution">Convolution</SelectItem>
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </td>
-                )}
-              </tr>
-                  {[...singleVarReductionOps.map(op => op.value), ...multiVar2DOps.map(op => op.value), 'CUMSUM3D'].includes(operation) && !isFlat &&
-                    (
-                      <tr>
-                        <th>Axis</th>
-                        <td style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <Select onValueChange={e => setNewDim(parseInt(e))}>
-                            <SelectTrigger style={{ width: ['CUMSUM3D', 'LinearSlope'].includes(operation) ? '50%' : '175px', marginLeft: '18px' }}>
-                              <SelectValue placeholder={dimNames[activeIndices[newDim]] ?? "Select Axis"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {activeIndices.map((origIdx, dataShapeIdx) => (
-                                <SelectItem key={dataShapeIdx} value={String(dataShapeIdx)}>
-                                  {dimNames[origIdx]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {['CUMSUM3D'].includes(operation) && 
-                          <Tooltip delayDuration={300}>
-                            <div style={{width:'90%', display:'flex', justifyContent:'space-around', alignItems:'center', alignContent:'center'}}>
-                              <label htmlFor="reverse-axis" style={{textAlign:'left'}}>Rev.</label>
-                              <TooltipTrigger asChild>  
-                                <Switch id='reverse-axis' checked={reverseDirection == 1} onCheckedChange={e=> {setReverseDirection(e ? 1 : 0)}}/>
-                              </TooltipTrigger>
-                            </div>
-                            <TooltipContent side='bottom'>
-                              Reverse the direction of the operation along the axis
-                            </TooltipContent>
-                          </Tooltip>
-                          }
-                        </td>
-                      </tr>
-                    )
-                  }
-                  {operation == 'Convolution' &&
-                    <>
-                    <tr>
-                      <th>Kernel Op.</th>
-                      <td>
-                        <Select onValueChange={setKernelOperation}>
-                          <SelectTrigger style={{ width: '175px', marginLeft: '18px' }}>
-                            <SelectValue
-                              placeholder={
-                                kernelOperation === 'Default' ? 'Select...' : kernelOperation
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {useTwo && multiVar3DOps.map((op, idx) =>  (
-                                <SelectItem key={idx} value={op.value}>
-                                  {op.label}
-                                </SelectItem>
-                                )
-                            )}
-                            {!useTwo && isFlat ? 
-                                singleVar2DOps.map((op, idx) =>  (
-                                  <SelectItem key={idx} value={op.value}>
-                                    {op.label}
-                                  </SelectItem>
-                                )) 
-                                :
-                                singleVar3DOps.map((op, idx) =>  (
-                                  <SelectItem key={idx} value={op.value}>
-                                    {op.label}
-                                  </SelectItem>
-                                ))
-                            }
-                          </SelectContent>
-                        </Select>
-                      </td>
-                    </tr>
-                  
-                    <tr>
-                      <th style={{padding:'0px 12px'}}>Kernel Size</th>
-                      <td>
-                        <table style={{ width: '100%', tableLayout: 'fixed' }}>
-                          <tbody>
-                            {!isFlat &&<tr>
-                              <td style={{ textAlign: 'center' }}>Size</td>
-                                <td style={{ textAlign: 'center' }}>Depth</td>
-                            </tr>}
-                            <tr>
-                              <td style={{ textAlign: 'center', padding:'0px 12px'}}>
-                                <Input type='number' min='1' step='2' value={String(kernelSize)} 
-                                  onChange={e=>setKernelSize(parseInt(e.target.value))}
-                                  onBlur={e=>setKernelSize(HandleKernelNums(e.target.value))}
-                                />
-                              </td>
-                              {!isFlat &&
-                                <td  style={{ textAlign: 'center', padding:'0px 12px' }}>
-                                <Input type='number' min='1' step='2' value={String(kernelDepth)} 
-                                  onChange={e=>setKernelDepth(parseInt(e.target.value))}
-                                  onBlur={e=>setKernelDepth(HandleKernelNums(e.target.value))}
-                                />
-                              </td>}
-                            </tr>
-                          </tbody>
-                        </table>
-                      </td>
-                    </tr>
-                    <tr >
-                      <td/>
-                      <th >
-                            <KernelVisualizer size={Math.min(kernelSize,15)} depth={Math.min(kernelDepth, 15)} />
-                      </th>
-                    </tr>
-                    </>
-                  }
-                </tbody>
-              </table>
+						<SelectGroup>
+						<SelectLabel>Three Dimensional</SelectLabel>
+						<SelectItem value="2:3:Convolution">Convolution</SelectItem>
+						</SelectGroup>
+					</SelectContent>
+				</Select>
+				:
+				<Select defaultValue={operation} onValueChange={setOpString}>
+					<SelectTrigger className='w-full'>
+						<SelectValue
+						placeholder='Select...'
+						/>
+					</SelectTrigger>
+					<SelectContent>
+						{!isFlat &&
+						<SelectGroup>
+						<SelectLabel>Dimension Reduction</SelectLabel>
+						{singleVarReductionOps.map((op, idx) => (
+							<SelectItem key={idx} value={`1:2:${op.value}`}>
+							{op.label}
+							</SelectItem>
+						))}
+						</SelectGroup>}
+						<SelectGroup>
+						<SelectLabel>{isFlat ? '' : 'Three Dimensional'}</SelectLabel>
+						<SelectItem value="1:3:Convolution">Convolution</SelectItem>
+						{!isFlat && !analysisMode &&<SelectItem value="1:3:CUMSUM3D">CUMSUM</SelectItem>}
+						</SelectGroup>
+					</SelectContent>
+				</Select>
+				}
+				{(operation != 'Convolution') && <>
+					<h1>Axis</h1>
+					<div className='flex justify-between w-full'>
+						<Select onValueChange={e => setNewDim(parseInt(e))}>
+							<SelectTrigger className='w-full' style={{ width: ['CUMSUM3D', 'LinearSlope'].includes(operation) ? '50%' : '100%'}}>
+								<SelectValue placeholder={dimNames[activeIndices[newDim]] ?? "Select Axis"} />
+							</SelectTrigger>
+							<SelectContent>
+								{activeIndices.map((origIdx, dataShapeIdx) => (
+								<SelectItem key={dataShapeIdx} value={String(dataShapeIdx)}>
+									{dimNames[origIdx]}
+								</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						{['CUMSUM3D', 'LinearSlope'].includes(operation) && 
+						<QuickTip message='Swap direction of operation'>
+							<div className='flex justify-around w-[50%] items-center '>
+								<label htmlFor="reverse-axis" style={{textAlign:'left'}}>Rev.</label>
+								<Switch id='reverse-axis' checked={reverseDirection == 1} onCheckedChange={e=> {setReverseDirection(e ? 1 : 0)}}/>
+							</div>
+						</QuickTip>
+						}
+					</div>
+				</>}
+				{operation == 'Convolution' &&
+				<>
+				<h1>Kernel Op.</h1>
+				<Select onValueChange={setKernelOperation}>
+					<SelectTrigger className='w-full'>
+					<SelectValue
+						placeholder={
+						kernelOperation === 'Default' ? 'Select...' : kernelOperation
+						}
+					/>
+					</SelectTrigger>
+					<SelectContent>
+					{useTwo && multiVar3DOps.map((op, idx) =>  (
+						<SelectItem key={idx} value={op.value}>
+							{op.label}
+						</SelectItem>
+						)
+					)}
+					{!useTwo && isFlat ? 
+						singleVar2DOps.map((op, idx) =>  (
+							<SelectItem key={idx} value={op.value}>
+							{op.label}
+							</SelectItem>
+						)) 
+						:
+						singleVar3DOps.map((op, idx) =>  (
+							<SelectItem key={idx} value={op.value}>
+							{op.label}
+							</SelectItem>
+						))
+					}
+					</SelectContent>
+				</Select>
+				<h1>Kernel Size</h1>
+				<div className={`grid grid-cols-${isFlat ? 1 : 2} w-full`}>
+					<div>
+						<h2>Size</h2>
+						<Input type='number' min='1' step='2' value={String(kernelSize)} 
+							onChange={e=>setKernelSize(parseInt(e.target.value))}
+							onBlur={e=>setKernelSize(HandleKernelNums(e.target.value))}
+						/>
+					</div>
+					{!isFlat && <div>
+						<h2>Depth</h2>
+						<Input type='number' min='1' step='2' value={String(kernelDepth)} 
+							onChange={e=>setKernelDepth(parseInt(e.target.value))}
+							onBlur={e=>setKernelDepth(HandleKernelNums(e.target.value))}
+						/>
+					</div>}
+				</div>
+				<div className='col-span-2 w-full place-items-center'>
+					<KernelVisualizer size={Math.min(kernelSize,15)} depth={Math.min(kernelDepth, 15)} />
+				</div>
+				</> }
+			</div>
               <Button
                 onClick={()=>{
                   useAnalysisStore.setState({useEditor:true})
@@ -468,7 +395,6 @@ const AnalysisOptions = () => {
                 onClick={() => {
                   setAxis(newDim)
                   setAnalysisDim(operation == 'CUMSUM3D' ? null : newDim)
-                  setExecute(!execute);
                   setTimeSeries({});
                 }}
               >

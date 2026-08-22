@@ -22,6 +22,7 @@ type AnalysisState = {
   useEditor: boolean;
   executeCustom: boolean;
   outputShape: number[];
+  operationString: string;
 
   setAnalysisMode: (analysisMode: boolean) => void;
   setAxis: (axis: number) => void;
@@ -62,6 +63,7 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   useEditor: false,
   executeCustom:false,
   outputShape: [],
+  operationString:'',
 
   setAnalysisMode: (analysisMode) => set({ analysisMode }),
   setAxis: (axis) => set({ axis }),
