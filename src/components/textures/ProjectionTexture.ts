@@ -164,23 +164,27 @@ function createInverseUV(
     //We assume all irregular grids are in degrees for now. 
 	const normX = normalizeArray(xArray, is360? 0 : -180 , is360 ? 360 : 180);
 	const normY = normalizeArray(yArray, -90, 90);
+    const [xMin, xMax] = ArrayMinMax(normX);
+    const [yMin, yMax] = ArrayMinMax(normY);
 
 	const data = new Uint16Array(width * height * 4); // 4 for RGBA
 	let ptr = 0;
 	for (let j = 0; j < height; j++) {
-		const vRaw = height > 1 ? j / (height - 1) : 0;
+		const vRaw = height > 1 ? j / (height) : 0;
 		const v = vRaw;
 		const jIdx = findNearestIndex(normY, v);
-		const jNorm = yArray.length > 1 ? jIdx / (yArray.length - 1) : 0;
-
+		const jNorm = yArray.length > 1 ? jIdx / (yArray.length) : 0;
+        const vValid = v >= yMin && v <= yMax;
 		for (let i = 0; i < width; i++) {
-			const u = width > 1 ? i / (width - 1) : 0;
+			const u = width > 1 ? i / (width) : 0;
 			const iIdx = findNearestIndex(normX, u);
-			const iNorm = xArray.length > 1 ? iIdx / (xArray.length - 1) : 0;
+			const iNorm = xArray.length > 1 ? iIdx / (xArray.length) : 0;
+            const uValid = u >= xMin && u <= xMax;
 
+            const valid = uValid && vValid;
 			data[ptr++] = THREE.DataUtils.toHalfFloat(iNorm);
 			data[ptr++] = THREE.DataUtils.toHalfFloat(jNorm);
-			data[ptr++] = THREE.DataUtils.toHalfFloat(1.); // Set Valid so can be used in same shader logic
+			data[ptr++] = THREE.DataUtils.toHalfFloat(valid ? 1 : 0); // Set Valid so can be used in same shader logic
 			ptr++;
 		}
 	}
