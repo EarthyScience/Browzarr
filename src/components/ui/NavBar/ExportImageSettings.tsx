@@ -33,13 +33,13 @@ const ExportImageSettings = () => {
         setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis, 
         setHideAxis, setHideAxisControls, setMainTitle, setCbarLabel, setAnimate, 
         setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setKeyFrameEditor, 
-        setCbarUnits, setPingpong, setPreview, setPreviewExtent, setOrbitDeg} = useImageExportStore.getState()
+        setCbarUnits, setPingpong, setPreview, setPreviewExtent, setOrbitDeg} = useImageExportStore(useShallow(s => s))
 
     interface CapitalizeFn {
         (str: string): string;
     }
 
-    const {plotType, zSlice} = usePlotStore(useShallow(s => s))
+    const {plotType, zSlice} = usePlotStore( useShallow(s => ({ plotType: s.plotType, zSlice: s.zSlice })))
     const {variable, metadata, dimArrays} = useGlobalStore(useShallow(s => s))
     const capitalize: CapitalizeFn = str => str.charAt(0).toUpperCase() + str.slice(1);
     const [showTitles, setShowTitles] = useState(false)
@@ -47,8 +47,7 @@ const ExportImageSettings = () => {
     const [showSettings, setShowSettings] = useState(true)
 	const [previewState, setPreviewState] = useState(false)
     const [copied, setCopied] = useState(false);
-
-    const { axisMapping } = useZarrStore(useShallow(s => s));
+    const axisMapping = useZarrStore(s => s.axisMapping);
 
     useEffect(()=>{
         const shapeLength = dimArrays?.length || 3;

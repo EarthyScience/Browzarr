@@ -21,7 +21,7 @@ export function useCommonUniforms() {
 		useBorderTexture: {value: useBorderTexture && showBorders},
 		borderTexture: {value: borderTexture},
 		borderWidth: {value: borderWidth},
-		borderColor: {value: new THREE.Color(borderColor)},
+		borderColor: {value: new THREE.Color(borderColor).convertLinearToSRGB()},
 		remapBorders : {value: Boolean(remapBorders) && !Boolean(remapTexture)},
 		is360: {value: is360Deg},
 		useF16: {value: useF16Textures},
@@ -31,7 +31,7 @@ export function useCommonUniforms() {
 		textureDepths: {value:  new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
 		cmap : { value : colormap},
 		animateProg: {value: animProg},
-		nanColor: {value : new THREE.Color(nanColor)},
+		nanColor: {value : new THREE.Color(nanColor).convertLinearToSRGB()},
 		nanAlpha: {value: 1 - nanTransparency},
 		fillValue: {value: fillValue?? NaN},
 		valueRange: {value: new THREE.Vector2(valueScales.minVal, valueScales.maxVal)}
@@ -62,7 +62,7 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		uniforms.cOffset.value = cOffset;
 		uniforms.cmap. value = colormap;
 		uniforms.animateProg.value = animProg;
-		uniforms.nanColor.value = new THREE.Color(nanColor);
+		uniforms.nanColor.value = new THREE.Color(nanColor).convertLinearToSRGB();
 		uniforms.nanAlpha.value = 1 - nanTransparency;
 		uniforms.cScale.value = cScale;
 		uniforms.threshold.value.set(valueRange[0], valueRange[1]);
@@ -71,7 +71,7 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		uniforms.maskValue.value = maskValue;
 		uniforms.fillValue.value = fillValue?? NaN;
 		uniforms.useBorderTexture.value = useBorderTexture && showBorders;
-		uniforms.borderColor.value = new THREE.Color(borderColor);
+		uniforms.borderColor.value = new THREE.Color(borderColor).convertLinearToSRGB();
 		uniforms.borderWidth.value = borderWidth;
 		uniforms.is360.value = is360Deg;
 		uniforms.valueRange.value = new THREE.Vector2(valueScales.minVal, valueScales.maxVal);
