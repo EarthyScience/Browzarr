@@ -120,7 +120,6 @@ export async function DataProcess(
     const precision = hasF16 ? 'f16' : 'f32';
     const shaders = createShaders(precision);
     let shaderCatalog: Record<string, any>;
-
     if (operationString.includes("Convolution")){
         if (is3D) shaderCatalog = convolutionShaders;
         else shaderCatalog = convolution2DShaders;
@@ -138,7 +137,8 @@ export async function DataProcess(
     console.log(`workGroups: ${workGroups}`)
     console.log(`is3D: ${is3D}`)
     console.log(`strides: ${strides}`)
-    console.log(shader)
+
+    // console.log(shader)
     // ---- START PIPELINE ---- //
     const computeModule = device.createShaderModule({
         label: 'analysis compute module',
@@ -160,9 +160,9 @@ export async function DataProcess(
         xStride,
         yStride,
         zStride,
-        xSize: shape[2], 
-        ySize: shape[1],
-        zSize: shape[0],
+        xSize: thisShape.at(-1), 
+        ySize: thisShape.at(-2),
+        zSize: thisShape.at(0),
         workGroups: is3D ?
             [workGroups[2], workGroups[1], workGroups[0]]
             : [workGroups[0], workGroups[1]],
