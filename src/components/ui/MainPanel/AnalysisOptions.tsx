@@ -23,40 +23,15 @@ import {
 } from '@/components/ui/select';
 import { BsBoxArrowLeft } from "react-icons/bs";
 import { RxReset } from "react-icons/rx";
+import { Analysis } from '@/components/computation/Analysis';
 
-const singleVarReductionOps = [
-  { value: 'Mean', label: 'Mean' },
-  { value: 'Min', label: 'Min' },
-  { value: 'Max', label: 'Max' },
-  { value: 'StDev', label: 'Standard Deviation' },
-  { value: 'LinearSlope', label: 'Linear Slope' },
-];
+const singleVarReductionOps = ['Mean', 'Min', 'Max', 'Standard Deviation', 'Linear Slope']
 
-const singleVar3DOps = [
-  { value: 'Mean3D', label: 'Mean' },
-  { value: 'Min3D', label: 'Min' },
-  { value: 'Max3D', label: 'Max' },
-  { value: 'StDev3D', label: 'Standard Deviation' },
-];
+const singleVarOps = ['Mean', 'Min', 'Max', 'Standard Deviation']
 
-const singleVar2DOps = [
-  { value: 'Mean2D', label: 'Mean' },
-  { value: 'Min2D', label: 'Min' },
-  { value: 'Max2D', label: 'Max' },
-  { value: 'StDev2D',label: 'Standard Deviation' },
-];
+const multiVarOps = ['Correlation', 'Linear Slope', 'Covariance']
 
-const multiVar2DOps = [
-    { value: 'Correlation2D', label: 'Correlation' },
-    { value: 'TwoVarLinearSlope2D', label: 'Linear Slope' },
-    { value: 'Covariance2D', label: 'Covariance' },
-];
 
-const multiVar3DOps = [
-    { value: 'Correlation3D', label: 'Correlation' },
-    { value: 'TwoVarLinearSlope3D', label: 'Linear Slope' },
-    { value: 'Covariance3D', label: 'Covariance' },
-];
 
 
 const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center items-center">
@@ -83,22 +58,27 @@ const AnalysisOptions = () => {
 	const previousStore = useRef<string>(initStore)
 	const [incompatible, setIncompatible] = useState(false); 
 	const [operation, setComponentOperation] = useState(useAnalysisStore.getState().operation)
+	const [kernelOp, setKernelOp] = useState('')
 	const operationString = useRef('') // #vars:#dims:operation
-	const {
-		useTwo, kernelSize, kernelDepth,
-		kernelOperation, axis, variable2, analysisMode,
+	const {useTwo, kernelSize, kernelDepth,
+		axis, variable2, analysisMode,
 		reverseDirection, valueScalesOrig,
 		setAxis, setOperation, setUseTwo,
 		setVariable2, setKernelSize, setKernelDepth,
 		setKernelOperation, setAnalysisMode,
 		setReverseDirection, setAnalysisStore,
-		setAnalysisDim
+		setAnalysisDim, setOperationString
 	} = useAnalysisStore(useShallow(s => s));
 	const reFetch = useZarrStore(s => s.reFetch)
 	const setOpString = (operation: string) => {
 		operationString.current = operation
 		setComponentOperation(operation.split(':').at(-1) as string)
 	};
+	const handleExecute = () => {
+		if (operationString.current.includes("Convolution")) return [operationString.current, kernelOp].join('');
+		else return operationString.current;
+	}
+
 	const [showError, setShowError] = useState<boolean>(false);
 	useEffect(() => {
 		const checkWebGPU = async () => {
@@ -150,7 +130,6 @@ const AnalysisOptions = () => {
 		window.addEventListener("resize", handleResize);
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
-
   return (
     <>
       <Popover>
@@ -258,9 +237,9 @@ const AnalysisOptions = () => {
 					<SelectContent>
 						<SelectGroup>
 						<SelectLabel>Dimension Reduction</SelectLabel>
-						{multiVar2DOps.map((op, idx) => (
-							<SelectItem key={idx} value={`2:2:${op.value}`}>
-							{op.label}
+						{multiVarOps.map((op, idx) => (
+							<SelectItem key={idx} value={`2:2:${op.trim()}`}>
+							{op}
 							</SelectItem>
 						))}
 						</SelectGroup>
@@ -283,14 +262,14 @@ const AnalysisOptions = () => {
 						<SelectGroup>
 						<SelectLabel>Dimension Reduction</SelectLabel>
 						{singleVarReductionOps.map((op, idx) => (
-							<SelectItem key={idx} value={`1:2:${op.value}`}>
-							{op.label}
+							<SelectItem key={idx} value={`1:2:${op.trim()}`}>
+							{op}
 							</SelectItem>
 						))}
 						</SelectGroup>}
 						<SelectGroup>
 						<SelectLabel>{isFlat ? '' : 'Three Dimensional'}</SelectLabel>
-						<SelectItem value="1:3:Convolution">Convolution</SelectItem>
+						<SelectItem value={`1:${isFlat ? 2 : 3}:Convolution`}>Convolution</SelectItem>
 						{!isFlat && !analysisMode &&<SelectItem value="1:3:CUMSUM3D">CUMSUM</SelectItem>}
 						</SelectGroup>
 					</SelectContent>
@@ -324,31 +303,31 @@ const AnalysisOptions = () => {
 				{operation == 'Convolution' &&
 				<>
 				<h1>Kernel Op.</h1>
-				<Select onValueChange={setKernelOperation}>
+				<Select onValueChange={setKernelOp}>
 					<SelectTrigger className='w-full'>
 					<SelectValue
-						placeholder={
-						kernelOperation === 'Default' ? 'Select...' : kernelOperation
+						defaultValue={
+						kernelOp.length > 0 ? 'Select...' : kernelOp
 						}
 					/>
 					</SelectTrigger>
 					<SelectContent>
-					{useTwo && multiVar3DOps.map((op, idx) =>  (
-						<SelectItem key={idx} value={op.value}>
-							{op.label}
+					{useTwo && multiVarOps.map((op, idx) =>  (
+						<SelectItem key={idx} value={op.trim()}>
+							{op}
 						</SelectItem>
 						)
 					)}
 					{!useTwo && isFlat ? 
-						singleVar2DOps.map((op, idx) =>  (
-							<SelectItem key={idx} value={op.value}>
-							{op.label}
+						singleVarOps.map((op, idx) =>  (
+							<SelectItem key={idx} value={op.trim()}>
+							{op}
 							</SelectItem>
 						)) 
 						:
-						singleVar3DOps.map((op, idx) =>  (
-							<SelectItem key={idx} value={op.value}>
-							{op.label}
+						singleVarOps.map((op, idx) =>  (
+							<SelectItem key={idx} value={op.trim()}>
+							{op}
 							</SelectItem>
 						))
 					}
@@ -388,7 +367,7 @@ const AnalysisOptions = () => {
                 className="cursor-pointer active:scale-[0.95]"
                 disabled={
                   operation === 'Default' ||
-                  (operation === 'Convolution' && kernelOperation === 'Default') ||
+                  (operation === 'Convolution' && kernelOp.length == 0) ||
                   (useTwo && variable2 === 'Default')
                 }
                 variant='pink'
@@ -396,6 +375,8 @@ const AnalysisOptions = () => {
                   setAxis(newDim)
                   setAnalysisDim(operation == 'CUMSUM3D' ? null : newDim)
                   setTimeSeries({});
+				  setOperationString(handleExecute())
+				  Analysis();
                 }}
               >
                 Execute

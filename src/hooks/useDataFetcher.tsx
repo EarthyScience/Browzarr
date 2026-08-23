@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { useTextureStore } from '@/GlobalStates/TextureStore';
 import { useShallow } from 'zustand/shallow';
 import { GetDimInfo } from '@/utils/HelperFuncs';
 import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
@@ -20,7 +21,7 @@ export const useDataFetcher = () => {
     const {reFetch} = useZarrStore(useShallow(s => s))
 
     //---- Local State ----//
-    const [textures, setTextures] = useState<THREE.DataTexture[] | THREE.Data3DTexture[] | null>(null);
+    const {textures, setTextures} = useTextureStore(useShallow(s => s))
     const [show, setShow] = useState<boolean>(false);
     const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
 
@@ -43,7 +44,7 @@ export const useDataFetcher = () => {
                             if (tex.source) (tex.source as any).data = null;
                         });
                     }, 0);
-                    setTextures(null);
+                    setTextures(undefined);
                 }
                 //----- TimeSeries Cleanup ----//
                 useGlobalStore.setState({timeSeries:{}, dimCoords:{}})

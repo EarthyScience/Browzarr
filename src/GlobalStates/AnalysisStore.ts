@@ -41,6 +41,7 @@ type AnalysisState = {
   setAnalysisDim: (analysisDim: number | null) => void;
   setCustomShader: (customShader: string | undefined) => void;
   setOutPutShape: (outputShape: number[]) => void;
+  setOperationString: (operationString : string) => void;
 }
 
 export const useAnalysisStore = create<AnalysisState>((set) => ({
@@ -82,4 +83,5 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   setAnalysisDim: (analysisDim) => set({ analysisDim }),
   setCustomShader: (customShader) => set({ customShader }),
   setOutPutShape: (outputShape) => set({ outputShape }),
+  setOperationString: (operationString) => set({ operationString })
 }));
