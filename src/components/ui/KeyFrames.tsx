@@ -17,7 +17,8 @@ import { TbKeyframesFilled } from "react-icons/tb";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner"
 import { QuickTip } from './Widgets/QuickTip';
-
+import { KeyFramesHelper } from './Elements/KeyFramesHelper';
+import { BsBoxArrowUp } from 'react-icons/bs';
 function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
   return keys.reduce((acc, key) => {
     if (key in obj) {
@@ -62,6 +63,7 @@ const SetKeyFrame = (frame: number) =>{
 export const KeyFrames = () => {
 
     const {animProg, setAnimProg} = usePlotStore(useShallow(s => s))
+    const [showHelper, setShowHelper] = useState(false)
 
     const {keyFrames, frames, useTime, frameRate, timeRate, orbit, currentFrame, previewKeyFrames, setCurrentFrame, setFrames} = useImageExportStore(
         useShallow(s => s))
@@ -144,9 +146,16 @@ export const KeyFrames = () => {
     </QuickTip>
       <CardContent className='flex flex-col gap-1 w-full h-full px-1 py-1'>
         <div className='flex flex-wrap justify-center gap-1 ml-6 mr-0 md:ml-8 md:mr-4'>
+            <Button
+                variant='outline'
+                onClick={()=>setShowHelper(true)}
+            >
+                <BsBoxArrowUp />
+                Guide
+            </Button>
 			{/* Buttons */}
 			<ButtonGroup>
-				<QuickTip message='Add new Keyframe'>
+				<QuickTip message='Add new Keyframe' side='top'>
                     <Button 
                         className='cursor-pointer'
                         size="sm"
@@ -156,7 +165,7 @@ export const KeyFrames = () => {
                         <FaPlusCircle /> { MdLg === "lg" ? 'Keyframe' : <TbKeyframeFilled/>}
                     </Button>
                 </QuickTip>
-                <QuickTip message='Clear all Keyframes'>
+                <QuickTip message='Clear all Keyframes' side='top'>
                     <Button 
                             disabled={!keyFrameList}
                             className='cursor-pointer'
@@ -167,7 +176,7 @@ export const KeyFrames = () => {
                             <MdDeleteForever className='size-6'/> { MdLg === "lg" ? 'Keyframes' : <TbKeyframesFilled/>}
                         </Button>
                 </QuickTip>
-                <QuickTip message='Preview full animation'>
+                <QuickTip message='Preview full animation' side='top'>
                     <Button 
                         disabled={!keyFrameList}
                         className='cursor-pointer'
@@ -181,7 +190,7 @@ export const KeyFrames = () => {
 			</ButtonGroup>
 			{/* Frame Information */}
             <ButtonGroup >
-                <QuickTip message='Frames'>
+                <QuickTip message='Set number of frames in animation (defaults to number of timesteps)' side='top'>
                     <Button size="sm" variant="outline">
                         <TbKeyframesFilled/> { MdLg === "lg" ? 'Frames' : ''}
                     </Button>
@@ -189,7 +198,7 @@ export const KeyFrames = () => {
                 <Input className='w-[80px] h-[32px]' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(Math.max(parseInt(e.target.value),2))} />
             </ButtonGroup>
             <ButtonGroup >
-                <QuickTip message='Frame'>
+                <QuickTip message='Curent Frame' side='top'>
                     <Button size="sm" variant="outline">
                         <TbKeyframeFilled/> { MdLg === "lg" ? 'Frame' : ''}
                     </Button>
@@ -244,6 +253,7 @@ export const KeyFrames = () => {
 		</div>
 		
     </CardContent>
+    <KeyFramesHelper open={showHelper} onOpenChange={setShowHelper}/>
     </Card>
   )
 }
