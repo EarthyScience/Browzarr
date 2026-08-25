@@ -51,7 +51,9 @@ function Num2String(value: number){
 }
 
 const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Record<string, any>, valueScales: {maxVal: number, minVal:number}}) => {
-    const {colormap, variable, scalingFactor} = useGlobalStore(useShallow(s => s));
+    const {colormap, variable, scalingFactor} = useGlobalStore(useShallow(s => ({
+        colormap: s.colormap, variable:s.variable, scalingFactor:s.scalingFactor
+    })));
     const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
     const {variable2, analysisMode, operation, kernelOperation, execute} = useAnalysisStore(useShallow(s => s));
 
@@ -70,7 +72,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     const [displayMin, setDisplayMin] = useState(Num2String(origMin*Math.pow(10, scalingFactor??0)))
     const [displayMax, setDisplayMax] = useState(Num2String(origMax*Math.pow(10, scalingFactor??0)))
     const prevVals = useRef<{ min: number | null; max: number | null }>({ min: null, max: null });
-    
+    const colorString = colorScale ? `(${colorScale?.slice(0,-1)})` : ''
     const colors = useMemo(()=>{
         const sourceData = colormap.source.data;
         if (!sourceData || !sourceData.data) {
@@ -240,6 +242,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
             }}>
                 {<Metadata data={metadata} variable={variable} isMobile={true} />}
                 {`${analysisString}`}
+                {`${colorString}`}
             </p>
         {/* RESET */}
         {(cScale != 1 || cOffset != 0 || colorScale) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} 
