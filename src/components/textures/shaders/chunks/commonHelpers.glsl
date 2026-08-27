@@ -35,10 +35,6 @@ float sample1(
     else return 0.0;
 }
 
-bool isNaN(float x) {
-    return x != x;
-}
-
 bool isNaNBits(float x) {
     uint bits = floatBitsToUint(x);
     uint exponent = bits & 0x7F800000u;
@@ -46,12 +42,12 @@ bool isNaNBits(float x) {
     return (exponent == 0x7F800000u) && (mantissa != 0u);
 }
 
-void denorm(out float x){
+void denorm(inout float x){
     x *= (valueRange.y - valueRange.x);
     x += valueRange.x;
 }
 
-void norm(out float x){
+void norm(inout float x){
     x -= valueRange.x;
     x /= (valueRange.y - valueRange.x);
 }
@@ -62,9 +58,9 @@ void rescaler(inout float x){
 
 vec2 reprojector(
 #ifdef IS_FLAT
-    out vec2 texCoord
+    inout vec2 texCoord
 #else
-    out vec3 texCoord
+    inout vec3 texCoord
 #endif
 ) {
     vec2 originalCoord = texCoord.xy;
