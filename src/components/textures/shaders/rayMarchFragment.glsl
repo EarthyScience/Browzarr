@@ -61,7 +61,9 @@ void main() {
             continue;
         }
         vec3 texCoord = p * scaler + 0.5;
-        vec2 maskUV = reprojector(texCoord);
+        bool valid;
+        vec2 maskUV = reprojector(texCoord, valid);
+        if (!valid) continue;
         if (maskValue != 0){
             float mask = texture(maskTexture, maskUV).r;
             bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;

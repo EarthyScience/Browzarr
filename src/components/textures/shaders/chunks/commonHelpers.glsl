@@ -62,10 +62,11 @@ void rescaler(inout float x){
 
 vec2 reprojector(
 #ifdef IS_FLAT
-    out vec2 texCoord
+    out vec2 texCoord,
 #else
-    out vec3 texCoord
+    out vec3 texCoord,
 #endif
+    out bool valid
 ) {
     vec2 originalCoord = texCoord.xy;
     vec2 maskUV = realCoords(texCoord.xy);
@@ -73,6 +74,7 @@ vec2 reprojector(
         vec3 remap = texture2D(remapTexture, texCoord.xy).rgb;
         texCoord.xy = remap.rg;
         maskUV = realCoords(remap.rg);
+        valid = remap.b > 0.5;
     #else
          // All reprojected data is made -180 to 180. Don't need to adjust
         if (remapBorders){
@@ -81,6 +83,7 @@ vec2 reprojector(
             maskUV.y = 1.0 - maskUV.y; // I'm not certain if this is robust
             maskUV.xy = texture(remapTexture, maskUV).ba;
         }
+        valid = true;
     #endif
     if (is360) maskUV.x = fract(maskUV.x + 0.5);
     return maskUV;
