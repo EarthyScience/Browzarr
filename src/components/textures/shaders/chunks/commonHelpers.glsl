@@ -58,9 +58,9 @@ void rescaler(inout float x){
 
 vec2 reprojector(
 #ifdef IS_FLAT
-    inout vec2 texCoord
+    inout vec2 texCoord,
 #else
-    inout vec3 texCoord
+    inout vec3 texCoord,
 #endif
     out bool valid
 ) {
