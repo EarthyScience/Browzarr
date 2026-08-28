@@ -535,6 +535,7 @@ const GlobalOptions = () =>{
           </Select>
         </div>
       </Hider>
+      <Reprojection />
       {!(analysisMode && axis != 0) && // Hide if Analysismode and Axis != 0
       <>
       <QuickTip 
@@ -609,8 +610,8 @@ const AdjustPlot = () => {
     const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
     const [open, setOpen] = useState(false);
 
-    const {plotOn} = useGlobalStore(useShallow(s => s))
-    const {plotType} = usePlotStore(useShallow(s => s))
+    const {plotOn} = useGlobalStore(useShallow(s => ({plotOn: s.plotOn})))
+    const {plotType} = usePlotStore(useShallow(s => ({plotType: s.plotType})))
 
   useEffect(() => {
       const handleResize = () => {
@@ -661,22 +662,27 @@ const AdjustPlot = () => {
               <RiCloseLargeLine className="size-4" />
             </Button>
         </QuickTip>
-        <div className={`overflow-y-auto no-scrollbar -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          
-          <RxReset size={25} 
+        <div className={`overflow-y-auto no-scrollbar -mx-4 px-4 pt-2 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>    
+          <Button
+            className='size-12 !p-0'
+            variant='ghost'
             style={{
-              // position:'absolute',
-              top:"10px",
-              left:"10px",
+              padding:'0px',
+              margin:'0px',
+              position:'absolute',
+              top:"5px",
+              left:"5px",
               cursor:'pointer',
             }} 
             onClick={resetViz}
-          />
+          >
+            <RxReset className='size-6'/>
+          </Button>      
           {plotType === 'volume' && <VolumeOptions />}
           {plotType === 'point-cloud' && <PointOptions />}
           {plotType === 'sphere' && <SphereOptions/>}
           {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
           {plotType === 'flat' && <FlatOptions />}
-          <Reprojection />
           <GlobalOptions />
         </div>
       </PopoverContent>

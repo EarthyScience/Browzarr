@@ -143,7 +143,6 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
         units:axisDimUnits[2-plotDim[0]] ?? ''
       }
     }
-    console.log(dimObj)
     updateDimCoords({[tsID] : dimObj})
   }
 

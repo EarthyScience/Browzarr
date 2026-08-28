@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 import { useShallow } from 'zustand/shallow'
-import { deg2rad, parseUVCoords } from '@/utils/HelperFuncs'
+import { deg2rad } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { useAxisIndices } from '@/hooks'
 
@@ -19,26 +19,33 @@ function remapToXYZ(uv: THREE.Vector2, latBounds: number[], lonBounds: number[])
 	);
 }
 
-function normalToPos(uv: THREE.Vector2, normal:THREE.Vector3, ratios:{depthRatio:number, aspectRatio:number}): THREE.Vector3{
+function normalToPos(uv: THREE.Vector2, normal:THREE.Vector3, ratios:{depthRatio:number, aspectRatio:number}, steps:{xSteps:number, ySteps:number, zSteps:number}): THREE.Vector3{
 	let posZ, posY, posX: number;
+	const {xSteps,ySteps,zSteps} = steps;
 	const {aspectRatio, depthRatio} = ratios;
 	if (Math.abs(normal.z) == 1){
 		const flip = normal.z < 0;
-		const x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
+		let x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
+		x = (Math.floor(x * xSteps)+0.5)/xSteps;
 		posX = x*2;
-		posY = (uv.y-0.5)*2*aspectRatio;
+		const y = (Math.floor(uv.y * ySteps) + 0.5)/ySteps;
+		posY = (y-0.5)*2*aspectRatio;
 		posZ = 0;
 	} else if (Math.abs(normal.y) == 1){
 		const flip = normal.y > 0;
-		const y = flip ? (1-uv.y)-0.5: (uv.y-0.5)
-		posX = (uv.x-0.5)*2;
+		let y = flip ? (1-uv.y)-0.5: (uv.y-0.5)
+		y = (Math.floor(y * zSteps)+0.5)/zSteps;
+		const x = (Math.floor(uv.x * xSteps)+0.5)/xSteps;
+		posX = (x-0.5)*2;
 		posY = 0;
 		posZ = y*Math.max(depthRatio,2);
 	} else {
 		const flip = normal.x > 0;
-		const x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
+		let x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
+		x = (Math.floor(x * zSteps)+0.5)/zSteps;
 		posX = 0;
-		posY = (uv.y-0.5)*2*aspectRatio;
+		const y = (Math.floor(uv.y * ySteps) + 0.5)/ySteps;
+		posY = (y-0.5)*2*aspectRatio;
 		posZ = x*Math.max(depthRatio,2);
 	}
 	return new THREE.Vector3(posX, posY, posZ)
@@ -56,11 +63,11 @@ function normalToScale(normal:THREE.Vector3, ratios:{depthRatio:number, aspectRa
 	} else if (Math.abs(normal.y) == 1){
 		scaleX = 2/xSteps;
 		scaleY = 2*aspectRatio;
-		scaleZ = 2*Math.max(depthRatio,2)/zSteps;
+		scaleZ = Math.max(depthRatio,2)/zSteps;
 	} else{
 		scaleX = 2;
 		scaleY = 2*aspectRatio/ySteps;
-		scaleZ = 2*Math.max(depthRatio,2)/zSteps;
+		scaleZ = Math.max(depthRatio,2)/zSteps;
 	}
 	return new THREE.Vector3(scaleX, scaleY, scaleZ);
 }
@@ -144,10 +151,9 @@ export const ColumnMeshes = () => {
 		const zSteps = dataShape[zIdx];
 		const aspectRatio = ySteps/xSteps; // This is not aspect ratio
 		const depthRatio = zSteps/xSteps;
-
 		for (const [_tsID, tsObj] of Object.entries(timeSeries)){
 			const {normal, uv, color} = tsObj
-			const position = normalToPos(uv, normal, {aspectRatio,depthRatio})
+			const position = normalToPos(uv, normal, {aspectRatio,depthRatio}, {xSteps, ySteps, zSteps})
 			const meshScale = normalToScale(normal, {aspectRatio, depthRatio}, {xSteps, ySteps, zSteps})
 			const thisColor = color.map((c: number) => Math.pow((c/255), 2.2)) // Gamma correct the color
 			const material = new THREE.MeshBasicMaterial({color: new THREE.Color(...thisColor)})

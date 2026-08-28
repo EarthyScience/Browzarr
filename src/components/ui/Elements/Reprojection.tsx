@@ -2,12 +2,15 @@ import { usePlotStore } from '@/GlobalStates/PlotStore'
 import React, { useRef, useState } from 'react'
 import { useShallow } from 'zustand/shallow'
 import { Hider } from '../Widgets/Hider'
-import { ChevronDown } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { Input } from '../input'
 import { Button } from '@/components/ui'
 import { checkProjString, reproject, resetProjection } from '@/components/textures/ProjectionTexture'
 import { TbReplace } from "react-icons/tb";
 import { RxReset } from "react-icons/rx";
+import { Robinson } from './Icons'
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+
 
 export const Reprojection = () => {
     const {destCRS, nativeCRS, is360Deg} = usePlotStore(useShallow(s => s))
@@ -26,94 +29,98 @@ export const Reprojection = () => {
     }
     return (
         <div className="space-y-2">
-            <button
-                onClick={() => setShowRepro(x => !x)}
-                className="flex items-center gap-2 w-full mb-2"
-            >
-                <b>Reprojection</b>
-                <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${
-                        showRepro ? '' : 'rotate-180'
-                    }`}
-                />
-            </button>
-            <Hider show={showRepro}>
-                <div className="space-y-3">
-                    { is360Deg && 
-                    <div className='warn-box'>
-                        360° coordinates may behave unexpectedly. 
+            <Popover open={showRepro} onOpenChange={setShowRepro}>
+                <PopoverTrigger asChild>
+                    <div className='flex items-center justify-between mb-2'>
+                    <ChevronLeft className={`h-4 w-4 transition-transform duration-200 ${
+                        showRepro ? '' : 'rotate-180'} z-5`} />
+                    <Button
+                        variant='secondary'
+                        className="flex items-center flex-grow justify-center gap-2 h-auto "
+                    >
+                        <b>Reprojection</b>
+                        <Robinson strokeWidth={2} className="size-8" />
+                    </Button>
                     </div>
-                    }
-                    <div className="grid grid-cols-[auto_30px] items-center gap-1">
-                        <div
-                            className="min-w-0 break-all max-h-20 overflow-scroll no-scrollbar rounded-md border border-[#333] bg-[#1e1e1e] px-1 py-2 font-mono text-sm text-[#d4d4d4] whitespace-pre-wrap"
-                        >
-                            {nativeCRS
-                                ? `Native CRS: ${nativeCRS}`
-                                : "No CRS detected"}
+                </PopoverTrigger>
+                <PopoverContent side='left'>
+                    <div className="space-y-3">
+                        { is360Deg && 
+                        <div className='warn-box'>
+                            360° coordinates may behave unexpectedly. 
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <button 
-                                className="shrink-0 rounded-md p-2 hover:bg-muted cursor-pointer transition-colors"
-                                onClick={resetProjection}
+                        }
+                        <div className="grid grid-cols-[auto_30px] items-center gap-1">
+                            <div
+                                className="min-w-0 break-all max-h-20 overflow-scroll no-scrollbar rounded-md border border-[#333] bg-[#1e1e1e] px-1 py-2 font-mono text-sm text-[#d4d4d4] whitespace-pre-wrap"
                             >
-                                <RxReset className="h-4 w-4" />
-                            </button>
-                            <button 
-                                className="shrink-0 rounded-md p-2 hover:bg-muted cursor-pointer transition-colors"
-                                onClick={()=>setChangeNativeCRS(x=>!x)}
-                            >
-                                <TbReplace className="h-4 w-4" />
-                            </button>
+                                {nativeCRS
+                                    ? `Native CRS: ${nativeCRS}`
+                                    : "No CRS detected"}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <button 
+                                    className="shrink-0 rounded-md p-2 hover:bg-muted cursor-pointer transition-colors"
+                                    onClick={resetProjection}
+                                >
+                                    <RxReset className="h-4 w-4" />
+                                </button>
+                                <button 
+                                    className="shrink-0 rounded-md p-2 hover:bg-muted cursor-pointer transition-colors"
+                                    onClick={()=>setChangeNativeCRS(x=>!x)}
+                                >
+                                    <TbReplace className="h-4 w-4" />
+                                </button>
+                            </div>
+                            
                         </div>
-                        
-                    </div>
-                    <Hider show={!nativeCRS || changeNativeCRS}>
-                        <div className="flex flex-col gap-2 rounded-md border border-dashed border-muted-foreground/30 p-3">
-                            <Input
-                                type="string"
-                                defaultValue={tempCRS.current}
-                                onChange={e => (tempCRS.current = e.target.value)}
-                                placeholder={`${nativeCRS ? "Update" : "Enter" } native CRS`}
-                            />
+                        <Hider show={!nativeCRS || changeNativeCRS}>
+                            <div className="flex flex-col gap-2 rounded-md border border-dashed border-muted-foreground/30 p-3">
+                                <Input
+                                    type="string"
+                                    defaultValue={tempCRS.current}
+                                    onChange={e => (tempCRS.current = e.target.value)}
+                                    placeholder={`${nativeCRS ? "Update" : "Enter" } native CRS`}
+                                />
+                                <Button
+                                    className="cursor-pointer w-full"
+                                    onClick={handleNativeCRS}
+                                >
+                                    Set native CRS
+                                </Button>
+                            </div>
+                        </Hider>
+                        <div className="grid grid-cols-[60%_35%] gap-2 pt-1">
+                            <div className='col-span-2 grid grid-cols-[65%_30%]'>
+                                <p>Target Projection</p>
+                                <p>Resolution</p>
+                                <Input
+                                    type="string"
+                                    defaultValue={destCRS}
+                                    onChange={e => usePlotStore.setState({ destCRS: e.target.value })}
+                                    placeholder="Target projection"
+                                />
+                                <Input
+                                    className='appearance-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+                                    type="number"
+                                    defaultValue={repRes.current}
+                                    step={1}
+                                    onChange={e => { const val = parseInt(e.target.value); repRes.current = isNaN(val) ? 256 : val; }}
+                                    placeholder="Resolution"
+                                />
+                            </div>
                             <Button
-                                className="cursor-pointer w-full"
-                                onClick={handleNativeCRS}
+                                variant='pink'
+                                className="cursor-pointer col-span-2"
+                                onClick={()=>reproject(repRes.current)}
+                                disabled={!destCRS || !nativeCRS || isNaN(repRes.current)}
                             >
-                                Set native CRS
+                                Reproject
                             </Button>
                         </div>
-                    </Hider>
-                    <div className="grid grid-cols-[60%_35%] gap-2 pt-1">
-                        <div className='col-span-2 grid grid-cols-[65%_30%]'>
-                            <p>Target Projection</p>
-                            <p>Resolution</p>
-                            <Input
-                                type="string"
-                                defaultValue={destCRS}
-                                onChange={e => usePlotStore.setState({ destCRS: e.target.value })}
-                                placeholder="Target projection"
-                            />
-                            <Input
-                                className='appearance-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
-                                type="number"
-                                defaultValue={repRes.current}
-                                step={1}
-                                onChange={e => { const val = parseInt(e.target.value); repRes.current = isNaN(val) ? 256 : val; }}
-                                placeholder="Resolution"
-                            />
-                        </div>
-                         <Button
-                            variant='pink'
-                            className="cursor-pointer col-span-2"
-                            onClick={()=>reproject(repRes.current)}
-                            disabled={!destCRS || !nativeCRS || isNaN(repRes.current)}
-                        >
-                            Reproject
-                        </Button>
                     </div>
-                </div>
-            </Hider>
+                </PopoverContent>
+            </Popover>
         </div>
     )
 }
