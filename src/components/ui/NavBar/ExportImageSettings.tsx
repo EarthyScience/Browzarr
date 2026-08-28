@@ -8,7 +8,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronLeft } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -120,12 +120,13 @@ const ExportImageSettings = () => {
                 <div className='grid'>
                     <label htmlFor="main-title">Main Title</label>
                     <Input id='main-title' type='string' value={mainTitle} onChange={e=> setMainTitle(e.target.value)}/>
-
-                    <label htmlFor="cbar-title">Colorbar Label</label>
-                    <Input id='cbar-title' type='string' placeholder={variable} value={cbarLabel} onChange={e=> setCbarLabel(e.target.value)}/>
-                
-                    <label htmlFor="cbar-title">Colorbar Units</label>
-                    <Input id='cbar-title' type='string' placeholder={metadata?.units?? "undefined"} value={cbarUnits} onChange={e=> setCbarUnits(e.target.value)}/>
+                    <Hider show={includeColorbar} >
+                        <label htmlFor="cbar-title">Colorbar Label</label>
+                        <Input id='cbar-title' type='string' placeholder={variable} value={cbarLabel} onChange={e=> setCbarLabel(e.target.value)}/>
+                    
+                        <label htmlFor="cbar-title">Colorbar Units</label>
+                        <Input id='cbar-title' type='string' placeholder={metadata?.units?? "undefined"} value={cbarUnits} onChange={e=> setCbarUnits(e.target.value)}/>
+                    </Hider>
                 </div>
             </Hider>
             {/* Settings */}
@@ -209,111 +210,125 @@ const ExportImageSettings = () => {
                 </div>
             </Hider>
             {/* ANIMATION */}
-            <button 
-                onClick={() => setShowAnimation(x=>!x)}
-                className="flex items-center gap-2 w-full "
-            >
-                <b>Animations</b>
-                <ChevronDown 
-                    className={`h-4 w-4 transition-transform duration-200 ${
-                    !showAnimation ? 'rotate-180' : ''
-                    }`}
-                />
-            </button>
-            <Hider show={showAnimation} className='grid col-span-2 gap-2'>
-                <div className="grid grid-cols-[auto_60px] items-center gap-2">
-                    <label htmlFor="useAnimate">Export Animation</label>
-                    <Switch id='useAnimate' checked={animate} onCheckedChange={e => setAnimate(e)}/>
-                    {/* Animation Settings */}
-                    <Hider show={animate} className='col-span-2 '>
-                        <div className="grid grid-cols-[auto_80px] items-center gap-1 mb-2">
-                            <label htmlFor="frames">Frames</label>
-                            <Input className='h-[26px]' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(parseInt(e.target.value))} />
-                            <label htmlFor="fps">FPS</label>
-                            <Input className='h-[26px]' id="fps" type='number' step={1} value={frameRate} onChange={e => setFrameRate(parseInt(e.target.value))} />
-                        </div>
-                        <div className="grid grid-cols-[auto_60px] items-center gap-2">
-                            
-                            <label htmlFor="useOrbit">Orbit</label>
-                            <Switch id="useOrbit" checked={orbit} onCheckedChange={e=> setOrbit(e)} />
-							
-							<Hider show={orbit} className='col-span-2'>
-                                <div className="grid grid-cols-[auto_80px] items-center gap-2 mb-2">
-                                    <label htmlFor="orbitDeg">Orbit Degrees</label>
-                                    <Input id="orbitDeg" type='number' step={1} value={orbitDeg} onChange={e => setOrbitDeg(parseInt(e.target.value))} />
-                                </div>
-                                <div className="grid grid-cols-[auto_60px] items-center gap-2 mb-2">
-                                    <label htmlFor="orbitDir">Direction</label>
-                                    <FaLongArrowAltRight id='orbitDir' onClick={()=>useImageExportStore.getState().flipOrbitDir()}
-                                        style={{
-                                            transform: `${orbitDir ? "rotate(180deg)" : ""}`,
-                                            transition: ".25s",
-                                            cursor:"pointer"
-                                        }}      
-                                        size={26}
-                                    />
-									<label htmlFor="useOrbit">Ping-Pong</label>
-									<Switch id="useOrbit" checked={pingpong} onCheckedChange={e=> setPingpong(e)} />
-								</div>
-
-                                <div className='border-b my-2' />
-							</Hider>
-                            
-                            <label htmlFor="useTime">Animate Time</label>
-                            <Switch id="useTime" checked={useTime} onCheckedChange={e=> setUseTime(e)} />
-                            <Hider show={useTime} className='col-span-2'>
-                                <div className="grid grid-cols-[auto_80px] items-center gap-2 mb-2">
-                                    <label htmlFor="timeRate">Time FPS</label>
-                                    <Input id="timeRate" type='number' step={1} value={timeRate} onChange={e => setTimeRate(parseInt(e.target.value))} />
-                                </div> 
-                                <div className="grid grid-cols-[auto_60px] items-center gap-2">
-                                    <label htmlFor="loopTime">Loop Time</label>
-                                    <Switch id="loopTime" checked={loopTime} onCheckedChange={e=> setLoopTime(e)} />
-                                </div>
-                                <div className='border-b my-2' />
-                            </Hider>
-
-                            <Button
-								className='col-span-2 cursor-pointer'
-								onClick={()=>setKeyFrameEditor(true)}
-							>
-								Keyframe Editor <BsBoxArrowRight/>
-							</Button>
-							{keyFrames &&
-                            <div className='col-span-2 text-center'>
-                                <b>Export Keyframes</b>
-                                <div className='grid grid-cols-2 items-center'>
-                                    <div>
-										<QuickTip message='Copy the current keyframes to JSON for use in a coding environment'>
-											<Button
-												className='p-2'
-												variant='ghost'
-												onClick={copyToClipboard}
-											>
-												<FiCopy className='size-4'/><span className='text-xs'>Copy</span>
-											</Button>
-										</QuickTip>
-                                    </div>
-                                    <div>
-										<QuickTip message='Export the current keyframes to JSON for use in a coding environment'>
-											<Button
-												className='p-2'
-												variant='ghost'
-												onClick={exportToJson}
-											>
-												<BiExport className='size-4'/><span className='text-xs'>Export</span>
-											</Button>
-                                        </QuickTip>
-                                    </div>
-                                </div>
+            <Popover open={showAnimation} onOpenChange={setShowAnimation}>
+                <PopoverTrigger className='col-span-2' asChild>
+                    <div className='flex items-center justify-between mb-2'>
+                    
+                    <Button
+                        variant='secondary'
+                        className="flex items-center flex-grow justify-center gap-2 h-auto "
+                    >
+                        <b>Animation Settings</b>
+                    </Button>
+                    <ChevronLeft className={`h-4 w-4 transition-transform duration-200 ${
+                        showAnimation ? 'rotate-180' : '' } z-5`} />
+                    </div>
+                </PopoverTrigger>
+                <PopoverContent side='right' className='w-50'>
+                    <div className="grid grid-cols-[auto_60px] items-center gap-2">
+                        {/* Animation Settings */}
+                        <div className='col-span-2 '>
+                            <div className="grid grid-cols-[auto_80px] items-center gap-1 mb-2">
+                                <label htmlFor="frames">Frames</label>
+                                <Input className='h-[26px]' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(parseInt(e.target.value))} />
+                                <label htmlFor="fps">FPS</label>
+                                <Input className='h-[26px]' id="fps" type='number' step={1} value={frameRate} onChange={e => setFrameRate(parseInt(e.target.value))} />
                             </div>
-							}
+                            <div className="grid grid-cols-[auto_60px] items-center gap-2">
+                                
+                                <label htmlFor="useOrbit">Orbit</label>
+                                <Switch id="useOrbit" checked={orbit} onCheckedChange={e=> setOrbit(e)} />
+                                
+                                <Hider show={orbit} className='col-span-2'>
+                                    <div className="grid grid-cols-[auto_80px] items-center gap-2 mb-2">
+                                        <label htmlFor="orbitDeg">Orbit Degrees</label>
+                                        <Input id="orbitDeg" type='number' step={1} value={orbitDeg} onChange={e => setOrbitDeg(parseInt(e.target.value))} />
+                                    </div>
+                                    <div className="grid grid-cols-[auto_60px] items-center gap-2 mb-2">
+                                        <label htmlFor="orbitDir">Direction</label>
+                                        <FaLongArrowAltRight id='orbitDir' onClick={()=>useImageExportStore.getState().flipOrbitDir()}
+                                            style={{
+                                                transform: `${orbitDir ? "rotate(180deg)" : ""}`,
+                                                transition: ".25s",
+                                                cursor:"pointer"
+                                            }}      
+                                            size={26}
+                                        />
+                                        <label htmlFor="useOrbit">Ping-Pong</label>
+                                        <Switch id="useOrbit" checked={pingpong} onCheckedChange={e=> setPingpong(e)} />
+                                    </div>
+
+                                    <div className='border-b my-2' />
+                                </Hider>
+                                
+                                <label htmlFor="useTime">Animate Time</label>
+                                <Switch id="useTime" checked={useTime} onCheckedChange={e=> setUseTime(e)} />
+                                <Hider show={useTime} className='col-span-2'>
+                                    <div className="grid grid-cols-[auto_80px] items-center gap-2 mb-2">
+                                        <label htmlFor="timeRate">Time FPS</label>
+                                        <Input id="timeRate" type='number' step={1} value={timeRate} onChange={e => setTimeRate(parseInt(e.target.value))} />
+                                    </div> 
+                                    <div className="grid grid-cols-[auto_60px] items-center gap-2">
+                                        <label htmlFor="loopTime">Loop Time</label>
+                                        <Switch id="loopTime" checked={loopTime} onCheckedChange={e=> setLoopTime(e)} />
+                                    </div>
+                                    <div className='border-b my-2' />
+                                </Hider>
+
+                                <Button
+                                    className='col-span-2 cursor-pointer'
+                                    onClick={()=>setKeyFrameEditor(true)}
+                                >
+                                    Keyframe Editor <BsBoxArrowRight/>
+                                </Button>
+                                {keyFrames &&
+                                <div className='col-span-2 text-center'>
+                                    <b>Export Keyframes</b>
+                                    <div className='grid grid-cols-2 items-center'>
+                                        <div>
+                                            <QuickTip message='Copy the current keyframes to JSON for use in a coding environment'>
+                                                <Button
+                                                    className='p-2'
+                                                    variant='ghost'
+                                                    onClick={copyToClipboard}
+                                                >
+                                                    <FiCopy className='size-4'/><span className='text-xs'>Copy</span>
+                                                </Button>
+                                            </QuickTip>
+                                        </div>
+                                        <div>
+                                            <QuickTip message='Export the current keyframes to JSON for use in a coding environment'>
+                                                <Button
+                                                    className='p-2'
+                                                    variant='ghost'
+                                                    onClick={exportToJson}
+                                                >
+                                                    <BiExport className='size-4'/><span className='text-xs'>Export</span>
+                                                </Button>
+                                            </QuickTip>
+                                        </div>
+                                    </div>
+                                </div>
+                                }
+                            </div>
+                            <div className='my-2'/>
+                            <QuickTip message='Chose export quality. Preview for fast test renders' asChild>
+                                <div className='col-span-2'>
+                                <Switcher leftText='Preview' rightText='Final' state={preview} onClick={()=> setPreview(!preview)} />
+                                </div>
+                            </QuickTip>
+                            
                         </div>
-                        <div className='my-2'/>
-                        <Switcher leftText='Preview' rightText='Final' state={preview} onClick={()=> setPreview(!preview)} />
-                    </Hider>
+                    </div>
+                </PopoverContent>
+            </Popover>
+            <b className='col-span-2 text-center'><u>Export As</u></b>
+            <QuickTip message='Export as an image or as an animation' asChild>
+                <div className='col-span-2'>
+                <Switcher leftText='Image' rightText='Animation' state={!animate} onClick={()=> setAnimate(!animate)} />
                 </div>
-            </Hider>
+            </QuickTip>
+            
             <Button
                 className="col-span-2"
                 variant='pink'
