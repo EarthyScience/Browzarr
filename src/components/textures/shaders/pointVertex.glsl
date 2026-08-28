@@ -56,7 +56,12 @@ bool boundsCheck(vec3 loc) {
 
 void main() {
     vec3 texCoord = computeTexCoord(vertexIdx);
-    vec2 maskUV = reprojector(texCoord);
+    bool valid;
+    vec2 maskUV = reprojector(texCoord, valid);
+    if (!valid){
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+        return;
+    }
     vUv = maskUV;
     if (maskValue != 0 ){ // If using a mask, quick check if vertex is masked out before doing additional rendering
         float mask = texture(maskTexture, maskUV).r;
@@ -89,7 +94,7 @@ void main() {
     vValue = max(min(vValue+cOffset,0.995), 0.0);
     
     bool fillCheck = abs(vValue - fillValue) < 0.005;
-    bool valid = (vValue >= threshold.x) && (vValue <= threshold.y); 
+    valid = (vValue >= threshold.x) && (vValue <= threshold.y); 
     if (!valid || fillCheck){ //Hide points that are outside of value range
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
         return;

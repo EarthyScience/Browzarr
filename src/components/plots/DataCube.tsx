@@ -38,7 +38,10 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
 			remapTexture: { value: remapTexture?? remapBorders},
 			scale: {value: shape},
 			flatBounds:{value: new THREE.Vector4(-xRange[1],-xRange[0],zRange[0] * timeRatio, zRange[1] * timeRatio)},
-			vertBounds:{value: new THREE.Vector2(yRange[0]*aspectRatio,yRange[1]*aspectRatio)},
+			vertBounds:{value: flipY 
+				? new THREE.Vector2(yRange[0]*aspectRatio,yRange[1]*aspectRatio)
+				: new THREE.Vector2(yRange[0]*aspectRatio,yRange[1]*aspectRatio)
+			},
 			steps: { value: quality },
 			transparency: {value: transparency},
 			revTransparency: {value: revTransparency},
@@ -67,7 +70,8 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
 				uniforms.dataShape.value = gridShape;
 			uniforms.scale.value = shape;
 			uniforms.flatBounds.value.set(-xRange[1], -xRange[0], zRange[0] * timeRatio, zRange[1] * timeRatio);
-			uniforms.vertBounds.value.set(yRange[0] * aspectRatio, yRange[1] * aspectRatio);
+			flipY ? uniforms.vertBounds.value.set(-yRange[1] * aspectRatio, -yRange[0] * aspectRatio)
+			: uniforms.vertBounds.value.set(yRange[0] * aspectRatio, yRange[1] * aspectRatio);
 			uniforms.steps.value = quality;
 			uniforms.transparency.value = transparency;
 			uniforms.revTransparency.value = revTransparency;
@@ -75,7 +79,7 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
 			uniforms.useClipScale.value = vTransferRange;
 			invalidate() // Needed because Won't trigger re-render if camera is stationary. 
 		}
-    }, [shape, gridShape, xRange, yRange, zRange, aspectRatio, quality, transparency, revTransparency, vTransferScale, vTransferRange]);
+    }, [shape, gridShape, xRange, yRange, zRange, aspectRatio, quality, transparency, revTransparency, vTransferScale, vTransferRange, flipY]);
     useFrame(({camera})=>{ // This calculates InverseModel matrix for the orthographic raymarcher
 		if (!useOrtho || !meshRef.current || !shaderMaterial) return;
 		meshRef.current.modelViewMatrix.multiplyMatrices(camera.matrixWorldInverse, meshRef.current.matrixWorld);

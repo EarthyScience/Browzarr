@@ -10,7 +10,9 @@ void main() {
         // Adjust if reproject
         #ifdef REPROJECT
             // Remap texture is based around the OG UV. So we sample with OG UV and then broadcast to Realcoords
-            realUV = texture(remapTexture, vUv).rg;
+            vec3 remapped = texture(remapTexture, vUv).rgb;
+            if (remapped.b < 0.5) return;
+            realUV = remapped.rg;
             realUV = realCoords(realUV);
         #else
             // All reprojected data is made -180 to 180. Don't need to adjust
