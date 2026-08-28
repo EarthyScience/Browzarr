@@ -124,9 +124,9 @@ export const PointCloud = ({textures} : {textures:PCProps} )=>{
           xRange[0], xRange[1], 
           zRange[0], zRange[1]
         );
-        uniforms.vertBounds.value.set(
-          yRange[0], yRange[1]
-        );
+        flipY 
+          ? uniforms.vertBounds.value.set(-yRange[1] , -yRange[0] )
+          : uniforms.vertBounds.value.set(yRange[0] , yRange[1] );
         uniforms.aspect.value = shape.x/shape.y;
       }
   }, [volTexture, depthRatio, depth, height, shape, width, pointSize, valueRange, scalePoints, scaleIntensity, xRange, yRange, zRange]);

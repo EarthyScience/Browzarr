@@ -36,9 +36,10 @@ bool shouldSkip(vec3 p, out vec3 texCoord, out vec2 maskUV) {
     if (p.x > -flatBounds.x || p.x < -flatBounds.y) return true;
     if (-p.z > -flatBounds.z || -p.z < -flatBounds.w) return true;
     if (p.y < vertBounds.x || p.y > vertBounds.y) return true;
-
+    bool valid;
     texCoord = p / scale + 0.5;
-    maskUV = reprojector(texCoord);
+    maskUV = reprojector(texCoord, valid);
+    if (!valid) return true;
     if (maskValue != 0) {
         float mask = texture(maskTexture, maskUV).r;
         bool masked = maskValue == 1 ? mask < 0.5 : mask >= 0.5;
@@ -129,9 +130,10 @@ void main() {
                     if (useBorderTexture) {
                         vec3 pHit = vOrigin + t * rayDir;
                         vec3 localPosContinuous = (pHit - boxMin) / scale;
-                        vec2 borderUV = reprojector(localPosContinuous);
+                        bool valid;
+                        vec2 borderUV = reprojector(localPosContinuous, valid);
                         float borderDist = texture(borderTexture, borderUV).r;
-                        if (borderDist <= borderWidth) {
+                        if (borderDist <= borderWidth && valid) {
                             color = vec4(borderColor, 1.0);
                             return;
                         }
