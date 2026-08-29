@@ -26,7 +26,7 @@ function normalToPos(uv: THREE.Vector2, normal:THREE.Vector3, ratios:{depthRatio
 	if (Math.abs(normal.z) == 1){
 		const flip = normal.z < 0;
 		let x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
-		x = (Math.floor(x * xSteps)+0.5)/xSteps;
+		x = (Math.floor(x * xSteps ) + 0.5 )/xSteps;
 		posX = x*2;
 		const y = (Math.floor(uv.y * ySteps) + 0.5)/ySteps;
 		posY = (y-0.5)*2*aspectRatio;
@@ -34,7 +34,7 @@ function normalToPos(uv: THREE.Vector2, normal:THREE.Vector3, ratios:{depthRatio
 	} else if (Math.abs(normal.y) == 1){
 		const flip = normal.y > 0;
 		let y = flip ? (1-uv.y)-0.5: (uv.y-0.5)
-		y = (Math.floor(y * zSteps)+0.5)/zSteps;
+		y = (Math.floor(y * zSteps))/zSteps;
 		const x = (Math.floor(uv.x * xSteps)+0.5)/xSteps;
 		posX = (x-0.5)*2;
 		posY = 0;
@@ -42,9 +42,9 @@ function normalToPos(uv: THREE.Vector2, normal:THREE.Vector3, ratios:{depthRatio
 	} else {
 		const flip = normal.x > 0;
 		let x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
-		x = (Math.floor(x * zSteps)+0.5)/zSteps;
+		x = (Math.round(x * zSteps))/zSteps;
 		posX = 0;
-		const y = (Math.floor(uv.y * ySteps) + 0.5)/ySteps;
+		const y = (Math.round(uv.y * ySteps) + 0.5)/ySteps;
 		posY = (y-0.5)*2*aspectRatio;
 		posZ = x*Math.max(depthRatio,2);
 	}
