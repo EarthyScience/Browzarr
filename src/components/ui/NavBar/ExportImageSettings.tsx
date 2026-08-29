@@ -89,6 +89,7 @@ const ExportImageSettings = () => {
     <Popover>
         <PopoverTrigger asChild>
 			<QuickTip message='Export view as Image'>
+                <div>
 				<Button 
                     variant="ghost"
                     size="icon"
@@ -97,6 +98,7 @@ const ExportImageSettings = () => {
                 >
                     <IoImage className="size-8"/>
                 </Button>
+                </div>
 			</QuickTip>
         </PopoverTrigger>
         <PopoverContent
