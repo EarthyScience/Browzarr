@@ -21,18 +21,11 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-
-// Render gradients directly instead of using pre-generated icon images
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { QuickTip } from '../Widgets/QuickTip';
 
 const Colormaps = () => {
 
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [hoveredCmap, setHoveredCmap] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showNames, setShowNames] = useState(true);
   const { colormap, setColormap, colormapName, flipColormap, setColormapName, setFlipColormap } = useGlobalStore(
@@ -46,12 +39,10 @@ const Colormaps = () => {
     }))
   );
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
-
   const [prevColormapName, setPrevColormapName] = useState<string>(colormapName || '');
   const previousTextureRef = useRef(colormap);
   const colormapNameRef = useRef(colormapName);
   const flipColormapRef = useRef(flipColormap);
-  const lastHoveredCmap = useRef<string | null>(null);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -60,7 +51,6 @@ const Colormaps = () => {
     });
     return ['None', ...Array.from(set).sort()];
   }, []);
-
   const filteredColormaps = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -90,6 +80,10 @@ const Colormaps = () => {
         otherMatches.push(entry.name);
       }
     }
+    for (const cmap of colormaps){
+      const nameHit = cmap.toLowerCase().includes(query)
+      if (nameHit) nameMatches.push(cmap)
+    }
 
     return [...nameMatches, ...otherMatches];
   }, [searchQuery, selectedCategory]);
@@ -107,34 +101,33 @@ const Colormaps = () => {
     previousTextureRef.current = colormap;
   }, [colormap]);
 
-  useEffect(() => {
-    if (hoveredCmap !== null) {
-      // Show hovered colormap preview
-      setColormap(
-        GetColorMapTexture(
-          previousTextureRef.current,
-          hoveredCmap === "Default" ? "Spectral" : hoveredCmap,
-          1,
-          "#000000",
-          0,
-          flipColormapRef.current
-        )
-      );
-    } else if (lastHoveredCmap.current !== null) {
-      // Mouse left hover: revert to selected colormap
-      setColormap(
-        GetColorMapTexture(
-          previousTextureRef.current,
-          colormapNameRef.current === "Default" ? "Spectral" : colormapNameRef.current,
-          1,
-          "#000000",
-          0,
-          flipColormapRef.current
-        )
-      );
+  let cmapTimeout: NodeJS.Timeout | undefined;
+
+  const updateColormap = (cmap: string) => {
+    if (cmapTimeout){
+      clearTimeout(cmapTimeout);
+      cmapTimeout = undefined;
     }
-    lastHoveredCmap.current = hoveredCmap;
-  }, [hoveredCmap, setColormap]);
+    setColormap(
+      GetColorMapTexture(
+        previousTextureRef.current,
+        cmap === "Default" ? "Spectral" : cmap,
+        1,
+        "#000000",
+        0,
+        flipColormapRef.current
+      )
+    );
+  }
+
+  const restoreColormap = () => {
+    cmapTimeout = setTimeout(()=>{
+      setColormap(
+      GetColorMapTexture(
+        previousTextureRef.current,
+        colormapName))
+    }, 100)
+  }
 
   useEffect(() => {
       const handleResize = () => {
@@ -150,9 +143,8 @@ const Colormaps = () => {
       <Popover>
       <PopoverTrigger asChild>
         <div>
-        <Tooltip delayDuration={500} >
-          <TooltipTrigger asChild>
-            <div>
+        <QuickTip message='Change Colormap' side={popoverSide}>
+          <div>
               <Button
                 size="icon"
                 className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full cmap-trigger'
@@ -166,17 +158,7 @@ const Colormaps = () => {
                   height: "32px",
                 }} /> 
             </div>
-          </TooltipTrigger>
-          {popoverSide === "left" ? (
-            <TooltipContent side="left" align="start">
-              <span>Change Colormap</span>
-            </TooltipContent>
-          ) : (
-            <TooltipContent side="top" align="center">
-              <span>Change Colormap</span>
-            </TooltipContent>
-          )}
-        </Tooltip>
+        </QuickTip>
         </div>
       </PopoverTrigger>
       <PopoverContent
@@ -209,8 +191,8 @@ const Colormaps = () => {
                 type="button"
                 onClick={() => {
                   setColormapName(prevColormapName);
+                  setPrevColormapName(colormapName);
                   setFlipColormap(false);
-                  setHoveredCmap(null);
                 }}
                 size="sm"
                 variant="secondary"
@@ -219,7 +201,6 @@ const Colormaps = () => {
                 Revert
               </Button>
             </ButtonGroup>
-
             <Select
               value={selectedCategory === 'None' ? '' : selectedCategory}
               onValueChange={(value) => setSelectedCategory(value === 'None' ? '' : value)}
@@ -235,44 +216,30 @@ const Colormaps = () => {
                 ))}
               </SelectContent>
             </Select>
-
             <div style={{ marginRight: 'auto', display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-              <Tooltip delayDuration={200}>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="cursor-pointer"
-                    onClick={() => setShowNames(prev => !prev)}
-                  >
-                    {showNames ? (
-                      <Eye className="h-4 w-4" />
-                    ) : (
-                      <EyeOff className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="center">
-                  <span>{showNames ? "Hide names" : "Show names"}</span>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip delayDuration={200}>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="border-b-1 border-amber-400"
-                  >
-                    <span className="max-w-[188px] truncate">
-                      {colormapName}
-                    </span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="center">
-                  <span>{colormapName}</span>
-                </TooltipContent>
-              </Tooltip>
+              <QuickTip message={<span>{showNames ? "Hide names" : "Show names"}</span>}>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="cursor-pointer"
+                  onClick={() => setShowNames(prev => !prev)}
+                >
+                  {showNames ? (
+                    <Eye className="h-4 w-4" />
+                  ) : (
+                    <EyeOff className="h-4 w-4" />
+                  )}
+                </Button>
+              </QuickTip>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="border-b-1 border-amber-400"
+              >
+                <span className="max-w-[188px] truncate">
+                  {colormapName}
+                </span>
+              </Button>
             </div>
           </div>
           <Separator/>
@@ -307,7 +274,7 @@ const Colormaps = () => {
             {hasMoreResults && ' — first 64 shown'}
           </div>
         )}
-
+        {/* COLORMAPS */}
         <div className="colormap-list-container" style={{ marginTop: '0.5rem', width: '100%', padding: '0 0.75rem 0.75rem' }}>
           <div style={{ maxHeight: 'min(50vh, 360px)', overflowY: 'auto', paddingRight: 0, width: '100%', boxSizing: 'border-box' }}>
             <div className="colormaps-grid" style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(1, minmax(0, 1fr))', width: '100%', boxSizing: 'border-box' }}>
@@ -319,10 +286,9 @@ const Colormaps = () => {
               onClick={() => {
                 setPrevColormapName(colormapName);
                 setColormapName(val);
-                setHoveredCmap(null);
               }}
-              onMouseEnter={() => setHoveredCmap(val)}
-              onMouseLeave={() => setHoveredCmap(null)}
+              onMouseEnter={() => updateColormap(val)}
+              onMouseLeave={() => restoreColormap()}
               style={{
                 width: '96%',
                 minWidth: 0,
