@@ -6,6 +6,7 @@ import { FaCarSide } from "react-icons/fa6";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { Button } from "@/components/ui/button-enhanced"
+import { QuickTip } from '../Widgets/QuickTip';
 
 const icons = {
     "fast": <MdOutlineRocketLaunch className='size-8'/>,
@@ -29,13 +30,16 @@ const PerformanceMode = () => {
         <PopoverTrigger
          asChild
         >
-            <Button
-                variant="ghost"
-                size="icon"
-                className="size-10 cursor-pointer"
-            >
-                {icons[currentIcon as keyof typeof icons]}
-            </Button>
+            <QuickTip message='Set Render/performance mode'>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-10 cursor-pointer"
+                >
+                    {icons[currentIcon as keyof typeof icons]}
+                </Button>
+            </QuickTip>
+            
         </PopoverTrigger>
         <PopoverContent
             side='right'
