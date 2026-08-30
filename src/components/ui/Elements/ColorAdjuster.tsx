@@ -55,7 +55,7 @@ const ColorAdjuster = () => {
 					</PopoverTrigger>
 					<PopoverContent>
 						<p>Along with general arithmetic operations. The following globals can also be used:</p>
-						<ul className='grid grid-cols-2 !list-none bg-gray-100 rounded-lg border-solid border-2'>
+						<ul className='grid grid-cols-2 !list-none bg-[var(--background-modal)] rounded-lg border-solid border-2'>
 							{[
 								'abs(x)', 'sqrt(x)', 'min(x, y)', 'max(x, y)', 
 								'log(x)', 'log2(x)',  'exp(x)', 'exp2(x)', 

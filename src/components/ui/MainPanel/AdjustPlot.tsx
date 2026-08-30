@@ -6,7 +6,6 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import '../css/MainPanel.css'
 import { useShallow } from 'zustand/shallow';
 import { SliderThumbs } from '@/components/ui/Widgets/SliderThumbs';
-import { LuSettings } from "react-icons/lu";
 import { RxReset } from "react-icons/rx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Input, Switch, Hider, Button, Slider as UISlider, Switcher, Slider, QuickTip } from '@/components/ui';
@@ -16,8 +15,9 @@ import { ChevronDown } from 'lucide-react';
 import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
 import { RiCloseLargeLine } from "react-icons/ri";
 import { Reprojection } from '../Elements/Reprojection';
-import { useAxisIndices } from '@/hooks';
+import { useAxisIndices, useDimAxis } from '@/hooks';
 import { FaLongArrowAltUp } from "react-icons/fa";
+import { HiAdjustmentsHorizontal } from "react-icons/hi2";
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -78,7 +78,7 @@ const DimSlicer = () =>{
   const {xRange, yRange, zRange, setXRange, setYRange, setZRange} = usePlotStore(useShallow(s => s))
 
       const defaultScales = {minVal: 0, maxVal: 0} //This is fed into MinMax as it is required but overwritten if an array is present
-  
+      const {xArray, yArray, zArray} = useDimAxis()
       const {axisDimArrays, axisDimNames, axisDimUnits} = useGlobalStore(useShallow(s => s))
       const {xIdx, yIdx, zIdx} = useAxisIndices()
       const [isSpatialOpen, setIsSpatialOpen] = useState(false);
@@ -91,7 +91,7 @@ const DimSlicer = () =>{
           onClick={() => setIsSpatialOpen(!isSpatialOpen)}
           className="flex items-center gap-2 w-full mb-2"
         >
-          <b>Spatial Cropping</b>
+          <b>Axis Cropping</b>
           <ChevronDown 
             className={`h-4 w-4 transition-transform duration-200 ${
               !isSpatialOpen ? 'rotate-180' : ''
@@ -112,7 +112,7 @@ const DimSlicer = () =>{
                   range={xRange} 
                   setRange={setXRange} 
                   valueScales={defaultScales} 
-                  array={axisDimArrays[xIdx]} 
+                  array={xArray} 
                   units={axisDimUnits[xIdx]}
                 />
               </div>
@@ -122,7 +122,7 @@ const DimSlicer = () =>{
                 range={yRange} 
                 setRange={setYRange} 
                 valueScales={defaultScales} 
-                array={axisDimArrays[yIdx]} 
+                array={yArray} 
                 units={axisDimUnits[yIdx]}
                 />
               </div>
@@ -132,7 +132,7 @@ const DimSlicer = () =>{
                   range={zRange} 
                   setRange={setZRange} 
                   valueScales={defaultScales} 
-                  array={axisDimArrays[zIdx]} 
+                  array={zArray} 
                   units={axisDimUnits[zIdx]}
                 />
               </div>
@@ -535,6 +535,7 @@ const GlobalOptions = () =>{
           </Select>
         </div>
       </Hider>
+      <Reprojection />
       {!(analysisMode && axis != 0) && // Hide if Analysismode and Axis != 0
       <>
       <QuickTip 
@@ -609,8 +610,8 @@ const AdjustPlot = () => {
     const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
     const [open, setOpen] = useState(false);
 
-    const {plotOn} = useGlobalStore(useShallow(s => s))
-    const {plotType} = usePlotStore(useShallow(s => s))
+    const {plotOn} = useGlobalStore(useShallow(s => ({plotOn: s.plotOn})))
+    const {plotType} = usePlotStore(useShallow(s => ({plotType: s.plotType})))
 
   useEffect(() => {
       const handleResize = () => {
@@ -635,7 +636,7 @@ const AdjustPlot = () => {
                 color: enableCond ? '' : 'var(--text-disabled)'
               }}
             >
-              <LuSettings className="size-8" />
+              <HiAdjustmentsHorizontal className="size-8" />
             </Button>
           </QuickTip>
         </div>
@@ -661,22 +662,27 @@ const AdjustPlot = () => {
               <RiCloseLargeLine className="size-4" />
             </Button>
         </QuickTip>
-        <div className={`overflow-y-auto no-scrollbar -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          
-          <RxReset size={25} 
+        <div className={`overflow-y-auto no-scrollbar -mx-4 px-4 pt-2 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>    
+          <Button
+            className='size-12 !p-0'
+            variant='ghost'
             style={{
-              // position:'absolute',
-              top:"10px",
-              left:"10px",
+              padding:'0px',
+              margin:'0px',
+              position:'absolute',
+              top:"5px",
+              left:"5px",
               cursor:'pointer',
             }} 
             onClick={resetViz}
-          />
+          >
+            <RxReset className='size-6'/>
+          </Button>      
           {plotType === 'volume' && <VolumeOptions />}
           {plotType === 'point-cloud' && <PointOptions />}
           {plotType === 'sphere' && <SphereOptions/>}
           {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
           {plotType === 'flat' && <FlatOptions />}
-          <Reprojection />
           <GlobalOptions />
         </div>
       </PopoverContent>

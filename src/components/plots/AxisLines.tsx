@@ -35,10 +35,8 @@ const AXIS_CONSTANTS = {
 const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, flipDown: boolean}) =>{
   const {axisDimArrays, axisDimNames, axisDimUnits, dataShape, shape} = useGlobalStore(useShallow(s => s))
   const revY = useGlobalStore(useShallow(s => s.flipY))
-
   const {xRange, yRange, zRange, plotType, timeScale, animProg, zSlice, ySlice, xSlice, coarsen} = usePlotStore(useShallow(s => s))
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow(s => s))
-
   const {xIdx, yIdx, zIdx} = useAxisIndices()
   const dimSlices = useMemo(()=> {
     let slices = [
@@ -52,9 +50,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     }
     return slices
   },[revY, axisDimArrays, zSlice, ySlice, xSlice, coarsen, xIdx, yIdx, zIdx])
-
   const dimLengths = dimSlices.map(val => val.length)
-
   const [xResolution, setXResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [yResolution, setYResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [zResolution, setZResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
@@ -102,9 +98,8 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const xTitleOffset = useMemo(() => ((axisDimNames[xIdx]?.length || 0) * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [axisDimNames, globalScale, xIdx]);
   const yTitleOffset = useMemo(() => ((axisDimNames[yIdx]?.length || 0) * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [axisDimNames, globalScale, yIdx]);
   const zTitleOffset = useMemo(() => ((axisDimNames[zIdx]?.length || 0) * AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR / 2 + 0.1) * globalScale, [axisDimNames, globalScale, zIdx]);
-  
   function getFactor(fac:number, isX=false){
-      const length = dimLengths[isX ? xIdx : yIdx]
+      const length = dimLengths[isX ? 2 : 1]
       return Math.floor(fac * (length - 1))
   }
   return (
@@ -343,7 +338,6 @@ const FlatAxis = () =>{
     return originallyFlat ? 
     [yArray, xArray] :[zArray, yArray, xArray]
   },[xArray, yArray, zArray])
-
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
       return dimSlices.map((val) => val.length)
@@ -361,7 +355,7 @@ const FlatAxis = () =>{
   const [yResolution, setYResolution] = useState<number>(FLAT_AXIS_CONSTANTS.INITIAL_RESOLUTION)
 
   const { axisArrays, axisUnits, axisNames } = useMemo(() => {
-
+  
     if (originallyFlat) {
       return {
         axisArrays: dimSlices,

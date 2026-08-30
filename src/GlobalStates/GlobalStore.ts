@@ -221,6 +221,7 @@ declare global {
   var __appStore: UseBoundStore<StoreApi<StoreState>> | undefined
 }
 
+export const defaultGlobals = createStore().getState()
 
 // Supposedly this makes it a global that cannot be duplicated by Next into different code chunks
 export const useGlobalStore =

@@ -280,7 +280,6 @@ export function reproject(resolution: number = 256){
         remapTexture:undefined
     })
 	if (insufficientCRS || plotType == 'sphere'){
-        console.log("should be here too")
 		// If sphere, we check if irregularGrid. If so then create new texture. 
 		handleIrregularGrid()
 		return;
@@ -291,7 +290,6 @@ export function reproject(resolution: number = 256){
     if (is360Deg) {
 		xArray = remap360to180Monotonic(xArray) 
 	}
-    console.log("got through intial checks")
     const width = xArray.length;
     const height = yArray.length;
     // We need the border points as the min/max of the old CRS won't always be the min/max of the new CRS
@@ -333,7 +331,6 @@ export function reproject(resolution: number = 256){
         }
         return [lon, lat, 1];
     }
-    console.log("")
     // ---- Construct new CRS axis' ----//
     let adjustedResolution = resolution;
 
@@ -411,7 +408,6 @@ export function reproject(resolution: number = 256){
     texture.needsUpdate = true;
     if (remapTexture) remapTexture.dispose();
     useGlobalStore.setState({remapTexture: texture})
-    console.log("set Texture")
     // ---- Update Axis and Shape information ----//
     const crsCheck = proj4(destCRS);
     const {axisDimArrays, axisDimUnits, axisDimNames, shape} = useGlobalStore.getState()
@@ -441,8 +437,6 @@ export function reproject(resolution: number = 256){
         xSlice: [0, null],
         ySlice: [0, null],
     })
-    console.log("function completed without issue")
-
 }
 
 
