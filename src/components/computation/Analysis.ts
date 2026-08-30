@@ -8,15 +8,15 @@ import { usePlotStore } from "@/GlobalStates/PlotStore";
 import { useTextureStore } from "@/GlobalStates/TextureStore";
 
 export async function Analysis(){
-	const { strides, dataShape, valueScales, plotOn, setIsFlat, setStatus, setValueScales } = useGlobalStore.getState()
+	const { strides, dataShape, valueScales, plotOn, isFlat, setIsFlat, setStatus, setValueScales } = useGlobalStore.getState()
     const { axis, useTwo, variable2, valueScalesOrig, kernelSize, kernelDepth, 
         reverseDirection, operationString, analysisStore, analysisMode, analysisArray, 
         setValueScalesOrig, setAnalysisArray, setAnalysisMode } = useAnalysisStore.getState()
     const {setPlotType} = usePlotStore.getState();
     const {setTextures} = useTextureStore.getState();
+    const [_varCount, origShape, newShape, operation] = operationString.split(':')
+	const isReduction = origShape != newShape;
 
-	const operation = operationString.split(':').at(-1) 
-	const is2DOp = operationString.split(':').at(1) == '2'
 	console.log(operationString)
 	if (!plotOn || !operation) return;
 	setStatus("Computing...");
@@ -40,8 +40,7 @@ export async function Analysis(){
 	const dimInfo = { shape: dataShape, strides};
 	const kernel = { kernelDepth, kernelSize };
 	// ---- 3. Process and Check --- //
-    const reduceDim = is2DOp ? axis : undefined;
-    console.log(reduceDim)
+    const reduceDim = useTwo ? axis : undefined;
     newArray = await DataProcess(inputArray, var2Data, dimInfo, kernel, operationString, reduceDim, Boolean(reverseDirection))
     if (!newArray) {
         setStatus(null);

@@ -31,9 +31,6 @@ const singleVarOps = ['Mean', 'Min', 'Max', 'Standard Deviation']
 
 const multiVarOps = ['Correlation', 'Linear Slope', 'Covariance']
 
-
-
-
 const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center items-center">
     <span className="text-5xl mb-4 block self-center">⚠️</span>
     <h1 className="text-2xl font-bold mb-4">WebGPU Not Available</h1>
@@ -53,8 +50,9 @@ const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center
   </div>
 
 const AnalysisOptions = () => {
-	const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(s => s));
-
+	const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(s => ({
+		plotOn: s.plotOn, variable: s.variable, variables: s.variables, dimNames: s.dimNames, 
+		activeIndices: s.activeIndices, initStore: s.initStore, isFlat: s.isFlat, setTimeSeries: s.setTimeSeries, setValueScales: s.setValueScales})));
 	const previousStore = useRef<string>(initStore)
 	const [incompatible, setIncompatible] = useState(false); 
 	const [operation, setComponentOperation] = useState(useAnalysisStore.getState().operation)
@@ -70,15 +68,10 @@ const AnalysisOptions = () => {
 		setAnalysisDim, setOperationString
 	} = useAnalysisStore(useShallow(s => s));
 	const reFetch = useZarrStore(s => s.reFetch)
-	const setOpString = (operation: string) => {
-		operationString.current = operation
-		setComponentOperation(operation.split(':').at(-1) as string)
-	};
 	const handleExecute = () => {
-		if (operationString.current.includes("Convolution")) return [operationString.current, kernelOp].join('');
-		else return operationString.current;
+		if (operation.includes("Convolution")) return [kernelOp, operationString].join('');
+		else return operation;
 	}
-
 	const [showError, setShowError] = useState<boolean>(false);
 	useEffect(() => {
 		const checkWebGPU = async () => {
@@ -117,10 +110,11 @@ const AnalysisOptions = () => {
 	},[variable])
 
 	const [newDim, setNewDim] = useState(0)
+
 	useEffect(()=>{
 		setNewDim(axis)
 	},[axis])
-
+	console.log(operationString)
 	const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 	useEffect(() => {
 		const handleResize = () => {
@@ -130,8 +124,8 @@ const AnalysisOptions = () => {
 		window.addEventListener("resize", handleResize);
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
+
   return (
-    <>
       <Popover>
         <PopoverTrigger asChild>
           <div style={plotOn ? {} : { pointerEvents: 'none' } }>
@@ -160,7 +154,7 @@ const AnalysisOptions = () => {
               {/*  */}
               {!isFlat && 
                 <Button
-                className="cursor-pointer active:scale-[0.95] bg-gray-500"
+				variant='secondary'
                 disabled={incompatible}
                 onClick={() => {
                   setUseTwo(!useTwo);
@@ -181,7 +175,7 @@ const AnalysisOptions = () => {
 						<div className='flex px-4 items-center'>
 							<span className='pr-2'>Current</span> 
 							<QuickTip message='Operations will be applied to the newly generated data. '>
-							<BsFillQuestionCircleFill/>
+								<BsFillQuestionCircleFill/>
 							</QuickTip>
 						</div>
 					</div>
@@ -227,7 +221,7 @@ const AnalysisOptions = () => {
 				{useTwo ? 
 				<Select 
 					defaultValue={operation} 
-					onValueChange={setOpString}
+					onValueChange={setComponentOperation}
 				>
 					<SelectTrigger className='w-full'>
 						<SelectValue
@@ -235,42 +229,41 @@ const AnalysisOptions = () => {
 						/>
 					</SelectTrigger>
 					<SelectContent>
+						{/* DIM Reduction */}
 						<SelectGroup>
 						<SelectLabel>Dimension Reduction</SelectLabel>
 						{multiVarOps.map((op, idx) => (
-							<SelectItem key={idx} value={`2:2:${op.trim()}`}>
+							<SelectItem key={idx} value={op.trim()}>
 							{op}
 							</SelectItem>
 						))}
 						</SelectGroup>
-
+						{/* THREE DIM */}
 						<SelectGroup>
 						<SelectLabel>Three Dimensional</SelectLabel>
-						<SelectItem value="2:3:Convolution">Convolution</SelectItem>
+						<SelectItem value="Convolution">Convolution</SelectItem>
 						</SelectGroup>
 					</SelectContent>
 				</Select>
 				:
-				<Select defaultValue={operation} onValueChange={setOpString}>
+				<Select value={operationString.current} onValueChange={setComponentOperation}>
 					<SelectTrigger className='w-full'>
-						<SelectValue
-						placeholder='Select...'
-						/>
+						<SelectValue placeholder='Select...'/>
 					</SelectTrigger>
 					<SelectContent>
 						{!isFlat &&
 						<SelectGroup>
 						<SelectLabel>Dimension Reduction</SelectLabel>
 						{singleVarReductionOps.map((op, idx) => (
-							<SelectItem key={idx} value={`1:2:${op.trim()}`}>
-							{op}
+							<SelectItem key={idx} value={op.trim()}>
+								{op}
 							</SelectItem>
 						))}
 						</SelectGroup>}
 						<SelectGroup>
 						<SelectLabel>{isFlat ? '' : 'Three Dimensional'}</SelectLabel>
-						<SelectItem value={`1:${isFlat ? 2 : 3}:Convolution`}>Convolution</SelectItem>
-						{!isFlat && !analysisMode &&<SelectItem value="1:3:CUMSUM3D">CUMSUM</SelectItem>}
+						<SelectItem value={`Convolution`}>Convolution</SelectItem>
+						{!isFlat && !analysisMode &&<SelectItem value="CUMSUM3D">CUMSUM</SelectItem>}
 						</SelectGroup>
 					</SelectContent>
 				</Select>
@@ -278,9 +271,9 @@ const AnalysisOptions = () => {
 				{(operation != 'Convolution') && <>
 					<h1>Axis</h1>
 					<div className='flex justify-between w-full'>
-						<Select onValueChange={e => setNewDim(parseInt(e))}>
+						<Select value={String(newDim)} onValueChange={e => setNewDim(parseInt(e))}>
 							<SelectTrigger className='w-full' style={{ width: ['CUMSUM3D', 'LinearSlope'].includes(operation) ? '50%' : '100%'}}>
-								<SelectValue placeholder={dimNames[activeIndices[newDim]] ?? "Select Axis"} />
+								<SelectValue defaultValue={dimNames[activeIndices[newDim]] ?? "Select Axis"} />
 							</SelectTrigger>
 							<SelectContent>
 								{activeIndices.map((origIdx, dataShapeIdx) => (
@@ -300,6 +293,7 @@ const AnalysisOptions = () => {
 						}
 					</div>
 				</>}
+				{/* KERNEL OPERATIONS */}
 				{operation == 'Convolution' &&
 				<>
 				<h1>Kernel Op.</h1>
@@ -321,13 +315,13 @@ const AnalysisOptions = () => {
 					{!useTwo && isFlat ? 
 						singleVarOps.map((op, idx) =>  (
 							<SelectItem key={idx} value={op.trim()}>
-							{op}
+								{op}
 							</SelectItem>
 						)) 
 						:
 						singleVarOps.map((op, idx) =>  (
 							<SelectItem key={idx} value={op.trim()}>
-							{op}
+								{op}
 							</SelectItem>
 						))
 					}
@@ -385,7 +379,7 @@ const AnalysisOptions = () => {
           )}
         </PopoverContent>
       </Popover>
-    </>
+
   );
 };
 
