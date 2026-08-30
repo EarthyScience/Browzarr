@@ -73,7 +73,7 @@ const months = [
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ];
   
-export function parseLoc(input: any, units: string | undefined, verbose: boolean = false) {
+export function parseLoc(input: any, units: string | undefined, verbose: boolean = false, resolution: number = 0) {
     if (!units){
       if (typeof(input) == 'bigint'){
         return input;
@@ -99,25 +99,18 @@ export function parseLoc(input: any, units: string | undefined, verbose: boolean
         const hours = date.getUTCHours();
         const mins = date.getUTCMinutes();
         const secs = date.getUTCSeconds();
-        
-        const lowerUnits = units.toLowerCase();
-        const showTime = lowerUnits.includes('hour') || lowerUnits.includes('min') || lowerUnits.includes('sec') || hours !== 0 || mins !== 0 || secs !== 0;
-        
-        if (verbose) {
-          let dateStr = `${day} ${months[month - 1]} ${year}`;
-          if (showTime) {
-             dateStr += ` ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-             if (secs !== 0 || lowerUnits.includes('sec')) dateStr += `:${String(secs).padStart(2, '0')}`;
-          }
-          return dateStr;
-        } else {
-          let dateStr = `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
-          if (showTime) {
-             dateStr += ` ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-             if (secs !== 0 || lowerUnits.includes('sec')) dateStr += `:${String(secs).padStart(2, '0')}`;
-          }
-          return dateStr;
+
+        let dateStr;
+        if (verbose) dateStr = `${day} ${months[month - 1]} ${year}`
+        else dateStr = `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
+        if (resolution > 0){
+          const thisRes = Math.min(resolution, 3);
+          dateStr += [
+            ` ${String(hours).padStart(2, '0')}`,
+            `${String(mins).padStart(2, '0')}`,
+            `${String(secs).padStart(2, '0')}`].slice(0,thisRes).join(':')
         }
+        return dateStr;
       }
       catch{
         return input;
