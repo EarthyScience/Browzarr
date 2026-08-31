@@ -40,9 +40,9 @@ function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds
     }
     newX = (newX-xBounds[0])/(xBounds[1]-xBounds[0]);
     newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);
-    newY = flipY ? 1 - newY : newY
+    newY = (flipY && (remapBorders && !remapTexture)) ? 1 - newY : newY;  // Don't flip after reprojection when using irregular grid
+    // newY = 1-newY
     if (remapBorders && !remapTexture){
-        newY = flipY ? 1 - newY : newY // Don't flip when using remapBorders
         const [newV, _valid] = sampleCRS(remapBorders, newX, newY)
         newX = newV.x;
         newY = newV.y;
