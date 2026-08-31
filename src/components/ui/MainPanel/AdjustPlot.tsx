@@ -18,6 +18,7 @@ import { Reprojection } from '../Elements/Reprojection';
 import { useAxisIndices, useDimAxis } from '@/hooks';
 import { FaLongArrowAltUp } from "react-icons/fa";
 import { HiAdjustmentsHorizontal } from "react-icons/hi2";
+import { resetProjection } from '@/components/textures/ProjectionTexture';
 
 function DeNorm(val : number, min : number, max : number){
     const range = max-min;
@@ -603,6 +604,7 @@ function resetViz(){
     maskValue: 0,
     disablePointScale: false,
   })
+  resetProjection();
 }
 
 
@@ -647,37 +649,34 @@ const AdjustPlot = () => {
         onOpenAutoFocus={(e) => { //Prevents tooltip from opening automatically
           e.preventDefault();
         }}
-        className={`relative w-[240px] mt-2 mr-1 ${
+        className={`relative grid w-[240px] mt-2 mr-1 ${
           popoverSide === 'top' ? 'mb-1' : ''
         }`}
       >
-        <QuickTip message='Close settings'>
-          <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-0 right-1 z-10 cursor-pointer saturate-[180%]"
-              onClick={() => setOpen(false)}
-              aria-label="Close settings"
-            >
-              <RiCloseLargeLine className="size-4" />
-            </Button>
-        </QuickTip>
+        <div className='flex justify-between w-full items-center h-6 pt-0'>
+          <QuickTip message='Reset visual state'>
+            <Button
+                className='size-8 !p-0'
+                variant='ghost'
+                onClick={resetViz}
+              >
+              <RxReset className='size-6'/>
+            </Button>   
+          </QuickTip>
+          <QuickTip message='Close settings'>
+              <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close settings"
+                >
+                  <RiCloseLargeLine className="size-6" />
+                </Button>
+          </QuickTip>   
+        </div>
+        
         <div className={`overflow-y-auto no-scrollbar -mx-4 px-4 pt-2 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>    
-          <Button
-            className='size-12 !p-0'
-            variant='ghost'
-            style={{
-              padding:'0px',
-              margin:'0px',
-              position:'absolute',
-              top:"5px",
-              left:"5px",
-              cursor:'pointer',
-            }} 
-            onClick={resetViz}
-          >
-            <RxReset className='size-6'/>
-          </Button>      
+          
           {plotType === 'volume' && <VolumeOptions />}
           {plotType === 'point-cloud' && <PointOptions />}
           {plotType === 'sphere' && <SphereOptions/>}
