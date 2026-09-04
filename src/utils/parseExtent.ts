@@ -65,7 +65,8 @@ export const parseExtent = () => {
 	const yRes = Math.abs(yArray[1] - yArray[0]);
 
 	const is360Deg = xMax > 180 && xMax <= 360;
-	const borderCompatible = xMax <= 360 || Boolean(validCRS);
+	const yMax = Math.max(yStart, yEnd);
+	const borderCompatible = (xMax <= 360 && yMax <= 90)|| Boolean(validCRS);
 	
 	const yExtent = flipY ? [yEnd, yStart] : [yStart, yEnd];
 	usePlotStore.setState({
