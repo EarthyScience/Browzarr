@@ -36,7 +36,7 @@ void main() {
     if (maskValue != 0 || useBorderTexture){ // need to pass vUv to frag render bordelines. Hence why useBorderTexture is here
         // Get Coordinates
         vec2 realUV = realCoords(instanceUV);
-        vUv = realCoords(instanceUV + (position.xz) / vec2(2.*PI, PI));
+        vUv = realCoords(instanceUV + (position.xz) / vec2(PI * 2., PI));
         if (is360){
             realUV.x = fract(realUV.x + 0.5);
             vUv.x = fract(vUv.x + 0.5);

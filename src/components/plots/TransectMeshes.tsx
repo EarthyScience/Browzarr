@@ -3,20 +3,36 @@ import * as THREE from 'three'
 import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 import { useShallow } from 'zustand/shallow'
-import { deg2rad } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { useAxisIndices } from '@/hooks'
 
-function remapToXYZ(uv: THREE.Vector2, latBounds: number[], lonBounds: number[]): THREE.Vector3 {
-	const u = 1 - uv.x;
-	const v = uv.y;
-	const lon = u * (deg2rad(lonBounds[1]) - deg2rad(lonBounds[0])) + deg2rad(lonBounds[0]);
-	const lat = v * (deg2rad(latBounds[1]) - deg2rad(latBounds[0])) + deg2rad(latBounds[0]);
+function remapToXYZ(sphereUV: THREE.Vector2): THREE.Vector3 {
+	const u = -sphereUV.x;
+	const v = sphereUV.y;
+	const theta = u * Math.PI * 2;        // longitude, [0, 2π]
+	const phi = v * Math.PI - Math.PI / 2; // latitude, [-π/2, π/2]
+
 	return new THREE.Vector3(
-		Math.cos(lat) * Math.cos(lon),
-		Math.sin(lat),
-		Math.cos(lat) * Math.sin(lon)
+		Math.cos(phi) * Math.cos(theta),
+		Math.sin(phi),
+		Math.cos(phi) * Math.sin(theta)
 	);
+}
+
+function uvToSphere(uv: THREE.Vector2, latBounds: number[], lonBounds: number[]): THREE.Vector2 {
+	const u = uv.x;
+	const v = uv.y;
+
+	const sphereMinU = lonBounds[0] / (Math.PI * 2);
+	const sphereMaxU = lonBounds[1] / (Math.PI * 2);
+
+	const sphereMinV = (latBounds[0] + Math.PI / 2) / Math.PI;
+	const sphereMaxV = (latBounds[1] + Math.PI / 2) / Math.PI;
+
+	const sphereU = sphereMinU + u * (sphereMaxU - sphereMinU);
+	const sphereV = sphereMinV + v * (sphereMaxV - sphereMinV);
+
+	return new THREE.Vector2(sphereU, sphereV);
 }
 
 function normalToPos(uv: THREE.Vector2, normal:THREE.Vector3, ratios:{depthRatio:number, aspectRatio:number}, steps:{xSteps:number, ySteps:number, zSteps:number}): THREE.Vector3{
@@ -73,7 +89,7 @@ function normalToScale(normal:THREE.Vector3, ratios:{depthRatio:number, aspectRa
 }
 
 export const SquareMeshes = () => {
-	const {timeSeries, dataShape, shape} = useGlobalStore(useShallow(s => s))
+	const {timeSeries, dataShape, shape, flipY} = useGlobalStore(useShallow(s => s))
 	const {plotType} = usePlotStore(useShallow(s => s))
 	const {lonBounds, latBounds} = useCoordBounds()
 	const {xIdx, yIdx} = useAxisIndices()
@@ -99,11 +115,13 @@ export const SquareMeshes = () => {
 			const uvX = (Math.floor(uv.x * xSteps)+0.5)/xSteps;
 			const uvY = (Math.floor(uv.y * ySteps)+0.5)/ySteps;
 			if (isSphere){
+				const thisUV = new THREE.Vector2(uvX, flipY ? 1 - uvY : uvY)
+				const sphereUV = uvToSphere(thisUV, latBounds, lonBounds)
 				const circum = 2*Math.PI;
 				const xScale = circum/xSteps * normedXExtent;
 				const yScale = circum/2/ySteps * normedYExtent;
-				const xScaler = Math.cos((uvY - 0.5) * Math.PI);
-				position = remapToXYZ(new THREE.Vector2(uvX, uvY), latBounds, lonBounds)	
+				const xScaler = Math.cos((sphereUV.y - 0.5) * Math.PI);
+				position = remapToXYZ(sphereUV)	
 				// Rotate the plane where position is also normal vector
 				mesh.lookAt(position.x, position.y, position.z)
 				geometry.scale(xScale*xScaler, yScale, 1)

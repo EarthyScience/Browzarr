@@ -58,8 +58,8 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
                 remapTexture: { value: remapTexture },
                 displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))},
                 displacement: {value: displacement},
-                widthFactor: {value: Math.abs(deg2rad(lonBounds[1])-deg2rad(lonBounds[0]))/(2.0*Math.PI)},
-                vertFactor: {value: Math.abs(deg2rad(latBounds[1])-deg2rad(latBounds[0]))/(Math.PI)},
+                widthFactor: {value: Math.abs(lonBounds[1]-lonBounds[0])/(2.0*Math.PI)},
+                vertFactor: {value: Math.abs(latBounds[1]-latBounds[0])/(Math.PI)},
                 ...uniforms
             },
             defines:{
@@ -82,8 +82,8 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             uniforms.map.value = textures;
             uniforms.displacement.value = displacement
             uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
-            uniforms.widthFactor.value = Math.abs(deg2rad(lonBounds[1])-deg2rad(lonBounds[0]))/(2.0*Math.PI)
-            uniforms.vertFactor.value =  Math.abs(deg2rad(latBounds[1])-deg2rad(latBounds[0]))/(Math.PI)
+            uniforms.widthFactor.value = Math.abs(lonBounds[1]-lonBounds[0])/(2.0*Math.PI)
+            uniforms.vertFactor.value =  Math.abs(latBounds[1]-latBounds[0])/(Math.PI)
         }
         invalidate();
     },[valueScales, displacement, offsetNegatives, lonBounds, textures])
@@ -96,8 +96,8 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
     useEffect(()=>{
         if (nanMaterial ){
             nanMaterial.dispose();
-            nanMaterial.color.set(nanColor)
-            nanMaterial.opacity = (1-nanTransparency)
+            nanMaterial.color.set(nanColor);
+            nanMaterial.opacity = (1-nanTransparency);
             invalidate();
         }
     },[nanColor, nanTransparency])
