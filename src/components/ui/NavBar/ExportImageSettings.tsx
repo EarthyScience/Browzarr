@@ -18,13 +18,11 @@ import {
 } from "@/components/ui/select"
 import { BsBoxArrowRight } from "react-icons/bs";
 import { FaLongArrowAltRight } from "react-icons/fa";
-import { FiCopy } from "react-icons/fi";
-import { BiExport } from 'react-icons/bi'
 
 
 const ExportImageSettings = () => {
     const {
-        includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum, keyFrames,
+        includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum,
         useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, cbarUnits, animate, timeRate,
         frames, frameRate, orbit, useTime, loopTime, orbitDeg, orbitDir, preview, pingpong  
     } = useImageExportStore(useShallow(s => s))
@@ -45,8 +43,6 @@ const ExportImageSettings = () => {
     const [showTitles, setShowTitles] = useState(false)
     const [showAnimation, setShowAnimation] = useState(false)
     const [showSettings, setShowSettings] = useState(true)
-	const [previewState, setPreviewState] = useState(false)
-    const [copied, setCopied] = useState(false);
     const axisMapping = useZarrStore(s => s.axisMapping);
 
     useEffect(()=>{
@@ -58,32 +54,6 @@ const ExportImageSettings = () => {
         setFrames(sliceDist);
     },[zSlice, dimArrays, axisMapping])
 
-	const keyFramesJSON = (): string => {
-		const {keyFrames} = useImageExportStore.getState()
-		if (!keyFrames) return '';
-		const obj = Object.fromEntries(keyFrames)
-		return JSON.stringify(obj)
-	}
-
-    const copyToClipboard = async () => {
-		const keyFramesJson = keyFramesJSON()
-        await navigator.clipboard.writeText(JSON.stringify(keyFramesJson));
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500); //Use for a pop-up that fades away
-    };
-
-	const exportToJson = async () => {
-		const keyFramesJson = keyFramesJSON()
-		const blob = new Blob([keyFramesJson], { type: "application/json" });
-		const url = URL.createObjectURL(blob);
-		const link = document.createElement("a");
-		link.href = url;
-		link.download = "keyframes.json";
-
-		link.click();
-		URL.revokeObjectURL(url)
-
-	}
 
   return (
     <Popover>
@@ -192,7 +162,7 @@ const ExportImageSettings = () => {
                                 <h1>Height</h1>
                                 <Input className='h-[26px]' id='cbarNum' type="number"  value={customRes[1]} onChange={e => setCustomRes([customRes[0], parseInt(e.target.value)])}/>
                             </div>
-							<Button className={`col-span-2 ${previewState ? 'bg-red-600' : ''}`}
+							<Button className={`col-span-2`}
 								variant='outline'
 								disableRipple
 								onPointerEnter={()=>setPreviewExtent(true)}
@@ -283,35 +253,6 @@ const ExportImageSettings = () => {
                                 >
                                     Keyframe Editor <BsBoxArrowRight/>
                                 </Button>
-                                {keyFrames &&
-                                <div className='col-span-2 text-center'>
-                                    <b>Export Keyframes</b>
-                                    <div className='grid grid-cols-2 items-center'>
-                                        <div>
-                                            <QuickTip message='Copy the current keyframes to JSON for use in a coding environment'>
-                                                <Button
-                                                    className='p-2'
-                                                    variant='ghost'
-                                                    onClick={copyToClipboard}
-                                                >
-                                                    <FiCopy className='size-4'/><span className='text-xs'>Copy</span>
-                                                </Button>
-                                            </QuickTip>
-                                        </div>
-                                        <div>
-                                            <QuickTip message='Export the current keyframes to JSON for use in a coding environment'>
-                                                <Button
-                                                    className='p-2'
-                                                    variant='ghost'
-                                                    onClick={exportToJson}
-                                                >
-                                                    <BiExport className='size-4'/><span className='text-xs'>Export</span>
-                                                </Button>
-                                            </QuickTip>
-                                        </div>
-                                    </div>
-                                </div>
-                                }
                             </div>
                             <div className='my-2'/>
                             <QuickTip message='Chose export quality. Preview for fast test renders' asChild>
