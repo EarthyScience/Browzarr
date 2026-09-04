@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
 import { useShallow } from "zustand/shallow";
 import { useGlobalStore } from "@/GlobalStates/GlobalStore";
+import { deg2rad } from "@/utils/HelperFuncs";
 
 export const useCoordBounds = ()=>{
     const {lonExtent, latExtent, lonResolution, latResolution} = usePlotStore(useShallow(s => s))
@@ -15,6 +16,7 @@ export const useCoordBounds = ()=>{
         return [newLonBounds, newLatBounds]
     },[latExtent, lonExtent, lonResolution, latResolution, flipY])
     return {
-        lonBounds,latBounds
+        lonBounds:lonBounds.map(e => deg2rad(e)),
+        latBounds: latBounds.map(e => deg2rad(e))
     }
 }

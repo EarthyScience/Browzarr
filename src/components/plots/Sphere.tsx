@@ -4,7 +4,7 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
-import { parseUVCoords, GetTimeSeries, GetCurrentArray, deg2rad } from '@/utils/HelperFuncs';
+import { parseUVCoords, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
 import { evaluateColorMap } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { SquareMeshes } from './TransectMeshes';
@@ -14,11 +14,11 @@ import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
-    const lon = Math.atan2(xyz.z,xyz.x)
+    const lon = -Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
-    const u = (lon - deg2rad(lonBounds[0]))/(deg2rad(lonBounds[1])-deg2rad(lonBounds[0]))
-    const v = (lat - deg2rad(latBounds[0]))/(deg2rad(latBounds[1])-deg2rad(latBounds[0]))
-    return new THREE.Vector2(1-u,v)
+    const u = (lon - lonBounds[0])/(lonBounds[1]-lonBounds[0])
+    const v = (lat - latBounds[0])/(latBounds[1]-latBounds[0])
+    return new THREE.Vector2(u,v)
 }
 
 export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
@@ -98,12 +98,11 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
 
         //const uv = XYZtoUV(point, texture?.source.data.width, texture?.source.data.height);
         const uv = XYZtoRemap(point, latBounds, lonBounds);
+        uv.y = flipY ? 1 - uv.y : uv.y;
         const normal = new THREE.Vector3(0,0,1)
-        const tsUV = flipY ? new THREE.Vector2(uv.x, 1-uv.y) : uv
-        const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:tsUV,normal})
+        const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv,normal})
         setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
-          
-        const coordUV = parseUVCoords({normal:normal,uv:uv})
+        const coordUV = parseUVCoords({normal:normal,uv})
         let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length)] : null)
         const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
         const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)
@@ -113,7 +112,7 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
           color: evaluateColorMap(getColorIdx() / 10, 'Paired'),
           data: tempTS,
           normal,
-          uv: tsUV,
+          uv,
         }
         incrementColorIdx();
         updateTimeSeries({ [tsID] : tsObj})
