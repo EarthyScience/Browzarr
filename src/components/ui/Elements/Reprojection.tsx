@@ -4,13 +4,14 @@ import { useShallow } from 'zustand/shallow'
 import { Hider } from '../Widgets/Hider'
 import { ChevronLeft } from 'lucide-react'
 import { Input } from '../input'
-import { Button } from '@/components/ui'
+import { Button, QuickTip } from '@/components/ui'
 import { checkProjString, reproject, resetProjection } from '@/components/textures/ProjectionTexture'
 import { TbReplace } from "react-icons/tb";
 import { RxReset } from "react-icons/rx";
 import { Robinson } from './Icons'
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 
+const crsClass = 'text-[var(--chart-2)]'
 
 export const Reprojection = () => {
     const {destCRS, nativeCRS, is360Deg} = usePlotStore(useShallow(s => s))
@@ -52,10 +53,10 @@ export const Reprojection = () => {
                         }
                         <div className="grid grid-cols-[auto_30px] items-center gap-1">
                             <div
-                                className="min-w-0 break-all max-h-20 overflow-scroll no-scrollbar rounded-md border border-[#333] bg-[#1e1e1e] px-1 py-2 font-mono text-sm text-[#d4d4d4] whitespace-pre-wrap"
+                                className="flex justify-center min-w-0 break-all max-h-20 overflow-scroll no-scrollbar rounded-md border border-[#333] bg-[var(--background-modal)] px-1 py-2 font-mono text-sm text-[#d4d4d4] whitespace-pre-wrap"
                             >
                                 {nativeCRS
-                                    ? `Native CRS: ${nativeCRS}`
+                                    ? <div className='text-[var(--text-plot)]'>Native CRS: <span className={crsClass}>{nativeCRS}</span></div>
                                     : "No CRS detected"}
                             </div>
                             <div className="flex flex-col gap-1">
@@ -63,13 +64,17 @@ export const Reprojection = () => {
                                     className="shrink-0 rounded-md p-2 hover:bg-muted cursor-pointer transition-colors"
                                     onClick={resetProjection}
                                 >
-                                    <RxReset className="h-4 w-4" />
+                                    <QuickTip message='Reset reprojection back to native' side='top'>
+                                        <RxReset className="h-4 w-4" />
+                                    </QuickTip>
                                 </button>
                                 <button 
                                     className="shrink-0 rounded-md p-2 hover:bg-muted cursor-pointer transition-colors"
                                     onClick={()=>setChangeNativeCRS(x=>!x)}
                                 >
-                                    <TbReplace className="h-4 w-4" />
+                                    <QuickTip message='Update/change the native CRS' side='top'>
+                                        <TbReplace className="h-4 w-4" />
+                                    </QuickTip>
                                 </button>
                             </div>
                             

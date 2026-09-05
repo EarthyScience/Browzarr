@@ -95,7 +95,6 @@ function createIrregularUV(
     xArray: Array<number>,
 	yArray: Array<number>,
     flipY: boolean,
-    is360: boolean,
 ) {
     const width = xArray.length;
     const height = yArray.length;
@@ -152,7 +151,6 @@ function createIrregularUV(
 function createInverseUV(
 	xArray: Array<number>,
 	yArray: Array<number>,
-	flipY: boolean,
     is360: boolean,
 	resolution : number
 ) {
@@ -213,9 +211,9 @@ export function handleIrregularGrid(){
     if (isRegular) return;
     const {is360Deg, plotType} = usePlotStore.getState();
 	if(plotType == 'sphere') {
-        const texture = createInverseUV(xArray, yArray, flipY, is360Deg, 1024);
+        const texture = createInverseUV(xArray, yArray, is360Deg, 1024);
         useGlobalStore.setState({remapTexture:texture});
-    } else createIrregularUV(xArray, yArray, flipY, is360Deg)
+    } else createIrregularUV(xArray, yArray, flipY)
     return
 }
 
@@ -284,7 +282,6 @@ export function reproject(resolution: number = 256){
 		handleIrregularGrid()
 		return;
 	}
-    console.log(destCRS)
     if (!checkProjString(destCRS) || !checkProjString(nativeCRS)) return; 
     const {xIdx, yIdx} = getAxisIndices()
     if (is360Deg) {
@@ -389,7 +386,7 @@ export function reproject(resolution: number = 256){
                 const idx = (j * targetWidth + i) * 4;
                 data[idx]     = THREE.DataUtils.toHalfFloat(u); 
                 data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
-                data[idx + 2] = THREE.DataUtils.toHalfFloat(valid);
+                data[idx + 2] = THREE.DataUtils.toHalfFloat(Number(inBounds));
             }  
         }
     }       
@@ -416,7 +413,6 @@ export function reproject(resolution: number = 256){
     newAxisDimArrays[yIdx] = yTicks;
     const newAxisDimUnits = [...axisDimUnits];
     const targetUnits = (crsCheck.oProj as any)?.units;
-
     //@ts-ignore At this point these are all valid
     newAxisDimUnits[xIdx] = targetUnits;
     //@ts-ignore At this point these are all valid

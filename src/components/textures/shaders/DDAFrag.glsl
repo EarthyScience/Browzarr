@@ -40,6 +40,8 @@ bool shouldSkip(vec3 p, out vec3 texCoord, out vec2 maskUV) {
     texCoord = p / scale + 0.5;
     maskUV = reprojector(texCoord, valid);
     if (!valid) return true;
+    if (any(greaterThan(maskUV, vec2(1.0)))) return true;
+    if (any(lessThan(maskUV, vec2(0.0)))) return true;
     if (maskValue != 0) {
         float mask = texture(maskTexture, maskUV).r;
         bool masked = maskValue == 1 ? mask < 0.5 : mask >= 0.5;
@@ -122,7 +124,13 @@ void main() {
                 } else {
                     vec3 col = texture(cmap, vec2(d, 0.5)).rgb;
                     float alphaFac = revTransparency ? 1.0 - d : d;
-                    float alpha = pow(max(alphaFac, 0.001), transparency * opacityMag);
+                    float alpha;
+                    if (useClipScale){
+                        float normalizedOpacity = clamp((alphaFac - threshold.x) / (threshold.y - threshold.x), 0.0, 1.0);
+                        alpha = pow(max(normalizedOpacity, 0.001), transparency*opacityMag);
+                    } else {
+                        alpha = pow(max(alphaFac, 0.001), transparency * opacityMag);
+                    }
                     accumColor += (1.0 - alphaAcc) * alpha * col;
                     alphaAcc += alpha * (1.0 - alphaAcc);
                 }
