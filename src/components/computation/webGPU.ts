@@ -108,7 +108,7 @@ export async function DataProcess(
     const {strides, shape} = dimInfo;
     const {kernelSize, kernelDepth} = kernel;
     const [zStride, yStride, xStride] = strides;
-    const isMultiVar = operationString.split(':').at(0) == '2'
+    const isMultiVar = Boolean(secondArray)
     const operation = operationString.split(':').at(-1) ;
     const is3D = operationString.split(':').at(1) == '3';
     const workerSize = is3D ? 4 : 16; // 16 for 2D outputs and 4 for 3D outputs
@@ -138,7 +138,6 @@ export async function DataProcess(
     console.log(`is3D: ${is3D}`)
     console.log(`strides: ${strides}`)
 
-    // console.log(shader)
     // ---- START PIPELINE ---- //
     const computeModule = device.createShaderModule({
         label: 'analysis compute module',

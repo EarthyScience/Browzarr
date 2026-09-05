@@ -16,13 +16,12 @@ export async function Analysis(){
     const {setTextures} = useTextureStore.getState();
     const [_varCount, origShape, newShape, operation] = operationString.split(':')
 	const isReduction = origShape != newShape;
-
-	console.log(operationString)
+    
 	if (!plotOn || !operation) return;
 	setStatus("Computing...");
 	let newArray: Float16Array | Float32Array | undefined;
 
-	// --- 1. Fetch second variable if needed --- //
+	// --- Fetch second variable if needed --- //
 	let var2Data: ArrayBufferView | undefined;
 	if (useTwo) {
 		setStatus("Fetching second variable...")
@@ -35,7 +34,9 @@ export async function Analysis(){
 			return;
 		}
 	}
-	// --- 2. Dispatch GPU computation based on the operation --- //
+    // --- Define Shapes --- //
+    
+	// --- Dispatch GPU computation based on the operation --- //
 	const inputArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore)
 	const dimInfo = { shape: dataShape, strides};
 	const kernel = { kernelDepth, kernelSize };
@@ -72,14 +73,14 @@ export async function Analysis(){
             textureData[i] = normed * 254;
         }
     };
-    const newTexture = CreateTexture(!is2DOp ? dataShape : thisShape, textureData)
+    const newTexture = CreateTexture(!isFlat ? dataShape : thisShape, textureData)
     // --- Final state updates --- //
     setAnalysisArray(newArray);
     if (newTexture){
         setTextures(newTexture);
     }
-    setIsFlat(is2DOp);
-    setPlotType(is2DOp ? 'flat' : 'volume' );
+    setIsFlat(isFlat);
+    setPlotType(isFlat ? 'flat' : 'volume' );
     setAnalysisMode(true);
     setStatus(null);
 }
