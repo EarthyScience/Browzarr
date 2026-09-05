@@ -7,6 +7,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
 import { evaluateColorMap } from '@/components/textures';
+import { useDimAxis } from '@/hooks';
 
 function normalizeUV(uv:number, scale:number, pos:number){
   return (uv*scale) + (pos-0.5*scale+0.5)
@@ -69,14 +70,15 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     useShallow(s => s))
 
   const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
-
-  const {shape, dataShape, strides, axisDimArrays,axisDimNames,axisDimUnits, remapTexture, flipY} = useGlobalStore(
+  const {shape, dataShape, strides, axisDimNames,axisDimUnits, remapTexture, flipY} = useGlobalStore(
     useShallow(s => s))
   
+  const {xArray, yArray, zArray} = useDimAxis();
+  const allAxis = [zArray, yArray, xArray];
   const {selectTS, xRange, yRange, zRange,getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
 
   const lastNormal = useRef<number | null>( 0 )
-
+	
   function HandleTimeSeries(event: THREE.Intersection){
     const uv = event.uv!;
     const normal = event.normal!;
@@ -112,9 +114,8 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       }
       return null;}).filter(idx => idx !== null);
     setPlotDim(2-plotDim[0]) //I think this 2 is only if there are 3-dims. Need to rework the logic
-
     const coordUV = parseUVCoords({normal:normal,uv})
-    let dimCoords = coordUV.map((val,idx)=>val ? axisDimArrays[idx][Math.round(val*axisDimArrays[idx].length)] : null)
+    let dimCoords = coordUV.map((val,idx)=>val ? allAxis[idx][Math.round(val*allAxis[idx].length)] : null)
     const thisDimNames = axisDimNames.filter((_,idx)=> dimCoords[idx] !== null)
     const thisDimUnits = axisDimUnits.filter((_,idx)=> dimCoords[idx] !== null)
     dimCoords = dimCoords.filter(val => val !== null)

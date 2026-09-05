@@ -15,7 +15,7 @@ import { evaluateColorMap } from '@/components/textures';
 import { flatFrag } from '../textures/shaders';
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
-import { useAxisIndices } from '@/hooks';
+import { useAxisIndices, useDimAxis } from '@/hooks';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
 interface InfoSettersProps{
@@ -37,21 +37,8 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     const {kernelSize, kernelDepth} = useZarrStore(useShallow(s => s))
 
     const {xIdx, yIdx, zIdx} = useAxisIndices()
-    
-    const dimSlices = useMemo (() => {
-      let slices = isFlat
-        ? [
-          dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
-          dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
-        ]
-        : [
-          dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
-          dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
-          dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined ) ?? [],
-        ]
-      if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
-      return slices
-    } ,[dimArrays, zSlice, ySlice, xSlice, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
+    const {xArray, yArray, zArray} = useDimAxis();
+    const dimSlices = [zArray, yArray, xArray];
     const shapeRatio = useMemo(()=> {
       if (dataShape.length == 2){
         return shape.y/shape.x
@@ -82,10 +69,12 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
     useEffect(()=>{
         geometry.dispose()
     },[geometry])
+
     // ----- MOUSE MOVE ----- //
     const handleMove = (e: ThreeEvent<PointerEvent>) => {
       if (infoRef.current && e.uv) {
         let {uv} = e;
+        console.log(uv)
         if (!uv) return;
         setLoc([e.clientX, e.clientY]);
         if (remapTexture){
@@ -98,14 +87,12 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
           }
         }
         const { x, y } = uv;
-        const zSliceIdx = dimSlices.length > 2 ? 2 : 1;
-        const ySliceIdx = dimSlices.length > 2 ? 1 : 0;
-        const xSize = isFlat ? (analysisMode ? analysisDims[1].length : dimSlices[1].length) : dimSlices[zSliceIdx].length;
-        const ySize = isFlat ? (analysisMode ? analysisDims[0].length : dimSlices[0].length) : dimSlices[ySliceIdx].length;
+        const xSize = xArray.length;
+        const ySize = yArray.length;
         const xId = Math.round(x * xSize - 0.5);
         const yId = Math.floor(y * ySize);
         let dataIdx = xSize * yId + xId;
-        const zOffset = isFlat ? 0 : Math.floor((dimSlices[zIdx].length-1) * animProg)
+        const zOffset = isFlat ? 0 : Math.floor((zArray.length-1) * animProg)
         dataIdx += zOffset * xSize*ySize
         const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
         val.current = dataVal;
@@ -128,10 +115,10 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
           }
       }
 
-      const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:newUV ?? tsUV,normal})
+      const tempTS = GetTimeSeries({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape, stride:strides},{uv:newUV ?? uv,normal})
       setPlotDim(0) //I think this 2 is only if there are 3-dims. Need to rework the logic
-        
-      const coordUV = parseUVCoords({normal:normal,uv:uv})
+      
+      const coordUV = parseUVCoords({normal:normal,uv:tsUV})
       let dimCoords = coordUV.map((val,idx)=>val ? dimSlices[idx][Math.round(val*dimSlices[idx].length)] : null)
       const thisDimNames = dimNames.filter((_,idx)=> dimCoords[idx] !== null)
       const thisDimUnits = dimUnits.filter((_,idx)=> dimCoords[idx] !== null)

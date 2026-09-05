@@ -9,7 +9,7 @@ import { evaluateColorMap } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
-import { useAxisIndices } from '@/hooks';
+import { useAxisIndices, useDimAxis } from '@/hooks';
 import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
@@ -25,22 +25,13 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
     const textures = usePaddedTextures(propTextures);
     const {setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
     const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
-    const {isFlat, dimArrays, dimNames, dimUnits, valueScales, 
+    const {isFlat, dimNames, dimUnits, valueScales, 
           dataShape, strides, flipY, remapTexture} = useGlobalStore(useShallow(s => s))
     
-    const { selectTS, displacement, sphereResolution, zSlice, ySlice, xSlice, fillValue, colorScale,
+    const { selectTS, displacement, sphereResolution, fillValue, colorScale,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
-
-    const {xIdx, yIdx, zIdx} = useAxisIndices()
-    const dimSlices = useMemo(() => {
-      return [
-        dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ?? undefined) ?? [],
-        dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ?? undefined) ?? [],
-        dimArrays.length > 2
-          ? dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ?? undefined) ?? []
-          : [],
-      ];
-    }, [dimArrays, zIdx, yIdx, xIdx, zSlice, ySlice, xSlice]);
+    const {xArray, yArray, zArray} = useDimAxis();
+    const dimSlices = [zArray, yArray, xArray];
     const {lonBounds, latBounds} = useCoordBounds()
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
     const uniforms = useCommonUniforms()
