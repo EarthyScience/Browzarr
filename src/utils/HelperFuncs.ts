@@ -129,16 +129,15 @@ export function parseLoc(input: any, units: string | undefined, verbose: boolean
 }
 
 export function parseUVCoords({normal,uv}:{normal:THREE.Vector3,uv:THREE.Vector2}){
-  const flipY = useGlobalStore.getState().flipY
   switch(true){
     case normal.z === 1:
-      return [null, flipY ? 1-uv.y : uv.y, uv.x]
+      return [null, uv.y, uv.x]
     case normal.z === -1:
-      return [null, flipY ? 1-uv.y : uv.y, 1-uv.x]
+      return [null, uv.y, 1-uv.x]
     case normal.x === 1:
-      return [1-uv.x, flipY ? 1- uv.y : uv.y, null]
+      return [1-uv.x, uv.y, null]
     case normal.x === -1:
-      return [uv.x, flipY ? 1-uv.y : uv.y, null]
+      return [uv.x, uv.y, null]
     case normal.y === 1:
       return [1-uv.y, null, uv.x]
     case normal.y === -1:
@@ -187,7 +186,7 @@ export function GetTimeSeries(array : arrayInfo, TimeSeriesInfo:TimeSeriesInfo){
   //This is a complicated logic check but it works bb
   const sliceSize = parseUVCoords({normal,uv})
   const slice = sliceSize.map((value, index) =>
-    value === null || shape[index] === null ? null : Math.round(value * shape[index]-.5));
+    value === null || shape[index] === null ? null : Math.floor(value * shape[index]));
   const mapDim = slice.indexOf(null);
   const dimStride = stride[mapDim];
   const pz = slice[0] == null ? 0 : stride[0]*slice[0]

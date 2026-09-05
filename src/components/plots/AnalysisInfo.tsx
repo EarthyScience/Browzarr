@@ -5,12 +5,14 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from 'zustand/shallow'
 import { parseLoc } from '@/utils/HelperFuncs'
+import { useDimAxis } from '@/hooks';
 
 
 const AnalysisInfo = ({loc, show, info, } : {loc: number[], show: boolean, info: number[]}) => {
-    const {axisDimNames, axisDimArrays, axisDimUnits} = useGlobalStore(useShallow(s => s))
+    const {axisDimNames, axisDimUnits} = useGlobalStore(useShallow(s => s))
     const axis = useAnalysisStore(state=> state.axis)
-    // This logic is weak and May not hold up with >3 dimensions
+    const {xArray, yArray, zArray} = useDimAxis();
+    const axisDimArrays = [zArray, yArray, xArray];
     const plotInfo = useMemo(()=>{
         let plotNames, plotUnits, plotArrays;
         if (axisDimNames.length < 3){
@@ -25,9 +27,7 @@ const AnalysisInfo = ({loc, show, info, } : {loc: number[], show: boolean, info:
         }
         return {plotNames, plotUnits, plotArrays}
     },[axisDimNames, axisDimUnits, axisDimArrays, axis]) 
-    const {plotNames, plotUnits, plotArrays} = plotInfo;
-    const yArray = plotArrays[0]
-    const xArray = plotArrays[1]
+    const {plotNames, plotUnits} = plotInfo;
     const yCoord = yArray[Math.floor(info[0] * yArray.length)]
     const xCoord = xArray[Math.floor(info[1] * xArray.length)]
 

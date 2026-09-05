@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import proj4 from 'proj4';
 import { getAxisIndices } from '@/hooks/useAxisIndices';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { getDimAxis} from '@/hooks';
+import { getDimAxis, getAxisDimAxis} from '@/hooks';
 
 export function checkProjString(projString: string){
     const {setError} = useErrorStore.getState()
@@ -33,6 +33,10 @@ export function clearProjectionData(){
 export function resetProjection(){
     const {dimArrays, dimNames, dimUnits, shape} = useGlobalStore.getState()
     const {xSlice, ySlice} = useZarrStore.getState()
+    usePlotStore.setState({ // Need to set this before getDimAxis()
+        xSlice, 
+        ySlice,
+    })
     const {xArray, yArray} = getDimAxis()
     const xLength = xArray.length;
     const yLength = yArray.length;
@@ -48,10 +52,6 @@ export function resetProjection(){
         remapBorders: undefined,
     })
     handleIrregularGrid()
-    usePlotStore.setState({
-        xSlice, 
-        ySlice,
-    })
 }
 
 function normalizeArray(array: number[], min?: number, max?: number): number[]{
@@ -116,8 +116,8 @@ function createIrregularUV(
             let xi = fractionalIndex(xArray, x);
             let yi = fractionalIndex(yArray, y);
 
-            const u = (xi??0 + 0.5) / xArray.length;
-            const v = (yi??0 + 0.5) / yArray.length;
+            const u = ((xi ?? 0) + 0.5) / xArray.length;
+            const v = ((yi ?? 0) + 0.5) / yArray.length;
 
             // Inverse for border Texture
             const ix = xArray[i]
@@ -207,7 +207,7 @@ function createInverseUV(
 
 export function handleIrregularGrid(){
     // This is needed for Sphere and other projections where the grid is not uniform. It creates an array for the ticks and update for sphere
-    const {xArray, yArray} = getDimAxis();
+    const {xArray, yArray} = getAxisDimAxis();
     const {flipY} = useGlobalStore.getState()
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
     if (isRegular) return;
@@ -284,8 +284,8 @@ export function reproject(resolution: number = 256){
 		handleIrregularGrid()
 		return;
 	}
-    if (insufficientCRS) return; 
-    if (!checkProjString(destCRS) || !checkProjString(destCRS)) return; 
+    console.log(destCRS)
+    if (!checkProjString(destCRS) || !checkProjString(nativeCRS)) return; 
     const {xIdx, yIdx} = getAxisIndices()
     if (is360Deg) {
 		xArray = remap360to180Monotonic(xArray) 
