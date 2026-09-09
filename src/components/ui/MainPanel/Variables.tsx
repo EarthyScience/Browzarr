@@ -50,8 +50,6 @@ const Variables = () => {
     }))
   );
 
-
-
   const [selectedVar, setSelectedVar] = useState<string | null>(null);
   const [isLoadingVar, setIsLoadingVar] = useState<string | null>(null);
   const activeRequest = useRef<string | null>(null);
