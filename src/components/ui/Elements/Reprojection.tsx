@@ -10,11 +10,16 @@ import { TbReplace } from "react-icons/tb";
 import { RxReset } from "react-icons/rx";
 import { Robinson } from './Icons'
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { useIsMobile } from '@/hooks'
 
 const crsClass = 'text-[var(--chart-2)]'
 
 export const Reprojection = () => {
-    const {destCRS, nativeCRS, is360Deg} = usePlotStore(useShallow(s => s))
+    const {destCRS, nativeCRS, is360Deg} = usePlotStore(useShallow(s => ({
+        destCRS: s.destCRS,
+        nativeCRS: s.nativeCRS,
+        is360Deg: s.is360Deg
+    })))
     const [showRepro, setShowRepro] = useState(false)
     const [changeNativeCRS, setChangeNativeCRS] = useState(false)
 
@@ -28,6 +33,8 @@ export const Reprojection = () => {
             setChangeNativeCRS(false)
         }
     }
+    const isMobile = useIsMobile();
+    const popoverSide = isMobile ? "top" : "left";
     return (
         <div className="space-y-2">
             <Popover open={showRepro} onOpenChange={setShowRepro}>
@@ -37,14 +44,14 @@ export const Reprojection = () => {
                         showRepro ? '' : 'rotate-180'} z-5`} />
                     <Button
                         variant='secondary'
-                        className="flex items-center flex-grow justify-center gap-2 h-auto "
+                        className="flex items-center flex-grow justify-center gap-2 p-1 h-auto border-solid border-gray border-[1px]"
                     >
-                        <b>Reprojection</b>
+                        Reprojection
                         <Robinson strokeWidth={2} className="size-8" />
                     </Button>
                     </div>
                 </PopoverTrigger>
-                <PopoverContent side='left'>
+                <PopoverContent side={popoverSide}>
                     <div className="space-y-3">
                         { is360Deg && 
                         <div className='warn-box'>
