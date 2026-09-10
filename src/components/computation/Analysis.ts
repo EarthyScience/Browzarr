@@ -9,15 +9,15 @@ import { useTextureStore } from "@/GlobalStates/TextureStore";
 
 export async function Analysis(){
 	const { strides, dataShape, valueScales, plotOn, setIsFlat, setStatus, setValueScales } = useGlobalStore.getState()
-    const { axis, useTwo, variable2, valueScalesOrig, kernelSize, kernelDepth, 
+    const { axis, useTwo, operation, variable2, valueScalesOrig, kernelSize, kernelDepth, 
         reverseDirection, operationString, analysisStore, analysisMode, analysisArray, 
         setValueScalesOrig, setAnalysisArray, setAnalysisMode } = useAnalysisStore.getState()
     const {setPlotType} = usePlotStore.getState();
     const {setTextures} = useTextureStore.getState();
-
-	const operation = operationString.split(':').at(-1) 
+        console.log(operation)
 	const is2DOp = operationString.split(':').at(1) == '2'
 	console.log(operationString)
+    console.log(dataShape)
 	if (!plotOn || !operation) return;
 	setStatus("Computing...");
 	let newArray: Float16Array | Float32Array | undefined;

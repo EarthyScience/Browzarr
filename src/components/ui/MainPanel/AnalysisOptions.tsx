@@ -4,7 +4,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { useShallow } from 'zustand/shallow';
 import '../css/MainPanel.css';
 import { PiMathOperationsBold } from "react-icons/pi";
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -32,8 +31,6 @@ const singleVarOps = ['Mean', 'Min', 'Max', 'Standard Deviation']
 const multiVarOps = ['Correlation', 'Linear Slope', 'Covariance']
 
 
-
-
 const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center items-center">
     <span className="text-5xl mb-4 block self-center">⚠️</span>
     <h1 className="text-2xl font-bold mb-4">WebGPU Not Available</h1>
@@ -52,63 +49,52 @@ const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center
     </div>
   </div>
 
-const AnalysisOptions = () => {
-	const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(s => s));
+type OpMode = 'reduction' | 'convolution' | 'cumsum';
 
+const AnalysisOptions = () => {
+	const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(s => s);
 	const previousStore = useRef<string>(initStore)
 	const [incompatible, setIncompatible] = useState(false); 
-	const [operation, setComponentOperation] = useState(useAnalysisStore.getState().operation)
 	const [kernelOp, setKernelOp] = useState('')
-	const operationString = useRef('') // #vars:#dims:operation
-	const {useTwo, kernelSize, kernelDepth,
-		axis, variable2, analysisMode,
-		reverseDirection, valueScalesOrig,
-		setAxis, setOperation, setUseTwo,
+	const {useTwo, kernelSize, kernelDepth, axis, variable2,
+		analysisMode, reverseDirection, valueScalesOrig,
+		operation, setOperation, setAxis, setUseTwo,
 		setVariable2, setKernelSize, setKernelDepth,
 		setKernelOperation, setAnalysisMode,
 		setReverseDirection, setAnalysisStore,
 		setAnalysisDim, setOperationString
-	} = useAnalysisStore(useShallow(s => s));
+	} = useAnalysisStore(s => s);
 	const reFetch = useZarrStore(s => s.reFetch)
-	const setOpString = (operation: string) => {
-		operationString.current = operation
-		setComponentOperation(operation.split(':').at(-1) as string)
-	};
-	const handleExecute = () => {
-		if (operationString.current.includes("Convolution")) return [operationString.current, kernelOp].join('');
-		else return operationString.current;
-	}
 
+	// Single source of truth: derive mode from the operation name itself.
+	// Anything that isn't Convolution or CUMSUM3D is a reduction op.
+	const opMode: OpMode =
+		operation === 'Convolution' ? 'convolution' :
+		operation === 'CUMSUM3D' ? 'cumsum' : 'reduction';
+
+	const handleExecute = () =>
+		opMode === 'convolution' ? `${operation}${kernelOp}` : operation;
 	const [showError, setShowError] = useState<boolean>(false);
 	useEffect(() => {
 		const checkWebGPU = async () => {
-			if (!navigator.gpu){
-				setShowError(true);
-				return;
-			}
-			try {
-				await navigator.gpu.requestAdapter();
-				setShowError(false);
-			} catch {setShowError(true);}
+			if (!navigator.gpu){ setShowError(true); return; }
+			try { await navigator.gpu.requestAdapter(); setShowError(false); }
+			catch { setShowError(true); }
 		};
 		checkWebGPU();
 	}, [plotOn]);
 
-	useEffect(()=>{ // Changing stores makes it so you can't use two variable operations. 
-		if(initStore != previousStore.current)setIncompatible(true)
-		else setIncompatible(false)
+	useEffect(()=>{ // Changing stores makes it so you can't use two variable operations.
+		setIncompatible(initStore != previousStore.current)
 	},[initStore])
 
-	useEffect(()=>{ // When data is downloaded (indicated by changes in refetch) The newly plotted and any future variables are compatible until initStore changes. 
+	useEffect(()=>{ // When data is downloaded, newly plotted (and future) variables are compatible until initStore changes.
 		setIncompatible(false);
 		previousStore.current = initStore
 		setAnalysisStore(initStore)
 	},[reFetch])
 
-	useEffect(()=>{
-		if (isFlat)setKernelDepth(1)
-		else setKernelDepth(3)
-	},[isFlat])
+	useEffect(()=>{ setKernelDepth(isFlat ? 1 : 3) },[isFlat])
 
 	useEffect(()=>{
 		setKernelOperation("Default")
@@ -117,19 +103,16 @@ const AnalysisOptions = () => {
 	},[variable])
 
 	const [newDim, setNewDim] = useState(0)
-	useEffect(()=>{
-		setNewDim(axis)
-	},[axis])
+	useEffect(()=>{ setNewDim(axis) },[axis])
 
 	const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 	useEffect(() => {
-		const handleResize = () => {
-		setPopoverSide(window.innerWidth < 768 ? "top" : "left");
-		};
+		const handleResize = () => setPopoverSide(window.innerWidth < 768 ? "top" : "left");
 		handleResize();
 		window.addEventListener("resize", handleResize);
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
+
   return (
     <>
       <Popover>
@@ -162,10 +145,7 @@ const AnalysisOptions = () => {
                 <Button
                 className="cursor-pointer active:scale-[0.95] bg-gray-500"
                 disabled={incompatible}
-                onClick={() => {
-                  setUseTwo(!useTwo);
-                  setOperation('Default');
-                }}
+                onClick={() => {setUseTwo(!useTwo);setOperation('Default')}}
               >
                 {useTwo ? 'Use One \n Variable' : 'Use Two Variables'}
               </Button>}
@@ -224,58 +204,27 @@ const AnalysisOptions = () => {
 				</Hider>
 				{/* OPERATION TYPE */}
 				<h1>Operation</h1>
-				{useTwo ? 
-				<Select 
-					defaultValue={operation} 
-					onValueChange={setOpString}
-				>
+				<Select defaultValue={operation} onValueChange={setOperation}>
 					<SelectTrigger className='w-full'>
-						<SelectValue
-						placeholder='Select...'
-						/>
+						<SelectValue placeholder='Select...' />
 					</SelectTrigger>
 					<SelectContent>
 						<SelectGroup>
 						<SelectLabel>Dimension Reduction</SelectLabel>
-						{multiVarOps.map((op, idx) => (
-							<SelectItem key={idx} value={`2:2:${op.trim()}`}>
-							{op}
-							</SelectItem>
+						{(useTwo ? multiVarOps : singleVarReductionOps).map((op, idx) => (
+							!useTwo && isFlat ? null : // reduction group is single-var only when !isFlat; keep isFlat's own list below
+							<SelectItem key={idx} value={op.trim()}>{op}</SelectItem>
 						))}
 						</SelectGroup>
+						<SelectGroup>
+						<SelectLabel>{useTwo || !isFlat ? 'Three Dimensional' : ''}</SelectLabel>
+						<SelectItem value="Convolution">Convolution</SelectItem>
+						{!useTwo && !isFlat && !analysisMode && <SelectItem value="CUMSUM3D">CUMSUM</SelectItem>}
+						</SelectGroup>
+					</SelectContent>
+				</Select>
 
-						<SelectGroup>
-						<SelectLabel>Three Dimensional</SelectLabel>
-						<SelectItem value="2:3:Convolution">Convolution</SelectItem>
-						</SelectGroup>
-					</SelectContent>
-				</Select>
-				:
-				<Select defaultValue={operation} onValueChange={setOpString}>
-					<SelectTrigger className='w-full'>
-						<SelectValue
-						placeholder='Select...'
-						/>
-					</SelectTrigger>
-					<SelectContent>
-						{!isFlat &&
-						<SelectGroup>
-						<SelectLabel>Dimension Reduction</SelectLabel>
-						{singleVarReductionOps.map((op, idx) => (
-							<SelectItem key={idx} value={`1:2:${op.trim()}`}>
-							{op}
-							</SelectItem>
-						))}
-						</SelectGroup>}
-						<SelectGroup>
-						<SelectLabel>{isFlat ? '' : 'Three Dimensional'}</SelectLabel>
-						<SelectItem value={`1:${isFlat ? 2 : 3}:Convolution`}>Convolution</SelectItem>
-						{!isFlat && !analysisMode &&<SelectItem value="1:3:CUMSUM3D">CUMSUM</SelectItem>}
-						</SelectGroup>
-					</SelectContent>
-				</Select>
-				}
-				{(operation != 'Convolution') && <>
+				{opMode === 'reduction' && <>
 					<h1>Axis</h1>
 					<div className='flex justify-between w-full'>
 						<Select onValueChange={e => setNewDim(parseInt(e))}>
@@ -300,8 +249,7 @@ const AnalysisOptions = () => {
 						}
 					</div>
 				</>}
-				{operation == 'Convolution' &&
-				<>
+				{opMode == 'convolution' && <>
 				<h1>Kernel Op.</h1>
 				<Select onValueChange={setKernelOp}>
 					<SelectTrigger className='w-full'>
@@ -373,7 +321,7 @@ const AnalysisOptions = () => {
                 variant='pink'
                 onClick={() => {
                   setAxis(newDim)
-                  setAnalysisDim(operation == 'CUMSUM3D' ? null : newDim)
+                  setAnalysisDim(opMode === 'cumsum' ? null : newDim)
                   setTimeSeries({});
 				  setOperationString(handleExecute())
 				  Analysis();
