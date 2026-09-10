@@ -179,7 +179,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         } else{
             return units ? `[${units}]` : ''
         }
-    },[analysisMode, execute])
+    },[analysisMode, execute, units])
 
     return (
         <>
