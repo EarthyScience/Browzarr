@@ -177,9 +177,9 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
             const string = twoVar ? `+ ${variable2} (${theseUnits})` : `[${units}] (${theseUnits})`
             return string
         } else{
-            return `[${units}]`
+            return units ? `[${units}]` : ''
         }
-    },[analysisMode, execute])
+    },[analysisMode, execute, units])
 
     return (
         <>

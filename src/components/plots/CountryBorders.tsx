@@ -12,16 +12,16 @@ import proj4, { Converter } from 'proj4';
 import {useDimAxis} from '@/hooks';
 import { sampleCRS } from '../textures/ProjectionTexture';
 
-function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=>THREE.Vector3, span = 1.5) {
+function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=>THREE.Vector3, span = 1.) {
     const segments: THREE.Vector3[][] = [[]];
     let prevLon: number | null = null;
     for (const [lon, lat] of coords) {
         const newPos = toXYZ(lon, lat)
         const newLon = newPos.x
         if (prevLon !== null && Math.abs(newLon - prevLon) > span) {
-            const closerToOne = Math.abs(newLon - 1) < Math.abs(newLon + 1);
-            newPos.x = closerToOne ? -1 : 1
-            segments[segments.length - 1].push(newPos);
+            // const closerToOne = Math.abs(newLon - 1) < Math.abs(newLon + 1);
+            // newPos.x = closerToOne ? -1 : 1
+            // segments[segments.length - 1].push(newPos);
             segments.push([]); // jump detected -> start new line
             prevLon = newLon;
             continue;
@@ -40,9 +40,9 @@ function Reproject([x, y] : [number, number], xBounds: [number, number], yBounds
     }
     newX = (newX-xBounds[0])/(xBounds[1]-xBounds[0]);
     newY = (newY-yBounds[0])/(yBounds[1]-yBounds[0]);
-    newY = flipY ? 1 - newY : newY
+    newY = (flipY && (remapBorders && !remapTexture)) ? 1 - newY : newY;  // Don't flip after reprojection when using irregular grid
+    // newY = 1-newY
     if (remapBorders && !remapTexture){
-        newY = flipY ? 1 - newY : newY // Don't flip when using remapBorders
         const [newV, _valid] = sampleCRS(remapBorders, newX, newY)
         newX = newV.x;
         newY = newV.y;

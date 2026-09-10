@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="144.50848mm"
+   height="90.925735mm"
+   viewBox="0 0 144.50848 90.925735"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <g
+     id="layer1"
+     transform="translate(-33.273725,-104.80649)">
+    <rect
+       style="fill:none;fill-opacity:0.5;stroke:#000000;stroke-width:4.22701;paint-order:fill markers stroke"
+       id="rect1"
+       width="140.28149"
+       height="86.698723"
+       x="35.387234"
+       y="106.92"
+       ry="43.349361" />
+    <path
+       style="fill:none;fill-opacity:0.5;stroke:#000000;stroke-width:4.22701;paint-order:fill markers stroke"
+       d="m 136.74638,193.36596 c 0,0 22.74894,-10.69538 22.74894,-43.0966 0,-32.40122 -22.74894,-43.0966 -22.74894,-43.0966"
+       id="path1" />
+    <path
+       style="fill:none;fill-opacity:0.5;stroke:#000000;stroke-width:4.22701;paint-order:fill markers stroke"
+       d="m 122.98796,193.36596 c 0,0 11.88,-12.97027 11.88,-42.84383 0,-29.87356 -11.88,-43.34937 -11.88,-43.34937"
+       id="path2" />
+    <path
+       style="fill:none;fill-opacity:0.5;stroke:#000000;stroke-width:4.22701;paint-order:fill markers stroke"
+       d="m 105.90893,106.66723 v 87.20426"
+       id="path5" />
+    <path
+       style="fill:none;fill-opacity:0.5;stroke:#000000;stroke-width:4.22701;paint-order:fill markers stroke"
+       d="M 34.628936,150.39574 H 175.9251"
+       id="path6" />
+    <path
+       style="fill:none;fill-opacity:0.5;stroke:#000000;stroke-width:4.22701;paint-order:fill markers stroke"
+       d="M 41.959149,129.41617 H 169.35319"
+       id="path7" />
+    <path
+       style="fill:none;fill-opacity:0.5;stroke:#000000;stroke-width:4.22701;paint-order:fill markers stroke"
+       d="M 41.959149,171.37532 H 169.35319"
+       id="path8" />
+    <path
+       style="fill:none;fill-opacity:0.5;stroke:#000000;stroke-width:4.22701;paint-order:fill markers stroke"
+       d="m 75.237779,193.36596 c 0,0 -22.748942,-10.69538 -22.748942,-43.0966 0,-32.40122 22.748942,-43.0966 22.748942,-43.0966"
+       id="path9" />
+    <path
+       style="fill:none;fill-opacity:0.5;stroke:#000000;stroke-width:4.22701;paint-order:fill markers stroke"
+       d="m 88.996198,193.36596 c 0,0 -11.879999,-12.97027 -11.879999,-42.84383 0,-29.87356 11.879999,-43.34937 11.879999,-43.34937"
+       id="path10" />
+  </g>
+</svg>

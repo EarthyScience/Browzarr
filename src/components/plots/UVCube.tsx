@@ -7,6 +7,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
 import { evaluateColorMap } from '@/components/textures';
+import { useDimAxis } from '@/hooks';
 
 function normalizeUV(uv:number, scale:number, pos:number){
   return (uv*scale) + (pos-0.5*scale+0.5)
@@ -69,16 +70,18 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     useShallow(s => s))
 
   const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
-
-  const {shape, dataShape, strides, axisDimArrays,axisDimNames,axisDimUnits, remapTexture, flipY} = useGlobalStore(
+  const {shape, dataShape, strides, axisDimNames,axisDimUnits, remapTexture, flipY} = useGlobalStore(
     useShallow(s => s))
   
+  const {xArray, yArray, zArray} = useDimAxis();
+  const allAxis = [zArray, yArray, xArray];
   const {selectTS, xRange, yRange, zRange,getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
 
   const lastNormal = useRef<number | null>( 0 )
-
+	
   function HandleTimeSeries(event: THREE.Intersection){
     const uv = event.uv!;
+    const timeUV = new THREE.Vector2().copy(uv); // Need this to flipY if necessary
     const normal = event.normal!;
     let newUV: THREE.Vector2 | undefined;
     if (remapTexture){ // Get new UV if reprojected and along z Axis
@@ -102,9 +105,11 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       setDimCoords({});
     }
     lastNormal.current = dimAxis;
+    const coordUV = parseUVCoords({normal:normal,uv})
+    timeUV.y = flipY ? 1 - uv.y : uv.y;
     const tempTS = GetTimeSeries(
       { data: analysisMode ? analysisArray : GetCurrentArray(), shape: dataShape, stride: strides },
-      { uv: newUV ?? uv, normal }
+      { uv: newUV ?? timeUV, normal }
     )
     const plotDim = (normal.toArray()).map((val, idx) => {
       if (Math.abs(val) > 0) {
@@ -112,9 +117,8 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
       }
       return null;}).filter(idx => idx !== null);
     setPlotDim(2-plotDim[0]) //I think this 2 is only if there are 3-dims. Need to rework the logic
-
-    const coordUV = parseUVCoords({normal:normal,uv})
-    let dimCoords = coordUV.map((val,idx)=>val ? axisDimArrays[idx][Math.round(val*axisDimArrays[idx].length)] : null)
+    
+    let dimCoords = coordUV.map((val,idx)=>val ? allAxis[idx][Math.round(val*allAxis[idx].length)] : null)
     const thisDimNames = axisDimNames.filter((_,idx)=> dimCoords[idx] !== null)
     const thisDimUnits = axisDimUnits.filter((_,idx)=> dimCoords[idx] !== null)
     dimCoords = dimCoords.filter(val => val !== null)
@@ -143,7 +147,6 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
         units:axisDimUnits[2-plotDim[0]] ?? ''
       }
     }
-    console.log(dimObj)
     updateDimCoords({[tsID] : dimObj})
   }
 

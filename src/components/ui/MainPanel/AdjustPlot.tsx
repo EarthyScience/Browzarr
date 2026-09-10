@@ -18,18 +18,10 @@ import { Reprojection } from '../Elements/Reprojection';
 import { useAxisIndices, useDimAxis } from '@/hooks';
 import { FaLongArrowAltUp } from "react-icons/fa";
 import { HiAdjustmentsHorizontal } from "react-icons/hi2";
-
-function DeNorm(val : number, min : number, max : number){
-    const range = max-min;
-    return val*range+min;
-}
-
-function Norm(val : number, min : number, max : number){
-    const range = max-min;
-    return (val-min)/range;
-}
-
-const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueScales, min=-1, array, units} : 
+import { resetProjection } from '@/components/textures/ProjectionTexture';
+import {AxisCropper} from '../Elements/AxisCropper';
+import { Masker } from '../Elements/Masker';
+export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueScales, min=-1, array, units} : 
     {
         range : number[], 
         setRange : (value: number[]) => void, 
@@ -44,14 +36,14 @@ const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueSca
         let [trueMin, trueMax] = [min, 1]
         if (array){
             const size = array.length
-            const minIdx = Math.round(Norm(range[0], min, 1) * size)
-            const maxIdx = Math.round(Norm(range[1], min, 1) * size)
+            const minIdx = Math.round(normalize(range[0], min, 1) as number * size)
+            const maxIdx = Math.round(normalize(range[1], min, 1) as number * size)
             trueMin = array[minIdx]
             trueMax = array[maxIdx-1]
         }
         else {
-            trueMin = Math.round(DeNorm(range[0], minVal, maxVal)*100)/100
-            trueMax = Math.round(DeNorm(range[1], minVal, maxVal)*100)/100
+            trueMin = Math.round(denormalize(range[0], minVal, maxVal) as number*100)/100
+            trueMax = Math.round(denormalize(range[1], minVal, maxVal) as number*100)/100
         }
 
     return(
@@ -73,77 +65,6 @@ const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueSca
 
     )
 })
-
-const DimSlicer = () =>{
-  const {xRange, yRange, zRange, setXRange, setYRange, setZRange} = usePlotStore(useShallow(s => s))
-
-      const defaultScales = {minVal: 0, maxVal: 0} //This is fed into MinMax as it is required but overwritten if an array is present
-      const {xArray, yArray, zArray} = useDimAxis()
-      const {axisDimArrays, axisDimNames, axisDimUnits} = useGlobalStore(useShallow(s => s))
-      const {xIdx, yIdx, zIdx} = useAxisIndices()
-      const [isSpatialOpen, setIsSpatialOpen] = useState(false);
-  return (
-    <>
-    
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col w-[200px] -mt-4">
-        <button 
-          onClick={() => setIsSpatialOpen(!isSpatialOpen)}
-          className="flex items-center gap-2 w-full mb-2"
-        >
-          <b>Axis Cropping</b>
-          <ChevronDown 
-            className={`h-4 w-4 transition-transform duration-200 ${
-              !isSpatialOpen ? 'rotate-180' : ''
-            }`}
-          />
-        </button>
-        <div 
-          className="grid transition-all duration-300 ease-in-out"
-          style={{
-            gridTemplateRows: isSpatialOpen ? '1fr' : '0fr',
-          }}
-        >
-          <div className="overflow-hidden">
-            <div className="flex flex-col items-center gap-2">
-              <div className='grid w-[100%] place-items-center'>
-                <h2>{axisDimNames[xIdx]}</h2>
-                <MinMaxSlider 
-                  range={xRange} 
-                  setRange={setXRange} 
-                  valueScales={defaultScales} 
-                  array={xArray} 
-                  units={axisDimUnits[xIdx]}
-                />
-              </div>
-              <div className='grid w-[100%] place-items-center'>
-                <h2>{axisDimNames[yIdx]}</h2>
-                <MinMaxSlider 
-                range={yRange} 
-                setRange={setYRange} 
-                valueScales={defaultScales} 
-                array={yArray} 
-                units={axisDimUnits[yIdx]}
-                />
-              </div>
-              <div className='grid w-[100%] place-items-center'>
-                <h2>{axisDimNames[zIdx]}</h2>
-                <MinMaxSlider 
-                  range={zRange} 
-                  setRange={setZRange} 
-                  valueScales={defaultScales} 
-                  array={zArray} 
-                  units={axisDimUnits[zIdx]}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    </>
-  )
-}
 
 const VolumeOptions = ()=>{
   const { useRayMarch, quality, transparency, vTransferRange, vTransferScale, interpPixels, revTransparency,
@@ -186,7 +107,7 @@ const VolumeOptions = ()=>{
       </Hider>
       <Switcher className={interpPixels ? 'opacity-40 !cursor-default' : undefined} leftText='DDA' rightText='Raymarch' state={!useRayMarch} onClick={()=> setUseRayMarch(!useRayMarch)}/>
       <div className='grid grid-cols-3 justify-between place-items-center'>
-        <b>Transparency</b>
+        <h1>Transparency</h1>
         <Button
           variant='ghost'
           className='px-0 w-10'
@@ -253,7 +174,7 @@ const PointOptions = () =>{
   return(
     <>
     <div className='flex-column items-center w-50 text-center mb-8'>
-          <b>Point Size</b>
+          <h1>Point Size</h1>
           <UISlider
               className='w-full mb-4 mt-2'
               min={1}
@@ -271,7 +192,7 @@ const PointOptions = () =>{
         {disablePointScale ? "Enable Scaling" : "Disable Scaling" }
       </Button>
       <Hider show={scalePoints}>
-        <><b>Scale Intensity</b>
+        <><h1>Scale Intensity</h1>
         <UISlider
             className='w-full mb-2 mt-2'
             min={1}
@@ -283,7 +204,7 @@ const PointOptions = () =>{
       </Hider>
       <div className='relative'>
         {timeScale != 1 && <RxReset className='text-lg cursor-pointer absolute top-0 left-0 hover:scale-90 transition-transform duration-100 ease-out' onClick={()=> setTimeScale(1)}/>}
-        <b>Resize Time Dimension</b>
+        <h1>Resize Time Dimension</h1>
       </div>
       <UISlider
           className='w-full mb-2 mt-2'
@@ -311,7 +232,7 @@ const FlatOptions = () =>{
     />
     <Hider show={displaceFaces}>
       <div className='grid gap-2'>
-        <b>Displacement</b>
+        <h1>Displacement</h1>
         <UISlider
           min={0}
           max={100}
@@ -321,10 +242,10 @@ const FlatOptions = () =>{
           onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
         />
         <div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
-          <label htmlFor="offset-switch"><b>Offset Negatives</b></label>
+          <label htmlFor="offset-switch"><h1>Offset Negatives</h1></label>
           <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
 
-          <label htmlFor="rotate-switch"><b>Rotate</b></label>
+          <label htmlFor="rotate-switch"><h1>Rotate</h1></label>
           <Switch id='rotate-switch' checked={rotateFlat} onCheckedChange={e=>usePlotStore.setState({rotateFlat: e})} />
         </div>
       </div>
@@ -342,7 +263,7 @@ const SphereOptions = () =>{
 
   return(<>
   <div className='grid gap-y-[5px] items-center w-50 text-center mb-2'>
-    <b>Displacement Mode</b>
+    <h1>Displacement Mode</h1>
     <Switcher 
       leftText='Surface' 
       rightText='Faces' state={!displaceFaces} 
@@ -351,7 +272,7 @@ const SphereOptions = () =>{
         setDisplacement(displacement * (!displaceFaces ? maxFaceDisplacement/maxSurfaceDisp : maxSurfaceDisp/maxFaceDisplacement))}}
     />
     
-    <b>Displacement</b>
+    <h1>Displacement</h1>
     <UISlider
       min={0}
       max={!displaceFaces ? maxSurfaceDisp : maxFaceDisplacement}
@@ -367,7 +288,7 @@ const SphereOptions = () =>{
       </div>
     </Hider>
     <Hider show={!displaceFaces}>
-        <b>Displacement Resolution</b>
+        <h1>Displacement Resolution</h1>
         <UISlider
           min={4}
           max={100}
@@ -459,10 +380,10 @@ const GlobalOptions = () =>{
   }, []);
 
   return (
-    <div className='grid gap-y-[5px] items-center w-50 text-center'>
-      <div className="border-t border-gray-300 w-full my-4" />
+    <div className='grid gap-y-[5px] items-center w-full text-center mt-2 bg-[var(--global-settings)] rounded-md p-4'>
+      <span className='text-lg font-bold'>Global Settings</span>
       <div className="flex flex-col items-center w-[200px] gap-4">
-        <b>Value Cropping</b>
+        <h1>Value Cropping</h1>
         <MinMaxSlider 
           range={valueRange} 
           setRange={setValueRange} 
@@ -472,7 +393,7 @@ const GlobalOptions = () =>{
       </div>
       {!isPC &&
         <>
-      <b>NaN Transparency</b>
+      <h1>NaN Transparency</h1>
       <UISlider
         min={0}
         max={1}
@@ -481,60 +402,21 @@ const GlobalOptions = () =>{
         className='w-full mb-2'
         onValueChange={(vals:number[]) => setNanTransparency(vals[0])}
       />
-      <b>NaN Color</b>
-      <input type="color"
-        className='w-[100%] cursor-pointer'
-        defaultValue={nanColor}
-        onChange={handleColorChange(setNanColor)}
-      />
+      <div className='grid grid-cols-[80px_auto] place-items-center text-left'>
+        <h1 className='w-full'>NaN Color</h1>
+        <input type="color"
+          className='w-[100%] cursor-pointer'
+          defaultValue={nanColor}
+          onChange={handleColorChange(setNanColor)}
+        />
+      </div>
       <div className='grid grid-cols-[auto_20%] items-center gap-2 mt-2 text-left'>
         <label>Interpolate Pixels</label>
         <Switch className='h-5'  id="interpoalte-pixels" checked={interpPixels} onCheckedChange={e=>setInterpPixels(e)}/>
       </div>
       </>}
-      <button
-        onClick={()=>setShowMasks(x=>!x)}
-        className="flex items-center gap-2 w-full mb-2"
-      >
-        <b>Masking</b>
-        <ChevronDown 
-          className={`h-4 w-4 transition-transform duration-200 ${
-            showMasks ? '' : 'rotate-180'
-          }`}
-        />
-      </button>
-      
-      <Hider show={showMasks} >
-          <b>Mask Value</b>
-          <div className='grid grid-cols-[auto_60%] items-center gap-2 mt-2 text-left'>
-          <Input
-            type='number'
-            defaultValue={denormalize(fillValue, valueScales.minVal, valueScales.maxVal)}
-            onChange={e=> setThisFillValue(parseFloat(e.target.value))}
-          />
-          <Button
-            disabled={normalize(thisFillVal, valueScales.minVal, valueScales.maxVal) === fillValue}
-            className='cursor-pointer'
-            onClick={()=>setFillValue(normalize(thisFillVal, valueScales.minVal, valueScales.maxVal))}
-          >Set Value</Button>
-          <b>Mask Land</b>
-          <Select onValueChange={e=>{
-            const idx = masks.indexOf(e)
-            usePlotStore.setState({maskValue:idx})
-          }}>
-            <SelectTrigger className='w-[100%]'>
-              <SelectValue placeholder={masks[usePlotStore.getState().maskValue]}/>
-            </SelectTrigger>
-            <SelectContent>
-              {masks.map((val,idx)=>(
-                <SelectItem value={val} key={idx}>
-                  {val}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </Hider>
+      <Masker/>
+      <Reprojection />
       {!(analysisMode && axis != 0) && // Hide if Analysismode and Axis != 0
       <>
       <QuickTip 
@@ -547,27 +429,28 @@ const GlobalOptions = () =>{
           disabled={!borderCompatible}
           onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
       </QuickTip>
-        
-        <Hider show={showBorders}>
-          <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
-            ()=>usePlotStore.setState({useBorderTexture:!useBorderTexture})
-          } />
-          <Hider show={useBorderTexture} >
-            <b>Border Width</b>
-            <Slider className='my-2'
-              value={[borderWidth]}
-              min={0.01}
-              max={0.4}
-              step={0.01}
-              onValueChange={e=>usePlotStore.setState({borderWidth:e[0]})}
-            />
-          </Hider>
-          <b>Border Color</b>
+      <Hider show={showBorders}>
+        <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
+          ()=>usePlotStore.setState({useBorderTexture:!useBorderTexture})
+        } />
+        <Hider show={useBorderTexture} >
+          <h1>Border Width</h1>
+          <Slider className='my-2'
+            value={[borderWidth]}
+            min={0.01}
+            max={0.4}
+            step={0.01}
+            onValueChange={e=>usePlotStore.setState({borderWidth:e[0]})}
+          />
+        </Hider>
+        <div className='grid grid-cols-[80px_auto] place-items-center text-left'>
+          <h1>Border Color</h1>
           <input type="color"
-              className='w-[100%] cursor-pointer'
-              defaultValue={borderColor}
-              onChange={handleColorChange(setBorderColor)}
-              />
+            className='w-[100%] cursor-pointer'
+            defaultValue={borderColor}
+            onChange={handleColorChange(setBorderColor)}
+          />
+        </div>
         </Hider>
       </>
       }
@@ -602,6 +485,7 @@ function resetViz(){
     maskValue: 0,
     disablePointScale: false,
   })
+  resetProjection();
 }
 
 
@@ -609,8 +493,8 @@ const AdjustPlot = () => {
     const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
     const [open, setOpen] = useState(false);
 
-    const {plotOn} = useGlobalStore(useShallow(s => s))
-    const {plotType} = usePlotStore(useShallow(s => s))
+    const {plotOn} = useGlobalStore(useShallow(s => ({plotOn: s.plotOn})))
+    const {plotType} = usePlotStore(useShallow(s => ({plotType: s.plotType})))
 
   useEffect(() => {
       const handleResize = () => {
@@ -646,37 +530,41 @@ const AdjustPlot = () => {
         onOpenAutoFocus={(e) => { //Prevents tooltip from opening automatically
           e.preventDefault();
         }}
-        className={`relative w-[240px] mt-2 mr-1 ${
+        className={`relative grid w-[240px] mt-2 mr-1 ${
           popoverSide === 'top' ? 'mb-1' : ''
         }`}
       >
-        <QuickTip message='Close settings'>
-          <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-0 right-1 z-10 cursor-pointer saturate-[180%]"
-              onClick={() => setOpen(false)}
-              aria-label="Close settings"
-            >
-              <RiCloseLargeLine className="size-4" />
-            </Button>
-        </QuickTip>
-        <div className={`overflow-y-auto no-scrollbar -mx-4 px-4 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>          
-          <RxReset size={25} 
-            style={{
-              // position:'absolute',
-              top:"10px",
-              left:"10px",
-              cursor:'pointer',
-            }} 
-            onClick={resetViz}
-          />
-          {plotType === 'volume' && <VolumeOptions />}
-          {plotType === 'point-cloud' && <PointOptions />}
-          {plotType === 'sphere' && <SphereOptions/>}
-          {(plotType === 'volume' || plotType === 'point-cloud') && <DimSlicer />}
-          {plotType === 'flat' && <FlatOptions />}
-          <Reprojection />
+        <div className='flex justify-between w-full items-center h-6 pt-0'>
+          <QuickTip message='Reset visual state'>
+            <Button
+                className='size-8 !p-0'
+                variant='ghost'
+                onClick={resetViz}
+              >
+              <RxReset className='size-6'/>
+            </Button>   
+          </QuickTip>
+          <QuickTip message='Close settings'>
+              <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close settings"
+                >
+                  <RiCloseLargeLine className="size-6" />
+                </Button>
+          </QuickTip>   
+        </div>
+        
+        <div className={`overflow-y-auto no-scrollbar -mx-4 px-1 pt-2 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>    
+          <div className='bg-[var(--plot-settings)] rounded-md p-4 text-center'>
+            <span className='text-lg font-bold'>Plot Settings</span>
+            {plotType === 'volume' && <VolumeOptions />}
+            {plotType === 'point-cloud' && <PointOptions />}
+            {plotType === 'sphere' && <SphereOptions/>}
+            {(plotType === 'volume' || plotType === 'point-cloud') && <AxisCropper/>}
+            {plotType === 'flat' && <FlatOptions />}
+          </div>
           <GlobalOptions />
         </div>
       </PopoverContent>

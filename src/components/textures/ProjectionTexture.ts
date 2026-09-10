@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import proj4 from 'proj4';
 import { getAxisIndices } from '@/hooks/useAxisIndices';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { getDimAxis} from '@/hooks';
+import { getDimAxis, getAxisDimAxis} from '@/hooks';
 
 export function checkProjString(projString: string){
     const {setError} = useErrorStore.getState()
@@ -33,6 +33,10 @@ export function clearProjectionData(){
 export function resetProjection(){
     const {dimArrays, dimNames, dimUnits, shape} = useGlobalStore.getState()
     const {xSlice, ySlice} = useZarrStore.getState()
+    usePlotStore.setState({ // Need to set this before getDimAxis()
+        xSlice, 
+        ySlice,
+    })
     const {xArray, yArray} = getDimAxis()
     const xLength = xArray.length;
     const yLength = yArray.length;
@@ -48,10 +52,6 @@ export function resetProjection(){
         remapBorders: undefined,
     })
     handleIrregularGrid()
-    usePlotStore.setState({
-        xSlice, 
-        ySlice,
-    })
 }
 
 function normalizeArray(array: number[], min?: number, max?: number): number[]{
@@ -95,7 +95,6 @@ function createIrregularUV(
     xArray: Array<number>,
 	yArray: Array<number>,
     flipY: boolean,
-    is360: boolean,
 ) {
     const width = xArray.length;
     const height = yArray.length;
@@ -116,8 +115,8 @@ function createIrregularUV(
             let xi = fractionalIndex(xArray, x);
             let yi = fractionalIndex(yArray, y);
 
-            const u = (xi??0 + 0.5) / xArray.length;
-            const v = (yi??0 + 0.5) / yArray.length;
+            const u = ((xi ?? 0) + 0.5) / xArray.length;
+            const v = ((yi ?? 0) + 0.5) / yArray.length;
 
             // Inverse for border Texture
             const ix = xArray[i]
@@ -152,7 +151,6 @@ function createIrregularUV(
 function createInverseUV(
 	xArray: Array<number>,
 	yArray: Array<number>,
-	flipY: boolean,
     is360: boolean,
 	resolution : number
 ) {
@@ -207,15 +205,15 @@ function createInverseUV(
 
 export function handleIrregularGrid(){
     // This is needed for Sphere and other projections where the grid is not uniform. It creates an array for the ticks and update for sphere
-    const {xArray, yArray} = getDimAxis();
+    const {xArray, yArray} = getAxisDimAxis();
     const {flipY} = useGlobalStore.getState()
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
     if (isRegular) return;
     const {is360Deg, plotType} = usePlotStore.getState();
 	if(plotType == 'sphere') {
-        const texture = createInverseUV(xArray, yArray, flipY, is360Deg, 1024);
+        const texture = createInverseUV(xArray, yArray, is360Deg, 1024);
         useGlobalStore.setState({remapTexture:texture});
-    } else createIrregularUV(xArray, yArray, flipY, is360Deg)
+    } else createIrregularUV(xArray, yArray, flipY)
     return
 }
 
@@ -284,8 +282,7 @@ export function reproject(resolution: number = 256){
 		handleIrregularGrid()
 		return;
 	}
-    if (insufficientCRS) return; 
-    if (!checkProjString(destCRS) || !checkProjString(destCRS)) return; 
+    if (!checkProjString(destCRS) || !checkProjString(nativeCRS)) return; 
     const {xIdx, yIdx} = getAxisIndices()
     if (is360Deg) {
 		xArray = remap360to180Monotonic(xArray) 
@@ -389,7 +386,7 @@ export function reproject(resolution: number = 256){
                 const idx = (j * targetWidth + i) * 4;
                 data[idx]     = THREE.DataUtils.toHalfFloat(u); 
                 data[idx + 1] = THREE.DataUtils.toHalfFloat(v);
-                data[idx + 2] = THREE.DataUtils.toHalfFloat(valid);
+                data[idx + 2] = THREE.DataUtils.toHalfFloat(Number(inBounds));
             }  
         }
     }       
@@ -416,7 +413,6 @@ export function reproject(resolution: number = 256){
     newAxisDimArrays[yIdx] = yTicks;
     const newAxisDimUnits = [...axisDimUnits];
     const targetUnits = (crsCheck.oProj as any)?.units;
-
     //@ts-ignore At this point these are all valid
     newAxisDimUnits[xIdx] = targetUnits;
     //@ts-ignore At this point these are all valid

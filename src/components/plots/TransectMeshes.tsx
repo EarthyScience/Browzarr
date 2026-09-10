@@ -3,42 +3,65 @@ import * as THREE from 'three'
 import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 import { useShallow } from 'zustand/shallow'
-import { deg2rad, parseUVCoords } from '@/utils/HelperFuncs'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { useAxisIndices } from '@/hooks'
 
-function remapToXYZ(uv: THREE.Vector2, latBounds: number[], lonBounds: number[]): THREE.Vector3 {
-	const u = 1 - uv.x;
-	const v = uv.y;
-	const lon = u * (deg2rad(lonBounds[1]) - deg2rad(lonBounds[0])) + deg2rad(lonBounds[0]);
-	const lat = v * (deg2rad(latBounds[1]) - deg2rad(latBounds[0])) + deg2rad(latBounds[0]);
+function remapToXYZ(sphereUV: THREE.Vector2): THREE.Vector3 {
+	const u = -sphereUV.x;
+	const v = sphereUV.y;
+	const theta = u * Math.PI * 2;        // longitude, [0, 2π]
+	const phi = v * Math.PI - Math.PI / 2; // latitude, [-π/2, π/2]
+
 	return new THREE.Vector3(
-		Math.cos(lat) * Math.cos(lon),
-		Math.sin(lat),
-		Math.cos(lat) * Math.sin(lon)
+		Math.cos(phi) * Math.cos(theta),
+		Math.sin(phi),
+		Math.cos(phi) * Math.sin(theta)
 	);
 }
 
-function normalToPos(uv: THREE.Vector2, normal:THREE.Vector3, ratios:{depthRatio:number, aspectRatio:number}): THREE.Vector3{
+function uvToSphere(uv: THREE.Vector2, latBounds: number[], lonBounds: number[]): THREE.Vector2 {
+	const u = uv.x;
+	const v = uv.y;
+
+	const sphereMinU = lonBounds[0] / (Math.PI * 2);
+	const sphereMaxU = lonBounds[1] / (Math.PI * 2);
+
+	const sphereMinV = (latBounds[0] + Math.PI / 2) / Math.PI;
+	const sphereMaxV = (latBounds[1] + Math.PI / 2) / Math.PI;
+
+	const sphereU = sphereMinU + u * (sphereMaxU - sphereMinU);
+	const sphereV = sphereMinV + v * (sphereMaxV - sphereMinV);
+
+	return new THREE.Vector2(sphereU, sphereV);
+}
+
+function normalToPos(uv: THREE.Vector2, normal:THREE.Vector3, ratios:{depthRatio:number, aspectRatio:number}, steps:{xSteps:number, ySteps:number, zSteps:number}): THREE.Vector3{
 	let posZ, posY, posX: number;
+	const {xSteps,ySteps,zSteps} = steps;
 	const {aspectRatio, depthRatio} = ratios;
 	if (Math.abs(normal.z) == 1){
 		const flip = normal.z < 0;
-		const x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
+		let x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
+		x = (Math.floor(x * xSteps ) + 0.5 )/xSteps;
 		posX = x*2;
-		posY = (uv.y-0.5)*2*aspectRatio;
+		const y = (Math.floor(uv.y * ySteps) + 0.5)/ySteps;
+		posY = (y-0.5)*2*aspectRatio;
 		posZ = 0;
 	} else if (Math.abs(normal.y) == 1){
 		const flip = normal.y > 0;
-		const y = flip ? (1-uv.y)-0.5: (uv.y-0.5)
-		posX = (uv.x-0.5)*2;
+		let y = flip ? (1-uv.y)-0.5: (uv.y-0.5)
+		y = (Math.floor(y * zSteps))/zSteps;
+		const x = (Math.floor(uv.x * xSteps)+0.5)/xSteps;
+		posX = (x-0.5)*2;
 		posY = 0;
 		posZ = y*Math.max(depthRatio,2);
 	} else {
 		const flip = normal.x > 0;
-		const x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
+		let x = flip ? (1-uv.x)-0.5: (uv.x-0.5)
+		x = (Math.round(x * zSteps))/zSteps;
 		posX = 0;
-		posY = (uv.y-0.5)*2*aspectRatio;
+		const y = (Math.round(uv.y * ySteps) + 0.5)/ySteps;
+		posY = (y-0.5)*2*aspectRatio;
 		posZ = x*Math.max(depthRatio,2);
 	}
 	return new THREE.Vector3(posX, posY, posZ)
@@ -56,17 +79,17 @@ function normalToScale(normal:THREE.Vector3, ratios:{depthRatio:number, aspectRa
 	} else if (Math.abs(normal.y) == 1){
 		scaleX = 2/xSteps;
 		scaleY = 2*aspectRatio;
-		scaleZ = 2*Math.max(depthRatio,2)/zSteps;
+		scaleZ = Math.max(depthRatio,2)/zSteps;
 	} else{
 		scaleX = 2;
 		scaleY = 2*aspectRatio/ySteps;
-		scaleZ = 2*Math.max(depthRatio,2)/zSteps;
+		scaleZ = Math.max(depthRatio,2)/zSteps;
 	}
 	return new THREE.Vector3(scaleX, scaleY, scaleZ);
 }
 
 export const SquareMeshes = () => {
-	const {timeSeries, dataShape, shape} = useGlobalStore(useShallow(s => s))
+	const {timeSeries, dataShape, shape, flipY} = useGlobalStore(useShallow(s => s))
 	const {plotType} = usePlotStore(useShallow(s => s))
 	const {lonBounds, latBounds} = useCoordBounds()
 	const {xIdx, yIdx} = useAxisIndices()
@@ -92,11 +115,13 @@ export const SquareMeshes = () => {
 			const uvX = (Math.floor(uv.x * xSteps)+0.5)/xSteps;
 			const uvY = (Math.floor(uv.y * ySteps)+0.5)/ySteps;
 			if (isSphere){
+				const thisUV = new THREE.Vector2(uvX, flipY ? 1 - uvY : uvY)
+				const sphereUV = uvToSphere(thisUV, latBounds, lonBounds)
 				const circum = 2*Math.PI;
 				const xScale = circum/xSteps * normedXExtent;
 				const yScale = circum/2/ySteps * normedYExtent;
-				const xScaler = Math.cos((uvY - 0.5) * Math.PI);
-				position = remapToXYZ(new THREE.Vector2(uvX, uvY), latBounds, lonBounds)	
+				const xScaler = Math.cos((sphereUV.y - 0.5) * Math.PI);
+				position = remapToXYZ(sphereUV)	
 				// Rotate the plane where position is also normal vector
 				mesh.lookAt(position.x, position.y, position.z)
 				geometry.scale(xScale*xScaler, yScale, 1)
@@ -135,6 +160,7 @@ export const ColumnMeshes = () => {
 	const {xIdx, yIdx, zIdx} = useAxisIndices()
 	const meshes: THREE.Mesh[] = useMemo(()=>{
 		const meshes: THREE.Mesh[] = []
+		const originalXSteps = dataShape[xIdx]; // Need this because it messes up the depthScale after repro
 		const xSteps = remapTexture 
 						? remapTexture.image.width 
 						: dataShape[xIdx];
@@ -143,11 +169,10 @@ export const ColumnMeshes = () => {
 						: dataShape[yIdx];
 		const zSteps = dataShape[zIdx];
 		const aspectRatio = ySteps/xSteps; // This is not aspect ratio
-		const depthRatio = zSteps/xSteps;
-
+		const depthRatio = zSteps/originalXSteps;
 		for (const [_tsID, tsObj] of Object.entries(timeSeries)){
 			const {normal, uv, color} = tsObj
-			const position = normalToPos(uv, normal, {aspectRatio,depthRatio})
+			const position = normalToPos(uv, normal, {aspectRatio,depthRatio}, {xSteps, ySteps, zSteps})
 			const meshScale = normalToScale(normal, {aspectRatio, depthRatio}, {xSteps, ySteps, zSteps})
 			const thisColor = color.map((c: number) => Math.pow((c/255), 2.2)) // Gamma correct the color
 			const material = new THREE.MeshBasicMaterial({color: new THREE.Color(...thisColor)})

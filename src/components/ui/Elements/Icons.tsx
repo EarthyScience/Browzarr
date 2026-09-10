@@ -66,5 +66,50 @@ const Potato = ({ color = "currentColor", size = 24, ...props }: IconProps) => (
   </svg>
 );
 
+const Robinson = ({
+  color = "currentColor",
+  size = 24,
+  strokeWidth = 1.5,
+  ...props
+}: IconProps) => (
+  <svg
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={size}
+    width={size}
+    viewBox="0 0 144.50848 90.925735"
+    version="1.1"
+    id="svg1"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
+    <defs id="defs1" />
+    <g
+      id="layer1"
+      transform="translate(-33.273725,-104.80649)"
+    >
+      <rect
+        id="rect1"
+        width="140.28149"
+        height="86.698723"
+        x="35.387234"
+        y="106.92"
+        ry="43.349361"
+      />
+      <path d="m 136.74638,193.36596 c 0,0 22.74894,-10.69538 22.74894,-43.0966 0,-32.40122 -22.74894,-43.0966 -22.74894,-43.0966" id="path1" />
+      <path d="m 122.98796,193.36596 c 0,0 11.88,-12.97027 11.88,-42.84383 0,-29.87356 -11.88,-43.34937 -11.88,-43.34937" id="path2" />
+      <path d="m 105.90893,106.66723 v 87.20426" id="path5" />
+      <path d="M 34.628936,150.39574 H 175.9251" id="path6" />
+      <path d="M 41.959149,129.41617 H 169.35319" id="path7" />
+      <path d="M 41.959149,171.37532 H 169.35319" id="path8" />
+      <path d="m 75.237779,193.36596 c 0,0 -22.748942,-10.69538 -22.748942,-43.0966 0,-32.40122 22.748942,-43.0966 22.748942,-43.0966" id="path9" />
+      <path d="m 88.996198,193.36596 c 0,0 -11.879999,-12.97027 -11.879999,-42.84383 0,-29.87356 11.879999,-43.34937 11.879999,-43.34937" id="path10" />
+    </g>
+  </svg>
+);
 
-export { Perspective, Orthographic, Potato };
+
+export { Perspective, Orthographic, Potato, Robinson };
