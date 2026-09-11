@@ -97,9 +97,6 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
     }
     return closestIndex;
   };
-
-  
-
   const maxIndex = Math.max(effectiveDimSize - 1, 0);
 
   const changeScalarBy = useCallback((delta: number) => {
@@ -141,7 +138,6 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
         : String(index),
     [values, effectiveDimSize, formatValue]
   );
-
   const isTimeDimension =
     /time|date|hour|hr|step|lead|period/i.test(dimName) ||
     Boolean(values && values.length > 0 && formatValue && /\b(h|hr|hrs|hours|min|sec|s|d|days|ms|since)\b/i.test(formatValue(values[0]) || ''));
@@ -169,6 +165,7 @@ const DimSlicerComponent: React.FC<DimSlicerProps> = ({
     } else updateSelection({ stop: String(newStop)})
   },[updateSelection])
 
+  
   return (
     <div className={`relative border border-l-2 rounded-md px-2 py-1.5 space-y-2 bg-muted/20 transition-colors ${MODE_ACCENT[sel.mode]}`}>
 

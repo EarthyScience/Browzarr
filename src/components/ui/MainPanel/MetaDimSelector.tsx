@@ -21,6 +21,7 @@ import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { clearProjectionData } from '@/components/textures/ProjectionTexture';
+import { AxisSlider } from '../MetaComponents/AxisSlider';
 
 const MAX_ACTIVE_DIMS = 3;
 
@@ -193,7 +194,7 @@ const useMetaSelectorStore = <T,>(selector: (state: SelectorStoreState) => T): T
   return useStore(store, selector);
 };
 
-// --- ISOLATED SUB-COMPONENTS ---
+// --- ISOLATED SUB-COMPONENTS --- //
 
 const MetaStatusBadges: React.FC<{
   meta: Props['meta'];
@@ -896,20 +897,23 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
             </div>
           </Hider>
 
-          <MetaDimTable
+          {/* <MetaDimTable
             availableDims={availableDims}
             dataShape={dataShape}
             chunkShape={chunkShape}
-          />
+          /> */}
         </div>
-
+        
         <div className="px-1">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-foreground/80">Active Dimensions</h3>
             <MetaAddDimensionControl availableDims={availableDims} dataShape={dataShape} />
           </div>
-
-          <MetaActiveSlicers availableDims={availableDims} dataShape={dataShape} />
+          {dimArrays.map((val,idx) => (
+            <AxisSlider array={val} itemIdx={idx} units={dimUnits[idx]} isSlice={true}/>
+          ))}
+          {/* <AxisSlider array={Array.from({ length: 51 }, (_, i) => i)} itemIdx={0} isSlice={true}/> */}
+          {/* <MetaActiveSlicers availableDims={availableDims} dataShape={dataShape} /> */}
           <MetaCollapsedSlicers availableDims={availableDims} />
         </div>
       </div>
