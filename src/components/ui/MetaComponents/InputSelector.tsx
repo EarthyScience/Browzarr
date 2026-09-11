@@ -84,7 +84,7 @@ export const InputSelector = ({array, idx, units, setIdx} : InputProps) => {
                 onChange={e => setLocal(e.target.value)}
                 onBlur={commitValue}
                 onClick={() => setExpanded(false)}
-                className="no-spinner h-7 text-xs w-16 text-center appearance-none"
+                className={`no-spinner h-7 text-xs ${isTime ? 'w-[6.5rem]' : 'w-[5rem]'} text-center appearance-none`}
             />
             {expanded ? (
                 <ButtonGroup orientation="horizontal" className="h-fit">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Select,
   SelectContent,
@@ -49,6 +49,10 @@ export const AxisSlider = ({array, isSlice, dimList, itemIdx, units, updateDimSe
         setStartIndex(e[0])
         if (isSlice) setStopIndex(e[1])
     }
+
+    useEffect(()=>{
+
+    },[startIndex, stopIndex])
     return (
         <div className={`relative border border-l-2 rounded-md px-2 py-1.5 space-y-2 bg-muted/20 transition-colors border-l-teal-700`}>
             <div className='flex justify-between w-full'>
