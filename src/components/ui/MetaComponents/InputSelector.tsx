@@ -10,6 +10,7 @@ interface InputProps{
     array: (number | bigint)[];
     idx: number;
     units:string;
+    useRaw: boolean;
     setIdx: React.Dispatch<React.SetStateAction<number>>
 }
 
@@ -37,7 +38,7 @@ function dateToNumber(dateString: string, unit:string) {
     }
 }
 
-export const InputSelector = ({array, idx, units, setIdx} : InputProps) => {
+export const InputSelector = ({array, idx, units, useRaw, setIdx} : InputProps) => {
     const isTime = units.includes('since')
     const [localValue, setLocalValue] = useState(String(array[idx]))
     const rootRef = useRef<HTMLDivElement>(null);
@@ -45,6 +46,11 @@ export const InputSelector = ({array, idx, units, setIdx} : InputProps) => {
     const [expanded, setExpanded] = useState(false);
     function commitValue(e: React.FocusEvent<HTMLInputElement>){
         const val = e.target.value
+        if (useRaw){
+            setLocal(val);
+            setIdx(parseInt(val));
+            return;
+        }
         if (!isTime){
             const numberVal = parseFloat(val)
             const [nearestVal, newIdx] = findClosest(array as number[], numberVal);
@@ -62,9 +68,10 @@ export const InputSelector = ({array, idx, units, setIdx} : InputProps) => {
         setIdx(newIdx);
     }
     useEffect(()=>{
+        if (useRaw) {setLocal(idx); return;}
         const newVal = isTime ? parseLoc(array[idx], units) : array[idx];
         setLocal(newVal)
-    }, [idx, array, units])
+    }, [idx, useRaw, array, units])
 
     // --- Close Incrementer ---- //
     useEffect(() => {
@@ -80,10 +87,13 @@ export const InputSelector = ({array, idx, units, setIdx} : InputProps) => {
     <div ref={rootRef}>
         <ButtonGroup>
             <Input
-                type={isTime ? "string" : "number"}
+                type={useRaw || !isTime ? "number" : "string"}
                 value={localValue}
                 defaultValue={localValue}
-                onChange={e => setLocal(e.target.value)}
+                onChange={e => {
+                    useRaw && setIdx(parseInt(e.target.value))
+                    setLocal(e.target.value)
+                }}
                 onBlur={commitValue}
                 onClick={() => setExpanded(false)}
                 className={`no-spinner h-7 text-xs ${isTime ? 'w-[6.5rem]' : 'w-[5rem]'} text-center appearance-none`}

@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo, createContext, useContext } from 'react'
+import React, { useState, useEffect, useMemo, createContext, useContext, useCallback } from 'react'
 import { useIsMobile } from '@/hooks';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge, Switch, Input, Hider, QuickTip, Button } from "@/components/ui";
-import { defaultAttributes, renderAttributes } from "@/components/ui/MetaData";
+import { defaultAttributes, renderAttributes } from "@/components/ui/MetaComponents/Helpers";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { parseLoc } from '@/utils/HelperFuncs';
 import { ChevronDown, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { usePlotStore } from '@/GlobalStates/PlotStore';
@@ -13,10 +12,17 @@ import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { clearProjectionData } from '@/components/textures/ProjectionTexture';
 import { SliderGroup } from '../MetaComponents/SliderGroup';
+
+const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
+};
 
 interface Dimfo {
   dimArrays: ArrayLike<number>[];
@@ -37,7 +43,7 @@ const DimContext = createContext<DimContextProps | undefined>(undefined)
 export function useDimContext() {
   const context = useContext(DimContext);
   if (context === undefined) {
-    throw new Error('useAppContext must be used within an AppProvider');
+    throw new Error('useDimContext must be used within an AppProvider');
   }
   return context;
 }
@@ -56,6 +62,176 @@ type Props = {
   metadata?: Record<string, unknown>;
 };
 
+function MetaInfo({
+    selectionInfo,
+    meta,
+    cacheSize,
+    setDataSize,
+    setCacheSize
+}: {
+    selectionInfo: Record<string, any>;
+    meta: Record<string, any>;
+    cacheSize: number,
+    setDataSize: React.Dispatch<React.SetStateAction<number>>;
+    setCacheSize: React.Dispatch<React.SetStateAction<number>>;
+}) {
+    const initStore = useGlobalStore(s => s.initStore);
+    const {cache, maxSize} = useCacheStore((s) => s);
+
+    const {compress, coarsen, kernelSize, kernelDepth} = useZarrStore((s) => s);
+    const {maxTextureSize, max3DTextureSize} = usePlotStore((s) => s);
+
+    const dataShape = meta?.shape as number[] || [];
+    const dtype = meta.totalSize ? Math.round(meta.totalSize/dataShape.reduce((a,b) => a * b, 1)) : 4;
+    const sizeData = useMemo(()=>{
+        let prod = 1;
+        const sizes:number[] = [];
+        // ---- Get total Size ----//
+        Object.values(selectionInfo).map((dimObj) => {
+            const numKey = dimObj.plotDim;
+            if (numKey >= 0){
+                const size = Math.abs(dimObj.stop- dimObj.start)
+                sizes.push(size)
+                prod *= size
+            }
+        })
+        // ---- Get Texture Counts ---- //
+        const is2D = sizes.length == 2;
+        const texSize = is2D ? maxTextureSize : max3DTextureSize;
+        let texProd = 1;
+        for (const size of sizes){
+            const texCount = Math.ceil(size/texSize);
+            texProd *= texCount;
+        }
+        // ---- Apply Coarsen ---- //
+        if (coarsen){
+            prod /= Math.pow(kernelSize,2)
+            if (!is2D) prod /= kernelDepth
+            prod = Math.round(prod)
+        }
+        return{
+            size: prod * dtype, texCount:texProd
+        }
+    },[selectionInfo, coarsen, kernelSize, kernelDepth])
+
+    const currentSize = sizeData.size;
+    const texCount = sizeData.texCount;
+    const tooBig = texCount > 12;
+    const cachedSize = useMemo(() => {
+    const cachedSize = currentSize * 2/dtype;
+    setDataSize(cachedSize);
+    return cachedSize;
+    }, [currentSize, meta]);
+
+    const smallCache = cachedSize > cacheSize;
+    const [cachedChunks, setCachedChunks] = useState<string | null>(null);
+    let cacheBase = `${initStore}_${meta.name}`;
+    useEffect(() => {
+        let newCached = false;
+        let newCachedChunks: string | null = null;
+        
+        if (meta && meta.chunks && meta.shape) {
+            const chunks = meta.chunks;
+            const slices: Record<string, number>[] = Array.from({length: 3}).map(() => ({start: 0, end: 0}))
+            Array.from(selectionInfo.values() as Iterable<{ dataDim: number; start: number; stop: number }>).forEach((dimObj)=>{
+                const numKey = dimObj.dataDim
+                if (numKey < 0) return;
+                const idx = dimObj.dataDim;
+                const chunkSize = chunks[idx]
+                slices[numKey] = {
+                    start: Math.floor(dimObj.start/chunkSize), 
+                    end: Math.ceil(dimObj.stop/chunkSize)
+                }
+            })
+            const [zDim, yDim, xDim] = slices;
+            let accum = 0;
+            let total = 0;
+            for (let z = zDim.start; z < zDim.end; z++) {
+                for (let y = yDim.start; y < yDim.end; y++) {
+                    for (let x = xDim.start; x < xDim.end; x++) {
+                        total++;
+                        if (cache.has(`${cacheBase}_chunk_z${z}_y${y}_x${x}`)) accum++;
+                    }
+                }
+            }
+            if (total > 0 && accum > 0) {
+                newCachedChunks = `${accum}/${total}`;
+                newCached = true;
+            } else if (cache.has(`${initStore}_${meta.name}`)) {
+                newCached = true;
+            }
+        } else if (meta && cache.has(`${initStore}_${meta.name}`)) {
+            newCached = true;
+        }
+        setCachedChunks((prev) => (prev !== newCachedChunks ? newCachedChunks : prev));
+      }, [meta, cache, initStore, selectionInfo]);
+
+    return(
+       <div className="flex flex-col gap-2">
+      {/* Size info badge */}
+      <div className="flex items-center gap-2 text-xs bg-background border px-2 py-1 rounded-md shadow-sm w-fit">
+        <span className="text-muted-foreground">Raw:</span> <span className="font-medium">{formatBytes(currentSize)}</span>
+        <span className="text-muted-foreground/50">|</span>
+        <span className="text-muted-foreground">Stored:</span> <span className="font-medium">{compress ? "<" : ""}{formatBytes(cachedSize)}</span>
+      </div>
+
+      {/* Messages */}
+      <div className="flex flex-col gap-1 text-xs">
+        {tooBig && (
+          <span className="font-medium text-destructive">
+            Too many textures ({texCount}/12). Won&apos;t fit.
+          </span>
+        )}
+        {cachedChunks && (
+          <span className="font-medium text-muted-foreground">
+            {`${cachedChunks} chunks already cached`}
+          </span>
+        )}
+      </div>
+
+      {/* Cache expand UI if needed */}
+      {currentSize > maxSize && (
+        <Alert variant={smallCache ? "destructive" : "default"} className="mt-2 w-full border-0">
+          {smallCache ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+          <AlertTitle>
+            {smallCache ? "Selection won't fit in Cache" : "Data Will Fit"}
+          </AlertTitle>
+          <AlertDescription className="w-full min-w-0">
+            <div className="flex flex-col gap-3 mt-1 w-full min-w-0">
+              <span className="leading-none text-muted-foreground break-words">Decrease selection or expand cache size</span>
+              <div className="flex items-center gap-4 w-full min-w-0">
+                <SliderThumbs
+                  id="newCache-size"
+                  min={200}
+                  max={1200}
+                  value={[cacheSize / (1024 * 1024)]}
+                  step={10}
+                  onValueChange={(e) => setCacheSize(e[0] * (1024 * 1024))}
+                  className="flex-1 min-w-0"
+                />
+                <div className="flex items-center gap-1 shrink-0">
+                  <Input
+                    className="w-[70px] h-[28px] text-xs no-spinner"
+                    type="number"
+                    min={200}
+                    step={20}
+                    value={cacheSize / (1024 * 1024)}
+                    onChange={(e) => setCacheSize(parseInt(e.target.value) * (1024 * 1024))}
+                  />
+                  <span className="text-xs font-semibold">MB</span>
+                  <QuickTip message='Increasing this too far can cause crashes. Mobile users beware'>
+                      <BsFillQuestionCircleFill className="ml-1 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+                    </QuickTip>
+                </div>
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
+    )
+}
+
 export const MetaData = ({ meta, metadata }: Props) => {
     const isMobile = useIsMobile();
     const { dimArrays, dimNames, dimUnits } = useMemo(() => ({
@@ -65,12 +241,11 @@ export const MetaData = ({ meta, metadata }: Props) => {
     }), [meta?.dimInfo]);
     const dataShape = meta?.shape || [];
     const dataLength = dataShape.length;
-    const chunkShape = meta?.chunks || [];
 
     const { setDimArrays, setDimNames, setDimUnits, setVariable, variable } = useGlobalStore(useShallow(s => s));
 
     const { maxSize, setMaxSize } = useCacheStore(useShallow(s => s))
-    const { ndSlices, axisMapping, ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(
+    const { ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(
     useShallow(s => s))
     const [cacheSize, setCacheSize] = useState(maxSize);
     const [dataSize, setDataSize] = useState(maxSize)
@@ -79,8 +254,16 @@ export const MetaData = ({ meta, metadata }: Props) => {
     const [displaySpat, setDisplaySpat] = useState(String(kernelSize));
     const [displayDepth, setDisplayDepth] = useState(String(kernelDepth));
 
-    const [selectionInfo, setSelectionInfo] = useState<Record<number, any>>({})
-
+    // --- Selected Dim-Data --- //
+    const [selectionInfo, setSelectionInfo] = useState<Map<string, any>>(new Map())
+    const updateSelectionInfo = useCallback((dim: string, oldDim:string, dimObj: Record<string,any> ) => {
+        setSelectionInfo(prev => {
+            const newSelectionInfo = new Map(prev)
+            newSelectionInfo.delete(oldDim)
+            newSelectionInfo.set(dim, dimObj)
+            return newSelectionInfo
+        })
+    },[setSelectionInfo])
     const [deactiveDims, setDeactiveDims] = useState(Math.max(0, dataLength - 3))
     const [activeDims, setActiveDims] = useState(Math.min(dataLength, 3))
     const [collapsedOpen, setCollapsedOpen] = useState(false)
@@ -90,16 +273,46 @@ export const MetaData = ({ meta, metadata }: Props) => {
         [dimArrays, dimNames, dimUnits, setActiveDims, setDeactiveDims]
     );
 
+    // --- Ready Checkers --- //
+    const [duplicateWarning, setDuplicateWarning] = useState<string | undefined>()
+    useEffect(()=>{
+        const dimCount = [...selectionInfo.keys()].length
+        if (dimCount < dataLength){
+            setDuplicateWarning('Duplicate dimensions set')
+        }
+        console.log(dimCount < dataLength)
+        console.log(selectionInfo)
+    },[selectionInfo])
+    const smallCache = dataSize > cacheSize;
+    // --- PLOT FUNCTION --- //
     function handlePlot(){
         setDimArrays(dimArrays);
         setDimNames(dimNames);
         setDimUnits(dimUnits);
 
-        let ndSlices = Array.from({length: dataLength})
-        
-
+        let ndSlices:[number, number][] = Array.from({length: dataLength})
+        let axisIdices = Array.from({length: activeDims})
+        Array.from(selectionInfo.values()).forEach((dimObj) => {
+            const numKey = dimObj.plotDim
+            const dimLoc = dimObj.dataDim
+            if ( numKey >= 0 ) axisIdices[numKey] = dimLoc; 
+            ndSlices[dimLoc] = [dimObj.start, dimObj.stop]
+        })
+        const axisMapping = {
+            x: axisIdices.at(-1) as number, 
+            y: axisIdices.at(-2) as number,
+            z: axisIdices.at(-3) as number
+        }
+        useZarrStore.setState({ndSlices, axisMapping})
+        if (variable === meta.name) {
+            ReFetch();
+        } else {
+            setMaxSize(cacheSize);
+            setVariable(meta.name || '');
+            clearProjectionData()
+            ReFetch();
+        }
     }
-
     return (
         <div className="flex flex-col gap-2 min-w-0">
             <div className="flex flex-col gap-4 mb-2 min-w-0">
@@ -157,23 +370,16 @@ export const MetaData = ({ meta, metadata }: Props) => {
 
                         <div className="flex items-center justify-end ml-auto min-w-0">
                             <Button
-                            //   disabled={smallCache}
-                            variant={'pink'}
-                            className="cursor-pointer hover:scale-[1.05] shadow-sm h-8 px-4"
-                            //   onClick={handlePlot}
+                                disabled={smallCache}
+                                variant={'pink'}
+                                className="cursor-pointer hover:scale-[1.05] shadow-sm h-8 px-4"
+                                onClick={handlePlot}
                             >
                             Plot
                             </Button>
                         </div>
                     </div>
-                    {/* 
-                    <MetaStatusBadges
-                    meta={meta}
-                    availableDims={availableDims}
-                    cacheSize={cacheSize}
-                    setCacheSize={setCacheSize}
-                    setDataSize={setDataSize}
-                    /> */}
+                    <MetaInfo selectionInfo={selectionInfo} cacheSize={cacheSize} setCacheSize={setCacheSize} setDataSize={setDataSize} meta={meta} />
                 </div>
                 <Hider show={coarsen}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 bg-background p-3 rounded-md border text-sm">
@@ -200,18 +406,18 @@ export const MetaData = ({ meta, metadata }: Props) => {
                     <div className="flex items-center justify-between sm:justify-start sm:gap-4">
                         <span className="font-semibold">Spatial Coarsening</span>
                         <div className="flex items-center gap-2">
-                        <Input
-                            type='number'
-                            min='0'
-                            step={1}
-                            value={displaySpat}
-                            className="w-16 h-8 text-center"
-                            onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            setDisplaySpat(e.target.value);
-                            setKernelSize(Math.pow(2, val));
-                            }}
-                        />
+                            <Input
+                                type='number'
+                                min='0'
+                                step={1}
+                                value={displaySpat}
+                                className="w-16 h-8 text-center"
+                                onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                setDisplaySpat(e.target.value);
+                                setKernelSize(Math.pow(2, val));
+                                }}
+                            />
                         </div>
                     </div>
                     <div className="col-span-1 sm:col-span-2 text-xs text-muted-foreground/70 italic sm:text-center mt-1">
@@ -224,23 +430,20 @@ export const MetaData = ({ meta, metadata }: Props) => {
                 <h3 className="text-sm font-semibold text-foreground/80">Active Dimensions</h3>
             </div>
             <DimContext.Provider value={contextValue} >
-                <SliderGroup dimCount={activeDims} collapsed={false} canShrink={activeDims == 3} setSelectionInfo={setSelectionInfo}/>
-                <div className="mt-6 mb-2">
-                      <button
-                        onClick={() => setCollapsedOpen((o) => !o)}
-                        className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                      >
+                <SliderGroup dimCount={activeDims} collapsed={false} canShrink={activeDims == 3} updateSelectionInfo={updateSelectionInfo}/>
+                <div className="mt-6 mb-2" style={{display: deactiveDims ? '' : 'none'}}>
+                    <button
+                    onClick={() => setCollapsedOpen((o) => !o)}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
                         {collapsedOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                         Collapsed dimensions
-                        <span className="ml-1 text-muted-foreground/60 text-xs font-normal bg-muted px-1.5 py-0.5 rounded-full">{deactiveDims}</span>
-                      </button>
-                
-                      {collapsedOpen && (
-                        <div className='ml-4'>
-                            <SliderGroup dimCount={deactiveDims} collapsed={true} canShrink={activeDims <= 3} setSelectionInfo={setSelectionInfo}/>
-                        </div>
-                      )}
-                    </div>
+                    <span className="ml-1 text-muted-foreground/60 text-xs font-normal bg-muted px-1.5 py-0.5 rounded-full">{deactiveDims}</span>
+                    </button>
+                    <Hider show={collapsedOpen} className='ml-4'>
+                        <SliderGroup dimCount={deactiveDims} collapsed={true} canShrink={activeDims < 3} updateSelectionInfo={updateSelectionInfo}/>
+                    </Hider>
+                </div>
                 
             </DimContext.Provider>
         </div>

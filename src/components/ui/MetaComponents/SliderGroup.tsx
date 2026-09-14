@@ -1,19 +1,29 @@
 import React, {useCallback, useRef} from 'react'
 import { AxisSlider } from './AxisSlider';
 
-export const SliderGroup = ({ dimCount, collapsed, canShrink, setSelectionInfo} 
-  : { dimCount: number, collapsed: boolean, canShrink: boolean, setSelectionInfo: React.Dispatch<React.SetStateAction<Record<number, any>>>}) => {
-    const selectionObject = useRef<Record<number, any>>({})
-    const updateDimSelection = useCallback((idx:number, dimData: Record<string, number>) => {
-        const deReffed = selectionObject.current;
-        deReffed[idx] = dimData
-        setSelectionInfo({...deReffed})
-    }, [setSelectionInfo])
+
+
+export const SliderGroup = ({ dimCount, collapsed, canShrink, updateSelectionInfo} 
+  : { dimCount: number, collapsed: boolean, canShrink: boolean, updateSelectionInfo: (dim:string, oldDim:string, dimObj: Record<string,any>) => void}) => {
+    const updateDimSelection = useCallback((dim:string, oldDim:string, dimData: Record<string, number>) => {
+        updateSelectionInfo(dim, oldDim, dimData)
+    }, [updateSelectionInfo])
+
+    const axisStyling= dimCount == 3
+		? [{name: 'z',color: 'blue-500'}, {name: 'y',color: 'green-500' },{name: 'x',color: 'pink-500'}]
+		: [{name: 'y',color: 'green-500' },{name: 'x',color: 'pink-500'}]
 
   return (
     <div className='grid gap-2'>
       {Array.from({length:dimCount}).map((_val,idx)=>(
-        <AxisSlider key={idx} isSlice={!collapsed} itemIdx={idx} removable={canShrink && idx == dimCount - 1} updateDimSelection={updateDimSelection} />
+        <AxisSlider 
+			key={idx} 
+			isSlice={!collapsed} 
+			itemIdx={idx} 
+			removable={canShrink && idx == dimCount - 1} 
+			style={axisStyling[idx]}
+			updateDimSelection={updateDimSelection} 
+		/>
       ))}
     </div>
   )

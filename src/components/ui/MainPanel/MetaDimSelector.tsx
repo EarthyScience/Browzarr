@@ -21,8 +21,6 @@ import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { clearProjectionData } from '@/components/textures/ProjectionTexture';
-import { AxisSlider } from '../MetaComponents/AxisSlider';
-import { ActiveSliders } from '../MetaComponents/SliderGroup';
 
 const MAX_ACTIVE_DIMS = 3;
 
@@ -909,7 +907,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
             <h3 className="text-sm font-semibold text-foreground/80">Active Dimensions</h3>
             <MetaAddDimensionControl availableDims={availableDims} dataShape={dataShape} />
           </div>
-          <ActiveSliders activeDimensions={availableAxis} />
           {/* <AxisSlider array={Array.from({ length: 51 }, (_, i) => i)} itemIdx={0} isSlice={true}/> */}
           {/* <MetaActiveSlicers availableDims={availableDims} dataShape={dataShape} /> */}
           <MetaCollapsedSlicers availableDims={availableDims} />
