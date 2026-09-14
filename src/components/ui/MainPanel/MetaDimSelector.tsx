@@ -22,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { clearProjectionData } from '@/components/textures/ProjectionTexture';
 import { AxisSlider } from '../MetaComponents/AxisSlider';
+import { ActiveSliders } from '../MetaComponents/SliderGroup';
 
 const MAX_ACTIVE_DIMS = 3;
 
@@ -596,7 +597,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
 
 	const dataShape = meta?.shape || [];
 	const chunkShape = meta?.chunks || [];
-	
+	const availableAxis = {dimArrays, dimNames, dimUnits }
 	const { setDimArrays, setDimNames, setDimUnits, setVariable, variable } = useGlobalStore(useShallow(s => s));
 	const { maxSize, setMaxSize } = useCacheStore(useShallow(s => s))
 	const { ndSlices, axisMapping, ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(
@@ -623,7 +624,6 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
 		}),
 	[dimArrays, dimNames, dimUnits]);
 	const dimsKey = availableDims.map((d) => `${d.name}:${d.size}`).join('|');
-
 	const initialCollapsed = useMemo(() => {
 		const isCurrentVar = variable === meta.name && ndSlices && ndSlices.length === availableDims.length;
 		return Object.fromEntries(
@@ -909,9 +909,7 @@ export default function MetaDimSelector({ meta, metadata, onApply }: Props) {
             <h3 className="text-sm font-semibold text-foreground/80">Active Dimensions</h3>
             <MetaAddDimensionControl availableDims={availableDims} dataShape={dataShape} />
           </div>
-          {dimArrays.map((val,idx) => (
-            <AxisSlider array={val} itemIdx={idx} units={dimUnits[idx]} isSlice={true}/>
-          ))}
+          <ActiveSliders activeDimensions={availableAxis} />
           {/* <AxisSlider array={Array.from({ length: 51 }, (_, i) => i)} itemIdx={0} isSlice={true}/> */}
           {/* <MetaActiveSlicers availableDims={availableDims} dataShape={dataShape} /> */}
           <MetaCollapsedSlicers availableDims={availableDims} />

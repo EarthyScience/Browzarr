@@ -64,7 +64,9 @@ export const InputSelector = ({array, idx, units, setIdx} : InputProps) => {
     useEffect(()=>{
         const newVal = isTime ? parseLoc(array[idx], units) : array[idx];
         setLocal(newVal)
-    }, [idx])
+    }, [idx, array, units])
+
+    // --- Close Incrementer ---- //
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (rootRef.current && !rootRef.current.contains(event.target as Node)) {

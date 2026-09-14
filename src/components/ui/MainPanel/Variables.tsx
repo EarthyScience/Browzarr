@@ -30,7 +30,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-
+import { MetaData } from './MetaData'
 
 const Variables = () => {
   const isMobile = useIsMobile();
@@ -353,17 +353,9 @@ const Variables = () => {
             className="max-h-[80vh] overflow-y-auto w-[350px]"
           >
             {metadata && meta && (
-              <MetaDimSelector
-                key={selectedVar || "none"}
+              <MetaData
                 meta={meta}
                 metadata={metadata}
-                onApply={(sels, axes) => {
-                  // close UI after applying selections
-                  setOpenMetaPopover(false);
-                  setOpenVariables(false);
-                  // future: persist sels/axes to store
-                  console.log('Applied slices', sels, axes);
-                }}
               />
             )}
           </PopoverContent>
@@ -376,15 +368,9 @@ const Variables = () => {
             <DialogDescription className="sr-only">Variables configuration dialog</DialogDescription>
             <div className="-mt-4">
               {meta && metadata && (
-                <MetaDimSelector
-                  key={selectedVar || "none"}
+                <MetaData
                   meta={meta}
                   metadata={metadata}
-                  onApply={(sels, axes) => {
-                    setShowMeta(false);
-                    setOpenVariables(false);
-                    console.log('Applied slices', sels, axes);
-                  }}
                 />
               )}
             </div>
