@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/accordion";
 import { MetaData } from './MetaData'
 import { QuickTip } from "../Widgets/QuickTip";
+import VariableHeader from "../MetaComponents/VariableHeader";
 
 const Variables = () => {
   const isMobile = useIsMobile();
@@ -300,22 +301,11 @@ const Variables = () => {
             }
           }}
         >
-          <div className="flex items-center gap-2 mb-4 justify-center max-w-[240px] md:max-w-sm mx-auto flex-shrink-0">
-            <Input
-              placeholder="Search variable..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1"
-            />
-            <Button variant="secondary" onClick={() => setQuery("")}>
-              Clear
-            </Button>
-          </div>
-          {VariableList}
+          <VariableHeader />
         </PopoverContent>
       </Popover>
 
-      {popoverSide === "left" && (
+      {!isMobile && (
         <Popover open={openMetaPopover} onOpenChange={setOpenMetaPopover}>
           <PopoverTrigger asChild>
             <div
@@ -340,7 +330,7 @@ const Variables = () => {
           </PopoverContent>
         </Popover>
       )}
-      {popoverSide === "top" && (
+      {isMobile && (
         <Dialog open={showMeta} onOpenChange={setShowMeta} modal={false}>
           <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-[85vw] md:max-w-2xl max-h-[80vh] overflow-y-auto px-4 sm:px-6">
             <DialogTitle>{ }</DialogTitle>

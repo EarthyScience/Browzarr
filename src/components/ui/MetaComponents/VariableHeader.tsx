@@ -1,25 +1,17 @@
 import React, {useState} from 'react'
 import { Button } from '@/components/ui'
-import { VariableAccordion } from './VariableAccordion'
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { VariableAccordion } from './VariableAccordion';
 
 const VariableHeader = () => {
     const variables = useGlobalStore(s => s.variables)
     const [meta, setMeta] = useState<Record<string, any> | undefined>(undefined)
+    const [variable, setVariable] = useState<string | undefined>(undefined)
 
     return (
         <div>
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button >
-                        Variables
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent side='left'>
-                    <VariableAccordion variables={variables} setMeta={setMeta}/>
-                </PopoverContent>
-            </Popover>
+            <VariableAccordion variables={variables} setVariable={setVariable} />
         
         </div>
     )

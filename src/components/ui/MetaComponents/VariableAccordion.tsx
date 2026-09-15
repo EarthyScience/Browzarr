@@ -1,9 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useShallow } from 'zustand/shallow';
-import { useIsMobile } from '@/hooks';
-import { GetDimInfo } from '@/utils/HelperFuncs';
-import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
+import React, { useMemo, useState, useEffect } from 'react'
 import {
   Accordion,
   AccordionContent,
@@ -11,26 +6,16 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Separator, Button, Input } from '@/components/ui'
-import { Loader2 } from "lucide-react";
+import { useIsMobile } from '@/hooks';
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
-export const VariableAccordion = ({variables, setMeta} : {variables:string[], setMeta: React.Dispatch<React.SetStateAction<Record<string, any> | undefined>>}) => {
-	const { zMeta, metadata, initStore, setMetadata } = useGlobalStore(
-		useShallow((state) => ({
-		variables: state.variables,
-		zMeta: state.zMeta,
-		metadata: state.metadata,
-		initStore: state.initStore,
-		setMetadata: state.setMetadata,
-		}))
-	);
-
+export const VariableAccordion = ({variables, setVariable} : {variables:string[], setVariable: React.Dispatch<React.SetStateAction<string>>}) => {
+	const isMobile = useIsMobile();
 	const [selectedVar, setSelectedVar] = useState<string | null>(null);
-	const [isLoadingVar, setIsLoadingVar] = useState<string | null>(null);
-	const activeRequest = useRef<string | null>(null);
 	const [query, setQuery] = useState("");
 	// root *open by default* (collapsible but starts open)
 	const [openAccordionItems, setOpenAccordionItems] = useState<string[]>(["root"]);
-
+	const [isOpen, setIsOpen] = useState(false)
 	// Build nested variable tree
 	const tree = useMemo(() => {
 		const q = query.toLowerCase().trim();
@@ -82,42 +67,6 @@ export const VariableAccordion = ({variables, setMeta} : {variables:string[], se
 		}
 	}, [query, tree]);
 
-	// Handle variable selection
-	const handleVariableSelect = (val: string, idx: number) => {
-
-			setIsLoadingVar(val);
-			setSelectedVar(val);
-			activeRequest.current = val;
-			Promise.all([GetDimInfo(val), GetAttributes(val)]).then(([dimInfo, attr]) => {
-			if (activeRequest.current !== val) return;
-
-			const relevant = zMeta?.find((e: any) => e.name === val);
-			if (relevant) {
-				setMeta({
-				...relevant,
-				dimInfo: {
-					dimArrays: dimInfo.dimArrays,
-					dimNames: dimInfo.dimNames,
-					dimUnits: dimInfo.dimUnits,
-				},
-				});
-			}
-			setMetadata(attr);
-			setIsLoadingVar(null);
-			}).catch((err) => {
-			if (activeRequest.current === val) {
-				setIsLoadingVar(null);
-			}
-			console.error("Failed to fetch dimension info or attributes:", err);
-			});
-	}
-
-	useEffect(() => {
-		setSelectedVar(null);
-		setMeta(undefined);
-		setMetadata(null);
-	}, [initStore, setMetadata]);
-
 	// Variable item renderer (keeps separator between variables in same group)
 	const VariableItem = ({ val, idx, arrayLength }: { val: string; idx: number; arrayLength: number }) => {
 		const variableName = val.split('/').pop() || val;
@@ -130,10 +79,9 @@ export const VariableAccordion = ({variables, setMeta} : {variables:string[], se
 				? "bg-primary text-primary-foreground" 
 				: "hover:bg-muted"
 			}`}
-			onClick={() => handleVariableSelect(val, idx)}
+			onClick={() => {setSelectedVar(val); setVariable(val); setIsOpen(false)}}
 			>
 			<span>{variableName}</span>
-			{isLoadingVar === val && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
 			</div>
 			{!isLastItem && <Separator className="my-1" />}
 		</React.Fragment>
@@ -214,19 +162,32 @@ export const VariableAccordion = ({variables, setMeta} : {variables:string[], se
 		</div>
 	);
 	return (
-		<div>
-			<div className="flex items-center gap-2 mb-4 justify-center max-w-[240px] md:max-w-sm mx-auto flex-shrink-0">
-            <Input
-              placeholder="Search variable..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1"
-            />
-            <Button variant="secondary" onClick={() => setQuery("")}>
-              Clear
-            </Button>
-          </div>
-			{VariableList}
-		</div>
+		<Popover open={isOpen} onOpenChange={setIsOpen}>
+			<PopoverTrigger asChild>
+				<Button
+					variant='secondary'
+				>
+					{selectedVar?? 'Select Variable'}
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent 
+				className="max-h-[50vh] overflow-hidden flex flex-col"
+				side={isMobile ? 'top' : 'left'}
+					>
+				<div className="flex items-center gap-2 mb-4 justify-center max-w-[240px] md:max-w-sm mx-auto flex-shrink-0">
+					<Input
+						placeholder="Search variable..."
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+						className="flex-1"
+					/>
+					<Button variant="secondary" onClick={() => setQuery("")}>
+						Clear
+					</Button>
+				</div>
+				{VariableList}
+			</PopoverContent>
+			
+		</Popover>
 	)
 }
