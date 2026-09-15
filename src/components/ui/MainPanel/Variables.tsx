@@ -6,18 +6,12 @@ import { Loader2 } from "lucide-react";
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
-import MetaDimSelector from "./MetaDimSelector";
 import { GetDimInfo } from "@/utils/HelperFuncs";
 import { GetAttributes } from "@/components/zarr/ZarrLoaderLRU";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button-enhanced";
 import { Input } from "../input";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +25,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { MetaData } from './MetaData'
+import { QuickTip } from "../Widgets/QuickTip";
 
 const Variables = () => {
   const isMobile = useIsMobile();
@@ -199,7 +194,6 @@ const Variables = () => {
     const entries = Object.entries(subtree);
     const variableEntries = entries.filter(([_, v]) => v === null);
     const groupEntries = entries.filter(([_, v]) => v && typeof v === "object");
-
     return (
       <Accordion
         key={basePath || "__root_inner__"}
@@ -227,7 +221,7 @@ const Variables = () => {
 
         {/* groups at this level */}
         {groupEntries.map(([name, subtreeValue]) => {
-          const currentPath = basePath ? `${basePath}/${name}` : name;
+          const currentPath = basePath !== '' ? `${basePath}/${name}` : name;
           return (
             <AccordionItem key={currentPath} value={currentPath}>
               <AccordionTrigger className="cursor-pointer pl-2">
@@ -255,7 +249,6 @@ const Variables = () => {
           onValueChange={setOpenAccordionItems}
         >
           <AccordionItem key="root" value="root">
-            <AccordionTrigger className="cursor-pointer">/</AccordionTrigger>
             <AccordionContent className="flex flex-col">
               {/* render the top-level subtree inside its own Accordion so nested AccordionItems are legal */}
               {renderSubtreeAccordion(tree, "")}
@@ -275,8 +268,7 @@ const Variables = () => {
       <Popover open={openVariables} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <div>
-            <Tooltip delayDuration={500}>
-              <TooltipTrigger asChild>
+            <QuickTip message='Select Variable' side={popoverSide}>
                 <div>
                   <Button
                     variant="ghost"
@@ -288,24 +280,14 @@ const Variables = () => {
                     <TbVariable className="size-8" />
                   </Button>
                 </div>
-              </TooltipTrigger>
-              <TooltipContent
-                side={popoverSide === "left" ? "left" : "top"}
-                align={popoverSide === "left" ? "start" : "center"}
-              >
-                <span>Select Variable</span>
-              </TooltipContent>
-            </Tooltip>
+              </QuickTip>
           </div>
         </PopoverTrigger>
-
         <PopoverContent
           side={popoverSide}
           className="max-h-[50vh] overflow-hidden flex flex-col"
           onInteractOutside={(e) => {
             const target = e.target as HTMLElement;
-            // Prevent the main variable list from closing when interacting with Meta popups/portals.
-            // We set a flag instead of calling e.preventDefault() so that native text selection still works!
             if (
               target.closest('[data-meta-popover]') ||
               target.closest('.metadata-dialog') ||
@@ -314,10 +296,7 @@ const Variables = () => {
               target.closest('[role="listbox"]') ||
               target.closest('[data-radix-popper-content-wrapper]')
             ) {
-              isInteractingWithMeta.current = true;
-              setTimeout(() => {
-                isInteractingWithMeta.current = false;
-              }, 0);
+              e.preventDefault();
             }
           }}
         >

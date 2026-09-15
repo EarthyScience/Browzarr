@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, createContext, useContext, useCall
 import { useIsMobile } from '@/hooks';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Badge, Switch, Input, Hider, QuickTip, Button } from "@/components/ui";
+import { Badge, Switch, Switcher, Input, Hider, QuickTip, Button } from "@/components/ui";
 import { defaultAttributes, renderAttributes } from "@/components/ui/MetaComponents/Helpers";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ChevronDown, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
