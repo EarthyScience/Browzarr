@@ -29,7 +29,7 @@ type StoreState = {
   timeSeries: Record<string, Record<string, any>>;
   strides: number[];
   metadata: Record<string, any> | null;
-  zMeta: object[];
+  zMeta: object[] | undefined;
   dimArrays: number[][];
   dimNames: string[];
   dimUnits: string[];
@@ -42,6 +42,8 @@ type StoreState = {
   initStore:string;
   storeFromURL: boolean;
   variable: string;
+  variable2: string | undefined;
+  bivariate: boolean;
   variables: string[];
   openVariables: boolean;
   plotOn: boolean;
@@ -85,6 +87,7 @@ type StoreState = {
   setInitStore: (initStore:string) => void;
   setStoreFromURL: (storeFromURL: boolean) => void;
   setVariable: (variable: string) => void;
+  setVariable2: (variable2: string) => void;
   setVariables: (variables: string[]) => void;
   setOpenVariables: (openVariables: boolean) => void;
   setPlotOn: (plotOn: boolean) => void;
@@ -115,7 +118,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   timeSeries: {},
   strides: [10368,144,1],
   metadata: null,
-  zMeta: [{}],
+  zMeta: undefined,
   dimArrays: [[0], [0], [0]],
   dimNames: ["Default"],
   dimUnits: ["Default"],
@@ -128,6 +131,8 @@ const createStore = () => create<StoreState>((set, get) => ({
   initStore: ESDC,
   storeFromURL: false,
   variable: 'Default',
+  variable2: undefined,
+  bivariate: false,
   variables: [],
   openVariables: false,
   plotOn: false,
@@ -201,6 +206,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   setInitStore: (initStore) => set({ initStore }),
   setStoreFromURL: (storeFromURL) => set({ storeFromURL }),
   setVariable: (variable) => set({ variable }),
+  setVariable2: (variable2) => set({ variable2 }),
   setVariables: (variables) => set({ variables }),
   setOpenVariables: (openVariables) => set({ openVariables }),
   setPlotOn: (plotOn) => set({ plotOn }),
