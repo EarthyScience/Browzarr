@@ -34,6 +34,7 @@ interface DimContextProps {
     dimArrays: ArrayLike<number>[];
     dimNames: string[];
     dimUnits: (string | null)[];
+    initOffset: number;
     setActiveDims: React.Dispatch<React.SetStateAction<number>>,
     setDeactiveDims: React.Dispatch<React.SetStateAction<number>>,
     removeSelectionDim: (dim: string) => void
@@ -78,10 +79,8 @@ function MetaInfo({
 }) {
     const initStore = useGlobalStore(s => s.initStore);
     const {cache, maxSize} = useCacheStore((s) => s);
-
     const {compress, coarsen, kernelSize, kernelDepth} = useZarrStore((s) => s);
     const {maxTextureSize, max3DTextureSize} = usePlotStore((s) => s);
-
     const dataShape = meta?.shape as number[] || [];
     const dtype = meta.totalSize ? Math.round(meta.totalSize/dataShape.reduce((a,b) => a * b, 1)) : 4;
     const sizeData = useMemo(()=>{
@@ -235,6 +234,7 @@ function MetaInfo({
 }
 
 export const MetaData = ({ meta, metadata }: Props) => {
+    // --- STATES --- //
     const isMobile = useIsMobile();
     const { dimArrays, dimNames, dimUnits } = useMemo(() => ({
         dimArrays: (meta?.dimInfo?.dimArrays ?? []).map((a) => Array.from(a)),
@@ -243,19 +243,15 @@ export const MetaData = ({ meta, metadata }: Props) => {
     }), [meta?.dimInfo]);
     const dataShape = meta?.shape || [];
     const dataLength = dataShape.length;
-
     const { setDimArrays, setDimNames, setDimUnits, setVariable, variable } = useGlobalStore(useShallow(s => s));
-
     const { maxSize, setMaxSize } = useCacheStore(useShallow(s => s))
     const { ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(
     useShallow(s => s))
     const [cacheSize, setCacheSize] = useState(maxSize);
     const [dataSize, setDataSize] = useState(maxSize)
-
     // --- Coarsen Values --- //
     const [displaySpat, setDisplaySpat] = useState(String(kernelSize));
     const [displayDepth, setDisplayDepth] = useState(String(kernelDepth));
-
     // --- Selected Dim-Data --- //
     const [selectionInfo, setSelectionInfo] = useState<Map<string, any>>(new Map())
     const updateSelectionInfo = useCallback((dim: string, dimObj: Record<string,any> ) => {
@@ -275,10 +271,11 @@ export const MetaData = ({ meta, metadata }: Props) => {
     const [deactiveDims, setDeactiveDims] = useState(Math.max(0, dataLength - 3))
     const [activeDims, setActiveDims] = useState(Math.min(dataLength, 3))
     const [collapsedOpen, setCollapsedOpen] = useState(false)
-
+    // --- Context States --- //
+    const initOffset = Math.max(0, dataLength - 3);
     const contextValue = useMemo(
-        () => ({ dimArrays, dimNames, dimUnits, setActiveDims, setDeactiveDims, removeSelectionDim }),
-        [dimArrays, dimNames, dimUnits, setActiveDims, setDeactiveDims, removeSelectionDim]
+        () => ({ dimArrays, dimNames, dimUnits, initOffset, setActiveDims, setDeactiveDims, removeSelectionDim }),
+        [dimArrays, dimNames, dimUnits, initOffset, setActiveDims, setDeactiveDims, removeSelectionDim]
     );
     // --- Ready Checkers --- //
     const [duplicateWarning, setDuplicateWarning] = useState<string | undefined>()

@@ -21,8 +21,8 @@ interface SliderProps {
 }
 
 export const AxisSlider = React.memo(({isSlice, itemIdx, removable, style, updateDimSelection} : SliderProps) => {
-    const {dimArrays, dimNames, dimUnits, setActiveDims, setDeactiveDims, removeSelectionDim} = useDimContext();
-    const [plotIndex, setPlotIndex] = useState(itemIdx);
+    const {dimArrays, dimNames, dimUnits, initOffset, setActiveDims, setDeactiveDims, removeSelectionDim} = useDimContext();
+    const [plotIndex, setPlotIndex] = useState(itemIdx + (isSlice ? initOffset : 0));
     const array = dimArrays[plotIndex];
     const maxIndex = array.length-1;
     const [startIndex, setStartIndex] = useState(0);
@@ -56,8 +56,8 @@ export const AxisSlider = React.memo(({isSlice, itemIdx, removable, style, updat
         setStartIndex(0);
         isSlice && setStopIndex(maxIndex)
     }, [maxIndex])
-
     const updatePlotIndex = useCallback((val: string) => setPlotIndex(dimNames.indexOf(val)), [setPlotIndex])
+
     return (
         <div className={`relative border border-l-2 rounded-md px-2 py-1.5 space-y-2 bg-muted/20 transition-colors 
                         ${isSlice ? 'border-l-[#644FF0]' : 'border-l-teal-700'}`}>

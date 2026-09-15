@@ -10,7 +10,7 @@ export const SliderGroup = ({ dimCount, collapsed, canShrink, updateSelectionInf
     const axisStyling= dimCount == 3
 		? [{name: 'z',color: 'blue-500'}, {name: 'y',color: 'green-500' },{name: 'x',color: 'pink-500'}]
 		: [{name: 'y',color: 'green-500' },{name: 'x',color: 'pink-500'}]
-
+    
   return (
     <div className='grid gap-2'>
       {Array.from({length:dimCount}).map((_val,idx)=>(
