@@ -17,13 +17,12 @@ interface SliderProps {
     itemIdx: number;
     removable: boolean;
     style:{name:string, color:string};
-    updateDimSelection: (dim: string, oldDim: string, dimData: Record<string, number>) => void
+    updateDimSelection: (dim: string, dimData: Record<string, number>) => void
 }
 
 export const AxisSlider = React.memo(({isSlice, itemIdx, removable, style, updateDimSelection} : SliderProps) => {
-    const {dimArrays, dimNames, dimUnits, setActiveDims, setDeactiveDims} = useDimContext();
+    const {dimArrays, dimNames, dimUnits, setActiveDims, setDeactiveDims, removeSelectionDim} = useDimContext();
     const [plotIndex, setPlotIndex] = useState(itemIdx);
-    const lastIndex = useRef<number>(itemIdx)
     const array = dimArrays[plotIndex];
     const maxIndex = array.length-1;
     const [startIndex, setStartIndex] = useState(0);
@@ -31,7 +30,9 @@ export const AxisSlider = React.memo(({isSlice, itemIdx, removable, style, updat
     const [useRawIndex, setUseRawIndex] = useState(false);
 
     const updateDimCount = useCallback(()=>{
+        // Update number of dims and remove current state from selection map
         const offset = isSlice ? -1 : 1;
+        removeSelectionDim(`${isSlice ? 'plot' : 'collapsed'}_${itemIdx}`)
         setActiveDims(x => x + offset)
         setDeactiveDims(x => x - offset)
     },[setActiveDims, setDeactiveDims])
@@ -47,7 +48,7 @@ export const AxisSlider = React.memo(({isSlice, itemIdx, removable, style, updat
             start: startIndex,
             stop: isSlice ? stopIndex : startIndex + 1
         }
-        updateDimSelection(dimNames[plotIndex], dimNames[lastIndex.current], selectionObject)
+        updateDimSelection(`${isSlice ? 'plot' : 'collapsed'}_${itemIdx}`, selectionObject)
     },[startIndex, stopIndex, plotIndex, itemIdx, updateDimSelection])
 
     // --- Reset to max when maxIndex changes --- //
@@ -56,7 +57,7 @@ export const AxisSlider = React.memo(({isSlice, itemIdx, removable, style, updat
         isSlice && setStopIndex(maxIndex)
     }, [maxIndex])
 
-    const updatePlotIndex = useCallback((val: string) => {lastIndex.current = plotIndex; setPlotIndex(dimNames.indexOf(val))}, [setPlotIndex])
+    const updatePlotIndex = useCallback((val: string) => setPlotIndex(dimNames.indexOf(val)), [setPlotIndex])
     return (
         <div className={`relative border border-l-2 rounded-md px-2 py-1.5 space-y-2 bg-muted/20 transition-colors 
                         ${isSlice ? 'border-l-[#644FF0]' : 'border-l-teal-700'}`}>

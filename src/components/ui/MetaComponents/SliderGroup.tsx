@@ -1,12 +1,10 @@
 import React, {useCallback, useRef} from 'react'
-import { AxisSlider } from './AxisSlider';
-
-
+import { AxisSlider } from './';
 
 export const SliderGroup = ({ dimCount, collapsed, canShrink, updateSelectionInfo} 
-  : { dimCount: number, collapsed: boolean, canShrink: boolean, updateSelectionInfo: (dim:string, oldDim:string, dimObj: Record<string,any>) => void}) => {
-    const updateDimSelection = useCallback((dim:string, oldDim:string, dimData: Record<string, number>) => {
-        updateSelectionInfo(dim, oldDim, dimData)
+  : { dimCount: number, collapsed: boolean, canShrink: boolean, updateSelectionInfo: (dim:string, dimObj: Record<string,any>) => void}) => {
+    const updateDimSelection = useCallback((dim:string, dimData: Record<string, number>) => {
+        updateSelectionInfo(dim, dimData)
     }, [updateSelectionInfo])
 
     const axisStyling= dimCount == 3

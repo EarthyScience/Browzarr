@@ -89,7 +89,6 @@ export const InputSelector = ({array, idx, units, useRaw, setIdx} : InputProps) 
             <Input
                 type={useRaw || !isTime ? "number" : "string"}
                 value={localValue}
-                defaultValue={localValue}
                 onChange={e => {
                     useRaw && setIdx(parseInt(e.target.value))
                     setLocal(e.target.value)

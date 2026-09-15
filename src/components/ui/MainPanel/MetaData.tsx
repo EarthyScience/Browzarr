@@ -14,7 +14,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { clearProjectionData } from '@/components/textures/ProjectionTexture';
-import { SliderGroup } from '../MetaComponents/SliderGroup';
+import { SliderGroup, ArrayInfo } from '../MetaComponents';
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
@@ -35,7 +35,8 @@ interface DimContextProps {
     dimNames: string[];
     dimUnits: (string | null)[];
     setActiveDims: React.Dispatch<React.SetStateAction<number>>,
-    setDeactiveDims: React.Dispatch<React.SetStateAction<number>>
+    setDeactiveDims: React.Dispatch<React.SetStateAction<number>>,
+    removeSelectionDim: (dim: string) => void
 }
 
 const DimContext = createContext<DimContextProps | undefined>(undefined)
@@ -87,10 +88,10 @@ function MetaInfo({
         let prod = 1;
         const sizes:number[] = [];
         // ---- Get total Size ----//
-        Object.values(selectionInfo).map((dimObj) => {
+        Array.from(selectionInfo.values() as Iterable<{ plotDim:number, dataDim: number; start: number; stop: number }>).forEach((dimObj) => {
             const numKey = dimObj.plotDim;
             if (numKey >= 0){
-                const size = Math.abs(dimObj.stop- dimObj.start)
+                const size = Math.abs((dimObj.stop + 1)- dimObj.start)
                 sizes.push(size)
                 prod *= size
             }
@@ -109,6 +110,7 @@ function MetaInfo({
             if (!is2D) prod /= kernelDepth
             prod = Math.round(prod)
         }
+        
         return{
             size: prod * dtype, texCount:texProd
         }
@@ -118,9 +120,9 @@ function MetaInfo({
     const texCount = sizeData.texCount;
     const tooBig = texCount > 12;
     const cachedSize = useMemo(() => {
-    const cachedSize = currentSize * 2/dtype;
-    setDataSize(cachedSize);
-    return cachedSize;
+        const cachedSize = currentSize * 2/dtype;
+        setDataSize(cachedSize);
+        return cachedSize;
     }, [currentSize, meta]);
 
     const smallCache = cachedSize > cacheSize;
@@ -132,9 +134,9 @@ function MetaInfo({
         
         if (meta && meta.chunks && meta.shape) {
             const chunks = meta.chunks;
-            const slices: Record<string, number>[] = Array.from({length: 3}).map(() => ({start: 0, end: 0}))
-            Array.from(selectionInfo.values() as Iterable<{ dataDim: number; start: number; stop: number }>).forEach((dimObj)=>{
-                const numKey = dimObj.dataDim
+            const slices: Record<string, number>[] = Array.from({length: 3}).map(() => ({start: 0, end: 1}))
+            Array.from(selectionInfo.values() as Iterable<{ plotDim:number, dataDim: number; start: number; stop: number }>).forEach((dimObj)=>{
+                const numKey = dimObj.plotDim
                 if (numKey < 0) return;
                 const idx = dimObj.dataDim;
                 const chunkSize = chunks[idx]
@@ -167,68 +169,68 @@ function MetaInfo({
       }, [meta, cache, initStore, selectionInfo]);
 
     return(
-       <div className="flex flex-col gap-2">
-      {/* Size info badge */}
-      <div className="flex items-center gap-2 text-xs bg-background border px-2 py-1 rounded-md shadow-sm w-fit">
-        <span className="text-muted-foreground">Raw:</span> <span className="font-medium">{formatBytes(currentSize)}</span>
-        <span className="text-muted-foreground/50">|</span>
-        <span className="text-muted-foreground">Stored:</span> <span className="font-medium">{compress ? "<" : ""}{formatBytes(cachedSize)}</span>
-      </div>
+        <div className="flex flex-col gap-2">
+        {/* Size info badge */}
+        <div className="flex items-center gap-2 text-xs bg-background border px-2 py-1 rounded-md shadow-sm w-fit">
+            <span className="text-muted-foreground">Raw:</span> <span className="font-medium">{formatBytes(currentSize)}</span>
+            <span className="text-muted-foreground/50">|</span>
+            <span className="text-muted-foreground">Stored:</span> <span className="font-medium">{compress ? "<" : ""}{formatBytes(cachedSize)}</span>
+        </div>
+        <ArrayInfo dataShape={meta?.shape} chunkShape={meta?.chunks}/>
+        {/* Messages */}
+        <div className="flex flex-col gap-1 text-xs">
+            {tooBig && (
+            <span className="font-medium text-destructive">
+                Too many textures ({texCount}/12). Won&apos;t fit.
+            </span>
+            )}
+            {cachedChunks && (
+            <span className="font-medium text-muted-foreground">
+                {`${cachedChunks} chunks already cached`}
+            </span>
+            )}
+        </div>
 
-      {/* Messages */}
-      <div className="flex flex-col gap-1 text-xs">
-        {tooBig && (
-          <span className="font-medium text-destructive">
-            Too many textures ({texCount}/12). Won&apos;t fit.
-          </span>
-        )}
-        {cachedChunks && (
-          <span className="font-medium text-muted-foreground">
-            {`${cachedChunks} chunks already cached`}
-          </span>
-        )}
-      </div>
-
-      {/* Cache expand UI if needed */}
-      {currentSize > maxSize && (
-        <Alert variant={smallCache ? "destructive" : "default"} className="mt-2 w-full border-0">
-          {smallCache ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
-          <AlertTitle>
-            {smallCache ? "Selection won't fit in Cache" : "Data Will Fit"}
-          </AlertTitle>
-          <AlertDescription className="w-full min-w-0">
-            <div className="flex flex-col gap-3 mt-1 w-full min-w-0">
-              <span className="leading-none text-muted-foreground break-words">Decrease selection or expand cache size</span>
-              <div className="flex items-center gap-4 w-full min-w-0">
-                <SliderThumbs
-                  id="newCache-size"
-                  min={200}
-                  max={1200}
-                  value={[cacheSize / (1024 * 1024)]}
-                  step={10}
-                  onValueChange={(e) => setCacheSize(e[0] * (1024 * 1024))}
-                  className="flex-1 min-w-0"
-                />
-                <div className="flex items-center gap-1 shrink-0">
-                  <Input
-                    className="w-[70px] h-[28px] text-xs no-spinner"
-                    type="number"
+        {/* Cache expand UI if needed */}
+        {currentSize > maxSize && (
+            <Alert variant={smallCache ? "destructive" : "default"} className="mt-2 w-full border-0">
+            {smallCache ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+            <AlertTitle>
+                {smallCache ? "Selection won't fit in Cache" : "Data Will Fit"}
+            </AlertTitle>
+            <AlertDescription className="w-full min-w-0">
+                <div className="flex flex-col gap-3 mt-1 w-full min-w-0">
+                <span className="leading-none text-muted-foreground break-words">Decrease selection or expand cache size</span>
+                <div className="flex items-center gap-4 w-full min-w-0">
+                    <SliderThumbs
+                    id="newCache-size"
                     min={200}
-                    step={20}
-                    value={cacheSize / (1024 * 1024)}
-                    onChange={(e) => setCacheSize(parseInt(e.target.value) * (1024 * 1024))}
-                  />
-                  <span className="text-xs font-semibold">MB</span>
-                  <QuickTip message='Increasing this too far can cause crashes. Mobile users beware'>
-                      <BsFillQuestionCircleFill className="ml-1 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
-                    </QuickTip>
+                    max={1200}
+                    value={[cacheSize / (1024 * 1024)]}
+                    step={10}
+                    onValueChange={(e) => setCacheSize(e[0] * (1024 * 1024))}
+                    className="flex-1 min-w-0"
+                    />
+                    <div className="flex items-center gap-1 shrink-0">
+                    <Input
+                        className="w-[70px] h-[28px] text-xs no-spinner"
+                        type="number"
+                        min={200}
+                        step={20}
+                        value={cacheSize / (1024 * 1024)}
+                        onChange={(e) => setCacheSize(parseInt(e.target.value) * (1024 * 1024))}
+                    />
+                    <span className="text-xs font-semibold">MB</span>
+                    <QuickTip message='Increasing this too far can cause crashes. Mobile users beware'>
+                        <BsFillQuestionCircleFill className="ml-1 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+                        </QuickTip>
+                    </div>
                 </div>
-              </div>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-    </div>
+                </div>
+            </AlertDescription>
+            </Alert>
+        )}
+        </div>
     )
 }
 
@@ -256,11 +258,17 @@ export const MetaData = ({ meta, metadata }: Props) => {
 
     // --- Selected Dim-Data --- //
     const [selectionInfo, setSelectionInfo] = useState<Map<string, any>>(new Map())
-    const updateSelectionInfo = useCallback((dim: string, oldDim:string, dimObj: Record<string,any> ) => {
+    const updateSelectionInfo = useCallback((dim: string, dimObj: Record<string,any> ) => {
         setSelectionInfo(prev => {
             const newSelectionInfo = new Map(prev)
-            newSelectionInfo.delete(oldDim)
             newSelectionInfo.set(dim, dimObj)
+            return newSelectionInfo
+        })
+    },[setSelectionInfo])
+    const removeSelectionDim = useCallback((dim: string) =>{
+        setSelectionInfo(prev => {
+            const newSelectionInfo = new Map(prev)
+            newSelectionInfo.delete(dim)
             return newSelectionInfo
         })
     },[setSelectionInfo])
@@ -269,21 +277,18 @@ export const MetaData = ({ meta, metadata }: Props) => {
     const [collapsedOpen, setCollapsedOpen] = useState(false)
 
     const contextValue = useMemo(
-        () => ({ dimArrays, dimNames, dimUnits, setActiveDims, setDeactiveDims }),
-        [dimArrays, dimNames, dimUnits, setActiveDims, setDeactiveDims]
+        () => ({ dimArrays, dimNames, dimUnits, setActiveDims, setDeactiveDims, removeSelectionDim }),
+        [dimArrays, dimNames, dimUnits, setActiveDims, setDeactiveDims, removeSelectionDim]
     );
-
     // --- Ready Checkers --- //
     const [duplicateWarning, setDuplicateWarning] = useState<string | undefined>()
-    useEffect(()=>{
-        const dimCount = [...selectionInfo.keys()].length
-        if (dimCount < dataLength){
-            setDuplicateWarning('Duplicate dimensions set')
-        }
-        console.log(dimCount < dataLength)
-        console.log(selectionInfo)
-    },[selectionInfo])
     const smallCache = dataSize > cacheSize;
+    useEffect(()=>{
+        const dims = Array.from(selectionInfo.values()).map(obj => obj.dataDim)
+        const duplicates = dims.filter((item, index) => dims.indexOf(item) !== index).map(val => dimNames[val]);
+        if (duplicates.length) setDuplicateWarning(`${duplicates}`)
+        else if(duplicateWarning) setDuplicateWarning(undefined)
+    },[selectionInfo])
     // --- PLOT FUNCTION --- //
     function handlePlot(){
         setDimArrays(dimArrays);
@@ -370,7 +375,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
 
                         <div className="flex items-center justify-end ml-auto min-w-0">
                             <Button
-                                disabled={smallCache}
+                                disabled={smallCache || Boolean(duplicateWarning)}
                                 variant={'pink'}
                                 className="cursor-pointer hover:scale-[1.05] shadow-sm h-8 px-4"
                                 onClick={handlePlot}
@@ -428,6 +433,9 @@ export const MetaData = ({ meta, metadata }: Props) => {
             </div>
             <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-foreground/80">Active Dimensions</h3>
+            </div>
+            <div className='warn-box' style={{display: duplicateWarning ? '' : 'none'}}>
+                <b>{duplicateWarning}</b> set to multiple dimensions
             </div>
             <DimContext.Provider value={contextValue} >
                 <SliderGroup dimCount={activeDims} collapsed={false} canShrink={activeDims == 3} updateSelectionInfo={updateSelectionInfo}/>
