@@ -42,7 +42,9 @@ type StoreState = {
   initStore:string;
   storeFromURL: boolean;
   variable: string;
+  variable2: string | undefined;
   variables: string[];
+  bivariate: boolean;
   openVariables: boolean;
   plotOn: boolean;
   isFlat: boolean;
@@ -85,7 +87,9 @@ type StoreState = {
   setInitStore: (initStore:string) => void;
   setStoreFromURL: (storeFromURL: boolean) => void;
   setVariable: (variable: string) => void;
+  setVariable2: (variable2: string | undefined) => void;
   setVariables: (variables: string[]) => void;
+  setBivariate: (bivariate: boolean) => void,
   setOpenVariables: (openVariables: boolean) => void;
   setPlotOn: (plotOn: boolean) => void;
   setIsFlat: (isFlat: boolean) => void;
@@ -128,7 +132,9 @@ const createStore = () => create<StoreState>((set, get) => ({
   initStore: ESDC,
   storeFromURL: false,
   variable: 'Default',
+  variable2: undefined,
   variables: [],
+  bivariate: false,
   openVariables: false,
   plotOn: false,
   isFlat: false,
@@ -201,8 +207,10 @@ const createStore = () => create<StoreState>((set, get) => ({
   setInitStore: (initStore) => set({ initStore }),
   setStoreFromURL: (storeFromURL) => set({ storeFromURL }),
   setVariable: (variable) => set({ variable }),
+  setVariable2: (variable2) => set({ variable2 }),
   setVariables: (variables) => set({ variables }),
   setOpenVariables: (openVariables) => set({ openVariables }),
+  setBivariate: (bivariate) => set({ bivariate }),
   setPlotOn: (plotOn) => set({ plotOn }),
   setIsFlat: (isFlat) => set({ isFlat }),
   setProgress: (progress) => set({ progress }),

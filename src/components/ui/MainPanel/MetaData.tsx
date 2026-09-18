@@ -14,7 +14,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { clearProjectionData } from '@/components/textures/ProjectionTexture';
-import { SliderGroup, ArrayInfo } from '../MetaComponents';
+import { SliderGroup, ArrayInfo, SecondVariable } from '../MetaComponents';
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
@@ -68,12 +68,14 @@ function MetaInfo({
     selectionInfo,
     meta,
     cacheSize,
+    isBivariate,
     setDataSize,
     setCacheSize
 }: {
     selectionInfo: Record<string, any>;
     meta: Record<string, any>;
     cacheSize: number,
+    isBivariate: boolean,
     setDataSize: React.Dispatch<React.SetStateAction<number>>;
     setCacheSize: React.Dispatch<React.SetStateAction<number>>;
 }) {
@@ -111,9 +113,9 @@ function MetaInfo({
         }
         
         return{
-            size: prod * dtype, texCount:texProd
+            size: prod * dtype * (isBivariate ? 2 : 1), texCount:texProd
         }
-    },[selectionInfo, coarsen, kernelSize, kernelDepth])
+    },[selectionInfo, coarsen, kernelSize, kernelDepth, isBivariate])
 
     const currentSize = sizeData.size;
     const texCount = sizeData.texCount;
@@ -248,7 +250,8 @@ export const MetaData = ({ meta, metadata }: Props) => {
     const { ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(
     useShallow(s => s))
     const [cacheSize, setCacheSize] = useState(maxSize);
-    const [dataSize, setDataSize] = useState(maxSize)
+    const [dataSize, setDataSize] = useState(maxSize);
+    const [isBivariate, setIsBivariate] = useState(false);
     // --- Coarsen Values --- //
     const [displaySpat, setDisplaySpat] = useState(String(kernelSize));
     const [displayDepth, setDisplayDepth] = useState(String(kernelDepth));
@@ -306,6 +309,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
             z: axisIdices.at(-3) as number
         }
         useZarrStore.setState({ndSlices, axisMapping})
+        useGlobalStore.setState({bivariate:isBivariate})
         if (variable === meta.name) {
             ReFetch();
         } else {
@@ -353,7 +357,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
                             </Popover>
                         )}
                     </div>
-
+                    <SecondVariable dataShape={dataShape} isBivariate={isBivariate} setIsBivariate={setIsBivariate}/>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm w-full min-w-0">
                         <div className="flex items-center gap-2">
                             <label htmlFor="coarsen" className="font-semibold cursor-pointer">Coarsen</label>
@@ -381,7 +385,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
                             </Button>
                         </div>
                     </div>
-                    <MetaInfo selectionInfo={selectionInfo} cacheSize={cacheSize} setCacheSize={setCacheSize} setDataSize={setDataSize} meta={meta} />
+                    <MetaInfo selectionInfo={selectionInfo} cacheSize={cacheSize} setCacheSize={setCacheSize} setDataSize={setDataSize} meta={meta} isBivariate={isBivariate}/>
                 </div>
                 <Hider show={coarsen}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 bg-background p-3 rounded-md border text-sm">
