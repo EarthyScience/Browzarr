@@ -71,8 +71,7 @@ export function LandingHome() {
     {variable == 'Default' && <LandingShapes />}
     <ErrorComponent />
     <Loading />
-    {/* {variable === "Default" && <ScrollableLinksTable />} */}
-    {variable != "Default" && <Plot />}
+    {variable && <Plot />}
     {Object.keys(timeSeries).length >= 1 && <PlotArea />}
     </>
   );

@@ -1,6 +1,6 @@
 //This File will have functions converting the array information into 2D or 3D textures that we will pass to the corresponding 2D or 3D object
 import * as THREE from 'three'
-import { ArrayMinMax, TypedArray, TypedArrayBufferLike  } from '@/utils/HelperFuncs';
+import { ArrayMinMax, GetCurrentArray, TypedArray, TypedArrayBufferLike  } from '@/utils/HelperFuncs';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
 interface Array {
@@ -32,7 +32,7 @@ function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number},
 
 export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, useF16=false) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
   const {textureArrayDepths} = useGlobalStore.getState()
-  const textureData = data ? data : useGlobalStore.getState().textureData
+  const textureData = data ?? useGlobalStore.getState().textureData
   if (!textureData){
     return
   }
@@ -84,6 +84,33 @@ export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minV
     const scales = StoreData(array, valueScales, useF16);
     const textures = CreateTexture(array.shape, undefined, useF16)
     return [textures as THREE.Data3DTexture[] | THREE.DataTexture[], scales];
+}
+
+export function BivariateTexture(useF16=false){
+	const {variable, variable2, shareScale, dataShape, setTextureData} = useGlobalStore.getState();
+	const dataLength = dataShape.reduce((a, b) => a * b , 1)
+	let minVal: number, maxVal: number;
+	const textureData = useF16 ? new Uint16Array(dataLength * 2) : new Uint8Array(dataLength * 2)
+	const variables = [variable, variable2];
+	variables.forEach((thisVar, idx) =>{
+		const array = GetCurrentArray(thisVar);
+		if (!shareScale || idx == 0) [minVal, maxVal] = ArrayMinMax(array);
+		const range = (maxVal - minVal)
+		for (let i = 0; i < dataLength; i++){
+			const normed = (array[i] - minVal) / range;
+			if (isNaN(normed)){
+				textureData[i * 2 + idx] = useF16 
+					?	THREE.DataUtils.toHalfFloat(NaN)
+					:	255;
+			} else {
+				textureData[i * 2 + idx] = useF16
+					?	THREE.DataUtils.toHalfFloat(normed)
+					:	normed * 254;
+			}
+		};
+	})
+	setTextureData(textureData)
+    return {minVal, maxVal}
 }
 
 function chunkArray(

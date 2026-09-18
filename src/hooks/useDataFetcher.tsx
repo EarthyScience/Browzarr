@@ -15,7 +15,7 @@ export const useDataFetcher = () => {
     const {
     setShape, setDataShape, setFlipY, setValueScales, setMetadata, setPlotOn, setStatus} = useGlobalStore(
     useShallow(s => s))
-    const {variable, setIsFlat, setUseF16Textures} = useGlobalStore(useShallow(s => s))
+    const {variable, bivariate, variable2, setIsFlat, setUseF16Textures} = useGlobalStore(useShallow(s => s))
     const {plotType, interpPixels, preProject, setPlotType} = usePlotStore(useShallow(s => s))
     const {reFetch} = useZarrStore(useShallow(s => s))
 
@@ -25,7 +25,7 @@ export const useDataFetcher = () => {
     const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
 
     useEffect(() => {
-        if (variable !== "Default") {
+        if (variable) {
             // Could remove this. But I think it looks better to just wipe then have an empty texture.
             // ---- RESET STATES ---- //
             setShow(false);
@@ -48,6 +48,7 @@ export const useDataFetcher = () => {
                 //----- TimeSeries Cleanup ----//
                 useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
                 //---- Main Fetch ----//
+                if ( bivariate ) GetArray(variable2);
                 GetArray().then((result) => {
                     setDataShape(result.shape);
                     const shape = result.shape.filter((val) => val != 1);

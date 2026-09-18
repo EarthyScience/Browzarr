@@ -15,7 +15,7 @@ export async function GetArray(varOveride?: string) {
     const { cache } = useCacheStore.getState();
     const fetcher = useNC ? NCFetcher() : zarrFetcher()
     const targetVariable = varOveride ?? variable;
-    const meta = await fetcher.getMetadata(targetVariable);
+    const meta = await fetcher.getMetadata(targetVariable as string);
     const { shape, chunkShape, fillValue, dtype } = meta;
     const rank = shape.length;
     // Identify which dimensions are already explicitly mapped

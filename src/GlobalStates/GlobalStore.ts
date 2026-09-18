@@ -41,10 +41,11 @@ type StoreState = {
   flipY:boolean;
   initStore:string;
   storeFromURL: boolean;
-  variable: string;
+  variable: string | undefined;
   variable2: string | undefined;
   variables: string[];
   bivariate: boolean;
+  shareScale: boolean;
   openVariables: boolean;
   plotOn: boolean;
   isFlat: boolean;
@@ -131,10 +132,11 @@ const createStore = () => create<StoreState>((set, get) => ({
   flipY: false,
   initStore: ESDC,
   storeFromURL: false,
-  variable: 'Default',
+  variable: undefined,
   variable2: undefined,
   variables: [],
   bivariate: false,
+  shareScale: false,
   openVariables: false,
   plotOn: false,
   isFlat: false,
