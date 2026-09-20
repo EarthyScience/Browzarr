@@ -80,8 +80,6 @@ export async function GetArray(varOveride?: string) {
     setArraySize(totalElements);
     setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); // These are used in GetCurrentArray() function
 
-    const typedArray = new Float16Array(totalElements);
-
     let scalingFactor: number | null = null;
     const totalChunks = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
     let iter = 1;
@@ -124,17 +122,7 @@ export async function GetArray(varOveride?: string) {
                                     cachedChunk.kernel.kernelDepth === (coarsen ? kernelDepth : undefined);
 
                 if (isCacheValid) {
-                    const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : new Float16Array(cachedChunk.data);
-                    copyChunkToArray(
-                        chunkData, 
-                        cachedChunk.shape, 
-                        cachedChunk.stride, 
-                        typedArray, 
-                        outputShape, 
-                        destStride as any, [z, y, x], 
-                        [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
-                        [zSlice[0], ySlice[0], xSlice[0]]
-                    )
+                    continue;
                 } else {
                     const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, ndSlices, axisMapping });
                     
@@ -163,7 +151,6 @@ export async function GetArray(varOveride?: string) {
 
                     if (newScalingFactor != null && newScalingFactor !== scalingFactor) {
                         const delta = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor;
-                        RescaleArray(typedArray, delta);
                         scalingFactor = newScalingFactor;
                         for (const id of rescaleIDs) {
                             const tempChunk = cache.get(`${cacheBase}_chunk_${id}`);
@@ -172,15 +159,6 @@ export async function GetArray(varOveride?: string) {
                             cache.set(`${cacheBase}_chunk_${id}`, tempChunk);
                         }
                     }
-
-                    copyChunkToArray(
-                        chunkF16, thisShape.slice(-3), chunkStride.slice(-3) as any, 
-                        typedArray, outputShape, destStride as any, [z, y, x], 
-                        [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
-                        [zSlice[0], ySlice[0], xSlice[0]]
-                    );
- 
-
                     cache.set(cacheName, {
                         data: compress ? CompressArray(chunkF16, 7) : chunkF16,
                         shape: thisShape.slice(-3), stride: chunkStride.slice(-3),
@@ -196,5 +174,5 @@ export async function GetArray(varOveride?: string) {
             }
     }
     setProgress(0);
-    return { data: typedArray, shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor };
+    return { shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor };
 }

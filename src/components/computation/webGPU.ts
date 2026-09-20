@@ -62,7 +62,7 @@ export async function DataReduction(inputArray : ArrayBufferView, dimInfo : {sha
     }
     const {strides, shape} = dimInfo;
     const [zStride, yStride, xStride] = strides;
-
+    console.log(inputArray)
     const thisShape = shape.filter((e, idx) => idx != reduceDim)
     const dimLength = shape[reduceDim]
     const outputSize = thisShape[0] * thisShape[1];

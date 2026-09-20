@@ -11,7 +11,7 @@ import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUnifor
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
 import { useCoordBounds, useDimAxis } from '@/hooks';
 import { deg2rad } from '@/utils/HelperFuncs';
-const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
+const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined}) => {
     const textures = usePaddedTextures(propTextures);
     const {isFlat, valueScales, remapTexture} = useGlobalStore(useShallow(s => s))
     const { nanColor, nanTransparency, displacement, offsetNegatives, colorScale} = usePlotStore(

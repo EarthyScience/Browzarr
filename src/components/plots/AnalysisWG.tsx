@@ -42,7 +42,7 @@ const ShaderMap = {
 // Define a type for our operations based on the ShaderMap keys
 type Operation = keyof typeof ShaderMap;
 
-const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetStateAction<THREE.Data3DTexture[] | THREE.DataTexture[] | null>> }) => {
+const AnalysisWG = ({ setTexture, }: { setTexture: (texture : THREE.Data3DTexture[] | THREE.DataTexture[] | undefined) => void }) => {
 
     // Global state hooks remain the same
     const { strides, dataShape, valueScales, isFlat, plotOn, setIsFlat, setStatus, setValueScales } = useGlobalStore(useShallow(s => s));
@@ -71,7 +71,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
             if (useTwo) {
                 setStatus("Fetching second variable...")
                 const var2Array = await GetArray(variable2);
-                var2Data = var2Array?.data;
+                var2Data = GetCurrentArray(undefined, variable2);
                 setStatus("Computing...");
                 if (!var2Data) {
                     console.error("Failed to fetch data for the second variable.");
@@ -82,6 +82,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: React.Dispatch<React.SetState
 
             // --- 2. Dispatch GPU computation based on the operation ---
             const inputArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore)
+            console.log(inputArray)
             const shapeInfo = { shape: dataShape, strides};
             const kernelParams = { kernelDepth, kernelSize };
             // [1538316, 1481, 1]
