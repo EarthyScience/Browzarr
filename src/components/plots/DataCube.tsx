@@ -11,7 +11,7 @@ import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
 interface DataCubeProps {
-  volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | null,
+  volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined,
 }
 
 export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {

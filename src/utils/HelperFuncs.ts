@@ -211,15 +211,15 @@ function DecompressArray(compressed : Uint8Array){
 	return floatArray
 }
 
-export function GetCurrentArray(overrideStore?:string){
+export function GetCurrentArray(overrideStore?:string, overrideVariable?:string){
   const { variable, is4D, idx4D, initStore, strides, dataShape }= useGlobalStore.getState()
   const { arraySize, currentChunks, ndSlices } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
-  
+  const thisVariable = overrideVariable?? variable;
   const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : (idx4D ?? "");
-  const cacheBase = scalarIndices !== "" ? `${store}_${variable}_${scalarIndices}` : `${store}_${variable}`;
-  
+  const cacheBase = scalarIndices !== "" ? `${store}_${thisVariable}_${scalarIndices}` : `${store}_${thisVariable}`;
+
   if (cache.has(cacheBase)){
       const chunk = cache.get(cacheBase)
       const compressed = chunk?.compressed
