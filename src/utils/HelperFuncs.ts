@@ -21,6 +21,17 @@ export type TypedArrayBufferLike =
   | Int32Array<ArrayBufferLike> | Uint32Array<ArrayBufferLike> 
   | Float32Array<ArrayBufferLike> | Float64Array<ArrayBufferLike>
 
+export function parseTimeScale(units:string){
+  const match = units.match(/^(\w+)\s+since\s+(.+)$/i);
+  if (!match) {
+    throw new Error(`Invalid time unit format: expected "<unit> since <date>", got "${units}"`);
+  }
+  
+  const [_, unit, referenceDate] = match;
+  const normalizedUnit = unit.toLowerCase();
+  return [normalizedUnit, referenceDate]
+}  
+
 export function parseTimeUnit(units: string | undefined): [number, number] {
     if (units === "Default"){
         return [1, 0];
@@ -30,14 +41,7 @@ export function parseTimeUnit(units: string | undefined): [number, number] {
       return [1, 0]; 
     }
     
-    // Regular expression to match CF time units (e.g., "seconds since 1970-01-01")
-    const match = units.match(/^(\w+)\s+since\s+(.+)$/i);
-    if (!match) {
-      throw new Error(`Invalid time unit format: expected "<unit> since <date>", got "${units}"`);
-    }
-    
-    const [_, unit, referenceDate] = match;
-    const normalizedUnit = unit.toLowerCase();
+    const [normalizedUnit, referenceDate] = parseTimeScale(units);
     
     // Map of time units to milliseconds per unit
     const unitToMilliseconds: Record<string, number> = {
@@ -63,7 +67,7 @@ export function parseTimeUnit(units: string | undefined): [number, number] {
      baseDate = referenceDate ? new Date(referenceDate) : new Date();
     }
     if (!(effectiveUnit in unitToMilliseconds)) {
-      throw new Error(`Unsupported time unit: "${unit}". Supported units: ${Object.keys(unitToMilliseconds).join(', ')}`);
+      throw new Error(`Unsupported time unit: "${units}". Supported units: ${Object.keys(unitToMilliseconds).join(', ')}`);
     }
     return [unitToMilliseconds[effectiveUnit], baseDate.getTime()];
 }
@@ -88,18 +92,17 @@ export function parseLoc(input: any, units: string | undefined, verbose: boolean
       if (!units){
         return Number(input)
       }
+
       try{
         const [scale, offset] = parseTimeUnit(units)
         const timeStamp = Number(input) * scale;
         const date = new Date(timeStamp + offset);
-        
         const day = date.getUTCDate();
         const month = date.getUTCMonth() + 1; // Months are 0-indexed
         const year = date.getUTCFullYear();
         const hours = date.getUTCHours();
         const mins = date.getUTCMinutes();
         const secs = date.getUTCSeconds();
-
         let dateStr;
         if (verbose) dateStr = `${day} ${months[month - 1]} ${year}`
         else dateStr = `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
@@ -113,6 +116,7 @@ export function parseLoc(input: any, units: string | undefined, verbose: boolean
         return dateStr;
       }
       catch{
+
         return input;
       }
     }
@@ -340,7 +344,6 @@ export function coarsenFlatArray(
   return output
 }
 
-
 export function calculateStrides(
   shape: number[]
 ){
@@ -348,4 +351,35 @@ export function calculateStrides(
     return shape.reduce((a: number, b: number, i: number) => a * (i > idx ? b : 1), 1)
   })
   return newStrides
+}
+
+export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
+
+export function findClosest(arr: number[], target:number): [number, number] {
+  let closest = arr[0];
+  let minDiff = Math.abs(target - closest);
+  let idx = 0;
+  for (let i = 1; i < arr.length; i++) {
+    const diff = Math.abs(target - arr[i]);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = arr[i];
+      idx = i;
+    }
+  }
+  return [closest, idx];
+}
+export function findClosestBigInt(arr: bigint[], target:bigint): [bigint, number] {
+  let closest = arr[0];
+  let minDiff = Math.abs(Number(target) - Number(closest));
+  let idx = 0;
+  for (let i = 1; i < arr.length; i++) {
+    const diff = Math.abs(Number(target) - Number(arr[i]));
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = arr[i];
+      idx = i;
+    }
+  }
+  return [closest, idx];
 }

@@ -206,7 +206,8 @@ function createInverseUV(
 export function handleIrregularGrid(){
     // This is needed for Sphere and other projections where the grid is not uniform. It creates an array for the ticks and update for sphere
     const {xArray, yArray} = getAxisDimAxis();
-    const {flipY} = useGlobalStore.getState()
+    const {flipY, borderCompatible} = useGlobalStore.getState()
+    if (!borderCompatible) return;
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
     if (isRegular) return;
     const {is360Deg, plotType} = usePlotStore.getState();
