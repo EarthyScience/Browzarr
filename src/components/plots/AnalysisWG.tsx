@@ -82,7 +82,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: (texture : THREE.Data3DTextur
 
             // --- 2. Dispatch GPU computation based on the operation ---
             const inputArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore)
-            console.log(inputArray)
+
             const shapeInfo = { shape: dataShape, strides};
             const kernelParams = { kernelDepth, kernelSize };
             // [1538316, 1481, 1]

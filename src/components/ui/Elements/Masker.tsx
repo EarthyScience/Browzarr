@@ -20,7 +20,7 @@ export const Masker = () => {
 
     return (
         <Popover open={showMasks} onOpenChange={setShowMasks}>
-            <PopoverTrigger>
+            <PopoverTrigger asChild>
                 <div className='flex items-center justify-between my-2'>
 			<ChevronLeft className={`h-4 w-4 transition-transform duration-200 ${
 				showMasks ? '' : 'rotate-180'} z-5`} />
