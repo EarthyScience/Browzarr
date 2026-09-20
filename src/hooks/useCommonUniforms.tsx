@@ -5,7 +5,6 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow'
 import { useCoordBounds } from './useCoordBounds'
-import { deg2rad } from '@/utils/HelperFuncs'
 
 export function useCommonUniforms() {
 	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange, 
@@ -26,8 +25,8 @@ export function useCommonUniforms() {
 		is360: {value: is360Deg},
 		useF16: {value: useF16Textures},
 		threshold: {value: new THREE.Vector2(valueRange[0],valueRange[1])},
-		latBounds: {value: new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]))},
-		lonBounds: {value: new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]))},
+		latBounds: {value: new THREE.Vector2(latBounds[0], latBounds[1])},
+		lonBounds: {value: new THREE.Vector2(lonBounds[0], lonBounds[1])},
 		textureDepths: {value:  new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0])},
 		cmap : { value : colormap},
 		animateProg: {value: animProg},
@@ -48,7 +47,6 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		useBorderTexture, borderColor, borderWidth, is360Deg, showBorders} = usePlotStore(useShallow(s=>s))
 	const {textureArrayDepths, colormap, valueScales, useF16Textures} = useGlobalStore(useShallow(s => s))
 	const {lonBounds, latBounds} = useCoordBounds()
-
 	useEffect(()=>{
 		// Cleanup function to dispose materials when they are remade in parent component
 		if (material){
@@ -66,8 +64,8 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		uniforms.nanAlpha.value = 1 - nanTransparency;
 		uniforms.cScale.value = cScale;
 		uniforms.threshold.value.set(valueRange[0], valueRange[1]);
-		uniforms.latBounds.value = new THREE.Vector2(deg2rad(latBounds[0]), deg2rad(latBounds[1]));
-		uniforms.lonBounds.value = new THREE.Vector2(deg2rad(lonBounds[0]), deg2rad(lonBounds[1]));
+		uniforms.latBounds.value = new THREE.Vector2(latBounds[0], latBounds[1]);
+		uniforms.lonBounds.value = new THREE.Vector2(lonBounds[0], lonBounds[1]);
 		uniforms.maskValue.value = maskValue;
 		uniforms.fillValue.value = fillValue?? NaN;
 		uniforms.useBorderTexture.value = useBorderTexture && showBorders;

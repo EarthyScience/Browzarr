@@ -89,6 +89,8 @@
   --warning-area: rgba(255, 205, 67, 0.616);
   --axis-shadow: hsla(0, 0%, 0%, 0.5);
   --transect-bg: rgb(255, 243, 133);
+  --global-settings: rgba(175, 244, 253, 0.514);
+  --plot-settings: rgba(248, 253, 175, 0.281);
 }
 
 /* Dark Theme */
@@ -150,6 +152,8 @@
   --warning-area: rgba(255, 183, 49, 0.555);
   --axis-shadow: rgb(255, 255, 255);
   --transect-bg: rgb(252, 59, 59);
+  --global-settings: rgba(175, 244, 253, 0.281);
+  --plot-settings: rgba(245, 253, 175, 0.281);
 }
 
 @layer utilities {

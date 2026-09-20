@@ -12,7 +12,7 @@ import { useAxisIndices, useDimAxis } from '@/hooks';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
 
-const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
+const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined}) => {
     const textures = usePaddedTextures(propTextures);
     const {isFlat, valueScales, flipY, dataShape, axisDimArrays, remapTexture, remapBorders} = useGlobalStore(useShallow(s => s))
     const { displacement, offsetNegatives, rotateFlat, colorScale} = usePlotStore(useShallow(s => s))

@@ -28,10 +28,8 @@ function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
     pointY = timeSeries[tsID]['data'][idx];
     pointX = axisDimArrays[plotDim][idx];
   }
-
   const [divX,divY] = pointLoc;
   const [show,setShow] = useState(false);
-
   useEffect(()=>{
     if (!showPointInfo) {
       const timeout = setTimeout(() => {
@@ -42,7 +40,6 @@ function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
     }
     setShow(true)  
   },[showPointInfo])
-
   return(
     <>
      { show && <div className='point-info'

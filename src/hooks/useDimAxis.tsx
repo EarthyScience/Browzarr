@@ -7,7 +7,9 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 export const useDimAxis = () => {
     const {axisDimArrays, flipY} = useGlobalStore(useShallow(s => ({
         axisDimArrays: s.axisDimArrays, flipY: s.flipY})));
-    const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(s => s));
+    const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(s => ({
+        zSlice:s.zSlice, ySlice:s.ySlice, xSlice:s.xSlice
+    })));
     const {zIdx, yIdx, xIdx} = useAxisIndices();
     const arrays = useMemo(()=>{
         const zArray = axisDimArrays[zIdx]?.slice(zSlice[0], zSlice[1]?? undefined);

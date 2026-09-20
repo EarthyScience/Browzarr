@@ -54,9 +54,12 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const [xResolution, setXResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [yResolution, setYResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [zResolution, setZResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
+  const [timeResolution, setTimeResolution] = useState(0);
+  const isTimeCompatible = axisDimUnits[zIdx].toLowerCase().includes('since')
 
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
   const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
+  const [verboseTime, setVerboseTime] = useState(false)
 
   const depthRatio = useMemo(()=>shape.z/shape.x*timeScale,[shape, timeScale]);
   const shapeRatio = useMemo(()=>shape.y/shape.x, [shape])
@@ -102,6 +105,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
       const length = dimLengths[isX ? 2 : 1]
       return Math.floor(fac * (length - 1))
   }
+  
   return (
     <group visible={plotType != 'sphere' && plotType != 'flat' && !hideAxis}>
     {/* Horizontal Group */}
@@ -188,10 +192,10 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]}
               position={[flipY ? AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale :-AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[0]?.[(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]] || 0,axisDimUnits[zIdx])}</Text>
+            >{parseLoc(dimSlices[0]?.[(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]] || 0,axisDimUnits[zIdx], verboseTime, timeResolution)}</Text>
           </group>
         ))}
-        <group rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]} position={[flipY ? AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale : -AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale, 0, isPC ? (zRange[0]+zRange[1])/2*depthRatio*(globalScale) : (zRange[0]+zRange[1])/2]}>
+        <group rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]} position={[flipY ? AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale : -AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale, 0, isPC ? (zRange[0]+zRange[1])/2*depthRatio*(globalScale) : (zRange[0]+zRange[1])/2*depthRatio]}>
           <Text 
             key={'zTitle'}
             anchorX={'center'}
@@ -232,6 +236,47 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
             >
               -
             </Text>}
+            {isTimeCompatible &&
+            <>
+            <Text 
+              visible={timeResolution < 3}
+              key={'zUpRes'}
+              anchorX={'center'}
+              anchorY={'top'} 
+              fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
+              position={[zTitleOffset*0.5, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale *2, 0]}
+              color={colorHex}
+              material-depthTest={false}
+              onClick={e=>setTimeResolution(x=> Math.min(x+1,3))}
+              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
+              onPointerLeave={e=>document.body.style.cursor = 'default'}
+            >⇒</Text>
+            <Text 
+              key={'zVerbose'}
+              anchorX={'center'}
+              anchorY={'top'} 
+              fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale*0.66} 
+              position={[0, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale*1.33 , 0]}
+              color={colorHex}
+              material-depthTest={false}
+              onClick={() => setVerboseTime(x => !x)}
+              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
+              onPointerLeave={e=>document.body.style.cursor = 'default'}
+            >① ⮀ Ⓐ</Text>
+            <Text 
+              visible={timeResolution > 0}
+              key={'zDownRes'}
+              anchorX={'center'}
+              anchorY={'top'} 
+              fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
+              position={[-zTitleOffset*0.5, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale*2, 0]}
+              color={colorHex}
+              material-depthTest={false}
+              onClick={e=>setTimeResolution(x=> Math.max(x-1,0))}
+              onPointerEnter={e=>document.body.style.cursor = 'pointer'}
+              onPointerLeave={e=>document.body.style.cursor = 'default'}
+            >⇐</Text>
+            </>}
           </group>
         </group>
       </group>

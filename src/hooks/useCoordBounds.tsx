@@ -2,10 +2,17 @@ import { useMemo } from "react";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
 import { useShallow } from "zustand/shallow";
 import { useGlobalStore } from "@/GlobalStates/GlobalStore";
+import { deg2rad } from "@/utils/HelperFuncs";
 
 export const useCoordBounds = ()=>{
+    const {flipY, borderCompatible} = useGlobalStore(useShallow(s => ({
+        flipY: s.flipY, borderCompatible: s.borderCompatible
+    })))
+    if (!borderCompatible) return{
+        lonBounds:[-Math.PI, Math.PI], latBounds:[-Math.PI/2, Math.PI/2]
+    }
     const {lonExtent, latExtent, lonResolution, latResolution} = usePlotStore(useShallow(s => s))
-    const {flipY} = useGlobalStore(useShallow(s => s))
+    
     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
         const newLatStep = latResolution/2;
         const newLonStep = lonResolution/2;
@@ -15,6 +22,7 @@ export const useCoordBounds = ()=>{
         return [newLonBounds, newLatBounds]
     },[latExtent, lonExtent, lonResolution, latResolution, flipY])
     return {
-        lonBounds,latBounds
+        lonBounds:lonBounds.map(e => deg2rad(e)),
+        latBounds: latBounds.map(e => deg2rad(e))
     }
 }

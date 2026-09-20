@@ -21,6 +21,17 @@ export type TypedArrayBufferLike =
   | Int32Array<ArrayBufferLike> | Uint32Array<ArrayBufferLike> 
   | Float32Array<ArrayBufferLike> | Float64Array<ArrayBufferLike>
 
+export function parseTimeScale(units:string){
+  const match = units.match(/^(\w+)\s+since\s+(.+)$/i);
+  if (!match) {
+    throw new Error(`Invalid time unit format: expected "<unit> since <date>", got "${units}"`);
+  }
+  
+  const [_, unit, referenceDate] = match;
+  const normalizedUnit = unit.toLowerCase();
+  return [normalizedUnit, referenceDate]
+}  
+
 export function parseTimeUnit(units: string | undefined): [number, number] {
     if (units === "Default"){
         return [1, 0];
@@ -30,14 +41,7 @@ export function parseTimeUnit(units: string | undefined): [number, number] {
       return [1, 0]; 
     }
     
-    // Regular expression to match CF time units (e.g., "seconds since 1970-01-01")
-    const match = units.match(/^(\w+)\s+since\s+(.+)$/i);
-    if (!match) {
-      throw new Error(`Invalid time unit format: expected "<unit> since <date>", got "${units}"`);
-    }
-    
-    const [_, unit, referenceDate] = match;
-    const normalizedUnit = unit.toLowerCase();
+    const [normalizedUnit, referenceDate] = parseTimeScale(units);
     
     // Map of time units to milliseconds per unit
     const unitToMilliseconds: Record<string, number> = {
@@ -63,7 +67,7 @@ export function parseTimeUnit(units: string | undefined): [number, number] {
      baseDate = referenceDate ? new Date(referenceDate) : new Date();
     }
     if (!(effectiveUnit in unitToMilliseconds)) {
-      throw new Error(`Unsupported time unit: "${unit}". Supported units: ${Object.keys(unitToMilliseconds).join(', ')}`);
+      throw new Error(`Unsupported time unit: "${units}". Supported units: ${Object.keys(unitToMilliseconds).join(', ')}`);
     }
     return [unitToMilliseconds[effectiveUnit], baseDate.getTime()];
 }
@@ -73,7 +77,7 @@ const months = [
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ];
   
-export function parseLoc(input: any, units: string | undefined, verbose: boolean = false) {
+export function parseLoc(input: any, units: string | undefined, verbose: boolean = false, resolution: number = 0) {
     if (!units){
       if (typeof(input) == 'bigint'){
         return input;
@@ -88,38 +92,31 @@ export function parseLoc(input: any, units: string | undefined, verbose: boolean
       if (!units){
         return Number(input)
       }
+
       try{
         const [scale, offset] = parseTimeUnit(units)
         const timeStamp = Number(input) * scale;
         const date = new Date(timeStamp + offset);
-        
         const day = date.getUTCDate();
         const month = date.getUTCMonth() + 1; // Months are 0-indexed
         const year = date.getUTCFullYear();
         const hours = date.getUTCHours();
         const mins = date.getUTCMinutes();
         const secs = date.getUTCSeconds();
-        
-        const lowerUnits = units.toLowerCase();
-        const showTime = lowerUnits.includes('hour') || lowerUnits.includes('min') || lowerUnits.includes('sec') || hours !== 0 || mins !== 0 || secs !== 0;
-        
-        if (verbose) {
-          let dateStr = `${day} ${months[month - 1]} ${year}`;
-          if (showTime) {
-             dateStr += ` ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-             if (secs !== 0 || lowerUnits.includes('sec')) dateStr += `:${String(secs).padStart(2, '0')}`;
-          }
-          return dateStr;
-        } else {
-          let dateStr = `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
-          if (showTime) {
-             dateStr += ` ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-             if (secs !== 0 || lowerUnits.includes('sec')) dateStr += `:${String(secs).padStart(2, '0')}`;
-          }
-          return dateStr;
+        let dateStr;
+        if (verbose) dateStr = `${day} ${months[month - 1]} ${year}`
+        else dateStr = `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
+        if (resolution > 0){
+          const thisRes = Math.min(resolution, 3);
+          dateStr += [
+            ` ${String(hours).padStart(2, '0')}`,
+            `${String(mins).padStart(2, '0')}`,
+            `${String(secs).padStart(2, '0')}`].slice(0,thisRes).join(':')
         }
+        return dateStr;
       }
       catch{
+
         return input;
       }
     }
@@ -136,16 +133,15 @@ export function parseLoc(input: any, units: string | undefined, verbose: boolean
 }
 
 export function parseUVCoords({normal,uv}:{normal:THREE.Vector3,uv:THREE.Vector2}){
-  const flipY = useGlobalStore.getState().flipY
   switch(true){
     case normal.z === 1:
-      return [null, flipY ? 1-uv.y : uv.y, uv.x]
+      return [null, uv.y, uv.x]
     case normal.z === -1:
-      return [null, flipY ? 1-uv.y : uv.y, 1-uv.x]
+      return [null, uv.y, 1-uv.x]
     case normal.x === 1:
-      return [1-uv.x, flipY ? 1- uv.y : uv.y, null]
+      return [1-uv.x, uv.y, null]
     case normal.x === -1:
-      return [uv.x, flipY ? 1-uv.y : uv.y, null]
+      return [uv.x, uv.y, null]
     case normal.y === 1:
       return [1-uv.y, null, uv.x]
     case normal.y === -1:
@@ -194,7 +190,7 @@ export function GetTimeSeries(array : arrayInfo, TimeSeriesInfo:TimeSeriesInfo){
   //This is a complicated logic check but it works bb
   const sliceSize = parseUVCoords({normal,uv})
   const slice = sliceSize.map((value, index) =>
-    value === null || shape[index] === null ? null : Math.round(value * shape[index]-.5));
+    value === null || shape[index] === null ? null : Math.floor(value * shape[index]));
   const mapDim = slice.indexOf(null);
   const dimStride = stride[mapDim];
   const pz = slice[0] == null ? 0 : stride[0]*slice[0]
@@ -215,15 +211,15 @@ function DecompressArray(compressed : Uint8Array){
 	return floatArray
 }
 
-export function GetCurrentArray(overrideStore?:string){
+export function GetCurrentArray(overrideStore?:string, overrideVariable?:string){
   const { variable, is4D, idx4D, initStore, strides, dataShape }= useGlobalStore.getState()
   const { arraySize, currentChunks, ndSlices } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
-  
+  const thisVariable = overrideVariable?? variable;
   const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : (idx4D ?? "");
-  const cacheBase = scalarIndices !== "" ? `${store}_${variable}_${scalarIndices}` : `${store}_${variable}`;
-  
+  const cacheBase = scalarIndices !== "" ? `${store}_${thisVariable}_${scalarIndices}` : `${store}_${thisVariable}`;
+
   if (cache.has(cacheBase)){
       const chunk = cache.get(cacheBase)
       const compressed = chunk?.compressed
@@ -348,7 +344,6 @@ export function coarsenFlatArray(
   return output
 }
 
-
 export function calculateStrides(
   shape: number[]
 ){
@@ -356,4 +351,35 @@ export function calculateStrides(
     return shape.reduce((a: number, b: number, i: number) => a * (i > idx ? b : 1), 1)
   })
   return newStrides
+}
+
+export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
+
+export function findClosest(arr: number[], target:number): [number, number] {
+  let closest = arr[0];
+  let minDiff = Math.abs(target - closest);
+  let idx = 0;
+  for (let i = 1; i < arr.length; i++) {
+    const diff = Math.abs(target - arr[i]);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = arr[i];
+      idx = i;
+    }
+  }
+  return [closest, idx];
+}
+export function findClosestBigInt(arr: bigint[], target:bigint): [bigint, number] {
+  let closest = arr[0];
+  let minDiff = Math.abs(Number(target) - Number(closest));
+  let idx = 0;
+  for (let i = 1; i < arr.length; i++) {
+    const diff = Math.abs(Number(target) - Number(arr[i]));
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = arr[i];
+      idx = i;
+    }
+  }
+  return [closest, idx];
 }
