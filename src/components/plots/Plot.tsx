@@ -236,7 +236,6 @@ const Plot = () => {
       <ExportExtent /> 
       {keyFrameEditor && <KeyFrames />}
       <TransectNotice />
-      <AnalysisWG setTexture={setMainTextures} />
       {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
       <Nav />
       {(isFlat || plotType == "flat") && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }

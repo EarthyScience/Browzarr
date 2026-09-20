@@ -55,24 +55,19 @@ const AnalysisOptions = () => {
 		activeIndices: s.activeIndices, initStore: s.initStore, isFlat: s.isFlat, setTimeSeries: s.setTimeSeries, setValueScales: s.setValueScales})));
 	const previousStore = useRef<string>(initStore)
 	const [incompatible, setIncompatible] = useState(false); 
-	const [operation, setComponentOperation] = useState(useAnalysisStore.getState().operation)
-	const [kernelOp, setKernelOp] = useState('')
-	const operationString = useRef('') // #vars:#dims:operation
-	const {useTwo, kernelSize, kernelDepth,
-		axis, variable2, analysisMode,
-		reverseDirection, valueScalesOrig,
-		setAxis, setOperation, setUseTwo,
-		setVariable2, setKernelSize, setKernelDepth,
-		setKernelOperation, setAnalysisMode,
-		setReverseDirection, setAnalysisStore,
-		setAnalysisDim, setOperationString
+	const [operation, setOperation] = useState<string | undefined>(undefined)
+	const [showError, setShowError] = useState<boolean>(false);
+	const [kernelOp, setKernelOp] = useState<string | undefined>(undefined)
+	const [kernelSize, setKernelSize] = useState(3);
+	const [kernelDepth, setKernelDepth] = useState(3);
+	const [reverse, setReverse] = useState(false);
+	const {useTwo, 
+		axis, variable2, analysisMode, valueScalesOrig,
+		setAxis, setUseTwo,	setVariable2, setAnalysisMode,
+		setAnalysisStore, setAnalysisDim, setAnalysisInfo
 	} = useAnalysisStore(useShallow(s => s));
 	const reFetch = useZarrStore(s => s.reFetch)
-	const handleExecute = () => {
-		if (operation.includes("Convolution")) return [kernelOp, operationString].join('');
-		else return operation;
-	}
-	const [showError, setShowError] = useState<boolean>(false);
+	
 	useEffect(() => {
 		const checkWebGPU = async () => {
 			if (!navigator.gpu){
@@ -104,8 +99,8 @@ const AnalysisOptions = () => {
 	},[isFlat])
 
 	useEffect(()=>{
-		setKernelOperation("Default")
-		setOperation("Default")
+		setKernelOp(undefined)
+		setOperation(undefined)
 		setAnalysisMode(false)
 	},[variable])
 
@@ -114,7 +109,7 @@ const AnalysisOptions = () => {
 	useEffect(()=>{
 		setNewDim(axis)
 	},[axis])
-	console.log(operationString)
+
 	const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 	useEffect(() => {
 		const handleResize = () => {
@@ -221,7 +216,7 @@ const AnalysisOptions = () => {
 				{useTwo ? 
 				<Select 
 					defaultValue={operation} 
-					onValueChange={setComponentOperation}
+					onValueChange={setOperation}
 				>
 					<SelectTrigger className='w-full'>
 						<SelectValue
@@ -246,7 +241,7 @@ const AnalysisOptions = () => {
 					</SelectContent>
 				</Select>
 				:
-				<Select value={operationString.current} onValueChange={setComponentOperation}>
+				<Select value={operation} onValueChange={setOperation}>
 					<SelectTrigger className='w-full'>
 						<SelectValue placeholder='Select...'/>
 					</SelectTrigger>
@@ -268,6 +263,7 @@ const AnalysisOptions = () => {
 					</SelectContent>
 				</Select>
 				}
+				{/* CONVOLUTION */}
 				{(operation != 'Convolution') && <>
 					<h1>Axis</h1>
 					<div className='flex justify-between w-full'>
@@ -287,7 +283,7 @@ const AnalysisOptions = () => {
 						<QuickTip message='Swap direction of operation'>
 							<div className='flex justify-around w-[50%] items-center '>
 								<label htmlFor="reverse-axis" style={{textAlign:'left'}}>Rev.</label>
-								<Switch id='reverse-axis' checked={reverseDirection == 1} onCheckedChange={e=> {setReverseDirection(e ? 1 : 0)}}/>
+								<Switch id='reverse-axis' checked={reverse} onCheckedChange={e=> {setReverse(x => !x)}}/>
 							</div>
 						</QuickTip>
 						}
@@ -301,7 +297,7 @@ const AnalysisOptions = () => {
 					<SelectTrigger className='w-full'>
 					<SelectValue
 						defaultValue={
-						kernelOp.length > 0 ? 'Select...' : kernelOp
+						kernelOp ?? 'Select...'
 						}
 					/>
 					</SelectTrigger>
@@ -360,8 +356,8 @@ const AnalysisOptions = () => {
               <Button
                 className="cursor-pointer active:scale-[0.95]"
                 disabled={
-                  operation === 'Default' ||
-                  (operation === 'Convolution' && kernelOp.length == 0) ||
+                  !operation ||
+                  (operation === 'Convolution' && !Boolean(kernelOp)) ||
                   (useTwo && variable2 === 'Default')
                 }
                 variant='pink'
@@ -369,7 +365,16 @@ const AnalysisOptions = () => {
                   setAxis(newDim)
                   setAnalysisDim(operation == 'CUMSUM3D' ? null : newDim)
                   setTimeSeries({});
-				  setOperationString(handleExecute())
+				  setAnalysisInfo({
+					operation,
+					kernelOp,
+					axis,
+					reverse,
+					kernelShape:{
+						size: kernelSize,
+						depth: kernelDepth
+					}
+				  })
 				  Analysis();
                 }}
               >

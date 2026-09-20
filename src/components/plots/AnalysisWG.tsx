@@ -49,7 +49,7 @@ const AnalysisWG = ({ setTexture, }: { setTexture: (texture : THREE.Data3DTextur
 
     const setPlotType = usePlotStore(state => state.setPlotType);
 
-    const { axis, execute, operation, useTwo, variable2, executeCustom, valueScalesOrig, kernelOperation, kernelSize, kernelDepth, reverseDirection, outputShape, analysisStore, analysisMode, analysisArray, analysisDim,
+    const { axis, execute, useTwo, variable2, executeCustom, valueScalesOrig, reverseDirection, outputShape, analysisStore, analysisMode, analysisArray, analysisDim,
         setValueScalesOrig, setAnalysisArray, setAnalysisMode, customShader } = useAnalysisStore(useShallow(s => s));
 
     useEffect(() => {

@@ -1,22 +1,18 @@
 import { useAnalysisStore } from "@/GlobalStates/AnalysisStore";
 import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 import { GetArray } from "../zarr/GetArray";
-import { ArrayMinMax, GetCurrentArray } from "@/utils/HelperFuncs";
+import { ArrayMinMax, GetCurrentArray, calculateStrides } from "@/utils/HelperFuncs";
 import { DataProcess } from "./webGPU";
 import { CreateTexture } from "../textures";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
-import { useTextureStore } from "@/GlobalStates/TextureStore";
 
 export async function Analysis(){
-	const { strides, dataShape, valueScales, plotOn, isFlat, setIsFlat, setStatus, setValueScales } = useGlobalStore.getState()
-    const { axis, useTwo, variable2, valueScalesOrig, kernelSize, kernelDepth, 
-        reverseDirection, operationString, analysisStore, analysisMode, analysisArray, 
-        setValueScalesOrig, setAnalysisArray, setAnalysisMode } = useAnalysisStore.getState()
+	const { strides, dataShape, valueScales, plotOn, isFlat, setIsFlat, setStatus, setMainTextures, setValueScales } = useGlobalStore.getState()
+    const { useTwo, variable2, analysisInfo, valueScalesOrig, analysisStore, analysisMode, analysisArray, analysisShape,
+        setValueScalesOrig, setAnalysisArray, setAnalysisMode, setAnalysisShape } = useAnalysisStore.getState()
     const {setPlotType} = usePlotStore.getState();
-    const {setTextures} = useTextureStore.getState();
-    const [_varCount, origShape, newShape, operation] = operationString.split(':')
-	const isReduction = origShape != newShape;
-    
+    if (!analysisInfo) return;
+    const {operation, kernelOp, kernelShape, reverse, axis} = analysisInfo;
 	if (!plotOn || !operation) return;
 	setStatus("Computing...");
 	let newArray: Float16Array | Float32Array | undefined;
@@ -25,8 +21,8 @@ export async function Analysis(){
 	let var2Data: ArrayBufferView | undefined;
 	if (useTwo) {
 		setStatus("Fetching second variable...")
-		const var2Array = await GetArray(variable2);
-		var2Data = var2Array?.data;
+		await GetArray(variable2);
+		var2Data = GetCurrentArray(analysisStore, variable2);
 		setStatus("Computing...");
 		if (!var2Data) {
 			console.error("Failed to fetch data for the second variable.");
@@ -38,20 +34,21 @@ export async function Analysis(){
     
 	// --- Dispatch GPU computation based on the operation --- //
 	const inputArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore)
-	const dimInfo = { shape: dataShape, strides};
-	const kernel = { kernelDepth, kernelSize };
+	const dimInfo = analysisMode ? { shape: analysisShape, strides: calculateStrides(analysisShape) }
+        : { shape: dataShape, strides };
 	// ---- 3. Process and Check --- //
-    const reduceDim = useTwo ? axis : undefined;
-    newArray = await DataProcess(inputArray, var2Data, dimInfo, kernel, operationString, reduceDim, Boolean(reverseDirection))
-    if (!newArray) {
+    const result = await DataProcess(inputArray, var2Data, dimInfo, operation, kernelOp, kernelShape, axis, reverse)
+    if (!result) {
         setStatus(null);
         return;
     }
+    newArray = result.array;
+    const thisShape = result.shape
+    setAnalysisShape(thisShape);
     // --- Value scaling logic --- //
     let minVal, maxVal;
-    const needsRescale = ['StDev', 'LinearSlope', 'Covariance', 'CUMSUM3D'].some(op => operationString.includes(op));
-    const isCorrelation = operationString.includes('Correlation');
-
+    const needsRescale = ['Deviation', 'Linear', 'Covariance', 'CUMSUM3D'].some(op => operation.includes(op));
+    const isCorrelation = operation.includes('Correlation');
     if (needsRescale) {
         if (!valueScalesOrig) setValueScalesOrig(valueScales);
         [minVal, maxVal] = ArrayMinMax(newArray);
@@ -62,7 +59,7 @@ export async function Analysis(){
         ({ minVal, maxVal } = valueScales);
     }
     setValueScales({ minVal, maxVal });
-    const thisShape = dataShape.length > 2 ? dataShape.filter((_, idx) => idx !== axis) : dataShape;
+    const reduced = inputArray.length > newArray.length;
     const textureData = new Uint8Array(newArray.length)
     const range = (maxVal - minVal)
     for (let i = 0; i < newArray.length; i++){
@@ -73,14 +70,16 @@ export async function Analysis(){
             textureData[i] = normed * 254;
         }
     };
-    const newTexture = CreateTexture(!isFlat ? dataShape : thisShape, textureData)
+    const newTexture = CreateTexture(thisShape, textureData)
     // --- Final state updates --- //
     setAnalysisArray(newArray);
     if (newTexture){
-        setTextures(newTexture);
+        console.log(newTexture)
+        setMainTextures(newTexture);
     }
-    setIsFlat(isFlat);
-    setPlotType(isFlat ? 'flat' : 'volume' );
+    const newFlat = thisShape.length == 2
+    setIsFlat(newFlat);
+    setPlotType(newFlat ? 'flat' : 'volume' );
     setAnalysisMode(true);
     setStatus(null);
 }
