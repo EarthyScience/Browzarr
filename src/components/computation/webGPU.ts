@@ -7,7 +7,6 @@ import { createShaders } from './WGSLShaders';
 import { ArrayMinMax } from '@/utils/HelperFuncs';
 import { RescaleArray } from '../zarr/utils';
 
-
 const twoDim = {
     Mean: "MeanReduction",
     Min: "MinReduction",
@@ -30,35 +29,6 @@ const multiVariate = {
     LinearSlope:"TwoVarLinearSlopeReduction",
     Covariance:"CovarianceReduction"
 }
-
-
-const ShaderMap = {
-    // Reductions
-    Mean: "MeanReduction",
-    Min: "MinReduction",
-    Max: "MaxReduction",
-    StDev: "StDevReduction",
-    LinearSlope: "LinearSlopeReduction",
-    // 3D Convolutions
-    Mean3D: "MeanConvolution",
-    Min3D: "MinConvolution",
-    Max3D: "MaxConvolution",
-    StDev3D: "StDevConvolution",
-    // 2D Convolutions
-    Mean2D: "MeanConvolution2D",
-    Min2D: "MinConvolution2D",
-    Max2D: "MaxConvolution2D",
-    StDev2D: "StDevConvolution2D",
-    // Multivariate
-    Correlation2D: "CorrelationReduction",
-    Correlation3D: "CorrelationConvolution",
-    TwoVarLinearSlope2D: "TwoVarLinearSlopeReduction",
-    TwoVarLinearSlope3D: "TwoVarLinearSlopeConvolution",
-    Covariance2D: "CovarianceReduction",
-    Covariance3D: "CovarianceConvolution",
-    // Special
-    CUMSUM3D: "CUMSUM3D"
-};
 
 const InitializeDevice = async () => {
     const adapter = await navigator.gpu?.requestAdapter();
@@ -132,7 +102,6 @@ export async function DataProcess(
     // ---- START PIPELINE ---- //
     const computeModule = device.createShaderModule({
         label: 'analysis compute module',
-        //@ts-ignore will remove with refactor
         code:shader,
     });
 

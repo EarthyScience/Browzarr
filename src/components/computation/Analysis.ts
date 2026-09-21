@@ -15,7 +15,6 @@ export async function Analysis(){
     const {operation, kernelOp, kernelShape, reverse, axis} = analysisInfo;
 	if (!plotOn || !operation) return;
 	setStatus("Computing...");
-	let newArray: Float16Array | Float32Array | undefined;
 	// --- Fetch second variable if needed --- //
 	let var2Data: ArrayBufferView | undefined;
 	if (useTwo) {
@@ -41,7 +40,7 @@ export async function Analysis(){
         setStatus(null);
         return;
     }
-    newArray = result.array;
+    const newArray = result.array;
     const thisShape = result.shape
     const newScalingFactor = result.scalingFactor;
     setScalingFactor(newScalingFactor)
