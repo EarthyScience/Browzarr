@@ -7,10 +7,10 @@ import { useShallow } from 'zustand/shallow';
 import { GetDimInfo } from '@/utils/HelperFuncs';
 import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
 import { GetArray } from '@/components/zarr/GetArray';
-import { ArrayToTexture } from '@/components/textures';
 import { handleIrregularGrid, reproject } from '@/components/textures/ProjectionTexture';
 import { parseExtent } from '@/utils/parseExtent';
 import { createDataTexture } from '@/components/textures/TextureMakers';
+import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 
 export const useDataFetcher = () => {
     const { variable, setIsFlat, setUseF16Textures,
@@ -57,6 +57,7 @@ export const useDataFetcher = () => {
                     // Create textures and store valuescales
                     createDataTexture();
                     useGlobalStore.setState({scalingFactor: result.scalingFactor});
+                    useAnalysisStore.setState({originalScalingFactor: result.scalingFactor})
                     const shapeLength = shape.length;
                     if (shapeLength === 2) {
                         setIsFlat(true);

@@ -6,7 +6,7 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { vertShader } from '@/components/computation/shaders'
+import { vertShader } from '@/components/textures/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
 import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
@@ -33,7 +33,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
     const {animProg, zSlice, ySlice, xSlice, selectTS, coarsen, colorScale,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
-    const {axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
+    const {analysisDim:axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
     const {kernelSize, kernelDepth} = useZarrStore(useShallow(s => s))
 
     const {xIdx, yIdx, zIdx} = useAxisIndices()

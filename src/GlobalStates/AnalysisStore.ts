@@ -6,78 +6,68 @@ type AnalysisState = {
   analysisMode: boolean;
   axis: number;
   reduceOnAxis: boolean;
-  operation: string;
   execute: boolean;
   useTwo: boolean;
-  variable2: string;
+  variable2: string | undefined;
   valueScalesOrig: {minVal: number, maxVal:number} | null
-  kernelSize: number;
-  kernelDepth: number;
-  kernelOperation: string;
   analysisArray: Uint8Array | Float32Array | Float16Array;
-  reverseDirection: number;
   analysisStore: string;
-  analysisDim: number | null;
+  analysisDim: number | null; //The collapsed dim after a dim reduction
+  analysisShape: number[]; // The shape of the analysisArray
   customShader: string | undefined;
   useEditor: boolean;
   executeCustom: boolean;
   outputShape: number[];
+  analysisInfo: {operation: string | undefined, kernelOp: string | undefined, axis: number, reverse: boolean, kernelShape:{size: number, depth:number}} | undefined;
+  originalScalingFactor: number | null;
 
   setAnalysisMode: (analysisMode: boolean) => void;
   setAxis: (axis: number) => void;
   setReduceOnAxis: (reduceOnAxis: boolean) => void;
-  setOperation: (operation: string) => void;
   setExecute: (execute: boolean) => void;
   setUseTwo: (useTwo: boolean) => void;
-  setVariable2: (variable2: string) => void;
+  setVariable2: (variable2: string | undefined) => void;
   setValueScalesOrig: (valueScalesOrig: {minVal: number, maxVal:number} | null) => void;
-  setKernelSize: (kernelSize: number) => void;
-  setKernelDepth: (kernelDepth: number) => void;
-  setKernelOperation: (kernelOperation: string) => void;
   setAnalysisArray: (analysisArray: Uint8Array | Float32Array | Float16Array) => void;
-  setReverseDirection: (reverseDirection: number) => void;
   setAnalysisStore: (analysisStore: string) => void;
   setAnalysisDim: (analysisDim: number | null) => void;
+  setAnalysisShape: (analysisShape: number[]) => void;
   setCustomShader: (customShader: string | undefined) => void;
   setOutPutShape: (outputShape: number[]) => void;
+  setAnalysisInfo: (analysisInfo: {operation: string | undefined, kernelOp: string | undefined, axis: number, reverse: boolean, kernelShape:{size: number, depth:number}}) => void;
 }
 
 export const useAnalysisStore = create<AnalysisState>((set) => ({
   analysisMode: false,
   axis: 0,
   reduceOnAxis: false,
-  operation: "Default", 
   execute: false,
   useTwo: false,
-  variable2: "Default",
+  variable2: undefined,
   valueScalesOrig: null,
-  kernelSize: 3,
-  kernelDepth: 3,
-  kernelOperation: 'Default',
   analysisArray: new Uint8Array(1),
-  reverseDirection: 0,
   analysisStore: ESDC,
   analysisDim: null,
+  analysisShape: [],
   customShader: undefined,
   useEditor: false,
   executeCustom:false,
   outputShape: [],
+  analysisInfo:undefined,
+  originalScalingFactor: null,
 
   setAnalysisMode: (analysisMode) => set({ analysisMode }),
   setAxis: (axis) => set({ axis }),
   setReduceOnAxis: (reduceOnAxis) => set({ reduceOnAxis }),
-  setOperation: (operation) => set({ operation }),
   setExecute: (execute) => set({ execute }),
   setUseTwo: (useTwo) => set({ useTwo}),
   setVariable2: (variable2) => set({ variable2 }), 
   setValueScalesOrig: (valueScalesOrig) => set({ valueScalesOrig }),
-  setKernelSize: (kernelSize) => set({ kernelSize}),
-  setKernelDepth: (kernelDepth) => set({ kernelDepth }),
-  setKernelOperation: (kernelOperation) => set({ kernelOperation}),
   setAnalysisArray: (analysisArray) => set({ analysisArray }),
-  setReverseDirection: (reverseDirection) => set( { reverseDirection} ),
   setAnalysisStore: (analysisStore) => set({ analysisStore }),
   setAnalysisDim: (analysisDim) => set({ analysisDim }),
+  setAnalysisShape: (analysisShape) => set({ analysisShape }),
   setCustomShader: (customShader) => set({ customShader }),
   setOutPutShape: (outputShape) => set({ outputShape }),
+  setAnalysisInfo: (analysisInfo) => set({ analysisInfo })
 }));

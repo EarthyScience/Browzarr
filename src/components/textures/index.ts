@@ -1,13 +1,2 @@
-import { GetColorMapTexture, colormaps, evaluateColorMap, availableColorMapNames, getColormapGradientCss, colormapIndex } from './colormap';
-import {ArrayToTexture, CreateTexture}from './TextureMakers'
-
-export {
-    GetColorMapTexture,
-    colormaps,
-    evaluateColorMap,
-    availableColorMapNames,
-    getColormapGradientCss,
-    colormapIndex,
-    ArrayToTexture,
-    CreateTexture
-}
+export { GetColorMapTexture, colormaps, evaluateColorMap, availableColorMapNames, getColormapGradientCss, colormapIndex } from './colormap';
+export {ArrayToTexture, CreateTexture, createDataTexture} from './TextureMakers'

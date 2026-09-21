@@ -10,7 +10,7 @@ import { useDimAxis } from '@/hooks';
 
 const AnalysisInfo = ({loc, show, info, } : {loc: number[], show: boolean, info: number[]}) => {
     const {axisDimNames, axisDimUnits} = useGlobalStore(useShallow(s => s))
-    const axis = useAnalysisStore(state=> state.axis)
+    const axis = useAnalysisStore(state=> state.analysisDim)
     const {xArray, yArray, zArray} = useDimAxis();
     const axisDimArrays = [zArray, yArray, xArray];
     const plotInfo = useMemo(()=>{

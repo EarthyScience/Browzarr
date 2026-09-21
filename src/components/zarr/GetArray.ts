@@ -3,9 +3,9 @@ import { useZarrStore } from "@/GlobalStates/ZarrStore";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { useErrorStore } from "@/GlobalStates/ErrorStore";
 import { calculateStrides } from "@/utils/HelperFuncs";
-import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, RescaleArray } from "./utils";
+import { ToFloat16, CompressArray, RescaleArray } from "./utils";
 import { NCFetcher, zarrFetcher } from "./dataFetchers";
-import { Convolve, Convolve2D } from "../computation/webGPU";
+import { Convolve } from "../computation/webGPU";
 import { coarsen3DArray } from "@/utils/HelperFuncs";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
 
@@ -80,7 +80,7 @@ export async function GetArray(varOveride?: string) {
     setArraySize(totalElements);
     setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); // These are used in GetCurrentArray() function
 
-    let scalingFactor: number | null = null;
+    let scalingFactor: number | undefined;
     const totalChunks = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
     let iter = 1;
     const rescaleIDs: string[] = [];
@@ -136,11 +136,11 @@ export async function GetArray(varOveride?: string) {
                     if (coarsen) {
                         const origShape = [...thisShape];
                         if (hasZ) {
-                            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, "Mean3D", { kernelSize, kernelDepth }) as Float16Array;
+                            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, { kernelSize, kernelDepth }) as Float16Array;
                             thisShape = origShape.map((dim, idx) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)));
                             chunkF16 = coarsen3DArray(chunkF16, origShape as [number, number, number], chunkStride as [number, number, number], kernelSize, kernelDepth, thisShape.reduce((a, b) => a * b, 1));
                         } else {
-                            chunkF16 = await Convolve2D(chunkF16, { shape: origShape, strides: chunkStride }, "Mean2D", kernelSize) as Float16Array;
+                            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, { kernelSize, kernelDepth:1 }) as Float16Array;
                             thisShape = origShape.map((dim, idx) => Math.floor(dim / kernelSize));
                             const paddedShape = [1, origShape[0], origShape[1]] as [number, number, number];
                             const paddedStride = [1, chunkStride[0], chunkStride[1]] as [number, number, number];
