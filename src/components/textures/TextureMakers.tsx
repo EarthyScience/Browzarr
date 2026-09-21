@@ -1,6 +1,6 @@
 //This File will have functions converting the array information into 2D or 3D textures that we will pass to the corresponding 2D or 3D object
 import * as THREE from 'three'
-import { ArrayMinMax, TypedArray, TypedArrayBufferLike  } from '@/utils/HelperFuncs';
+import { ArrayMinMax, GetCurrentArray, TypedArray, TypedArrayBufferLike  } from '@/utils/HelperFuncs';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
 interface Array {
@@ -8,14 +8,13 @@ interface Array {
     shape: number[];
 }
 
-function StoreData(array: Array, valueScales?: {maxVal: number, minVal: number}, useF16=false): {minVal: number, maxVal: number}{
+function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales?: {maxVal: number, minVal: number}, useF16=false): {minVal: number, maxVal: number}{
     const { setTextureData } = useGlobalStore.getState()
-    const data = array.data;
-    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(data)
-    const textureData = useF16 ? new Uint16Array(data.length) : new Uint8Array(data.length)
+    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(array)
+    const textureData = useF16 ? new Uint16Array(array.length) : new Uint8Array(array.length)
     const range = (maxVal - minVal)
-    for (let i = 0; i < data.length; i++){
-      const normed = (data[i] - minVal) / range;
+    for (let i = 0; i < array.length; i++){
+      const normed = (array[i] - minVal) / range;
       if (isNaN(normed)){
         textureData[i] = useF16 
 			?	THREE.DataUtils.toHalfFloat(NaN)
@@ -56,6 +55,7 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
         texture.needsUpdate = true;
         chunks.push(texture)
     }
+    console.log("flat textures")
     return chunks
   } else {
     const [lz,ly,lx] = shape
@@ -80,8 +80,17 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
   }
 }
 
+export function createDataTexture(){
+  const { dataShape, setMainTextures, setValueScales} = useGlobalStore.getState();
+  const dataArray = GetCurrentArray();
+  const valueScales = StoreData(dataArray);
+  setValueScales(valueScales);
+  const textures = CreateTexture(dataShape);
+  setMainTextures(textures);
+}
+
 export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}, useF16=false): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
-    const scales = StoreData(array, valueScales, useF16);
+    const scales = StoreData(array.data, valueScales, useF16);
     const textures = CreateTexture(array.shape, undefined, useF16)
     return [textures as THREE.Data3DTexture[] | THREE.DataTexture[], scales];
 }

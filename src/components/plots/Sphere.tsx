@@ -21,7 +21,7 @@ function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number
     return new THREE.Vector2(u,v)
 }
 
-export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | null}) => {
+export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined}) => {
     const textures = usePaddedTextures(propTextures);
     const {setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
     const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))

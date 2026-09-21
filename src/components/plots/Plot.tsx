@@ -152,7 +152,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {colormap, isFlat, DPR, valueScales, setIsFlat, setStatus, dataShape, useF16Textures, remapTexture} = useGlobalStore(useShallow(s => s))
+  const {colormap, isFlat, DPR, valueScales, mainTextures, setMainTextures, setIsFlat, setStatus, dataShape, useF16Textures} = useGlobalStore(useShallow(s => s))
   const {keyFrameEditor} = useImageExportStore(useShallow(s => s))
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => s))
   const {analysisMode, useEditor} = useAnalysisStore(useShallow(s => s))
@@ -162,7 +162,7 @@ const Plot = () => {
   const [loc, setLoc] = useState<number[]>([0,0])
   
   //DATA LOADING
-  const {textures, show, stableMetadata, setTextures} = useDataFetcher()
+  const {show, stableMetadata} = useDataFetcher()
   
   useEffect(()=>{
     if (analysisMode || !show) return;
@@ -182,7 +182,7 @@ const Plot = () => {
       setIsFlat(dataShape.length == 2)
       const newText = CreateTexture(dataShape)
       if (newText){
-        setTextures(newText)
+        setMainTextures(newText)
       }
     }
   },[analysisMode])
@@ -191,7 +191,7 @@ const Plot = () => {
     if(!analysisMode && show){
       const [newText, _valueScales] = ArrayToTexture({data:GetCurrentArray(), shape:dataShape},undefined,useF16Textures);
       if (newText){
-        setTextures(newText)
+        setMainTextures(newText)
       }
       setStatus(null)
   }},[useF16Textures])
@@ -236,7 +236,6 @@ const Plot = () => {
       <ExportExtent /> 
       {keyFrameEditor && <KeyFrames />}
       <TransectNotice />
-      <AnalysisWG setTexture={setTextures} />
       {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
       <Nav />
       {(isFlat || plotType == "flat") && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }
@@ -251,22 +250,22 @@ const Plot = () => {
         <ExportCanvas show={show}/>
         {show && <AxisLines />}
         {plotType == "volume" && show && 
-            <DataCube volTexture={textures}/>
+            <DataCube volTexture={mainTextures}/>
         }
         {plotType == "point-cloud" && show &&
           <>
-            <PointCloud textures={{texture: textures as THREE.Data3DTexture[],colormap}}/>
+            <PointCloud textures={{texture: mainTextures as THREE.Data3DTexture[],colormap}}/>
           </> 
         }
         {plotType == "sphere" && show && 
           <>
-            {displaceFaces ? <SphereBlocks textures={textures} /> : <Sphere textures={textures} /> }
+            {displaceFaces ? <SphereBlocks textures={mainTextures} /> : <Sphere textures={mainTextures} /> }
           </>
         }
         <MemoOrbit isFlat={plotType == "flat"} />
         {plotType == "flat" && show && <>
-          {!displaceFaces && <FlatMap textures={textures as THREE.DataTexture[] | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
-          {displaceFaces && <FlatBlocks textures={textures} />}
+          {!displaceFaces && <FlatMap textures={mainTextures as THREE.DataTexture[] | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
+          {displaceFaces && <FlatBlocks textures={mainTextures} />}
         </>
         }
 

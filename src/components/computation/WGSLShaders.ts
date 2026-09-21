@@ -1,13 +1,11 @@
 export type Precision = 'f16' | 'f32';
 
 
-export const createShaders = (precision: Precision) => {
+export const createShaders = (precision: Precision, wgs: {wgx: number, wgy:number, wgz:number}) => {
     /// Install WGSL Literal extension in VS code for syntax highlighting
 
     const enableF16 = precision === 'f16' ? 'enable f16;' : '';
-
-
-
+    const {wgx, wgy, wgz} = wgs;
     const isNaNFunc = /* WGSL */`
             fn isNaN(val: f32) -> bool {
                 let bits = bitcast<u32>(val);
@@ -45,14 +43,14 @@ export const createShaders = (precision: Precision) => {
         let reduceDim = params.reduceDim;
         let dimLength = params.dimLength;
                         
-        let outX = global_id.y;
-        let outY = global_id.x;
+        let outX = global_id.x;
+        let outY = global_id.y;
         
         if (outX >= xSize || outY >= ySize) {
             return;
         }
         `
-        const ConvolutionBoilerPlate = /* WGSL */`
+    const ConvolutionBoilerPlate = /* WGSL */`
     ${enableF16}
     struct Params {
         xStride: u32,
@@ -71,7 +69,7 @@ export const createShaders = (precision: Precision) => {
 
     ${isNaNFunc}
 
-    @compute @workgroup_size(4, 4, 4)
+    @compute @workgroup_size(${wgx}, ${wgy}, ${wgz})
     fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let zStride = params.zStride;
         let yStride = params.yStride;
@@ -91,11 +89,7 @@ export const createShaders = (precision: Precision) => {
             return;
         }
 
-        let total_threads_per_slice = workGroups.x * workGroups.y * 16;
-        let globalIdx = global_id.z * total_threads_per_slice + 
-                        global_id.y * (workGroups.x * 4) + 
-                        global_id.x;
-
+        let globalIdx = outX * xStride + outY * yStride + outZ * zStride;
         let xy_radius: i32 = i32(kernelSize/2u);
         let z_radius: i32 = i32(kernelDepth/2u);
 
@@ -103,46 +97,6 @@ export const createShaders = (precision: Precision) => {
         let xy_end: i32 = select(xy_radius + 1, 1, kernelSize == 1u);
         let z_start: i32 = select(-z_radius, 0, kernelDepth == 1u);
         let z_end: i32 = select(z_radius + 1, 1, kernelDepth == 1u);
-        `
-        const ConvolutionBoilerPlate2D = /* WGSL */`
-    ${enableF16}
-    struct Params {
-        xStride: u32,
-        yStride: u32,
-        xSize: u32,
-        ySize: u32,
-        kernelSize: u32,
-    };
-    @group(0) @binding(0) var<storage, read> inputData: array<${precision}>;
-    @group(0) @binding(1) var<storage, read_write> outputData: array<${precision}>;
-    @group(0) @binding(2) var<uniform> params: Params;
-
-    ${isNaNFunc}
-
-    @compute @workgroup_size(16, 16, 1)
-    fn main(@builtin(global_invocation_id) global_id: vec3<u32>,) {
-        let xStride = params.xStride; 
-        let yStride = params.yStride;
-        let xSize = params.xSize;
-        let ySize = params.ySize;
-        let kernelSize = params.kernelSize;
-
-        let outX = global_id.x; 
-        let outY = global_id.y;
-
-        if (outX >= xSize|| outY >= ySize) {
-            return;
-        }
-
-        let globalIdx = outY * xSize + outX;
-        let thisVal = inputData[globalIdx];
-        if (isNaN(f32(thisVal))){
-            outputData[globalIdx] = thisVal;
-            return;
-        }   
-
-        let xy_radius: i32 = i32(kernelSize/2u);
-
     `
     // #endregion
 
@@ -548,8 +502,8 @@ export const createShaders = (precision: Precision) => {
             let reduceDim = params.reduceDim;
             let dimLength = params.dimLength;
                             
-            let outX = global_id.y;
-            let outY = global_id.x;
+            let outX = global_id.x;
+            let outY = global_id.y;
             
             if (outX >= xSize || outY >= ySize) {
                 return;
@@ -686,8 +640,8 @@ export const createShaders = (precision: Precision) => {
             let reduceDim = params.reduceDim;
             let dimLength = params.dimLength;
                             
-            let outX = global_id.y;
-            let outY = global_id.x;
+            let outX = global_id.x;
+            let outY = global_id.y;
             
             if (outX >= xSize || outY >= ySize) {
                 return;
@@ -781,8 +735,8 @@ export const createShaders = (precision: Precision) => {
             let reduceDim = params.reduceDim;
             let dimLength = params.dimLength;
                             
-            let outX = global_id.y;
-            let outY = global_id.x;
+            let outX = global_id.x;
+            let outY = global_id.y;
             
             if (outX >= xSize || outY >= ySize) {
                 return;
@@ -1375,144 +1329,6 @@ export const createShaders = (precision: Precision) => {
                 }
             }
             outputData[globalIdx] = ${precision}(numSum/denomSum);
-        }
-    `,
-    // #endregion
-
-    // #region 2D CONVOLUTION SHADERS
-    MeanConvolution2D: /* wgsl */`
-            ${ConvolutionBoilerPlate2D}    
-            var sum: f32 = 0;
-            var count: u32 = 0u;
-            for (var kx: i32 = -xy_radius; kx <= xy_radius; kx++) {
-                for (var ky: i32 = -xy_radius; ky <= xy_radius; ky++) {
-                    let in_coord = vec2<i32>(i32(global_id.x), i32(global_id.y)) + vec2<i32>(kx, ky);
-                    if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
-                        in_coord.y >= 0 && in_coord.y < i32(ySize)) { //Ensure the sampled point is within 3D dataspace
-                        let xOffset = kx * i32(xStride);
-                        let yOffset = ky * i32(yStride);
-                        let newIdx = i32(globalIdx) + xOffset + yOffset;
-                        let newVal = f32(inputData[u32(newIdx)]);
-                        if (isNaN(newVal)){ 
-                            continue;
-                        }
-                        sum += newVal;
-                        count ++;
-                    }
-                }
-            }
-            outputData[globalIdx] = ${precision}(sum / f32(count));
-        }
-    `,
-
-    MinConvolution2D: /* wgsl */`
-        ${ConvolutionBoilerPlate2D}   
-            var minVal: f32 = 1e12;
-            for (var kx: i32 = -xy_radius; kx <= xy_radius; kx++) {
-                for (var ky: i32 = -xy_radius; ky <= xy_radius; ky++) {
-                    let in_coord = vec2<i32>(i32(global_id.x), i32(global_id.y)) + vec2<i32>(kx, ky);
-                    if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
-                        in_coord.y >= 0 && in_coord.y < i32(ySize)) { //Ensure the sampled point is within 3D dataspace
-                        let xOffset = kx * i32(xStride);
-                        let yOffset = ky * i32(yStride);
-                        let newIdx = i32(globalIdx) + xOffset + yOffset;
-                        let newVal = f32(inputData[u32(newIdx)]);
-                        if (isNaN(newVal)){ 
-                            continue;
-                        }
-                        if (newVal < minVal){
-                            minVal = newVal;
-                        }
-                        count++;
-                    }
-                }
-            }
-            if (count > 0u) {
-                outputData[globalIdx] = ${precision}(minVal);
-            } else {
-                let zero = 0.0;
-                outputData[globalIdx] = ${precision}(zero / zero);
-            }
-        }
-    `,
-
-    MaxConvolution2D: /* wgsl */`
-        ${ConvolutionBoilerPlate2D}  
-            var maxVal: f32 = -1e12;
-            for (var kx: i32 = -xy_radius; kx <= xy_radius; kx++) {
-                for (var ky: i32 = -xy_radius; ky <= xy_radius; ky++) {
-                    let in_coord = vec2<i32>(i32(global_id.x), i32(global_id.y)) + vec2<i32>(kx, ky);
-                    if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
-                        in_coord.y >= 0 && in_coord.y < i32(ySize)) { //Ensure the sampled point is within 3D dataspace
-                        let xOffset = kx * i32(xStride);
-                        let yOffset = ky * i32(yStride);
-                        let newIdx = i32(globalIdx) + xOffset + yOffset;
-                        let newVal = f32(inputData[u32(newIdx)]);
-                        if (isNaN(newVal)){ 
-                            continue;
-                        }
-                        if (newVal > maxVal){
-                            maxVal = newVal;
-                        }
-                        count++;
-                    }
-                }
-            }
-            if (count > 0u) {
-                outputData[globalIdx] = ${precision}(maxVal);
-            } else {
-                let zero = 0.0;
-                outputData[globalIdx] = ${precision}(zero / zero);
-            }
-        }
-    `,
-
-    StDevConvolution2D: /* wgsl */`
-        ${ConvolutionBoilerPlate2D}  
-            var sum: f32 = 0.;
-            var count: u32 = 0u;
-            for (var kx: i32 = -xy_radius; kx <= xy_radius; kx++) {
-                for (var ky: i32 = -xy_radius; ky <= xy_radius; ky++) {
-                    let in_coord = vec2<i32>(i32(global_id.x), i32(global_id.y)) + vec2<i32>(kx, ky);
-                    if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
-                        in_coord.y >= 0 && in_coord.y < i32(ySize)) { //Ensure the sampled point is within 3D dataspace
-                        let xOffset = kx * i32(xStride);
-                        let yOffset = ky * i32(yStride);
-                        let newIdx = i32(globalIdx) + xOffset + yOffset;
-                        let newVal = f32(inputData[u32(newIdx)]);
-                        if (isNaN(newVal)){ 
-                            continue;
-                        }
-                        sum += newVal;
-                        count ++;
-                    }
-                }
-            }
-            
-            let mean: f32 = sum / f32(count);
-
-            var squaredDiffSum: f32 = 0.0;
-
-            for (var kx: i32 = -xy_radius; kx <= xy_radius; kx++) {
-                for (var ky: i32 = -xy_radius; ky <= xy_radius; ky++) {
-                    let in_coord = vec2<i32>(i32(global_id.x), i32(global_id.y)) + vec2<i32>(kx, ky);
-                    if (in_coord.x >= 0 && in_coord.x < i32(xSize) &&
-                        in_coord.y >= 0 && in_coord.y < i32(ySize)) { //Ensure the sampled point is within 3D dataspace
-                        let xOffset = kx * i32(xStride);
-                        let yOffset = ky * i32(yStride);
-                        let newIdx = i32(globalIdx) + xOffset + yOffset;
-                        let newVal = f32(inputData[u32(newIdx)]);
-                        if (isNaN(newVal)){ 
-                            continue;
-                        }
-                        let diff: f32 = mean - newVal;
-                        squaredDiffSum += diff*diff;
-                    }
-                }
-            }
-            let stDev: f32 = sqrt(squaredDiffSum / f32(count));
-
-            outputData[globalIdx] = ${precision}(stDev);
         }
     `,
     // #endregion

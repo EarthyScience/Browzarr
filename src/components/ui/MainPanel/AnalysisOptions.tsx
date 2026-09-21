@@ -30,7 +30,6 @@ const singleVarOps = ['Mean', 'Min', 'Max', 'Standard Deviation']
 
 const multiVarOps = ['Correlation', 'Linear Slope', 'Covariance']
 
-
 const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center items-center">
     <span className="text-5xl mb-4 block self-center">⚠️</span>
     <h1 className="text-2xl font-bold mb-4">WebGPU Not Available</h1>
@@ -52,29 +51,24 @@ const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center
 type OpMode = 'reduction' | 'convolution' | 'cumsum';
 
 const AnalysisOptions = () => {
-	const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(s => s);
+	const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(s => ({
+		plotOn: s.plotOn, variable: s.variable, variables: s.variables, dimNames: s.dimNames, 
+		activeIndices: s.activeIndices, initStore: s.initStore, isFlat: s.isFlat, setTimeSeries: s.setTimeSeries, setValueScales: s.setValueScales})));
 	const previousStore = useRef<string>(initStore)
 	const [incompatible, setIncompatible] = useState(false); 
-	const [kernelOp, setKernelOp] = useState('')
-	const {useTwo, kernelSize, kernelDepth, axis, variable2,
-		analysisMode, reverseDirection, valueScalesOrig,
-		operation, setOperation, setAxis, setUseTwo,
-		setVariable2, setKernelSize, setKernelDepth,
-		setKernelOperation, setAnalysisMode,
-		setReverseDirection, setAnalysisStore,
-		setAnalysisDim, setOperationString
-	} = useAnalysisStore(s => s);
-	const reFetch = useZarrStore(s => s.reFetch)
-
-	// Single source of truth: derive mode from the operation name itself.
-	// Anything that isn't Convolution or CUMSUM3D is a reduction op.
-	const opMode: OpMode =
-		operation === 'Convolution' ? 'convolution' :
-		operation === 'CUMSUM3D' ? 'cumsum' : 'reduction';
-
-	const handleExecute = () =>
-		opMode === 'convolution' ? `${operation}${kernelOp}` : operation;
+	const [operation, setOperation] = useState<string | undefined>(undefined)
 	const [showError, setShowError] = useState<boolean>(false);
+	const [kernelOp, setKernelOp] = useState<string | undefined>(undefined)
+	const [kernelSize, setKernelSize] = useState(3);
+	const [kernelDepth, setKernelDepth] = useState(3);
+	const [reverse, setReverse] = useState(false);
+	const {useTwo, 
+		axis, variable2, analysisMode, valueScalesOrig,
+		setAxis, setUseTwo,	setVariable2, setAnalysisMode,
+		setAnalysisStore, setAnalysisDim, setAnalysisInfo
+	} = useAnalysisStore(useShallow(s => s));
+	const reFetch = useZarrStore(s => s.reFetch)
+	
 	useEffect(() => {
 		const checkWebGPU = async () => {
 			if (!navigator.gpu){ setShowError(true); return; }
@@ -97,13 +91,16 @@ const AnalysisOptions = () => {
 	useEffect(()=>{ setKernelDepth(isFlat ? 1 : 3) },[isFlat])
 
 	useEffect(()=>{
-		setKernelOperation("Default")
-		setOperation("Default")
+		setKernelOp(undefined)
+		setOperation(undefined)
 		setAnalysisMode(false)
 	},[variable])
 
 	const [newDim, setNewDim] = useState(0)
-	useEffect(()=>{ setNewDim(axis) },[axis])
+
+	useEffect(()=>{
+		setNewDim(axis)
+	},[axis])
 
 	const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 	useEffect(() => {
@@ -114,7 +111,6 @@ const AnalysisOptions = () => {
 	}, []);
 
   return (
-    <>
       <Popover>
         <PopoverTrigger asChild>
           <div style={plotOn ? {} : { pointerEvents: 'none' } }>
@@ -143,7 +139,7 @@ const AnalysisOptions = () => {
               {/*  */}
               {!isFlat && 
                 <Button
-                className="cursor-pointer active:scale-[0.95] bg-gray-500"
+				variant='secondary'
                 disabled={incompatible}
                 onClick={() => {setUseTwo(!useTwo);setOperation('Default')}}
               >
@@ -161,7 +157,7 @@ const AnalysisOptions = () => {
 						<div className='flex px-4 items-center'>
 							<span className='pr-2'>Current</span> 
 							<QuickTip message='Operations will be applied to the newly generated data. '>
-							<BsFillQuestionCircleFill/>
+								<BsFillQuestionCircleFill/>
 							</QuickTip>
 						</div>
 					</div>
@@ -204,32 +200,61 @@ const AnalysisOptions = () => {
 				</Hider>
 				{/* OPERATION TYPE */}
 				<h1>Operation</h1>
-				<Select defaultValue={operation} onValueChange={setOperation}>
+				{useTwo ? 
+				<Select 
+					defaultValue={operation} 
+					onValueChange={setOperation}
+				>
 					<SelectTrigger className='w-full'>
 						<SelectValue placeholder='Select...' />
 					</SelectTrigger>
 					<SelectContent>
+						{/* DIM Reduction */}
 						<SelectGroup>
 						<SelectLabel>Dimension Reduction</SelectLabel>
-						{(useTwo ? multiVarOps : singleVarReductionOps).map((op, idx) => (
-							!useTwo && isFlat ? null : // reduction group is single-var only when !isFlat; keep isFlat's own list below
-							<SelectItem key={idx} value={op.trim()}>{op}</SelectItem>
+						{multiVarOps.map((op, idx) => (
+							<SelectItem key={idx} value={op.trim()}>
+							{op}
+							</SelectItem>
 						))}
 						</SelectGroup>
+						{/* THREE DIM */}
 						<SelectGroup>
-						<SelectLabel>{useTwo || !isFlat ? 'Three Dimensional' : ''}</SelectLabel>
+						<SelectLabel>Three Dimensional</SelectLabel>
 						<SelectItem value="Convolution">Convolution</SelectItem>
-						{!useTwo && !isFlat && !analysisMode && <SelectItem value="CUMSUM3D">CUMSUM</SelectItem>}
 						</SelectGroup>
 					</SelectContent>
 				</Select>
-
-				{opMode === 'reduction' && <>
+				:
+				<Select value={operation} onValueChange={setOperation}>
+					<SelectTrigger className='w-full'>
+						<SelectValue placeholder='Select...'/>
+					</SelectTrigger>
+					<SelectContent>
+						{!isFlat &&
+						<SelectGroup>
+						<SelectLabel>Dimension Reduction</SelectLabel>
+						{singleVarReductionOps.map((op, idx) => (
+							<SelectItem key={idx} value={op.trim()}>
+								{op}
+							</SelectItem>
+						))}
+						</SelectGroup>}
+						<SelectGroup>
+						<SelectLabel>{isFlat ? '' : 'Three Dimensional'}</SelectLabel>
+						<SelectItem value={`Convolution`}>Convolution</SelectItem>
+						{!isFlat && !analysisMode &&<SelectItem value="CUMSUM3D">CUMSUM</SelectItem>}
+						</SelectGroup>
+					</SelectContent>
+				</Select>
+				}
+				{/* CONVOLUTION */}
+				{(operation != 'Convolution') && <>
 					<h1>Axis</h1>
 					<div className='flex justify-between w-full'>
-						<Select onValueChange={e => setNewDim(parseInt(e))}>
+						<Select value={String(newDim)} onValueChange={e => setNewDim(parseInt(e))}>
 							<SelectTrigger className='w-full' style={{ width: ['CUMSUM3D', 'LinearSlope'].includes(operation) ? '50%' : '100%'}}>
-								<SelectValue placeholder={dimNames[activeIndices[newDim]] ?? "Select Axis"} />
+								<SelectValue defaultValue={dimNames[activeIndices[newDim]] ?? "Select Axis"} />
 							</SelectTrigger>
 							<SelectContent>
 								{activeIndices.map((origIdx, dataShapeIdx) => (
@@ -243,19 +268,21 @@ const AnalysisOptions = () => {
 						<QuickTip message='Swap direction of operation'>
 							<div className='flex justify-around w-[50%] items-center '>
 								<label htmlFor="reverse-axis" style={{textAlign:'left'}}>Rev.</label>
-								<Switch id='reverse-axis' checked={reverseDirection == 1} onCheckedChange={e=> {setReverseDirection(e ? 1 : 0)}}/>
+								<Switch id='reverse-axis' checked={reverse} onCheckedChange={e=> {setReverse(x => !x)}}/>
 							</div>
 						</QuickTip>
 						}
 					</div>
 				</>}
-				{opMode == 'convolution' && <>
+				{/* KERNEL OPERATIONS */}
+				{operation == 'Convolution' &&
+				<>
 				<h1>Kernel Op.</h1>
 				<Select onValueChange={setKernelOp}>
 					<SelectTrigger className='w-full'>
 					<SelectValue
 						defaultValue={
-						kernelOp.length > 0 ? 'Select...' : kernelOp
+						kernelOp ?? 'Select...'
 						}
 					/>
 					</SelectTrigger>
@@ -269,13 +296,13 @@ const AnalysisOptions = () => {
 					{!useTwo && isFlat ? 
 						singleVarOps.map((op, idx) =>  (
 							<SelectItem key={idx} value={op.trim()}>
-							{op}
+								{op}
 							</SelectItem>
 						)) 
 						:
 						singleVarOps.map((op, idx) =>  (
 							<SelectItem key={idx} value={op.trim()}>
-							{op}
+								{op}
 							</SelectItem>
 						))
 					}
@@ -314,8 +341,8 @@ const AnalysisOptions = () => {
               <Button
                 className="cursor-pointer active:scale-[0.95]"
                 disabled={
-                  operation === 'Default' ||
-                  (operation === 'Convolution' && kernelOp.length == 0) ||
+                  !operation ||
+                  (operation === 'Convolution' && !Boolean(kernelOp)) ||
                   (useTwo && variable2 === 'Default')
                 }
                 variant='pink'
@@ -323,7 +350,16 @@ const AnalysisOptions = () => {
                   setAxis(newDim)
                   setAnalysisDim(opMode === 'cumsum' ? null : newDim)
                   setTimeSeries({});
-				  setOperationString(handleExecute())
+				  setAnalysisInfo({
+					operation,
+					kernelOp,
+					axis,
+					reverse,
+					kernelShape:{
+						size: kernelSize,
+						depth: kernelDepth
+					}
+				  })
 				  Analysis();
                 }}
               >
@@ -333,7 +369,7 @@ const AnalysisOptions = () => {
           )}
         </PopoverContent>
       </Popover>
-    </>
+
   );
 };
 

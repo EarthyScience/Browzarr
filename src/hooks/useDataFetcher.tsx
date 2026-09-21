@@ -3,25 +3,24 @@ import * as THREE from 'three';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { useTextureStore } from '@/GlobalStates/TextureStore';
 import { useShallow } from 'zustand/shallow';
 import { GetDimInfo } from '@/utils/HelperFuncs';
 import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
 import { GetArray } from '@/components/zarr/GetArray';
-import { ArrayToTexture } from '@/components/textures';
 import { handleIrregularGrid, reproject } from '@/components/textures/ProjectionTexture';
 import { parseExtent } from '@/utils/parseExtent';
+import { createDataTexture } from '@/components/textures/TextureMakers';
 
 export const useDataFetcher = () => {
-    const {
-    setShape, setDataShape, setFlipY, setValueScales, setMetadata, setPlotOn, setStatus} = useGlobalStore(
+    const { variable, setIsFlat, setUseF16Textures,
+    setShape, setDataShape, setFlipY, setMainTextures, mainTextures, setMetadata, setPlotOn, setStatus} = useGlobalStore(
     useShallow(s => s))
-    const {variable, setIsFlat, setUseF16Textures} = useGlobalStore(useShallow(s => s))
-    const {plotType, interpPixels, preProject, setPlotType} = usePlotStore(useShallow(s => s))
-    const {reFetch} = useZarrStore(useShallow(s => s))
+    const {plotType, interpPixels, preProject, setPlotType} = usePlotStore(useShallow(s => ({
+        plotType: s.plotType, interpPixels: s.interpPixels, preProject: s.preProject, setPlotType: s.setPlotType
+    })))
+    const reFetch = useZarrStore(s => s.reFetch)
 
     //---- Local State ----//
-    const {textures, setTextures} = useTextureStore(useShallow(s => s))
     const [show, setShow] = useState<boolean>(false);
     const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
 
@@ -36,15 +35,15 @@ export const useDataFetcher = () => {
             // ---- FETCH DATA ---- //
             try {
                 //---- Texture Cleanup ----//
-                if (textures) {
-                    const oldTextures = textures;
+                if (mainTextures) {
+                    const oldTextures = mainTextures;
                     setTimeout(() => {
                         oldTextures.forEach((tex) => {
                             tex.dispose();
                             if (tex.source) (tex.source as any).data = null;
                         });
                     }, 0);
-                    setTextures(undefined);
+                    setMainTextures(undefined);
                 }
                 //----- TimeSeries Cleanup ----//
                 useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
@@ -54,13 +53,8 @@ export const useDataFetcher = () => {
                     const shape = result.shape.filter((val) => val != 1);
                     const activeIndices = result.indices.filter((_, idx) => result.shape[idx] != 1);
                     useGlobalStore.getState().setActiveIndices(activeIndices);
-
-                    const [tempTexture, scaling] = ArrayToTexture({
-                        data: result.data,
-                        shape
-                    });
-                    setTextures(tempTexture);
-                    setValueScales(scaling as { maxVal: number; minVal: number });
+                    // Create textures and store valuescales
+                    createDataTexture();
                     useGlobalStore.setState({scalingFactor: result.scalingFactor});
                     const shapeLength = shape.length;
                     if (shapeLength === 2) {
@@ -110,8 +104,8 @@ export const useDataFetcher = () => {
 
     // ---- InterpPixels ---- //
     useEffect(()=> {
-        if (!textures) return;
-        const updated = textures.map(tex => {
+        if (!mainTextures) return;
+        const updated = mainTextures.map(tex => {
         const clone = tex.clone(); 
         if (interpPixels) {
             clone.minFilter = THREE.LinearFilter;
@@ -123,20 +117,21 @@ export const useDataFetcher = () => {
         clone.needsUpdate = true; 
         return clone ;
         });
-        setTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
+        setMainTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
   },[interpPixels])
 
   useEffect(() => {
     // This cleanup function will run when the `textures` state is about to change,
     // or when the component unmounts.
     return () => {
-      if (textures) {
-        textures.forEach(tex => {
+      if (mainTextures) {
+        mainTextures.forEach(tex => {
           tex.dispose();
         });
       }
     };
-  }, [textures]);
+  }, [mainTextures]);
 
-    return { textures, show, stableMetadata, setTextures };
+    return { show, stableMetadata };
 };
+
