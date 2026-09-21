@@ -27,12 +27,17 @@ const selectedPlates = {
     Convolution2D: "ConvolutionBoilerPlate2D"
 }
 
-const ConfigureUniforms = ({variables} : {variables:string[]})=>{
-    const {reduceOnAxis, axis, setKernelDepth, setKernelSize, setVariable2, setReduceOnAxis, setAxis} = useAnalysisStore(useShallow(s => s))
-    const {dimNames, variable} = useGlobalStore(useShallow(s => s))
-    const [thisKernelSize, setThisKernelSize] = useState(String(useAnalysisStore.getState().kernelSize))
-    const [thisKernelDepth, setThisKernelDepth] = useState(String(useAnalysisStore.getState().kernelDepth))
+interface Uniforms{
+    variables:string[];
+    kernel: {kernelSize: number, kernelDepth: number};
+    kernelSetters: {setKernelSize: React.Dispatch<React.SetStateAction<number>>, setKernelDepth: React.Dispatch<React.SetStateAction<number>>}
+}
 
+const ConfigureUniforms = ({variables, kernel, kernelSetters}  : Uniforms)=>{
+    const {reduceOnAxis, axis, setVariable2, setReduceOnAxis, setAxis} = useAnalysisStore(useShallow(s => s))
+    const {dimNames, variable} = useGlobalStore(useShallow(s => s))
+    const {kernelSize, kernelDepth} = kernel;
+    const {setKernelSize, setKernelDepth} = kernelSetters;
     return(
         <Popover>
             <PopoverTrigger>
@@ -61,22 +66,20 @@ const ConfigureUniforms = ({variables} : {variables:string[]})=>{
                     </Select>
                     <div>
                         kernelSize
-                        <Input type='number' value={thisKernelSize} 
-                            onChange={e=> setThisKernelSize(e.target.value)}
+                        <Input type='number' value={kernelSize} 
+                            onChange={e=> setKernelSize(parseInt(e.target.value))}
                             onBlur={e=>{
                                 const newVal = HandleKernelNums(e.target.value)
-                                setThisKernelSize(String(newVal))
                                 setKernelSize(newVal)
                             }}
                         />
                     </div>
                     <div>
                         kernelDepth
-                        <Input type='number' value={thisKernelDepth} 
-                            onChange={e=> setThisKernelDepth(e.target.value)}
+                        <Input type='number' value={kernelDepth} 
+                            onChange={e=> setKernelDepth(parseInt(e.target.value))}
                             onBlur={e=>{
                                 const newVal = HandleKernelNums(e.target.value)
-                                setThisKernelDepth(String(newVal))
                                 setKernelDepth(newVal)
                             }}
                         />
@@ -111,9 +114,11 @@ const ShaderEditor = React.memo(function ShaderEditor ({visible} : {visible: boo
     const [shader, setShader] = useState<string | undefined>()
     const [showUniforms, setShowUniforms] = useState(false)
     const [newDim, setNewDim] = useState(0)
+    const [kernelSize, setKernelSize] = useState(3);
+    const [kernelDepth, setKernelDepth] = useState(3);
     const [boilerPlate, setBoilerPlate] = useState("")
     const {resolvedTheme} = useTheme()
-    const {executeCustom, kernelDepth, kernelSize, axis, reduceOnAxis, variable2} = useAnalysisStore(useShallow(s => s))
+    const {executeCustom, axis, reduceOnAxis, variable2} = useAnalysisStore(useShallow(s => s))
     const {dimNames, dataShape, variable, variables,} = useGlobalStore(useShallow(s => s))
     const [outputShape, setOutPutShape] = useState(dataShape)
 
@@ -195,7 +200,7 @@ const ShaderEditor = React.memo(function ShaderEditor ({visible} : {visible: boo
                 >
                     {(showUniforms ? 'Hide' : 'Show') + ' Uniforms'}
                 </Button>
-                <ConfigureUniforms variables={variables}/>
+                <ConfigureUniforms variables={variables} kernel={{kernelSize, kernelDepth}} kernelSetters ={{setKernelSize, setKernelDepth}}/>
                 <div>
                     Reduction:  
                     <span style={{ color: reduceOnAxis ? "#44ef91" : "#ef4444" }}>

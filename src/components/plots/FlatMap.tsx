@@ -6,7 +6,7 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { vertShader } from '@/components/computation/shaders'
+import { vertShader } from '@/components/textures/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
 import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
