@@ -33,7 +33,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
     const {animProg, zSlice, ySlice, xSlice, selectTS, coarsen, colorScale,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
-    const {axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
+    const {analysisDim:axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
     const {kernelSize, kernelDepth} = useZarrStore(useShallow(s => s))
 
     const {xIdx, yIdx, zIdx} = useAxisIndices()

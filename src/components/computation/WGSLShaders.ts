@@ -1347,10 +1347,10 @@ export const createShaders = (precision: Precision, wgs: {wgx: number, wgy:numbe
             workGroups: vec3<u32>,
         };
         @group(0) @binding(0) var<storage, read> inputData: array<${precision}>;
-        @group(0) @binding(1) var<storage, read_write> outputData: array<${precision}>;
+        @group(0) @binding(1) var<storage, read_write> outputData: array<f32>;
         @group(0) @binding(2) var<uniform> params: Params;
         ${isNaNFunc}
-        @compute @workgroup_size(4, 4, 4)
+        @compute @workgroup_size(${wgx}, ${wgy}, ${wgz})
         fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let zStride = params.zStride;
             let yStride = params.yStride;
@@ -1425,9 +1425,9 @@ export const createShaders = (precision: Precision, wgs: {wgx: number, wgy:numbe
             let current_val = f32(inputData[baseIdx]);
             if (validCount == 0u && isNaN(current_val)) {
                 let zero = 0.0;
-                outputData[baseIdx] = ${precision}(zero / zero);
+                outputData[baseIdx] = f32(zero / zero);
             } else {
-                outputData[baseIdx] = ${precision}(accum);
+                outputData[baseIdx] = f32(accum);
             }
         }
     `

@@ -55,7 +55,6 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
         texture.needsUpdate = true;
         chunks.push(texture)
     }
-    console.log("flat textures")
     return chunks
   } else {
     const [lz,ly,lx] = shape

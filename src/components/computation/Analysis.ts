@@ -7,7 +7,7 @@ import { CreateTexture } from "../textures";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
 
 export async function Analysis(){
-	const { strides, dataShape, valueScales, plotOn, isFlat, setIsFlat, setStatus, setMainTextures, setValueScales } = useGlobalStore.getState()
+	const { strides, dataShape, valueScales, plotOn, setIsFlat, setStatus, setMainTextures, setValueScales, setScalingFactor } = useGlobalStore.getState()
     const { useTwo, variable2, analysisInfo, valueScalesOrig, analysisStore, analysisMode, analysisArray, analysisShape,
         setValueScalesOrig, setAnalysisArray, setAnalysisMode, setAnalysisShape } = useAnalysisStore.getState()
     const {setPlotType} = usePlotStore.getState();
@@ -16,7 +16,6 @@ export async function Analysis(){
 	if (!plotOn || !operation) return;
 	setStatus("Computing...");
 	let newArray: Float16Array | Float32Array | undefined;
-
 	// --- Fetch second variable if needed --- //
 	let var2Data: ArrayBufferView | undefined;
 	if (useTwo) {
@@ -30,6 +29,7 @@ export async function Analysis(){
 			return;
 		}
 	}
+
     // --- Define Shapes --- //
 	// --- Dispatch GPU computation based on the operation --- //
 	const inputArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore)
@@ -43,6 +43,8 @@ export async function Analysis(){
     }
     newArray = result.array;
     const thisShape = result.shape
+    const newScalingFactor = result.scalingFactor;
+    setScalingFactor(newScalingFactor)
     setAnalysisShape(thisShape);
     // --- Value scaling logic --- //
     let minVal, maxVal;

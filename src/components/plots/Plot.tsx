@@ -3,7 +3,7 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
-import { ArrayToTexture, CreateTexture } from '@/components/textures';
+import { ArrayToTexture, createDataTexture } from '@/components/textures';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
@@ -12,7 +12,6 @@ import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar, ExportExtent, ShaderEditor, KeyFrames } from '../ui';
 import AnalysisInfo from './AnalysisInfo';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import AnalysisWG from './AnalysisWG';
 import ExportCanvas from '@/utils/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/components/textures/ProjectionTexture';
@@ -155,7 +154,7 @@ const Plot = () => {
   const {colormap, isFlat, DPR, valueScales, mainTextures, setMainTextures, setIsFlat, setStatus, dataShape, useF16Textures} = useGlobalStore(useShallow(s => s))
   const {keyFrameEditor} = useImageExportStore(useShallow(s => s))
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => s))
-  const {analysisMode, useEditor} = useAnalysisStore(useShallow(s => s))
+  const {analysisMode, analysisArray, useEditor} = useAnalysisStore(useShallow(s => s))
   const coords = useRef<number[]>([0,0])
   const val = useRef<number>(0)
   const [showInfo, setShowInfo] = useState<boolean>(false)
@@ -176,25 +175,20 @@ const Plot = () => {
     }
   },[analysisMode])
 
-  useEffect(()=>{ // Reset after analysis mode
+  useEffect(()=>{ // Reset texture after analysis mode
     if(!analysisMode && show){
-      const {dataShape} = useGlobalStore.getState();
-      setIsFlat(dataShape.length == 2)
-      const newText = CreateTexture(dataShape)
-      if (newText){
-        setMainTextures(newText)
-      }
+      createDataTexture();
     }
   },[analysisMode])
 
   useEffect(()=>{ // Switch Texture array bit-depth
-    if(!analysisMode && show){
-      const [newText, _valueScales] = ArrayToTexture({data:GetCurrentArray(), shape:dataShape},undefined,useF16Textures);
+    if(show){
+      const [newText, _valueScales] = ArrayToTexture({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape},undefined,useF16Textures);
       if (newText){
         setMainTextures(newText)
       }
-      setStatus(null)
-  }},[useF16Textures])
+    } setStatus(null)
+  },[useF16Textures])
 
   const infoSetters = useMemo(()=>({
     setLoc,

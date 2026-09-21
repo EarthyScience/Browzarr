@@ -19,6 +19,7 @@ type AnalysisState = {
   executeCustom: boolean;
   outputShape: number[];
   analysisInfo: {operation: string | undefined, kernelOp: string | undefined, axis: number, reverse: boolean, kernelShape:{size: number, depth:number}} | undefined;
+  originalScalingFactor: number | null;
 
   setAnalysisMode: (analysisMode: boolean) => void;
   setAxis: (axis: number) => void;
@@ -53,7 +54,7 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   executeCustom:false,
   outputShape: [],
   analysisInfo:undefined,
-  
+  originalScalingFactor: null,
 
   setAnalysisMode: (analysisMode) => set({ analysisMode }),
   setAxis: (axis) => set({ axis }),

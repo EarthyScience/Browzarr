@@ -30,7 +30,7 @@ export function getDtypeSize(dtype: string): number {
 	};
 	return dtypeMap[dtype] || 4; // default to 4 bytes if type not found
 }
-export function RescaleArray(array: Float16Array, scalingFactor: number) {
+export function RescaleArray(array: Float16Array | Float32Array, scalingFactor: number) {
 	// Rescales built array when new chunk has higher scalingFactor
 	const multipler = 1 / Math.pow(10, scalingFactor);
 	for (let i = 0; i < array.length; i++) {
@@ -40,7 +40,7 @@ export function RescaleArray(array: Float16Array, scalingFactor: number) {
 
 export function ToFloat16(
 	array: Float32Array,
-	scalingFactor: number | null,
+	scalingFactor?: number,
 ): [Float16Array, number | null] {
 	const initialScale = scalingFactor ?? 0;
 	let denominator = Math.pow(10, initialScale);

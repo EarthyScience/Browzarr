@@ -49,10 +49,15 @@ const webGPUError = <div className="m-0 p-5 font-sans flex-column justify-center
     </div>
   </div>
 
+// Used for 2D CUMSUM to align the axis to the reduced plots axis
+const newToOrig = (origIdx:number, reducedIdx: number | null) => reducedIdx ? 
+	origIdx < reducedIdx ? origIdx : origIdx - 1
+	: origIdx
+
 const AnalysisOptions = () => {
-	const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales} = useGlobalStore(useShallow(s => ({
+	const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales, setScalingFactor} = useGlobalStore(useShallow(s => ({
 		plotOn: s.plotOn, variable: s.variable, variables: s.variables, dimNames: s.dimNames, 
-		activeIndices: s.activeIndices, initStore: s.initStore, isFlat: s.isFlat, setTimeSeries: s.setTimeSeries, setValueScales: s.setValueScales})));
+		activeIndices: s.activeIndices, initStore: s.initStore, isFlat: s.isFlat, setTimeSeries: s.setTimeSeries, setValueScales: s.setValueScales, setScalingFactor:s.setScalingFactor})));
 	const previousStore = useRef<string>(initStore)
 	const [incompatible, setIncompatible] = useState(false); 
 	const [operation, setOperation] = useState<string | undefined>(undefined)
@@ -63,7 +68,7 @@ const AnalysisOptions = () => {
 	const [newDim, setNewDim] = useState(0)
 	const [reverse, setReverse] = useState(false);
 	const {useTwo, 
-		variable2, analysisMode, valueScalesOrig,
+		variable2, analysisMode, valueScalesOrig, analysisDim, originalScalingFactor,
 		setAxis, setUseTwo,	setVariable2, setAnalysisMode,
 		setAnalysisStore, setAnalysisDim, setAnalysisInfo
 	} = useAnalysisStore(useShallow(s => s));
@@ -170,7 +175,11 @@ const AnalysisOptions = () => {
 					<Button
 						variant='ghost'
 						className='pl-4 ml-4'
-						onClick={e=>{useAnalysisStore.setState({ analysisMode: false, analysisDim: null }); if(valueScalesOrig){setValueScales(valueScalesOrig)}}}
+						onClick={()=>{
+							useAnalysisStore.setState({ analysisMode: false, analysisDim: null }); 
+							setScalingFactor(originalScalingFactor); 
+							if(valueScalesOrig){setValueScales(valueScalesOrig)
+						}}}
 					>
 						<RxReset />
 					</Button>
@@ -208,14 +217,9 @@ const AnalysisOptions = () => {
 				{/* OPERATION TYPE */}
 				<h1>Operation</h1>
 				{useTwo ? 
-				<Select 
-					value={operation} 
-					onValueChange={setOperation}
-				>
+				<Select value={operation} onValueChange={setOperation}>
 					<SelectTrigger className='w-full'>
-						<SelectValue
-						placeholder='Select...'
-						/>
+						<SelectValue placeholder='Select...'/>
 					</SelectTrigger>
 					<SelectContent>
 						{/* DIM Reduction */}
@@ -242,17 +246,17 @@ const AnalysisOptions = () => {
 					<SelectContent>
 						{!isFlat &&
 						<SelectGroup>
-						<SelectLabel>Dimension Reduction</SelectLabel>
-						{singleVarReductionOps.map((op, idx) => (
-							<SelectItem key={idx} value={op.trim()}>
-								{op}
-							</SelectItem>
-						))}
+							<SelectLabel>Dimension Reduction</SelectLabel>
+							{singleVarReductionOps.map((op, idx) => (
+								<SelectItem key={idx} value={op.trim()}>
+									{op}
+								</SelectItem>
+							))}
 						</SelectGroup>}
 						<SelectGroup>
-						<SelectLabel>{isFlat ? '' : 'Three Dimensional'}</SelectLabel>
-						<SelectItem value={`Convolution`}>Convolution</SelectItem>
-						{!isFlat && !analysisMode &&<SelectItem value="CUMSUM3D">CUMSUM</SelectItem>}
+							<SelectLabel>Keep Dims</SelectLabel>
+							<SelectItem value={`Convolution`}>Convolution</SelectItem>
+							<SelectItem value="CUMSUM3D">CUMSUM</SelectItem>
 						</SelectGroup>
 					</SelectContent>
 				</Select>
@@ -266,7 +270,7 @@ const AnalysisOptions = () => {
 								<SelectValue defaultValue={dimNames[activeIndices[newDim]] ?? "Select Axis"} />
 							</SelectTrigger>
 							<SelectContent>
-								{activeIndices.map((origIdx, dataShapeIdx) => (
+								{activeIndices.map((origIdx, dataShapeIdx) => ( dataShapeIdx != analysisDim &&
 								<SelectItem key={dataShapeIdx} value={String(dataShapeIdx)}>
 									{dimNames[origIdx]}
 								</SelectItem>
@@ -347,8 +351,8 @@ const AnalysisOptions = () => {
                 }
                 variant='pink'
                 onClick={() => {
-                  setAxis(newDim)
-                  setAnalysisDim(operation == 'CUMSUM3D' ? null : newDim)
+                  setAxis((operation == 'CUMSUM3D') ? newToOrig(newDim, analysisDim) : newDim)
+                  setAnalysisDim(analysisDim?? (operation == 'CUMSUM3D') ? null : newDim)
                   setTimeSeries({});
 				  setAnalysisInfo({
 					operation,

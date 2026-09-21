@@ -374,7 +374,7 @@ const FlatAxis = () =>{
   const {axisDimArrays, axisDimNames, axisDimUnits} = useGlobalStore(useShallow(s => s))
   const {plotType, rotateFlat} = usePlotStore(useShallow(s => s))
   const {hideAxis, hideAxisControls} = useImageExportStore(useShallow(s => s))
-  const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
+  const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
 
   const originallyFlat = axisDimArrays.length == 2;
   const {xIdx, yIdx, zIdx} = useAxisIndices()
