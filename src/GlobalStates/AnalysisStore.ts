@@ -8,7 +8,7 @@ type AnalysisState = {
   reduceOnAxis: boolean;
   execute: boolean;
   useTwo: boolean;
-  variable2: string;
+  variable2: string | undefined;
   valueScalesOrig: {minVal: number, maxVal:number} | null
   analysisArray: Uint8Array | Float32Array | Float16Array;
   analysisStore: string;
@@ -25,7 +25,7 @@ type AnalysisState = {
   setReduceOnAxis: (reduceOnAxis: boolean) => void;
   setExecute: (execute: boolean) => void;
   setUseTwo: (useTwo: boolean) => void;
-  setVariable2: (variable2: string) => void;
+  setVariable2: (variable2: string | undefined) => void;
   setValueScalesOrig: (valueScalesOrig: {minVal: number, maxVal:number} | null) => void;
   setAnalysisArray: (analysisArray: Uint8Array | Float32Array | Float16Array) => void;
   setAnalysisStore: (analysisStore: string) => void;
@@ -42,7 +42,7 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   reduceOnAxis: false,
   execute: false,
   useTwo: false,
-  variable2: "Default",
+  variable2: undefined,
   valueScalesOrig: null,
   analysisArray: new Uint8Array(1),
   analysisStore: ESDC,

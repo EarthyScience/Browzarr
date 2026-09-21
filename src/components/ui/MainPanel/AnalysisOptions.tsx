@@ -60,9 +60,10 @@ const AnalysisOptions = () => {
 	const [kernelOp, setKernelOp] = useState<string | undefined>(undefined)
 	const [kernelSize, setKernelSize] = useState(3);
 	const [kernelDepth, setKernelDepth] = useState(3);
+	const [newDim, setNewDim] = useState(0)
 	const [reverse, setReverse] = useState(false);
 	const {useTwo, 
-		axis, variable2, analysisMode, valueScalesOrig,
+		variable2, analysisMode, valueScalesOrig,
 		setAxis, setUseTwo,	setVariable2, setAnalysisMode,
 		setAnalysisStore, setAnalysisDim, setAnalysisInfo
 	} = useAnalysisStore(useShallow(s => s));
@@ -104,12 +105,6 @@ const AnalysisOptions = () => {
 		setAnalysisMode(false)
 	},[variable])
 
-	const [newDim, setNewDim] = useState(0)
-
-	useEffect(()=>{
-		setNewDim(axis)
-	},[axis])
-
 	const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 	useEffect(() => {
 		const handleResize = () => {
@@ -119,7 +114,6 @@ const AnalysisOptions = () => {
 		window.addEventListener("resize", handleResize);
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
-
   return (
       <Popover>
         <PopoverTrigger asChild>
@@ -153,7 +147,6 @@ const AnalysisOptions = () => {
                 disabled={incompatible}
                 onClick={() => {
                   setUseTwo(!useTwo);
-                  setOperation('Default');
                 }}
               >
                 {useTwo ? 'Use One \n Variable' : 'Use Two Variables'}
@@ -177,7 +170,7 @@ const AnalysisOptions = () => {
 					<Button
 						variant='ghost'
 						className='pl-4 ml-4'
-						onClick={e=>{useAnalysisStore.setState({ analysisMode: false, analysisDim: null, variable2: 'Default' }); if(valueScalesOrig){setValueScales(valueScalesOrig)}}}
+						onClick={e=>{useAnalysisStore.setState({ analysisMode: false, analysisDim: null }); if(valueScalesOrig){setValueScales(valueScalesOrig)}}}
 					>
 						<RxReset />
 					</Button>
@@ -192,6 +185,7 @@ const AnalysisOptions = () => {
 					<div className='grid grid-cols-[70px_auto] place-items-center gap-2'>
 						<h1>Second Variable</h1>
 						<Select 
+							value={variable2}
 							onValueChange={setVariable2}
 						>
 						<SelectTrigger className='w-full'>
@@ -215,7 +209,7 @@ const AnalysisOptions = () => {
 				<h1>Operation</h1>
 				{useTwo ? 
 				<Select 
-					defaultValue={operation} 
+					value={operation} 
 					onValueChange={setOperation}
 				>
 					<SelectTrigger className='w-full'>
@@ -268,7 +262,7 @@ const AnalysisOptions = () => {
 					<h1>Axis</h1>
 					<div className='flex justify-between w-full'>
 						<Select value={String(newDim)} onValueChange={e => setNewDim(parseInt(e))}>
-							<SelectTrigger className='w-full' style={{ width: ['CUMSUM3D', 'LinearSlope'].includes(operation) ? '50%' : '100%'}}>
+							<SelectTrigger className='w-full' style={{ width: ['CUMSUM3D', 'LinearSlope'].includes(operation as string) ? '50%' : '100%'}}>
 								<SelectValue defaultValue={dimNames[activeIndices[newDim]] ?? "Select Axis"} />
 							</SelectTrigger>
 							<SelectContent>
@@ -279,7 +273,7 @@ const AnalysisOptions = () => {
 								))}
 							</SelectContent>
 						</Select>
-						{['CUMSUM3D', 'LinearSlope'].includes(operation) && 
+						{['CUMSUM3D', 'LinearSlope'].includes(operation as string) && 
 						<QuickTip message='Swap direction of operation'>
 							<div className='flex justify-around w-[50%] items-center '>
 								<label htmlFor="reverse-axis" style={{textAlign:'left'}}>Rev.</label>
@@ -293,34 +287,25 @@ const AnalysisOptions = () => {
 				{operation == 'Convolution' &&
 				<>
 				<h1>Kernel Op.</h1>
-				<Select onValueChange={setKernelOp}>
+				<Select 
+					value={kernelOp}
+					onValueChange={setKernelOp}
+				>
 					<SelectTrigger className='w-full'>
-					<SelectValue
-						defaultValue={
-						kernelOp ?? 'Select...'
-						}
-					/>
+						<SelectValue placeholder='Select...' />
 					</SelectTrigger>
 					<SelectContent>
-					{useTwo && multiVarOps.map((op, idx) =>  (
-						<SelectItem key={idx} value={op.trim()}>
-							{op}
-						</SelectItem>
-						)
-					)}
-					{!useTwo && isFlat ? 
-						singleVarOps.map((op, idx) =>  (
+						{useTwo && multiVarOps.map((op, idx) =>  (
 							<SelectItem key={idx} value={op.trim()}>
 								{op}
 							</SelectItem>
-						)) 
-						:
-						singleVarOps.map((op, idx) =>  (
-							<SelectItem key={idx} value={op.trim()}>
-								{op}
-							</SelectItem>
-						))
-					}
+							)
+						)}
+						{!useTwo && singleVarOps.map((op, idx) =>  (
+								<SelectItem key={idx} value={op.trim()}>
+									{op}
+								</SelectItem>
+						))}
 					</SelectContent>
 				</Select>
 				<h1>Kernel Size</h1>
@@ -368,7 +353,7 @@ const AnalysisOptions = () => {
 				  setAnalysisInfo({
 					operation,
 					kernelOp,
-					axis,
+					axis: newDim,
 					reverse,
 					kernelShape:{
 						size: kernelSize,

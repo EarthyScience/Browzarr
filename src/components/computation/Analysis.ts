@@ -31,7 +31,6 @@ export async function Analysis(){
 		}
 	}
     // --- Define Shapes --- //
-    
 	// --- Dispatch GPU computation based on the operation --- //
 	const inputArray = analysisMode ? analysisArray : await GetCurrentArray(analysisStore)
 	const dimInfo = analysisMode ? { shape: analysisShape, strides: calculateStrides(analysisShape) }
@@ -47,8 +46,10 @@ export async function Analysis(){
     setAnalysisShape(thisShape);
     // --- Value scaling logic --- //
     let minVal, maxVal;
-    const needsRescale = ['Deviation', 'Linear', 'Covariance', 'CUMSUM3D'].some(op => operation.includes(op));
-    const isCorrelation = operation.includes('Correlation');
+    const needsRescale = ['Deviation', 'Linear', 'Covariance', 'CUMSUM3D'].some(op => operation.includes(op)) ||
+        ['Deviation', 'Linear', 'Covariance', 'CUMSUM3D'].some(op => kernelOp?.includes(op))
+    ;
+    const isCorrelation = operation.includes('Correlation') || kernelOp?.includes('Correlation');
     if (needsRescale) {
         if (!valueScalesOrig) setValueScalesOrig(valueScales);
         [minVal, maxVal] = ArrayMinMax(newArray);
@@ -59,7 +60,6 @@ export async function Analysis(){
         ({ minVal, maxVal } = valueScales);
     }
     setValueScales({ minVal, maxVal });
-    const reduced = inputArray.length > newArray.length;
     const textureData = new Uint8Array(newArray.length)
     const range = (maxVal - minVal)
     for (let i = 0; i < newArray.length; i++){
@@ -74,7 +74,6 @@ export async function Analysis(){
     // --- Final state updates --- //
     setAnalysisArray(newArray);
     if (newTexture){
-        console.log(newTexture)
         setMainTextures(newTexture);
     }
     const newFlat = thisShape.length == 2

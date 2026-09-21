@@ -101,7 +101,6 @@ export async function DataProcess(
         return;
     }
     // ---- Unload Parameters ---- //
-    operation = operation.replace(/\s+/g, "")
     const {strides, shape} = dimInfo;
     const {size:kernelSize, depth:kernelDepth} = kernel;
     const xStride = strides.at(-1);
@@ -124,20 +123,21 @@ export async function DataProcess(
     } else if (isMultiVar) shaderCatalog = multiVariate;
     else if (operation == "CUMSUM") shaderCatalog = {CUMSUM3D: "CUMSUM3D"}
     else shaderCatalog = twoDim;
+    operation = operation.replace(/\s+/g, "")
     const shaderKey = shaderCatalog[operation as keyof typeof shaderCatalog] as keyof typeof shaders;
     const shader = shaders[shaderKey];
-    console.log(shaderKey)
-    console.log(`shape: ${shape}`)
-    console.log(`thisShape: ${thisShape}`)
-    console.log(`outputSize: ${outputSize}`)
-    console.log(`workerGroups: ${workGroups}`)
-    console.log(`operation: ${operation}`)
-    console.log(`reduceDim: ${reduceDim}`)
-    console.log(`workGroups: ${workGroups}`)
-    console.log(`is3D: ${is3D}`)
-    console.log(`strides: ${strides}`)
-    console.log(`kernelInfo: ${kernel.depth, kernel.size}`)
-    console.log({wgx:workerSize, wgy:workerSize, wgz: is3D ? workerSize : 1})
+    // console.log(shaderKey)
+    // console.log(`shape: ${shape}`)
+    // console.log(`thisShape: ${thisShape}`)
+    // console.log(`outputSize: ${outputSize}`)
+    // console.log(`workerGroups: ${workGroups}`)
+    // console.log(`operation: ${operation}`)
+    // console.log(`reduceDim: ${reduceDim}`)
+    // console.log(`workGroups: ${workGroups}`)
+    // console.log(`is3D: ${is3D}`)
+    // console.log(`strides: ${strides}`)
+    // console.log(`kernelInfo: ${kernel.depth, kernel.size}`)
+    // console.log({wgx:workerSize, wgy:workerSize, wgz: is3D ? workerSize : 1})
     // ---- START PIPELINE ---- //
     const computeModule = device.createShaderModule({
         label: 'analysis compute module',
@@ -338,249 +338,6 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
     const pass = encoder.beginComputePass({
         label: 'convolution compute pass',
     });
-    pass.setPipeline(pipeline);
-    pass.setBindGroup(0, bindGroup);
-    pass.dispatchWorkgroups(workGroups[2], workGroups[1], workGroups[0]);
-    pass.end();
-
-    encoder.copyBufferToBuffer(
-    outputBuffer, 0,
-    readBuffer, 0,
-    outputSize * (hasF16 ? 2 : 4)
-    );
-
-    // Submit work to GPU
-    device.queue.submit([encoder.finish()]);
-
-    // Map staging buffer to read results
-    await readBuffer.mapAsync(GPUMapMode.READ);
-    const resultArrayBuffer = readBuffer.getMappedRange();
-    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
-
-    // Clean up
-    readBuffer.unmap();
-    return results;
-}
-
-export async function Multivariate2D(firstArray: ArrayBufferView, secondArray: ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, reduceDim: number, operation:string){
-   const {device, hasF16} = await InitializeDevice();
-    if (!device) { // Redundant check but needed to satisfy typescript that device is not undefined
-        Error('need a browser that supports WebGPU');
-        return;
-    }
-    const {strides, shape} = dimInfo;
-    const [zStride, yStride, xStride] = strides;
-
-    const thisShape = shape.filter((e, idx) => idx != reduceDim)
-    const dimLength = shape[reduceDim]
-    const outputSize = thisShape[0] * thisShape[1];
-    const workGroups = thisShape.map(e => Math.ceil(e/16)) //We assume the workgroups are 16 threads each dimension. We see how many of those 16 thread workgroups are needed for each dimension
-
-    const precision = hasF16 ? 'f16' : 'f32';
-    const shaders = createShaders(precision);
-    const shaderKey = ShaderMap[operation as keyof typeof ShaderMap] as keyof typeof shaders
-    const shader = shaders[shaderKey]
-
-    const computeModule = device.createShaderModule({
-        label: 'Multivariate2D compute module',
-        //@ts-ignore will remove with refactor
-        code:shader,
-    });
-
-    const pipeline = device.createComputePipeline({
-        label: 'Multivariate2D compute pipeline',
-        layout: 'auto',
-        compute: {
-        module: computeModule,
-        },
-    });
-    //@ts-ignore will remove with refactor
-    const defs = makeShaderDataDefinitions(shader);
-    const myUniformValues = makeStructuredView(defs.uniforms.params);
-    myUniformValues.set({
-        zStride,
-        yStride,
-        xStride,
-        xSize:  thisShape[1], 
-        ySize: thisShape[0],
-        reduceDim,
-        dimLength
-    });
-
-    // Create buffers
-    const firstInputBuffer = device.createBuffer({
-        label: 'First Input Buffer',
-        size: firstArray.byteLength * (hasF16 ? 1 : 2), 
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
-
-    const secondInputBuffer = device.createBuffer({
-        label: 'Second Input Buffer',
-        size: secondArray.byteLength * (hasF16 ? 1 : 2), 
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
-
-    const outputBuffer = device.createBuffer({
-        label: 'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-    });
-
-    const uniformBuffer = device.createBuffer({
-        size: myUniformValues.arrayBuffer.byteLength,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    const readBuffer = device.createBuffer({
-        label:'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-
-    // Write Buffers to GPU
-    device.queue.writeBuffer(firstInputBuffer, 0, (hasF16 ? firstArray : new Float32Array(firstArray as Float16Array)) as GPUAllowSharedBufferSource);
-    device.queue.writeBuffer(secondInputBuffer, 0, (hasF16 ? secondArray : new Float32Array(secondArray as Float16Array)) as GPUAllowSharedBufferSource);
-    device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
-
-    const bindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-            { binding: 0, resource: { buffer: firstInputBuffer } },
-            { binding: 1, resource: { buffer: secondInputBuffer } },
-            { binding: 2, resource: { buffer: outputBuffer } },
-            { binding: 3, resource: { buffer: uniformBuffer } },
-        ],
-    });
-
-    const encoder = device.createCommandEncoder({
-        label: 'Multivariate2D encoder',
-    });
-    const pass = encoder.beginComputePass({
-        label: 'Multivariate2D compute pass',
-    });
-
-    pass.setPipeline(pipeline);
-    pass.setBindGroup(0, bindGroup);
-    pass.dispatchWorkgroups(workGroups[0], workGroups[1]);
-    pass.end();
-
-    encoder.copyBufferToBuffer(
-    outputBuffer, 0,
-    readBuffer, 0,
-    outputSize * (hasF16 ? 2 : 4)
-    );
-
-    // Submit work to GPU
-    device.queue.submit([encoder.finish()]);
-
-    // Map staging buffer to read results
-    await readBuffer.mapAsync(GPUMapMode.READ);
-    const resultArrayBuffer = readBuffer.getMappedRange();
-    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
-
-    // Clean up
-    readBuffer.unmap();
-    return results;
-}
-
-export async function Multivariate3D(firstArray: ArrayBufferView, secondArray: ArrayBufferView, dimInfo : {shape: number[], strides: number[]}, kernel: {kernelSize: number, kernelDepth: number}, operation: string){
-    const {device, hasF16} = await InitializeDevice();
-    if (!device) { // Redundant check but needed to satisfy typescript that device is not undefined
-        Error('need a browser that supports WebGPU');
-        return;
-    }
-    const {kernelDepth, kernelSize} = kernel;
-    const {strides, shape} = dimInfo;
-    const [zStride, yStride, xStride] = strides;
-
-    const outputSize = shape[0] * shape[1] * shape[2];
-    const workGroups = shape.map(e => Math.ceil(e/4)) //We assume the workgroups are 4 threads each dimension. We see how many of those 4 thread workgroups are needed for each dimension
-
-    const precision = hasF16 ? 'f16' : 'f32';
-    const shaders = createShaders(precision);
-    const shaderKey = ShaderMap[operation as keyof typeof ShaderMap] as keyof typeof shaders;
-    const shader = shaders[shaderKey]
-
-    const computeModule = device.createShaderModule({
-        label: 'Multivariate3D compute module',
-        //@ts-ignore will remove with refactor
-        code:shader,
-    });
-
-    const pipeline = device.createComputePipeline({
-        label: 'Multivariate3D compute pipeline',
-        layout: 'auto',
-        compute: {
-        module: computeModule,
-        },
-    });
-    //@ts-ignore will remove with refactor
-    const defs = makeShaderDataDefinitions(shader);
-    const myUniformValues = makeStructuredView(defs.uniforms.params);
-    myUniformValues.set({
-        xStride,
-        yStride,
-        zStride,
-        xSize: shape[2], 
-        ySize: shape[1],
-        zSize: shape[0],
-        workGroups:[workGroups[2], workGroups[1], workGroups[0]],
-        kernelDepth,
-        kernelSize
-    });
-
-    // Create buffers
-    const firstInputBuffer = device.createBuffer({
-        label: 'First Input Buffer',
-        size: firstArray.byteLength * (hasF16 ? 1 : 2), 
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
-
-    const secondInputBuffer = device.createBuffer({
-        label: 'Second Input Buffer',
-        size: secondArray.byteLength * (hasF16 ? 1 : 2),
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
-
-    const outputBuffer = device.createBuffer({
-        label: 'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-    });
-
-    const uniformBuffer = device.createBuffer({
-        size: myUniformValues.arrayBuffer.byteLength,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    const readBuffer = device.createBuffer({
-        label:'Read Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-
-    // Write Buffers to GPU
-    device.queue.writeBuffer(firstInputBuffer, 0, (hasF16 ? firstArray : new Float32Array(firstArray as Float16Array)) as GPUAllowSharedBufferSource);
-    device.queue.writeBuffer(secondInputBuffer, 0, (hasF16 ? secondArray : new Float32Array(secondArray as Float16Array)) as GPUAllowSharedBufferSource);
-    device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
-
-    const bindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-            { binding: 0, resource: { buffer: firstInputBuffer } },
-            { binding: 1, resource: { buffer: secondInputBuffer } },
-            { binding: 2, resource: { buffer: outputBuffer } },
-            { binding: 3, resource: { buffer: uniformBuffer } },
-        ],
-    });
-
-    const encoder = device.createCommandEncoder({
-        label: 'Multivariate3D encoder',
-    });
-    const pass = encoder.beginComputePass({
-        label: 'Multivariate3D compute pass',
-    });
-
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bindGroup);
     pass.dispatchWorkgroups(workGroups[2], workGroups[1], workGroups[0]);
