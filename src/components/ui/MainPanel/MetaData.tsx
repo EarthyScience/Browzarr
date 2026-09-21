@@ -122,7 +122,7 @@ function MetaInfo({
         const cachedSize = currentSize * 2/dtype;
         setDataSize(cachedSize);
         return cachedSize;
-    }, [currentSize, meta]);
+    }, [currentSize]);
 
     const smallCache = cachedSize > cacheSize;
     const [cachedChunks, setCachedChunks] = useState<string | null>(null);
