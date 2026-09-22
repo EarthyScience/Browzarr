@@ -71,31 +71,31 @@ export const useDataFetcher = () => {
                     const aspectRatio = shape[shapeLength - 2] / shape[shapeLength - 1];
                     const timeRatio = shape[shapeLength - 3] / shape[shapeLength - 1];
                     setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio, 2)));
-                }).then(()=>{
-                    //---- Metadata ----//
-                    GetAttributes().then((result) => {
-                        setMetadata(result);
-                        setStableMetadata(result);
-                    });
-
-                    //---- DimInfo ----//
-                    GetDimInfo(variable).then((arrays) => {
-                        let { dimArrays, dimUnits, dimNames } = arrays;
-                        useGlobalStore.setState({dimArrays, dimNames, dimUnits, 
-                            axisDimArrays: dimArrays, axisDimNames: dimNames, axisDimUnits: dimUnits});
-                        const { axisMapping } = useZarrStore.getState();
-                        const yIdx = (axisMapping.y >= 0 && axisMapping.y < dimArrays.length) ? axisMapping.y : Math.max(0, dimArrays.length - 2);
-                        const targetDim = dimArrays[yIdx] || dimArrays[0];
-                        const shouldFlip = (targetDim && targetDim.length >= 2) ? targetDim[1] < targetDim[0] : false;
-                        setFlipY(shouldFlip);   
-                        parseExtent();  
-                        if(preProject)reproject();
-                        else handleIrregularGrid();           
-                    });
-                    setShow(true);
-                    setPlotOn(true);
-                    setStatus(null);
                 })
+                //---- Metadata ----//
+                GetAttributes(variable).then((result) => {
+                    setMetadata(result);
+                    setStableMetadata(result);
+                });
+
+                //---- DimInfo ----//
+                GetDimInfo(variable).then((arrays) => {
+                    let { dimArrays, dimUnits, dimNames } = arrays;
+                    console.log(dimArrays)
+                    useGlobalStore.setState({dimArrays, dimNames, dimUnits, 
+                        axisDimArrays: dimArrays, axisDimNames: dimNames, axisDimUnits: dimUnits});
+                    const { axisMapping } = useZarrStore.getState();
+                    const yIdx = (axisMapping.y >= 0 && axisMapping.y < dimArrays.length) ? axisMapping.y : Math.max(0, dimArrays.length - 2);
+                    const targetDim = dimArrays[yIdx] || dimArrays[0];
+                    const shouldFlip = (targetDim && targetDim.length >= 2) ? targetDim[1] < targetDim[0] : false;
+                    setFlipY(shouldFlip);   
+                    parseExtent();  
+                    if(preProject)reproject();
+                    else handleIrregularGrid();           
+                })
+                setShow(true);
+                setPlotOn(true);
+                setStatus(null);
             } catch (error) {
                 setStatus(null);
                 return;
