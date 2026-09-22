@@ -242,7 +242,7 @@ const Plot = () => {
         dpr={[DPR,DPR]}
       >
         <KeyFramePreviewer/>
-        <CountryBorders/>
+        {show && <CountryBorders/>}
         <ExportCanvas show={show}/>
         {show && <AxisLines />}
         {plotType == "volume" && show && 
