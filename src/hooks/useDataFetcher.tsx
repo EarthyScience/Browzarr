@@ -13,7 +13,7 @@ import { createDataTexture } from '@/components/textures/TextureMakers';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 
 export const useDataFetcher = () => {
-    const { variable, setIsFlat, setUseF16Textures,
+    const { variable, bivariate, variable2, setIsFlat, setUseF16Textures,
     setShape, setDataShape, setFlipY, setMainTextures, mainTextures, setMetadata, setPlotOn, setStatus} = useGlobalStore(
     useShallow(s => s))
     const {plotType, interpPixels, preProject, setPlotType} = usePlotStore(useShallow(s => ({

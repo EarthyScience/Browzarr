@@ -219,7 +219,6 @@ export function GetCurrentArray(overrideStore?: string, overrideVariable?: strin
   const thisVar = overrideVariable?? variable
   const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : (idx4D ?? "");
   const cacheBase = scalarIndices !== "" ? `${store}_${thisVar}_${scalarIndices}` : `${store}_${thisVar}`;
-  
   if (cache.has(cacheBase)){
       const chunk = cache.get(cacheBase)
       const compressed = chunk?.compressed

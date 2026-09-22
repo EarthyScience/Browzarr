@@ -245,13 +245,13 @@ export const MetaData = ({ meta, metadata }: Props) => {
     }), [meta?.dimInfo]);
     const dataShape = meta?.shape || [];
     const dataLength = dataShape.length;
-    const { setDimArrays, setDimNames, setDimUnits, setVariable, variable } = useGlobalStore(useShallow(s => s));
+    const { setDimArrays, setDimNames, setDimUnits, setVariable, variable, bivariate } = useGlobalStore(useShallow(s => s));
     const { maxSize, setMaxSize } = useCacheStore(useShallow(s => s))
     const { ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(
     useShallow(s => s))
     const [cacheSize, setCacheSize] = useState(maxSize);
     const [dataSize, setDataSize] = useState(maxSize);
-    const [isBivariate, setIsBivariate] = useState(false);
+    const [isBivariate, setIsBivariate] = useState(bivariate);
     // --- Coarsen Values --- //
     const [displaySpat, setDisplaySpat] = useState(String(kernelSize));
     const [displayDepth, setDisplayDepth] = useState(String(kernelDepth));

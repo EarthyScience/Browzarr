@@ -14,6 +14,7 @@ import Metadata from "./MetaData";
 import { LuSettings } from "react-icons/lu";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import ColorAdjuster from "./Elements/ColorAdjuster";
+import { useColormapStore } from "@/GlobalStates/ColormapStore";
 const operationMap = {
     // Reductions
     Mean: "Mean",
@@ -51,9 +52,10 @@ function Num2String(value: number){
 }
 
 const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Record<string, any>, valueScales: {maxVal: number, minVal:number}}) => {
-    const {colormap, variable, scalingFactor} = useGlobalStore(useShallow(s => ({
-        colormap: s.colormap, variable:s.variable, scalingFactor:s.scalingFactor
+    const {variable, scalingFactor} = useGlobalStore(useShallow(s => ({
+        variable:s.variable, scalingFactor:s.scalingFactor
     })));
+    const colormap = useColormapStore(s => s.colormap);
     const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
     const {variable2, analysisMode, analysisInfo, execute} = useAnalysisStore(useShallow(s => s));
     const {operation, kernelOp} = analysisInfo?? {operation:undefined, kernelOp:undefined};

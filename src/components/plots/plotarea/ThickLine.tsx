@@ -9,6 +9,7 @@ import { PlotPoints } from './PlotPoints';
 import { useThree } from '@react-three/fiber';
 import { invalidate } from '@react-three/fiber';
 import { useGraphStore } from '@/GlobalStates/GraphStore';
+import { useColormapStore } from '@/GlobalStates/ColormapStore';
 
 
 function linspace(start: number, stop: number, num: number): number[] {
@@ -30,8 +31,9 @@ interface ThickLineProps {
 }
 
 const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
-    const {valueScales, timeSeries, colormap} = useGlobalStore(useShallow(s => s))
-    const {lineWidth, useLineColor, lineColor, showPoints, lineResolution, useCustomColor} = useGraphStore(useShallow(s => s))
+    const {valueScales, timeSeries} = useGlobalStore(useShallow(s => s));
+    const colormap = useColormapStore(s => s.colormap);
+    const {lineWidth, useLineColor, lineColor, showPoints, lineResolution, useCustomColor} = useGraphStore(useShallow(s => s));
 	  const {camera} = useThree()
 
   const {maxVal, minVal} = valueScales

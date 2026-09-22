@@ -30,11 +30,13 @@ function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales?: {max
 }
 
 export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, useF16=false) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
-  const {textureArrayDepths} = useGlobalStore.getState()
+  const {textureArrayDepths, bivariate} = useGlobalStore.getState()
   const textureData = data ?? useGlobalStore.getState().textureData
-  if (!textureData){
-    return
-  }
+  if (!textureData) return;
+
+  const numComponents = bivariate ? 2 : 1;
+  const format = bivariate ? THREE.RGFormat : THREE.RedFormat;
+
   if (shape.length == 2){
     const width = shape[1];
     const height = shape[0];
@@ -49,7 +51,7 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
             chunk.data,
             chunk.dims.x,
             chunk.dims.y,
-            THREE.RedFormat,
+            format,
             useF16 ? THREE.HalfFloatType : THREE.UnsignedByteType
         );
         texture.needsUpdate = true;
@@ -63,15 +65,15 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
         y: Math.floor(ly / textureArrayDepths[1]),
         x: Math.floor(lx / textureArrayDepths[2])
     };
-    const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths, useF16)
+    const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths, useF16, numComponents)
     const chunks = []
     for (const chunk of chunkData){   
         //@ts-ignore stop whining
         const volTexture = new THREE.Data3DTexture(chunk.data, chunk.dims.x, chunk.dims.y, chunk.dims.z);
-        volTexture.format = THREE.RedFormat;
+        volTexture.format = format;
         volTexture.minFilter = THREE.NearestFilter;
         volTexture.magFilter = THREE.NearestFilter;
-		volTexture.type = useF16 ? THREE.HalfFloatType : THREE.UnsignedByteType
+		    volTexture.type = useF16 ? THREE.HalfFloatType : THREE.UnsignedByteType
         volTexture.needsUpdate = true;
         chunks.push(volTexture)
     }
@@ -80,9 +82,13 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
 }
 
 export function createDataTexture(){
-  const { dataShape, setMainTextures, setValueScales} = useGlobalStore.getState();
-  const dataArray = GetCurrentArray();
-  const valueScales = StoreData(dataArray);
+  const { dataShape, bivariate, setMainTextures, setValueScales} = useGlobalStore.getState();
+  let valueScales;
+  if (bivariate){valueScales = storeBivariate();}
+  else{
+    const dataArray = GetCurrentArray();
+    valueScales = StoreData(dataArray);
+  }
   setValueScales(valueScales);
   const textures = CreateTexture(dataShape);
   setMainTextures(textures);
@@ -94,14 +100,14 @@ export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minV
     return [textures as THREE.Data3DTexture[] | THREE.DataTexture[], scales];
 }
 
-export function BivariateTexture(useF16=false){
+export function storeBivariate(useF16=false){
 	const {variable, variable2, shareScale, dataShape, setTextureData} = useGlobalStore.getState();
 	const dataLength = dataShape.reduce((a, b) => a * b , 1)
 	let minVal: number, maxVal: number;
 	const textureData = useF16 ? new Uint16Array(dataLength * 2) : new Uint8Array(dataLength * 2)
 	const variables = [variable, variable2];
 	variables.forEach((thisVar, idx) =>{
-		const array = GetCurrentArray(thisVar);
+		const array = GetCurrentArray(undefined, thisVar);
 		if (!shareScale || idx == 0) [minVal, maxVal] = ArrayMinMax(array);
 		const range = (maxVal - minVal)
 		for (let i = 0; i < dataLength; i++){
@@ -126,54 +132,50 @@ function chunkArray(
   dims: { z: number; y: number; x: number },
   chunkSize: { z: number; y: number; x: number },
   resolution: number[],
-  useF16=false
+  useF16 = false,
+  numComponents = 1
 ): { data: Uint8Array | Uint16Array; dims: { x: number; y: number; z: number } }[] {
   const chunks: { data: Uint8Array | Uint16Array; dims: { x: number; y: number; z: number } }[] = [];
- 
-  // Strides for navigating the source array
+
+  // Strides scaled by component count — everything else is unchanged
   const sourceStride = {
-    z: dims.y * dims.x,
-    y: dims.x
+    z: dims.y * dims.x * numComponents,
+    y: dims.x * numComponents
   };
-  
-  // Iterate through each chunk position
+
   for (let cz = 0; cz < resolution[0]; cz++) {
     for (let cy = 0; cy < resolution[1]; cy++) {
       for (let cx = 0; cx < resolution[2]; cx++) {
-        // Calculate the starting indices for this chunk
         const startZ = cz * chunkSize.z;
         const startY = cy * chunkSize.y;
         const startX = cx * chunkSize.x;
-        
-        // Calculate the ending indices (don't exceed array bounds)
+
         const endZ = Math.min(startZ + chunkSize.z, dims.z);
         const endY = Math.min(startY + chunkSize.y, dims.y);
         const endX = Math.min(startX + chunkSize.x, dims.x);
-        
+
         const rowLength = endX - startX;
         const chunkDepth = endZ - startZ;
         const chunkHeight = endY - startY;
-        
-        // Pre-allocate the typed array for this chunk
-        const chunk = useF16 ? new Uint16Array(chunkDepth * chunkHeight * rowLength) : new Uint8Array(chunkDepth * chunkHeight * rowLength);
+        const rowElements = rowLength * numComponents;
+
+        const chunk = useF16
+          ? new Uint16Array(chunkDepth * chunkHeight * rowElements)
+          : new Uint8Array(chunkDepth * chunkHeight * rowElements);
         let chunkOffset = 0;
-        
-        // Extract row by row
+
         for (let z = startZ; z < endZ; z++) {
           for (let y = startY; y < endY; y++) {
-            // Calculate the offset to the start of this row in the source array
-            const rowOffset = z * sourceStride.z + y * sourceStride.y + startX;
-            
-            // Copy the entire row directly into the chunk
-            chunk.set(arr.subarray(rowOffset, rowOffset + rowLength), chunkOffset);
-            chunkOffset += rowLength;
+            const rowOffset = z * sourceStride.z + y * sourceStride.y + startX * numComponents;
+            chunk.set(arr.subarray(rowOffset, rowOffset + rowElements), chunkOffset);
+            chunkOffset += rowElements;
           }
         }
         chunks.push({ data: chunk, dims: { x: rowLength, y: chunkHeight, z: chunkDepth } });
       }
     }
   }
-  
+
   return chunks;
 }
 

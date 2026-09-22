@@ -122,7 +122,9 @@ void main() {
                         alphaAcc += nanA;
                     }
                 } else {
+                    bool nanCheck = false;
                     vec3 col = texture(cmap, vec2(d, 0.5)).rgb;
+                    col = bivariateColor(texCoord, 0, isnan);
                     float alphaFac = revTransparency ? 1.0 - d : d;
                     float alpha;
                     if (useClipScale){

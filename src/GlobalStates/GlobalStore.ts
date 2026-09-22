@@ -21,15 +21,12 @@ type StoreState = {
   activeIndices: number[];
   shape: THREE.Vector3;
   valueScales: { maxVal: number; minVal: number };
-  colormap: THREE.DataTexture;
   remapTexture: THREE.DataTexture | undefined;
   remapBorders: THREE.DataTexture | undefined;
-  colormapName: string;
-  flipColormap: boolean;
   timeSeries: Record<string, Record<string, any>>;
   strides: number[];
   metadata: Record<string, any> | null;
-  zMeta: object[];
+  zMeta: object[] | undefined;
   dimArrays: number[][];
   dimNames: string[];
   dimUnits: string[];
@@ -68,9 +65,6 @@ type StoreState = {
   setActiveIndices: (indices: number[]) => void;
   setShape: (shape: THREE.Vector3) => void;
   setValueScales: (valueScales: { maxVal: number; minVal: number }) => void;
-  setColormap: (colormap: THREE.DataTexture) => void;
-  setColormapName: (colormapName: string) => void;
-  setFlipColormap: (flipColormap: boolean) => void;
   setTimeSeries: (timeSeries: Record<string, Record<string, any>>) => void;
   updateTimeSeries: (newEntries: Record<string, Record<string, any>>) => void;
   setStrides: (strides: number[]) => void;
@@ -114,15 +108,12 @@ const createStore = () => create<StoreState>((set, get) => ({
   activeIndices: [],
   shape: new THREE.Vector3(2, 2, 2),
   valueScales: { maxVal: 1, minVal: -1 },
-  colormap: GetColorMapTexture(),
   remapTexture: undefined,
   remapBorders: undefined,
-  colormapName: "Spectral",
-  flipColormap: false,
   timeSeries: {},
   strides: [10368,144,1],
   metadata: null,
-  zMeta: [{}],
+  zMeta: undefined,
   dimArrays: [[0], [0], [0]],
   dimNames: ["Default"],
   dimUnits: ["Default"],
@@ -161,19 +152,6 @@ const createStore = () => create<StoreState>((set, get) => ({
   setActiveIndices: (indices) => set({ activeIndices: indices }),
   setShape: (shape) => set({ shape }),
   setValueScales: (valueScales) => set({ valueScales }),
-  setColormap: (colormap) => set({ colormap }),
-  setColormapName: (colormapName) => {
-    const prev = get().colormap;
-    const palette = (colormapName === 'Default') ? 'Spectral' : colormapName;
-    const tex = GetColorMapTexture(prev, palette, 1, '#000000', 0, get().flipColormap);
-    set({ colormapName, colormap: tex });
-  },
-  setFlipColormap: (flipColormap) => {
-    const palette = (get().colormapName === 'Default') ? 'Spectral' : get().colormapName;
-    const prev = get().colormap;
-    const tex = GetColorMapTexture(prev, palette, 1, '#000000', 0, flipColormap);
-    set({ flipColormap, colormap: tex });
-  },
   setTimeSeries: (timeSeries) => set({ timeSeries }),
   updateTimeSeries: (newEntries) => {
     const merged = { ...newEntries, ...get().timeSeries  };

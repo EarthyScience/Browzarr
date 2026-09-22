@@ -10,6 +10,7 @@ import './Plots.css';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
+import { useColormapStore } from '@/GlobalStates/ColormapStore';
 
 
 // Define the type for our custom shader material's uniforms
@@ -33,7 +34,9 @@ const MorphingPoints = () => {
   const pointsRef = useRef<THREE.Points>(null);
   const count = 15625; // Total number of points
   const {gl} = useThree();
-  const { setMaxTextureSize, setMax3DTextureSize } = usePlotStore(useShallow(s => s))
+  const { setMaxTextureSize, setMax3DTextureSize } = usePlotStore(useShallow(s => ({
+    setMaxTextureSize: s.setMaxTextureSize, setMax3DTextureSize:s.setMax3DTextureSize
+  })))
 
   useEffect(()=>{
     const context = gl.getContext()
@@ -42,7 +45,7 @@ const MorphingPoints = () => {
     setMaxTextureSize(context.getParameter(context.MAX_TEXTURE_SIZE))
   },[])
 
-  const {colormap} = useGlobalStore(useShallow(s => s))
+  const colormap = useColormapStore(s => s.colormap)
   // Pre-calculate the point positions for each shape using useMemo for performance
   const { spherePositions, cubePositions, planePositions } = useMemo(() => {
     const spherePositions = new Float32Array(count * 3);

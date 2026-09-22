@@ -14,6 +14,10 @@ uniform float borderWidth;
 uniform vec3 borderColor;
 uniform vec3 textureDepths;
 
+uniform vec3 bottomLeft;
+uniform vec3 topLeft;
+uniform vec3 bottomRight;
+uniform float resolution;
 
 uniform bool is360;
 uniform float cOffset;

@@ -16,6 +16,7 @@ import ExportCanvas from '@/utils/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/components/textures/ProjectionTexture';
 import { GetCurrentArray } from '@/utils/HelperFuncs';
+import { useColormapStore } from '@/GlobalStates/ColormapStore';
 
 const TransectNotice = () =>{
   const {selectTS} = usePlotStore(useShallow(s => s))
@@ -151,7 +152,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {colormap, isFlat, DPR, valueScales, mainTextures, setMainTextures, setIsFlat, setStatus, dataShape, useF16Textures} = useGlobalStore(useShallow(s => s))
+  const {isFlat, DPR, valueScales, mainTextures, setMainTextures, setIsFlat, setStatus, dataShape, useF16Textures} = useGlobalStore(useShallow(s => s))
+  const colormap = useColormapStore(s => s.colormap)
   const {keyFrameEditor} = useImageExportStore(useShallow(s => s))
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => s))
   const {analysisMode, analysisArray, useEditor} = useAnalysisStore(useShallow(s => s))

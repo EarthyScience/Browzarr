@@ -12,6 +12,13 @@ vec2 realCoords(vec2 uv){
     return vec2(u, v);
 }
 
+bool isNaNBits(float x) {
+    uint bits = floatBitsToUint(x);
+    uint exponent = bits & 0x7F800000u;
+    uint mantissa = bits & 0x007FFFFFu;
+    return (exponent == 0x7F800000u) && (mantissa != 0u);
+}
+
 float sample1(
     #ifdef IS_FLAT
         vec2 p,
@@ -35,11 +42,53 @@ float sample1(
     else return 0.0;
 }
 
-bool isNaNBits(float x) {
-    uint bits = floatBitsToUint(x);
-    uint exponent = bits & 0x7F800000u;
-    uint mantissa = bits & 0x007FFFFFu;
-    return (exponent == 0x7F800000u) && (mantissa != 0u);
+vec2 sample2(
+    #ifdef IS_FLAT
+        vec2 p,
+    #else
+        vec3 p,
+    #endif
+    int index
+    ) { // Shader doesn't support dynamic indexing so we gotta use switching
+    if (index == 0) return texture(map[0], p).rg;
+    else if (index == 1) return texture(map[1], p).rg;
+    else if (index == 2) return texture(map[2], p).rg;
+    else if (index == 3) return texture(map[3], p).rg;
+    else if (index == 4) return texture(map[4], p).rg;
+    else if (index == 5) return texture(map[5], p).rg;
+    else if (index == 6) return texture(map[6], p).rg;
+    else if (index == 7) return texture(map[7], p).rg;
+    else if (index == 8) return texture(map[8], p).rg;
+    else if (index == 9) return texture(map[9], p).rg;
+    else if (index == 10) return texture(map[10], p).rg;
+    else if (index == 11) return texture(map[11], p).rg;
+    else return vec2(0.0);
+}
+
+vec3 lerpColors(vec3 A, vec3 B, float fac){
+    float steps = resolution - 1.0;
+    fac = round(fac * steps) / steps;
+    return mix(A, B, fac);
+}
+
+vec3 bivariateColor(
+    #ifdef IS_FLAT
+        vec2 p,
+    #else
+        vec3 p,
+    #endif
+    int index,
+    inout bool isNaN
+    ){
+    vec2 biValues = sample2(p, index);
+    if (isNaNBits(biValues.r) || isNaNBits(biValues.g)){
+        isNaN = true;
+        return vec3(0.0, 0.0, 0.0);
+    } else{
+        vec3 bottomColor = lerpColors(bottomLeft, bottomRight, biValues.r);
+        vec3 leftColor = lerpColors(bottomLeft, topLeft, biValues.g);
+        return min(bottomColor, leftColor);
+    }
 }
 
 void denorm(inout float x){

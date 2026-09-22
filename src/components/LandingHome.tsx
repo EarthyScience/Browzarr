@@ -68,7 +68,7 @@ export function LandingHome() {
   return (
     <>
     <MainPanel/> 
-    {variable == 'Default' && <LandingShapes />}
+    {!variable && <LandingShapes />}
     <ErrorComponent />
     <Loading />
     {variable && <Plot />}

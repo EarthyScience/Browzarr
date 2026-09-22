@@ -20,16 +20,16 @@ interface SecondProps{
 }
 
 export const SecondVariable = ({dataShape, isBivariate, setIsBivariate} : SecondProps) => {
-    const { variable2, zMeta, setVariable2 } = useGlobalStore(useShallow(s => ({
-        variable2: s.variable2, zMeta: s.zMeta, setVariable2: s.setVariable2
+    const { variable2, zMeta, shareScale, setVariable2 } = useGlobalStore(useShallow(s => ({
+        variable2: s.variable2, zMeta: s.zMeta, shareScale: s.shareScale, setVariable2: s.setVariable2
     })))
     const isMobile = useIsMobile();
     const [metadata, setMetadata] = useState<Record<string, any> | undefined>(undefined);
     const [variables, setVariables] = useState<string[]>([])
-
+    const setShareScale = (newVal: boolean) => useGlobalStore.setState({ shareScale: newVal})
     useEffect(()=>{
         let compatibleVariables: string[] = []
-        Object.values(zMeta).forEach(val => {
+        zMeta && Object.values(zMeta).forEach(val => {
             const {shape, name} = val as {shape: number[], name: string};
             if (!shape && !name) return;
             if (sameShape(dataShape, shape)) compatibleVariables.push(name)
@@ -41,7 +41,13 @@ export const SecondVariable = ({dataShape, isBivariate, setIsBivariate} : Second
         GetAttributes(e).then(result => {
             setMetadata(result);
         })
+        setVariable2(e)
     }
+
+    useEffect(()=>{
+        // Load attributes on mount if variable2
+        if (variable2) GetAttributes(variable2).then(result => setMetadata(result))
+    },[])
 
     return (
         <>
@@ -81,10 +87,17 @@ export const SecondVariable = ({dataShape, isBivariate, setIsBivariate} : Second
                 )}
             </div>
         </Hider>
-        <div className='grid grid-cols-[auto_40px]'>
-            <label htmlFor="isBivariate">Bivariate Plot</label>
-            <Switch onCheckedChange={e => setIsBivariate(e)}/>
+        <div className={isBivariate ? 'grid grid-cols-2 gap-x-2' : ''}>
+            <div className={`grid grid-cols-[auto_40px]`} style={{display: isBivariate ? '' : 'none'}}>
+                <label htmlFor="shareScale">Share Scale</label>
+                <Switch id="shareScale" defaultChecked={shareScale} onCheckedChange={e => setShareScale(e)}/>
+            </div>
+            <div className={`grid grid-cols-[auto_40px]`}>
+                <label htmlFor="isBivariate">Bivariate Plot</label>
+                <Switch id="isBivariate" defaultChecked={isBivariate} onCheckedChange={e => setIsBivariate(e)}/>
+            </div>
         </div>
+        
         </>
     )
 }
