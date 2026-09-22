@@ -83,6 +83,7 @@ docs/*.tgz
 docs/.tmp
 docs/.profile
 docs/*.0x
+code-review/
 
 #VSC
 docs/.history

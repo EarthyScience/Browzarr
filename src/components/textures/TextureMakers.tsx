@@ -42,9 +42,10 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
     const height = shape[0];
     const chunkSize = {
         y: Math.floor(height / textureArrayDepths[1]),
-        x: Math.floor(width / textureArrayDepths[2])
+        x: Math.floor(width / textureArrayDepths[2]),
+        z: 1
     };
-    const chunkData = chunkArray2D(textureData as Uint8Array, {y:height, x:width}, chunkSize, useF16)
+    const chunkData = chunkArray(textureData as Uint8Array, {y:height, x:width, z:1}, chunkSize, useF16, numComponents)
     const chunks = []
     for (const chunk of chunkData){
         const texture = new THREE.DataTexture(
@@ -65,7 +66,7 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
         y: Math.floor(ly / textureArrayDepths[1]),
         x: Math.floor(lx / textureArrayDepths[2])
     };
-    const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, textureArrayDepths, useF16, numComponents)
+    const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, useF16, numComponents)
     const chunks = []
     for (const chunk of chunkData){   
         //@ts-ignore stop whining
@@ -129,34 +130,42 @@ export function storeBivariate(useF16=false){
 
 function chunkArray(
   arr: Uint8Array | Uint16Array,
-  dims: { z: number; y: number; x: number },
-  chunkSize: { z: number; y: number; x: number },
-  resolution: number[],
+  dims: { z?: number; y: number; x: number },
+  chunkSize: { z?: number; y: number; x: number },
   useF16 = false,
   numComponents = 1
 ): { data: Uint8Array | Uint16Array; dims: { x: number; y: number; z: number } }[] {
+  const dz = dims.z ?? 1;
+  const csz = chunkSize.z ?? dz; // one chunk deep if z not given
+
   const chunks: { data: Uint8Array | Uint16Array; dims: { x: number; y: number; z: number } }[] = [];
 
-  // Strides scaled by component count — everything else is unchanged
   const sourceStride = {
     z: dims.y * dims.x * numComponents,
     y: dims.x * numComponents
   };
 
-  for (let cz = 0; cz < resolution[0]; cz++) {
-    for (let cy = 0; cy < resolution[1]; cy++) {
-      for (let cx = 0; cx < resolution[2]; cx++) {
-        const startZ = cz * chunkSize.z;
+  const numChunksZ = Math.ceil(dz / csz);
+  const numChunksY = Math.ceil(dims.y / chunkSize.y);
+  const numChunksX = Math.ceil(dims.x / chunkSize.x);
+
+  for (let cz = 0; cz < numChunksZ; cz++) {
+    for (let cy = 0; cy < numChunksY; cy++) {
+      for (let cx = 0; cx < numChunksX; cx++) {
+        const startZ = cz * csz;
         const startY = cy * chunkSize.y;
         const startX = cx * chunkSize.x;
 
-        const endZ = Math.min(startZ + chunkSize.z, dims.z);
+        const endZ = Math.min(startZ + csz, dz);
         const endY = Math.min(startY + chunkSize.y, dims.y);
         const endX = Math.min(startX + chunkSize.x, dims.x);
 
         const rowLength = endX - startX;
         const chunkDepth = endZ - startZ;
         const chunkHeight = endY - startY;
+
+        if (chunkDepth <= 0 || chunkHeight <= 0 || rowLength <= 0) continue;
+
         const rowElements = rowLength * numComponents;
 
         const chunk = useF16
@@ -173,62 +182,6 @@ function chunkArray(
         }
         chunks.push({ data: chunk, dims: { x: rowLength, y: chunkHeight, z: chunkDepth } });
       }
-    }
-  }
-
-  return chunks;
-}
-
-function chunkArray2D(
-  arr: Uint8Array,
-  dims: { y: number; x: number },
-  chunkSize: { y: number; x: number },
-  useF16=false
-): { data: Uint8Array | Uint16Array; dims: { x: number; y: number } }[] {
-  
-  const chunks: { data: Uint8Array | Uint16Array; dims: { x: number; y: number } }[] = [];
-  // Calculate how many chunks there will be along each axis
-  const numChunksY = Math.ceil(dims.y / chunkSize.y);
-  const numChunksX = Math.ceil(dims.x / chunkSize.x);
-
-  // Iterate through each chunk position
-  for (let cy = 0; cy < numChunksY; cy++) {
-    for (let cx = 0; cx < numChunksX; cx++) {
-      // Calculate the starting indices for this chunk
-      const startY = cy * chunkSize.y;
-      const startX = cx * chunkSize.x;
-
-      // Calculate the ending indices, ensuring they don't exceed array bounds
-      const endY = Math.min(startY + chunkSize.y, dims.y);
-      const endX = Math.min(startX + chunkSize.x, dims.x);
-
-      // Determine the actual dimensions of this chunk
-      const chunkHeight = endY - startY;
-      const rowLength = endX - startX;
-
-      // Skip creating a chunk if it has no size
-      if (chunkHeight <= 0 || rowLength <= 0) {
-        continue;
-      }
-
-      // Pre-allocate the typed array for this chunk's data
-      const chunk = useF16 ? new Uint16Array(chunkHeight * rowLength) : new Uint8Array(chunkHeight * rowLength);
-      let chunkOffset = 0;
-
-      // Extract data row by row for this chunk
-      for (let y = startY; y < endY; y++) {
-        // Calculate the offset to the start of this row in the source array
-        const sourceRowOffset = y * dims.x + startX;
-
-        // Efficiently copy the entire row segment into the chunk
-        chunk.set(
-          arr.subarray(sourceRowOffset, sourceRowOffset + rowLength),
-          chunkOffset
-        );
-        chunkOffset += rowLength;
-      }
-      
-      chunks.push({ data: chunk, dims: { x: rowLength, y: chunkHeight } });
     }
   }
 
