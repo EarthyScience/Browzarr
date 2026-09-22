@@ -5,8 +5,8 @@ import { useShallow } from 'zustand/shallow'
 
 
 export const useAxisIndices = () => {
-	const { axisMapping } = useZarrStore(useShallow(s => s))
-	const { dimArrays } = useGlobalStore(useShallow(s => s))
+	const axisMapping = useZarrStore(s => s.axisMapping)
+	const dimArrays = useGlobalStore(s => s.dimArrays)
 	const shapeLength = dimArrays.length;
     const xIdx = (axisMapping.x >= 0 && axisMapping.x < shapeLength) ? axisMapping.x : Math.max(0, shapeLength - 1);
     const yIdx = (axisMapping.y >= 0 && axisMapping.y < shapeLength) ? axisMapping.y : Math.max(0, shapeLength - 2);
