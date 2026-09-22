@@ -3,9 +3,9 @@ import { useZarrStore } from "@/GlobalStates/ZarrStore";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { useErrorStore } from "@/GlobalStates/ErrorStore";
 import { calculateStrides } from "@/utils/HelperFuncs";
-import { ToFloat16, CompressArray, DecompressArray, copyChunkToArray, RescaleArray } from "./utils";
+import { ToFloat16, CompressArray, RescaleArray } from "./utils";
 import { NCFetcher, zarrFetcher } from "./dataFetchers";
-import { Convolve, Convolve2D } from "../computation/webGPU";
+import { Convolve } from "../computation/webGPU";
 import { coarsen3DArray } from "@/utils/HelperFuncs";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
 
@@ -80,9 +80,7 @@ export async function GetArray(varOveride?: string) {
     setArraySize(totalElements);
     setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); // These are used in GetCurrentArray() function
 
-    const typedArray = new Float16Array(totalElements);
-
-    let scalingFactor: number | null = null;
+    let scalingFactor: number | undefined;
     const totalChunks = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
     let iter = 1;
     const rescaleIDs: string[] = [];
@@ -124,17 +122,7 @@ export async function GetArray(varOveride?: string) {
                                     cachedChunk.kernel.kernelDepth === (coarsen ? kernelDepth : undefined);
 
                 if (isCacheValid) {
-                    const chunkData = cachedChunk.compressed ? DecompressArray(cachedChunk.data) : new Float16Array(cachedChunk.data);
-                    copyChunkToArray(
-                        chunkData, 
-                        cachedChunk.shape, 
-                        cachedChunk.stride, 
-                        typedArray, 
-                        outputShape, 
-                        destStride as any, [z, y, x], 
-                        [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
-                        [zSlice[0], ySlice[0], xSlice[0]]
-                    )
+                    continue;
                 } else {
                     const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, ndSlices, axisMapping });
                     
@@ -148,11 +136,11 @@ export async function GetArray(varOveride?: string) {
                     if (coarsen) {
                         const origShape = [...thisShape];
                         if (hasZ) {
-                            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, "Mean3D", { kernelSize, kernelDepth }) as Float16Array;
+                            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, { kernelSize, kernelDepth }) as Float16Array;
                             thisShape = origShape.map((dim, idx) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)));
                             chunkF16 = coarsen3DArray(chunkF16, origShape as [number, number, number], chunkStride as [number, number, number], kernelSize, kernelDepth, thisShape.reduce((a, b) => a * b, 1));
                         } else {
-                            chunkF16 = await Convolve2D(chunkF16, { shape: origShape, strides: chunkStride }, "Mean2D", kernelSize) as Float16Array;
+                            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, { kernelSize, kernelDepth:1 }) as Float16Array;
                             thisShape = origShape.map((dim, idx) => Math.floor(dim / kernelSize));
                             const paddedShape = [1, origShape[0], origShape[1]] as [number, number, number];
                             const paddedStride = [1, chunkStride[0], chunkStride[1]] as [number, number, number];
@@ -163,7 +151,6 @@ export async function GetArray(varOveride?: string) {
 
                     if (newScalingFactor != null && newScalingFactor !== scalingFactor) {
                         const delta = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor;
-                        RescaleArray(typedArray, delta);
                         scalingFactor = newScalingFactor;
                         for (const id of rescaleIDs) {
                             const tempChunk = cache.get(`${cacheBase}_chunk_${id}`);
@@ -172,15 +159,6 @@ export async function GetArray(varOveride?: string) {
                             cache.set(`${cacheBase}_chunk_${id}`, tempChunk);
                         }
                     }
-
-                    copyChunkToArray(
-                        chunkF16, thisShape.slice(-3), chunkStride.slice(-3) as any, 
-                        typedArray, outputShape, destStride as any, [z, y, x], 
-                        [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
-                        [zSlice[0], ySlice[0], xSlice[0]]
-                    );
- 
-
                     cache.set(cacheName, {
                         data: compress ? CompressArray(chunkF16, 7) : chunkF16,
                         shape: thisShape.slice(-3), stride: chunkStride.slice(-3),
@@ -196,5 +174,5 @@ export async function GetArray(varOveride?: string) {
             }
     }
     setProgress(0);
-    return { data: typedArray, shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor };
+    return { shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor };
 }

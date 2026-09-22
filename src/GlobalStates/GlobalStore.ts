@@ -61,6 +61,7 @@ type StoreState = {
   clampExtremes: boolean;
   useF16Textures: boolean;
   borderCompatible: boolean;
+  mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined;
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -105,6 +106,7 @@ type StoreState = {
   setScalingFactor: (scalingFactor: number | null) => void;
   setClampExtremes: (clampExtremes: boolean) => void;
   setUseF16Textures: (useF16Textures: boolean) => void;
+  setMainTextures: (mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined) => void;
 };
 
 const createStore = () => create<StoreState>((set, get) => ({
@@ -152,8 +154,9 @@ const createStore = () => create<StoreState>((set, get) => ({
   clampExtremes: false,
   useF16Textures: false,
   borderCompatible: true,
-  // setters
+  mainTextures: undefined,
 
+  // setters
   setDataShape: (dataShape) => set({ dataShape }),
   setActiveIndices: (indices) => set({ activeIndices: indices }),
   setShape: (shape) => set({ shape }),
@@ -224,7 +227,8 @@ const createStore = () => create<StoreState>((set, get) => ({
   setDPR: (DPR) => set({ DPR }),
   setScalingFactor: (scalingFactor) => set({ scalingFactor }),
   setClampExtremes: (clampExtremes) => set({ clampExtremes }),
-  setUseF16Textures: (useF16Textures) => set({ useF16Textures })
+  setUseF16Textures: (useF16Textures) => set({ useF16Textures }),
+  setMainTextures: (mainTextures) => set({ mainTextures })
 }));
 
 declare global {

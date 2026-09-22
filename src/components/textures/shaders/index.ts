@@ -11,7 +11,7 @@ import sphereBlocksFrag from './sphereBlocksFrag.glsl';
 import orthoVertex from './orthoVertex.glsl';
 import flatBlocksVert from './flatBlocksVert.glsl';
 import ddaFrag from './DDAFrag.glsl'
-
+import vertShader from './vert.glsl'
 import commonUniforms from './chunks/commonUniforms.glsl'
 import commonHelpers from './chunks/commonHelpers.glsl'
 
@@ -40,6 +40,7 @@ export {
     wrappedSphereBlocksVert as sphereBlocksVert,
     sphereBlocksFrag,
     orthoVertex,
+    vertShader,
     wrappedFlatBlocksVert as flatBlocksVert,
     wrappedDDAFrag as ddaFrag
 }

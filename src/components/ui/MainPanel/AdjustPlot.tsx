@@ -358,11 +358,8 @@ const SpatialExtent = () =>{
 const GlobalOptions = () =>{
   const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
     setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(s => s))
-  const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
+  const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
   const {valueScales, borderCompatible} = useGlobalStore(useShallow(s => ({valueScales: s.valueScales, borderCompatible: s.borderCompatible})))
-  const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
-  const [showMasks, setShowMasks] = useState(false)
-  const masks = ["None", "Land", "Water"]
   const isPC = plotType == 'point-cloud'
 
   const throttleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);

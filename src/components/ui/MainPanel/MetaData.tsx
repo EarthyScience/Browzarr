@@ -124,7 +124,7 @@ function MetaInfo({
         const cachedSize = currentSize * 2/dtype;
         setDataSize(cachedSize);
         return cachedSize;
-    }, [currentSize, meta]);
+    }, [currentSize]);
 
     const smallCache = cachedSize > cacheSize;
     const [cachedChunks, setCachedChunks] = useState<string | null>(null);
@@ -301,7 +301,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
             const numKey = dimObj.plotDim
             const dimLoc = dimObj.dataDim
             if ( numKey >= 0 ) axisIdices[numKey] = dimLoc; 
-            ndSlices[dimLoc] = [dimObj.start, dimObj.stop]
+            ndSlices[dimLoc] = [dimObj.start, dimObj.stop + 1]
         })
         const axisMapping = {
             x: axisIdices.at(-1) as number, 

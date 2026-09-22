@@ -55,8 +55,8 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         colormap: s.colormap, variable:s.variable, scalingFactor:s.scalingFactor
     })));
     const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
-    const {variable2, analysisMode, operation, kernelOperation, execute} = useAnalysisStore(useShallow(s => s));
-
+    const {variable2, analysisMode, analysisInfo, execute} = useAnalysisStore(useShallow(s => s));
+    const {operation, kernelOp} = analysisInfo?? {operation:undefined, kernelOp:undefined};
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const scaling = useRef<boolean>(false)
     const prevPos = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
@@ -172,7 +172,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     const analysisString = useMemo(()=>{
         if (analysisMode){
             const twoVar = variable2 != "Default";
-            const thisOperation = (operation === "Convolution") ? kernelOperation : operation
+            const thisOperation = (operation === "Convolution") ? kernelOp : operation
             const theseUnits = operationMap[thisOperation as keyof typeof operationMap] 
             const string = twoVar ? `+ ${variable2} (${theseUnits})` : `[${units}] (${theseUnits})`
             return string
