@@ -19,6 +19,8 @@ uniform vec3 bottomLeft;
 uniform vec3 topLeft;
 uniform vec3 bottomRight;
 uniform float resolution;
+uniform int mixMode;
+uniform int bivariateSelection;
 
 uniform bool is360;
 uniform float cOffset;

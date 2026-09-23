@@ -65,11 +65,38 @@ vec2 sample2(
     else return vec2(0.0);
 }
 
+vec2 sample2ToOrder(
+    #ifdef IS_FLAT
+        vec2 p,
+    #else
+        vec3 p,
+    #endif
+    int index,
+    int variable
+    ) { // This sets the first value in the vec2 to be variable. 
+    vec2 biVar = sample2(p, index);
+    if (variable == 0) return biVar;
+    else return biVar.gr;
+}
+
 vec3 lerpColors(vec3 A, vec3 B, float fac){
     float steps = resolution - 1.0;
     fac = round(fac * steps) / steps;
     return mix(A, B, fac);
 }
+vec3 darkenColors(vec3 A, vec3 B){
+    return min(A, B);
+}
+vec3 lightenColors(vec3 A, vec3 B){
+    return max(A, B);
+}
+vec3 multiplyColors(vec3 A, vec3 B){
+    return clamp(A * B, 0., 1.0);
+}
+vec3 differenceColors(vec3 A, vec3 B) {
+    return abs(A - B); 
+}
+
 
 vec3 bivariateColor(
     #ifdef IS_FLAT
@@ -87,7 +114,18 @@ vec3 bivariateColor(
     } else{
         vec3 bottomColor = lerpColors(bottomLeft, bottomRight, biValues.r);
         vec3 leftColor = lerpColors(bottomLeft, topLeft, biValues.g);
-        return min(bottomColor, leftColor);
+        switch (mixMode){
+            case 0:
+                return darkenColors(bottomColor, leftColor);
+            case 1:
+                return lightenColors(bottomColor, leftColor);
+            case 2:
+                return multiplyColors(bottomColor, leftColor);
+            case 3:
+                return differenceColors(bottomColor, leftColor);
+            default:
+                return darkenColors(bottomColor, leftColor);
+        }
     }
 }
 

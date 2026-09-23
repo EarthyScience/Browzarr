@@ -6,6 +6,7 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow'
 import { useCoordBounds } from './useCoordBounds'
+import { invalidate } from '@react-three/fiber'
 
 export function useCommonUniforms() {
 	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange, 
@@ -20,8 +21,9 @@ export function useCommonUniforms() {
 		valueScales: s.valueScales, useF16Textures: s.useF16Textures, bivariate: s.bivariate
 	})))
 	const {lonBounds, latBounds} = useCoordBounds()
-    const {colormap, bottomLeft, bottomRight, topLeft, resolution} = useColormapStore(useShallow(s => ({
-		colormap: s.colormap, bottomLeft: s.bottomLeft, bottomRight: s.bottomRight, topLeft: s.topLeft, resolution: s.resolution,
+    const {colormap, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection} = useColormapStore(useShallow(s => ({
+		colormap: s.colormap, bottomLeft: s.bottomLeft, bottomRight: s.bottomRight, 
+		topLeft: s.topLeft, resolution: s.resolution, mixMode: s.mixMode, bivariateSelection: s.bivariateSelection
 	})))
 	const uniforms = useMemo(() => ({
 		cScale: {value: cScale},
@@ -49,12 +51,14 @@ export function useCommonUniforms() {
 		bottomRight: {value: new THREE.Color(bottomRight).convertLinearToSRGB()},
 		topLeft: {value: new THREE.Color(topLeft).convertLinearToSRGB()},
 		resolution: {value: resolution},
-		bivariate: {value: bivariate}
+		bivariate: {value: bivariate},
+		mixMode: {value: mixMode},
+		bivariateSelection: {value: bivariateSelection}
 	}), [
 		cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
 		textureArrayDepths, colormap, lonBounds, latBounds, useBorderTexture, borderTexture, borderWidth, 
 		borderColor, remapBorders, remapTexture, is360Deg, showBorders, valueScales, useF16Textures,
-		bottomLeft, bottomRight, topLeft, resolution, bivariate
+		bottomLeft, bottomRight, topLeft, resolution, bivariate, mixMode, bivariateSelection
 	])
 	return uniforms
 }
@@ -71,8 +75,9 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		valueScales: s.valueScales, useF16Textures: s.useF16Textures, 
 	})))
 	const {lonBounds, latBounds} = useCoordBounds()
-    const {colormap, bottomLeft, bottomRight, topLeft, resolution} = useColormapStore(useShallow(s => ({
-		colormap: s.colormap, bottomLeft: s.bottomLeft, bottomRight: s.bottomRight, topLeft: s.topLeft, resolution: s.resolution,
+    const {colormap, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection} = useColormapStore(useShallow(s => ({
+		colormap: s.colormap, bottomLeft: s.bottomLeft, bottomRight: s.bottomRight, 
+		topLeft: s.topLeft, resolution: s.resolution, mixMode: s.mixMode, bivariateSelection: s.bivariateSelection
 	})))
 	useEffect(()=>{
 		// Cleanup function to dispose materials when they are remade in parent component
@@ -105,11 +110,14 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		uniforms.bottomRight.value = new THREE.Color(bottomRight).convertLinearToSRGB();
 		uniforms.topLeft.value = new THREE.Color(topLeft).convertLinearToSRGB();
 		uniforms.resolution.value = resolution;
-	},[[
+		uniforms.mixMode.value = mixMode;
+		uniforms.bivariateSelection.value = bivariateSelection;
+		invalidate();
+	},[
 		cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
 		colormap, lonBounds, latBounds, useBorderTexture, borderColor, borderWidth, is360Deg, showBorders,
-		valueScales, useF16Textures, bottomLeft, bottomRight, topLeft, resolution
-	]])
+		valueScales, useF16Textures, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection
+	])
 	
 	return;
 }

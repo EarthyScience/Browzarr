@@ -49,8 +49,9 @@ export const useDataFetcher = () => {
                 //----- TimeSeries Cleanup ----//
                 useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
                 //---- Main Fetch ----//
-                if ( bivariate ) GetArray(variable2);
-                GetArray().then((result) => {
+                const promises: Promise<any>[] = [];
+                if ( bivariate ) promises.push(GetArray(variable2));
+                promises.push(GetArray().then((result) => {
                     setDataShape(result.shape);
                     const shape = result.shape.filter((val) => val != 1);
                     const activeIndices = result.indices.filter((_, idx) => result.shape[idx] != 1);
@@ -71,17 +72,16 @@ export const useDataFetcher = () => {
                     const aspectRatio = shape[shapeLength - 2] / shape[shapeLength - 1];
                     const timeRatio = shape[shapeLength - 3] / shape[shapeLength - 1];
                     setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio, 2)));
-                })
+                }))
                 //---- Metadata ----//
-                GetAttributes(variable).then((result) => {
+                promises.push(GetAttributes(variable).then((result) => {
                     setMetadata(result);
                     setStableMetadata(result);
-                });
+                }));
 
                 //---- DimInfo ----//
-                GetDimInfo(variable).then((arrays) => {
+                promises.push(GetDimInfo(variable).then((arrays) => {
                     let { dimArrays, dimUnits, dimNames } = arrays;
-                    console.log(dimArrays)
                     useGlobalStore.setState({dimArrays, dimNames, dimUnits, 
                         axisDimArrays: dimArrays, axisDimNames: dimNames, axisDimUnits: dimUnits});
                     const { axisMapping } = useZarrStore.getState();
@@ -92,10 +92,12 @@ export const useDataFetcher = () => {
                     parseExtent();  
                     if(preProject)reproject();
                     else handleIrregularGrid();           
-                })
-                setShow(true);
-                setPlotOn(true);
-                setStatus(null);
+                }))
+                Promise.all(promises).then(() =>{
+                    setShow(true);
+                    setPlotOn(true);
+                    setStatus(null);
+                });
             } catch (error) {
                 setStatus(null);
                 return;

@@ -8,19 +8,17 @@ import { useShallow } from 'zustand/shallow';
 import { SliderThumbs } from '@/components/ui/Widgets/SliderThumbs';
 import { RxReset } from "react-icons/rx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Input, Switch, Hider, Button, Slider as UISlider, Switcher, Slider, QuickTip } from '@/components/ui';
+import { Input, Switch, Hider, Button, Slider as UISlider, Switcher, Slider, QuickTip, QuickSelect, SelectItem } from '@/components/ui';
 import { parseLoc, normalize, denormalize } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { ChevronDown } from 'lucide-react';
-import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
 import { RiCloseLargeLine } from "react-icons/ri";
 import { Reprojection } from '../Elements/Reprojection';
-import { useAxisIndices, useDimAxis } from '@/hooks';
 import { FaLongArrowAltUp } from "react-icons/fa";
 import { HiAdjustmentsHorizontal } from "react-icons/hi2";
 import { resetProjection } from '@/components/textures/ProjectionTexture';
 import {AxisCropper} from '../Elements/AxisCropper';
 import { Masker } from '../Elements/Masker';
+import { useColormapStore } from '@/GlobalStates/ColormapStore';
 export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueScales, min=-1, array, units} : 
     {
         range : number[], 
@@ -220,47 +218,70 @@ const PointOptions = () =>{
 }
 
 const FlatOptions = () =>{
-  const {displacement, displaceFaces, offsetNegatives, rotateFlat,
+    const {displacement, displaceFaces, offsetNegatives, rotateFlat,
     setDisplacement, setDisplaceFaces, setOffsetNegatives,
     setResetCamera} = usePlotStore(useShallow(s => s))
-   return(
-   <>
-   
-   <div className='grid gap-2 mb-2'>
-    <Switcher leftText='Flat' rightText='Displace' state={!displaceFaces} onClick={()=>{
-      if (displaceFaces){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceFaces(!displaceFaces); usePlotStore.setState({rotateFlat: false}) }} 
-    />
-    <Hider show={displaceFaces}>
-      <div className='grid gap-2'>
-        <h1>Displacement</h1>
-        <UISlider
-          min={0}
-          max={100}
-          step={2}
-          value={[displacement]}
-          className='w-full mb-2'
-          onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
-        />
-        <div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
-          <label htmlFor="offset-switch"><h1>Offset Negatives</h1></label>
-          <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
+	const {bivariate, variable, variable2} = useGlobalStore(useShallow(s => ({
+		bivariate: s.bivariate, variable: s.variable, variable2: s.variable2
+	})))
+	const {bivariateSelection, setBivariateSelection} = useColormapStore(useShallow(s => ({
+		bivariateSelection: s.bivariateSelection, setBivariateSelection: s.setBivariateSelection
+	})))
+	const variables = [variable, variable2];
+    return(
+    <>
+    <div className='grid gap-2 mb-2'>
+      <Switcher leftText='Flat' rightText='Displace' state={!displaceFaces} onClick={()=>{
+        if (displaceFaces){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceFaces(!displaceFaces); usePlotStore.setState({rotateFlat: false}) }} 
+      />
+      <Hider show={displaceFaces}>
+        <div className='grid gap-2'>
+          <h1>Displacement</h1>
+		{bivariate && <QuickSelect 
+			defaultValue={variables[bivariateSelection]}
+			onValueChange={(val: string) => setBivariateSelection(variables.indexOf(val))}
+			className='w-full'
+		>
+			{variables.map((val, idx)=> (
+				<SelectItem key={idx} value={val as string}>
+					{val}
+				</SelectItem>
+			))}
+		</QuickSelect>}
+          <UISlider
+            min={0}
+            max={100}
+            step={2}
+            value={[displacement]}
+            className='w-full mb-2'
+            onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
+          />
+          <div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
+            <label htmlFor="offset-switch"><h1>Offset Negatives</h1></label>
+            <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
 
-          <label htmlFor="rotate-switch"><h1>Rotate</h1></label>
-          <Switch id='rotate-switch' checked={rotateFlat} onCheckedChange={e=>usePlotStore.setState({rotateFlat: e})} />
+            <label htmlFor="rotate-switch"><h1>Rotate</h1></label>
+            <Switch id='rotate-switch' checked={rotateFlat} onCheckedChange={e=>usePlotStore.setState({rotateFlat: e})} />
+          </div>
         </div>
+      </Hider>
       </div>
-    </Hider>
-    </div>
-   </>
-   )
+    </>
+    )
 }
 
 const SphereOptions = () =>{
-  const {sphereResolution, displacement, displaceFaces, offsetNegatives,
-    setSphereResolution, setDisplacement, setDisplaceFaces, setOffsetNegatives} = usePlotStore(useShallow(s => s))
-  const maxSurfaceDisp = 2;
-  const maxFaceDisplacement = 15*maxSurfaceDisp; 
-
+	const {sphereResolution, displacement, displaceFaces, offsetNegatives,
+		setSphereResolution, setDisplacement, setDisplaceFaces, setOffsetNegatives} = usePlotStore(useShallow(s => s))
+	const maxSurfaceDisp = 2;
+	const maxFaceDisplacement = 15*maxSurfaceDisp; 
+	const {bivariate, variable, variable2} = useGlobalStore(useShallow(s => ({
+		bivariate: s.bivariate, variable: s.variable, variable2: s.variable2
+	})))
+	const {bivariateSelection, setBivariateSelection} = useColormapStore(useShallow(s => ({
+		bivariateSelection: s.bivariateSelection, setBivariateSelection: s.setBivariateSelection
+	})))
+	const variables = [variable, variable2];
   return(<>
   <div className='grid gap-y-[5px] items-center w-50 text-center mb-2'>
     <h1>Displacement Mode</h1>
@@ -273,6 +294,17 @@ const SphereOptions = () =>{
     />
     
     <h1>Displacement</h1>
+	{bivariate && <QuickSelect 
+		defaultValue={variables[bivariateSelection]}
+		onValueChange={(val: string) => setBivariateSelection(variables.indexOf(val))}
+		className='w-full'
+	>
+		{variables.map((val, idx)=> (
+			<SelectItem key={idx} value={val as string}>
+				{val}
+			</SelectItem>
+		))}
+	</QuickSelect>}
     <UISlider
       min={0}
       max={!displaceFaces ? maxSurfaceDisp : maxFaceDisplacement}

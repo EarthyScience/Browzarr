@@ -7,13 +7,11 @@ import { Button } from "@/components/ui/button-enhanced";
 import { QuickTip } from '../Widgets/QuickTip';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { useColormapStore } from '@/GlobalStates/ColormapStore';
-import { useShallow } from 'zustand/shallow';
 import UnivariateColor from '../Elements/UnivariateColor';
-import BivariateColormap from '../Elements/BivariateColor';
+import {BivariateColormap, getBivariateCss} from '../Elements/BivariateColor';
 
 const Colormaps = () => {
-  const {colormapName, flipColormap} = useColormapStore(useShallow(s => ({
-    colormapName: s.colormapName, flipColormap:s.flipColormap})))
+  const {colormapName, flipColormap, bottomLeft, bottomRight, topLeft, mixMode} = useColormapStore(s => s)
   const bivariate = useGlobalStore(s => s.bivariate)
   const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
@@ -37,10 +35,13 @@ const Colormaps = () => {
                 size="icon"
                 className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full cmap-trigger'
                 style={{
-                  backgroundImage: getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral'),
+                  backgroundImage: bivariate 
+                      ? getBivariateCss(bottomLeft, bottomRight, topLeft, mixMode)
+                      : getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral'),
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'center',
                   backgroundSize: '100% 100%',
+                  imageRendering: "pixelated",
                   transform: flipColormap ? "scaleX(-1)" : "",
                   width: "32px",
                   height: "32px",

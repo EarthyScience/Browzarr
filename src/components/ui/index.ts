@@ -140,3 +140,4 @@ export {
 
 export { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
 export {QuickTip} from "./Widgets/QuickTip"
+export {QuickSelect} from './Widgets/QuickSelect'

@@ -10,6 +10,8 @@ type StoreState = {
     topLeft: string;
     bottomRight: string;
     resolution: number;
+    mixMode: number;
+    bivariateSelection: number; // This is which variable to send to colormap when bivariate and wanna see just one value
 
     setColormap: (colormap: THREE.DataTexture) => void;
     setColormapName: (colormapName: string) => void;
@@ -18,6 +20,8 @@ type StoreState = {
     setTopLeft: (color: string) => void;
     setBottomRight: (color: string) => void;
     setResolution: (resolution: number) => void;
+    setMixMode: (mixMode: number) => void;
+    setBivariateSelection: (selection: number) => void;
 }
 
 export const useColormapStore = create<StoreState>((set, get) => ({
@@ -27,7 +31,9 @@ export const useColormapStore = create<StoreState>((set, get) => ({
     bottomLeft: "#ffffff",
     topLeft: "#2a9d8f",
     bottomRight: "#e63946",
-    resolution: 5,
+    resolution: 10,
+    mixMode: 0,
+    bivariateSelection: 0,
 
     setColormap: (colormap) => set({ colormap }),
     setColormapName: (colormapName) => {
@@ -46,4 +52,6 @@ export const useColormapStore = create<StoreState>((set, get) => ({
     setTopLeft: (topLeft) => set({ topLeft }),
     setBottomRight: (bottomRight) => set({ bottomRight }),
     setResolution: (resolution) => set({ resolution }),
+    setMixMode: (mixMode) => set({ mixMode }),
+    setBivariateSelection: (bivariateSelection) => set({ bivariateSelection }),
 }))

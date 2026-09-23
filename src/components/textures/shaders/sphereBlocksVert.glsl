@@ -70,7 +70,16 @@ void main() {
         vec3 localCoord = texCoord * (textureDepths); // Scale up
     #endif
     localCoord = fract(localCoord);
-    float dispStrength = sample1(localCoord, textureIdx);
+    float dispStrength;
+    float instFac;
+    if (bivariate){
+        vec2 biVar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
+        dispStrength = biVar.r;
+        instFac = biVar.g;
+    } else {
+        dispStrength = sample1(localCoord, textureIdx);
+        instFac = dispStrength;
+    }
     rescaler(dispStrength);
     bool isnan = isNaNBits(dispStrength)
         || (!useF16 && dispStrength == 1.0);
@@ -104,6 +113,6 @@ void main() {
     // Apply orientation and position
     vec3 oriented = orientation * scaledPosition;
     vec3 worldPosition = spherePosition + oriented;
-    vStrength = dispStrength;
+    vStrength = instFac;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
 }

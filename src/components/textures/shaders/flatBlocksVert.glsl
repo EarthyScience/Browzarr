@@ -6,8 +6,6 @@ uniform float aspect;
 uniform float displaceZero;
 uniform float displacement;
 
-
-
 vec3 givePosition(vec2 uv) {
     return vec3(uv.x*2., uv.y/aspect*2., 0.);
 }
@@ -75,7 +73,16 @@ void main() {
         vec3 localCoord = texCoord * textureDepths; // Scale up
     #endif
     localCoord = fract(localCoord);
-    float dispStrength = sample1(localCoord, textureIdx);
+    float dispStrength;
+    float instFac;
+    if (bivariate){
+        vec2 biVar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
+        dispStrength = biVar.r;
+        instFac = biVar.g;
+    } else {
+        dispStrength = sample1(localCoord, textureIdx);
+        instFac = dispStrength;
+    }
     rescaler(dispStrength);
 
     bool isnan = isNaNBits(dispStrength)
@@ -97,7 +104,7 @@ void main() {
     vec3 scaledPosition = position;
     scaledPosition.z += 0.005;
     scaledPosition.z *= heightFactor;
-    vStrength = dispStrength;
+    vStrength = instFac;
     vec3 worldPosition = planePosition + scaledPosition;
     
     gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
