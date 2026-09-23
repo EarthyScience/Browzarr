@@ -181,17 +181,16 @@ export function BivariateColormap({ size = 340 }: BivariateColormapProps) {
 				</SelectTrigger>
 				<SelectContent >
 					{bivariateSchemes.map((obj, idx) => (
-						<div className="flex justify-between items-center">
-						<SelectItem className='w-full flex justify-between' key={idx} value={String(idx)}>
-							<span>{obj.name}</span>	
-						</SelectItem>
-						<div className="flex gap-1">
-								{colorSwatch(obj.bottomLeft)}
-								{colorSwatch(obj.topLeft)}
-								{colorSwatch(obj.bottomRight)}
-						</div>	
+						<div key={idx} className="flex justify-between items-center">
+							<SelectItem value={String(idx)}>
+								<span>{obj.name}</span>	
+							</SelectItem>
+							<div className="flex gap-1">
+									{colorSwatch(obj.bottomLeft)}
+									{colorSwatch(obj.topLeft)}
+									{colorSwatch(obj.bottomRight)}
+							</div>	
 						</div>
-					
 					))}
 				</SelectContent>
 			</Select>

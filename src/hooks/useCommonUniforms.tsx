@@ -46,7 +46,7 @@ export function useCommonUniforms() {
 		nanColor: {value : new THREE.Color(nanColor).convertLinearToSRGB()},
 		nanAlpha: {value: 1 - nanTransparency},
 		fillValue: {value: fillValue?? NaN},
-		valueRange: {value: new THREE.Vector2(valueScales.minVal, valueScales.maxVal)},
+		valueRange: {value: new THREE.Vector2(valueScales[bivariateSelection].minVal, valueScales[bivariateSelection].maxVal)},
 		bottomLeft: {value: new THREE.Color(bottomLeft).convertLinearToSRGB()},
 		bottomRight: {value: new THREE.Color(bottomRight).convertLinearToSRGB()},
 		topLeft: {value: new THREE.Color(topLeft).convertLinearToSRGB()},
@@ -104,7 +104,7 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		uniforms.borderColor.value = new THREE.Color(borderColor).convertLinearToSRGB();
 		uniforms.borderWidth.value = borderWidth;
 		uniforms.is360.value = is360Deg;
-		uniforms.valueRange.value = new THREE.Vector2(valueScales.minVal, valueScales.maxVal);
+		uniforms.valueRange.value = new THREE.Vector2(valueScales[bivariateSelection].minVal, valueScales[bivariateSelection].maxVal);
 		uniforms.useF16.value = useF16Textures;
 		uniforms.bottomLeft.value = new THREE.Color(bottomLeft).convertLinearToSRGB();
 		uniforms.bottomRight.value = new THREE.Color(bottomRight).convertLinearToSRGB();

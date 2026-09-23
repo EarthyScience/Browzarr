@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, } from 'react'
+import React, { useEffect, useMemo, useState, } from 'react'
 import { getColormapGradientCss } from '@/components/textures';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button-enhanced";
@@ -11,19 +11,22 @@ import UnivariateColor from '../Elements/UnivariateColor';
 import {BivariateColormap, getBivariateCss} from '../Elements/BivariateColor';
 
 const Colormaps = () => {
-  const {colormapName, flipColormap, bottomLeft, bottomRight, topLeft, mixMode} = useColormapStore(s => s)
-  const bivariate = useGlobalStore(s => s.bivariate)
-  const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
+    const {colormapName, flipColormap, bottomLeft, bottomRight, topLeft, mixMode} = useColormapStore(s => s)
+    const bivariate = useGlobalStore(s => s.bivariate)
+    const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
-  useEffect(() => {
-      const handleResize = () => {
-        setPopoverSide(window.innerWidth < 768 ? "top" : "left");
-      };
-      handleResize();
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }, []);
-
+    useEffect(() => {
+        const handleResize = () => {
+          setPopoverSide(window.innerWidth < 768 ? "top" : "left");
+        };
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+      }, []);
+    const colormapBG = useMemo(()=> bivariate 
+                      ? getBivariateCss(bottomLeft, bottomRight, topLeft, mixMode)
+                      : getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral')
+    ,[bottomLeft, bottomRight, topLeft, mixMode, colormapName, bivariate])
   return (
     <div className="relative">
       <Popover>
@@ -35,9 +38,7 @@ const Colormaps = () => {
                 size="icon"
                 className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full cmap-trigger'
                 style={{
-                  backgroundImage: bivariate 
-                      ? getBivariateCss(bottomLeft, bottomRight, topLeft, mixMode)
-                      : getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral'),
+                  backgroundImage: colormapBG,
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'center',
                   backgroundSize: '100% 100%',

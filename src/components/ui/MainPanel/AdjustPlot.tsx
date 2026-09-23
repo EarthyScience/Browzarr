@@ -64,6 +64,31 @@ export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, v
     )
 })
 
+const BivariateSelector = ({className} : {className?: string})=>{
+	const {bivariate, variable, variable2} = useGlobalStore(useShallow(s => ({
+		bivariate: s.bivariate, variable: s.variable, variable2: s.variable2
+	})))
+	const {bivariateSelection, setBivariateSelection} = useColormapStore(useShallow(s => ({
+		bivariateSelection: s.bivariateSelection, setBivariateSelection: s.setBivariateSelection
+	})))
+	const variables = [variable, variable2];
+	return (
+		<div className={className}>
+			{bivariate && <QuickSelect 
+				value={variables[bivariateSelection]}
+				onValueChange={(val: string) => setBivariateSelection(variables.indexOf(val))}
+				className='w-full'
+			>
+				{variables.map((val, idx)=> (
+					<SelectItem key={idx} value={val as string}>
+						{val}
+					</SelectItem>
+				))}
+			</QuickSelect>}
+		</div>
+	)
+}
+
 const VolumeOptions = ()=>{
   const { useRayMarch, quality, transparency, vTransferRange, vTransferScale, interpPixels, revTransparency,
     setQuality, setUseRayMarch, setTransparency, setVTransferRange, setVTransferScale, setRevTransparency} = usePlotStore(useShallow(s => s))
@@ -104,6 +129,7 @@ const VolumeOptions = ()=>{
         </div>
       </Hider>
       <Switcher className={interpPixels ? 'opacity-40 !cursor-default' : undefined} leftText='DDA' rightText='Raymarch' state={!useRayMarch} onClick={()=> setUseRayMarch(!useRayMarch)}/>
+		<BivariateSelector />
       <div className='grid grid-cols-3 justify-between place-items-center'>
         <h1>Transparency</h1>
         <Button
@@ -221,13 +247,6 @@ const FlatOptions = () =>{
     const {displacement, displaceFaces, offsetNegatives, rotateFlat,
     setDisplacement, setDisplaceFaces, setOffsetNegatives,
     setResetCamera} = usePlotStore(useShallow(s => s))
-	const {bivariate, variable, variable2} = useGlobalStore(useShallow(s => ({
-		bivariate: s.bivariate, variable: s.variable, variable2: s.variable2
-	})))
-	const {bivariateSelection, setBivariateSelection} = useColormapStore(useShallow(s => ({
-		bivariateSelection: s.bivariateSelection, setBivariateSelection: s.setBivariateSelection
-	})))
-	const variables = [variable, variable2];
     return(
     <>
     <div className='grid gap-2 mb-2'>
@@ -235,35 +254,25 @@ const FlatOptions = () =>{
         if (displaceFaces){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceFaces(!displaceFaces); usePlotStore.setState({rotateFlat: false}) }} 
       />
       <Hider show={displaceFaces}>
-        <div className='grid gap-2'>
-          <h1>Displacement</h1>
-		{bivariate && <QuickSelect 
-			defaultValue={variables[bivariateSelection]}
-			onValueChange={(val: string) => setBivariateSelection(variables.indexOf(val))}
-			className='w-full'
-		>
-			{variables.map((val, idx)=> (
-				<SelectItem key={idx} value={val as string}>
-					{val}
-				</SelectItem>
-			))}
-		</QuickSelect>}
-          <UISlider
-            min={0}
-            max={100}
-            step={2}
-            value={[displacement]}
-            className='w-full mb-2'
-            onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
-          />
-          <div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
-            <label htmlFor="offset-switch"><h1>Offset Negatives</h1></label>
-            <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
+			<div className='grid gap-2'>
+			<h1>Displacement</h1>
+			<BivariateSelector />
+			<UISlider
+				min={0}
+				max={100}
+				step={2}
+				value={[displacement]}
+				className='w-full mb-2'
+				onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
+			/>
+			<div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
+				<label htmlFor="offset-switch"><h1>Offset Negatives</h1></label>
+				<Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
 
-            <label htmlFor="rotate-switch"><h1>Rotate</h1></label>
-            <Switch id='rotate-switch' checked={rotateFlat} onCheckedChange={e=>usePlotStore.setState({rotateFlat: e})} />
-          </div>
-        </div>
+				<label htmlFor="rotate-switch"><h1>Rotate</h1></label>
+				<Switch id='rotate-switch' checked={rotateFlat} onCheckedChange={e=>usePlotStore.setState({rotateFlat: e})} />
+			</div>
+			</div>
       </Hider>
       </div>
     </>
@@ -275,13 +284,7 @@ const SphereOptions = () =>{
 		setSphereResolution, setDisplacement, setDisplaceFaces, setOffsetNegatives} = usePlotStore(useShallow(s => s))
 	const maxSurfaceDisp = 2;
 	const maxFaceDisplacement = 15*maxSurfaceDisp; 
-	const {bivariate, variable, variable2} = useGlobalStore(useShallow(s => ({
-		bivariate: s.bivariate, variable: s.variable, variable2: s.variable2
-	})))
-	const {bivariateSelection, setBivariateSelection} = useColormapStore(useShallow(s => ({
-		bivariateSelection: s.bivariateSelection, setBivariateSelection: s.setBivariateSelection
-	})))
-	const variables = [variable, variable2];
+	
   return(<>
   <div className='grid gap-y-[5px] items-center w-50 text-center mb-2'>
     <h1>Displacement Mode</h1>
@@ -294,17 +297,7 @@ const SphereOptions = () =>{
     />
     
     <h1>Displacement</h1>
-	{bivariate && <QuickSelect 
-		defaultValue={variables[bivariateSelection]}
-		onValueChange={(val: string) => setBivariateSelection(variables.indexOf(val))}
-		className='w-full'
-	>
-		{variables.map((val, idx)=> (
-			<SelectItem key={idx} value={val as string}>
-				{val}
-			</SelectItem>
-		))}
-	</QuickSelect>}
+	<BivariateSelector />
     <UISlider
       min={0}
       max={!displaceFaces ? maxSurfaceDisp : maxFaceDisplacement}
@@ -391,12 +384,11 @@ const GlobalOptions = () =>{
   const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, useBorderTexture,
     setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels} = usePlotStore(useShallow(s => s))
   const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
-  const {valueScales, borderCompatible, bivariate} = useGlobalStore(useShallow(s => ({valueScales: s.valueScales, borderCompatible: s.borderCompatible, bivariate: s.bivariate})))
+  const {valueScales, borderCompatible} = useGlobalStore(useShallow(s => ({valueScales: s.valueScales, borderCompatible: s.borderCompatible})))
   const isPC = plotType == 'point-cloud'
-
+	const bivariateSelection = useColormapStore(s => s.bivariateSelection)
   const throttleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestValue = useRef(borderColor);
-
   const handleColorChange = useCallback((setter: (color:string) => void)=>(e: React.ChangeEvent<HTMLInputElement>) => {
     latestValue.current = e.target.value;
 
@@ -411,17 +403,16 @@ const GlobalOptions = () =>{
   return (
     <div className='grid gap-y-[5px] items-center w-full text-center mt-2 bg-[var(--global-settings)] rounded-md p-4'>
       <span className='text-lg font-bold'>Global Settings</span>
-      {!bivariate && 
       <div className="flex flex-col items-center w-[200px] gap-4">
         <h1>Value Cropping</h1>
+		<BivariateSelector />
         <MinMaxSlider 
           range={valueRange} 
           setRange={setValueRange} 
-          valueScales={valueScales} 
+          valueScales={valueScales[bivariateSelection]} 
           min={0} 
         />
       </div>
-      }
       {!isPC &&
         <>
       <h1>NaN Transparency</h1>

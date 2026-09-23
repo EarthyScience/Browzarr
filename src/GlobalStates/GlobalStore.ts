@@ -20,7 +20,7 @@ type StoreState = {
   dataShape: number[];
   activeIndices: number[];
   shape: THREE.Vector3;
-  valueScales: { maxVal: number; minVal: number };
+  valueScales: { maxVal: number; minVal: number }[];
   remapTexture: THREE.DataTexture | undefined;
   remapBorders: THREE.DataTexture | undefined;
   timeSeries: Record<string, Record<string, any>>;
@@ -64,7 +64,7 @@ type StoreState = {
   setDataShape: (dataShape: number[]) => void;
   setActiveIndices: (indices: number[]) => void;
   setShape: (shape: THREE.Vector3) => void;
-  setValueScales: (valueScales: { maxVal: number; minVal: number }) => void;
+  setValueScales: (valueScales: { maxVal: number; minVal: number }[]) => void;
   setTimeSeries: (timeSeries: Record<string, Record<string, any>>) => void;
   updateTimeSeries: (newEntries: Record<string, Record<string, any>>) => void;
   setStrides: (strides: number[]) => void;
@@ -107,7 +107,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   dataShape: [1, 1, 1],
   activeIndices: [],
   shape: new THREE.Vector3(2, 2, 2),
-  valueScales: { maxVal: 1, minVal: -1 },
+  valueScales: [{ maxVal: 1, minVal: -1 }],
   remapTexture: undefined,
   remapBorders: undefined,
   timeSeries: {},

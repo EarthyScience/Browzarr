@@ -53,19 +53,24 @@ bool shouldSkip(vec3 p, out vec3 texCoord, out vec2 maskUV) {
     return false;
 }
 
-bool sampleVoxel(vec3 texCoord, out float d, out vec3 localCoord, out int textureIdx, out bool isnan) {
+bool sampleVoxel(vec3 texCoord, out float d, out float biVal, out bool isnan) {
     // This gets the sample value. If d is clipped by value-range return false
     ivec3 depths = ivec3(textureDepths);
     int yStepSize = depths.x;
     int zStepSize = depths.y * depths.x;
     ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), depths - 1);
-    textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
-    localCoord = fract(texCoord * textureDepths);
-    if (bivariate) return true; // if Bivariate move to bivariate coloring with localCoord and textureIdx
-    d = sample1(localCoord, textureIdx);
+    int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
+    vec3 localCoord = fract(texCoord * textureDepths);
+    bool biNaN = false;
+    if (bivariate) {
+        vec2 bivar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
+        d = bivar.r;
+        biVal = bivar.g;
+        biNaN = isNaNBits(d) || isNaNBits(biVal);
+    } else d = sample1(localCoord, textureIdx);
     rescaler(d);
     isnan = isNaNBits(d) || (!useF16 && d == 1.0);
-    d = max(min(d * cScale + cOffset, 0.995), 0.0);
+    // d = max(min(d * cScale + cOffset, 0.995), 0.0);
     return d >= threshold.x && d <= threshold.y;
 }
 
@@ -112,43 +117,32 @@ void main() {
         vec2 maskUV;
         if (!shouldSkip(pCenter, texCoord, maskUV)) {
             float d;
+            float biVal;
             bool isNan;
-            vec3 localCoord;
-            int textureIdx;
-            if (sampleVoxel(texCoord, d, localCoord, textureIdx, isNan)) {
-                if (bivariate){
-                    vec3 col = bivariateColor(localCoord, textureIdx, isNan);
-                    if (isNan) {
-                        if (nanAlpha > 0.0){ 
-                            float nanA = pow(nanAlpha, 5.0);
-                            accumColor += (1.0 - alphaAcc) * nanA * nanColor;
-                            alphaAcc += nanA;
-                        }
+            if (sampleVoxel(texCoord, d, biVal, isNan)) {
+                isNan =  isNan || (abs(d - fillValue) < 0.005);
+                if (isNan) {    
+                    if (nanAlpha > 0.0){ 
+                        float nanA = pow(nanAlpha, 5.0);
+                        accumColor += (1.0 - alphaAcc) * nanA * nanColor;
+                        alphaAcc += nanA;
                     }
-                    accumColor =  col;
-                    alphaAcc = 1.0;
-                } else{
-                    isNan =  isNan || (abs(d - fillValue) < 0.005);
-                    if (isNan) {    
-                        if (nanAlpha > 0.0){ 
-                            float nanA = pow(nanAlpha, 5.0);
-                            accumColor += (1.0 - alphaAcc) * nanA * nanColor;
-                            alphaAcc += nanA;
-                        }
+                } else {
+                    vec3 col;
+                    if (bivariate){
+                        bool flipOrder = bivariateSelection != 0;
+                        col = flipOrder ? colorMixer(biVal, d) : colorMixer(d, biVal);
+                    }else col = texture(cmap, vec2(d, 0.5)).rgb;
+                    float alphaFac = revTransparency ? 1.0 - d : d;
+                    float alpha;
+                    if (useClipScale){
+                        float normalizedOpacity = clamp((alphaFac - threshold.x) / (threshold.y - threshold.x), 0.0, 1.0);
+                        alpha = pow(max(normalizedOpacity, 0.001), transparency*opacityMag);
                     } else {
-                        bool nanCheck = false;
-                        vec3 col = texture(cmap, vec2(d, 0.5)).rgb;
-                        float alphaFac = revTransparency ? 1.0 - d : d;
-                        float alpha;
-                        if (useClipScale){
-                            float normalizedOpacity = clamp((alphaFac - threshold.x) / (threshold.y - threshold.x), 0.0, 1.0);
-                            alpha = pow(max(normalizedOpacity, 0.001), transparency*opacityMag);
-                        } else {
-                            alpha = pow(max(alphaFac, 0.001), transparency * opacityMag);
-                        }
-                        accumColor += (1.0 - alphaAcc) * alpha * col;
-                        alphaAcc += alpha * (1.0 - alphaAcc);
+                        alpha = pow(max(alphaFac, 0.001), transparency * opacityMag);
                     }
+                    accumColor += (1.0 - alphaAcc) * alpha * col;
+                    alphaAcc += alpha * (1.0 - alphaAcc);
                 }
                 if (alphaAcc >= 1.0){
                     if (useBorderTexture) {

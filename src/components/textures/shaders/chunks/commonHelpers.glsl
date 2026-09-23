@@ -97,6 +97,22 @@ vec3 differenceColors(vec3 A, vec3 B) {
     return abs(A - B); 
 }
 
+vec3 colorMixer(float A, float B){
+    vec3 bottomColor = lerpColors(bottomLeft, bottomRight, A);
+    vec3 leftColor = lerpColors(bottomLeft, topLeft,B);
+    switch (mixMode){
+        case 0:
+            return darkenColors(bottomColor, leftColor);
+        case 1:
+            return lightenColors(bottomColor, leftColor);
+        case 2:
+            return multiplyColors(bottomColor, leftColor);
+        case 3:
+            return differenceColors(bottomColor, leftColor);
+        default:
+            return darkenColors(bottomColor, leftColor);
+    }
+}
 
 vec3 bivariateColor(
     #ifdef IS_FLAT
@@ -112,20 +128,7 @@ vec3 bivariateColor(
         isNaN = true;
         return vec3(0.0, 0.0, 0.0);
     } else{
-        vec3 bottomColor = lerpColors(bottomLeft, bottomRight, biValues.r);
-        vec3 leftColor = lerpColors(bottomLeft, topLeft, biValues.g);
-        switch (mixMode){
-            case 0:
-                return darkenColors(bottomColor, leftColor);
-            case 1:
-                return lightenColors(bottomColor, leftColor);
-            case 2:
-                return multiplyColors(bottomColor, leftColor);
-            case 3:
-                return differenceColors(bottomColor, leftColor);
-            default:
-                return darkenColors(bottomColor, leftColor);
-        }
+        return colorMixer(biValues.r, biValues.g);
     }
 }
 
