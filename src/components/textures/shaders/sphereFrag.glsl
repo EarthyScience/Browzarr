@@ -70,11 +70,17 @@ void main(){
             vec3 localCoord = texCoord * (textureDepths); // Scale up
         #endif
         localCoord = fract(localCoord);
+        bool isNan;
+        if (bivariate){
+            color = vec4(bivariateColor(localCoord, textureIdx, isNan), 1.0);
+            if (isNan) color = vec4(nanColor, nanAlpha);
+            return;
+        }
         float strength = sample1(localCoord, textureIdx);
         rescaler(strength);
-        bool isnan = isNaNBits(strength) || (!useF16 && ( strength == 1.0))
+        isNan = isNaNBits(strength) || (!useF16 && ( strength == 1.0))
             || abs(strength - fillValue) < 0.005;
-        if (!isnan){
+        if (!isNan){
             strength *= cScale;
             strength = max(min(strength+cOffset,0.995), 0.0); // clamp color to [0, 1]
             color = vec4(texture2D(cmap, vec2(strength, 0.5)).rgb, 1.);

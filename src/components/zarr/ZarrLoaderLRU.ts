@@ -71,6 +71,7 @@ export async function GetZarrAttributes(thisVariable?: string) {
 	const { cache } = useCacheStore.getState();
 	const { currentStore } = useZarrStore.getState();
 	const resolvedVariable = thisVariable ?? variable;
+	if (!resolvedVariable) throw new Error("Variable is not defined");
 	const cacheName = `${initStore}_${resolvedVariable}_meta`;
 
 	if (cache.has(cacheName)) return cache.get(cacheName);

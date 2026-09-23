@@ -58,7 +58,6 @@ bool sampleVoxel(vec3 texCoord, out float d, out bool isnan) {
     ivec3 depths = ivec3(textureDepths);
     int yStepSize = depths.x;
     int zStepSize = depths.y * depths.x;
-
     ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), depths - 1);
     int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
     vec3 localCoord = fract(texCoord * textureDepths);
@@ -124,7 +123,7 @@ void main() {
                 } else {
                     bool nanCheck = false;
                     vec3 col = texture(cmap, vec2(d, 0.5)).rgb;
-                    col = bivariateColor(texCoord, 0, isnan);
+                    // col = bivariateColor(texCoord, 0, isnan);
                     float alphaFac = revTransparency ? 1.0 - d : d;
                     float alpha;
                     if (useClipScale){

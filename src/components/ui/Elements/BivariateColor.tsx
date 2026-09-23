@@ -26,9 +26,9 @@ function lerpColor(c1: Rgb, c2: Rgb, t: number): Rgb {
 }
 function darkenBlend(c1: Rgb, c2: Rgb): Rgb {
   return {
-    r: (c1.r * c2.r) / 255,
-    g: (c1.g * c2.g) / 255,
-    b: (c1.b * c2.b) / 255,
+    r: Math.min((c1.r, c2.r)),
+    g: Math.min(c1.g, c2.g),
+    b: Math.min(c1.b, c2.b),
   };
 }
 
@@ -85,6 +85,7 @@ export default function BivariateColormap({ size = 340 }: BivariateColormapProps
             setBottomLeft: s.setBottomLeft, setTopLeft: s.setTopLeft, setBottomRight: s.setBottomRight, setResolution: s.setResolution
         })));
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    
     const draw = useCallback(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;

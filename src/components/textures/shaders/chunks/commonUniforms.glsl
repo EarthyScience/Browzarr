@@ -14,6 +14,7 @@ uniform float borderWidth;
 uniform vec3 borderColor;
 uniform vec3 textureDepths;
 
+uniform bool bivariate;
 uniform vec3 bottomLeft;
 uniform vec3 topLeft;
 uniform vec3 bottomRight;

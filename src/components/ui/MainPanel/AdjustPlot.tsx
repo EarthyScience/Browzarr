@@ -356,10 +356,10 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
-    setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(s => s))
+  const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, useBorderTexture,
+    setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels} = usePlotStore(useShallow(s => s))
   const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
-  const {valueScales, borderCompatible} = useGlobalStore(useShallow(s => ({valueScales: s.valueScales, borderCompatible: s.borderCompatible})))
+  const {valueScales, borderCompatible, bivariate} = useGlobalStore(useShallow(s => ({valueScales: s.valueScales, borderCompatible: s.borderCompatible, bivariate: s.bivariate})))
   const isPC = plotType == 'point-cloud'
 
   const throttleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -379,6 +379,7 @@ const GlobalOptions = () =>{
   return (
     <div className='grid gap-y-[5px] items-center w-full text-center mt-2 bg-[var(--global-settings)] rounded-md p-4'>
       <span className='text-lg font-bold'>Global Settings</span>
+      {!bivariate && 
       <div className="flex flex-col items-center w-[200px] gap-4">
         <h1>Value Cropping</h1>
         <MinMaxSlider 
@@ -388,6 +389,7 @@ const GlobalOptions = () =>{
           min={0} 
         />
       </div>
+      }
       {!isPC &&
         <>
       <h1>NaN Transparency</h1>
