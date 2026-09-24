@@ -73,19 +73,28 @@ const BivariateSelector = ({className} : {className?: string})=>{
 	})))
 	const variables = [variable, variable2];
 	return (
-		<div className={className}>
-			{bivariate && <QuickSelect 
-				value={variables[bivariateSelection]}
-				onValueChange={(val: string) => setBivariateSelection(variables.indexOf(val))}
-				className='w-full'
-			>
-				{variables.map((val, idx)=> (
-					<SelectItem key={idx} value={val as string}>
-						{val}
-					</SelectItem>
-				))}
-			</QuickSelect>}
-		</div>
+		<>
+			{bivariate &&
+      <div className={`grid grid-cols-[60px_auto] items-center ${className}`}>
+        <h1 className='w-14 flex'>
+          <QuickTip message='Changes will only apply to the selected variables values'>
+            <BsFillQuestionCircleFill />
+          </QuickTip>
+          Map to: 
+        </h1>
+        <QuickSelect 
+          value={variables[bivariateSelection]}
+          onValueChange={(val: string) => setBivariateSelection(variables.indexOf(val))}
+          className='w-full min-w-0'
+        >
+          {variables.map((val, idx)=> (
+            <SelectItem key={idx} value={val as string}>
+              {val}
+            </SelectItem>
+          ))}
+        </QuickSelect>
+      </div>}
+		</>
 	)
 }
 

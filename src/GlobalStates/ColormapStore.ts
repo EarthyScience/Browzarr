@@ -32,7 +32,7 @@ export const useColormapStore = create<StoreState>((set, get) => ({
     topLeft: "#2a9d8f",
     bottomRight: "#e63946",
     resolution: 10,
-    mixMode: 0,
+    mixMode: 2,
     bivariateSelection: 0,
 
     setColormap: (colormap) => set({ colormap }),

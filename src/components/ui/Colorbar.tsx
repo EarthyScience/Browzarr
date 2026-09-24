@@ -62,11 +62,13 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
     })));
     const unitList = useMemo(()=>{
         const units:string[] = [];
-        const variables = [variable, variable2].filter(val => val !== undefined);
-        variables
-            .forEach(val => GetAttributes(val).then(r => units.push(r.units)));
+        if (bivariate){
+            const variables = [variable, variable2].filter(val => val !== undefined);
+            variables
+                .forEach(val => GetAttributes(val).then(r => units.push(r.units)));
+        } else units.push(metadata?.units as string)
         return units
-    },[variable, variable2])
+    },[variable, variable2, bivariate])
     const colormap = useColormapStore(s => s.colormap);
     const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
     const {variable2:analysisVar2, analysisMode, analysisInfo, execute} = useAnalysisStore(useShallow(s => s));
@@ -164,6 +166,7 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
     }, []);
 
     useEffect(()=>{
+        if (bivariate) return;
         const newRange = (newMax - newMin);
         const scale = range/newRange;
         const offset = -(newMin - origMin)/newRange
@@ -318,8 +321,7 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
                 <ColorAdjuster />
             </PopoverContent>
         </Popover>
-        }
-            
+        } 
         </div>
         </>
         
