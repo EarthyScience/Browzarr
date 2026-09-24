@@ -76,12 +76,12 @@ const BivariateSelector = ({className} : {className?: string})=>{
 		<>
 			{bivariate &&
       <div className={`grid grid-cols-[60px_auto] items-center ${className}`}>
-        <h1 className='w-14 flex'>
+        <span className='flex items-center justify-center'>
           <QuickTip message='Changes will only apply to the selected variables values'>
             <BsFillQuestionCircleFill />
           </QuickTip>
-          Map to: 
-        </h1>
+          <span>Map to:</span>
+        </span>
         <QuickSelect 
           value={variables[bivariateSelection]}
           onValueChange={(val: string) => setBivariateSelection(variables.indexOf(val))}
@@ -107,15 +107,15 @@ const VolumeOptions = ()=>{
   return(
     <>
     <div className='grid gap-y-[5px] items-center w-50 text-center mb-8'>
-      <b className='flex justify-center'>Renderer
+      <b className='flex items-center justify-center'>
         <QuickTip message={<div className='flex flex-col'>
           <span>Change between DDA or Raymarching render method.</span>
-          <span>DDA is more performant than Raymarching and doesn't produce artifacts.</span>
-          <span>Raymarching can interpolate and show smoother animations</span>
-        </div>}>
+          <span><b>DDA</b> is more performant than Raymarching and doesn't produce artifacts.</span>
+          <span><b>Raymarching</b> can interpolate and create softer volumes</span>
+          </div>}>
           <BsFillQuestionCircleFill/>
         </QuickTip>
-
+        Renderer
       </b>
       <Hider show={useRayMarch}>
         <b className='flex pb-1 justify-center font-mono'>Quality 
@@ -175,21 +175,23 @@ const VolumeOptions = ()=>{
           onValueChange={(vals:number[]) => setTransparency(vals[0])}
       />
       <div className='grid grid-cols-[auto_60px] items-center text-left'>
-        <h1 className='flex'><span>Transparency Scale </span> 
+        <h1 className='flex items-center'>
         <QuickTip message='This is the raised power for transparency. Higher values "Squash" lower values while lower values help bring them out. 1 is linear.'>
           <BsFillQuestionCircleFill/>
         </QuickTip>
+        <span>Transparency Scale </span> 
         </h1>
         <Input type='number' value={vTransferScale} step={0.1} min={0} onChange={e => setVTransferScale(parseFloat(e.target.value))} />
       </div>
       <div className="grid grid-cols-[auto_20%] items-center gap-2 mt-2 text-left">
         <label htmlFor="compress-data"> 
-          <h1 className='flex'> <span>Scale by clip </span> 
+          <h1 className='flex items-center'> 
             <QuickTip 
               className='max-w-80'
               message='Transparency is scaled from dataset minimum to maximum. Lower values are more transparent. When enabled - transparency scales based on the cropped values below. '>
               <BsFillQuestionCircleFill/>
             </QuickTip>
+            <span>Scale by clip </span> 
           </h1> 
         </label>
         <Switch className='h-5 cursor-pointer'  id="compress-data" checked={vTransferRange} onCheckedChange={e=>setVTransferRange(e)}/>

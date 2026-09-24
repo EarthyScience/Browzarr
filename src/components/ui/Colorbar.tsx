@@ -66,9 +66,9 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
             const variables = [variable, variable2].filter(val => val !== undefined);
             variables
                 .forEach(val => GetAttributes(val).then(r => units.push(r.units)));
-        } else units.push(metadata?.units as string)
-        return units
-    },[variable, variable2, bivariate])
+            return units
+        } else return[metadata?.units as string]
+    },[variable, variable2, bivariate, metadata])
     const colormap = useColormapStore(s => s.colormap);
     const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
     const {variable2:analysisVar2, analysisMode, analysisInfo, execute} = useAnalysisStore(useShallow(s => s));
@@ -172,7 +172,7 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
         const offset = -(newMin - origMin)/newRange
         setCOffset(offset)
         setCScale(scale)
-    },[newMin, newMax])
+    },[newMin, newMax, bivariate])
 
     useEffect(()=>{ // Update internal vals when global vals change
         setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)))
@@ -321,7 +321,7 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
                 <ColorAdjuster />
             </PopoverContent>
         </Popover>
-        } 
+        }
         </div>
         </>
         

@@ -19,7 +19,7 @@ export const VariableCombo = ({variables, initValue, setVariable} : ComboProps) 
     return (
         <Combobox items={variables} defaultInputValue={initValue} onValueChange={e => setVariable(e as string)}>
             <ComboboxInput placeholder="Select a variable" />
-            <ComboboxContent >
+            <ComboboxContent>
                 <ComboboxEmpty>No items found.</ComboboxEmpty>
                 <ComboboxList className='no-scrollbar'>
                     {(item) => (
