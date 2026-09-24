@@ -10,22 +10,10 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { bivariateSchemes } from "./bivariateColorSchemes";
-// --- color helpers ---
-
-
+import { BivariateCanvas } from "./BivariateCanvas";
 const colorSwatch = (hex: string) => <div className={`h-6 w-6 rounded border border-black/10 shadow-sm`} style={{ backgroundColor: hex }}/>
 
-/**
- * Computes the color for grid cell (col, row) out of `resolution` steps
- * per axis, given the three corner colors:
- *   - bottomLeft: origin color
- *   - bottomRight: color the x-axis interpolates toward
- *   - topLeft: color the y-axis interpolates toward
- *
- * The x-edge and y-edge colors at that cell are each linearly interpolated
- * from bottomLeft, then multiplicatively blended together so the center
- * of the map is a darker combination of both, rather than a flat average.
- */
+
 function getCellColor(
   col: number,
   row: number,
@@ -65,36 +53,6 @@ const mixModes = ['darken', 'lighten', 'multiply', 'difference'] as const;
 export function BivariateColormap({ size = 340 }: BivariateColormapProps) {
     const { bottomLeft, topLeft, bottomRight, resolution, mixMode, 
 		setBottomLeft, setTopLeft, setBottomRight, setResolution, setMixMode } = useColormapStore(s => s);
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const draw = useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        const bl = hexToRgb(bottomLeft);
-        const br = hexToRgb(bottomRight);
-        const tl = hexToRgb(topLeft);
-
-        const cell = size / resolution;
-
-        ctx.clearRect(0, 0, size, size);
-
-        for (let row = 0; row < resolution; row++) {
-          for (let col = 0; col < resolution; col++) {
-              const color = getCellColor(col, row, resolution, bl, br, tl, mixMode);
-              ctx.fillStyle = rgbToCss(color);
-
-              const px = col * cell;
-              // flip vertically so bottomLeft sits at the bottom of the canvas
-              const py = size - (row + 1) * cell;
-
-              ctx.fillRect(px, py, Math.ceil(cell), Math.ceil(cell));
-          }
-        }
-    }, [resolution, bottomLeft, bottomRight, topLeft, size, mixMode]);
-    useEffect(() => {
-        draw();
-    }, [draw]);
 	
 	const updateColorScheme = (e: string) => {
 		const scheme = bivariateSchemes[parseInt(e)]
@@ -164,13 +122,7 @@ export function BivariateColormap({ size = 340 }: BivariateColormapProps) {
           {resolution}
         </span>
       </div>
-
-      <canvas
-        ref={canvasRef}
-        width={size}
-        height={size}
-        style={{ width: size, height: size, borderRadius: 8, border: "1px solid #ccc" }}
-      />
+      <BivariateCanvas size={size} />
     </div>
   );
 }

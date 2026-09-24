@@ -1,7 +1,5 @@
 
 "use client";
-
-import { RxReset } from "react-icons/rx";
 import { FaPlus, FaMinus } from "react-icons/fa";
 import React, {useRef, useEffect, useMemo, useState} from 'react'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
@@ -9,56 +7,20 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import './css/Colorbar.css'
-import { linspace } from '@/utils/HelperFuncs';
 import Metadata from "./MetaData";
 import { LuSettings } from "react-icons/lu";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import ColorAdjuster from "./Elements/ColorAdjuster";
-import { useColormapStore } from "@/GlobalStates/ColormapStore";
-import { BivariateColorbar } from "./Elements/BivariateColorbar";
 import {Button} from '@/components/ui'
 import { PiSwap } from "react-icons/pi";
 import { GetAttributes } from "../zarr/ZarrLoaderLRU";
-const operationMap = {
-    // Reductions
-    Mean: "Mean",
-    Min: "Min",
-    Max: "Max",
-    StDev: "StDev",
-    LinearSlope: "Slope",
-    // 3D Convolutions
-    Mean3D: "Local Mean",
-    Min3D: "Local Min",
-    Max3D: "Local Max",
-    StDev3D: "Local StDev",
-    // 2D Convolutions
-    Mean2D: "Local Mean",
-    Min2D: "Local Min",
-    Max2D: "Local Max",
-    StDev2D: "Local StDev",
-    // Multivariate
-    Correlation2D: "R",
-    Correlation3D: "Local R",
-    TwoVarLinearSlope2D: "Slope",
-    TwoVarLinearSlope3D: "Local Slope",
-    Covariance2D: "Covariance",
-    Covariance3D: "Covariance",
-    // Special
-    CUMSUM3D: "Cumulative Sum"
-};
-
-function Num2String(value: number){
-    if ((Math.abs(value) > 1e-3 && Math.abs(value) < 1e6) || value === 0){
-        return parseFloat(value.toFixed(2)).toString() // This seems redundant but it removes trailing zeros
-    } else{
-        return value.toExponential(2)
-    }
-}
+import { UnivariateColorbar } from "./Elements/UnivariateColorbar";
+import { operationMap } from "./Elements/colorbarUtils";
+import { BivariateColorbar } from "./Elements/BivariateColorbar";
 
 const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
-    const {variable, variable2, bivariate, scalingFactor, valueScales} = useGlobalStore(useShallow(s => ({
-        variable:s.variable, variable2: s.variable2, scalingFactor:s.scalingFactor, valueScales: s.valueScales,
-        bivariate: s.bivariate
+    const {variable, variable2, bivariate,} = useGlobalStore(useShallow(s => ({
+        variable:s.variable, variable2: s.variable2, bivariate: s.bivariate
     })));
     const unitList = useMemo(()=>{
         const units:string[] = [];
@@ -69,130 +31,16 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
             return units
         } else return[metadata?.units as string]
     },[variable, variable2, bivariate, metadata])
-    const colormap = useColormapStore(s => s.colormap);
-    const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
+    const colorScale = usePlotStore(s => s.colorScale);
     const {variable2:analysisVar2, analysisMode, analysisInfo, execute} = useAnalysisStore(useShallow(s => s));
     const {operation, kernelOp} = analysisInfo?? {operation:undefined, kernelOp:undefined};
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [bivariateSelection, setBivariateSelection] = useState(0);
     const thisVariable = [variable, variable2][bivariateSelection];
     const units = unitList[bivariateSelection];
     // ---- Scaling States --- //
-    const scaling = useRef<boolean>(false)
-    const prevPos = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
-    const prevVals = useRef<{ min: number | null; max: number | null }>({ min: null, max: null });
-    const thisScale = valueScales[bivariateSelection]
-    const {origMin, origMax} = useMemo(()=>({
-        origMin: thisScale.minVal,
-        origMax: thisScale.maxVal
-    }),[thisScale])
-    const range = origMax - origMin
-    
     // --- Tick States --- //
     const [tickCount, setTickCount] = useState<number>(5)
-    const [newMin, setNewMin] = useState(origMin)
-    const [newMax, setNewMax] = useState(origMax)
-    const [displayMin, setDisplayMin] = useState(Num2String(origMin*Math.pow(10, scalingFactor??0)))
-    const [displayMax, setDisplayMax] = useState(Num2String(origMax*Math.pow(10, scalingFactor??0)))
-    
     const colorString = colorScale ? `(${colorScale?.slice(0,-1)})` : ''
-    const colors = useMemo(()=>{
-        const sourceData = colormap.source.data;
-        if (!sourceData || !sourceData.data) {
-            return []; // Early return
-        }
-        const colors: string[] = [];
-        const data = sourceData.data;
-
-        for (let i = 0; i < data.length/4; i++){
-            const newIdx = i*4
-            const rgba = `rgba(${data[newIdx]}, ${data[newIdx+1]}, ${data[newIdx+2]}, ${data[newIdx+3]} )`
-            colors.push(rgba)
-        }
-        return colors
-    },[colormap])
-
-    const [locs, vals] = useMemo(()=>{
-        const locs = linspace(0, 100, tickCount)
-        const vals = linspace(newMin, newMax, tickCount)
-        return [locs, vals]
-    },[ tickCount, newMin, newMax])
-
-    // Mouse move handler
-    const handleMouseMove = (e: MouseEvent) => {
-        if (!scaling.current) return;
-        // Your scaling logic here
-        if (prevPos.current.x === null || prevPos.current.y === null){
-            prevPos.current.x = e.clientX;
-            prevPos.current.y = e.clientY;
-        }
-        if (prevVals.current.min === null || prevVals.current.max === null){
-            prevVals.current.min = newMin;
-            prevVals.current.max = newMax;
-        }
-
-        const deltaX = prevPos.current.x - e.clientX;
-        const thisOffset = deltaX  / 100
-        const lastMin = prevVals.current.min
-        const lastMax = prevVals.current.max
-        setNewMin(lastMin+(range*thisOffset))
-        setNewMax(lastMax+(range*thisOffset))
-        setDisplayMax(Num2String((lastMax+(range*thisOffset))*Math.pow(10, scalingFactor??0)))
-        setDisplayMin(Num2String((lastMin+(range*thisOffset))*Math.pow(10, scalingFactor??0)))
-    };
-
-    // Mouse up handler
-    const handleMouseUp = () => {
-        scaling.current = false;
-        prevPos.current = {x: null, y: null}
-        prevVals.current = {min: null, max: null}
-        document.removeEventListener("pointermove", handleMouseMove);
-        document.removeEventListener("pointerup", handleMouseUp);
-    };
-
-    // Mouse down handler
-    const handleMouseDown = () => {
-        scaling.current = true;
-        document.addEventListener("pointermove", handleMouseMove);
-        document.addEventListener("pointerup", handleMouseUp);
-    };
-
-    // Clean up in case component unmounts mid-drag
-    useEffect(() => {
-        return () => {
-        document.removeEventListener("pointermove", handleMouseMove);
-        document.removeEventListener("pointerup", handleMouseUp);
-        };
-    }, []);
-
-    useEffect(()=>{
-        if (bivariate) return;
-        const newRange = (newMax - newMin);
-        const scale = range/newRange;
-        const offset = -(newMin - origMin)/newRange
-        setCOffset(offset)
-        setCScale(scale)
-    },[newMin, newMax, bivariate])
-
-    useEffect(()=>{ // Update internal vals when global vals change
-        setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)))
-        setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0)))
-        setNewMin(origMin)
-        setNewMax(origMax)
-    },[origMax, origMin, scalingFactor])
-
-    useEffect(() => {
-        if (canvasRef.current) {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
-            if (ctx){
-                colors.forEach((color, index) => {
-                ctx.fillStyle = color;
-                ctx.fillRect(index*2, 0, 2, 24); // Each color is 1px wide and 50px tall
-                });
-            }     
-        }
-    }, [colors]);
     const analysisString = useMemo(()=>{
         if (analysisMode){
             const twoVar = Boolean(analysisVar2);
@@ -207,59 +55,6 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
     return (
         <>
         <div className='colorbar' >
-            <input type="number" 
-                className="text-[16px] font-semibold"
-                style={{
-                    left: `0%`,
-                    top:'100%',
-                    position:'absolute',
-                    width:`${displayMin.length*10+1}px`,
-                    transform:'translateX(-50%)',
-                    textAlign:'right',
-                    minWidth:'30px'
-                }}
-                value={displayMin} 
-                onChange={e=>{setDisplayMin(e.target.value); setNewMin(parseFloat(e.target.value)/Math.pow(10, scalingFactor??0))}}
-                onBlur={e=>setDisplayMin(Num2String(newMin*Math.pow(10, scalingFactor??0)))}
-            />
-            {Array.from({length: tickCount}).map((_val,idx)=>{
-                if (idx == 0 || idx == tickCount-1){
-                    return null
-                }
-                return (<p
-                key={idx}
-                style={{
-                    left: `${locs[idx]}%`,
-                    top:'100%',
-                    position:'absolute',
-                    transform:'translateX(-50%)',
-                }}
-            >{Num2String(vals[idx]*Math.pow(10,scalingFactor??0))}
-            </p>)}
-            )}
-            <input type="number" 
-                className="text-[16px] font-semibold"
-                style={{
-                    left: `100%`,
-                    top:'100%',
-                    position:'absolute',
-                    width:`${displayMax.length*10+1}px`,
-                    transform:'translateX(-50%)',
-                    textAlign:'right',
-                    minWidth:'30px'
-                }}
-                value={displayMax}
-                onChange={e=>{
-                    setDisplayMax(e.target.value); 
-                    setNewMax(parseFloat(e.target.value)/Math.pow(10, scalingFactor??0))
-                }}
-                onBlur={e=>setDisplayMax(Num2String(newMax*Math.pow(10, scalingFactor??0)))}
-            />
-            {bivariate 
-                ? <BivariateColorbar width={512} height={24} 
-                    bivariateSelection={bivariateSelection}/>
-                : <canvas className='cursor-[ew-resize]' id="colorbar-canvas" ref={canvasRef} width={512} height={24} onPointerDown={handleMouseDown}/>
-            }
             <p className="colorbar-title"
                 style={{
                     position:'absolute',
@@ -281,16 +76,12 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
                 {`${analysisString}`}
                 {`${colorString}`}
             </p>
-        {/* RESET */}
-        {(cScale != 1 || cOffset != 0 || colorScale) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} 
-            onClick={()=>{
-                setNewMin(origMin); 
-                setNewMax(origMax); 
-                setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0))); 
-                setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)));
-                setColorScale(undefined)
-            }}
-        />}
+            {bivariate 
+                ? <BivariateColorbar width={512} height={24} 
+                    bivariateSelection={bivariateSelection} 
+                    tickCount={tickCount}
+                    />
+                : <UnivariateColorbar width={512} height={24} tickCount={tickCount}/>}
         <div
             style={{
                 position:'absolute',
