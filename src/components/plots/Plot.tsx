@@ -17,6 +17,7 @@ import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/components/textures/ProjectionTexture';
 import { GetCurrentArray } from '@/utils/HelperFuncs';
 import { useColormapStore } from '@/GlobalStates/ColormapStore';
+import { useValueScales } from '@/hooks';
 
 const TransectNotice = () =>{
   const {selectTS} = usePlotStore(useShallow(s => s))
@@ -152,11 +153,12 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {isFlat, DPR, valueScales, mainTextures, setMainTextures, setIsFlat, setStatus, dataShape, useF16Textures} = useGlobalStore(useShallow(s => s))
+  const {isFlat, DPR, mainTextures, setMainTextures, setIsFlat, setStatus, dataShape, useF16Textures} = useGlobalStore(useShallow(s => s))
   const colormap = useColormapStore(s => s.colormap)
   const {keyFrameEditor} = useImageExportStore(useShallow(s => s))
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => s))
   const {analysisMode, analysisArray, useEditor} = useAnalysisStore(useShallow(s => s))
+  const valueScales = useValueScales();
   const coords = useRef<number[]>([0,0])
   const val = useRef<number>(0)
   const [showInfo, setShowInfo] = useState<boolean>(false)
@@ -232,7 +234,7 @@ const Plot = () => {
       <ExportExtent /> 
       {keyFrameEditor && <KeyFrames />}
       <TransectNotice />
-      {show && <Colorbar units={stableMetadata?.units} metadata={stableMetadata} valueScales={valueScales}/>}
+      {show && <Colorbar metadata={stableMetadata}/>}
       <Nav />
       {(isFlat || plotType == "flat") && show && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }
       <ShaderEditor visible={useEditor}/>

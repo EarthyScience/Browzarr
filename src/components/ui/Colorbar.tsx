@@ -15,6 +15,10 @@ import { LuSettings } from "react-icons/lu";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import ColorAdjuster from "./Elements/ColorAdjuster";
 import { useColormapStore } from "@/GlobalStates/ColormapStore";
+import { BivariateColorbar } from "./Elements/BivariateColorbar";
+import {Button} from '@/components/ui'
+import { PiSwap } from "react-icons/pi";
+import { GetAttributes } from "../zarr/ZarrLoaderLRU";
 const operationMap = {
     // Reductions
     Mean: "Mean",
@@ -51,29 +55,44 @@ function Num2String(value: number){
     }
 }
 
-const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Record<string, any>, valueScales: {maxVal: number, minVal:number}}) => {
-    const {variable, scalingFactor} = useGlobalStore(useShallow(s => ({
-        variable:s.variable, scalingFactor:s.scalingFactor
+const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
+    const {variable, variable2, bivariate, scalingFactor, valueScales} = useGlobalStore(useShallow(s => ({
+        variable:s.variable, variable2: s.variable2, scalingFactor:s.scalingFactor, valueScales: s.valueScales,
+        bivariate: s.bivariate
     })));
+    const unitList = useMemo(()=>{
+        const units:string[] = [];
+        const variables = [variable, variable2].filter(val => val !== undefined);
+        variables
+            .forEach(val => GetAttributes(val).then(r => units.push(r.units)));
+        return units
+    },[variable, variable2])
     const colormap = useColormapStore(s => s.colormap);
     const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
-    const {variable2, analysisMode, analysisInfo, execute} = useAnalysisStore(useShallow(s => s));
+    const {variable2:analysisVar2, analysisMode, analysisInfo, execute} = useAnalysisStore(useShallow(s => s));
     const {operation, kernelOp} = analysisInfo?? {operation:undefined, kernelOp:undefined};
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const [bivariateSelection, setBivariateSelection] = useState(0);
+    const thisVariable = [variable, variable2][bivariateSelection];
+    const units = unitList[bivariateSelection];
+    // ---- Scaling States --- //
     const scaling = useRef<boolean>(false)
     const prevPos = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
+    const prevVals = useRef<{ min: number | null; max: number | null }>({ min: null, max: null });
+    const thisScale = valueScales[bivariateSelection]
     const {origMin, origMax} = useMemo(()=>({
-        origMin: valueScales.minVal,
-        origMax: valueScales.maxVal
-    }),[valueScales])
+        origMin: thisScale.minVal,
+        origMax: thisScale.maxVal
+    }),[thisScale])
     const range = origMax - origMin
-
+    
+    // --- Tick States --- //
     const [tickCount, setTickCount] = useState<number>(5)
     const [newMin, setNewMin] = useState(origMin)
     const [newMax, setNewMax] = useState(origMax)
     const [displayMin, setDisplayMin] = useState(Num2String(origMin*Math.pow(10, scalingFactor??0)))
     const [displayMax, setDisplayMax] = useState(Num2String(origMax*Math.pow(10, scalingFactor??0)))
-    const prevVals = useRef<{ min: number | null; max: number | null }>({ min: null, max: null });
+    
     const colorString = colorScale ? `(${colorScale?.slice(0,-1)})` : ''
     const colors = useMemo(()=>{
         const sourceData = colormap.source.data;
@@ -173,16 +192,15 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
     }, [colors]);
     const analysisString = useMemo(()=>{
         if (analysisMode){
-            const twoVar = variable2 != "Default";
+            const twoVar = Boolean(analysisVar2);
             const thisOperation = (operation === "Convolution") ? kernelOp : operation
             const theseUnits = operationMap[thisOperation as keyof typeof operationMap] 
-            const string = twoVar ? `+ ${variable2} (${theseUnits})` : `[${units}] (${theseUnits})`
+            const string = twoVar ? `+ ${analysisVar2} (${theseUnits})` : `[${units}] (${theseUnits})`
             return string
         } else{
             return units ? `[${units}]` : ''
         }
     },[analysisMode, execute, units])
-
     return (
         <>
         <div className='colorbar' >
@@ -192,7 +210,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                     left: `0%`,
                     top:'100%',
                     position:'absolute',
-                    width:`${displayMin.length*9+1}px`,
+                    width:`${displayMin.length*10+1}px`,
                     transform:'translateX(-50%)',
                     textAlign:'right',
                     minWidth:'30px'
@@ -222,7 +240,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                     left: `100%`,
                     top:'100%',
                     position:'absolute',
-                    width:`${displayMax.length*9+1}px`,
+                    width:`${displayMax.length*10+1}px`,
                     transform:'translateX(-50%)',
                     textAlign:'right',
                     minWidth:'30px'
@@ -234,15 +252,29 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                 }}
                 onBlur={e=>setDisplayMax(Num2String(newMax*Math.pow(10, scalingFactor??0)))}
             />
-            <canvas id="colorbar-canvas" ref={canvasRef} width={512} height={24} onPointerDown={handleMouseDown}/>
+            {bivariate 
+                ? <BivariateColorbar width={512} height={24} 
+                    bivariateSelection={bivariateSelection}/>
+                : <canvas className='cursor-[ew-resize]' id="colorbar-canvas" ref={canvasRef} width={512} height={24} onPointerDown={handleMouseDown}/>
+            }
             <p className="colorbar-title"
                 style={{
-                position:'absolute',
-                top:'-24px',
-                left:'50%',
-                transform:'translateX(-50%)',
+                    position:'absolute',
+                    top:'-30px',
+                    left:'50%',
+                    transform:'translateX(-50%)',
             }}>
-                {<Metadata data={metadata} variable={variable} isMobile={true} />}
+                {bivariate &&
+                    <Button
+                        className="p-0 py-0 my-0 "
+                        onClick={()=>setBivariateSelection(x => (x + 1) % 2)}
+                        variant={'ghost'}
+                        size={'sm'}
+                    >
+                        <PiSwap className="m-0 p-0"/>
+                    </Button>
+                }
+                {<Metadata data={metadata} variable={thisVariable} isMobile={true} />}
                 {`${analysisString}`}
                 {`${colorString}`}
             </p>
@@ -271,7 +303,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
         </div>
         <Popover>
             <PopoverTrigger asChild>
-                <LuSettings 
+                {!bivariate && <LuSettings 
                     style={{
                         position:'absolute',
                         right: '101%',
@@ -280,7 +312,7 @@ const Colorbar = ({units, metadata, valueScales} : {units: string, metadata: Rec
                         transform:'translatey(50%)'
                     }}
                     size={20}
-                />
+                />}
             </PopoverTrigger>
             <PopoverContent>
                 <ColorAdjuster />

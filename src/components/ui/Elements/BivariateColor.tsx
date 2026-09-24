@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback, type CSSProperties } from "react";
 import {Input} from '@/components/ui'
 import { useColormapStore } from "@/GlobalStates/ColormapStore";
+import { rgbToCss, Rgb, hexToRgb, mixColors, lerpColor } from "@/utils/colorUtils";
 import {
   Select,
   SelectTrigger,
@@ -11,58 +12,6 @@ import {
 import { bivariateSchemes } from "./bivariateColorSchemes";
 // --- color helpers ---
 
-interface Rgb {
-  r: number;
-  g: number;
-  b: number;
-}
-function hexToRgb(hex: string): Rgb {
-  const v = parseInt(hex.slice(1), 16);
-  return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
-}
-function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
-}
-function lerpColor(c1: Rgb, c2: Rgb, t: number): Rgb {
-  return {
-    r: lerp(c1.r, c2.r, t),
-    g: lerp(c1.g, c2.g, t),
-    b: lerp(c1.b, c2.b, t),
-  };
-}
-
-function darkenBlend(c1: Rgb, c2: Rgb): Rgb {
-  return {
-    r: Math.min(c1.r, c2.r),
-    g: Math.min(c1.g, c2.g),
-    b: Math.min(c1.b, c2.b),
-  };
-}
-function lightenBlend(c1: Rgb, c2: Rgb): Rgb {
-  return {
-    r: Math.max(c1.r, c2.r),
-    g: Math.max(c1.g, c2.g),
-    b: Math.max(c1.b, c2.b),
-  };
-}
-function multiplyBlend(c1: Rgb, c2: Rgb): Rgb {
-  return {
-    r: (c1.r * c2.r) / 255,
-    g: (c1.g * c2.g) / 255,
-    b: (c1.b * c2.b) / 255,
-  };
-}
-function differenceBlend(c1: Rgb, c2: Rgb): Rgb {
-  return {
-    r: Math.abs(c1.r - c2.r),
-    g: Math.abs(c1.g - c2.g),
-    b: Math.abs(c1.b - c2.b)
-  };
-}
-
-function rgbToCss({ r, g, b }: Rgb): string {
-  return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
-}
 
 const colorSwatch = (hex: string) => <div className={`h-6 w-6 rounded border border-black/10 shadow-sm`} style={{ backgroundColor: hex }}/>
 
@@ -91,18 +40,7 @@ function getCellColor(
 
   const xColor = lerpColor(bottomLeft, bottomRight, tx);
   const yColor = lerpColor(bottomLeft, topLeft, ty);
-  switch (mixMode){
-    case 0:
-      	return darkenBlend(xColor, yColor);
-	case 1:
-		return lightenBlend(xColor, yColor);
-	case 2:
-		return multiplyBlend(xColor, yColor);
-	case 3:
-		return differenceBlend(xColor, yColor);
-    default:
-      	return darkenBlend(xColor, yColor);
-  }
+  return mixColors(xColor, yColor, mixMode);
 }
 function capitalizeFirstLetter(val: string) {
     return String(val).charAt(0).toUpperCase() + String(val).slice(1);
@@ -142,16 +80,16 @@ export function BivariateColormap({ size = 340 }: BivariateColormapProps) {
         ctx.clearRect(0, 0, size, size);
 
         for (let row = 0; row < resolution; row++) {
-        for (let col = 0; col < resolution; col++) {
-            const color = getCellColor(col, row, resolution, bl, br, tl, mixMode);
-            ctx.fillStyle = rgbToCss(color);
+          for (let col = 0; col < resolution; col++) {
+              const color = getCellColor(col, row, resolution, bl, br, tl, mixMode);
+              ctx.fillStyle = rgbToCss(color);
 
-            const px = col * cell;
-            // flip vertically so bottomLeft sits at the bottom of the canvas
-            const py = size - (row + 1) * cell;
+              const px = col * cell;
+              // flip vertically so bottomLeft sits at the bottom of the canvas
+              const py = size - (row + 1) * cell;
 
-            ctx.fillRect(px, py, Math.ceil(cell), Math.ceil(cell));
-        }
+              ctx.fillRect(px, py, Math.ceil(cell), Math.ceil(cell));
+          }
         }
     }, [resolution, bottomLeft, bottomRight, topLeft, size, mixMode]);
     useEffect(() => {

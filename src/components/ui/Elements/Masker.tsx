@@ -5,13 +5,14 @@ import {normalize, denormalize} from '@/utils/HelperFuncs'
 import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { useShallow } from 'zustand/shallow'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
-import { useIsMobile } from '@/hooks'
+import { useIsMobile, useValueScales } from '@/hooks'
 import { ChevronLeft } from 'lucide-react'
 export const Masker = () => {
     const {fillValue, setFillValue} = usePlotStore(useShallow(s => ({
         fillValue: s.fillValue, setFillValue: s.setFillValue
     })))
-    const {valueScales, bivariate} = useGlobalStore(useShallow(s => ({valueScales: s.valueScales, bivariate: s.bivariate})))
+    const bivariate = useGlobalStore(s => s.bivariate)
+    const valueScales = useValueScales();
     const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
     const [showMasks, setShowMasks] = useState(false)
     const masks = ["None", "Land", "Water"]

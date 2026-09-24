@@ -15,6 +15,7 @@ import { SliderThumbs } from "@/components/ui/Widgets/SliderThumbs";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { clearProjectionData } from '@/components/textures/ProjectionTexture';
 import { SliderGroup, ArrayInfo, SecondVariable } from '../MetaComponents';
+import { useColormapStore } from '@/GlobalStates/ColormapStore';
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
@@ -310,6 +311,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
         }
         useZarrStore.setState({ndSlices, axisMapping})
         useGlobalStore.setState({bivariate:isBivariate})
+        useColormapStore.setState({bivariateSelection: 0})
         if (variable === meta.name) {
             ReFetch();
         } else {

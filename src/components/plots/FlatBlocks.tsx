@@ -8,15 +8,21 @@ import * as THREE from 'three'
 import { flatBlocksVert, sphereBlocksFrag } from '../textures/shaders'
 import { invalidate } from '@react-three/fiber'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
-import { useDimAxis } from '@/hooks';
+import { useDimAxis, useValueScales } from '@/hooks';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
 
 const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined}) => {
     const textures = usePaddedTextures(propTextures);
-    const {isFlat, valueScales, flipY, dataShape, axisDimArrays, remapTexture, remapBorders} = useGlobalStore(useShallow(s => s))
-    const { displacement, offsetNegatives, rotateFlat, colorScale} = usePlotStore(useShallow(s => s))
+    const {isFlat, flipY, dataShape, axisDimArrays, remapTexture, remapBorders} = useGlobalStore(useShallow(s => ({
+        isFlat: s.isFlat, flipY: s.flipY, dataShape: s.dataShape, axisDimArrays: s.axisDimArrays, 
+        remapTexture: s.remapTexture, remapBorders: s.remapBorders
+    })))
+    const { displacement, offsetNegatives, rotateFlat, colorScale} = usePlotStore(useShallow(s => ({
+        displacement: s.displacement, offsetNegatives: s.offsetNegatives, rotateFlat: s.rotateFlat, colorScale: s.colorScale
+    })))
     const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
+    const valueScales = useValueScales();
     const {xArray, yArray} = useDimAxis()
     const {width, height} = useMemo(()=>{
         if (analysisMode){

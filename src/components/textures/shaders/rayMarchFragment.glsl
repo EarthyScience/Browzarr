@@ -80,7 +80,7 @@ void main() {
         localCoord = fract(localCoord);
         float d;
         float biVal;
-        bool biNaN;
+        bool biNaN = false;
         if (bivariate) {
             vec2 bivar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
             d = bivar.r;

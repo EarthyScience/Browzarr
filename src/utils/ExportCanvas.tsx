@@ -11,6 +11,7 @@ import { useShallow } from 'zustand/shallow';
 import { lerp } from 'three/src/math/MathUtils.js';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { deg2rad } from './HelperFuncs';
+import { getValueScales } from '@/hooks/useValueScales';
 
 const DrawText = (
     //Context and cbarlocs
@@ -22,7 +23,9 @@ const DrawText = (
 ) => {
     const { doubleSize, mainTitle,
     cbarLabel, cbarUnits, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
-    const {valueScales, variable, metadata } = useGlobalStore.getState()
+
+    const {variable, metadata } = useGlobalStore.getState()
+    const valueScales = getValueScales();
     let {cbarStartPos, cbarTop, cbarWidth, cbarHeight} = cbarLocs;
     const transpose = cbarLoc === 'right' || cbarLoc === 'left'
     const cbarTickSize = doubleSize ? 36 : 18

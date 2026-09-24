@@ -9,7 +9,7 @@ import { evaluateColorMap } from '@/components/textures';
 import { useCoordBounds } from '@/hooks/useCoordBounds'
 import { SquareMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
-import { useAxisIndices, useDimAxis } from '@/hooks';
+import { useDimAxis, useValueScales } from '@/hooks';
 import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
@@ -23,17 +23,24 @@ function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number
 
 export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined}) => {
     const textures = usePaddedTextures(propTextures);
-    const {setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
-    const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
-    const {isFlat, dimNames, dimUnits, valueScales, 
-          dataShape, strides, flipY, remapTexture} = useGlobalStore(useShallow(s => s))
-    
+    const {isFlat, dimNames, dimUnits, dataShape, strides, flipY, remapTexture,
+          setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => ({
+            isFlat: s.isFlat, dimNames: s.dimNames, dimUnits: s.dimUnits, 
+            dataShape: s.dataShape, strides: s.strides, flipY: s.flipY, remapTexture: s.remapTexture,
+            setPlotDim: s.setPlotDim, updateDimCoords: s.updateDimCoords, updateTimeSeries: s.updateTimeSeries
+          })))
     const { selectTS, displacement, sphereResolution, fillValue, colorScale,
-      getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
+      getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
+        selectTS: s.selectTS, displacement: s.displacement, sphereResolution: s.sphereResolution, fillValue: s.fillValue,
+        colorScale: s.colorScale, getColorIdx: s.getColorIdx, incrementColorIdx: s.incrementColorIdx
+      })))
+    const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))   
+    const valueScales = useValueScales();
     const {xArray, yArray, zArray} = useDimAxis();
     const dimSlices = [zArray, yArray, xArray];
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
     const uniforms = useCommonUniforms()
+
     const shaderMaterial = useMemo(()=>{
         const shader = new THREE.ShaderMaterial({
             glslVersion: THREE.GLSL3,
