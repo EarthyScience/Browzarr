@@ -17,7 +17,10 @@ interface UCBProps{
 export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
     const scalingFactor = useGlobalStore(s => s.scalingFactor)
     const colormap = useColormapStore(s => s.colormap);
-    const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => s));
+    const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => ({
+        cScale: s.cScale, cOffset: s.cOffset, colorScale: s.colorScale, 
+        setColorScale: s.setColorScale, setCScale: s.setCScale, setCOffset: s.setCOffset
+    })));
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     // ---- Scaling States --- //
@@ -88,7 +91,7 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
         const offset = -(newMin - origMin)/newRange
         setCOffset(offset)
         setCScale(scale)
-    },[newMin, newMax])
+    },[newMin, newMax, range, origMin])
 
     useEffect(()=>{ // Update internal vals when global vals change
         setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)))
@@ -97,7 +100,6 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
         setNewMax(origMax)
     },[origMax, origMin, scalingFactor])
 
-    const colorString = colorScale ? `(${colorScale?.slice(0,-1)})` : ''
     const colors = useMemo(()=>{
         const sourceData = colormap.source.data;
         if (!sourceData || !sourceData.data) {

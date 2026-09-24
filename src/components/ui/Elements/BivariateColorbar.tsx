@@ -6,8 +6,10 @@ import { BivariateCanvas } from './BivariateCanvas';
 import {Button} from '@/components/ui'
 import { TbLayoutNavbarCollapse } from "react-icons/tb";
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { linspace } from '@/utils/HelperFuncs';
+import { linspace, clamp } from '@/utils/HelperFuncs';
 import { Num2String } from './colorbarUtils';
+import { lerp } from '@/utils/colorUtils';
+
 interface BCbarProps{
     width: number,
     height: number;
@@ -56,14 +58,26 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
         const yvals = linspace(valueScales[1].minVal, valueScales[1].maxVal, tickCount)
         return [locs, xvals, yvals]
     },[ tickCount, valueScales ])
-    
-    const handleMouseMove = useCallback((e) =>{
 
+    const [divPos, setDivPos] = useState<[number, number]>([0,0])
+    const [varVals, setVarVals] = useState<[number, number]>([0,0])
+    const handleMouseMove = useCallback((e) =>{
+        const rect = e.currentTarget.getBoundingClientRect();
+        const thisWidth = rect.width;
+        // Calculate mouse position relative to the element's top-left corner
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        setDivPos([x,y])
+        const xFac = clamp(x/thisWidth, 0, 1);
+        const yFac = 1 - clamp(y/thisWidth, 0, 1)
+        const xVal = lerp(valueScales[0].minVal, valueScales[0].maxVal, xFac)
+        const yVal = lerp(valueScales[1].minVal, valueScales[1].maxVal, yFac)
+        setVarVals([xVal, yVal]);
     },[])
 
     return (
         <div>
-            {/* <ValueReadout visible={showInfo} names={[variable as string, variable2 as string]} /> */}
+            <ValueReadout visible={showInfo} names={[variable as string, variable2 as string]} position={divPos} values={varVals}/>
         {expandBivariate 
             ? <>
                 <div className='grid' >
@@ -140,7 +154,7 @@ const PALETTE = {
 };
  
 const NOTCH = 8; // size of the pointer triangle, px
-const GAP = 10; // space between anchor point and card, px
+const GAP = 0; // space between anchor point and card, px
 
 function ValueReadout({
   names,
