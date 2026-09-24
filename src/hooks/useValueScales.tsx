@@ -4,13 +4,13 @@ import React from 'react'
 
 export const useValueScales = () => {
     const valueScales = useGlobalStore(s => s.valueScales);
-    const bivariateSelection = useColormapStore(s => s.bivariateSelection)
-    const thisScale = valueScales[bivariateSelection]
-    return thisScale
+    const bivariateSelection = useColormapStore(s => s.bivariateSelection);
+    const thisScale = valueScales[bivariateSelection];
+    return thisScale ?? valueScales[0];
 }
 
 export const getValueScales = () => {
-    const {valueScales} = useGlobalStore.getState()
-    const {bivariateSelection} = useColormapStore.getState()
-    return valueScales[bivariateSelection]
+    const {valueScales} = useGlobalStore.getState();
+    const {bivariateSelection} = useColormapStore.getState();
+    return valueScales[bivariateSelection] ?? valueScales[0];
 }

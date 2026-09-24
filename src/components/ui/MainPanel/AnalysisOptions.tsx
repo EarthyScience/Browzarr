@@ -178,7 +178,7 @@ const AnalysisOptions = () => {
 						onClick={()=>{
 							useAnalysisStore.setState({ analysisMode: false, analysisDim: null }); 
 							setScalingFactor(originalScalingFactor); 
-							if(valueScalesOrig){setValueScales(valueScalesOrig)
+							if(valueScalesOrig){setValueScales([valueScalesOrig])
 						}}}
 					>
 						<RxReset />

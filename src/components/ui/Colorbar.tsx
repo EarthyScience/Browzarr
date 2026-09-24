@@ -200,7 +200,7 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
         } else{
             return units ? `[${units}]` : ''
         }
-    },[analysisMode, execute, units])
+    },[analysisMode, execute, units, kernelOp, operation, analysisVar2])
     return (
         <>
         <div className='colorbar' >
@@ -301,9 +301,9 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
             <FaMinus className='cursor-pointer' onClick={()=>setTickCount(Math.max(tickCount-1, 2))}/>
             <FaPlus className='cursor-pointer' onClick={()=>setTickCount(Math.min(tickCount+1, 10))}/>
         </div>
-        <Popover>
+        {!bivariate && <Popover>
             <PopoverTrigger asChild>
-                {!bivariate && <LuSettings 
+                <LuSettings 
                     style={{
                         position:'absolute',
                         right: '101%',
@@ -312,12 +312,13 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
                         transform:'translatey(50%)'
                     }}
                     size={20}
-                />}
+                />
             </PopoverTrigger>
             <PopoverContent>
                 <ColorAdjuster />
             </PopoverContent>
         </Popover>
+        }
             
         </div>
         </>

@@ -11,7 +11,7 @@ import { useShallow } from 'zustand/shallow';
 import { lerp } from 'three/src/math/MathUtils.js';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { deg2rad } from './HelperFuncs';
-import { getValueScales } from '@/hooks/useValueScales';
+import { getValueScales } from '@/hooks';
 
 const DrawText = (
     //Context and cbarlocs
