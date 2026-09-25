@@ -14,7 +14,6 @@ const Colormaps = () => {
     const {colormapName, flipColormap, bottomLeft, bottomRight, topLeft, mixMode, resolution} = useColormapStore(s => s)
     const bivariate = useGlobalStore(s => s.bivariate)
     const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
-
     useEffect(() => {
         const handleResize = () => {
           setPopoverSide(window.innerWidth < 768 ? "top" : "left");
@@ -43,7 +42,7 @@ const Colormaps = () => {
                   backgroundPosition: 'center',
                   backgroundSize: '100% 100%',
                   imageRendering: "pixelated",
-                  transform: flipColormap ? "scaleX(-1)" : "",
+                  transform: (flipColormap && !bivariate) ? "scaleX(-1)" : "",
                   width: "32px",
                   height: "32px",
                 }} /> 

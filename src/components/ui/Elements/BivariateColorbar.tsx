@@ -57,7 +57,7 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
     const [locs, xVals, yVals ] = useMemo(()=>{
         const locs = linspace(0, 100, tickCount)
         const xvals = linspace(valueScales[0].minVal, valueScales[0].maxVal, tickCount)
-        const yvals = linspace(valueScales[1].minVal, valueScales[1].maxVal, tickCount)
+        const yvals = linspace(valueScales[1]?.minVal, valueScales[1]?.maxVal, tickCount)
         return [locs, xvals, yvals]
     },[ tickCount, valueScales ])
 
@@ -74,9 +74,9 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
         const xFac = clamp(x/thisWidth, 0, 1);
         const yFac = 1 - clamp(y/thisWidth, 0, 1)
         const xVal = lerp(valueScales[0].minVal, valueScales[0].maxVal, xFac)
-        const yVal = lerp(valueScales[1].minVal, valueScales[1].maxVal, yFac)
+        const yVal = lerp(valueScales[1]?.minVal, valueScales[1]?.maxVal, yFac)
         setVarVals([xVal, yVal]);
-    },[])
+    },[valueScales])
     return (
         <div className='flex justify-center relative'
         >

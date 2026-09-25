@@ -67,21 +67,33 @@ void main() {
         vec3 localCoord = texCoord * (textureDepths); // Scale up
     #endif
     localCoord = fract(localCoord);
-    bool isNan;
-    if (bivariate){
-        Color = vec4(bivariateColor(localCoord, textureIdx, isNan), 1.0);
-        if (isNan) Color = vec4(nanColor, nanAlpha);
+    float strength;
+    float biVal;
+    bool biNaN;
+    if (bivariate) {
+        vec2 bivar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
+        strength = bivar.r;
+        biVal = bivar.g;
+        biNaN = isNaNBits(strength) || isNaNBits(biVal);
+    }else{
+        strength = sample1(localCoord, textureIdx);
+        rescaler(strength);
+    } 
+    bool isNan = isNaNBits(strength) || biNaN || (!useF16 && strength == 1.);
+    if (isNan){ 
+        Color = vec4(nanColor, nanAlpha);
         return;
     }
-    float strength = sample1(localCoord, textureIdx);
-    rescaler(strength);
-    isNan = isNaNBits(strength) || (!useF16 && strength == 1.);
-    if (!isNan){
-        strength *= cScale;
-        strength = min(strength+cOffset,0.995);
-        Color = vec4(texture2D(cmap, vec2(strength, 0.5)).rgb, 1.);
-    } else {
-        Color = vec4(nanColor, nanAlpha);
+    else {
+        if (bivariate){
+            bool flipOrder = bivariateSelection != 0;
+            Color = vec4(flipOrder ? colorMixer(biVal, strength) : colorMixer(strength, biVal), 1.);
+        }
+        else {
+            strength *= cScale;
+            strength = min(strength+cOffset,0.995);
+            Color = vec4(texture2D(cmap, vec2(strength, 0.5)).rgb, 1.);
+        }
     }
     bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
     if (!valid || abs(strength - fillValue) < 0.005){

@@ -67,10 +67,12 @@ bool sampleVoxel(vec3 texCoord, out float d, out float biVal, out bool isnan) {
         d = bivar.r;
         biVal = bivar.g;
         biNaN = isNaNBits(d) || isNaNBits(biVal);
-    } else d = sample1(localCoord, textureIdx);
-    rescaler(d);
+    } else{
+        d = sample1(localCoord, textureIdx);
+        rescaler(d);
+        d = max(min(d * cScale + cOffset, 0.995), 0.0);
+    } 
     isnan = isNaNBits(d) || (!useF16 && d == 1.0);
-    d = max(min(d * cScale + cOffset, 0.995), 0.0);
     return d >= threshold.x && d <= threshold.y;
 }
 

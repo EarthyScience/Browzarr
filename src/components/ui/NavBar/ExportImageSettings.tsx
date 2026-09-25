@@ -58,7 +58,7 @@ const ExportImageSettings = () => {
         setFrames(sliceDist);
     },[zSlice, dimArrays, axisMapping])
 
-    const updateCbarLables = (idx: number) => (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const updateCbarLabels = (idx: number) => (e: React.ChangeEvent<HTMLInputElement>): void => {
         const oldLabels = [...cbarLabels]
         oldLabels[idx] = e.target.value
         setCbarLabels(oldLabels)
@@ -107,8 +107,8 @@ const ExportImageSettings = () => {
                     <Input id='main-title' type='string' value={mainTitle} onChange={e=> setMainTitle(e.target.value)}/>
                     <Hider show={includeColorbar} >
                         <label htmlFor="cbar-title">Colorbar Label{bivariate ? 's' : ''}</label>
-                        <Input id='cbar-title' type='string' placeholder={variable} value={cbarLabels[0]} onChange={updateCbarLables(0)}/>
-                        {bivariate && <Input id='cbar-title2' type='string' placeholder={variable2} value={cbarLabels[1]} onChange={updateCbarLables(1)}/>}
+                        <Input id='cbar-title' type='string' placeholder={variable} value={cbarLabels[0]} onChange={updateCbarLabels(0)}/>
+                        {bivariate && <Input id='cbar-title2' type='string' placeholder={variable2} value={cbarLabels[1]} onChange={updateCbarLabels(1)}/>}
                         <label htmlFor="cbar-units">Colorbar Units</label>
                         <Input id='cbar-units' type='string' placeholder={units[0]?? "undefined"} value={cbarUnits[0]} onChange={updateCbarUnits(0)}/>
                         <Input id='cbar-units2' type='string' placeholder={units[1]?? "undefined"} value={cbarUnits[1]} onChange={updateCbarUnits(1)}/>

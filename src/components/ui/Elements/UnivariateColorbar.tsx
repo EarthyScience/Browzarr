@@ -125,15 +125,16 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
     useEffect(() => {
         if (canvasRef.current) {
         const canvas = canvasRef.current;
+        const sliceWidth = width/256;
         const ctx = canvas.getContext("2d");
             if (ctx){
                 colors.forEach((color, index) => {
                 ctx.fillStyle = color;
-                ctx.fillRect(index*2, 0, 2, 24); // Each color is 1px wide and 50px tall
+                ctx.fillRect(index*sliceWidth, 0, 2, height); 
                 });
             }     
         }
-    }, [colors]);
+    }, [colors, height, width]);
 
 
     return(
@@ -189,7 +190,7 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
             
             <canvas className='cursor-[ew-resize]' id="colorbar-canvas" ref={canvasRef} width={width} height={height} onPointerDown={handleMouseDown}/>
             {/* RESET */}
-            {(cScale != 1 || cOffset != 0 || colorScale) && <RxReset size={25} style={{position:'absolute', top:'-25px', cursor:'pointer'}} 
+            {(cScale != 1 || cOffset != 0 || colorScale) && <RxReset size={25} style={{position:'absolute', left:0, top:'-25px', cursor:'pointer'}} 
                 onClick={()=>{
                     setNewMin(origMin); 
                     setNewMax(origMax); 

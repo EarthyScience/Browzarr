@@ -71,8 +71,8 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 			useBorderTexture: s.useBorderTexture, borderColor: s.borderColor, borderWidth: s.borderWidth,
 			is360Deg: s.is360Deg, showBorders: s.showBorders
 		})))
-	const { valueScales, useF16Textures} = useGlobalStore(useShallow(s => ({
-		valueScales: s.valueScales, useF16Textures: s.useF16Textures, 
+	const { valueScales, useF16Textures, bivariate} = useGlobalStore(useShallow(s => ({
+		valueScales: s.valueScales, useF16Textures: s.useF16Textures, bivariate: s.bivariate
 	})))
 	const {lonBounds, latBounds} = useCoordBounds()
     const {colormap, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection} = useColormapStore(useShallow(s => ({
@@ -112,11 +112,13 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		uniforms.resolution.value = resolution;
 		uniforms.mixMode.value = mixMode;
 		uniforms.bivariateSelection.value = bivariateSelection;
+		uniforms.bivariate.value = bivariate;
 		invalidate();
 	},[
 		cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
 		colormap, lonBounds, latBounds, useBorderTexture, borderColor, borderWidth, is360Deg, showBorders,
-		valueScales, useF16Textures, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection
+		valueScales, useF16Textures, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection, 
+		bivariate
 	])
 	
 	return;

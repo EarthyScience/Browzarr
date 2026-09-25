@@ -39,45 +39,44 @@ const UnivariateColor = () => {
 	const flipColormapRef = useRef(flipColormap);
 
 	const categories = useMemo(() => {
-	const set = new Set<string>();
-	colormapIndex.forEach((entry) => {
-		if (entry.category) set.add(entry.category);
-	});
-	return ['None', ...Array.from(set).sort()];
+    const set = new Set<string>();
+    colormapIndex.forEach((entry) => {
+      if (entry.category) set.add(entry.category);
+    });
+    return ['None', ...Array.from(set).sort()];
 	}, []);
 	const filteredColormaps = useMemo(() => {
-	const query = searchQuery.trim().toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
 
-	// No search: category filtering works normally
-	if (!query) {
-		if (!selectedCategory || selectedCategory === 'None') {
-		return colormaps;
-		}
+    // No search: category filtering works normally
+    if (!query) {
+      if (!selectedCategory || selectedCategory === 'None') {
+      return colormaps;
+      }
 
-		return colormapIndex
-		.filter((entry) => entry.category === selectedCategory)
-		.map((entry) => entry.name);
-	}
+      return colormapIndex
+      .filter((entry) => entry.category === selectedCategory)
+      .map((entry) => entry.name);
+    }
 
-	// Search ALWAYS uses the complete collection
-	const nameMatches: string[] = [];
-	const otherMatches: string[] = [];
+    // Search ALWAYS uses the complete collection
+    const nameMatches: string[] = [];
+    const otherMatches: string[] = [];
+    for (const entry of colormapIndex) {
+      const nameHit = entry.name.toLowerCase().includes(query);
+      const categoryHit = entry.category?.toLowerCase().includes(query);
+      const notesHit = entry.notes?.toLowerCase().includes(query);
 
-	for (const entry of colormapIndex) {
-		const nameHit = entry.name.toLowerCase().includes(query);
-		const categoryHit = entry.category?.toLowerCase().includes(query);
-		const notesHit = entry.notes?.toLowerCase().includes(query);
-
-		if (nameHit) {
-		nameMatches.push(entry.name);
-		} else if (categoryHit || notesHit) {
-		otherMatches.push(entry.name);
-		}
-	}
-	for (const cmap of colormaps){
-		const nameHit = cmap.toLowerCase().includes(query)
-		if (nameHit) nameMatches.push(cmap)
-	}
+      if (nameHit) {
+        nameMatches.push(entry.name);
+        } else if (categoryHit || notesHit) {
+        otherMatches.push(entry.name);
+      }
+    }
+    for (const cmap of colormaps){
+      const nameHit = cmap.toLowerCase().includes(query)
+      if (nameHit && !nameMatches.includes(cmap)) nameMatches.push(cmap)
+    }
 
 	return [...nameMatches, ...otherMatches];
 	}, [searchQuery, selectedCategory]);
@@ -87,15 +86,15 @@ const UnivariateColor = () => {
 
 	// Keep refs in sync with store state changes
 	useEffect(() => {
-	colormapNameRef.current = colormapName;
-	flipColormapRef.current = flipColormap;
+    colormapNameRef.current = colormapName;
+    flipColormapRef.current = flipColormap;
 	}, [colormapName, flipColormap]);
 
 	useEffect(() => {
-	previousTextureRef.current = colormap;
+	  previousTextureRef.current = colormap;
 	}, [colormap]);
 
-	let cmapTimeout: NodeJS.Timeout | undefined;
+	const cmapTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
 	const setCmap = (cmap: string) => setColormap(
 		GetColorMapTexture(
@@ -109,15 +108,16 @@ const UnivariateColor = () => {
 	)
 
 	const updateColormap = (cmap: string) => {
-	if (cmapTimeout){
-		clearTimeout(cmapTimeout);
-		cmapTimeout = undefined;
-	}
-	setCmap(cmap);
+    const cto = cmapTimeout.current
+    if (cto){
+      clearTimeout(cto);
+      cmapTimeout.current = undefined;
+    }
+    setCmap(cmap);
 	}
 
 	const restoreColormap = () => {
-		cmapTimeout = setTimeout(()=>{
+		cmapTimeout.current = setTimeout(()=>{
 			setCmap(colormapName);
 		}, 100)
 	}

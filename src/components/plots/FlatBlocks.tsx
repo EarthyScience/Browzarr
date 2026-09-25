@@ -83,7 +83,7 @@ const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] 
                 ...(remapTexture ? { REPROJECT: true } : {})
             },
             vertexShader: functionInjector(flatBlocksVert, colorScale),
-            fragmentShader: sphereBlocksFrag,
+            fragmentShader: functionInjector(sphereBlocksFrag, colorScale),
             blending: THREE.NoBlending,
             depthWrite:true,
             depthTest:true,

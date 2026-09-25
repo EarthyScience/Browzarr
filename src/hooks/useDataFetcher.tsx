@@ -78,10 +78,10 @@ export const useDataFetcher = () => {
                 promises.push(GetAttributes(variable).then((result) => {
                     setMetadata(result);
                     setStableMetadata(result);
-                    units.push(result.units);
+                    units[0] = result.units;
                 }));
                 if (bivariate)promises.push(GetAttributes(variable2).then((result) => {
-                    units.push(result.units);
+                    units[1] = result.units;
                 }));
 
                 //---- DimInfo ----//

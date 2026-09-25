@@ -121,13 +121,14 @@ vec3 bivariateColor(
         vec3 p,
     #endif
     int index,
-    inout bool isNaN
+    out bool isNaN
     ){
     vec2 biValues = sample2(p, index);
     if (isNaNBits(biValues.r) || isNaNBits(biValues.g)){
         isNaN = true;
         return vec3(0.0, 0.0, 0.0);
     } else{
+        isNaN = false;
         return colorMixer(biValues.r, biValues.g);
     }
 }

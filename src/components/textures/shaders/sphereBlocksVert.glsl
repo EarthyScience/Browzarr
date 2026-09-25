@@ -29,7 +29,7 @@ vec3 givePosition(vec2 lonlat, out float cosLat) {
     return vec3(x, y, z);
 }
 
-out float vStrength;
+out vec2 vStrength;
 out vec2 vUv;
 
 void main() {
@@ -70,26 +70,26 @@ void main() {
         vec3 localCoord = texCoord * (textureDepths); // Scale up
     #endif
     localCoord = fract(localCoord);
-    float dispStrength;
-    float instFac;
-    if (bivariate){
-        vec2 biVar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
-        dispStrength = biVar.r;
-        instFac = biVar.g;
-    } else {
-        dispStrength = sample1(localCoord, textureIdx);
-        instFac = dispStrength;
-    }
-    rescaler(dispStrength);
-    bool isnan = isNaNBits(dispStrength)
-        || (!useF16 && dispStrength == 1.0);
-    if (isnan){gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return;}// Invalid value. Just hide it
-
-    dispStrength *= cScale;
-    dispStrength = clamp(dispStrength + cOffset, 0.0, 0.995);
-
-    bool valid = (dispStrength >= threshold.x) && (dispStrength <= threshold.y); 
-    if (!valid || abs(dispStrength - fillValue) < 0.005){ // Invalid value. Just hide it
+    float strength;
+    float biVal;
+    bool biNaN;
+    if (bivariate) {
+        vec2 bivar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
+        strength = bivar.r;
+        biVal = bivar.g;
+        biNaN = isNaNBits(strength) || isNaNBits(biVal);
+    }else{
+        strength = sample1(localCoord, textureIdx);
+        rescaler(strength);
+    } 
+    bool isNan = isNaNBits(strength) || biNaN || (!useF16 && strength == 1.);
+    if (isNan){gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return;}// Invalid value. Just hide it
+    if (!bivariate){
+        strength *= cScale;
+        strength = clamp(strength + cOffset, 0.0, 0.995);
+    }   
+    bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
+    if (!valid || abs(strength - fillValue) < 0.005){ // Invalid value. Just hide it
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
         return;
     } 
@@ -97,7 +97,7 @@ void main() {
     vec2 lonlat = giveLonLat(instanceUV);
     float latitudeFactor; // Maps -1..1 to proper latitude
     vec3 spherePosition = givePosition(lonlat, latitudeFactor);
-    float heightFactor = (dispStrength - displaceZero) * displacement;
+    float heightFactor = (strength - displaceZero) * displacement;
     vec3 scaledPosition = position;
     scaledPosition.x *= latitudeFactor * widthFactor;
     scaledPosition.z *= vertFactor ;
@@ -113,6 +113,6 @@ void main() {
     // Apply orientation and position
     vec3 oriented = orientation * scaledPosition;
     vec3 worldPosition = spherePosition + oriented;
-    vStrength = instFac;
+    vStrength = vec2(strength, biVal);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);
 }

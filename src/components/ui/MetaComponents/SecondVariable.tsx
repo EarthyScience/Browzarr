@@ -20,18 +20,19 @@ interface SecondProps{
 }
 
 export const SecondVariable = ({dataShape, isBivariate, setIsBivariate} : SecondProps) => {
-    const { variable2, zMeta, shareScale, setVariable2 } = useGlobalStore(useShallow(s => ({
-        variable2: s.variable2, zMeta: s.zMeta, shareScale: s.shareScale, setVariable2: s.setVariable2
+    const { variable, variable2, zMeta, shareScale, setVariable2 } = useGlobalStore(useShallow(s => ({
+        variable: s.variable, variable2: s.variable2, zMeta: s.zMeta, shareScale: s.shareScale, setVariable2: s.setVariable2
     })))
     const isMobile = useIsMobile();
     const [metadata, setMetadata] = useState<Record<string, any> | undefined>(undefined);
     const [variables, setVariables] = useState<string[]>([])
     const setShareScale = (newVal: boolean) => useGlobalStore.setState({ shareScale: newVal})
+    
     useEffect(()=>{
         const compatibleVariables: string[] = []
         zMeta && Object.values(zMeta).forEach(val => {
             const {shape, name} = val as {shape: number[], name: string};
-            if (!shape && !name) return;
+            if (!shape || !name || name === variable) return;
             if (sameShape(dataShape, shape)) compatibleVariables.push(name)
         })
         setVariables(compatibleVariables)

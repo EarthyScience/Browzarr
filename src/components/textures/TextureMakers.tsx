@@ -2,6 +2,7 @@
 import * as THREE from 'three'
 import { ArrayMinMax, GetCurrentArray, TypedArray, TypedArrayBufferLike  } from '@/utils/HelperFuncs';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { clamp } from 'three/src/math/MathUtils.js';
 
 interface Array {
     data: TypedArray | TypedArrayBufferLike;
@@ -112,7 +113,7 @@ export function storeBivariate(useF16=false): {minVal: number, maxVal: number}[]
     valueScales.push({minVal,maxVal})
 		const range = (maxVal - minVal)
 		for (let i = 0; i < dataLength; i++){
-			const normed = (array[i] - minVal) / range;
+			let normed = (array[i] - minVal) / range;
 			if (isNaN(normed)){
 				textureData[i * 2 + idx] = useF16 
 					?	THREE.DataUtils.toHalfFloat(NaN)
@@ -120,7 +121,7 @@ export function storeBivariate(useF16=false): {minVal: number, maxVal: number}[]
 			} else {
 				textureData[i * 2 + idx] = useF16
 					?	THREE.DataUtils.toHalfFloat(normed)
-					:	normed * 254;
+					:	clamp(normed, 0, 1) * 254;
 			}
 		};
 	})

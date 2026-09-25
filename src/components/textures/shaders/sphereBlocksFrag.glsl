@@ -1,21 +1,9 @@
-uniform sampler2D cmap;
-uniform float cOffset;
-uniform float cScale;
-uniform bool useBorderTexture;
-uniform sampler2D borderTexture;
-uniform float borderWidth;
-uniform vec3 borderColor;
-
-in float vStrength;
+in vec2 vStrength;
 in vec2 vUv;
 
 out vec4 Color;
 
-
 void main() {
-    float strength = vStrength;
-    vec3 sampColor = texture(cmap, vec2(strength, 0.5)).rgb;
-
     if (useBorderTexture){
         float borderDist = texture(borderTexture, vUv).r;
         float latFac = cos(vUv.y);
@@ -24,5 +12,8 @@ void main() {
             return;
         }
     }
-    Color = vec4(sampColor, 1.);
+    if (bivariate){
+        bool flipOrder = bivariateSelection != 0;
+        Color = vec4(flipOrder ? colorMixer(vStrength.g, vStrength.r) : colorMixer(vStrength.r, vStrength.g), 1.);
+    } else Color = vec4(texture(cmap, vec2(vStrength.r, 0.5)).rgb, 1.0);
 }

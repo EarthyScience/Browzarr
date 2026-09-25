@@ -1,7 +1,6 @@
-import { useRef, useEffect, useState, useCallback, type CSSProperties } from "react";
+import { type CSSProperties } from "react";
 import {Input} from '@/components/ui'
 import { useColormapStore } from "@/GlobalStates/ColormapStore";
-import { rgbToCss, Rgb, hexToRgb, mixColors, lerpColor } from "@/utils/colorUtils";
 import {
   Select,
   SelectTrigger,
@@ -13,23 +12,6 @@ import { bivariateSchemes } from "./bivariateColorSchemes";
 import { BivariateCanvas, getBivariateCanvas } from "./BivariateCanvas";
 const colorSwatch = (hex: string) => <div className={`h-6 w-6 rounded border border-black/10 shadow-sm`} style={{ backgroundColor: hex }}/>
 
-
-function getCellColor(
-  col: number,
-  row: number,
-  resolution: number,
-  bottomLeft: Rgb,
-  bottomRight: Rgb,
-  topLeft: Rgb,
-  mixMode=0
-): Rgb {
-  const tx = resolution > 1 ? col / (resolution - 1) : 0;
-  const ty = resolution > 1 ? row / (resolution - 1) : 0;
-
-  const xColor = lerpColor(bottomLeft, bottomRight, tx);
-  const yColor = lerpColor(bottomLeft, topLeft, ty);
-  return mixColors(xColor, yColor, mixMode);
-}
 function capitalizeFirstLetter(val: string) {
     return String(val).charAt(0).toUpperCase() + String(val).slice(1);
 }

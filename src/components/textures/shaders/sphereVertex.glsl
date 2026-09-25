@@ -44,7 +44,9 @@ void main() {
             int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
             vec3 localCoord = texCoord * (textureDepths); // Scale up
         #endif
-        float dispStrength = sample1(localCoord, textureIdx);
+        float dispStrength;
+        if (bivariate) dispStrength = sample2ToOrder(localCoord, textureIdx, bivariateSelection).r;
+        else dispStrength = sample1(localCoord, textureIdx);
         rescaler(dispStrength);
         bool isnan = isNaNBits(dispStrength) || (!useF16 && dispStrength == 1.);
         if (!isnan){
