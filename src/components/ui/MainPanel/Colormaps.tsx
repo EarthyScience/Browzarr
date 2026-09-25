@@ -11,7 +11,7 @@ import UnivariateColor from '../Elements/UnivariateColor';
 import {BivariateColormap, getBivariateCss} from '../Elements/BivariateColor';
 
 const Colormaps = () => {
-    const {colormapName, flipColormap, bottomLeft, bottomRight, topLeft, mixMode} = useColormapStore(s => s)
+    const {colormapName, flipColormap, bottomLeft, bottomRight, topLeft, mixMode, resolution} = useColormapStore(s => s)
     const bivariate = useGlobalStore(s => s.bivariate)
     const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
 
@@ -24,9 +24,9 @@ const Colormaps = () => {
         return () => window.removeEventListener("resize", handleResize);
       }, []);
     const colormapBG = useMemo(()=> bivariate 
-                      ? getBivariateCss(bottomLeft, bottomRight, topLeft, mixMode)
+                      ? getBivariateCss(bottomLeft, bottomRight, topLeft, mixMode, resolution)
                       : getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral')
-    ,[bottomLeft, bottomRight, topLeft, mixMode, colormapName, bivariate])
+    ,[bottomLeft, bottomRight, topLeft, mixMode, colormapName, bivariate, resolution])
   return (
     <div className="relative">
       <Popover>

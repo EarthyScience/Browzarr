@@ -10,7 +10,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { bivariateSchemes } from "./bivariateColorSchemes";
-import { BivariateCanvas } from "./BivariateCanvas";
+import { BivariateCanvas, getBivariateCanvas } from "./BivariateCanvas";
 const colorSwatch = (hex: string) => <div className={`h-6 w-6 rounded border border-black/10 shadow-sm`} style={{ backgroundColor: hex }}/>
 
 
@@ -159,24 +159,9 @@ export function getBivariateCss(
     return `linear-gradient(135deg, ${bottomLeft}, ${bottomRight})`;
   }
 
-  const canvas = document.createElement("canvas");
-  canvas.width = resolution;
-  canvas.height = resolution;
+  const canvas = getBivariateCanvas(resolution)
   const ctx = canvas.getContext("2d");
   if (!ctx) return `linear-gradient(135deg, ${bottomLeft}, ${bottomRight})`;
-
-  const bl = hexToRgb(bottomLeft);
-  const br = hexToRgb(bottomRight);
-  const tl = hexToRgb(topLeft);
-
-  for (let row = 0; row < resolution; row++) {
-    for (let col = 0; col < resolution; col++) {
-      const color = getCellColor(col, row, resolution, bl, br, tl, mixMode);
-      ctx.fillStyle = rgbToCss(color);
-      const py = resolution - (row + 1); 
-      ctx.fillRect(col, py, 1, 1);
-    }
-  }
 
   return `url(${canvas.toDataURL()})`;
 }

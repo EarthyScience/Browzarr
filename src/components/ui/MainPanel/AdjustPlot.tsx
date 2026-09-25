@@ -219,6 +219,7 @@ const PointOptions = () =>{
               disabled={disablePointScale}
           onValueChange={(vals:number[]) => setPointSize(vals[0])}
           />
+          <BivariateSelector />
       <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" disabled={disablePointScale} onClick={() => setScalePoints(!scalePoints)}>
         {scalePoints ? "Remove Scaling" : "Scale By Value" }
       </Button>

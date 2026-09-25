@@ -1,7 +1,7 @@
 attribute float value;
 in int vertexIdx;
 
-out float vValue;
+out vec2 vValue;
 out vec2 vUv;
 
 uniform float pointSize;
@@ -86,22 +86,35 @@ void main() {
     vec3 localCoord = texCoord * textureDepths; // Scale up
 
     localCoord = fract(localCoord);
-    vValue = sample1(localCoord, textureIdx);
-    rescaler(vValue);
-    bool isnan = isNaNBits(vValue) || (!useF16 && vValue == 1.0);
+    float d;
+    float biVal;
+    bool biNaN = false;
+    if (bivariate) {
+        vec2 bivar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
+        d = bivar.r;
+        biVal = bivar.g;
+        biNaN = isNaNBits(d) || isNaNBits(biVal);
+    }else{ 
+        d = sample1(localCoord, textureIdx);
+        rescaler(d);
+    }
+    bool isnan = isNaNBits(d) || 
+            biNaN || 
+            (!useF16 && d == 1.0);
+
     if (isnan){gl_Position = vec4(2.0, 2.0, 2.0, 1.0);return;}
-    vValue *= cScale;
-    vValue = max(min(vValue+cOffset,0.995), 0.0);
+    d *= cScale;
+    d = max(min(d+cOffset,0.995), 0.0);
     
-    bool fillCheck = abs(vValue - fillValue) < 0.005;
-    valid = (vValue >= threshold.x) && (vValue <= threshold.y); 
+    bool fillCheck = abs(d - fillValue) < 0.005;
+    valid = (d >= threshold.x) && (d <= threshold.y); 
     if (!valid || fillCheck){ //Hide points that are outside of value range
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
         return;
     }
     #ifndef NO_SCALE
         float pointScale = pointSize/gl_Position.w;
-        pointScale = scalePoints ? pointScale*pow(vValue,scaleIntensity) : pointScale;
+        pointScale = scalePoints ? pointScale*pow(d,scaleIntensity) : pointScale;
         
         if (isnan || (pointScale*gl_Position.w < 0.75 && scalePoints)){ //Hide points that are invisible or get too small when scaled
             gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
@@ -111,5 +124,5 @@ void main() {
     #else
         gl_PointSize =  1.;
     #endif
-
+    vValue = vec2(d, biVal);
 }
