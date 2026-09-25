@@ -9,6 +9,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { linspace, clamp } from '@/utils/HelperFuncs';
 import { Num2String } from './colorbarUtils';
 import { lerp } from '@/utils/colorUtils';
+import { useIsMobile } from '@/hooks';
 
 interface BCbarProps{
     width: number,
@@ -25,6 +26,7 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
     const {valueScales, scalingFactor, variable, variable2} = useGlobalStore(useShallow(s => ({
         valueScales: s.valueScales, scalingFactor: s.scalingFactor, variable: s.variable, variable2: s.variable2
     })));
+    const isMobile = useIsMobile();
     const [expandBivariate, setExpandBivariate] = useState(false);
     const [showInfo, setShowInfo] = useState(false)
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -47,7 +49,7 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
             const px = col * cell;
             ctx.fillRect(px, 0, Math.ceil(cell), height);
         }
-    }, [resolution, bottomLeft, bottomRight, topLeft, mixMode, bivariateSelection, expandBivariate]);
+    }, [resolution, bottomLeft, bottomRight, topLeft, mixMode, width, height, bivariateSelection, expandBivariate]);
     useEffect(() => {
         draw();
     }, [draw]);
@@ -74,9 +76,9 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
         const yVal = lerp(valueScales[1].minVal, valueScales[1].maxVal, yFac)
         setVarVals([xVal, yVal]);
     },[])
-
     return (
-        <div>
+        <div className='flex justify-center relative'
+        >
             <ValueReadout visible={showInfo} names={[variable as string, variable2 as string]} position={divPos} values={varVals}/>
         {expandBivariate 
             ? <>
@@ -93,21 +95,41 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
                         onPointerMove={handleMouseMove}
                     >
                         <BivariateCanvas size={width} />
-                        {Array.from({length: tickCount}).map((_val,idx)=>(
-                            <p
-                                key={idx}
-                                style={{
-                                    bottom: `${locs[idx]}%`,
-                                    right:'100%',
-                                    position:'absolute',
-                                    textAlign:'right',
-                                    margin:0,
-                                    maxWidth:'100px',
-                                    whiteSpace: 'nowrap',
-                                    transform:idx !== 0 ?'translateY(50%)' : ''
-                                }}
-                            >{Num2String(yVals[idx]*Math.pow(10,scalingFactor??0))}</p>
-                        ))}
+                        {/* Y Ticks */}
+                        <div 
+                          style={{
+                          height:'100%',
+                          top:'0%',
+                          left:'0%',
+                          position:'absolute',
+                          textAlign:'right',
+                        }}>
+                          <h1 style={{
+                            position:'absolute',
+                            writingMode:'vertical-lr',
+                            top:'50%',
+                            left:'-4rem',
+                            transform:'translateY(-50%)',
+                            fontSize:isMobile ? '14px' : '20px'
+                          }}>
+                            {variable2}
+                          </h1>
+                          <div className='relative h-full w-12'>
+                            {Array.from({length: tickCount}).map((_val,idx)=>(
+                                <p
+                                    key={idx}
+                                    style={{
+                                        bottom: `${locs[idx]}%`,
+                                        position:'absolute',
+                                        right:'100%',
+                                        margin:0,
+                                        whiteSpace: 'nowrap',
+                                        transform:idx !== 0 ?'translateY(50%)' : ''
+                                    }}
+                                >{Num2String(yVals[idx]*Math.pow(10,scalingFactor??0))}</p>
+                            ))}
+                          </div>
+                        </div>
                     </div>
                 </div>
             </>
@@ -122,17 +144,34 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
                 
             </>
         }
-        {Array.from({length: tickCount}).map((_val,idx)=>(
-            <p
-                key={idx}
-                style={{
-                    left: `${locs[idx]}%`,
-                    top:'100%',
-                    position:'absolute',
-                    transform:'translateX(-50%)',
-                }}
-            >{Num2String(xVals[idx]*Math.pow(10,scalingFactor??0))}</p>
-        ))}
+        {/* X Ticks */}
+        <div className='grid place-items-center'
+          style={{
+              top:'100%',
+              position:'absolute',
+              width:'100%'
+          }}
+        >
+          <div className='relative w-full h-6'>
+            {Array.from({length: tickCount}).map((_val,idx)=>(
+                <p
+                    key={idx}
+                    style={{
+                        left: `${locs[idx]}%`,
+                        position:'absolute',
+                        transform:'translateX(-50%)',
+                    }}
+                >{Num2String(xVals[idx]*Math.pow(10,scalingFactor??0))}</p>
+            ))}
+          </div>
+          {expandBivariate && <h1
+            style={{
+              fontSize:isMobile ? '14px' : '20px'
+            }}
+          >
+            {variable}
+          </h1>}
+        </div>
       </div>
     )
 }

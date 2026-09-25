@@ -17,6 +17,7 @@ import { GetAttributes } from "../zarr/ZarrLoaderLRU";
 import { UnivariateColorbar } from "./Elements/UnivariateColorbar";
 import { operationMap } from "./Elements/colorbarUtils";
 import { BivariateColorbar } from "./Elements/BivariateColorbar";
+import { useIsMobile } from "@/hooks";
 
 const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
     const {variable, variable2, bivariate,} = useGlobalStore(useShallow(s => ({
@@ -52,9 +53,11 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
             return units ? `[${units}]` : ''
         }
     },[analysisMode, execute, units, kernelOp, operation, analysisVar2])
+    const isMobile = useIsMobile();
+    const thisWidth = isMobile ? 200 : 512
     return (
         <>
-        <div className='colorbar' >
+        <div className='colorbar place-items-center' >
             <p className="colorbar-title"
                 style={{
                     position:'absolute',
@@ -77,11 +80,11 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
                 {`${colorString}`}
             </p>
             {bivariate 
-                ? <BivariateColorbar width={512} height={24} 
+                ? <BivariateColorbar width={thisWidth} height={24} 
                     bivariateSelection={bivariateSelection} 
                     tickCount={tickCount}
                     />
-                : <UnivariateColorbar width={512} height={24} tickCount={tickCount}/>}
+                : <UnivariateColorbar width={thisWidth} height={24} tickCount={tickCount}/>}
         <div
             style={{
                 position:'absolute',
