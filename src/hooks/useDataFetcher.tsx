@@ -14,8 +14,13 @@ import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 
 export const useDataFetcher = () => {
     const { variable, bivariate, variable2, mainTextures, setUnits, setIsFlat, setUseF16Textures,
-    setShape, setDataShape, setFlipY, setMainTextures, setMetadata, setPlotOn, setStatus} = useGlobalStore(
-    useShallow(s => s))
+    setShape, setDataShape, setFlipY, setMainTextures, setMetadata, setPlotOn, setStatus, setScalingFactors} = useGlobalStore(
+    useShallow(s => ({
+        variable: s.variable, bivariate: s.bivariate, variable2: s.variable2, mainTextures: s.mainTextures,
+        setUnits: s.setUnits, setIsFlat: s.setIsFlat, setUseF16Textures: s.setUseF16Textures,
+        setShape: s.setShape, setDataShape: s.setDataShape, setFlipY: s.setFlipY, setMainTextures: s.setMainTextures,
+        setMetadata: s.setMetadata, setPlotOn: s.setPlotOn, setStatus: s.setStatus, setScalingFactors: s.setScalingFactors
+    })))
     const {plotType, interpPixels, preProject, setPlotType} = usePlotStore(useShallow(s => ({
         plotType: s.plotType, interpPixels: s.interpPixels, preProject: s.preProject, setPlotType: s.setPlotType
     })))
@@ -49,8 +54,11 @@ export const useDataFetcher = () => {
                 //----- TimeSeries Cleanup ----//
                 useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
                 //---- Main Fetch ----//
+                const scalingFactors: number[] = [];
                 const promises: Promise<any>[] = [];
-                if ( bivariate ) promises.push(GetArray(variable2));
+                if ( bivariate ) promises.push(GetArray(variable2).then(
+                    result => {scalingFactors[1] = result.scalingFactor?? 0}
+                ));
                 promises.push(GetArray().then((result) => {
                     setDataShape(result.shape);
                     const shape = result.shape.filter((val) => val != 1);
@@ -58,7 +66,7 @@ export const useDataFetcher = () => {
                     useGlobalStore.getState().setActiveIndices(activeIndices);
                     // Create textures and store valuescales
                     createDataTexture();
-                    useGlobalStore.setState({scalingFactor: result.scalingFactor});
+                    scalingFactors[0] = result.scalingFactor?? 0;
                     useAnalysisStore.setState({originalScalingFactor: result.scalingFactor})
                     const shapeLength = shape.length;
                     if (shapeLength === 2) {
@@ -103,6 +111,7 @@ export const useDataFetcher = () => {
                     setPlotOn(true);
                     setStatus(null);
                     setUnits(units)
+                    setScalingFactors(scalingFactors)
                 });
             } catch (error) {
                 setStatus(null);

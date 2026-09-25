@@ -28,9 +28,9 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
     const [bivariateSelection, setBivariateSelection] = useState(0);
     const thisVariable = [variable, variable2][bivariateSelection];
     const units = unitList[bivariateSelection];
-    // ---- Scaling States --- //
-    // --- Tick States --- //
+    // --- Tick State --- //
     const [tickCount, setTickCount] = useState<number>(5)
+    // --- Title States --- //
     const colorString = colorScale ? `(${colorScale?.slice(0,-1)})` : ''
     const analysisString = useMemo(()=>{
         if (analysisMode){
@@ -45,6 +45,14 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
     },[analysisMode, execute, units, kernelOp, operation, analysisVar2])
     const isMobile = useIsMobile();
     const thisWidth = isMobile ? 200 : 512
+    useEffect(()=>{
+        // Reset color states when new variable or bivariate changes
+        usePlotStore.setState({
+            cScale: 1,
+            cOffset: 0,
+            colorScale: undefined
+        })
+    },[variable, variable2, bivariate])
     return (
         <>
         <div className='colorbar place-items-center' >

@@ -55,9 +55,9 @@ const newToOrig = (origIdx:number, reducedIdx: number | null) => reducedIdx ?
 	: origIdx
 
 const AnalysisOptions = () => {
-	const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales, setScalingFactor} = useGlobalStore(useShallow(s => ({
+	const {plotOn, variable, variables, dimNames, activeIndices, initStore, isFlat, setTimeSeries, setValueScales, setScalingFactors} = useGlobalStore(useShallow(s => ({
 		plotOn: s.plotOn, variable: s.variable, variables: s.variables, dimNames: s.dimNames, 
-		activeIndices: s.activeIndices, initStore: s.initStore, isFlat: s.isFlat, setTimeSeries: s.setTimeSeries, setValueScales: s.setValueScales, setScalingFactor:s.setScalingFactor})));
+		activeIndices: s.activeIndices, initStore: s.initStore, isFlat: s.isFlat, setTimeSeries: s.setTimeSeries, setValueScales: s.setValueScales, setScalingFactors: s.setScalingFactors})));
 	const previousStore = useRef<string>(initStore)
 	const [incompatible, setIncompatible] = useState(false); 
 	const [operation, setOperation] = useState<string | undefined>(undefined)
@@ -177,7 +177,7 @@ const AnalysisOptions = () => {
 						className='pl-4 ml-4'
 						onClick={()=>{
 							useAnalysisStore.setState({ analysisMode: false, analysisDim: null }); 
-							setScalingFactor(originalScalingFactor); 
+							setScalingFactors([originalScalingFactor?? 0]); 
 							if(valueScalesOrig){setValueScales([valueScalesOrig])
 						}}}
 					>

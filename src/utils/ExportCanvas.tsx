@@ -66,7 +66,7 @@ const DrawText = (
         if (bivariate){
             // ---- TickLabels ---- //
             const {size, cbarStartPos: sqX, cbarTop: sqY} = GetBivariateCbarGeometry(width, height)
-            const {valueScales: allValueScales, scalingFactor} = useGlobalStore.getState()
+            const {valueScales: allValueScales, scalingFactors} = useGlobalStore.getState()
             const labelNum = cbarNum
             const locs = linspace(0, 100, labelNum)
             const xVals = linspace(allValueScales[0].minVal, allValueScales[0].maxVal, labelNum)
@@ -76,13 +76,13 @@ const DrawText = (
             ctx.textAlign = 'center'
             ctx.textBaseline = 'top'
             for (let i = 0; i < labelNum; i++){
-                ctx.fillText(Num2String(xVals[i]*Math.pow(10, scalingFactor??0)), sqX + size*locs[i]/100, sqY + size + 6)
+                ctx.fillText(Num2String(xVals[i]*Math.pow(10, scalingFactors[0])), sqX + size*locs[i]/100, sqY + size + 6)
             }
             // Y Ticks
             ctx.textAlign = 'right'
             ctx.textBaseline = 'middle'
             for (let i = 0; i < labelNum; i++){
-                ctx.fillText(Num2String(yVals[i]*Math.pow(10, scalingFactor??0)), sqX - 6, sqY + size - size*locs[i]/100)
+                ctx.fillText(Num2String(yVals[i]*Math.pow(10, scalingFactors[1])), sqX - 6, sqY + size - size*locs[i]/100)
             }
             // ---- Cbar Label/Units ---- //
             ctx.fillStyle = textColor

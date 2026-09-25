@@ -8,7 +8,7 @@ import { usePlotStore } from "@/GlobalStates/PlotStore";
 import { getValueScales } from "@/hooks";
 
 export async function Analysis(){
-	const { strides, dataShape, plotOn, setIsFlat, setStatus, setMainTextures, setValueScales, setScalingFactor } = useGlobalStore.getState()
+	const { strides, dataShape, plotOn, setIsFlat, setStatus, setMainTextures, setValueScales, setScalingFactors } = useGlobalStore.getState()
     const { useTwo, variable2, analysisInfo, valueScalesOrig, analysisStore, analysisMode, analysisArray, analysisShape,
         setValueScalesOrig, setAnalysisArray, setAnalysisMode, setAnalysisShape } = useAnalysisStore.getState()
     const {setPlotType} = usePlotStore.getState();
@@ -45,7 +45,7 @@ export async function Analysis(){
     const newArray = result.array;
     const thisShape = result.shape
     const newScalingFactor = result.scalingFactor;
-    setScalingFactor(newScalingFactor)
+    setScalingFactors([newScalingFactor])
     setAnalysisShape(thisShape);
     // --- Value scaling logic --- //
     let minVal, maxVal;

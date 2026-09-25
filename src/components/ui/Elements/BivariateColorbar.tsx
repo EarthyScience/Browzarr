@@ -23,8 +23,8 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
         bottomLeft: s.bottomLeft, topLeft: s.topLeft, bottomRight: s.bottomRight, 
         resolution: s.resolution, mixMode: s.mixMode
     })))
-    const {valueScales, scalingFactor, variable, variable2} = useGlobalStore(useShallow(s => ({
-        valueScales: s.valueScales, scalingFactor: s.scalingFactor, variable: s.variable, variable2: s.variable2
+    const {valueScales, scalingFactors, variable, variable2} = useGlobalStore(useShallow(s => ({
+        valueScales: s.valueScales, scalingFactors: s.scalingFactors, variable: s.variable, variable2: s.variable2
     })));
     const isMobile = useIsMobile();
     const [expandBivariate, setExpandBivariate] = useState(false);
@@ -127,7 +127,7 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
                                         whiteSpace: 'nowrap',
                                         transform:idx !== 0 ?'translateY(50%)' : ''
                                     }}
-                                >{Num2String(yVals[idx]*Math.pow(10,scalingFactor??0))}</p>
+                                >{Num2String(yVals[idx]*Math.pow(10,scalingFactors[1]))}</p>
                             ))}
                           </div>
                         </div>
@@ -162,7 +162,7 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
                         position:'absolute',
                         transform:'translateX(-50%)',
                     }}
-                >{Num2String(xVals[idx]*Math.pow(10,scalingFactor??0))}</p>
+                >{Num2String(xVals[idx]*Math.pow(10,scalingFactors[0]))}</p>
             ))}
           </div>
           {expandBivariate && <h1

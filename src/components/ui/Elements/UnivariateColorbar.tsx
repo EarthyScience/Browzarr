@@ -15,7 +15,7 @@ interface UCBProps{
 }
 
 export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
-    const scalingFactor = useGlobalStore(s => s.scalingFactor)
+    const scalingFactors = useGlobalStore(s => s.scalingFactors)
     const colormap = useColormapStore(s => s.colormap);
     const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => ({
         cScale: s.cScale, cOffset: s.cOffset, colorScale: s.colorScale, 
@@ -35,8 +35,8 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
     const range = origMax - origMin
     const [newMin, setNewMin] = useState(origMin)
     const [newMax, setNewMax] = useState(origMax)
-    const [displayMin, setDisplayMin] = useState(Num2String(origMin*Math.pow(10, scalingFactor??0)))
-    const [displayMax, setDisplayMax] = useState(Num2String(origMax*Math.pow(10, scalingFactor??0)))
+    const [displayMax, setDisplayMax] = useState(Num2String(origMax*Math.pow(10, scalingFactors[0])))
+    const [displayMin, setDisplayMin] = useState(Num2String(origMin*Math.pow(10, scalingFactors[0])))
 
     // Mouse move handler
     const handleMouseMove = (e: MouseEvent) => {
@@ -57,8 +57,8 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
         const lastMax = prevVals.current.max
         setNewMin(lastMin+(range*thisOffset))
         setNewMax(lastMax+(range*thisOffset))
-        setDisplayMax(Num2String((lastMax+(range*thisOffset))*Math.pow(10, scalingFactor??0)))
-        setDisplayMin(Num2String((lastMin+(range*thisOffset))*Math.pow(10, scalingFactor??0)))
+        setDisplayMax(Num2String((lastMax+(range*thisOffset))*Math.pow(10, scalingFactors[0])))
+        setDisplayMin(Num2String((lastMin+(range*thisOffset))*Math.pow(10, scalingFactors[0])))
     };
 
     // Mouse up handler
@@ -94,11 +94,11 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
     },[newMin, newMax, range, origMin])
 
     useEffect(()=>{ // Update internal vals when global vals change
-        setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)))
-        setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0)))
+        setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactors[0])))
+        setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactors[0])))
         setNewMin(origMin)
         setNewMax(origMax)
-    },[origMax, origMin, scalingFactor])
+    },[origMax, origMin, scalingFactors])
 
     const colors = useMemo(()=>{
         const sourceData = colormap.source.data;
@@ -151,8 +151,8 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
                     minWidth:'30px'
                 }}
                 value={displayMin} 
-                onChange={e=>{setDisplayMin(e.target.value); setNewMin(parseFloat(e.target.value)/Math.pow(10, scalingFactor??0))}}
-                onBlur={e=>setDisplayMin(Num2String(newMin*Math.pow(10, scalingFactor??0)))}
+                onChange={e=>{setDisplayMin(e.target.value); setNewMin(parseFloat(e.target.value)/Math.pow(10, scalingFactors[0]))}}
+                onBlur={e=>setDisplayMin(Num2String(newMin*Math.pow(10, scalingFactors[0])))}
             />
             {Array.from({length: tickCount}).map((_val,idx)=>{
                 if (idx == 0 || idx == tickCount-1){
@@ -166,7 +166,7 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
                     position:'absolute',
                     transform:'translateX(-50%)',
                 }}
-            >{Num2String(vals[idx]*Math.pow(10,scalingFactor??0))}
+            >{Num2String(vals[idx]*Math.pow(10,scalingFactors[0]))}
             </p>)}
             )}
             <input type="number" 
@@ -183,9 +183,9 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
                 value={displayMax}
                 onChange={e=>{
                     setDisplayMax(e.target.value); 
-                    setNewMax(parseFloat(e.target.value)/Math.pow(10, scalingFactor??0))
+                    setNewMax(parseFloat(e.target.value)/Math.pow(10, scalingFactors[0]))
                 }}
-                onBlur={e=>setDisplayMax(Num2String(newMax*Math.pow(10, scalingFactor??0)))}
+                onBlur={e=>setDisplayMax(Num2String(newMax*Math.pow(10, scalingFactors[0])))}
             />
             
             <canvas className='cursor-[ew-resize]' id="colorbar-canvas" ref={canvasRef} width={width} height={height} onPointerDown={handleMouseDown}/>
@@ -194,8 +194,8 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
                 onClick={()=>{
                     setNewMin(origMin); 
                     setNewMax(origMax); 
-                    setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactor??0))); 
-                    setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactor??0)));
+                    setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactors[0]))); 
+                    setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactors[0])));
                     setColorScale(undefined)
                 }}
             />}

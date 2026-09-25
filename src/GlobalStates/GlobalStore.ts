@@ -50,7 +50,7 @@ type StoreState = {
   status: string | null;
   progress: number;
   DPR: number,
-  scalingFactor: number | null;
+  scalingFactors: number[];
   is4D: boolean;
   idx4D: number | null;
   titleDescription: { title: string | null; description: string | null };
@@ -99,7 +99,7 @@ type StoreState = {
   setTextureArrayDepths: (textureArrayResolution: number[] ) => void;
   setTextureData: (textureData: Uint8Array | Uint16Array ) => void;
   setDPR: (DPR: number) => void;
-  setScalingFactor: (scalingFactor: number | null) => void;
+  setScalingFactors: (scalingFactors: number[]) => void;
   setClampExtremes: (clampExtremes: boolean) => void;
   setUseF16Textures: (useF16Textures: boolean) => void;
   setMainTextures: (mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined) => void;
@@ -144,7 +144,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   textureArrayDepths: [1,1,1], 
   textureData: new Uint8Array(1),
   DPR: 1,
-  scalingFactor: null,
+  scalingFactors: [],
   clampExtremes: false,
   useF16Textures: false,
   borderCompatible: true,
@@ -207,7 +207,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   setTextureArrayDepths: (textureArrayDepths) => set({ textureArrayDepths }),
   setTextureData: (textureData) => set({ textureData }),
   setDPR: (DPR) => set({ DPR }),
-  setScalingFactor: (scalingFactor) => set({ scalingFactor }),
+  setScalingFactors: (scalingFactors) => set({ scalingFactors }),
   setClampExtremes: (clampExtremes) => set({ clampExtremes }),
   setUseF16Textures: (useF16Textures) => set({ useF16Textures }),
   setMainTextures: (mainTextures) => set({ mainTextures })
