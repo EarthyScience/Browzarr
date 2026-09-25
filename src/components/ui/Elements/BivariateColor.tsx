@@ -1,5 +1,5 @@
 import { type CSSProperties } from "react";
-import {Input} from '@/components/ui'
+import {Input, Button} from '@/components/ui'
 import { useColormapStore } from "@/GlobalStates/ColormapStore";
 import {
   Select,
@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/select";
 import { bivariateSchemes } from "./bivariateColorSchemes";
 import { BivariateCanvas, getBivariateCanvas } from "./BivariateCanvas";
+import { IoMdSwap } from "react-icons/io";
+
 const colorSwatch = (hex: string) => <div className={`h-6 w-6 rounded border border-black/10 shadow-sm`} style={{ backgroundColor: hex }}/>
 
 function capitalizeFirstLetter(val: string) {
@@ -42,6 +44,18 @@ export function BivariateColormap({ size = 340 }: BivariateColormapProps) {
 		setTopLeft(scheme.topLeft);
 		setBottomRight(scheme.bottomRight);
 	}
+
+  function swapBottom(){
+    const tempColor = bottomLeft;
+    setBottomLeft(bottomRight);
+    setBottomRight(tempColor);
+  }
+  function swapLeft(){
+    const tempColor = bottomLeft;
+    setBottomLeft(topLeft);
+    setTopLeft(tempColor);
+  }
+
 
   return (
     <div className='flex flex-col gap-2 p-2'>
@@ -104,7 +118,32 @@ export function BivariateColormap({ size = 340 }: BivariateColormapProps) {
           {resolution}
         </span>
       </div>
-      <BivariateCanvas size={size} />
+      <div className="flex justify-center px-3 py-4 relative">
+          <IoMdSwap 
+            style={{
+              position:'absolute',
+              left:'-0.75rem',
+              top:'50%',
+              rotate:'90deg',
+              transform:'translateX(-50%)',
+              padding:0,
+              cursor:'pointer'
+            }}
+            onClick={swapLeft}
+            className="size-8" color="var(--sidebar-ring)"/>
+          <BivariateCanvas size={Math.round(size*0.9)} />
+      </div>
+      <IoMdSwap 
+        style={{
+          position:'absolute',
+          left:'50%',
+          bottom:'-0.25rem',
+          transform:'translateX(-50%)',
+          padding:0,
+          cursor:'pointer'
+        }}
+        onClick={swapBottom}
+        className="size-8" color="var(--sidebar-ring)"/>
     </div>
   );
 }
