@@ -60,3 +60,37 @@ export function BivariateCanvas({size} : {size: number}){
       />
     )
 }
+
+export function getBivariateCanvas(size: number): HTMLCanvasElement {
+    const { bottomLeft, topLeft, bottomRight, resolution, mixMode } = useColormapStore.getState();
+
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    canvas.style.borderRadius = "4px";
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return canvas;
+
+    const bl = hexToRgb(bottomLeft);
+    const br = hexToRgb(bottomRight);
+    const tl = hexToRgb(topLeft);
+
+    const cell = size / resolution;
+
+    ctx.clearRect(0, 0, size, size);
+
+    for (let row = 0; row < resolution; row++) {
+        for (let col = 0; col < resolution; col++) {
+            const color = getCellColor(col, row, resolution, bl, br, tl, mixMode);
+            ctx.fillStyle = rgbToCss(color);
+
+            const px = col * cell;
+            // flip vertically so bottomLeft sits at the bottom of the canvas
+            const py = size - (row + 1) * cell;
+
+            ctx.fillRect(px, py, Math.ceil(cell), Math.ceil(cell));
+        }
+    }
+
+    return canvas;
+}

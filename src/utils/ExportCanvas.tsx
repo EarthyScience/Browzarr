@@ -10,8 +10,23 @@ import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow';
 import { lerp } from 'three/src/math/MathUtils.js';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { deg2rad } from './HelperFuncs';
+import { deg2rad, linspace } from './HelperFuncs';
 import { getValueScales } from '@/hooks';
+import { getBivariateCanvas } from '@/components/ui/Elements/BivariateCanvas';
+import { Num2String } from '@/components/ui/Elements/colorbarUtils';
+
+const GetBivariateCbarGeometry = (width: number, height: number) => {
+    const { doubleSize, cbarLoc } = useImageExportStore.getState()
+    const size = doubleSize ? Math.min(1024, width*0.4) : Math.min(512, width*0.4)
+    const margin = doubleSize ? 140 : 70
+    const isRight = cbarLoc === 'bottomRight' || cbarLoc === 'topRight'
+    const isTop = cbarLoc === 'topLeft' || cbarLoc === 'topRight'
+    return {
+        size,
+        cbarStartPos: isRight ? width - margin - size : margin,
+        cbarTop: isTop ? margin : height - margin - size
+    }
+}
 
 const DrawText = (
     //Context and cbarlocs
@@ -22,9 +37,9 @@ const DrawText = (
     textColor:string
 ) => {
     const { doubleSize, mainTitle,
-    cbarLabel, cbarUnits, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
+    cbarLabels, cbarUnits, cbarLoc, cbarNum, includeColorbar} = useImageExportStore.getState()
 
-    const {variable, metadata } = useGlobalStore.getState()
+    const {variable, variable2, units, bivariate } = useGlobalStore.getState()
     const valueScales = getValueScales();
     let {cbarStartPos, cbarTop, cbarWidth, cbarHeight} = cbarLocs;
     const transpose = cbarLoc === 'right' || cbarLoc === 'left'
@@ -48,6 +63,41 @@ const DrawText = (
     ctx.fillText("browzarr.io", doubleSize ? 20 : 10, doubleSize ? height - 20 : height - 10) // Watermark
 
     if (includeColorbar){
+        if (bivariate){
+            // ---- TickLabels ---- //
+            const {size, cbarStartPos: sqX, cbarTop: sqY} = GetBivariateCbarGeometry(width, height)
+            const {valueScales: allValueScales, scalingFactor} = useGlobalStore.getState()
+            const labelNum = cbarNum
+            const locs = linspace(0, 100, labelNum)
+            const xVals = linspace(allValueScales[0].minVal, allValueScales[0].maxVal, labelNum)
+            const yVals = linspace(allValueScales[1].minVal, allValueScales[1].maxVal, labelNum)
+            ctx.font = `${cbarTickSize}px "Segoe UI"`
+            // X Ticks
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'top'
+            for (let i = 0; i < labelNum; i++){
+                ctx.fillText(Num2String(xVals[i]*Math.pow(10, scalingFactor??0)), sqX + size*locs[i]/100, sqY + size + 6)
+            }
+            // Y Ticks
+            ctx.textAlign = 'right'
+            ctx.textBaseline = 'middle'
+            for (let i = 0; i < labelNum; i++){
+                ctx.fillText(Num2String(yVals[i]*Math.pow(10, scalingFactor??0)), sqX - 6, sqY + size - size*locs[i]/100)
+            }
+            // ---- Cbar Label/Units ---- //
+            ctx.fillStyle = textColor
+            ctx.font = `${unitSize}px "Segoe UI"`
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'top'
+            ctx.fillText(`${cbarLabels[0]?? variable} [${cbarUnits[0]?? units[0]}]`, sqX + size/2, sqY + size + 6 + cbarTickSize + 8)
+            ctx.save()
+            ctx.translate(sqX - 12 - cbarTickSize - unitSize, sqY + size/2)
+            ctx.rotate(Math.PI / 2)
+            ctx.textBaseline = 'top'
+            ctx.fillText(`${cbarLabels[1]?? variable2} [${cbarUnits[1]?? units[1]}]`, 0, 0)
+            ctx.restore()
+            return
+        }
         // ---- TickLabels ---- //
         ctx.font = `${cbarTickSize}px "Segoe UI"`
         const labelNum = cbarNum; // Number of cbar "ticks"
@@ -78,7 +128,7 @@ const DrawText = (
         ctx.fillStyle = textColor
         ctx.font = `${unitSize}px "Segoe UI" bold`
         ctx.textAlign = 'center'
-        const cbarString = `${cbarLabel?? variable} [${cbarUnits?? metadata?.units}]`
+        const cbarString = `${cbarLabels[0]?? variable} [${cbarUnits[0]?? units[0]}]`
         if (transpose){
             const xOffset = cbarLoc === 'right' ? cbarWidth+unitSize/2 : -cbarWidth-unitSize/2
             const rotate = cbarLoc === 'right' ? Math.PI / 2 : -Math.PI / 2
@@ -105,6 +155,7 @@ const DrawComposite = (
 
     const {bgColor, textColor} = colors;
     const { doubleSize, includeBackground, cbarLoc, includeColorbar} = useImageExportStore.getState()
+    const { bivariate } = useGlobalStore.getState()
     const ctx = compositeCanvas.getContext('2d')
     if (!ctx){return}
 
@@ -127,6 +178,14 @@ const DrawComposite = (
 
     // ---- COLORBAR ---- //
     if (includeColorbar){
+        if (bivariate){
+            const {size, cbarStartPos: sqX, cbarTop: sqY} = GetBivariateCbarGeometry(width, height)
+            ctx.drawImage(getBivariateCanvas(size), sqX, sqY, size, size)
+            cbarStartPos = sqX
+            cbarTop = sqY
+            cbarWidth = size
+            cbarHeight = size
+        } else {
         const secondCanvas = document.getElementById('colorbar-canvas')
         if (secondCanvas instanceof HTMLCanvasElement) {
             if (transpose) {
@@ -159,6 +218,7 @@ const DrawComposite = (
             }else{
                 ctx.drawImage(secondCanvas, cbarStartPos, cbarTop, cbarWidth, cbarHeight)
             }
+        }
         }
     }
 
@@ -205,6 +265,15 @@ async function DrawTextOverlay(
         cbarStartPos = cbarLoc === 'right' ? (width - (doubleSize ? 140 : 70)) : (doubleSize ? 140 : 70)
     } else {
         cbarTop = cbarLoc === 'top' ? (doubleSize ? 140 : 70) : (height - (doubleSize ? 140 : 70))
+    }
+
+    const { bivariate } = useGlobalStore.getState();
+    if (bivariate){
+        const {size, cbarStartPos: sqX, cbarTop: sqY} = GetBivariateCbarGeometry(width, height)
+        cbarStartPos = sqX
+        cbarTop = sqY
+        cbarWidth = size
+        cbarHeight = size
     }
 
     // ---- TEXT ---- //

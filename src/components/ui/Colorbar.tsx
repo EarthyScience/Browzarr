@@ -13,25 +13,15 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import ColorAdjuster from "./Elements/ColorAdjuster";
 import {Button} from '@/components/ui'
 import { PiSwap } from "react-icons/pi";
-import { GetAttributes } from "../zarr/ZarrLoaderLRU";
 import { UnivariateColorbar } from "./Elements/UnivariateColorbar";
 import { operationMap } from "./Elements/colorbarUtils";
 import { BivariateColorbar } from "./Elements/BivariateColorbar";
 import { useIsMobile } from "@/hooks";
 
 const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
-    const {variable, variable2, bivariate,} = useGlobalStore(useShallow(s => ({
-        variable:s.variable, variable2: s.variable2, bivariate: s.bivariate
+    const {variable, variable2, bivariate, units:unitList} = useGlobalStore(useShallow(s => ({
+        variable:s.variable, variable2: s.variable2, bivariate: s.bivariate, units: s.units
     })));
-    const unitList = useMemo(()=>{
-        const units:string[] = [];
-        if (bivariate){
-            const variables = [variable, variable2].filter(val => val !== undefined);
-            variables
-                .forEach(val => GetAttributes(val).then(r => units.push(r.units)));
-            return units
-        } else return[metadata?.units as string]
-    },[variable, variable2, bivariate, metadata])
     const colorScale = usePlotStore(s => s.colorScale);
     const {variable2:analysisVar2, analysisMode, analysisInfo, execute} = useAnalysisStore(useShallow(s => s));
     const {operation, kernelOp} = analysisInfo?? {operation:undefined, kernelOp:undefined};

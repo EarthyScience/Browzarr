@@ -63,7 +63,8 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
 
     const [divPos, setDivPos] = useState<[number, number]>([0,0])
     const [varVals, setVarVals] = useState<[number, number]>([0,0])
-    const handleMouseMove = useCallback((e) =>{
+    
+    const handleMouseMove = useCallback((e: React.PointerEvent<HTMLDivElement>): void =>{
         const rect = e.currentTarget.getBoundingClientRect();
         const thisWidth = rect.width;
         // Calculate mouse position relative to the element's top-left corner

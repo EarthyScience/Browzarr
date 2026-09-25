@@ -21,6 +21,7 @@ type StoreState = {
   activeIndices: number[];
   shape: THREE.Vector3;
   valueScales: { maxVal: number; minVal: number }[];
+  units: string[];
   remapTexture: THREE.DataTexture | undefined;
   remapBorders: THREE.DataTexture | undefined;
   timeSeries: Record<string, Record<string, any>>;
@@ -65,6 +66,7 @@ type StoreState = {
   setActiveIndices: (indices: number[]) => void;
   setShape: (shape: THREE.Vector3) => void;
   setValueScales: (valueScales: { maxVal: number; minVal: number }[]) => void;
+  setUnits: (units: string[]) => void;
   setTimeSeries: (timeSeries: Record<string, Record<string, any>>) => void;
   updateTimeSeries: (newEntries: Record<string, Record<string, any>>) => void;
   setStrides: (strides: number[]) => void;
@@ -108,6 +110,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   activeIndices: [],
   shape: new THREE.Vector3(2, 2, 2),
   valueScales: [{ maxVal: 1, minVal: -1 }],
+  units: [],
   remapTexture: undefined,
   remapBorders: undefined,
   timeSeries: {},
@@ -152,6 +155,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   setActiveIndices: (indices) => set({ activeIndices: indices }),
   setShape: (shape) => set({ shape }),
   setValueScales: (valueScales) => set({ valueScales }),
+  setUnits: (units) => set({ units }),
   setTimeSeries: (timeSeries) => set({ timeSeries }),
   updateTimeSeries: (newEntries) => {
     const merged = { ...newEntries, ...get().timeSeries  };

@@ -13,8 +13,8 @@ import { createDataTexture } from '@/components/textures/TextureMakers';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 
 export const useDataFetcher = () => {
-    const { variable, bivariate, variable2, setIsFlat, setUseF16Textures,
-    setShape, setDataShape, setFlipY, setMainTextures, mainTextures, setMetadata, setPlotOn, setStatus} = useGlobalStore(
+    const { variable, bivariate, variable2, mainTextures, setUnits, setIsFlat, setUseF16Textures,
+    setShape, setDataShape, setFlipY, setMainTextures, setMetadata, setPlotOn, setStatus} = useGlobalStore(
     useShallow(s => s))
     const {plotType, interpPixels, preProject, setPlotType} = usePlotStore(useShallow(s => ({
         plotType: s.plotType, interpPixels: s.interpPixels, preProject: s.preProject, setPlotType: s.setPlotType
@@ -74,9 +74,14 @@ export const useDataFetcher = () => {
                     setShape(new THREE.Vector3(2, aspectRatio * 2, Math.max(timeRatio, 2)));
                 }))
                 //---- Metadata ----//
+                const units: string[] = []
                 promises.push(GetAttributes(variable).then((result) => {
                     setMetadata(result);
                     setStableMetadata(result);
+                    units.push(result.units);
+                }));
+                if (bivariate)promises.push(GetAttributes(variable2).then((result) => {
+                    units.push(result.units);
                 }));
 
                 //---- DimInfo ----//
@@ -97,6 +102,7 @@ export const useDataFetcher = () => {
                     setShow(true);
                     setPlotOn(true);
                     setStatus(null);
+                    setUnits(units)
                 });
             } catch (error) {
                 setStatus(null);
