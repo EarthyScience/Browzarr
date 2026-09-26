@@ -22,11 +22,14 @@ async function sendPing() {
 }
 
 export function LandingHome() {
-  const {timeSeries, variable,
-    setZMeta, setVariables, setTitleDescription, setOpenVariables, setStoreFromURL,
-  } = useGlobalStore(useShallow(s => s))
-
-  const { currentStore, useNC} = useZarrStore(useShallow(s => s))
+  const {timeSeries, variable, setZMeta, setVariables, setTitleDescription, 
+    setOpenVariables, setStoreFromURL} = useGlobalStore(useShallow(s => ({
+      timeSeries: s.timeSeries, variable: s.variable, setZMeta: s.setZMeta, setVariables: s.setVariables,
+      setTitleDescription: s.setTitleDescription, setOpenVariables: s.setOpenVariables, setStoreFromURL: s.setStoreFromURL
+    })))
+  const { currentStore, useNC} = useZarrStore(useShallow(s => ({
+    currentStore: s.currentStore, useNC: s.useNC
+  })))
 
   useEffect(() => {
     // LocalNetCDF --> loadNetCDF grabs metadata during loading. Maybe move this logic to GetStore. 
@@ -68,11 +71,10 @@ export function LandingHome() {
   return (
     <>
     <MainPanel/> 
-    {variable == 'Default' && <LandingShapes />}
+    {!variable && <LandingShapes />}
     <ErrorComponent />
     <Loading />
-    {/* {variable === "Default" && <ScrollableLinksTable />} */}
-    {variable != "Default" && <Plot />}
+    {variable && <Plot />}
     {Object.keys(timeSeries).length >= 1 && <PlotArea />}
     </>
   );

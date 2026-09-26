@@ -20,16 +20,14 @@ type StoreState = {
   dataShape: number[];
   activeIndices: number[];
   shape: THREE.Vector3;
-  valueScales: { maxVal: number; minVal: number };
-  colormap: THREE.DataTexture;
+  valueScales: { maxVal: number; minVal: number }[];
+  units: string[];
   remapTexture: THREE.DataTexture | undefined;
   remapBorders: THREE.DataTexture | undefined;
-  colormapName: string;
-  flipColormap: boolean;
   timeSeries: Record<string, Record<string, any>>;
   strides: number[];
   metadata: Record<string, any> | null;
-  zMeta: object[];
+  zMeta: object[] | undefined;
   dimArrays: number[][];
   dimNames: string[];
   dimUnits: string[];
@@ -41,15 +39,18 @@ type StoreState = {
   flipY:boolean;
   initStore:string;
   storeFromURL: boolean;
-  variable: string;
+  variable: string | undefined;
+  variable2: string | undefined;
   variables: string[];
+  bivariate: boolean;
+  shareScale: boolean;
   openVariables: boolean;
   plotOn: boolean;
   isFlat: boolean;
   status: string | null;
   progress: number;
   DPR: number,
-  scalingFactor: number | null;
+  scalingFactors: number[];
   is4D: boolean;
   idx4D: number | null;
   titleDescription: { title: string | null; description: string | null };
@@ -64,10 +65,8 @@ type StoreState = {
   setDataShape: (dataShape: number[]) => void;
   setActiveIndices: (indices: number[]) => void;
   setShape: (shape: THREE.Vector3) => void;
-  setValueScales: (valueScales: { maxVal: number; minVal: number }) => void;
-  setColormap: (colormap: THREE.DataTexture) => void;
-  setColormapName: (colormapName: string) => void;
-  setFlipColormap: (flipColormap: boolean) => void;
+  setValueScales: (valueScales: { maxVal: number; minVal: number }[]) => void;
+  setUnits: (units: string[]) => void;
   setTimeSeries: (timeSeries: Record<string, Record<string, any>>) => void;
   updateTimeSeries: (newEntries: Record<string, Record<string, any>>) => void;
   setStrides: (strides: number[]) => void;
@@ -86,7 +85,9 @@ type StoreState = {
   setInitStore: (initStore:string) => void;
   setStoreFromURL: (storeFromURL: boolean) => void;
   setVariable: (variable: string) => void;
+  setVariable2: (variable2: string | undefined) => void;
   setVariables: (variables: string[]) => void;
+  setBivariate: (bivariate: boolean) => void,
   setOpenVariables: (openVariables: boolean) => void;
   setPlotOn: (plotOn: boolean) => void;
   setIsFlat: (isFlat: boolean) => void;
@@ -98,7 +99,7 @@ type StoreState = {
   setTextureArrayDepths: (textureArrayResolution: number[] ) => void;
   setTextureData: (textureData: Uint8Array | Uint16Array ) => void;
   setDPR: (DPR: number) => void;
-  setScalingFactor: (scalingFactor: number | null) => void;
+  setScalingFactors: (scalingFactors: number[]) => void;
   setClampExtremes: (clampExtremes: boolean) => void;
   setUseF16Textures: (useF16Textures: boolean) => void;
   setMainTextures: (mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined) => void;
@@ -108,16 +109,14 @@ const createStore = () => create<StoreState>((set, get) => ({
   dataShape: [1, 1, 1],
   activeIndices: [],
   shape: new THREE.Vector3(2, 2, 2),
-  valueScales: { maxVal: 1, minVal: -1 },
-  colormap: GetColorMapTexture(),
+  valueScales: [{ maxVal: 1, minVal: -1 }],
+  units: [],
   remapTexture: undefined,
   remapBorders: undefined,
-  colormapName: "Spectral",
-  flipColormap: false,
   timeSeries: {},
   strides: [10368,144,1],
   metadata: null,
-  zMeta: [{}],
+  zMeta: undefined,
   dimArrays: [[0], [0], [0]],
   dimNames: ["Default"],
   dimUnits: ["Default"],
@@ -129,8 +128,11 @@ const createStore = () => create<StoreState>((set, get) => ({
   flipY: false,
   initStore: ESDC,
   storeFromURL: false,
-  variable: 'Default',
+  variable: undefined,
+  variable2: undefined,
   variables: [],
+  bivariate: false,
+  shareScale: false,
   openVariables: false,
   plotOn: false,
   isFlat: false,
@@ -142,7 +144,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   textureArrayDepths: [1,1,1], 
   textureData: new Uint8Array(1),
   DPR: 1,
-  scalingFactor: null,
+  scalingFactors: [],
   clampExtremes: false,
   useF16Textures: false,
   borderCompatible: true,
@@ -153,19 +155,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   setActiveIndices: (indices) => set({ activeIndices: indices }),
   setShape: (shape) => set({ shape }),
   setValueScales: (valueScales) => set({ valueScales }),
-  setColormap: (colormap) => set({ colormap }),
-  setColormapName: (colormapName) => {
-    const prev = get().colormap;
-    const palette = (colormapName === 'Default') ? 'Spectral' : colormapName;
-    const tex = GetColorMapTexture(prev, palette, 1, '#000000', 0, get().flipColormap);
-    set({ colormapName, colormap: tex });
-  },
-  setFlipColormap: (flipColormap) => {
-    const palette = (get().colormapName === 'Default') ? 'Spectral' : get().colormapName;
-    const prev = get().colormap;
-    const tex = GetColorMapTexture(prev, palette, 1, '#000000', 0, flipColormap);
-    set({ flipColormap, colormap: tex });
-  },
+  setUnits: (units) => set({ units }),
   setTimeSeries: (timeSeries) => set({ timeSeries }),
   updateTimeSeries: (newEntries) => {
     const merged = { ...newEntries, ...get().timeSeries  };
@@ -204,8 +194,10 @@ const createStore = () => create<StoreState>((set, get) => ({
   setInitStore: (initStore) => set({ initStore }),
   setStoreFromURL: (storeFromURL) => set({ storeFromURL }),
   setVariable: (variable) => set({ variable }),
+  setVariable2: (variable2) => set({ variable2 }),
   setVariables: (variables) => set({ variables }),
   setOpenVariables: (openVariables) => set({ openVariables }),
+  setBivariate: (bivariate) => set({ bivariate }),
   setPlotOn: (plotOn) => set({ plotOn }),
   setIsFlat: (isFlat) => set({ isFlat }),
   setProgress: (progress) => set({ progress }),
@@ -215,7 +207,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   setTextureArrayDepths: (textureArrayDepths) => set({ textureArrayDepths }),
   setTextureData: (textureData) => set({ textureData }),
   setDPR: (DPR) => set({ DPR }),
-  setScalingFactor: (scalingFactor) => set({ scalingFactor }),
+  setScalingFactors: (scalingFactors) => set({ scalingFactors }),
   setClampExtremes: (clampExtremes) => set({ clampExtremes }),
   setUseF16Textures: (useF16Textures) => set({ useF16Textures }),
   setMainTextures: (mainTextures) => set({ mainTextures })

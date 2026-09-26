@@ -5,10 +5,8 @@ import { parseTimeUnit } from '@/utils/HelperFuncs'
 import { Fragment } from 'react'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { useShallow } from 'zustand/shallow'
-import { useAxisIndices } from '@/hooks'
-
+import { useAxisIndices, useValueScales } from '@/hooks'
 
 interface ViewportBounds {
   left: number;
@@ -41,11 +39,14 @@ export function FixedTicks({
   const { camera, size } = useThree()
   const initSize = useRef(size)
   const [bounds, setBounds] = useState<ViewportBounds>({ left: 0, right: 0, top: 0, bottom: 0 })
-  const {dimCoords, axisDimArrays, plotDim, valueScales} = useGlobalStore(
-    useShallow(s => s))
-  const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(s => s))
+  const {dimCoords, axisDimArrays, plotDim} = useGlobalStore(useShallow(s => ({
+    dimCoords: s.dimCoords, axisDimArrays: s.axisDimArrays, plotDim: s.plotDim
+  })))
+  const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(s => ({
+    zSlice: s.zSlice, ySlice: s.ySlice, xSlice: s.xSlice
+  })))
   const {xIdx, yIdx, zIdx} = useAxisIndices()
-
+  const valueScales = useValueScales();
   const dimSlices = useMemo(() => {
     return [
       axisDimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],

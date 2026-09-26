@@ -6,13 +6,11 @@ uniform float aspect;
 uniform float displaceZero;
 uniform float displacement;
 
-
-
 vec3 givePosition(vec2 uv) {
     return vec3(uv.x*2., uv.y/aspect*2., 0.);
 }
 
-out float vStrength;
+out vec2 vStrength;
 out vec2 vUv;
 
 void main() {
@@ -75,29 +73,37 @@ void main() {
         vec3 localCoord = texCoord * textureDepths; // Scale up
     #endif
     localCoord = fract(localCoord);
-    float dispStrength = sample1(localCoord, textureIdx);
-    rescaler(dispStrength);
-
-    bool isnan = isNaNBits(dispStrength)
-        || (!useF16 && dispStrength == 1.0);
-    if (isnan){gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return;}// Invalid value. Just hide it
-
-    dispStrength *= cScale;
-    dispStrength = max(min(dispStrength+cOffset,0.995), 0.0);
-
-    bool valid = (dispStrength >= threshold.x) && (dispStrength <= threshold.y); 
-    if (!valid || abs(dispStrength - fillValue) < 0.005){ // Invalid value. Just hide it
+    float strength;
+    float biVal;
+    bool biNaN;
+    if (bivariate) {
+        vec2 bivar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
+        strength = bivar.r;
+        biVal = bivar.g;
+        biNaN = isNaNBits(strength) || isNaNBits(biVal);
+    }else{
+        strength = sample1(localCoord, textureIdx);
+        rescaler(strength);
+    } 
+    bool isNan = isNaNBits(strength) || biNaN || (!useF16 && strength == 1.);
+    if (isNan){gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return;}// Invalid value. Just hide it
+    if (!bivariate){
+        strength *= cScale;
+        strength = clamp(strength + cOffset, 0.0, 0.995);
+    }   
+    bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
+    if (!valid || abs(strength - fillValue) < 0.005){ // Invalid value. Just hide it
         gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
         return;
-    }
+    } 
 
     vec2 centeredUV = (instanceUV - vec2(0.5, 0.5)); 
     vec3 planePosition = givePosition(centeredUV);
-    float heightFactor = (dispStrength - displaceZero) * displacement;
+    float heightFactor = (strength - displaceZero) * displacement;
     vec3 scaledPosition = position;
     scaledPosition.z += 0.005;
     scaledPosition.z *= heightFactor;
-    vStrength = dispStrength;
+    vStrength = vec2(strength, biVal);
     vec3 worldPosition = planePosition + scaledPosition;
     
     gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition, 1.0);

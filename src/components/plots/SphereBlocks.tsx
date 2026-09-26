@@ -9,13 +9,17 @@ import { invalidate } from '@react-three/fiber'
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
-import { useCoordBounds, useDimAxis } from '@/hooks';
-import { deg2rad } from '@/utils/HelperFuncs';
+import { useCoordBounds, useDimAxis, useValueScales } from '@/hooks';
 const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined}) => {
     const textures = usePaddedTextures(propTextures);
-    const {isFlat, valueScales, remapTexture} = useGlobalStore(useShallow(s => s))
-    const { nanColor, nanTransparency, displacement, offsetNegatives, colorScale} = usePlotStore(
-        useShallow(s => s))
+    const {isFlat, remapTexture} = useGlobalStore(useShallow(s => ({
+        isFlat: s.isFlat, remapTexture: s.remapTexture
+    })))
+    const { nanColor, nanTransparency, displacement, offsetNegatives, colorScale} = usePlotStore(useShallow(s => ({
+        nanColor: s.nanColor, nanTransparency: s.nanTransparency, displacement: s.displacement, 
+        offsetNegatives: s.offsetNegatives, colorScale: s.colorScale
+    })))
+    const valueScales = useValueScales();
     const {xArray, yArray} = useDimAxis()
     const width = xArray.length;
     const height = yArray.length;

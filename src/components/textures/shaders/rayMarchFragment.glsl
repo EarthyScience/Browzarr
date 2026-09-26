@@ -78,22 +78,37 @@ void main() {
         int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
         vec3 localCoord = texCoord * (textureDepths);  
         localCoord = fract(localCoord);
-        float d = sample1(localCoord, textureIdx);
-        rescaler(d);
-        bool isnan = isNaNBits(d) 
+        float d;
+        float biVal;
+        bool biNaN = false;
+        if (bivariate) {
+            vec2 bivar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
+            d = bivar.r;
+            biVal = bivar.g;
+            biNaN = isNaNBits(d) || isNaNBits(biVal);
+        }else {
+            d = sample1(localCoord, textureIdx);
+            rescaler(d);
+        }
+       
+        bool isnan = isNaNBits(d) || biNaN
             || (!useF16 && d == 1.0) 
             || abs(d - fillValue) < 0.005;
-        if (!isnan){
-            d *= cScale;
-            d = max(min(d+cOffset,0.995), 0.0);
-        } else {
+        if (isnan){
             accumColor.rgb += (1.0 - alphaAcc) * pow(nanAlpha, 5.) * nanColor.rgb;
             alphaAcc += pow(nanAlpha, 5.);
             continue;
+        } else if (!bivariate) {
+            d *= cScale;
+            d = max(min(d+cOffset,0.995), 0.0);
         }
         bool cond = (d >= threshold.x) && (d <= threshold.y); 
         if (cond) {
-            vec4 col = texture(cmap, vec2(d, 0.5));
+            vec3 col;
+            if (bivariate){
+                bool flipOrder = bivariateSelection != 0;
+                col = flipOrder ? colorMixer(biVal, d) : colorMixer(d, biVal);
+            }else col = texture(cmap, vec2(d, 0.5)).rgb;
             float alpha;
             float alphaFac = revTransparency ? 1.0 - d : d;
             if (useClipScale){

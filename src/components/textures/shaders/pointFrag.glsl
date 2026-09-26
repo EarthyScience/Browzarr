@@ -1,6 +1,6 @@
 out vec4 Color;
 
-in float vValue;
+in vec2 vValue;
 in vec2 vUv;
 
 void main() {
@@ -11,7 +11,9 @@ void main() {
             return;
         }
     }
-    vec4 color = texture(cmap, vec2(vValue, 0.5));
+    vec4 color;
+    if (bivariate)color = vec4(colorMixer(vValue.r, vValue.g), 1.0);
+    else color = texture(cmap, vec2(vValue.r, 0.5));
     color.a = 1.;
     Color = color;    
 }

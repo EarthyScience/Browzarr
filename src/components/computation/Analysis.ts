@@ -5,12 +5,14 @@ import { ArrayMinMax, GetCurrentArray, calculateStrides } from "@/utils/HelperFu
 import { DataProcess } from "./webGPU";
 import { CreateTexture } from "../textures";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
+import { getValueScales } from "@/hooks";
 
 export async function Analysis(){
-	const { strides, dataShape, valueScales, plotOn, setIsFlat, setStatus, setMainTextures, setValueScales, setScalingFactor } = useGlobalStore.getState()
+	const { strides, dataShape, plotOn, setIsFlat, setStatus, setMainTextures, setValueScales, setScalingFactors } = useGlobalStore.getState()
     const { useTwo, variable2, analysisInfo, valueScalesOrig, analysisStore, analysisMode, analysisArray, analysisShape,
         setValueScalesOrig, setAnalysisArray, setAnalysisMode, setAnalysisShape } = useAnalysisStore.getState()
     const {setPlotType} = usePlotStore.getState();
+    const valueScales = getValueScales()
     if (!analysisInfo) return;
     const {operation, kernelOp, kernelShape, reverse, axis} = analysisInfo;
 	if (!plotOn || !operation) return;
@@ -43,7 +45,7 @@ export async function Analysis(){
     const newArray = result.array;
     const thisShape = result.shape
     const newScalingFactor = result.scalingFactor;
-    setScalingFactor(newScalingFactor)
+    setScalingFactors([newScalingFactor])
     setAnalysisShape(thisShape);
     // --- Value scaling logic --- //
     let minVal, maxVal;
@@ -60,7 +62,7 @@ export async function Analysis(){
     } else {
         ({ minVal, maxVal } = valueScales);
     }
-    setValueScales({ minVal, maxVal });
+    setValueScales([{ minVal, maxVal }]);
     const textureData = new Uint8Array(newArray.length)
     const range = (maxVal - minVal)
     for (let i = 0; i < newArray.length; i++){

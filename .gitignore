@@ -20,11 +20,17 @@
 # production
 /build
 
+# agent related
+opencode.json
+code-review/
+agents/
+
+
 # misc
 .DS_Store
 *.pem
 .vscode
-opencode.json
+
 
 # debug
 npm-debug.log*
@@ -83,6 +89,7 @@ docs/*.tgz
 docs/.tmp
 docs/.profile
 docs/*.0x
+
 
 #VSC
 docs/.history

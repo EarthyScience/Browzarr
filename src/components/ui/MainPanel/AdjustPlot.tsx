@@ -8,19 +8,17 @@ import { useShallow } from 'zustand/shallow';
 import { SliderThumbs } from '@/components/ui/Widgets/SliderThumbs';
 import { RxReset } from "react-icons/rx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Input, Switch, Hider, Button, Slider as UISlider, Switcher, Slider, QuickTip } from '@/components/ui';
+import { Input, Switch, Hider, Button, Slider as UISlider, Switcher, Slider, QuickTip, QuickSelect, SelectItem } from '@/components/ui';
 import { parseLoc, normalize, denormalize } from '@/utils/HelperFuncs';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { ChevronDown } from 'lucide-react';
-import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue} from '@/components/ui'
 import { RiCloseLargeLine } from "react-icons/ri";
 import { Reprojection } from '../Elements/Reprojection';
-import { useAxisIndices, useDimAxis } from '@/hooks';
 import { FaLongArrowAltUp } from "react-icons/fa";
 import { HiAdjustmentsHorizontal } from "react-icons/hi2";
 import { resetProjection } from '@/components/textures/ProjectionTexture';
 import {AxisCropper} from '../Elements/AxisCropper';
 import { Masker } from '../Elements/Masker';
+import { useColormapStore } from '@/GlobalStates/ColormapStore';
 export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueScales, min=-1, array, units} : 
     {
         range : number[], 
@@ -66,6 +64,40 @@ export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, v
     )
 })
 
+const BivariateSelector = ({className} : {className?: string})=>{
+	const {bivariate, variable, variable2} = useGlobalStore(useShallow(s => ({
+		bivariate: s.bivariate, variable: s.variable, variable2: s.variable2
+	})))
+	const {bivariateSelection, setBivariateSelection} = useColormapStore(useShallow(s => ({
+		bivariateSelection: s.bivariateSelection, setBivariateSelection: s.setBivariateSelection
+	})))
+	const variables = [variable, variable2];
+	return (
+		<>
+			{bivariate &&
+      <div className={`grid grid-cols-[60px_auto] items-center ${className}`}>
+        <span className='flex items-center justify-center'>
+          <QuickTip message='Changes will only apply to the selected variables values'>
+            <BsFillQuestionCircleFill />
+          </QuickTip>
+          <span>Map to:</span>
+        </span>
+        <QuickSelect 
+          value={variables[bivariateSelection]}
+          onValueChange={(val: string) => setBivariateSelection(variables.indexOf(val))}
+          className='w-full min-w-0'
+        >
+          {variables.map((val, idx)=> (
+            <SelectItem key={idx} value={val as string}>
+              {val}
+            </SelectItem>
+          ))}
+        </QuickSelect>
+      </div>}
+		</>
+	)
+}
+
 const VolumeOptions = ()=>{
   const { useRayMarch, quality, transparency, vTransferRange, vTransferScale, interpPixels, revTransparency,
     setQuality, setUseRayMarch, setTransparency, setVTransferRange, setVTransferScale, setRevTransparency} = usePlotStore(useShallow(s => s))
@@ -75,15 +107,15 @@ const VolumeOptions = ()=>{
   return(
     <>
     <div className='grid gap-y-[5px] items-center w-50 text-center mb-8'>
-      <b className='flex justify-center'>Renderer
+      <b className='flex items-center justify-center'>
         <QuickTip message={<div className='flex flex-col'>
           <span>Change between DDA or Raymarching render method.</span>
-          <span>DDA is more performant than Raymarching and doesn't produce artifacts.</span>
-          <span>Raymarching can interpolate and show smoother animations</span>
-        </div>}>
+          <span><b>DDA</b> is more performant than Raymarching and doesn't produce artifacts.</span>
+          <span><b>Raymarching</b> can interpolate and create softer volumes</span>
+          </div>}>
           <BsFillQuestionCircleFill/>
         </QuickTip>
-
+        Renderer
       </b>
       <Hider show={useRayMarch}>
         <b className='flex pb-1 justify-center font-mono'>Quality 
@@ -106,6 +138,7 @@ const VolumeOptions = ()=>{
         </div>
       </Hider>
       <Switcher className={interpPixels ? 'opacity-40 !cursor-default' : undefined} leftText='DDA' rightText='Raymarch' state={!useRayMarch} onClick={()=> setUseRayMarch(!useRayMarch)}/>
+		<BivariateSelector />
       <div className='grid grid-cols-3 justify-between place-items-center'>
         <h1>Transparency</h1>
         <Button
@@ -142,21 +175,23 @@ const VolumeOptions = ()=>{
           onValueChange={(vals:number[]) => setTransparency(vals[0])}
       />
       <div className='grid grid-cols-[auto_60px] items-center text-left'>
-        <h1 className='flex'><span>Transparency Scale </span> 
+        <h1 className='flex items-center'>
         <QuickTip message='This is the raised power for transparency. Higher values "Squash" lower values while lower values help bring them out. 1 is linear.'>
           <BsFillQuestionCircleFill/>
         </QuickTip>
+        <span>Transparency Scale </span> 
         </h1>
         <Input type='number' value={vTransferScale} step={0.1} min={0} onChange={e => setVTransferScale(parseFloat(e.target.value))} />
       </div>
       <div className="grid grid-cols-[auto_20%] items-center gap-2 mt-2 text-left">
         <label htmlFor="compress-data"> 
-          <h1 className='flex'> <span>Scale by clip </span> 
+          <h1 className='flex items-center'> 
             <QuickTip 
               className='max-w-80'
               message='Transparency is scaled from dataset minimum to maximum. Lower values are more transparent. When enabled - transparency scales based on the cropped values below. '>
               <BsFillQuestionCircleFill/>
             </QuickTip>
+            <span>Scale by clip </span> 
           </h1> 
         </label>
         <Switch className='h-5 cursor-pointer'  id="compress-data" checked={vTransferRange} onCheckedChange={e=>setVTransferRange(e)}/>
@@ -184,6 +219,7 @@ const PointOptions = () =>{
               disabled={disablePointScale}
           onValueChange={(vals:number[]) => setPointSize(vals[0])}
           />
+          <BivariateSelector />
       <Button variant="pink" size="sm" className="w-[100%] cursor-[pointer] mb-2 mt-2" disabled={disablePointScale} onClick={() => setScalePoints(!scalePoints)}>
         {scalePoints ? "Remove Scaling" : "Scale By Value" }
       </Button>
@@ -220,47 +256,47 @@ const PointOptions = () =>{
 }
 
 const FlatOptions = () =>{
-  const {displacement, displaceFaces, offsetNegatives, rotateFlat,
+    const {displacement, displaceFaces, offsetNegatives, rotateFlat,
     setDisplacement, setDisplaceFaces, setOffsetNegatives,
     setResetCamera} = usePlotStore(useShallow(s => s))
-   return(
-   <>
-   
-   <div className='grid gap-2 mb-2'>
-    <Switcher leftText='Flat' rightText='Displace' state={!displaceFaces} onClick={()=>{
-      if (displaceFaces){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceFaces(!displaceFaces); usePlotStore.setState({rotateFlat: false}) }} 
-    />
-    <Hider show={displaceFaces}>
-      <div className='grid gap-2'>
-        <h1>Displacement</h1>
-        <UISlider
-          min={0}
-          max={100}
-          step={2}
-          value={[displacement]}
-          className='w-full mb-2'
-          onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
-        />
-        <div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
-          <label htmlFor="offset-switch"><h1>Offset Negatives</h1></label>
-          <Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
+    return(
+    <>
+    <div className='grid gap-2 mb-2'>
+      <Switcher leftText='Flat' rightText='Displace' state={!displaceFaces} onClick={()=>{
+        if (displaceFaces){setResetCamera(!usePlotStore.getState().resetCamera)}; setDisplaceFaces(!displaceFaces); usePlotStore.setState({rotateFlat: false}) }} 
+      />
+      <Hider show={displaceFaces}>
+			<div className='grid gap-2'>
+			<h1>Displacement</h1>
+			<BivariateSelector />
+			<UISlider
+				min={0}
+				max={100}
+				step={2}
+				value={[displacement]}
+				className='w-full mb-2'
+				onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
+			/>
+			<div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
+				<label htmlFor="offset-switch"><h1>Offset Negatives</h1></label>
+				<Switch id='offset-switch' checked={offsetNegatives} onCheckedChange={e=>setOffsetNegatives(e)} />
 
-          <label htmlFor="rotate-switch"><h1>Rotate</h1></label>
-          <Switch id='rotate-switch' checked={rotateFlat} onCheckedChange={e=>usePlotStore.setState({rotateFlat: e})} />
-        </div>
+				<label htmlFor="rotate-switch"><h1>Rotate</h1></label>
+				<Switch id='rotate-switch' checked={rotateFlat} onCheckedChange={e=>usePlotStore.setState({rotateFlat: e})} />
+			</div>
+			</div>
+      </Hider>
       </div>
-    </Hider>
-    </div>
-   </>
-   )
+    </>
+    )
 }
 
 const SphereOptions = () =>{
-  const {sphereResolution, displacement, displaceFaces, offsetNegatives,
-    setSphereResolution, setDisplacement, setDisplaceFaces, setOffsetNegatives} = usePlotStore(useShallow(s => s))
-  const maxSurfaceDisp = 2;
-  const maxFaceDisplacement = 15*maxSurfaceDisp; 
-
+	const {sphereResolution, displacement, displaceFaces, offsetNegatives,
+		setSphereResolution, setDisplacement, setDisplaceFaces, setOffsetNegatives} = usePlotStore(useShallow(s => s))
+	const maxSurfaceDisp = 2;
+	const maxFaceDisplacement = 15*maxSurfaceDisp; 
+	
   return(<>
   <div className='grid gap-y-[5px] items-center w-50 text-center mb-2'>
     <h1>Displacement Mode</h1>
@@ -273,6 +309,7 @@ const SphereOptions = () =>{
     />
     
     <h1>Displacement</h1>
+	<BivariateSelector />
     <UISlider
       min={0}
       max={!displaceFaces ? maxSurfaceDisp : maxFaceDisplacement}
@@ -356,15 +393,14 @@ const SpatialExtent = () =>{
 }
 
 const GlobalOptions = () =>{
-  const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, fillValue, useBorderTexture,
-    setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels, setFillValue} = usePlotStore(useShallow(s => s))
+  const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, useBorderTexture,
+    setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels} = usePlotStore(useShallow(s => s))
   const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
   const {valueScales, borderCompatible} = useGlobalStore(useShallow(s => ({valueScales: s.valueScales, borderCompatible: s.borderCompatible})))
   const isPC = plotType == 'point-cloud'
-
+	const bivariateSelection = useColormapStore(s => s.bivariateSelection)
   const throttleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestValue = useRef(borderColor);
-
   const handleColorChange = useCallback((setter: (color:string) => void)=>(e: React.ChangeEvent<HTMLInputElement>) => {
     latestValue.current = e.target.value;
 
@@ -381,10 +417,11 @@ const GlobalOptions = () =>{
       <span className='text-lg font-bold'>Global Settings</span>
       <div className="flex flex-col items-center w-[200px] gap-4">
         <h1>Value Cropping</h1>
+		<BivariateSelector />
         <MinMaxSlider 
           range={valueRange} 
           setRange={setValueRange} 
-          valueScales={valueScales} 
+          valueScales={valueScales[bivariateSelection]} 
           min={0} 
         />
       </div>

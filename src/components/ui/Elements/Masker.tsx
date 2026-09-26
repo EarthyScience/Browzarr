@@ -5,13 +5,14 @@ import {normalize, denormalize} from '@/utils/HelperFuncs'
 import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { useShallow } from 'zustand/shallow'
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
-import { useIsMobile } from '@/hooks'
+import { useIsMobile, useValueScales } from '@/hooks'
 import { ChevronLeft } from 'lucide-react'
 export const Masker = () => {
     const {fillValue, setFillValue} = usePlotStore(useShallow(s => ({
         fillValue: s.fillValue, setFillValue: s.setFillValue
     })))
-    const {valueScales} = useGlobalStore(useShallow(s => ({valueScales: s.valueScales})))
+    const bivariate = useGlobalStore(s => s.bivariate)
+    const valueScales = useValueScales();
     const [thisFillVal, setThisFillValue] = useState(denormalize(fillValue, valueScales.minVal, valueScales.maxVal))
     const [showMasks, setShowMasks] = useState(false)
     const masks = ["None", "Land", "Water"]
@@ -33,19 +34,23 @@ export const Masker = () => {
 			</div>
             </PopoverTrigger>
             <PopoverContent side={popoverSide}>
-                <h1>Mask Value</h1>
-                <div className='grid grid-cols-[auto_60%] items-center gap-2 mt-2 text-left'>
-                    <Input
-                    type='number'
-                    defaultValue={denormalize(fillValue, valueScales.minVal, valueScales.maxVal)}
-                    onChange={e=> setThisFillValue(parseFloat(e.target.value))}
-                    />
+                <div className='grid grid-cols-[auto_40%] items-center gap-2 mt-2 text-left'>
+                    {!bivariate &&  <><div className='flex'>
+                        <label htmlFor="maskValue"><h1>Mask Value</h1></label>
+                        <Input
+                            id='maskValue'
+                            type='number'
+                            defaultValue={denormalize(fillValue, valueScales.minVal, valueScales.maxVal)}
+                            onChange={e=> setThisFillValue(parseFloat(e.target.value))}
+                        />
+                    </div>
                     <Button
                         disabled={normalize(thisFillVal, valueScales.minVal, valueScales.maxVal) === fillValue}
                         className='cursor-pointer'
                         onClick={()=>setFillValue(normalize(thisFillVal, valueScales.minVal, valueScales.maxVal))}
                     >Set Value
-                    </Button>
+                    </Button></>
+                    }
                     <h1>Mask Feature</h1>
                     <Select 
                         onValueChange={e=>{

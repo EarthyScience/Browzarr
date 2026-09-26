@@ -23,13 +23,13 @@ import { FaLongArrowAltRight } from "react-icons/fa";
 const ExportImageSettings = () => {
     const {
         includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum,
-        useCustomRes, customRes, includeAxis, mainTitle, cbarLabel, cbarUnits, animate, timeRate,
+        useCustomRes, customRes, includeAxis, mainTitle, cbarLabels, cbarUnits, animate, timeRate,
         frames, frameRate, orbit, useTime, loopTime, orbitDeg, orbitDir, preview, pingpong  
     } = useImageExportStore(useShallow(s => s))
 
     const {ExportImg, EnableExport, setIncludeBackground, setIncludeColorbar, 
         setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis, 
-        setHideAxis, setHideAxisControls, setMainTitle, setCbarLabel, setAnimate, 
+        setHideAxis, setHideAxisControls, setMainTitle, setCbarLabels, setAnimate, 
         setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setKeyFrameEditor, 
         setCbarUnits, setPingpong, setPreview, setPreviewExtent, setOrbitDeg} = useImageExportStore(useShallow(s => s))
 
@@ -38,13 +38,17 @@ const ExportImageSettings = () => {
     }
 
     const {plotType, zSlice} = usePlotStore( useShallow(s => ({ plotType: s.plotType, zSlice: s.zSlice })))
-    const {variable, metadata, dimArrays} = useGlobalStore(useShallow(s => s))
+    const {variable, variable2, dimArrays, bivariate, units} = useGlobalStore(useShallow(s => ({
+        variable: s.variable, variable2: s.variable2, dimArrays: s.dimArrays, bivariate: s.bivariate, units: s.units
+    })))
     const capitalize: CapitalizeFn = str => str.charAt(0).toUpperCase() + str.slice(1);
     const [showTitles, setShowTitles] = useState(false)
     const [showAnimation, setShowAnimation] = useState(false)
     const [showSettings, setShowSettings] = useState(true)
     const axisMapping = useZarrStore(s => s.axisMapping);
-
+    const cbarLocList = bivariate 
+            ? ['bottomLeft', 'bottomRight', 'topLeft', 'topRight'] 
+            : ['left', 'right', 'top', 'bottom']
     useEffect(()=>{
         const shapeLength = dimArrays?.length || 3;
         const zIdx = axisMapping?.z >= 0 ? axisMapping.z : Math.max(0, shapeLength - 3);
@@ -54,7 +58,16 @@ const ExportImageSettings = () => {
         setFrames(sliceDist);
     },[zSlice, dimArrays, axisMapping])
 
-
+    const updateCbarLabels = (idx: number) => (e: React.ChangeEvent<HTMLInputElement>): void => {
+        const oldLabels = [...cbarLabels]
+        oldLabels[idx] = e.target.value
+        setCbarLabels(oldLabels)
+    }
+    const updateCbarUnits = (idx: number) => (e: React.ChangeEvent<HTMLInputElement>): void => {
+        const oldUnits = [...cbarUnits]
+        oldUnits[idx] = e.target.value
+        setCbarUnits(oldUnits)
+    }
   return (
     <Popover>
         <PopoverTrigger asChild>
@@ -93,11 +106,12 @@ const ExportImageSettings = () => {
                     <label htmlFor="main-title">Main Title</label>
                     <Input id='main-title' type='string' value={mainTitle} onChange={e=> setMainTitle(e.target.value)}/>
                     <Hider show={includeColorbar} >
-                        <label htmlFor="cbar-title">Colorbar Label</label>
-                        <Input id='cbar-title' type='string' placeholder={variable} value={cbarLabel} onChange={e=> setCbarLabel(e.target.value)}/>
-                    
-                        <label htmlFor="cbar-title">Colorbar Units</label>
-                        <Input id='cbar-title' type='string' placeholder={metadata?.units?? "undefined"} value={cbarUnits} onChange={e=> setCbarUnits(e.target.value)}/>
+                        <label htmlFor="cbar-title">Colorbar Label{bivariate ? 's' : ''}</label>
+                        <Input id='cbar-title' type='string' placeholder={variable} value={cbarLabels[0]} onChange={updateCbarLabels(0)}/>
+                        {bivariate && <Input id='cbar-title2' type='string' placeholder={variable2} value={cbarLabels[1]} onChange={updateCbarLabels(1)}/>}
+                        <label htmlFor="cbar-units">Colorbar Units</label>
+                        <Input id='cbar-units' type='string' placeholder={units[0]?? "undefined"} value={cbarUnits[0]} onChange={updateCbarUnits(0)}/>
+                        <Input id='cbar-units2' type='string' placeholder={units[1]?? "undefined"} value={cbarUnits[1]} onChange={updateCbarUnits(1)}/>
                     </Hider>
                 </div>
             </Hider>
@@ -135,7 +149,7 @@ const ExportImageSettings = () => {
                                         <SelectValue placeholder={cbarLoc}/>
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {['left', 'right', 'top', 'bottom'].map((val)=>(
+                                        {cbarLocList.map((val)=>(
                                             <SelectItem key={val} value={val}>{capitalize(val)}</SelectItem>
                                         ))}
                                     </SelectContent>

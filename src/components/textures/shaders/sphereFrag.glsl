@@ -1,5 +1,5 @@
  // by Jeran Poehls
-out vec4 color;
+out vec4 Color;
 in vec3 aPosition;
 
 vec2 giveUV(vec3 position){
@@ -34,15 +34,15 @@ void main(){
             float mask = texture(maskTexture, maskUV).r;
             bool cond = maskValue == 1 ? mask<0.5 : mask>=0.5;
             if (cond){
-                color = vec4(nanColor, 1.);
-                color.a = nanAlpha;  
+                Color = vec4(nanColor, 1.);
+                Color.a = nanAlpha;  
                 return;
             }
         } else {
             float borderDist = texture(borderTexture, maskUV).r;
             float latFac = cos(maskUV.y);
             if (borderDist <= borderWidth * latFac) {
-                color = vec4(borderColor, 1.0);
+                Color = vec4(borderColor, 1.0);
                 return;
             }
         }
@@ -70,23 +70,40 @@ void main(){
             vec3 localCoord = texCoord * (textureDepths); // Scale up
         #endif
         localCoord = fract(localCoord);
-        float strength = sample1(localCoord, textureIdx);
-        rescaler(strength);
-        bool isnan = isNaNBits(strength) || (!useF16 && ( strength == 1.0))
-            || abs(strength - fillValue) < 0.005;
-        if (!isnan){
-            strength *= cScale;
-            strength = max(min(strength+cOffset,0.995), 0.0); // clamp color to [0, 1]
-            color = vec4(texture2D(cmap, vec2(strength, 0.5)).rgb, 1.);
-        } else {
-            color = vec4(nanColor, nanAlpha);
+        float strength;
+        float biVal;
+        bool biNaN;
+        if (bivariate) {
+            vec2 bivar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
+            strength = bivar.r;
+            biVal = bivar.g;
+            biNaN = isNaNBits(strength) || isNaNBits(biVal);
+        }else{
+            strength = sample1(localCoord, textureIdx);
+            rescaler(strength);
+        } 
+        bool isNan = isNaNBits(strength) || biNaN || (!useF16 && strength == 1.);
+        if (isNan){ 
+            Color = vec4(nanColor, nanAlpha);
+            return;
+        }
+        else {
+            if (bivariate){
+                bool flipOrder = bivariateSelection != 0;
+                Color = vec4(flipOrder ? colorMixer(biVal, strength) : colorMixer(strength, biVal), 1.);
+            }
+            else {
+                strength *= cScale;
+                strength = min(strength+cOffset,0.995);
+                Color = vec4(texture2D(cmap, vec2(strength, 0.5)).rgb, 1.);
+            }
         }
         bool valid = (strength >= threshold.x) && (strength <= threshold.y); 
         if (!valid){
-            color = vec4(0.);
+            Color = vec4(0.);
             return;
         }
         return;
     } 
-    color = vec4(nanColor, nanAlpha);
+    Color = vec4(nanColor, nanAlpha);
 }

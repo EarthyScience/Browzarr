@@ -12,6 +12,7 @@ const AnalysisInfo = ({loc, show, info, } : {loc: number[], show: boolean, info:
     const {axisDimNames, axisDimUnits} = useGlobalStore(useShallow(s => s))
     const axis = useAnalysisStore(state=> state.analysisDim)
     const {xArray, yArray, zArray} = useDimAxis();
+
     const axisDimArrays = [zArray, yArray, xArray];
     const plotInfo = useMemo(()=>{
         let plotNames, plotUnits, plotArrays;
@@ -28,8 +29,8 @@ const AnalysisInfo = ({loc, show, info, } : {loc: number[], show: boolean, info:
         return {plotNames, plotUnits, plotArrays}
     },[axisDimNames, axisDimUnits, axisDimArrays, axis]) 
     const {plotNames, plotUnits} = plotInfo;
-    const yCoord = yArray[Math.floor(info[0] * yArray?.length)]
-    const xCoord = xArray[Math.floor(info[1] * xArray?.length)]
+    const yCoord = yArray?.[Math.floor(info[0] * yArray?.length)]
+    const xCoord = xArray?.[Math.floor(info[1] * xArray?.length)]
 
   return (
     <div className='analysis-overlay'

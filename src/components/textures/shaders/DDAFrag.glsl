@@ -53,19 +53,26 @@ bool shouldSkip(vec3 p, out vec3 texCoord, out vec2 maskUV) {
     return false;
 }
 
-bool sampleVoxel(vec3 texCoord, out float d, out bool isnan) {
+bool sampleVoxel(vec3 texCoord, out float d, out float biVal, out bool isnan) {
     // This gets the sample value. If d is clipped by value-range return false
     ivec3 depths = ivec3(textureDepths);
     int yStepSize = depths.x;
     int zStepSize = depths.y * depths.x;
-
     ivec3 idx = clamp(ivec3(texCoord * textureDepths), ivec3(0), depths - 1);
     int textureIdx = idx.z * zStepSize + idx.y * yStepSize + idx.x;
     vec3 localCoord = fract(texCoord * textureDepths);
-    d = sample1(localCoord, textureIdx);
-    rescaler(d);
+    bool biNaN = false;
+    if (bivariate) {
+        vec2 bivar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
+        d = bivar.r;
+        biVal = bivar.g;
+        biNaN = isNaNBits(d) || isNaNBits(biVal);
+    } else{
+        d = sample1(localCoord, textureIdx);
+        rescaler(d);
+        d = max(min(d * cScale + cOffset, 0.995), 0.0);
+    } 
     isnan = isNaNBits(d) || (!useF16 && d == 1.0);
-    d = max(min(d * cScale + cOffset, 0.995), 0.0);
     return d >= threshold.x && d <= threshold.y;
 }
 
@@ -112,9 +119,10 @@ void main() {
         vec2 maskUV;
         if (!shouldSkip(pCenter, texCoord, maskUV)) {
             float d;
-            bool isnan;
-            if (sampleVoxel(texCoord, d, isnan)) {
-                bool isNan =  isnan || (abs(d - fillValue) < 0.005);
+            float biVal;
+            bool isNan;
+            if (sampleVoxel(texCoord, d, biVal, isNan)) {
+                isNan =  isNan || (abs(d - fillValue) < 0.005);
                 if (isNan) {    
                     if (nanAlpha > 0.0){ 
                         float nanA = pow(nanAlpha, 5.0);
@@ -122,7 +130,11 @@ void main() {
                         alphaAcc += nanA;
                     }
                 } else {
-                    vec3 col = texture(cmap, vec2(d, 0.5)).rgb;
+                    vec3 col;
+                    if (bivariate){
+                        bool flipOrder = bivariateSelection != 0;
+                        col = flipOrder ? colorMixer(biVal, d) : colorMixer(d, biVal);
+                    }else col = texture(cmap, vec2(d, 0.5)).rgb;
                     float alphaFac = revTransparency ? 1.0 - d : d;
                     float alpha;
                     if (useClipScale){

@@ -72,7 +72,7 @@ export function renderAttributes(
     );
   });
 }
-const Metadata = ({ data, variable, isMobile: isMobileProp }: { data: Record<string, any>, variable: string, isMobile?: boolean }) => {
+const Metadata = ({ data, variable, isMobile: isMobileProp }: { data: Record<string, any>, variable: string | undefined, isMobile?: boolean }) => {
     const isMobileHook = useIsMobile();
     const [mounted, setMounted] = React.useState(false);
 
