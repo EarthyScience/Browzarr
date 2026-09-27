@@ -11,8 +11,9 @@ export const useCoordBounds = ()=>{
     if (!borderCompatible) return{
         lonBounds:[-Math.PI, Math.PI], latBounds:[-Math.PI/2, Math.PI/2]
     }
-    const {lonExtent, latExtent, lonResolution, latResolution} = usePlotStore(useShallow(s => s))
-    
+    const {lonExtent, latExtent, lonResolution, latResolution} = usePlotStore(useShallow(s => ({
+        lonExtent: s.lonExtent, latExtent: s.latExtent, lonResolution: s.lonResolution, latResolution: s.latResolution
+    })))
     const [lonBounds, latBounds] = useMemo(()=>{ //The bounds for the shader. It takes the middle point of the furthest coordinate and adds the distance to edge of pixel
         const newLatStep = latResolution/2;
         const newLonStep = lonResolution/2;

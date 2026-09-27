@@ -66,13 +66,15 @@ bool sampleVoxel(vec3 texCoord, out float d, out float biVal, out bool isnan) {
         vec2 bivar = sample2ToOrder(localCoord, textureIdx, bivariateSelection);
         d = bivar.r;
         biVal = bivar.g;
-        biNaN = isNaNBits(d) || isNaNBits(biVal);
+        biNaN = isNaNBits(d) || isNaNBits(biVal) 
+            || (!useF16 && d == 1.0) || (!useF16 && biVal == 1.0);
+        isnan = biNaN;
     } else{
         d = sample1(localCoord, textureIdx);
         rescaler(d);
+        isnan = isNaNBits(d) || (!useF16 && d == 1.0);
         d = max(min(d * cScale + cOffset, 0.995), 0.0);
     } 
-    isnan = isNaNBits(d) || (!useF16 && d == 1.0);
     return d >= threshold.x && d <= threshold.y;
 }
 
