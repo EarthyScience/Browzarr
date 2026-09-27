@@ -65,7 +65,6 @@ export const useDataFetcher = () => {
                     const activeIndices = result.indices.filter((_, idx) => result.shape[idx] != 1);
                     useGlobalStore.getState().setActiveIndices(activeIndices);
                     // Create textures and store valuescales
-                    createDataTexture();
                     scalingFactors[0] = result.scalingFactor?? 0;
                     useAnalysisStore.setState({originalScalingFactor: result.scalingFactor})
                     const shapeLength = shape.length;
@@ -107,6 +106,7 @@ export const useDataFetcher = () => {
                     else handleIrregularGrid();           
                 }))
                 Promise.all(promises).then(() =>{
+                    createDataTexture();
                     setShow(true);
                     setPlotOn(true);
                     setStatus(null);

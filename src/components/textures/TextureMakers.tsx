@@ -86,8 +86,7 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
 export function createDataTexture(){
   const { dataShape, bivariate, setMainTextures, setValueScales} = useGlobalStore.getState();
   if (bivariate){
-    const valueScales = storeBivariate();
-    setValueScales(valueScales);
+    setValueScales(storeBivariate());
   }
   else{
     const dataArray = GetCurrentArray();
