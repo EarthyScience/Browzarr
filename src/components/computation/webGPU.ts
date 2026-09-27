@@ -7,6 +7,22 @@ import { createShaders } from './WGSLShaders';
 import { ArrayMinMax } from '@/utils/HelperFuncs';
 import { RescaleArray } from '../zarr/utils';
 
+// WebGPU requires all buffer sizes, writeBuffer and copyBufferToBuffer sizes to be multiples of 4 bytes.
+// f16 elements are 2 bytes, so odd element counts would otherwise produce invalid (2 mod 4) sizes.
+const align4 = (bytes: number) => Math.ceil(bytes / 4) * 4;
+
+// Writes data to a GPU buffer, zero-padding to a 4-byte boundary when needed
+// (required by queue.writeBuffer; an odd-length f16 array is 2 mod 4 bytes).
+const writeAligned = (device: GPUDevice, buffer: GPUBuffer, data: ArrayBufferView) => {
+    if (data.byteLength % 4 === 0) {
+        device.queue.writeBuffer(buffer, 0, data as GPUAllowSharedBufferSource);
+    } else {
+        const padded = new Uint8Array(align4(data.byteLength));
+        padded.set(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+        device.queue.writeBuffer(buffer, 0, padded);
+    }
+};
+
 const twoDim = {
     Mean: "MeanReduction",
     Min: "MinReduction",
@@ -131,16 +147,17 @@ export async function DataProcess(
     });
 
     // ---- Create buffers ---- //
-    const outputBytes = outputSize * (isCUMSUM ? 4 : (hasF16 ? 2 : 4)); // if cumsum we use f32 cause it can easily surpass safe f16 limits
+    const outputElemBytes = isCUMSUM ? 4 : (hasF16 ? 2 : 4); // if cumsum we use f32 cause it can easily surpass safe f16 limits
+    const outputBytes = align4(outputSize * outputElemBytes); // buffer sizes must be a multiple of 4 bytes
     const inputBuffer = device.createBuffer({
         label: 'Input Buffer',
-        size: inputArray.byteLength * (hasF16 ? 1 : 2), 
+        size: align4(inputArray.byteLength * (hasF16 ? 1 : 2)), 
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
     
     const secondInputBuffer = secondArray ? device.createBuffer({
         label: 'Second Input Buffer',
-        size: secondArray.byteLength * (hasF16 ? 1 : 2),
+        size: align4(secondArray.byteLength * (hasF16 ? 1 : 2)),
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     }) : undefined;
 
@@ -163,9 +180,10 @@ export async function DataProcess(
     });
 
     // Write Buffers to GPU
-    device.queue.writeBuffer(inputBuffer, 0, (hasF16 ? inputArray : new Float32Array(inputArray as Float16Array)) as GPUAllowSharedBufferSource);
-        secondInputBuffer && 
-        device.queue.writeBuffer(secondInputBuffer, 0, (hasF16 ? secondArray : new Float32Array(secondArray as Float16Array)) as GPUAllowSharedBufferSource);
+    writeAligned(device, inputBuffer, hasF16 ? inputArray : new Float32Array(inputArray as Float16Array));
+    if (secondArray && secondInputBuffer) {
+        writeAligned(device, secondInputBuffer, hasF16 ? secondArray : new Float32Array(secondArray as Float16Array));
+    }
     device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
     const offset = secondInputBuffer ? 1 : 0;
 
@@ -204,7 +222,7 @@ export async function DataProcess(
     let results;
     let scalingFactor = 0;
     if (isCUMSUM){
-        const float32Arr = new Float32Array(resultArrayBuffer.slice())
+        const float32Arr = new Float32Array(resultArrayBuffer.slice(0, outputSize * outputElemBytes))
         const [minVal, maxVal] = ArrayMinMax(float32Arr)
         const isComp = (val: number) => Math.abs(val) <= 65504;
         if (isComp(minVal) && isComp(maxVal)) results = new Float16Array(float32Arr);
@@ -215,7 +233,7 @@ export async function DataProcess(
             results = new Float16Array(float32Arr);
             scalingFactor = thisScaling;
         }
-    } else results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
+    } else results = hasF16 ? new Float16Array(resultArrayBuffer.slice(0, outputSize * outputElemBytes)) : new Float16Array(new Float32Array(resultArrayBuffer.slice(0, outputSize * outputElemBytes)));
 
     // Clean up
     readBuffer.unmap();
@@ -279,15 +297,16 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
     });
     
     // Create buffers
+    const outputBytes = align4(outputSize * (hasF16 ? 2 : 4)); // buffer sizes must be a multiple of 4 bytes
     const inputBuffer = device.createBuffer({
         label: 'Input Buffer',
-        size: inputArray.byteLength * (hasF16 ? 1 : 2), 
+        size: align4(inputArray.byteLength * (hasF16 ? 1 : 2)), 
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
 
     const outputBuffer = device.createBuffer({
         label: 'Output Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
+        size: outputBytes,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
@@ -299,12 +318,12 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
 
     const readBuffer = device.createBuffer({
         label:'Read Buffer',
-        size: outputSize * (hasF16 ? 2 : 4),
+        size: outputBytes,
         usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
 
     // Write Buffers to GPU
-    device.queue.writeBuffer(inputBuffer, 0, (hasF16 ? inputArray : new Float32Array(inputArray as Float16Array)) as GPUAllowSharedBufferSource);
+    writeAligned(device, inputBuffer, hasF16 ? inputArray : new Float32Array(inputArray as Float16Array));
     device.queue.writeBuffer(uniformBuffer, 0, myUniformValues.arrayBuffer as GPUAllowSharedBufferSource);
 
     const bindGroup = device.createBindGroup({
@@ -333,7 +352,7 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
     encoder.copyBufferToBuffer(
         outputBuffer, 0,
         readBuffer, 0,
-        outputSize * (hasF16 ? 2 : 4)
+        outputBytes
     );
 
     // Submit work to GPU
@@ -342,7 +361,7 @@ export async function CustomShader(inputArray :  ArrayBufferView, dimInfo : {dat
     // Map staging buffer to read results
     await readBuffer.mapAsync(GPUMapMode.READ);
     const resultArrayBuffer = readBuffer.getMappedRange();
-    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice()) : new Float16Array(new Float32Array(resultArrayBuffer.slice()));
+    const results = hasF16 ? new Float16Array(resultArrayBuffer.slice(0, outputSize * 2)) : new Float16Array(new Float32Array(resultArrayBuffer.slice(0, outputSize * 4)));
 
     // Clean up
     readBuffer.unmap();
