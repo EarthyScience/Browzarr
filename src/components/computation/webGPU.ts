@@ -8,11 +8,9 @@ import { ArrayMinMax } from '@/utils/HelperFuncs';
 import { RescaleArray } from '../zarr/utils';
 
 // WebGPU requires all buffer sizes, writeBuffer and copyBufferToBuffer sizes to be multiples of 4 bytes.
-// f16 elements are 2 bytes, so odd element counts would otherwise produce invalid (2 mod 4) sizes.
 const align4 = (bytes: number) => Math.ceil(bytes / 4) * 4;
 
 // Writes data to a GPU buffer, zero-padding to a 4-byte boundary when needed
-// (required by queue.writeBuffer; an odd-length f16 array is 2 mod 4 bytes).
 const writeAligned = (device: GPUDevice, buffer: GPUBuffer, data: ArrayBufferView) => {
     if (data.byteLength % 4 === 0) {
         device.queue.writeBuffer(buffer, 0, data as GPUAllowSharedBufferSource);
