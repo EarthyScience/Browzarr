@@ -101,12 +101,12 @@ export const useDataFetcher = () => {
                     const targetDim = dimArrays[yIdx] || dimArrays[0];
                     const shouldFlip = (targetDim && targetDim.length >= 2) ? targetDim[1] < targetDim[0] : false;
                     setFlipY(shouldFlip);   
-                    parseExtent();  
-                    if(preProject)reproject();
-                    else handleIrregularGrid();           
                 }))
                 Promise.all(promises).then(() =>{
+                    parseExtent();  
                     createDataTexture();
+                    if(preProject)reproject();
+                    else handleIrregularGrid();   
                     setShow(true);
                     setPlotOn(true);
                     setStatus(null);
