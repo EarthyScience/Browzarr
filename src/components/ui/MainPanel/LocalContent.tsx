@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { useShallow } from 'zustand/shallow';
 import LocalZarr from './LocalZarr';
-import LocalNetCDF from './LocalNetCDF';
+import LocalFile from './LocalFile';
 import { Switcher } from '../Widgets/Switcher';
 
 type Props = {
@@ -31,7 +29,7 @@ const LocalContent = ({
         onClick={() => setUseNC(x => !x)}
       />
       {useNC ? (
-        <LocalNetCDF setOpenVariables={onOpenDescription} />
+        <LocalFile setOpenVariables={onOpenDescription} />
       ) : isSafari ? (
         <div className="p-3 rounded-md border border-yellow-600 text-tiny">
           <strong>Local folder upload is not supported in Safari.</strong> Please use Chrome, Firefox, or Edge instead.
