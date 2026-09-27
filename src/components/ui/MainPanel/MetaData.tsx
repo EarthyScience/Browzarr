@@ -65,25 +65,21 @@ type Props = {
   metadata?: Record<string, unknown>;
 };
 
-function MetaInfo({
-    selectionInfo,
-    meta,
-    cacheSize,
-    isBivariate,
-    setDataSize,
-    setCacheSize
-}: {
-    selectionInfo: Record<string, any>;
-    meta: Record<string, any>;
+function useSizeData(
+    meta: Record<string, any>,
+    selectionInfo: Record<string, any>,
     cacheSize: number,
     isBivariate: boolean,
-    setDataSize: React.Dispatch<React.SetStateAction<number>>;
-    setCacheSize: React.Dispatch<React.SetStateAction<number>>;
-}) {
+    variable2?: string,
+){
     const initStore = useGlobalStore(s => s.initStore);
-    const {cache, maxSize} = useCacheStore((s) => s);
-    const {compress, coarsen, kernelSize, kernelDepth} = useZarrStore((s) => s);
-    const {maxTextureSize, max3DTextureSize} = usePlotStore((s) => s);
+    const cache = useCacheStore(s => s.cache);
+    const {coarsen, kernelSize, kernelDepth} = useZarrStore(useShallow(s => ({
+        coarsen: s.coarsen, kernelSize: s.kernelSize, kernelDepth: s.kernelDepth
+    })));
+    const {maxTextureSize, max3DTextureSize} = usePlotStore(useShallow(s => ({
+        maxTextureSize: s.maxTextureSize, max3DTextureSize: s.max3DTextureSize
+    })));
     const dataShape = meta?.shape as number[] || [];
     const dtype = meta.totalSize ? Math.round(meta.totalSize/dataShape.reduce((a,b) => a * b, 1)) : 4;
     const sizeData = useMemo(()=>{
@@ -101,6 +97,7 @@ function MetaInfo({
         // ---- Get Texture Counts ---- //
         const is2D = sizes.length == 2;
         const texSize = is2D ? maxTextureSize : max3DTextureSize;
+        const texDepths = sizes.map(val => Math.ceil(val/texSize))
         let texProd = 1;
         for (const size of sizes){
             const texCount = Math.ceil(size/texSize);
@@ -114,24 +111,25 @@ function MetaInfo({
         }
         
         return{
-            size: prod * dtype * (isBivariate ? 2 : 1), texCount:texProd
+            size: prod * dtype * (isBivariate ? 2 : 1), 
+            texCount:texProd,
+            texDepths
         }
     },[selectionInfo, coarsen, kernelSize, kernelDepth, isBivariate])
 
     const currentSize = sizeData.size;
     const texCount = sizeData.texCount;
+    const texDepths = sizeData.texDepths;
     const tooBig = texCount > 12;
     const cachedSize = useMemo(() => {
         const cachedSize = currentSize * 2/dtype;
-        setDataSize(cachedSize);
         return cachedSize;
     }, [currentSize]);
 
     const smallCache = cachedSize > cacheSize;
-    const [cachedChunks, setCachedChunks] = useState<string | null>(null);
     let cacheBase = `${initStore}_${meta.name}`;
-    useEffect(() => {
-        let newCached = false;
+
+    const cachedChunks = useMemo(() => {
         let newCachedChunks: string | null = null;
         
         if (meta && meta.chunks && meta.shape) {
@@ -153,22 +151,53 @@ function MetaInfo({
             for (let z = zDim.start; z < zDim.end; z++) {
                 for (let y = yDim.start; y < yDim.end; y++) {
                     for (let x = xDim.start; x < xDim.end; x++) {
-                        total++;
+                        if (isBivariate) total = total + 2;
+                        else total++;
                         if (cache.has(`${cacheBase}_chunk_z${z}_y${y}_x${x}`)) accum++;
+                        if (variable2 && cache.has(`${cacheBase}_chunk_z${z}_y${y}_x${x}_${variable2}`)) accum++
                     }
                 }
             }
-            if (total > 0 && accum > 0) {
-                newCachedChunks = `${accum}/${total}`;
-                newCached = true;
-            } else if (cache.has(`${initStore}_${meta.name}`)) {
-                newCached = true;
-            }
-        } else if (meta && cache.has(`${initStore}_${meta.name}`)) {
-            newCached = true;
+            if (total > 0 && accum > 0)  newCachedChunks = `${accum}/${total}`;
         }
-        setCachedChunks((prev) => (prev !== newCachedChunks ? newCachedChunks : prev));
-      }, [meta, cache, initStore, selectionInfo]);
+        return newCachedChunks;
+      }, [meta, cache, initStore, selectionInfo, isBivariate, variable2]);
+    
+    return {
+        currentSize,
+        cachedSize,
+        texCount,
+        tooBig,
+        cachedChunks,
+        smallCache,
+        texDepths
+    }
+}
+
+
+function MetaInfo({
+    tooBig,
+    meta,
+    cacheSize,
+    cachedSize,
+    cachedChunks,
+    currentSize,
+    texCount,
+    smallCache,
+    setCacheSize
+}: {
+    tooBig: boolean;
+    meta: Record<string, any>;
+    cacheSize: number,
+    cachedSize: number,
+    cachedChunks: string,
+    currentSize: number;
+    texCount: number;
+    smallCache: boolean;
+    setCacheSize: React.Dispatch<React.SetStateAction<number>>;
+}) {
+    const maxSize = useCacheStore(s => s.maxSize);
+    const compress = useZarrStore(s => s.compress);
 
     return(
         <div className="flex flex-col gap-2">
@@ -246,12 +275,21 @@ export const MetaData = ({ meta, metadata }: Props) => {
     }), [meta?.dimInfo]);
     const dataShape = meta?.shape || [];
     const dataLength = dataShape.length;
-    const { setDimArrays, setDimNames, setDimUnits, setVariable, variable, bivariate } = useGlobalStore(useShallow(s => s));
-    const { maxSize, setMaxSize } = useCacheStore(useShallow(s => s))
-    const { ReFetch, compress, setCompress, coarsen, setCoarsen, kernelSize, setKernelSize, kernelDepth, setKernelDepth } = useZarrStore(
-    useShallow(s => s))
+    const { variable, variable2, bivariate, setDimArrays, setDimNames, setDimUnits, setVariable, setTextureArrayDepths, } = useGlobalStore(useShallow(s => ({
+        variable: s.variable, variable2: s.variable2, bivariate: s.bivariate, setDimArrays: s.setDimArrays, setDimNames: s.setDimNames, 
+        setDimUnits: s.setDimUnits, setVariable: s.setVariable, setTextureArrayDepths: s.setTextureArrayDepths
+    })));
+    const { maxSize, setMaxSize } = useCacheStore(useShallow(s => ({
+        maxSize: s.maxSize, setMaxSize: s.setMaxSize
+    })))
+    const {  compress, coarsen, kernelSize, kernelDepth, setCompress, setCoarsen, setKernelSize, setKernelDepth, ReFetch } = useZarrStore(
+    useShallow(s => ({
+        compress: s.compress, coarsen: s.coarsen, kernelSize: s.kernelSize, kernelDepth: s.kernelDepth,
+        setCompress: s.setCompress, setCoarsen: s.setCoarsen, setKernelSize: s.setKernelSize, setKernelDepth: s.setKernelDepth,
+        ReFetch: s.ReFetch
+    })))
+    
     const [cacheSize, setCacheSize] = useState(maxSize);
-    const [dataSize, setDataSize] = useState(maxSize);
     const [isBivariate, setIsBivariate] = useState(bivariate);
     // --- Coarsen Values --- //
     const [displaySpat, setDisplaySpat] = useState(String(kernelSize));
@@ -272,6 +310,11 @@ export const MetaData = ({ meta, metadata }: Props) => {
             return newSelectionInfo
         })
     },[setSelectionInfo])
+     // --- Size States --- //
+    const sizeData = useSizeData(meta, selectionInfo, maxSize, isBivariate, variable2);
+    const smallCache = sizeData.smallCache;
+
+    // --- Dim States --- //
     const [deactiveDims, setDeactiveDims] = useState(Math.max(0, dataLength - 3))
     const [activeDims, setActiveDims] = useState(Math.min(dataLength, 3))
     const [collapsedOpen, setCollapsedOpen] = useState(false)
@@ -283,7 +326,6 @@ export const MetaData = ({ meta, metadata }: Props) => {
     );
     // --- Ready Checkers --- //
     const [duplicateWarning, setDuplicateWarning] = useState<string | undefined>()
-    const smallCache = dataSize > cacheSize;
     useEffect(()=>{
         const dims = Array.from(selectionInfo.values()).map(obj => obj.dataDim)
         const duplicates = dims.filter((item, index) => dims.indexOf(item) !== index).map(val => dimNames[val]);
@@ -315,6 +357,8 @@ export const MetaData = ({ meta, metadata }: Props) => {
         if (variable === meta.name) {
             ReFetch();
         } else {
+            
+            setTextureArrayDepths(sizeData.texDepths);
             setMaxSize(cacheSize);
             setVariable(meta.name || '');
             clearProjectionData()
@@ -323,7 +367,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
     }
     return (
         <div className="flex flex-col gap-2 min-w-0">
-            <div className="flex flex-col gap-4 mb-2 min-w-0">
+            <div className="flex flex-col gap-4 min-w-0">
                 <div className="flex flex-col gap-3 w-full min-w-0">
                     <div className="flex items-center gap-2">
                         <b className="text-base">{`${meta.long_name ?? meta.name ?? ''} `}</b>
@@ -387,7 +431,17 @@ export const MetaData = ({ meta, metadata }: Props) => {
                             </Button>
                         </div>
                     </div>
-                    <MetaInfo selectionInfo={selectionInfo} cacheSize={cacheSize} setCacheSize={setCacheSize} setDataSize={setDataSize} meta={meta} isBivariate={isBivariate}/>
+                    <MetaInfo 
+                        tooBig={sizeData.tooBig} 
+                        setCacheSize={setCacheSize} 
+                        meta={meta} 
+                        cacheSize={cacheSize}
+                        cachedSize={sizeData.cachedSize} 
+                        cachedChunks={sizeData.cachedChunks || ''}
+                        currentSize={sizeData.currentSize}
+                        texCount={sizeData.texCount}
+                        smallCache={smallCache}
+                    />
                 </div>
                 <Hider show={coarsen}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 bg-background p-3 rounded-md border text-sm">
