@@ -16,6 +16,7 @@ import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { clearProjectionData } from '@/components/textures/ProjectionTexture';
 import { SliderGroup, ArrayInfo, SecondVariable } from '../MetaComponents';
 import { useColormapStore } from '@/GlobalStates/ColormapStore';
+import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
@@ -154,7 +155,7 @@ function useSizeData(
                         if (isBivariate) total = total + 2;
                         else total++;
                         if (cache.has(`${cacheBase}_chunk_z${z}_y${y}_x${x}`)) accum++;
-                        if (variable2 && cache.has(`${cacheBase}_chunk_z${z}_y${y}_x${x}_${variable2}`)) accum++
+                        if (variable2 && cache.has(`${initStore}_${variable2}_chunk_z${z}_y${y}_x${x}`)) accum++
                     }
                 }
             }
@@ -351,19 +352,16 @@ export const MetaData = ({ meta, metadata }: Props) => {
             y: axisIdices.at(-2) as number,
             z: axisIdices.at(-3) as number
         }
+        // --- (Re)set States --- //
         useZarrStore.setState({ndSlices, axisMapping})
         useGlobalStore.setState({bivariate:isBivariate})
         useColormapStore.setState({bivariateSelection: 0})
-        if (variable === meta.name) {
-            ReFetch();
-        } else {
-            
-            setTextureArrayDepths(sizeData.texDepths);
-            setMaxSize(cacheSize);
-            setVariable(meta.name || '');
-            clearProjectionData()
-            ReFetch();
-        }
+        useAnalysisStore.setState({ analysisMode: false, analysisDim: null });
+        setTextureArrayDepths(sizeData.texDepths);
+        setMaxSize(cacheSize);
+        setVariable(meta.name || '');
+        clearProjectionData()
+        ReFetch();
     }
     return (
         <div className="flex flex-col gap-2 min-w-0">
