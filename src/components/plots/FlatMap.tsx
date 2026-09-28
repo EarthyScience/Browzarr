@@ -87,7 +87,7 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
         names: [dimNames[xIdx], dimNames[yIdx]],
         units: [dimUnits[xIdx], dimUnits[yIdx]]
       }
-    },[analysisMode, axis, dimNames, dimUnits, xIdx, yIdx])
+    },[analysisMode, axis, dimNames, dimUnits, xIdx, yIdx, zIdx])
 
     const sampleArrays = useMemo(()=> analysisMode 
         ? [analysisArray] 
@@ -118,7 +118,7 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
         const yId = Math.floor(y * ySize);
         let dataIdx = xSize * yId + xId;
         const zOffset = isFlat ? 0 : Math.floor((zArray.length-1) * animProg)
-        dataIdx += zOffset * xSize*ySize
+        dataIdx += (analysisMode ? 1 : zOffset) * xSize*ySize
         const dataVal = sampleArrays.map(val => val ? val[dataIdx] : 0);
         vals.current = dataVal;
         coords.current = (analysisMode && axis == 2) ? [yArray[yId], xArray[xId]] : [xArray[xId],yArray[yId]]

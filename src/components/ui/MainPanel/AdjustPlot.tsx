@@ -459,11 +459,11 @@ const GlobalOptions = () =>{
           size="sm" 
           className="w-[100%] cursor-[pointer] mb-2 mt-2" 
           disabled={!borderCompatible ||
-            (analysisMode && Boolean(axis) && axis != 0 )
+            (analysisMode && Boolean(axis))
           }
           onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
       </QuickTip>
-      <Hider show={showBorders}>
+      <Hider show={showBorders && (analysisMode && !axis)}>
         <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
           ()=>usePlotStore.setState({useBorderTexture:!useBorderTexture})
         } />
