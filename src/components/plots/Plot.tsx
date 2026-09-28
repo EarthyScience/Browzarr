@@ -10,7 +10,7 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar, ExportExtent, ShaderEditor, KeyFrames } from '../ui';
-import AnalysisInfo from './AnalysisInfo';
+import { overLayTunnel } from '../ui/Elements/InfoViewer';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import ExportCanvas from '@/utils/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
@@ -238,13 +238,13 @@ const Plot = () => {
   return (
     <div id='main-canvas-div' className='main-canvas'
       style={{width:'100vw'}}
-    >
+    > 
+      <overLayTunnel.Out />
       <ExportExtent /> 
       {keyFrameEditor && <KeyFrames />}
       <TransectNotice />
       {show && <Colorbar metadata={stableMetadata}/>}
       <Nav />
-      {(isFlat || plotType == "flat") && show && <AnalysisInfo loc={loc} show={showInfo} info={[...coords.current,val.current]}/> }
       <ShaderEditor visible={useEditor}/>
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
         frameloop={useEditor ? "never" : "demand"}
@@ -270,7 +270,7 @@ const Plot = () => {
         }
         <MemoOrbit isFlat={plotType == "flat"} />
         {plotType == "flat" && show && <>
-          {!displaceFaces && <FlatMap textures={mainTextures as THREE.DataTexture[] | THREE.Data3DTexture[]} infoSetters={infoSetters} /> }
+          {!displaceFaces && <FlatMap textures={mainTextures as THREE.DataTexture[] | THREE.Data3DTexture[]} /> }
           {displaceFaces && <FlatBlocks textures={mainTextures} />}
         </>
         }
