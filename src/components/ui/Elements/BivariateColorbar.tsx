@@ -10,6 +10,7 @@ import { linspace, clamp } from '@/utils/HelperFuncs';
 import { Num2String } from './colorbarUtils';
 import { lerp } from '@/utils/colorUtils';
 import { useIsMobile } from '@/hooks';
+import { InfoViewer } from './InfoViewer'
 
 interface BCbarProps{
     width: number,
@@ -24,7 +25,8 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
         resolution: s.resolution, mixMode: s.mixMode
     })))
     const {valueScales, scalingFactors, variable, variable2} = useGlobalStore(useShallow(s => ({
-        valueScales: s.valueScales, scalingFactors: s.scalingFactors, variable: s.variable, variable2: s.variable2
+        valueScales: s.valueScales, scalingFactors: s.scalingFactors, variable: s.variable, 
+        variable2: s.variable2
     })));
     const isMobile = useIsMobile();
     const [expandBivariate, setExpandBivariate] = useState(false);
@@ -70,7 +72,7 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
         // Calculate mouse position relative to the element's top-left corner
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        setDivPos([x,y])
+        setDivPos([e.clientX, e.clientY])
         const xFac = clamp(x/thisWidth, 0, 1);
         const yFac = 1 - clamp(y/thisWidth, 0, 1)
         const xVal = lerp(valueScales[0].minVal, valueScales[0].maxVal, xFac)
@@ -80,7 +82,8 @@ export const BivariateColorbar = ({width, height, bivariateSelection, tickCount}
     return (
         <div className='flex justify-center relative'
         >
-            <ValueReadout visible={showInfo} names={[variable as string, variable2 as string]} position={divPos} values={varVals}/>
+            {/* <ValueReadout visible={showInfo} names={[variable as string, variable2 as string]} position={divPos} values={varVals}/> */}
+            <InfoViewer show={showInfo} loc={divPos} vals={varVals}/>
         {expandBivariate 
             ? <>
                 <div className='grid' >

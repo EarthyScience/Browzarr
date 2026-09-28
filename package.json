@@ -93,6 +93,7 @@
     "tailwind-merge": "^3.3.0",
     "three": "^0.182.0",
     "three-stdlib": "^2.36.0",
+    "tunnel-rat": "^0.1.2",
     "vaul": "^1.1.2",
     "webgpu-utils": "^1.11.0",
     "zarrita": "^0.7.3",

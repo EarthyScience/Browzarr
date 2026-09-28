@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useMemo, useEffect, useRef} from 'react'
+import React, {useMemo, useEffect, useState, useRef} from 'react'
 import * as THREE from 'three'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
@@ -18,24 +18,28 @@ import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices, useDimAxis } from '@/hooks';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
-interface InfoSettersProps{
-  setLoc: React.Dispatch<React.SetStateAction<number[]>>;
-  setShowInfo: React.Dispatch<React.SetStateAction<boolean>>;
-  val: React.RefObject<number>;
-  coords: React.RefObject<number[]>;
-}
+import {InfoViewer} from '../ui/Elements/InfoViewer';
 
-const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[], infoSetters : InfoSettersProps}) => {
+const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[]}) => {
     // ---- Imports ---- //
     const textures = usePaddedTextures(propTextures);
-    const {setLoc, setShowInfo, val, coords} = infoSetters;
-    const {flipY, dimArrays, dimNames, dimUnits, isFlat, dataShape, strides, remapTexture, remapBorders, shape,
-      setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => s))
+    const {flipY, dimArrays, dimNames, dimUnits, isFlat, variable2,
+      dataShape, strides, remapTexture, remapBorders, shape, 
+      bivariate, setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => ({
+        flipY:s.flipY, dimArrays:s.dimArrays, dimNames:s.dimNames, dimUnits:s.dimUnits, 
+        isFlat:s.isFlat, dataShape:s.dataShape, strides:s.strides, bivariate: s.bivariate,
+        remapTexture:s.remapTexture, remapBorders:s.remapBorders, shape:s.shape, variable2: s.variable2,
+        setPlotDim:s.setPlotDim, updateDimCoords:s.updateDimCoords, updateTimeSeries:s.updateTimeSeries
+      })))
     const {animProg, zSlice, ySlice, xSlice, selectTS, coarsen, colorScale,
-      getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => s))
+      getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
+        animProg:s.animProg, zSlice:s.zSlice, ySlice:s.ySlice, xSlice:s.xSlice, selectTS:s.selectTS, coarsen:s.coarsen, colorScale:s.colorScale,
+        getColorIdx:s.getColorIdx, incrementColorIdx:s.incrementColorIdx
+      })))
     const {analysisDim:axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
     const {kernelSize, kernelDepth} = useZarrStore(useShallow(s => s))
-
+    
+    // --- DIMENSIONS --- //
     const {xIdx, yIdx, zIdx} = useAxisIndices()
     const {xArray, yArray, zArray} = useDimAxis();
     const dimSlices = [zArray, yArray, xArray];
@@ -49,11 +53,34 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         return shape.y/shape.x
       }
     }, [axis, shape, dataShape, analysisMode] )
-    
+    // --- Geometry --- //
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
-    const infoRef = useRef<boolean>(false)
     const rotateMap = analysisMode && axis == 2;
-    const sampleArray = useMemo(()=> analysisMode ? analysisArray : GetCurrentArray(),[analysisMode, analysisArray, textures])
+    useEffect(()=>{
+        geometry.dispose()
+    },[geometry])
+
+    // ----- Info Viewer----- //
+    const [loc, setLoc] = useState<[number, number]>([0,0])
+    const [showInfo, setShowInfo] = useState(false)
+    const vals = useRef<number[]>([0]);
+    const coords = useRef<number[]>([0,0]);
+    const dimInfo = useMemo(()=>{
+      return {
+        names: [dimNames[xIdx], dimNames[yIdx]],
+        units: [dimUnits[xIdx], dimNames[yIdx]]
+      }
+    },[dimNames, dimUnits, xIdx, yIdx])
+
+
+    const sampleArrays = useMemo(()=> analysisMode 
+        ? [analysisArray] 
+        : 
+        bivariate
+            ? [GetCurrentArray(), GetCurrentArray(undefined, variable2)]
+            : [GetCurrentArray()],
+      [analysisMode, analysisArray, textures, bivariate, variable2])
+      
     const analysisDims = useMemo(() => {
       if (!analysisMode) return dimSlices;
       const fullSlices = [
@@ -66,13 +93,8 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       return slices;
     }, [analysisMode, dimSlices, dimArrays, zSlice, ySlice, xSlice, axis, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
 
-    useEffect(()=>{
-        geometry.dispose()
-    },[geometry])
-
-    // ----- MOUSE MOVE ----- //
     const handleMove = (e: ThreeEvent<PointerEvent>) => {
-      if (infoRef.current && e.uv) {
+      if (e.uv) {
         let {uv} = e;
         if (!uv) return;
         setLoc([e.clientX, e.clientY]);
@@ -80,7 +102,7 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
           const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, uv.y)
           uv = thisUV;
           if (!isValid){
-            val.current = NaN;
+            vals.current = [NaN];
             coords.current = [thisUV.y,thisUV.x]
             return;
           }
@@ -93,9 +115,9 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         let dataIdx = xSize * yId + xId;
         const zOffset = isFlat ? 0 : Math.floor((zArray.length-1) * animProg)
         dataIdx += zOffset * xSize*ySize
-        const dataVal = sampleArray ? sampleArray[dataIdx] : 0;
-        val.current = dataVal;
-        coords.current = [y,x]
+        const dataVal = sampleArrays.map(val => val ? val[dataIdx] : 0);
+        vals.current = dataVal;
+        coords.current = [xArray[xId],yArray[yId]]
       }
     }
     // ----- TIMESERIES ----- //
@@ -147,8 +169,8 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
         }
       }
       updateDimCoords({[tsID] : dimObj})
-      
     }
+
     // ----- SHADER MATERIAL ----- //
     const uniforms = useCommonUniforms()
     const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
@@ -172,16 +194,23 @@ const FlatMap = ({textures: propTextures, infoSetters} : {textures : THREE.DataT
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
     },[remapTexture])
+
   return (
     <>
     <SquareMeshes />
+    <InfoViewer loc={loc} vals={vals.current} show={showInfo} 
+      dimfo={{
+        locs:coords.current,
+        ...dimInfo
+      }}
+    />
     <mesh 
       material={shaderMaterial} 
       geometry={geometry} 
       scale={[((analysisMode && axis == 2) && flipY) ? -1:  1, flipY ? -1 : ((analysisMode && axis == 2) ? -1 : 1) , 1]}
       rotation={[0,0,rotateMap ? Math.PI/2 : 0]}
-      onPointerEnter={()=>{setShowInfo(true); infoRef.current = true }}
-      onPointerLeave={()=>{setShowInfo(false); infoRef.current = false }}
+      onPointerEnter={()=>{setShowInfo(true) }}
+      onPointerLeave={()=>{setShowInfo(false) }}
       onPointerMove={handleMove}
       onClick={selectTS && HandleTimeSeries}
     />
