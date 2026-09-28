@@ -5,11 +5,10 @@ import * as THREE from 'three'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { vertShader } from '@/components/textures/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
-import { coarsenFlatArray, GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
+import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
 import { sampleCRS } from '../textures/ProjectionTexture';
 import { evaluateColorMap } from '@/components/textures';
 import { flatFrag } from '../textures/shaders';
@@ -23,30 +22,38 @@ import {InfoViewer} from '../ui/Elements/InfoViewer';
 const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[]}) => {
     // ---- Imports ---- //
     const textures = usePaddedTextures(propTextures);
-    const {flipY, dimArrays, dimNames, dimUnits, isFlat, variable2,
+    const {flipY, dimNames, dimUnits, isFlat, variable2,
       dataShape, strides, remapTexture, remapBorders, shape, 
       bivariate, setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => ({
-        flipY:s.flipY, dimArrays:s.dimArrays, dimNames:s.dimNames, dimUnits:s.dimUnits, 
+        flipY:s.flipY, dimNames:s.dimNames, dimUnits:s.dimUnits, 
         isFlat:s.isFlat, dataShape:s.dataShape, strides:s.strides, bivariate: s.bivariate,
         remapTexture:s.remapTexture, remapBorders:s.remapBorders, shape:s.shape, variable2: s.variable2,
         setPlotDim:s.setPlotDim, updateDimCoords:s.updateDimCoords, updateTimeSeries:s.updateTimeSeries
       })))
-    const {animProg, zSlice, ySlice, xSlice, selectTS, coarsen, colorScale,
+    const {animProg, selectTS, colorScale,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
-        animProg:s.animProg, zSlice:s.zSlice, ySlice:s.ySlice, xSlice:s.xSlice, selectTS:s.selectTS, coarsen:s.coarsen, colorScale:s.colorScale,
+        animProg:s.animProg, selectTS:s.selectTS, colorScale:s.colorScale,
         getColorIdx:s.getColorIdx, incrementColorIdx:s.incrementColorIdx
       })))
     const {analysisDim:axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
-    const {kernelSize, kernelDepth} = useZarrStore(useShallow(s => s))
-    
     // --- DIMENSIONS --- //
     const {xIdx, yIdx, zIdx} = useAxisIndices()
-    const {xArray, yArray, zArray} = useDimAxis();
-    const dimSlices = [zArray, yArray, xArray];
+    const arrays = useDimAxis();
+    const {xArray, yArray, zArray} = useMemo(()=>{
+      if (analysisMode && axis){
+        return{
+          xArray: axis == 1 ? arrays.xArray : arrays.yArray,
+          yArray: arrays.zArray,
+          zArray: arrays.zArray
+        }
+      }
+      return arrays
+    },[arrays, analysisMode, axis])
+    const dimSlices = [zArray, yArray, xArray]
     const shapeRatio = useMemo(()=> {
       if (dataShape.length == 2){
         return shape.y/shape.x
-      } else if (analysisMode){
+      } else if (analysisMode && axis){
         const thisShape = dataShape.filter((_val, idx) => idx != axis)
         return thisShape[0]/thisShape[1]
       } else {
@@ -59,19 +66,28 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
     useEffect(()=>{
         geometry.dispose()
     },[geometry])
-
+    
     // ----- Info Viewer----- //
-    const [loc, setLoc] = useState<[number, number]>([0,0])
-    const [showInfo, setShowInfo] = useState(false)
+    const [loc, setLoc] = useState<[number, number]>([0,0]);
+    const [showInfo, setShowInfo] = useState(false);
     const vals = useRef<number[]>([0]);
     const coords = useRef<number[]>([0,0]);
     const dimInfo = useMemo(()=>{
+      if (analysisMode && axis){
+        return{
+          names: axis == 1 
+            ? [dimNames[xIdx], dimNames[zIdx]]
+            : [dimNames[zIdx] , dimNames[yIdx]],
+          units: axis == 1 
+            ? [dimUnits[xIdx], dimUnits[zIdx]]
+            : [dimUnits[zIdx] , dimUnits[yIdx]],
+        }
+      }
       return {
         names: [dimNames[xIdx], dimNames[yIdx]],
-        units: [dimUnits[xIdx], dimNames[yIdx]]
+        units: [dimUnits[xIdx], dimUnits[yIdx]]
       }
-    },[dimNames, dimUnits, xIdx, yIdx])
-
+    },[analysisMode, axis, dimNames, dimUnits, xIdx, yIdx, zIdx])
 
     const sampleArrays = useMemo(()=> analysisMode 
         ? [analysisArray] 
@@ -79,19 +95,7 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
         bivariate
             ? [GetCurrentArray(), GetCurrentArray(undefined, variable2)]
             : [GetCurrentArray()],
-      [analysisMode, analysisArray, textures, bivariate, variable2])
-      
-    const analysisDims = useMemo(() => {
-      if (!analysisMode) return dimSlices;
-      const fullSlices = [
-        dimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
-        dimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
-        dimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
-      ];
-      let slices = fullSlices.filter((_, idx) => idx !== axis);
-      if (coarsen) slices = slices.map((val, idx) => coarsenFlatArray(val, (idx === 0 && slices.length > 2 ? kernelDepth : kernelSize)))
-      return slices;
-    }, [analysisMode, dimSlices, dimArrays, zSlice, ySlice, xSlice, axis, coarsen, kernelDepth, kernelSize, xIdx, yIdx, zIdx])
+    [analysisMode, analysisArray, textures, bivariate, variable2])
 
     const handleMove = (e: ThreeEvent<PointerEvent>) => {
       if (e.uv) {
@@ -114,10 +118,10 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
         const yId = Math.floor(y * ySize);
         let dataIdx = xSize * yId + xId;
         const zOffset = isFlat ? 0 : Math.floor((zArray.length-1) * animProg)
-        dataIdx += zOffset * xSize*ySize
+        dataIdx += (analysisMode ? 1 : zOffset) * xSize*ySize
         const dataVal = sampleArrays.map(val => val ? val[dataIdx] : 0);
         vals.current = dataVal;
-        coords.current = [xArray[xId],yArray[yId]]
+        coords.current = (analysisMode && axis == 2) ? [yArray[yId], xArray[xId]] : [xArray[xId],yArray[yId]]
       }
     }
     // ----- TIMESERIES ----- //
@@ -194,7 +198,6 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
     },[remapTexture])
-
   return (
     <>
     <SquareMeshes />

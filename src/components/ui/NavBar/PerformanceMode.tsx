@@ -1,17 +1,17 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react'
 import { MdOutlineRocketLaunch } from "react-icons/md";
-import { Potato } from '../Elements/Icons';
 import { FaCarSide } from "react-icons/fa6";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { Button } from "@/components/ui/button-enhanced"
 import { QuickTip } from '../Widgets/QuickTip';
+import { LuSnail } from "react-icons/lu";
 
 const icons = {
     "fast": <MdOutlineRocketLaunch className='size-8'/>,
     "slow": <FaCarSide className='size-8'/>,
-    "potato": <Potato className='size-8'/>
+    "snail": <LuSnail className='size-8'/>
 }
 
 const PerformanceMode = () => {
@@ -23,14 +23,13 @@ const PerformanceMode = () => {
         dpr.current = window.devicePixelRatio || 1;
     },[])
 
-
   return (
     <Popover
     >
         <PopoverTrigger
          asChild
         >
-            <QuickTip message='Set Render/performance mode'>
+            <QuickTip message='Set render/performance mode'>
                 <Button
                     variant="ghost"
                     size="icon"
@@ -39,7 +38,6 @@ const PerformanceMode = () => {
                     {icons[currentIcon as keyof typeof icons]}
                 </Button>
             </QuickTip>
-            
         </PopoverTrigger>
         <PopoverContent
             side='right'

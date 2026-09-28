@@ -200,9 +200,11 @@ const CountryBorders = () => {
     const [borders, setBorders] = useState<any>(null)
     const [swapSides, setSwapSides] = useState<boolean>(false)
 
-    const {dataShape, shape} = useGlobalStore(useShallow(s => s))
+    const {dataShape, shape} = useGlobalStore(useShallow(s => ({
+        dataShape: s.dataShape, shape: s.shape
+    })))
     const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, useBorderTexture, is360Deg} = usePlotStore(useShallow(s => s))
-    const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
+    const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
 
     const spherize = plotType === 'sphere';
 
@@ -239,7 +241,7 @@ const CountryBorders = () => {
             scale={[globalScale, globalScale * (spherize ? 1 : (2 / aspectRatio)), globalScale]}
         >
             <group 
-                visible={showBorders && !(analysisMode && axis != 0) && !useBorderTexture} 
+                visible={showBorders && !useBorderTexture && (!analysisMode || !axis)}
                 position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0)) : zRange[1]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0))]} // I don't know what value to use here. THis seems okay but not perfect
                 rotation={[0, 0, 0]} 
             >
