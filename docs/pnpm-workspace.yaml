@@ -1,0 +1,2 @@
+patchedDependencies:
+  '@comark/vue': patches/@comark__vue.patch
