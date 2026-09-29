@@ -9,7 +9,7 @@ import { vertShader } from '@/components/textures/shaders'
 import { useShallow } from 'zustand/shallow'
 import { ThreeEvent } from '@react-three/fiber';
 import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
-import { sampleCRS } from '../textures/ProjectionTexture';
+import { sampleCRS } from '../textures/ProjectionUtils';
 import { evaluateColorMap } from '@/components/textures';
 import { flatFrag } from '../textures/shaders';
 import { SquareMeshes } from './TransectMeshes';

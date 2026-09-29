@@ -1,13 +1,14 @@
 import * as THREE from 'three'
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
-import { sampleCRS } from '../textures/ProjectionTexture';
+import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray, getCRSTimeSeries } from '@/utils/HelperFuncs';
+import { sampleCRS } from '../textures/ProjectionUtils';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useShallow } from 'zustand/shallow';
 import { evaluateColorMap } from '@/components/textures';
 import { useDimAxis } from '@/hooks';
+import { getCRSStrip } from '../textures/ProjectionUtils';
 
 function normalizeUV(uv:number, scale:number, pos:number){
   return (uv*scale) + (pos-0.5*scale+0.5)
@@ -27,7 +28,6 @@ function updateFace(
     uvs.setY(i,newY)
   }
 }
-
 
 const UpdateUVs = (
   geometry: THREE.BoxGeometry, 
@@ -84,6 +84,7 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     const timeUV = new THREE.Vector2().copy(uv); // Need this to flipY if necessary
     const normal = event.normal!;
     let newUV: THREE.Vector2 | undefined;
+    let crsStrip;
     if (remapTexture){ // Get new UV if reprojected and along z Axis
       if (Math.abs(normal.z) > 0.5){ // If its along the Z just grab the full timeseries at new UV
         const [thisUV, isValid] = sampleCRS(remapTexture, uv.x, flipY ? 1-uv.y: uv.y) // Weird double flippiing of UVs with flipY. Has something to do with how projected data is done. 
@@ -93,9 +94,9 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
           return;
         } 
       } else if (Math.abs(normal.x) > 0.5){ // If along Either X or y, we need a new function to resample the timeseries into the new CRS
-          // For later
+        crsStrip = getCRSStrip(remapTexture, uv.y, true)
       } else {
-        //for later
+        crsStrip = getCRSStrip(remapTexture, uv.x, false)
       }
       
     }
@@ -107,7 +108,9 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
     lastNormal.current = dimAxis;
     const coordUV = parseUVCoords({normal:normal,uv})
     timeUV.y = flipY ? 1 - uv.y : uv.y;
-    const tempTS = GetTimeSeries(
+    let tempTS;
+    if ( crsStrip) tempTS = getCRSTimeSeries(analysisMode ? analysisArray : GetCurrentArray(), {uv, normal}, dataShape, crsStrip)
+    else tempTS = GetTimeSeries(
       { data: analysisMode ? analysisArray : GetCurrentArray(), shape: dataShape, stride: strides },
       { uv: newUV ?? timeUV, normal }
     )
@@ -199,12 +202,17 @@ export const UVCube = ( {scale} : {scale?:THREE.Vector3} )=>{
   }, []);
 
   return (
-      <mesh geometry={geometry} position={position} scale={scale??shape} onClick={(e) => {
-        e.stopPropagation();
-        if (e.intersections.length > 0 && selectTS) {
-          HandleTimeSeries(e.intersections[0]);
-        }
-      }}>
+      <mesh 
+        geometry={geometry} 
+        position={position} 
+        scale={scale??shape} 
+        onClick={(e) => {
+          e.stopPropagation();
+          if (e.intersections.length > 0 && selectTS) {
+            HandleTimeSeries(e.intersections[0]);
+          }
+        }}
+      >
         <meshBasicMaterial 
           colorWrite={false}
           depthWrite={false}

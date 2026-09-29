@@ -10,7 +10,7 @@ import {vertexShader, bordersFrag} from '../textures/shaders'
 import { invalidate } from '@react-three/fiber';
 import proj4, { Converter } from 'proj4';
 import {useDimAxis} from '@/hooks';
-import { sampleCRS } from '../textures/ProjectionTexture';
+import { sampleCRS } from '../textures/ProjectionUtils';
 
 function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=>THREE.Vector3, span = 1.) {
     const segments: THREE.Vector3[][] = [[]];

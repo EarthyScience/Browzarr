@@ -19,6 +19,7 @@ import { resetProjection } from '@/components/textures/ProjectionTexture';
 import {AxisCropper} from '../Elements/AxisCropper';
 import { Masker } from '../Elements/Masker';
 import { useColormapStore } from '@/GlobalStates/ColormapStore';
+
 export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueScales, min=-1, array, units} : 
     {
         range : number[], 
