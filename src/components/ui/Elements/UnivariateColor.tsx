@@ -35,9 +35,6 @@ const UnivariateColor = () => {
 	);
 	const [prevColormapName, setPrevColormapName] = useState<string>(colormapName || '');
 	const previousTextureRef = useRef(colormap);
-	const colormapNameRef = useRef(colormapName);
-	const flipColormapRef = useRef(flipColormap);
-
 	const categories = useMemo(() => {
     const set = new Set<string>();
     colormapIndex.forEach((entry) => {
@@ -84,12 +81,6 @@ const UnivariateColor = () => {
 	const visibleMatches = useMemo(() => filteredColormaps.slice(0, 64), [filteredColormaps]);
 	const hasMoreResults = filteredColormaps.length > visibleMatches.length;
 
-	// Keep refs in sync with store state changes
-	useEffect(() => {
-    colormapNameRef.current = colormapName;
-    flipColormapRef.current = flipColormap;
-	}, [colormapName, flipColormap]);
-
 	useEffect(() => {
 	  previousTextureRef.current = colormap;
 	}, [colormap]);
@@ -99,14 +90,13 @@ const UnivariateColor = () => {
 	const setCmap = (cmap: string) => setColormap(
 		GetColorMapTexture(
 		previousTextureRef.current,
-		cmap === "Default" ? "Spectral" : cmap,
+		cmap,
 		1,
 		"#000000",
 		0,
-		flipColormapRef.current
+		flipColormap
 		)
 	)
-
 	const updateColormap = (cmap: string) => {
     const cto = cmapTimeout.current
     if (cto){

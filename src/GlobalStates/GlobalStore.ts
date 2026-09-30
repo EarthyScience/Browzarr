@@ -1,7 +1,6 @@
 "use client";
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import * as THREE from 'three';
-import { GetColorMapTexture } from "@/components/textures";
 
 const ESDC = 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr'
 
@@ -216,8 +215,6 @@ const createStore = () => create<StoreState>((set, get) => ({
 declare global {
   var __appStore: UseBoundStore<StoreApi<StoreState>> | undefined
 }
-
-export const defaultGlobals = createStore().getState()
 
 // Supposedly this makes it a global that cannot be duplicated by Next into different code chunks
 export const useGlobalStore =

@@ -111,7 +111,6 @@ type PlotState ={
   setFillValue: (fillValue: number | undefined) => void;
   setCameraPosition: (cameraPosition: THREE.Vector3) => void;
   setColorScale: (colorScale: string | undefined) => void;
-  
 }
 
 

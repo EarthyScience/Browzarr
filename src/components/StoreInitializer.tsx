@@ -10,6 +10,7 @@ import { LoadLocalZarr } from "./ui/MainPanel/LocalZarr";
 import { isRemoteStore } from "@/utils/isRemoteStore";
 import { GetStore } from "./zarr/ZarrLoaderLRU";
 import { useImageExportStore } from "@/GlobalStates/ImageExportStore";
+import { useColormapStore } from "@/GlobalStates/ColormapStore";
 
 export function initializeStore(){
 	const {initStore} = useGlobalStore.getState()
@@ -57,86 +58,102 @@ export function initializeStore(){
 	useZarrStore.setState({icechunkOptions: null, fetchOptions:null});
 }
 
-function StoreInitializerInner() {
-  const searchParams = useSearchParams();
-  const setInitStore = useGlobalStore(s => s.setInitStore);
+const safeJsonParse = (val: string | null): unknown => {
+  if (val === null) return undefined;
+  try {
+    return JSON.parse(val);
+  } catch {
+    return val; // Fallback to raw string if JSON.parse fails
+  }
+};
 
-  useEffect(() => {
-	if (searchParams.size === 0) {initializeStore(); return;}
-	const store = searchParams.get("store");
-	const data = searchParams.get("data");
-	const keyFramesPath = searchParams.get("keyFramesPath");
-	const exportPlot = searchParams.get("export")
-	const reproject = searchParams.get("reproject")
-	// ---- Handle States ---- //
-	if (data){
-		try{
-		const fullObj = JSON.parse(data);
-		if (fullObj.zarrState?.blobKey){ // If NC local must load file beforehand
-			const blobKey = fullObj.zarrState.blobKey
-			const isNC = fullObj.zarrState.useNC
-			loadFile(blobKey).then(cache =>{
-			if (!isNC){
-				console.log(cache?.blob)
-				LoadLocalZarr(cache?.blob as File[])
-			} else {
-				//@ts-ignore cache is what we want
-				const file = cache.blob as File
-				loadNetCDF(file, file.name).then(() => {
-				useZarrStore.setState(fullObj.zarrState);
-				useGlobalStore.setState(fullObj.globalState);
-				usePlotStore.setState(fullObj.plotState);
+function StoreInitializerInner() {
+	const searchParams = useSearchParams();
+	const setInitStore = useGlobalStore(s => s.setInitStore);
+	useEffect(() => {
+		if (searchParams.size === 0) {initializeStore(); return;}
+		
+		const urlStates = Array.from(searchParams.keys());
+		const [globalKeys, plotKeys, zarrKeys, colormapKeys, exportkeys] = // Get keys for each store
+			[useGlobalStore, usePlotStore, useZarrStore, useColormapStore, useImageExportStore].map(store => (
+				urlStates.filter(val => Object.keys(store.getState()).includes(val))))
+		const [globalStates, plotStates, zarrStates, colormapStates, exportStates] = // Get states for each store
+			[globalKeys, plotKeys, zarrKeys, colormapKeys, exportkeys].map(keys => (
+				Object.fromEntries(keys.map(key => [key, safeJsonParse(searchParams.get(key))]))))		
+
+		const setAllStates = () => {
+			useZarrStore.setState(zarrStates);
+			useGlobalStore.setState(globalStates);
+			usePlotStore.setState(plotStates);
+			useColormapStore.setState(colormapStates);
+			useImageExportStore.setState(exportStates);
+		}
+		const keyFramesPath = searchParams.get("keyFramesPath");
+		const exportPlot = searchParams.get("export")
+		const reproject = searchParams.get("reproject")
+		// ---- Handle States ---- //
+		const zarrParam = searchParams.get('zarrState')
+		if (zarrParam){
+			const zarrState = JSON.parse(zarrParam)
+			if (zarrState.blobKey){
+				const blobKey = zarrState.blobKey
+				const isNC = zarrState.useNC
+				loadFile(blobKey).then(cache =>{
+					if (!isNC){
+						console.log(cache?.blob)
+						LoadLocalZarr(cache?.blob as File[])
+					} else {
+						//@ts-ignore cache is what we want
+						const file = cache.blob as File
+						loadNetCDF(file, file.name).then(() => {
+							setAllStates()
+						})
+					}
 				})
 			}
+		} else setAllStates();
+		// ---- Handle KeyFrames ---- //
+		if (keyFramesPath){
+			// Fetch JSON 
+			const encodedPath = encodeURIComponent(keyFramesPath);
+			const jsonPath = `file?path=${encodedPath}`;
+			fetch(jsonPath)
+			.then(response => {
+				if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+				}
+				return response.json();
 			})
-		} else {
-			useZarrStore.setState(fullObj.zarrState)
-			useGlobalStore.setState(fullObj.globalState)
-			usePlotStore.setState(fullObj.plotState)
+			.then(data => {
+				const keyFrames = new Map<number, any>(
+				Object.entries(data).map(([key, value]) => [Number(key), value])
+				);
+				useImageExportStore.setState({keyFrames});
+			})
+			.catch(error => {
+				console.error('Error fetching keyFrames JSON:', error);
+			});
 		}
-		} catch {
-		console.error('Something Failed :/')
+		// ---- Establish local marker ---- //
+		const store = searchParams.get("initStore") || searchParams.get("dataset"); // dataset is julia convention. 
+		if (store){
+			const isRemoteZarr = isRemoteStore(store);
+			setInitStore(isRemoteZarr ? store : "local:" + store)
 		}
-	}
-	// ---- Handle KeyFrames ---- //
-	if (keyFramesPath){
-		// Fetch JSON 
-		const encodedPath = encodeURIComponent(keyFramesPath);
-		const jsonPath = `file?path=${encodedPath}`;
-		fetch(jsonPath)
-		.then(response => {
-			if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-			}
-			return response.json();
-		})
-		.then(data => {
-			const keyFrames = new Map<number, any>(
-			Object.entries(data).map(([key, value]) => [Number(key), value])
-			);
-			useImageExportStore.setState({keyFrames});
-		})
-		.catch(error => {
-			console.error('Error fetching keyFrames JSON:', error);
-		});
-  	}
-	// ---- Handle Export ---- //
-	if (exportPlot === 'true') useImageExportStore.setState({exportOnLoad:true})
-	// ---- Reproject data ---- //
-	if (reproject === 'true') usePlotStore.setState({preProject:true})
-	// ---- Julia fallback ---- //
-	/* Remove this if Julia package does not stay maintained */
-	if (searchParams.get("format") === "nc") useZarrStore.setState({useNC:true});
-  // ---- Establish local marker ---- //
-  if (store){
-    const isRemoteZarr = isRemoteStore(store);
-    setInitStore(isRemoteZarr ? store : "local:" + store)
-  }
-	usePlotStore.setState({overRideCamera:true})
-	initializeStore();
-  }, [searchParams]);
+		// --- CONDITIONALS ---- //
+		// ---- Handle Export ---- //
+		if (exportPlot === 'true') useImageExportStore.setState({exportOnLoad:true})
+		// ---- Reproject data ---- //
+		if (reproject === 'true') usePlotStore.setState({preProject:true})
+		// ---- Julia fallback ---- //
+			/* Remove this if Julia package does not stay maintained */
+			if (searchParams.get("format") === "nc") useZarrStore.setState({useNC:true});
+		useColormapStore.getState().initializeColormap()
+		usePlotStore.setState({overRideCamera:true})
+		initializeStore();
+	}, [searchParams]);
 
-  return null;
+  	return null;
 }
 
 export function StoreInitializer() {
