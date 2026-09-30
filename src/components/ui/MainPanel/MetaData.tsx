@@ -132,7 +132,6 @@ function useSizeData(
 
     const cachedChunks = useMemo(() => {
         let newCachedChunks: string | null = null;
-        
         if (meta && meta.chunks && meta.shape) {
             const chunks = meta.chunks;
             const slices: Record<string, number>[] = Array.from({length: 3}).map(() => ({start: 0, end: 1}))
@@ -199,7 +198,6 @@ function MetaInfo({
 }) {
     const maxSize = useCacheStore(s => s.maxSize);
     const compress = useZarrStore(s => s.compress);
-
     return(
         <div className="flex flex-col gap-2">
         {/* Size info badge */}
@@ -312,7 +310,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
         })
     },[setSelectionInfo])
      // --- Size States --- //
-    const sizeData = useSizeData(meta, selectionInfo, maxSize, isBivariate, variable2);
+    const sizeData = useSizeData(meta, selectionInfo, cacheSize, isBivariate, variable2);
     const smallCache = sizeData.smallCache;
 
     // --- Dim States --- //
