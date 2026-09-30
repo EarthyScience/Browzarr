@@ -22,6 +22,7 @@ type StoreState = {
     setResolution: (resolution: number) => void;
     setMixMode: (mixMode: number) => void;
     setBivariateSelection: (selection: number) => void;
+    initializeColormap: () => void;
 }
 
 export const useColormapStore = create<StoreState>((set, get) => ({
@@ -38,12 +39,11 @@ export const useColormapStore = create<StoreState>((set, get) => ({
     setColormap: (colormap) => set({ colormap }),
     setColormapName: (colormapName) => {
         const prev = get().colormap;
-        const palette = (colormapName === 'Default') ? 'Spectral' : colormapName;
-        const tex = GetColorMapTexture(prev, palette, 1, '#000000', 0, get().flipColormap);
+        const tex = GetColorMapTexture(prev, colormapName, 1, '#000000', 0, get().flipColormap);
         set({ colormapName, colormap: tex });
     },
     setFlipColormap: (flipColormap) => {
-        const palette = (get().colormapName === 'Default') ? 'Spectral' : get().colormapName;
+        const palette = get().colormapName;
         const prev = get().colormap;
         const tex = GetColorMapTexture(prev, palette, 1, '#000000', 0, flipColormap);
         set({ flipColormap, colormap: tex });
@@ -54,4 +54,14 @@ export const useColormapStore = create<StoreState>((set, get) => ({
     setResolution: (resolution) => set({ resolution }),
     setMixMode: (mixMode) => set({ mixMode }),
     setBivariateSelection: (bivariateSelection) => set({ bivariateSelection }),
+    initializeColormap: () => set({
+        colormap:GetColorMapTexture(
+            get().colormap,
+            get().colormapName,
+            1,
+            '#000000',
+            0,
+            get().flipColormap,
+        )
+    })
 }))
