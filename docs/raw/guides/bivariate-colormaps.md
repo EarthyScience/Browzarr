@@ -1,0 +1,30 @@
+# Bivariate colormaps
+
+> Map two variables to a 2D color scheme.
+
+Bivariate mode encodes **two variables at once**: one maps to one color axis and the second to the other, producing a 2D color scheme. Use it to look for relationships — e.g. soil moisture vs. temperature, or chlorophyll vs. sea surface temperature.
+
+## Enabling bivariate mode
+
+1. Plot your first variable as usual
+2. Enable bivariate mode in the colorbar/colormap controls
+3. Pick the second variable from the selector
+4. Choose a color scheme from the bivariate palette list
+
+## Reading the bivariate colorbar
+
+The colorbar becomes a 2D strip (a square-ish gradient):
+
+- The **bottom-left** corner represents the minimum of both variables
+- Moving along one axis changes the first variable's color contribution
+- Moving along the other axis changes the second variable's
+
+## Export
+
+Bivariate plots can be exported like any other plot; the exported image draws the bivariate strip and its tick labels. See [Animation & export](/guides/animation-and-export).
+
+<callout icon="i-lucide-lightbulb">
+
+Bivariate colors are harder to read for precise values — keep the univariate colorbar nearby or mention both variables and their ranges in your figure caption.
+
+</callout>

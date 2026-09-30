@@ -1,0 +1,34 @@
+# Animation and export
+
+> Keyframes, animation playback, and image/video export.
+
+## Exporting static images
+
+Click the export icon in the floating menu to open the export settings:
+
+- **Output size** — export at plot size or double (`doubleSize`)
+- **Include colorbar** — draws the colorbar and tick labels into the exported image
+- **Colorbar position** — `top`, `bottom`, `left`, or `right`
+- **Labels** — variable name, units, and custom caption text
+
+The export composites the plot canvas, axes, and colorbar into a single PNG rendered off-screen.
+
+## Animation
+
+For variables with a time (or any trailing) dimension:
+
+1. Set the animation range with the dimension slider
+2. Use the play/pause controls in the main menu to preview
+3. Open the export dialog and choose animation export
+
+Animations are rendered frame-by-frame (including the colorbar) and encoded to video, so they can be used directly in presentations or papers.
+
+## Keyframes
+
+Keyframes let you script camera moves or slice changes over time: set a keyframe, move to another state, set another — playback interpolates between them. The keyframes editor is available from the floating menu.
+
+<callout icon="i-lucide-lightbulb">
+
+For reproducible figures, fix the colorbar bounds manually before exporting — otherwise each frame may autoscale its range.
+
+</callout>

@@ -1,0 +1,35 @@
+# Variable selection
+
+> Select only data that fits.
+
+After loading a dataset, use the `variable` icon to pick the variable you want to visualize and click **plot**.
+
+## Variable name
+
+Shows the variable's name as stored in the dataset. If the name is not provided by the metadata it is set to `undefined`.
+
+### Attributes
+
+Additional information about variables can be seen by clicking on the attributes button — e.g. `units`, `long_name`, `standard_name`, fill values, and any other attributes stored alongside the variable.
+
+### Data shape
+
+It shows the overall data shape, i.e. the length of every dimension of the variable (e.g. `time × lat × lon = 46 × 72 × 1440`).
+
+### Chunk size
+
+If your variable is partitioned into chunks then here you will see the corresponding chunk dimensions. Chunking determines how much data is fetched per request — see [Supported formats](/reference/supported-formats).
+
+## Sliders
+
+If your data is too big then a set of sliders for selection will be shown. Use those to select an appropriate range along each dimension before plotting.
+
+<callout icon="i-lucide-lightbulb">
+
+Slicing early keeps memory usage low: only the chunks that intersect your selected range are downloaded.
+
+</callout>
+
+## Plot
+
+Click **plot** to render the selection. You can then change the [plot type](/essentials/plot-settings) or adjust the [colorbar](/essentials/colorbar).

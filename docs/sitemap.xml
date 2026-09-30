@@ -4,19 +4,76 @@
     <loc>/getting-started/introduction</loc>
   </url>
   <url>
+    <loc>/getting-started/installation</loc>
+  </url>
+  <url>
     <loc>/getting-started/landing</loc>
   </url>
   <url>
-    <loc>/essentials/variable-selection</loc>
+    <loc>/menus/dataset-loading</loc>
   </url>
   <url>
-    <loc>/essentials/colorbar</loc>
+    <loc>/menus/variable-selection</loc>
   </url>
   <url>
-    <loc>/essentials/plot-settings</loc>
+    <loc>/menus/plot-types</loc>
   </url>
   <url>
-    <loc>/essentials/analytics</loc>
+    <loc>/menus/colorbar</loc>
+  </url>
+  <url>
+    <loc>/menus/plot-settings</loc>
+  </url>
+  <url>
+    <loc>/menus/analytics</loc>
+  </url>
+  <url>
+    <loc>/guides/remote-data</loc>
+  </url>
+  <url>
+    <loc>/guides/local-data</loc>
+  </url>
+  <url>
+    <loc>/guides/bivariate-colormaps</loc>
+  </url>
+  <url>
+    <loc>/guides/animation-and-export</loc>
+  </url>
+  <url>
+    <loc>/pybrowzarr/overview</loc>
+  </url>
+  <url>
+    <loc>/pybrowzarr/quickstart</loc>
+  </url>
+  <url>
+    <loc>/pybrowzarr/export</loc>
+  </url>
+  <url>
+    <loc>/pybrowzarr/environment</loc>
+  </url>
+  <url>
+    <loc>/pybrowzarr/build-and-update</loc>
+  </url>
+  <url>
+    <loc>/pybrowzarr/api-reference</loc>
+  </url>
+  <url>
+    <loc>/community/contributing</loc>
+  </url>
+  <url>
+    <loc>/community/about</loc>
+  </url>
+  <url>
+    <loc>/reference/supported-formats</loc>
+  </url>
+  <url>
+    <loc>/reference/browser-support</loc>
+  </url>
+  <url>
+    <loc>/reference/troubleshooting</loc>
+  </url>
+  <url>
+    <loc>/reference/faq</loc>
   </url>
   <url>
     <loc>/</loc>
