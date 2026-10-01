@@ -355,7 +355,8 @@ export const MetaData = ({ meta, metadata }: Props) => {
         useGlobalStore.setState({bivariate:isBivariate})
         useColormapStore.setState({bivariateSelection: 0})
         useAnalysisStore.setState({ analysisMode: false, analysisDim: null });
-        setTextureArrayDepths(sizeData.texDepths);
+        const {texDepths} = sizeData;
+        setTextureArrayDepths(texDepths.length === 3 ? texDepths : [1, ...texDepths]);
         setMaxSize(cacheSize);
         setVariable(meta.name || '');
         clearProjectionData()
