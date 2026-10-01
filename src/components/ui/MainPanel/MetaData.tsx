@@ -350,6 +350,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
             y: axisIdices.at(-2) as number,
             z: axisIdices.at(-3) as number
         }
+        console.log(ndSlices)
         // --- (Re)set States --- //
         useZarrStore.setState({ndSlices, axisMapping})
         useGlobalStore.setState({bivariate:isBivariate})

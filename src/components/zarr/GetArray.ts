@@ -9,6 +9,25 @@ import { Convolve } from "../computation/webGPU";
 import { coarsen3DArray } from "@/utils/HelperFuncs";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
 
+function getChunkRange(chunkShape: number[], chunkLoc: number[], mapping: number[], ndSlices:[number, number][]): [number, number][]{
+    let chunkStarts: number[] = Array.from({length: ndSlices.length})
+    let chunkEnds: number[] = Array.from({length: ndSlices.length});
+    mapping.forEach((val, idx) => {
+        const start = chunkShape[val] * chunkLoc[idx];
+        chunkStarts[val] = start;
+        chunkEnds[val] = start + chunkShape[val];
+    });
+    chunkStarts = chunkStarts.map((val,idx) => val?? ndSlices[idx][0])
+    chunkEnds = chunkEnds.map((val,idx) => val?? chunkStarts[idx] + 1)
+    return chunkStarts.map((start,idx) => [start, chunkEnds[idx]])
+}
+
+function isCompleteChunk(chunkRanges:[number, number][], ndSlices:[number, number][]): boolean {
+    return chunkRanges.every((val, idx) => val[0] <= ndSlices[idx][0]) &&
+            chunkRanges.every((val, idx) => val[1] >= ndSlices[idx][1])
+}
+
+
 export async function GetArray(varOveride?: string) {
     const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
     const { compress, ndSlices, axisMapping, coarsen, kernelSize, kernelDepth, useNC, setCurrentChunks, setArraySize } = useZarrStore.getState();
@@ -124,7 +143,14 @@ export async function GetArray(varOveride?: string) {
                 if (isCacheValid) {
                     continue;
                 } else {
-                    const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, ndSlices, axisMapping });
+                    const chunkRanges = getChunkRange(chunkShape, [z,y,x], [axisMapping.z, axisMapping.y, axisMapping.x], ndSlices as [number, number][]);
+                    const completeChunk = isCompleteChunk(chunkRanges, ndSlices as [number, number][]);
+                    const raw = await fetcher.fetchChunk({ 
+                        variable:targetVariable, 
+                        chunkRanges, 
+                        ndSlices, 
+                        mapping:[axisMapping.z, axisMapping.y, axisMapping.x].slice(-Math.min(3, shape.length))
+                    });
                     
                     const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
 
