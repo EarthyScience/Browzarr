@@ -114,12 +114,9 @@ export function NCFetcher() {
                 const count = val[1] - val[0];
                 counts[mapping[idx]] = count;
             })
-            starts = starts.map((val, idx) => !val ? ndSlices[idx][0] : val)
-            counts = counts.map(val => !val ? 1 : val)
+            starts = starts.map((val, idx) => val ?? ndSlices[idx][0])
+            counts = counts.map(val => val ?? 1)
             let data = await ncModule.getSlicedVariableArray(variable, starts, counts);
-            // Filter out collapsed dims so shape matches Zarrita behavior
-            let collapsedShape = counts.filter((c, i) => ndSlices ? (!Array.isArray(ndSlices[i]) && i !== mapping[2] && i !== mapping[1] && i !== mapping[0] ? false : true) : c !== 1);
-            if (collapsedShape.length === 0) collapsedShape = [1];
             return { data, shape:counts, stride: calculateStrides(counts) };
         },
     };

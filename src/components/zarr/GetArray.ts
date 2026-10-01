@@ -22,9 +22,16 @@ function getChunkRange(chunkShape: number[], chunkLoc: number[], mapping: number
     return chunkStarts.map((start,idx) => [start, chunkEnds[idx]])
 }
 
-function isCompleteChunk(chunkRanges:[number, number][], ndSlices:[number, number][]): boolean {
-    return chunkRanges.every((val, idx) => val[0] <= ndSlices[idx][0]) &&
-            chunkRanges.every((val, idx) => val[1] >= ndSlices[idx][1])
+function isCompleteChunk(chunkShape: number[], chunkLoc: number[], datashape: number[], mapping: number[], ndSlices:[number, number][]): boolean {
+    let chunkStarts: number[] = Array.from({length: ndSlices.length})
+    let chunkEnds: number[] = Array.from({length: ndSlices.length});
+    mapping.forEach((val, idx) => {
+        const start = chunkShape[val] * chunkLoc[idx];
+        chunkStarts[val] = start;
+        chunkEnds[val] = Math.min(start + chunkShape[val], datashape[val]);
+    });
+    return chunkStarts.every((start, idx) => start >= ndSlices[idx][0]) &&
+            chunkEnds.every((end, idx) => end <= ndSlices[idx][1])
 }
 
 export async function GetArray(varOveride?: string) {
@@ -115,6 +122,7 @@ export async function GetArray(varOveride?: string) {
     const zIndexInRaw = activeDims.indexOf(zDimIndex);
     const yIndexInRaw = activeDims.indexOf(yDimIndex);
     const xIndexInRaw = activeDims.indexOf(xDimIndex);
+    const mapping = [axisMapping.z, axisMapping.y, axisMapping.x].slice(-Math.min(3, shape.length))
 
     setStatus("Downloading...");
     setProgress(0);
@@ -124,18 +132,14 @@ export async function GetArray(varOveride?: string) {
                 const chunkID = `z${z}_y${y}_x${x}`;
                 const cacheName = `${cacheBase}_chunk_${chunkID}`;
                 const cachedChunk = cache.get(cacheName);
-                console.log(cachedChunk?.complete)
+                const chunkRanges = getChunkRange(chunkShape, [z,y,x], mapping, ndSlices as [number, number][]);
+                const completeChunk = isCompleteChunk(chunkShape, [z,y,x], shape, mapping, ndSlices as [number, number][]);
                 const isCacheValid = cachedChunk && cachedChunk.complete &&
                                     cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) &&
                                     cachedChunk.kernel.kernelDepth === (coarsen ? kernelDepth : undefined);
-
-                if (isCacheValid) {
+                if (isCacheValid && completeChunk) {
                     continue;
                 } else {
-                    const mapping = [axisMapping.z, axisMapping.y, axisMapping.x].slice(-Math.min(3, shape.length))
-                    const chunkRanges = getChunkRange(chunkShape, [z,y,x], mapping, ndSlices as [number, number][]);
-                    console.log(chunkRanges, ndSlices)
-                    const completeChunk = isCompleteChunk(chunkRanges, ndSlices as [number, number][]);
                     const raw = await fetcher.fetchChunk({ 
                         variable:(targetVariable as string), 
                         chunkRanges, 
