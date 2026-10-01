@@ -12,6 +12,12 @@ interface FetchOutput{
     stride: number[]
 }
 
+interface ChunkProps{
+    chunkRanges: [number, number][];
+    mapping:number[];
+    variable: string;
+    ndSlices: [number, number][];
+}
 //---- Zarr Fetch ----//
 
 async function fetchWithRetry<T>(
@@ -61,59 +67,24 @@ export function zarrFetcher() {
                 _outVar: outVar, // carry through for fetchChunk
             } as any;
         },
-        async fetchChunk({ rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, variable, ndSlices }: any): Promise<FetchOutput> {
-            const chunkSlice = new Array(rank).fill(0);
-            if (ndSlices && ndSlices.length === rank) {
-                for (let i = 0; i < rank; i++) {
-                    if (i === xDimIndex) {
-                        chunkSlice[i] = zarr.slice(x * chunkShape[i], Math.min((x + 1) * chunkShape[i], shape[i]));
-                    } else if (i === yDimIndex) {
-                        chunkSlice[i] = zarr.slice(y * chunkShape[i], Math.min((y + 1) * chunkShape[i], shape[i]));
-                    } else if (i === zDimIndex) {
-                        chunkSlice[i] = zarr.slice(z * chunkShape[i], Math.min((z + 1) * chunkShape[i], shape[i]));
-                    } else {
-                        const sel = ndSlices[i];
-                        if (Array.isArray(sel)) {
-                            chunkSlice[i] = zarr.slice(sel[0], sel[1]);
-                        } else {
-                            chunkSlice[i] = sel;
-                        }
-                    }
-                }
-            } else {
-                chunkSlice[xDimIndex] = zarr.slice(x * chunkShape[xDimIndex], (x + 1) * chunkShape[xDimIndex]);
-                chunkSlice[yDimIndex] = zarr.slice(y * chunkShape[yDimIndex], (y + 1) * chunkShape[yDimIndex]);
-                if (zDimIndex >= 0) {
-                    chunkSlice[zDimIndex] = zarr.slice(z * chunkShape[zDimIndex], (z + 1) * chunkShape[zDimIndex]);
-                }
-                if (rank >= 4) {
-                    chunkSlice[0] = idx4D;
-                }
-            }
-
+        async fetchChunk({ chunkRanges, mapping, variable, ndSlices }: ChunkProps): Promise<FetchOutput> {
+            let chunkSlice: zarr.Slice[] = Array.from({length: ndSlices.length})
+            mapping.forEach((val, idx) => {
+                const range = chunkRanges[idx]
+                chunkSlice[val] = zarr.slice(range[0], range[1])
+            })
+            chunkSlice = chunkSlice.map((val, idx) => val?? zarr.slice(ndSlices[idx][0], ndSlices[idx][1]))
             const chunk = await fetchWithRetry(() => zarr.get(outVar, chunkSlice), `variable ${variable}`, useGlobalStore.getState().setStatus);
             if (!chunk || chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
                 throw new Error("BigInt arrays not supported.");
             }
-            
-            let outShape = chunk.shape;
-            if (!outShape || outShape.length === 0) {
-                outShape = chunkShape; // fallback if Zarrita doesn't collapse
-            }
-            
+            let outShape = chunk.shape;            
             return { data: chunk.data as Float32Array, shape: outShape as number[], stride: chunk.stride as number[] };
         },
     };
 }
 
 //---- NC Fetch ----//
-interface NCChunkProps{
-    rank: number;
-    chunkRanges: [number, number][];
-    mapping:number[];
-    variable: string;
-    ndSlices: [number, number][];
-}
 
 export function NCFetcher() {
     const {ncModule} = useZarrStore.getState()
@@ -135,7 +106,7 @@ export function NCFetcher() {
 
             return { shape, chunkShape, fillValue, validRange, preScaling, dtype: varInfo.dtype };
         },
-        async fetchChunk({ chunkRanges, mapping, variable, ndSlices }: NCChunkProps): Promise<FetchOutput> {
+        async fetchChunk({ chunkRanges, mapping, variable, ndSlices }: ChunkProps): Promise<FetchOutput> {
             let starts:number[] = Array.from({length:ndSlices.length});
             let counts:number[] = Array.from({length:ndSlices.length});
             chunkRanges.forEach((val, idx) => {
@@ -145,127 +116,11 @@ export function NCFetcher() {
             })
             starts = starts.map((val, idx) => !val ? ndSlices[idx][0] : val)
             counts = counts.map(val => !val ? 1 : val)
-            console.log(starts,counts)
             let data = await ncModule.getSlicedVariableArray(variable, starts, counts);
-            console.log(data.slice(0,1e5))
             // Filter out collapsed dims so shape matches Zarrita behavior
             let collapsedShape = counts.filter((c, i) => ndSlices ? (!Array.isArray(ndSlices[i]) && i !== mapping[2] && i !== mapping[1] && i !== mapping[0] ? false : true) : c !== 1);
             if (collapsedShape.length === 0) collapsedShape = [1];
             return { data, shape:counts, stride: calculateStrides(counts) };
         },
     };
-}
-
-
-//---- Class possiblity
-
-export class ZarrFetcher {
-    private outVar: zarr.Array<zarr.DataType, any> | undefined;
-    private variable: string;
-
-    constructor(variable: string) {
-        this.variable = variable;
-    }
-
-    async init(){
-        const { currentStore } = useZarrStore.getState();
-        const group = await currentStore;
-        const tempOutVar = await zarr.open(group.resolve(this.variable), { kind: "array" });
-        this.outVar = tempOutVar;
-    }
-
-    async getMetadata(): Promise<any> {
-        if (!this.outVar) {
-            await this.init();
-            if (!this.outVar){
-                throw new Error(`Init failed`);
-            }
-        }
-        if (!this.outVar.is("number") && !this.outVar.is("bigint")) {
-            throw new Error(`Unsupported data type: ${this.outVar.dtype}`);
-        }
-
-        const symbols = Object.getOwnPropertySymbols(this.outVar);
-        const contextSymbol = symbols.find(s => s.toString().includes("zarrita.context"));
-        const fillValue = contextSymbol && !Number.isNaN((this.outVar as any)[contextSymbol]?.fill_value)
-                            ? (this.outVar as any)[contextSymbol].fill_value
-                            : NaN;
-        return {
-            shape: this.outVar.shape,
-            chunkShape: GetSize(this.outVar)[2],
-            fillValue,
-            dtype: this.outVar.dtype,
-        };
-    }
-
-    async fetchChunk({
-        rank,
-        shape,
-        chunkShape,
-        x,
-        y,
-        z,
-        xDimIndex,
-        yDimIndex,
-        zDimIndex,
-        idx4D,
-        ndSlices
-    }: any): Promise<FetchOutput> {
-        if (!this.outVar) {
-            await this.init();
-            if (!this.outVar){
-                throw new Error(`Init failed`);
-            }
-        }
-
-        const chunkSlice = new Array(rank).fill(0);
-        if (ndSlices && ndSlices.length === rank) {
-            for (let i = 0; i < rank; i++) {
-                if (i === xDimIndex) {
-                    chunkSlice[i] = zarr.slice(x * chunkShape[i], Math.min((x + 1) * chunkShape[i], shape[i]));
-                } else if (i === yDimIndex) {
-                    chunkSlice[i] = zarr.slice(y * chunkShape[i], Math.min((y + 1) * chunkShape[i], shape[i]));
-                } else if (i === zDimIndex) {
-                    chunkSlice[i] = zarr.slice(z * chunkShape[i], Math.min((z + 1) * chunkShape[i], shape[i]));
-                } else {
-                    const sel = ndSlices[i];
-                    if (Array.isArray(sel)) {
-                        chunkSlice[i] = zarr.slice(sel[0], sel[1]);
-                    } else {
-                        chunkSlice[i] = sel;
-                    }
-                }
-            }
-        } else {
-            chunkSlice[xDimIndex] = zarr.slice(x * chunkShape[xDimIndex], (x + 1) * chunkShape[xDimIndex]);
-            chunkSlice[yDimIndex] = zarr.slice(y * chunkShape[yDimIndex], (y + 1) * chunkShape[yDimIndex]);
-            if (zDimIndex >= 0) {
-                chunkSlice[zDimIndex] = zarr.slice(z * chunkShape[zDimIndex], (z + 1) * chunkShape[zDimIndex]);
-            }
-            if (rank >= 4) {
-                chunkSlice[0] = idx4D;
-            }
-        }
-
-        const chunk = await fetchWithRetry(
-            () => zarr.get(this.outVar!, chunkSlice),
-            `variable ${this.variable}`,
-            useGlobalStore.getState().setStatus
-        );
-
-        if (!chunk || chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
-            throw new Error("BigInt arrays not supported.");
-        }
-        
-        let outShape = chunk.shape;
-        if (!outShape || outShape.length === 0) {
-            outShape = chunkShape; // fallback if Zarrita doesn't collapse
-        }
-        
-        return {
-            data: chunk.data as Float32Array,
-            shape: outShape as number[],
-            stride: chunk.stride as number[],
-        };
-    }
 }

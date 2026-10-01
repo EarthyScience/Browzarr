@@ -23,13 +23,13 @@ type ZarrState = {
   fetchKey: number;
   blobKey: string | undefined; // The key for the stored File blob for a local NC
   
-  ndSlices: (number | [number, number | null])[];
+  ndSlices: [number, number][];
   axisMapping: { x: number, y: number, z: number };
 
   setZSlice: (zSlice: [number , number | null]) => void;
   setYSlice: (ySlice: [number , number | null]) => void;
   setXSlice: (xSlice: [number , number | null]) => void;
-  setNdSlices: (ndSlices: (number | [number, number | null])[]) => void;
+  setNdSlices: (ndSlices: [number, number][]) => void;
   setAxisMapping: (mapping: { x: number, y: number, z: number }) => void;
   setCompress: (compress: boolean) => void;
   setCurrentStore: (currentStore: any) => void;

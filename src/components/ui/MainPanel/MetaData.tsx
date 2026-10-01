@@ -350,13 +350,13 @@ export const MetaData = ({ meta, metadata }: Props) => {
             y: axisIdices.at(-2) as number,
             z: axisIdices.at(-3) as number
         }
-        console.log(ndSlices)
         // --- (Re)set States --- //
         useZarrStore.setState({ndSlices, axisMapping})
         useGlobalStore.setState({bivariate:isBivariate})
         useColormapStore.setState({bivariateSelection: 0})
         useAnalysisStore.setState({ analysisMode: false, analysisDim: null });
-        setTextureArrayDepths(sizeData.texDepths);
+        const {texDepths} = sizeData;
+        setTextureArrayDepths(texDepths.length === 3 ? texDepths : [1, ...texDepths]);
         setMaxSize(cacheSize);
         setVariable(meta.name || '');
         clearProjectionData()

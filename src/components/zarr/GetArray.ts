@@ -14,8 +14,8 @@ function getChunkRange(chunkShape: number[], chunkLoc: number[], mapping: number
     let chunkEnds: number[] = Array.from({length: ndSlices.length});
     mapping.forEach((val, idx) => {
         const start = chunkShape[val] * chunkLoc[idx];
-        chunkStarts[val] = start;
-        chunkEnds[val] = start + chunkShape[val];
+        chunkStarts[val] = Math.max(start, ndSlices[val][0]);
+        chunkEnds[val] = Math.min(start + chunkShape[val], ndSlices[val][1]);
     });
     chunkStarts = chunkStarts.map((val,idx) => val?? ndSlices[idx][0])
     chunkEnds = chunkEnds.map((val,idx) => val?? chunkStarts[idx] + 1)
@@ -27,7 +27,6 @@ function isCompleteChunk(chunkRanges:[number, number][], ndSlices:[number, numbe
             chunkRanges.every((val, idx) => val[1] >= ndSlices[idx][1])
 }
 
-
 export async function GetArray(varOveride?: string) {
     const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
     const { compress, ndSlices, axisMapping, coarsen, kernelSize, kernelDepth, useNC, setCurrentChunks, setArraySize } = useZarrStore.getState();
@@ -37,51 +36,40 @@ export async function GetArray(varOveride?: string) {
     const meta = await fetcher.getMetadata(targetVariable as string);
     const { shape, chunkShape, fillValue, dtype } = meta;
     const rank = shape.length;
-    // Identify which dimensions are already explicitly mapped
-    const parseMapped = (val: any) => typeof val === 'number' && !isNaN(val) && val >= 0 ? val : -1;
-    const mappedX = parseMapped(axisMapping.x);
-    const mappedY = parseMapped(axisMapping.y);
-    const mappedZ = parseMapped(axisMapping.z);
-
-    const mappedDims = new Set([mappedX, mappedY, mappedZ].filter(v => v >= 0));
-    const unmappedDims: number[] = [];
-    for (let i = rank - 1; i >= 0; i--) {
-        if (!mappedDims.has(i)) unmappedDims.push(i);
-    }
-    const xDimIndex = mappedX >= 0 ? mappedX : (unmappedDims.length > 0 ? unmappedDims.shift()! : rank - 1);
-    const yDimIndex = mappedY >= 0 ? mappedY : (unmappedDims.length > 0 ? unmappedDims.shift()! : rank - 2);
-    const zDimIndex = mappedZ >= 0 ? mappedZ : (unmappedDims.length > 0 ? unmappedDims.shift()! : -1);
+    // Explicit mappings first (-1 if unmapped/NaN), then fill gaps with
+    // the remaining dims from last to first, in x, y, z order.
+    const mapped = [axisMapping.x, axisMapping.y, axisMapping.z]
+        .map(v => (Number.isInteger(v) && v >= 0 ? v : -1));
+    const free = Array.from({ length: rank }, (_, i) => rank - 1 - i)
+        .filter(i => !mapped.includes(i));
+    const [xDimIndex, yDimIndex, zDimIndex] = mapped.map(m => (m >= 0 ? m : free.shift() ?? -1));
     const hasZ = zDimIndex >= 0;
 
-    const calcDim = (slice: [number, number | null], dimIdx: number) => { 
-        if (dimIdx < 0) return { start: 0, end: 1, size: 0, chunkDim: 1 };
-        const dimSize = shape[dimIdx];
-        const chunkDim = chunkShape[dimIdx];
-        const start = Math.floor(slice[0] / chunkDim);
-        const sliceEnd = slice[1] ?? dimSize;
-        return { start, end: Math.ceil(sliceEnd / chunkDim), size: sliceEnd - slice[0], chunkDim, offset: slice[0] % chunkDim };
-    };
+    // ndSlices is in datashape order, so a dim's slice is just ndSlices[dim]
+    const sliceOf = (dimIdx: number): [number, number] => (dimIdx >= 0 ? ndSlices[dimIdx] : [0, 1]);
+    const xSlice = sliceOf(xDimIndex);
+    const ySlice = sliceOf(yDimIndex);
+    const zSlice = sliceOf(zDimIndex);
 
-    // If an axis is unmapped in the UI (NaN), we MUST fetch it as a scalar (size 1) 
-    // using the collapsed value from ndSlices. Otherwise, it defaults to [0, null] 
-    // and fetches the entire dimension, leading to massive memory requests (OOM).
-    const getEffectiveSlice = (mappingIdx: number, dimIdx: number): [number, number | null] => {
-        let sel;
-        if (mappingIdx >= 0) sel = ndSlices[mappingIdx];
-        if (dimIdx >= 0 && ndSlices && ndSlices[dimIdx] !== undefined) sel = ndSlices[dimIdx];
-        if (typeof sel === 'number') return [sel, sel + 1]; // If scalar convert to slice
-        if (Array.isArray(sel)) return sel as [number, number | null];
-        return [0, 1]; // Safe fallback to scalar
-    };
-    const xSlice = getEffectiveSlice(axisMapping.x, xDimIndex);
-    const ySlice = getEffectiveSlice(axisMapping.y, yDimIndex);
-    const zSlice = getEffectiveSlice(axisMapping.z, zDimIndex);
     // Carry slices to stores so we know what to slice from the axisDimarrays
-    usePlotStore.setState({zSlice, ySlice, xSlice})
-    useZarrStore.setState({zSlice, ySlice, xSlice})
-    const xDim = calcDim(xSlice, xDimIndex);
-    const yDim = calcDim(ySlice, yDimIndex);
-    const zDim = calcDim(zSlice, zDimIndex);
+    usePlotStore.setState({ xSlice, ySlice, zSlice });
+    useZarrStore.setState({ xSlice, ySlice, zSlice });
+
+    const calcDim = (dimIdx: number) => {
+        if (dimIdx < 0) return { start: 0, end: 1, size: 0, chunkDim: 1, offset: 0 };
+        const [lo, hi] = ndSlices[dimIdx];
+        const chunkDim = chunkShape[dimIdx];
+        return {
+            start: Math.floor(lo / chunkDim),
+            end: Math.ceil(hi / chunkDim),
+            size: hi - lo,
+            chunkDim,
+            offset: lo % chunkDim,
+        };
+    };
+    const xDim = calcDim(xDimIndex);
+    const yDim = calcDim(yDimIndex);
+    const zDim = calcDim(zDimIndex);
 
     let outputShape = hasZ ? [zDim.size, yDim.size, xDim.size] : [yDim.size, xDim.size];
     if (coarsen) {
@@ -136,22 +124,24 @@ export async function GetArray(varOveride?: string) {
                 const chunkID = `z${z}_y${y}_x${x}`;
                 const cacheName = `${cacheBase}_chunk_${chunkID}`;
                 const cachedChunk = cache.get(cacheName);
-                const isCacheValid = cachedChunk &&
+                console.log(cachedChunk?.complete)
+                const isCacheValid = cachedChunk && cachedChunk.complete &&
                                     cachedChunk.kernel.kernelSize === (coarsen ? kernelSize : undefined) &&
                                     cachedChunk.kernel.kernelDepth === (coarsen ? kernelDepth : undefined);
 
                 if (isCacheValid) {
                     continue;
                 } else {
-                    const chunkRanges = getChunkRange(chunkShape, [z,y,x], [axisMapping.z, axisMapping.y, axisMapping.x], ndSlices as [number, number][]);
+                    const mapping = [axisMapping.z, axisMapping.y, axisMapping.x].slice(-Math.min(3, shape.length))
+                    const chunkRanges = getChunkRange(chunkShape, [z,y,x], mapping, ndSlices as [number, number][]);
+                    console.log(chunkRanges, ndSlices)
                     const completeChunk = isCompleteChunk(chunkRanges, ndSlices as [number, number][]);
                     const raw = await fetcher.fetchChunk({ 
-                        variable:targetVariable, 
+                        variable:(targetVariable as string), 
                         chunkRanges, 
                         ndSlices, 
-                        mapping:[axisMapping.z, axisMapping.y, axisMapping.x].slice(-Math.min(3, shape.length))
+                        mapping
                     });
-                    
                     const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
 
                     let [chunkF16, newScalingFactor] = ToFloat16(rawData, scalingFactor);
@@ -191,7 +181,8 @@ export async function GetArray(varOveride?: string) {
                         scaling: scalingFactor, compressed: compress, coarsened: coarsen,
                         kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined },
                         fullChunkDim: [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
-                        sliceStart: [zSlice[0], ySlice[0], xSlice[0]]
+                        sliceStart: [zSlice[0], ySlice[0], xSlice[0]],
+                        complete:completeChunk
                     });
                     rescaleIDs.push(chunkID);
                 }
