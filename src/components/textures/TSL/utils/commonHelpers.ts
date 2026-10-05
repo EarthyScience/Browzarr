@@ -7,8 +7,11 @@ import { valueRange, resolution, bottomLeft, bottomRight, topLeft, reproject,
 // --- TEXTURE SAMPLERS ---//
 const sampleMap = Fn(([p, index]: [any, any]) => {
     const result = vec4(0).toVar();
-    const tex = map[index];
-    result.assign(texture(tex, p));
+    map.forEach( ( tex, i ) => {
+        If( index.equal( i ), () => {
+            result.assign( tex.sample( p ) );
+        } );
+    } );
     return result;
   });
 
@@ -16,8 +19,8 @@ export const sample1 = Fn(([p, index]: [any, any]) => sampleMap(p, index).r);
 export const sample2 = Fn(([p, index]: [any, any]) => sampleMap(p, index).rg);
 
 export const sample2ToOrder = Fn(([p, index, variable]: [any, any, any]) => {
-const biVar = sample2(p, index);
-return select(variable.equal(0), biVar, biVar.gr);
+  const biVar = sample2(p, index);
+  return select(variable.equal(0), biVar, biVar.gr);
 });
 
 // --- GEOHELPER --- //

@@ -17,7 +17,7 @@ import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/components/textures/ProjectionTexture';
 import { GetCurrentArray } from '@/utils/HelperFuncs';
 import { useColormapStore } from '@/GlobalStates/ColormapStore';
-
+import {color} from 'three/tsl'
 const TransectNotice = () =>{
   const selectTS = usePlotStore(s => s.selectTS)
   return (
@@ -28,7 +28,14 @@ const TransectNotice = () =>{
     </>
   )
 }
-
+function TestMesh() {
+  const material = new THREE.MeshBasicNodeMaterial({color:'hotpink'})
+  return (
+    <mesh material={material}>
+      <boxGeometry />
+    </mesh>
+  )
+}
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   const {resetCamera, useOrtho, displaceFaces, cameraPosition, overRideCamera} = usePlotStore(useShallow(s => ({
     resetCamera: s.resetCamera, useOrtho: s.useOrtho, displaceFaces: s.displaceFaces, 
@@ -237,18 +244,22 @@ const Plot = () => {
       <Nav />
       <ShaderEditor visible={useEditor}/>
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
-        frameloop={useEditor ? "never" : "demand"}
+        // frameloop={useEditor ? "never" : "demand"}
         gl={async (props) => {
           const renderer = new THREE.WebGPURenderer(props as any)
           await renderer.init()
+          const canvas = props.canvas as HTMLCanvasElement
+          renderer.setPixelRatio(DPR)
+          renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
           return renderer
         }}
         dpr={[DPR,DPR]}
       >
-        <KeyFramePreviewer/>
-        {show && <CountryBorders/>}
-        <ExportCanvas show={show}/>
-        {show && <AxisLines />}
+        
+        {/* <KeyFramePreviewer/> */}
+        {/* {show && <CountryBorders/>} */}
+        {/* <ExportCanvas show={show}/> */}
+        {/* {show && <AxisLines />} */}
         {plotType == "volume" && show && 
             <DataCube volTexture={mainTextures}/>
         }
@@ -268,7 +279,7 @@ const Plot = () => {
           {displaceFaces && <FlatBlocks textures={mainTextures} />}
         </>
         }
-
+        <TestMesh />
       </Canvas>
  
 

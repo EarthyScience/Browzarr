@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow'
 import { useCoordBounds } from './useCoordBounds'
 import { invalidate } from '@react-three/fiber'
+import * as u from '@/components/textures/TSL/utils/commonUniforms'
 
 export function useCommonUniforms() {
 	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange, 
@@ -72,7 +73,7 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 			is360Deg: s.is360Deg, showBorders: s.showBorders
 		})))
 	const { valueScales, useF16Textures, bivariate} = useGlobalStore(useShallow(s => ({
-		valueScales: s.valueScales, useF16Textures: s.useF16Textures, bivariate: s.bivariate
+		valueScales: s.valueScales, useF16Textures: s.useF16Textures, bivariate: s.bivariate, 
 	})))
 	const {lonBounds, latBounds} = useCoordBounds()
     const {colormap, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection} = useColormapStore(useShallow(s => ({
@@ -122,4 +123,65 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 	])
 	
 	return;
+}
+
+export function uniformUpdater(){
+	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange, 
+		useBorderTexture, borderColor, borderWidth, is360Deg, showBorders} = usePlotStore(useShallow(s=>({
+			cScale: s.cScale, cOffset: s.cOffset, animProg: s.animProg, nanTransparency: s.nanTransparency, nanColor: s.nanColor,
+			fillValue: s.fillValue, maskTexture: s.maskTexture, maskValue: s.maskValue, valueRange: s.valueRange,
+			useBorderTexture: s.useBorderTexture, borderColor: s.borderColor, borderWidth: s.borderWidth,
+			is360Deg: s.is360Deg, showBorders: s.showBorders
+		})))
+	const { valueScales, useF16Textures, bivariate, mainTextures, textureArrayDepths } = useGlobalStore(useShallow(s => ({
+		valueScales: s.valueScales, useF16Textures: s.useF16Textures, bivariate: s.bivariate, 
+		mainTextures: s.mainTextures, textureArrayDepths: s.textureArrayDepths
+	})))
+	const {lonBounds, latBounds} = useCoordBounds()
+    const {colormap, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection} = useColormapStore(useShallow(s => ({
+		colormap: s.colormap, bottomLeft: s.bottomLeft, bottomRight: s.bottomRight, 
+		topLeft: s.topLeft, resolution: s.resolution, mixMode: s.mixMode, bivariateSelection: s.bivariateSelection
+	})))
+	useEffect(()=>{
+		u.cOffset.value = cOffset;
+		u.cmap. value = colormap;
+		u.animateProg.value = animProg;
+		u.nanColor.value = new THREE.Color(nanColor).convertLinearToSRGB();
+		u.nanAlpha.value = 1 - nanTransparency;
+		u.cScale.value = cScale;
+		u.threshold.value.set(valueRange[0], valueRange[1]);
+		u.latBounds.value = new THREE.Vector2(latBounds[0], latBounds[1]);
+		u.lonBounds.value = new THREE.Vector2(lonBounds[0], lonBounds[1]);
+		u.maskValue.value = maskValue;
+		u.fillValue.value = fillValue?? NaN;
+		u.useBorderTexture.value = useBorderTexture && showBorders;
+		u.borderColor.value = new THREE.Color(borderColor).convertLinearToSRGB();
+		u.borderWidth.value = borderWidth;
+		u.is360.value = is360Deg;
+		u.textureDepths.value = new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0]);
+		u.valueRange.value = new THREE.Vector2(valueScales[bivariateSelection].minVal, valueScales[bivariateSelection].maxVal);
+		u.useF16.value = useF16Textures;
+		u.bottomLeft.value = new THREE.Color(bottomLeft).convertLinearToSRGB();
+		u.bottomRight.value = new THREE.Color(bottomRight).convertLinearToSRGB();
+		u.topLeft.value = new THREE.Color(topLeft).convertLinearToSRGB();
+		u.resolution.value = resolution;
+		u.mixMode.value = mixMode;
+		u.bivariateSelection.value = bivariateSelection;
+		u.bivariate.value = bivariate;
+	},[
+		cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
+		colormap, lonBounds, latBounds, useBorderTexture, borderColor, borderWidth, is360Deg, showBorders,
+		valueScales, useF16Textures, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection, 
+		bivariate, textureArrayDepths
+	])
+	useEffect(() => {
+		console.log(u.map)
+		mainTextures?.forEach((val, idx) => {
+        if (val && u.map[idx]) {
+            u.map[idx].value = val; // Must be a valid THREE.Data3DTexture or THREE.CompressedArrayTexture
+			u.map[idx].needsUpdate = true;
+        }
+    });
+	},[mainTextures])
+
 }

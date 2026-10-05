@@ -18,8 +18,8 @@ import { useAxisIndices, useDimAxis } from '@/hooks';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
 import {InfoViewer} from '../ui/Elements/InfoViewer';
-import { vec4 } from 'three/tsl';
-
+import { createFlatMapMaterial } from '../textures/TSL/flatMap';
+import { uniformUpdater } from '@/hooks/useCommonUniforms';
 const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[]}) => {
     // ---- Imports ---- //
     const textures = usePaddedTextures(propTextures);
@@ -177,10 +177,10 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
     }
 
     // ----- SHADER MATERIAL ----- //
-    const uniforms = useCommonUniforms()
+    uniformUpdater();
     // const shaderMaterial = useMemo(()=> new THREE.MeshBasicNodeMaterial({color: "red"})
     // ,[isFlat, textures, remapTexture, colorScale])
-    const shaderMaterial = new THREE.MeshBasicNodeMaterial({color: "red"})
+    const shaderMaterial = createFlatMapMaterial();
     useEffect(()=>{
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
