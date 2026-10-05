@@ -1,8 +1,17 @@
+import * as THREE from 'three/webgpu'
 import { Data3DTexture, DataTexture, Texture } from 'three/webgpu';
 import { texture, uniform, bool, float, int, vec2, vec3, color, texture3D } from 'three/tsl';
 
+const placeholder3D = () => {
+    const t = new THREE.Data3DTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, 1);
+    t.format = THREE.RGBAFormat; t.type = THREE.UnsignedByteType;
+    t.minFilter = t.magFilter = THREE.NearestFilter;
+    t.wrapS = t.wrapT = t.wrapR = THREE.ClampToEdgeWrapping;
+    t.needsUpdate = true;
+    return t;
+};
 
-export const map = Array.from({length: 12}, () => texture3D((new Data3DTexture())))
+export const map = Array.from({length: 12}, () => texture3D(placeholder3D()))
 export const maskTexture = texture( new DataTexture() );
 export const cmap = texture( new DataTexture() );
 export const remapTexture = texture( new DataTexture() );

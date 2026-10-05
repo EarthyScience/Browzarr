@@ -251,6 +251,8 @@ const Plot = () => {
           const canvas = props.canvas as HTMLCanvasElement
           renderer.setPixelRatio(DPR)
           renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
+          renderer.toneMapping = THREE.NoToneMapping;
+          console.log(renderer)
           return renderer
         }}
         dpr={[DPR,DPR]}
@@ -279,7 +281,7 @@ const Plot = () => {
           {displaceFaces && <FlatBlocks textures={mainTextures} />}
         </>
         }
-        <TestMesh />
+        {/* <TestMesh /> */}
       </Canvas>
  
 
