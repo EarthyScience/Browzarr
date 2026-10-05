@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useMemo, useEffect, useState, useRef} from 'react'
-import * as THREE from 'three'
+import * as THREE from 'three/webgpu'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
@@ -18,6 +18,7 @@ import { useAxisIndices, useDimAxis } from '@/hooks';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
 import {InfoViewer} from '../ui/Elements/InfoViewer';
+import { vec4 } from 'three/tsl';
 
 const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[]}) => {
     // ---- Imports ---- //
@@ -177,23 +178,9 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
 
     // ----- SHADER MATERIAL ----- //
     const uniforms = useCommonUniforms()
-    const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
-            glslVersion: THREE.GLSL3,
-            uniforms:{
-              map: {value: textures},
-              remapTexture: {value: remapTexture?? remapBorders},
-              ...uniforms
-            },
-            defines:{
-              ...(isFlat ? { IS_FLAT: true } : {}),
-              ...(remapTexture ? { REPROJECT: true } : {})
-            },
-            vertexShader: vertShader,
-            fragmentShader: functionInjector(flatFrag, colorScale),
-            side: THREE.DoubleSide,
-        }),[isFlat, textures, remapTexture, colorScale])
-    updateCommonUniforms(shaderMaterial)
-    
+    // const shaderMaterial = useMemo(()=> new THREE.MeshBasicNodeMaterial({color: "red"})
+    // ,[isFlat, textures, remapTexture, colorScale])
+    const shaderMaterial = new THREE.MeshBasicNodeMaterial({color: "red"})
     useEffect(()=>{
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})

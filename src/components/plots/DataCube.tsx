@@ -10,10 +10,11 @@ import { ColumnMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
-import { raymarchClouds } from '../textures/TSL/rayMarcher';
+import { rayMarchingMaterial } from '../textures/TSL/rayMarcher';
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined,
 }
+
 
 export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
     const volTexture = usePaddedTextures(propVolTexture);
@@ -30,11 +31,11 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
       
     },[remapTexture, dataShape])
 	const uniforms = useCommonUniforms()
-    const shaderMaterial = useMemo(()=> new THREE.MeshBasicNodeMaterial(),[useRayMarch, useOrtho, volTexture, colorScale, remapTexture]);
-	shaderMaterial.colorNode = raymarchClouds()
-	shaderMaterial.side = THREE.BackSide;
-	shaderMaterial.transparent = true;
-    const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
+  const shaderMaterial = useMemo(()=> 
+    rayMarchingMaterial()
+  ,[useRayMarch, useOrtho, volTexture, colorScale, remapTexture]);
+	
+  const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
     
   return (
     <group >

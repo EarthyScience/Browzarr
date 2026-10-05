@@ -1,28 +1,14 @@
 import { Fn, min, max, clamp, abs, round, mix, select, 
     texture, floatBitsToUint, uint, fract, float, vec2, vec3,
-    vec4, If } from 'three/tsl';
-import { valueRange, resolution, bottomLeft, bottomRight, topLeft, 
-    mixMode, lonBounds, latBounds, is360, remapBorders } from './commonUniforms';
-
-const IS_FLAT = true; // or false based on your setup
-
-// Create an array of 12 texture uniform nodes
-const maps = Array.from({ length: 12 }, (_, i) => {
-  const tex = myThreeTexturesArray[i]; // Your THREE.Texture or THREE.Data3DTexture
-  
-  return IS_FLAT 
-    ? texture(tex)     // Creates 2D sampler uniform node
-    : texture3D(tex);  // Creates 3D sampler uniform node
-});
+    vec4, If, texture3D } from 'three/tsl';
+import { valueRange, resolution, bottomLeft, bottomRight, topLeft, reproject,
+    mixMode, lonBounds, latBounds, is360, remapBorders, remapTexture, isFlat, map } from './commonUniforms';
 
 // --- TEXTURE SAMPLERS ---//
 const sampleMap = Fn(([p, index]: [any, any]) => {
     const result = vec4(0).toVar();
-    maps.forEach((map, i) => {
-      If(index.equal(i), () => {
-        result.assign(texture(map, p));
-      });
-    });
+    const tex = map[index];
+    result.assign(texture(tex, p));
     return result;
   });
 
@@ -98,9 +84,8 @@ export const denorm = (x: any) => x.mul(valueRange.y.sub(valueRange.x)).add(valu
 export const norm = (x: any) => x.sub(valueRange.x).div(valueRange.y.sub(valueRange.x));
 export const rescaler = (x: any) => x;
 
-export function reprojector(texCoord: any, opts: Pick<BivariateOptions, 'remapTexture' | 'isFlat' | 'reproject'>) {
-  const { remapTexture, isFlat, reproject } = opts;
- 
+export function reprojector(texCoord: any) {
+  
   let newTexCoord = texCoord;
   let maskUV: any;
   let valid: any;
@@ -122,14 +107,10 @@ export function reprojector(texCoord: any, opts: Pick<BivariateOptions, 'remapTe
     const flipped = vec2(originalCoord.x, float(1).sub(originalCoord.y));
     const remappedMask = texture(remapTexture, flipped).ba;
     maskUV = select(remapBorders, remappedMask, maskUV);
- 
-    valid = float(1).greaterThan(0.5); // always true
   }
  
   // For 0–360 data, wrap longitude by half a turn
-  const wrappedU = fract(maskUV.x.add(0.5));
-  maskUV = vec2(select(is360, wrappedU, maskUV.x), maskUV.y);
- 
+  if (is360) maskUV.x.assign(fract(maskUV.x.add(0.5)));
   return { texCoord: newTexCoord, maskUV, valid };
 }
 

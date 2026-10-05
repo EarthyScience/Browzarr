@@ -1,7 +1,8 @@
 import { Data3DTexture, DataTexture, Texture } from 'three/webgpu';
-import { texture3D, texture, uniform, uniformArray } from 'three/tsl';
+import { texture, uniform } from 'three/tsl';
 
 
+export const map = Array.from({length: 12}, () => texture(new Data3DTexture()))
 export const maskTexture = texture( new DataTexture() );
 export const cmap = texture( new DataTexture() );
 export const remapTexture = texture( new DataTexture() );
@@ -31,3 +32,5 @@ export const latBounds = uniform( 'vec2' );
 export const lonBounds = uniform( 'vec2' );
 export const valueRange = uniform( 'vec2' );
 export const useF16 = uniform( 'bool' );
+export const isFlat = uniform( 'bool' );
+export const reproject = uniform( 'bool' );
