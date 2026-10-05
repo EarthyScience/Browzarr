@@ -1,5 +1,5 @@
 import {  useEffect, useMemo, useRef } from 'react'
-import * as THREE from 'three'
+import * as THREE from 'three/webgpu'
 import { vertexShader, rayMarchFrag, orthoVertex , ddaFrag} from '@/components/textures/shaders';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
@@ -10,6 +10,7 @@ import { ColumnMeshes } from './TransectMeshes';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
 import { functionInjector } from '../ui/Elements/ColorAdjuster';
+import { raymarchClouds } from '../textures/TSL/rayMarcher';
 interface DataCubeProps {
   volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined,
 }
@@ -29,64 +30,12 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
       
     },[remapTexture, dataShape])
 	const uniforms = useCommonUniforms()
-    const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
-		glslVersion: THREE.GLSL3,
-		uniforms: {
-			modelViewMatrixInverse: { value: new THREE.Matrix4() }, // Used for Orthographic RayMarcher
-			map: { value: volTexture},
-			dataShape: {value: gridShape},
-			remapTexture: { value: remapTexture?? remapBorders},
-			scale: {value: shape},
-			flatBounds:{value: new THREE.Vector4(-xRange[1],-xRange[0],zRange[0] * timeRatio, zRange[1] * timeRatio)},
-			vertBounds:{value: flipY 
-				? new THREE.Vector2(yRange[0]*aspectRatio,yRange[1]*aspectRatio)
-				: new THREE.Vector2(yRange[0]*aspectRatio,yRange[1]*aspectRatio)
-			},
-			steps: { value: quality },
-			transparency: {value: transparency},
-			revTransparency: {value: revTransparency},
-			opacityMag: {value: vTransferScale},
-			useClipScale: {value: vTransferRange},
-			...uniforms
-		},
-		defines: {
-			USE_VORIGIN: 1,
-			USE_VDIRECTION: 1,
-			...(remapTexture ? { REPROJECT: true } : {})
-		},
-		vertexShader: useOrtho ? orthoVertex : vertexShader,
-		fragmentShader: useRayMarch ? functionInjector(rayMarchFrag, colorScale): functionInjector(ddaFrag, colorScale),
-		transparent: true,
-		blending: THREE.NormalBlending,
-		depthWrite: false,
-		side: useOrtho ? THREE.FrontSide : THREE.BackSide,
-    }),[useRayMarch, useOrtho, volTexture, colorScale, remapTexture]);
-
+    const shaderMaterial = useMemo(()=> new THREE.MeshBasicNodeMaterial(),[useRayMarch, useOrtho, volTexture, colorScale, remapTexture]);
+	shaderMaterial.colorNode = raymarchClouds()
+	shaderMaterial.side = THREE.BackSide;
+	shaderMaterial.transparent = true;
     const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
-	updateCommonUniforms(shaderMaterial)
-    useEffect(() => {
-		if (shaderMaterial) {
-			const uniforms = shaderMaterial.uniforms
-			uniforms.dataShape.value = gridShape;
-			uniforms.scale.value = shape;
-			uniforms.flatBounds.value.set(-xRange[1], -xRange[0], zRange[0] * timeRatio, zRange[1] * timeRatio);
-			flipY ? uniforms.vertBounds.value.set(-yRange[1] * aspectRatio, -yRange[0] * aspectRatio)
-			: uniforms.vertBounds.value.set(yRange[0] * aspectRatio, yRange[1] * aspectRatio);
-			uniforms.steps.value = quality;
-			uniforms.transparency.value = transparency;
-			uniforms.revTransparency.value = revTransparency;
-			uniforms.opacityMag.value = vTransferScale;
-			uniforms.useClipScale.value = vTransferRange;
-			invalidate() // Needed because Won't trigger re-render if camera is stationary. 
-		}
-    }, [shape, gridShape, xRange, yRange, zRange, aspectRatio, quality, transparency, revTransparency, vTransferScale, vTransferRange, flipY]);
-    useFrame(({camera})=>{ // This calculates InverseModel matrix for the orthographic raymarcher
-		if (!useOrtho || !meshRef.current || !shaderMaterial) return;
-		meshRef.current.modelViewMatrix.multiplyMatrices(camera.matrixWorldInverse, meshRef.current.matrixWorld);
-		shaderMaterial.uniforms.modelViewMatrixInverse.value
-			.copy(meshRef.current.modelViewMatrix)
-			.invert();
-    })
+    
   return (
     <group >
       <ColumnMeshes />

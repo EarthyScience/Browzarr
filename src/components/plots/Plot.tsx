@@ -1,6 +1,6 @@
 import { OrbitControls, useTexture } from '@react-three/drei';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, createDataTexture } from '@/components/textures';
@@ -167,10 +167,6 @@ const Plot = () => {
   const {analysisMode, analysisArray, useEditor} = useAnalysisStore(useShallow(s => ({
     analysisMode: s.analysisMode, analysisArray: s.analysisArray, useEditor: s.useEditor
   })))
-  const coords = useRef<number[]>([0,0])
-  const val = useRef<number>(0)
-  const [showInfo, setShowInfo] = useState<boolean>(false)
-  const [loc, setLoc] = useState<number[]>([0,0])
   
   //DATA LOADING
   const {show, stableMetadata} = useDataFetcher()
@@ -202,12 +198,6 @@ const Plot = () => {
     } setStatus(null)
   },[useF16Textures])
 
-  const infoSetters = useMemo(()=>({
-    setLoc,
-    setShowInfo,
-    coords,
-    val
-  }),[])
   const prevUniqueRep = useRef(false);
     `
     Point cloud and sphere need unique reprojections. However, reprojecting from volume
@@ -248,7 +238,11 @@ const Plot = () => {
       <ShaderEditor visible={useEditor}/>
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
         frameloop={useEditor ? "never" : "demand"}
-        gl={{ preserveDrawingBuffer: true }}
+        gl={async (props) => {
+          const renderer = new THREE.WebGPURenderer(props as any)
+          await renderer.init()
+          return renderer
+        }}
         dpr={[DPR,DPR]}
       >
         <KeyFramePreviewer/>

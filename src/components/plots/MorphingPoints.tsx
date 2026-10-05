@@ -219,7 +219,6 @@ export const LandingShapes = () =>{
       <Canvas
         camera={{position:[0, 0, 3]}}
       >
-
       <MorphingPoints/>
     </Canvas>
     </div>
