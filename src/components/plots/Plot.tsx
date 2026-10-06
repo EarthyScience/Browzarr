@@ -252,7 +252,6 @@ const Plot = () => {
           renderer.setPixelRatio(DPR)
           renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
           renderer.toneMapping = THREE.NoToneMapping;
-          console.log(renderer)
           return renderer
         }}
         dpr={[DPR,DPR]}

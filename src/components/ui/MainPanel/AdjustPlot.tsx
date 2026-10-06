@@ -276,7 +276,7 @@ const FlatOptions = () =>{
 				step={2}
 				value={[displacement]}
 				className='w-full mb-2'
-				onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
+				onValueChange={(vals:number[]) => {setDisplacement(vals[0])}}
 			/>
 			<div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
 				<label htmlFor="offset-switch"><h1>Offset Negatives</h1></label>

@@ -180,7 +180,8 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
     uniformUpdater();
     // const shaderMaterial = useMemo(()=> new THREE.MeshBasicNodeMaterial({color: "red"})
     // ,[isFlat, textures, remapTexture, colorScale])
-    const shaderMaterial = createFlatMapMaterial();
+    const shaderMaterial = useMemo(() => createFlatMapMaterial(), []) ;
+    
     useEffect(()=>{
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})

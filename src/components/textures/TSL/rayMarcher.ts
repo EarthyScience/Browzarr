@@ -7,7 +7,7 @@ import * as h from './utils/commonHelpers';
 import * as v from './utils/volumeUniforms'
 import * as THREE from 'three/webgpu'
 
-const hitBox = Fn(([orig, dir]: any[]) => {
+export const hitBox = Fn(([orig, dir]: any[]) => {
 		const boxMax = v.scale.mul(0.5);
 		const boxMin = boxMax.negate();
 		const invDir = vec3(1.0).div(dir);

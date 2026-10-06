@@ -179,7 +179,7 @@ export function uniformUpdater(){
 		mainTextures?.forEach((val, idx) => {
         if (val && u.map[idx]) {
             u.map[idx].value = val; // Must be a valid THREE.Data3DTexture or THREE.CompressedArrayTexture
-			u.map[idx].needsUpdate = true;
+			u.map[idx].value.needsUpdate = true;
         }
     });
 	},[mainTextures])

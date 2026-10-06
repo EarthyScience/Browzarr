@@ -1,4 +1,4 @@
-import { Fn, min, max, clamp, abs, round, mix, select, 
+import { Fn, min, max, clamp, abs, round, mix, select, bool,
     texture, floatBitsToUint, uint, fract, float, vec2, vec3,
     vec4, If, texture3D } from 'three/tsl';
 import { valueRange, resolution, bottomLeft, bottomRight, topLeft, reproject,
@@ -88,7 +88,6 @@ export const norm = (x: any) => x.sub(valueRange.x).div(valueRange.y.sub(valueRa
 export const rescaler = (x: any) => x;
 
 export function reprojector(texCoord: any) {
-  
   let newTexCoord = texCoord;
   let maskUV: any;
   let valid: any;
@@ -114,7 +113,7 @@ export function reprojector(texCoord: any) {
  
   // For 0–360 data, wrap longitude by half a turn
   if (is360) maskUV.x.assign(fract(maskUV.x.add(0.5)));
-  return { texCoord: newTexCoord, maskUV, valid };
+  return { texCoord: newTexCoord, maskUV, valid:bool(valid) };
 }
 
 // --- NANNERS ---//
