@@ -4,7 +4,7 @@ import { Fn, min, max, clamp, abs, round, mix, select, bool,
     Break} from 'three/tsl';
 import { valueRange, resolution, bottomLeft, bottomRight, topLeft, reproject,
     mixMode, lonBounds, latBounds, is360, remapBorders, remapTexture, isFlat, map } from './commonUniforms';
-
+console.log(remapTexture)
 // --- TEXTURE SAMPLERS ---//
 const sampleMap = Fn(([p, index]: [any, any]) => {
     const result = vec4(0).toVar();
@@ -81,39 +81,34 @@ export function createBivariateColor() {
   });
 }
 
-
 // --- VALUE SCALING --- //
 export const denorm = (x: any) => x.mul(valueRange.y.sub(valueRange.x)).add(valueRange.x);
 export const norm = (x: any) => x.sub(valueRange.x).div(valueRange.y.sub(valueRange.x));
 export const rescaler = (x: any) => x;
 
-export function reprojector(texCoord: any) {
-  let newTexCoord = texCoord;
-  let maskUV: any;
-  let valid: any;
- 
-  if (reproject) {
+
+// --- REPROJECTOR --- //
+export function reprojector(texCoord: any, maskUV: any) {
+  const valid = bool(true).toVar()
+  if (reproject.value) {
     // Each output pixel looks up where it comes from in the source data
-    const remap = texture(remapTexture, texCoord.xy).rgb;
- 
-    newTexCoord = isFlat ? remap.rg : vec3(remap.rg, texCoord.z);
+    const remap = texture(remapTexture, texCoord.xy).rgb.toVar();
+    texCoord.assign(vec3(remap.rg, texCoord.z));
     maskUV = realCoords(remap.rg);
-    valid = remap.b.greaterThan(0.5);
+    valid.assign(remap.b.greaterThan(0.5))
   } else {
     // Reprojected data is already -180..180, so no adjusting needed.
     const originalCoord = texCoord.xy;
-    maskUV = realCoords(originalCoord);
- 
+    const tempV = realCoords(originalCoord).toVar();
     // Regularly gridded data: the remap texture's .ba channels hold the mask coords.
     // (Original note: not certain the y-flip is robust.)
     const flipped = vec2(originalCoord.x, float(1).sub(originalCoord.y));
     const remappedMask = texture(remapTexture, flipped).ba;
-    maskUV = select(remapBorders, remappedMask, maskUV);
+    maskUV.assign(select(remapBorders, remappedMask, tempV));
   }
- 
   // For 0–360 data, wrap longitude by half a turn
-  if (is360) maskUV.x.assign(fract(maskUV.x.add(0.5)));
-  return { texCoord: newTexCoord, maskUV, valid:bool(valid) };
+  // if (is360) maskUV.x.assign(fract(maskUV.x.add(0.5)));
+  return valid
 }
 
 // --- NANNERS ---//

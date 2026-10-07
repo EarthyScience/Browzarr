@@ -13,9 +13,9 @@ import { cmap } from '../textures/TSL/utils/commonUniforms';
 import { sampleColormap } from '../textures/colormap';
 export const DataCube = ( ) => {
     const {shape, flipY, remapTexture, dataShape} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
-    const {xRange, yRange, zRange, quality, valueRange, useRayMarch, transparency, 
+    const {xRange, yRange, zRange, quality, useOrtho, valueRange, useRayMarch, transparency, 
 		vTransferScale, revTransparency} = usePlotStore(useShallow(s => s))
-  	const shaderMaterial = useMemo(() => useRayMarch ? createRayMarchingMaterial() : createDDAMaterial(), [useRayMarch]);
+  	const shaderMaterial = useMemo(() => useRayMarch ? createRayMarchingMaterial() : createDDAMaterial(useOrtho), [useRayMarch, remapTexture, useOrtho]);
   	const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
   	const aspectRatio = shape.y/shape.x
 	const timeRatio = shape.z/shape.x;

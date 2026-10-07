@@ -9,6 +9,7 @@ import { useCoordBounds } from './useCoordBounds'
 import { invalidate } from '@react-three/fiber'
 import * as u from '@/components/textures/TSL/utils/commonUniforms'
 import { texture } from 'three/src/nodes/TSL.js'
+import { sleep } from '@/components/zarr/utils'
 
 export function useCommonUniforms() {
 	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange, 
@@ -134,9 +135,9 @@ export function uniformUpdater(){
 			useBorderTexture: s.useBorderTexture, borderColor: s.borderColor, borderWidth: s.borderWidth,
 			is360Deg: s.is360Deg, showBorders: s.showBorders
 		})))
-	const { valueScales, useF16Textures, bivariate, mainTextures, textureArrayDepths } = useGlobalStore(useShallow(s => ({
+	const { valueScales, useF16Textures, bivariate, mainTextures, textureArrayDepths , remapTexture} = useGlobalStore(useShallow(s => ({
 		valueScales: s.valueScales, useF16Textures: s.useF16Textures, bivariate: s.bivariate, 
-		mainTextures: s.mainTextures, textureArrayDepths: s.textureArrayDepths
+		mainTextures: s.mainTextures, textureArrayDepths: s.textureArrayDepths, remapTexture: s.remapTexture
 	})))
 	const {lonBounds, latBounds} = useCoordBounds()
     const {colormap, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection} = useColormapStore(useShallow(s => ({
@@ -178,13 +179,15 @@ export function uniformUpdater(){
 		u.useF16.value = useF16Textures;
 		u.bivariateSelection.value = bivariateSelection;
 		u.bivariate.value = bivariate;
+		u.remapTexture.value = remapTexture?? new THREE.DataTexture();
 	},[
 		cScale, cOffset, nanTransparency, fillValue, maskValue, valueRange,
 		lonBounds, latBounds, useBorderTexture, borderWidth, is360Deg, showBorders,
 		valueScales, useF16Textures, bivariateSelection, 
-		bivariate, textureArrayDepths
+		bivariate, textureArrayDepths, remapTexture
 	])
 	useEffect(() => {
+		console.log(mainTextures)
 		if (mainTextures){
 			mainTextures.forEach((val, idx) => {
 			if (val) {

@@ -11,7 +11,7 @@ const placeholder3D = () => {
     return t;
 };
 
-export const map = Array.from({length: 1}, () => texture3D(placeholder3D()))
+export const map = Array.from({length: 1}, () => texture3D(new DataTexture()))
 export const maskTexture = texture( new DataTexture() );
 export const cmap = texture( new DataTexture() );
 export const remapTexture = texture( new DataTexture() );
@@ -42,4 +42,4 @@ export const lonBounds = uniform( vec2() );
 export const valueRange = uniform( vec2() );
 export const useF16 = uniform( bool() );
 export const isFlat = uniform( bool() );
-export const reproject = uniform( bool() );
+export const reproject = uniform( bool(false) );

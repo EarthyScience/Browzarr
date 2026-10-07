@@ -1,7 +1,7 @@
 import * as u from './utils/commonUniforms'	
 import * as h from './utils/commonHelpers';
 import * as THREE from 'three/webgpu'
-import { Fn, uv, If, fract, sub, min, abs, select, vec4, int, vec3, clamp, vec2, ivec3, EPSILON, float, bool} from 'three/tsl';
+import { Fn, uv, If, fract, sub, min, abs, select, vec4, int, vec3, clamp, vec2, ivec3, EPSILON, float, bool, Discard} from 'three/tsl';
 
 const maskAndBorder = Fn( () => {
     const result = vec4( 0, 0, 0, - 1 ).toVar( 'maskResult' );
@@ -11,12 +11,12 @@ const maskAndBorder = Fn( () => {
         If( u.is360, () => {
             realUV.x.assign( fract( realUV.x.add( 0.5 ) ) );
         } );
-        If( u.remapBorders, () => {
+        If( u.reproject, () => {
             // All reprojected data is regularly gridded
             const remapUV = uv().toVar('remapUV');
             remapUV.y.assign( sub( 1.0, remapUV.y ) );
             // I'm not certain if this is robust
-            realUV.xy.assign( u.remapTexture.sample( remapUV ).ba );
+            realUV.xy.assign( u.remapTexture.sample( remapUV ).rg );
         } );
         If(u.maskValue.notEqual( 0 ), () => {
             const mask = u.maskTexture.sample( realUV ).r;
@@ -42,7 +42,9 @@ const faceColor = Fn( () => {
     const yStepSize = int( u.textureDepths.x );
     const texCoord = vec3( uv(), u.animateProg ).toVar( 'texCoord' );
     texCoord.xy.assign( clamp( texCoord.xy, vec2( 0.0 ), sub( 1., vec2( EPSILON ) ) ) );
-
+    const maskUV = vec2(0).toVar();
+    const repValid = h.reprojector(texCoord, maskUV);
+    If(repValid.not(), () =>{ Discard(); })
     // Prevents the very edges from looping around and causing line artifacts
     const idx = clamp( ivec3( texCoord.mul( u.textureDepths ) ), ivec3( 0 ), ivec3( u.textureDepths ).sub( 1 ) );
     const textureIdx = idx.z.mul( zStepSize ).add( idx.y.mul( yStepSize ) ).add( idx.x );

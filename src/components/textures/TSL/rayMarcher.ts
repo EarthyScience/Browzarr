@@ -1,6 +1,6 @@
 import { Fn, vec4, vec3, abs, If, normalize, pow, EPSILON, Discard, int, ceil, Loop,
 	min, max, vec2, select, cameraPosition, positionLocal, varying, float, bool,
-	Break, modelWorldMatrixInverse, modelWorldMatrix, Continue,
+	Break, modelWorldMatrixInverse, cameraWorldMatrix, Continue,
 	texture, mod, clamp, ivec3, fract, 
 	uv} from 'three/tsl';
 import * as u from './utils/commonUniforms'	
@@ -9,11 +9,7 @@ import * as vu from './utils/volumeUniforms'
 import * as THREE from 'three/webgpu'
 import { hitBox, sampleVoxel, shouldSkip } from './utils/volumeHelpers';
 
-function rayMarch(){
-	const vOrigin = varying(modelWorldMatrixInverse.mul(vec4(cameraPosition, 1.0)).xyz, 'vOrigin');
-  	const vDirection = varying(positionLocal.sub(vOrigin), 'vDirection');
-
-	return Fn(() => {
+const rayMarch = Fn(([vOrigin, vDirection] : [any, any]) => {
 		const rayDir = normalize(vDirection);
 		const bounds = hitBox( vOrigin, rayDir ).toVar("bounds");
 		If(bounds.x.greaterThan(bounds.y), () => { Discard(); });
@@ -81,13 +77,22 @@ function rayMarch(){
 		});
 		If( alphaAcc.lessThanEqual( 0.0 ), () => Discard());
 		return select(borderHit, vec4(u.borderColor, 1.0), vec4(accumColor, alphaAcc));
-	})();
-}
+})
 
-export function createRayMarchingMaterial(){
+export function createRayMarchingMaterial(isOrtho=false){
 	const material = new THREE.NodeMaterial();
-	material.fragmentNode = rayMarch();
-	material.side = THREE.BackSide;
+	let vOrigin, vDirection;
+	if (isOrtho){
+		vOrigin = varying(positionLocal, 'vOrigin');
+		const viewDirWorld = cameraWorldMatrix.mul(vec4(0.0, 0.0, -1.0, 0.0));
+		const viewDirLocal = modelWorldMatrixInverse.mul(viewDirWorld).xyz;
+		vDirection = varying(normalize(viewDirLocal), 'vDirection');
+	} else {
+		vOrigin = varying(modelWorldMatrixInverse.mul(vec4(cameraPosition, 1)).xyz);
+		vDirection = varying(positionLocal.sub(vOrigin));
+		material.side = THREE.BackSide;
+	}
+	material.fragmentNode = rayMarch(vOrigin, vDirection);
 	material.transparent = true;
     material.depthWrite = false;
 	return material

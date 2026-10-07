@@ -21,9 +21,8 @@ export const shouldSkip = (p: any, texCoord: any, maskUV: any) => {
  
     If(skip.not(), () => {
         texCoord.assign(p.div(vu.scale).add(0.5));
-        // const rep = h.reprojector(texCoord).toVar();
-        // maskUV.assign(rep.xy);
-        // If(rep.z.lessThan(0.5), () => { skip.assign(bool(true)); });
+        const valid = h.reprojector(texCoord, maskUV);
+        If(valid.not(), () => { skip.assign(bool(true)); });
     });
  
     If(skip.not(), () => {

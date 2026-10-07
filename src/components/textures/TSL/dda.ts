@@ -1,16 +1,16 @@
 import { Fn, vec4, vec3, abs, any, greaterThan, If, lessThan, normalize, pow, EPSILON, Discard, int, ceil, Loop,
 	min, max, vec2, select, cameraPosition, positionLocal, varying, float, bool,sub,
-	Break, modelWorldMatrixInverse, modelWorldMatrix, Continue, floor,sign, mix, greaterThanEqual,
-	texture, mod, clamp, ivec3, fract } from 'three/tsl';
+	Break, modelWorldMatrixInverse, modelWorldMatrix, floor,sign, mix, greaterThanEqual,
+	texture, mod, clamp, ivec3, fract, 
+    cameraWorldMatrix} from 'three/tsl';
 import * as u from './utils/commonUniforms'	
 import * as h from './utils/commonHelpers';
 import * as vu from './utils/volumeUniforms'
 import * as THREE from 'three/webgpu'
 import {shouldSkip, sampleVoxel, hitBox} from './utils/volumeHelpers'
 
-const ddaColor = Fn(() =>{
-    const vOrigin = varying(modelWorldMatrixInverse.mul(vec4(cameraPosition, 1)).xyz);
-    const vDirection = varying(positionLocal.sub(vOrigin));
+const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
+   
     const rayDir = normalize( vDirection ).toVar("rayDir");
     const bounds = hitBox( vOrigin, rayDir ).toVar("bounds");
     If(bounds.x.greaterThan(bounds.y), () => { Discard(); });
@@ -72,14 +72,15 @@ const ddaColor = Fn(() =>{
                     alphaAcc.addAssign(opacity.mul(s.a));
                 });
 
-                If(alphaAcc.greaterThanEqual(1.0), () => {
-                    // If(u.useBorderTexture, () => {
+                If(alphaAcc.greaterThanEqual(0.99), () => {
+                    // If(bool(true), () => {
                     //     const pHit = vOrigin.add(t.mul(rayDir));
-                    //     const localPosContinuous = pHit.sub(boxMin).div(vu.scale);
+                    //     const localPosContinuous = pHit.sub(boxMin).div(vu.scale).toVar();
                     //     // ASSUMPTION: same vec3(uv.x, uv.y, valid) convention as above
-                    //     const rep = h.reprojector(localPosContinuous).toVar();
-                    //     const borderDist = u.borderTexture.sample(rep.xy).r;
-                    //     If(borderDist.lessThanEqual(u.borderWidth).and(rep.z.greaterThan(0.5)), () => {
+                    //     const borderUV = vec2(0).toVar();
+                    //     const valid = h.reprojector(texCoord, borderUV).toVar();
+                    //     const borderDist = u.borderTexture.sample(texCoord.xy).r;
+                    //     If(borderDist.lessThanEqual(u.borderWidth).and(borderUV.z.greaterThan(0.5)), () => {
                     //         borderHit.assign(bool(true)); // replaces the early `return` in GLSL
                     //     });
                     // });
@@ -110,11 +111,21 @@ const ddaColor = Fn(() =>{
     return select(borderHit, vec4(u.borderColor, 1.0), vec4(accumColor, alphaAcc));
 })
 
-export const createDDAMaterial = () => {
+export const createDDAMaterial = (isOrtho=false) => {
     const material = new THREE.NodeMaterial();
     material.transparent = true;
-    material.side = THREE.BackSide;
-    material.colorNode = ddaColor();
+    let vOrigin, vDirection;
+    if (isOrtho){
+        vOrigin = varying(positionLocal, 'vOrigin');
+        const viewDirWorld = cameraWorldMatrix.mul(vec4(0.0, 0.0, -1.0, 0.0));
+        const viewDirLocal = modelWorldMatrixInverse.mul(viewDirWorld).xyz;
+        vDirection = varying(normalize(viewDirLocal), 'vDirection');
+    } else {
+        vOrigin = varying(modelWorldMatrixInverse.mul(vec4(cameraPosition, 1)).xyz);
+        vDirection = varying(positionLocal.sub(vOrigin));
+        material.side = THREE.BackSide;
+    }
+    material.colorNode = ddaColor(vOrigin, vDirection);
 
     return material
 }

@@ -7,6 +7,7 @@ import proj4 from 'proj4';
 import { getAxisIndices } from '@/hooks/useAxisIndices';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { getDimAxis, getAxisDimAxis} from '@/hooks';
+import * as u from '@/components/textures/TSL/utils/commonUniforms'
 
 export function checkProjString(projString: string){
     const {setError} = useErrorStore.getState()
@@ -51,6 +52,7 @@ export function resetProjection(){
         remapTexture: undefined,
         remapBorders: undefined,
     })
+    u.reproject.value = false;
     handleIrregularGrid()
 }
 
@@ -221,7 +223,7 @@ export function handleIrregularGrid(){
 
 
 export function reproject(resolution: number = 256){
-    const {nativeCRS, destCRS, plotType, is360Deg} = usePlotStore.getState()
+    const {nativeCRS, destCRS, plotType, is360Deg, interpPixels} = usePlotStore.getState()
 	const {remapTexture, flipY } = useGlobalStore.getState()
     let {xArray, yArray} = getDimAxis();
 	const insufficientCRS = !nativeCRS || !destCRS
@@ -350,13 +352,14 @@ export function reproject(resolution: number = 256){
         THREE.RGBAFormat, // Must be RGBA as HalfFloat RGB is not supported
         THREE.HalfFloatType
     );
-    texture.magFilter = THREE.LinearFilter;
-    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = interpPixels ? THREE.LinearFilter : THREE.NearestFilter;
+    texture.minFilter = interpPixels ? THREE.LinearFilter : THREE.NearestFilter;
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
     texture.needsUpdate = true;
     if (remapTexture) remapTexture.dispose();
     useGlobalStore.setState({remapTexture: texture})
+    u.reproject.value = true;
     // ---- Update Axis and Shape information ----//
     const crsCheck = proj4(destCRS);
     const {axisDimArrays, axisDimUnits, axisDimNames, shape} = useGlobalStore.getState()
