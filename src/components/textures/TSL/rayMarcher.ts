@@ -45,21 +45,15 @@ const rayMarch = Fn(([vOrigin, vDirection] : [any, any]) => {
 							alphaAcc.addAssign(nanA);
 						});
 					}).Else(() => {
-						// const col = vec3(0.0).toVar();
-						// If(u.bivariate, () => {
-						// 	const flipOrder = u.bivariateSelection.notEqual(0);
-						// 	If(flipOrder, () => {
-						// 		col.assign(h.colorMixer(biVal, d));
-						// 	}).Else(() => {
-						// 		col.assign(h.colorMixer(d, biVal));
-						// 	});
-						// }).Else(() => {
-						// 	col.assign(u.cmap.sample(vec2(d, 0.5)).rgb);
-						// });
-
 						const s = vu.tfLUT.sample(vec2(d, 0.5));
 						const opacity = float(1).sub(alphaAcc);
-						accumColor.addAssign(opacity.mul(s.rgb));
+						If( u.bivariate, () => {
+							const flipOrder = u.bivariateSelection.notEqual( 0 );
+							const biCol = select( flipOrder, h.colorMixer( biVal, d ), h.colorMixer( d, biVal ) ).toVar();
+							accumColor.addAssign(opacity.mul(s.a).mul(biCol.rgb));
+						}).Else( () => {
+							accumColor.addAssign(opacity.mul(s.rgb));
+						})
 						alphaAcc.addAssign(opacity.mul(s.a));
 					});
 

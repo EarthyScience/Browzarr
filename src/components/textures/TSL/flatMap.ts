@@ -25,7 +25,8 @@ const maskAndBorder = Fn( () => {
                 result.assign( vec4( u.nanColor, 1. ) );
                 result.a.assign( u.nanAlpha );
             } );
-        }).Else( () => {
+        })
+        If(u.useBorderTexture, () => {
             const borderDist = u.borderTexture.sample( realUV ).r;
             If( borderDist.lessThanEqual( u.borderWidth ), () => {
                 result.assign( vec4( u.borderColor, 1.0 ) );

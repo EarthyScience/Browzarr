@@ -124,30 +124,30 @@ export const useDataFetcher = () => {
     }, [reFetch]); 
 
     // ---- InterpPixels ---- //
-    useEffect(()=> {
-        if (!mainTextures) return;
-        const updated = mainTextures.map(tex => {
-            const clone = tex.clone(); 
-            if (interpPixels) {
-                clone.minFilter = THREE.LinearFilter;
-                clone.magFilter = THREE.LinearFilter;
-            } else {
-                clone.minFilter = THREE.NearestFilter;
-                clone.magFilter = THREE.NearestFilter;
-            }
-            clone.needsUpdate = true; 
-            return clone ;
-        });
-        if (interpPixels){
-             remapTexture.value.minFilter = THREE.LinearFilter
-             remapTexture.value.magFilter = THREE.LinearFilter
-        } else {
-            remapTexture.value.minFilter = THREE.NearestFilter
-            remapTexture.value.magFilter = THREE.NearestFilter
-        }
-        remapTexture.value.needsUpdate = true;
-        setMainTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
-  },[interpPixels])
+//     useEffect(()=> {
+//         if (!mainTextures) return;
+//         const updated = mainTextures.map(tex => {
+//             const clone = tex.clone(); 
+//             if (interpPixels) {
+//                 clone.minFilter = THREE.LinearFilter;
+//                 clone.magFilter = THREE.LinearFilter;
+//             } else {
+//                 clone.minFilter = THREE.NearestFilter;
+//                 clone.magFilter = THREE.NearestFilter;
+//             }
+//             clone.needsUpdate = true; 
+//             return clone ;
+//         });
+//         if (interpPixels){
+//              remapTexture.value.minFilter = THREE.LinearFilter
+//              remapTexture.value.magFilter = THREE.LinearFilter
+//         } else {
+//             remapTexture.value.minFilter = THREE.NearestFilter
+//             remapTexture.value.magFilter = THREE.NearestFilter
+//         }
+//         remapTexture.value.needsUpdate = true;
+//         setMainTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
+//   },[interpPixels])
 
   useEffect(() => {
     // This cleanup function will run when the `textures` state is about to change,

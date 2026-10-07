@@ -6,7 +6,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 const placeholder3D = () => {
     const t = new THREE.Data3DTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, 1);
     t.format = THREE.RGBAFormat; t.type = THREE.UnsignedByteType;
-    t.minFilter = t.magFilter = THREE.NearestFilter;
+    t.minFilter = t.magFilter = THREE.LinearFilter;
     t.wrapS = t.wrapT = t.wrapR = THREE.ClampToEdgeWrapping;
     t.needsUpdate = true;
     return t;

@@ -51,14 +51,17 @@ const maskAndBorder = Fn( () => {
             maskUV.x.assign( fract( maskUV.x ) );
         });
         If( u.maskValue.notEqual( 0 ), () => {
-            const mask = u.maskTexture.sample( maskUV ).r;
+            //@ts-ignore level does exist on this node
+            const mask = u.maskTexture.sample( maskUV ).level(0).r;
             const cond = select( u.maskValue.equal( 1 ), mask.lessThan( 0.5 ), mask.greaterThanEqual( 0.5 ) );
             If( cond, () => {
                 result.assign( vec4( u.nanColor, 1. ) );
                 result.a.assign( u.nanAlpha );
             });
-        }).Else( () => {
-            const borderDist = u.borderTexture.sample( maskUV ).r;
+        })
+        If(u.useBorderTexture, () => {
+            //@ts-ignore level does exist on this node
+            const borderDist = u.borderTexture.sample( maskUV ).level(0).r;
             const latFac = cos( maskUV.y );
             If( borderDist.lessThanEqual( u.borderWidth.mul( latFac ) ), () => {
                 result.assign( vec4( u.borderColor, 1.0 ) );

@@ -58,7 +58,6 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
 
             If(inRange, () => {
                 isNan.assign(isNan.or(abs(d.sub(u.fillValue)).lessThan(0.005)));
- 
                 If(isNan, () => {
                     If(u.nanAlpha.greaterThan(0.0), () => {
                         const nanA = pow(u.nanAlpha, 5.0);
@@ -68,19 +67,25 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
                 }).Else(() => {
                     const s = vu.tfLUT.sample(vec2(d, 0.5));
                     const opacity = float(1).sub(alphaAcc);
-                    accumColor.addAssign(opacity.mul(s.rgb));
+                    If( u.bivariate, () => {
+                        const flipOrder = u.bivariateSelection.notEqual( 0 );
+                        const biCol = select( flipOrder, h.colorMixer( biVal, d ), h.colorMixer( d, biVal ) ).toVar();
+                        accumColor.addAssign(opacity.mul(s.a).mul(biCol.rgb));
+                    }).Else( () => {
+                        accumColor.addAssign(opacity.mul(s.rgb));
+                    })
                     alphaAcc.addAssign(opacity.mul(s.a));
                 });
-
+               
                 If(alphaAcc.greaterThanEqual(0.99), () => {
                     // If(bool(true), () => {
                     //     const pHit = vOrigin.add(t.mul(rayDir));
                     //     const localPosContinuous = pHit.sub(boxMin).div(vu.scale).toVar();
                     //     // ASSUMPTION: same vec3(uv.x, uv.y, valid) convention as above
                     //     const borderUV = vec2(0).toVar();
-                    //     const valid = h.reprojector(texCoord, borderUV).toVar();
-                    //     const borderDist = u.borderTexture.sample(texCoord.xy).r;
-                    //     If(borderDist.lessThanEqual(u.borderWidth).and(borderUV.z.greaterThan(0.5)), () => {
+                    //     const valid = shouldSkip(localPosContinuous, texCoord, borderUV).toVar();
+                    //     const borderDist = u.borderTexture.sample(borderUV.xy).r;
+                    //     If(borderDist.lessThanEqual(u.borderWidth).and(texCoord.z.greaterThan(0.5)), () => {
                     //         borderHit.assign(bool(true)); // replaces the early `return` in GLSL
                     //     });
                     // });
