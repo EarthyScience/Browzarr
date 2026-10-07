@@ -1,4 +1,5 @@
-import { bool, float, int, uniform, vec2, vec3, vec4 } from "three/tsl";
+import { bool, float, int, uniform, vec2, vec3, vec4, texture } from "three/tsl";
+import { DataTexture } from "three/webgpu";
 
 export const scale = uniform(vec3());
 export const steps = uniform(int());
@@ -9,3 +10,4 @@ export const opacityMag = uniform(float());
 export const useClipScale = uniform(bool());
 export const revTransparency = uniform(bool());
 export const dataShape = uniform(vec3())
+export const tfLUT = texture( new DataTexture() );

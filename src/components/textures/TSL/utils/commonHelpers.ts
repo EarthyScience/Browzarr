@@ -1,6 +1,7 @@
 import { Fn, min, max, clamp, abs, round, mix, select, bool,
     texture, floatBitsToUint, uint, fract, float, vec2, vec3,
-    vec4, If, texture3D } from 'three/tsl';
+    vec4, If, texture3D, 
+    Break} from 'three/tsl';
 import { valueRange, resolution, bottomLeft, bottomRight, topLeft, reproject,
     mixMode, lonBounds, latBounds, is360, remapBorders, remapTexture, isFlat, map } from './commonUniforms';
 
@@ -14,7 +15,6 @@ const sampleMap = Fn(([p, index]: [any, any]) => {
     } );
     return result;
   });
-
 export const sample1 = Fn(([p, index]: [any, any]) => sampleMap(p, index).r);
 export const sample2 = Fn(([p, index]: [any, any]) => sampleMap(p, index).rg);
 

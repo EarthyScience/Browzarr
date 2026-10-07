@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { colorschemes, get, findColorScheme } from 'color-schemes-js';
+import { lerp } from '@/utils/colorUtils';
 
 export const colormaps = ['magma', 'inferno', 'plasma', 'viridis', 'cividis', 'twilight', 'twilight_shifted', 'turbo', 'Blues', 'BrBG', 'BuGn', 'BuPu', 'CMRmap', 'GnBu', 'Greens', 'Greys', 'OrRd', 'Oranges', 'PRGn', 'PiYG', 'PuBu', 'PuBuGn', 'PuOr', 'PuRd', 'Purples', 'RdBu', 'RdGy', 'RdPu', 'RdYlBu', 'RdYlGn', 'Reds', 'Spectral', 'Wistia', 'YlGn', 'YlGnBu', 'YlOrBr', 'YlOrRd', 'afmhot', 'autumn', 'binary', 'bone', 'brg', 'bwr', 'cool', 'coolwarm', 'copper', 'cubehelix', 'flag', 'gist_earth', 'gist_gray', 'gist_heat', 'gist_ncar', 'gist_rainbow', 'gist_stern', 'gist_yarg', 'gnuplot', 'gnuplot2', 'gray', 'hot', 'hsv', 'jet', 'nipy_spectral', 'ocean', 'pink', 'prism', 'rainbow', 'seismic', 'spring', 'summer', 'terrain', 'winter', 'Accent', 'Dark2', 'Paired', 'Pastel1', 'Pastel2', 'Set1', 'Set2', 'Set3', 'tab10', 'tab20', 'tab20b', 'tab20c'];
 
@@ -76,6 +77,27 @@ export function evaluateColorMap(value: number, palette: string, reverse = false
   const rgb = color.toRgb255();
   return [rgb.r, rgb.g, rgb.b];
 }
+
+export function sampleColormap(value: number, texture: THREE.DataTexture): [number, number, number]{
+  const imageData = texture.source.data;
+  const {width, data} = imageData
+  if (!data) return [0,0,0]
+  const t = Math.min(Math.max(value, 0), 1);
+  const fac = t * (width - 1);
+  const facIdx = Math.min(Math.floor(fac), width - 2);
+  const mixVal = fac - facIdx;
+  const lo = facIdx * 4;
+  const hi = (facIdx + 1) * 4;
+  const r = THREE.MathUtils.lerp(data[lo],     data[hi],     mixVal) / 255;
+  const g = THREE.MathUtils.lerp(data[lo + 1], data[hi + 1], mixVal) / 255;
+  const b = THREE.MathUtils.lerp(data[lo + 2], data[hi + 2], mixVal) / 255;
+  const c = new THREE.Color();
+  // r,g,b are 0-1 sRGB values from the colormap (divide by 255 if they're bytes)
+  c.setRGB(r, g, b, THREE.SRGBColorSpace); // converts into the working (linear) space
+  return [c.r, c.g, c.b];
+}
+
+
 
 export function getColormapGradientCss(name: string): string {
   const schemeName = resolveColorSchemeName(name);

@@ -11,7 +11,7 @@ const placeholder3D = () => {
     return t;
 };
 
-export const map = Array.from({length: 12}, () => texture3D(placeholder3D()))
+export const map = Array.from({length: 1}, () => texture3D(placeholder3D()))
 export const maskTexture = texture( new DataTexture() );
 export const cmap = texture( new DataTexture() );
 export const remapTexture = texture( new DataTexture() );
