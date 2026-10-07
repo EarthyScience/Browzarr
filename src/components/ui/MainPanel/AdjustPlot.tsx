@@ -464,7 +464,7 @@ const GlobalOptions = () =>{
           }
           onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
       </QuickTip>
-      <Hider show={showBorders && (analysisMode && !axis)}>
+      <Hider show={showBorders && !(analysisMode && !axis)}>
         <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
           ()=>usePlotStore.setState({useBorderTexture:!useBorderTexture})
         } />

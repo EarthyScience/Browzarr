@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu'
 import { Data3DTexture, DataTexture, Texture } from 'three/webgpu';
 import { texture, uniform, bool, float, int, vec2, vec3, color, texture3D } from 'three/tsl';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
 const placeholder3D = () => {
     const t = new THREE.Data3DTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, 1);
@@ -11,7 +12,28 @@ const placeholder3D = () => {
     return t;
 };
 
-export const map = Array.from({length: 1}, () => texture3D(new DataTexture()))
+export let map: any[] = [ texture3D(placeholder3D()) ];
+
+export function setMapTextures(textures: (DataTexture | Data3DTexture | Texture)[]) {
+    if (!textures || !textures.length) return;
+    const is3D = !!(textures[0] as any).isData3DTexture;
+    const kindChanged = is3D !== !!(map[0].value as any).isData3DTexture;
+    const countChanged = textures.length !== map.length;
+
+    if (kindChanged || countChanged) {
+        // New nodes: materials rebuild against these when they observe mapVersion
+        map = textures.map(t => is3D ? texture3D(t as Data3DTexture) : texture(t as DataTexture));
+        (useGlobalStore.getState() as any).bumpMapVersion?.();
+    } else {
+        // Same kind & count: hot-swap bindings, no recompile needed
+        map.forEach((node, i) => {
+            if (node.value !== textures[i]) {
+                node.value = textures[i];
+                textures[i].needsUpdate = true;
+            }
+        });
+    }
+}
 export const maskTexture = texture( new DataTexture() );
 export const cmap = texture( new DataTexture() );
 export const remapTexture = texture( new DataTexture() );

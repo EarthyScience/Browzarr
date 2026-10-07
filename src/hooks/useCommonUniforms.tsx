@@ -8,8 +8,7 @@ import { useShallow } from 'zustand/shallow'
 import { useCoordBounds } from './useCoordBounds'
 import { invalidate } from '@react-three/fiber'
 import * as u from '@/components/textures/TSL/utils/commonUniforms'
-import { texture } from 'three/src/nodes/TSL.js'
-import { sleep } from '@/components/zarr/utils'
+
 
 export function useCommonUniforms() {
 	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange, 
@@ -187,14 +186,7 @@ export function uniformUpdater(){
 		bivariate, textureArrayDepths, remapTexture
 	])
 	useEffect(() => {
-		console.log(mainTextures)
-		if (mainTextures){
-			mainTextures.forEach((val, idx) => {
-			if (val) {
-				u.map[idx].value = val;
-				u.map[idx].value.needsUpdate = true;
-			}});
-		}
+		if (mainTextures) u.setMapTextures(mainTextures)
 	},[mainTextures])
 
 }
