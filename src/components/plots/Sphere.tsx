@@ -21,22 +21,22 @@ function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number
 }
 
 export const Sphere = () => {
-    const {isFlat, dimNames, dimUnits, dataShape, strides, flipY, remapTexture,
+    const { dimNames, dimUnits, dataShape, strides, flipY,
           setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => ({
-            isFlat: s.isFlat, dimNames: s.dimNames, dimUnits: s.dimUnits, 
-            dataShape: s.dataShape, strides: s.strides, flipY: s.flipY, remapTexture: s.remapTexture,
+            dimNames: s.dimNames, dimUnits: s.dimUnits, 
+            dataShape: s.dataShape, strides: s.strides, flipY: s.flipY, 
             setPlotDim: s.setPlotDim, updateDimCoords: s.updateDimCoords, updateTimeSeries: s.updateTimeSeries
           })))
-    const { selectTS, displacement, sphereResolution, fillValue, colorScale,
+    const { selectTS, displacement, sphereResolution, interpPixels,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
-        selectTS: s.selectTS, displacement: s.displacement, sphereResolution: s.sphereResolution, fillValue: s.fillValue,
-        colorScale: s.colorScale, getColorIdx: s.getColorIdx, incrementColorIdx: s.incrementColorIdx
+        selectTS: s.selectTS, displacement: s.displacement, sphereResolution: s.sphereResolution, interpPixels: s.interpPixels,
+         getColorIdx: s.getColorIdx, incrementColorIdx: s.incrementColorIdx
       })))
     const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))   
     const {xArray, yArray, zArray} = useDimAxis();
     const dimSlices = [zArray, yArray, xArray];
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
-    const shaderMaterial = useMemo( () => createSphereMaterial() , [])
+    const shaderMaterial = useMemo( () => createSphereMaterial() , [interpPixels])
     // No reprojection on Sphere. Remains static and can't update
     uniformUpdater();
     const backMaterial = useMemo(()=>{
@@ -44,11 +44,9 @@ export const Sphere = () => {
       mat.side = THREE.BackSide;
       return mat;
     },[shaderMaterial])
-
     const {lonBounds, latBounds} = useCoordBounds()
     function HandleTimeSeries(event: THREE.Intersection){
         const point = event.point.normalize();
-
         //const uv = XYZtoUV(point, texture?.source.data.width, texture?.source.data.height);
         const uv = XYZtoRemap(point, latBounds, lonBounds);
         uv.y = flipY ? 1 - uv.y : uv.y;

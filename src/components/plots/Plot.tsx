@@ -264,7 +264,7 @@ const Plot = () => {
         {/* <KeyFramePreviewer/> */}
         {show && <CountryBorders/>}
         {/* <ExportCanvas show={show}/> */}
-        {/* {show && <AxisLines />} */}
+        {show && <AxisLines />}
         {plotType == "volume" && show && 
             <DataCube />
         }

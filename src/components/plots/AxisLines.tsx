@@ -9,13 +9,13 @@ import React, {useState, useMemo} from 'react'
 import { useShallow } from 'zustand/shallow'
 import { Text } from '@react-three/drei'
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
-import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegments2 } from 'three/addons/lines/webgpu/LineSegments2.js';
 import { LineMaterial } from 'three-stdlib';
 import { useFrame } from '@react-three/fiber';
 import { parseLoc, coarsenFlatArray, linspace } from '@/utils/HelperFuncs';
 import { useCSSVariable } from '../ui';
 import { useAxisIndices, useDimAxis } from '@/hooks';
-import * as THREE from 'three'
+import * as THREE from 'three/webgpu'
 
 const AXIS_CONSTANTS = {
   INITIAL_RESOLUTION: 7,
@@ -72,7 +72,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     return col.getHex()
   },[secondaryColor])
 
-  const lineMat = useMemo(()=>new LineMaterial({color: colorHex ? colorHex : 0, linewidth: AXIS_CONSTANTS.LINE_WIDTH}),[colorHex])
+  const lineMat = useMemo(()=>new THREE.Line2NodeMaterial({color: colorHex ? colorHex : 0, linewidth: AXIS_CONSTANTS.LINE_WIDTH}),[colorHex])
   const tickLength = AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale;
 
   const xLine = useMemo(()=> {
@@ -119,7 +119,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
            &&          
           <group key={`xGroup_${idx}`} position={[isPC ? -globalScale + idx*xDimScale/(xResolution/2)*globalScale : -1 + idx*xDimScale/(xResolution/2), 0, 0]}>
             <primitive key={idx} object={tickLine.clone()}  rotation={[0, flipX ? Math.PI : 0, 0]} />
-            <Text 
+            {/* <Text 
               key={`textX_${idx}`}
               anchorX={idx == 0 ? (flipX ? 'right' : 'left') : idx == xResolution-1 ? (flipX ? 'left' : 'right') : 'center'}
               anchorY={'top'} 
@@ -128,20 +128,20 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]}
               position={[0, 0, flipX ? -AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale : AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale]}
-            >{parseLoc(dimSlices[2]?.[getFactor(idx*xValDelta, true)] || 0,axisDimUnits[xIdx])}</Text>
+            >{parseLoc(dimSlices[2]?.[getFactor(idx*xValDelta, true)] || 0,axisDimUnits[xIdx])}</Text> */}
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]} position={[(xRange[0]+xRange[1])/2*globalScale, 0, flipX ? -AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale : AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale]}>
-          <Text 
+          {/* <Text 
             key={'xTitle'}
             anchorX={'center'}
             anchorY={'top'} 
             fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
             color={colorHex}
             material-depthTest={false}
-          >{axisDimNames[xIdx]}</Text>
+          >{axisDimNames[xIdx]}</Text> */}
           <group visible={!hideAxisControls}>
-            {xResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
+            {/* {xResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
             <Text 
               key={'xAdd'}
               anchorX={'center'}
@@ -155,8 +155,8 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               +
-            </Text>}
-            { xResolution > AXIS_CONSTANTS.MIN_RESOLUTION &&
+            </Text>} */}
+            {/* { xResolution > AXIS_CONSTANTS.MIN_RESOLUTION &&
             <Text 
               key={'xSub'}
               anchorX={'center'}
@@ -170,7 +170,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
-            </Text>}
+            </Text>} */}
           </group>
         </group>
       </group>
@@ -183,7 +183,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
           && 
           <group key={`zGroup_${idx}`} position={[0, 0, isPC ? -depthRatio*globalScale + idx*zDimScale/(zResolution/2)*depthRatio*(globalScale) : -0.5*timeRatio + idx*zDimScale/(zResolution/2)*timeRatio/2]}>
             <primitive key={idx} object={tickLine.clone()}  rotation={[0, flipY ? Math.PI/2 : -Math.PI/2 , 0]} />
-            <Text 
+            {/* <Text 
               key={`textY_${idx}`}
               anchorX={idx == 0 ? (flipY ? 'right' : 'left') : idx == zResolution-1 ? (flipY ? 'left' : 'right') : 'center'}
               anchorY={'top'} 
@@ -192,21 +192,21 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]}
               position={[flipY ? AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale :-AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[0]?.[(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]] || 0,axisDimUnits[zIdx], verboseTime, timeResolution)}</Text>
+            >{parseLoc(dimSlices[0]?.[(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]] || 0,axisDimUnits[zIdx], verboseTime, timeResolution)}</Text> */}
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]} position={[flipY ? AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale : -AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale, 0, isPC ? (zRange[0]+zRange[1])/2*depthRatio*(globalScale) : (zRange[0]+zRange[1])/2*depthRatio]}>
-          <Text 
+          {/* <Text 
             key={'zTitle'}
             anchorX={'center'}
             anchorY={'top'} 
             fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
             color={colorHex}
             material-depthTest={false}
-          >{axisDimNames[zIdx]}</Text>
+          >{axisDimNames[zIdx]}</Text> */}
           
           <group visible={!hideAxisControls}>
-            {zResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
+            {/* {zResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
             <Text 
               key={'zAdd'}
               anchorX={'center'}
@@ -235,10 +235,10 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
-            </Text>}
+            </Text>} */}
             {isTimeCompatible &&
             <>
-            <Text 
+            {/* <Text 
               visible={timeResolution < 3}
               key={'zUpRes'}
               anchorX={'center'}
@@ -275,7 +275,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               onClick={e=>setTimeResolution(x=> Math.max(x-1,0))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
-            >⇐</Text>
+            >⇐</Text> */}
             </>}
           </group>
         </group>
@@ -290,7 +290,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
            &&       
           <group key={`yGroup_${idx}`} position={[0, isPC ?  (-shapeRatio*globalScale + idx*yDimScale/(yResolution/2)*shapeRatio*globalScale) : -shapeRatio + idx*yDimScale/(yResolution/2)*shapeRatio, 0]}>
             <primitive key={idx} object={tickLine.clone()}  rotation={[0, flipY ? -Math.PI/2 :Math.PI/2 , 0]} />
-            <Text 
+            {/* <Text 
               key={`text_${idx}`}
               anchorX={flipY ? flipX ? 'left' : 'right' : flipX ? 'right' : 'left'}
               anchorY={'middle'} 
@@ -299,11 +299,11 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               material-depthTest={false}
               rotation={[0, flipX ? Math.PI : 0, 0]}
               position={[flipY ? -0.07*globalScale : 0.07*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[1]?.[getFactor(idx*yValDelta)] || 0,axisDimUnits[yIdx])}</Text>
+            >{parseLoc(dimSlices[1]?.[getFactor(idx*yValDelta)] || 0,axisDimUnits[yIdx])}</Text> */}
           </group>
         ))}
         <group rotation={[0, flipX ? Math.PI : 0 , 0]} position={[flipY ? -0.32*globalScale : 0.32*globalScale, (yRange[0]+yRange[1])/2*shapeRatio*globalScale, 0]}>
-          <Text 
+          {/* <Text 
             key={'yTitle'}
             anchorX={'center'}
             anchorY={'middle'} 
@@ -313,9 +313,9 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
             rotation={[0, 0, Math.PI / 2]}
           >
             {axisDimNames[yIdx]}
-          </Text>
+          </Text> */}
 
-          <group visible={!hideAxisControls}>
+          {/* <group visible={!hideAxisControls}>
             {yResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
             <Text 
               key={'zAdd'}
@@ -349,7 +349,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
               -
             </Text>
           }
-        </group>
+        </group> */}
       </group>
     </group>
 
@@ -441,7 +441,7 @@ const FlatAxis = () =>{
     return col.getHex()
   },[secondaryColor])
 
-  const lineMat = useMemo(()=>new LineMaterial({color: colorHex ? colorHex : 0, linewidth: FLAT_AXIS_CONSTANTS.LINE_WIDTH}),[colorHex])
+  const lineMat = useMemo(()=>new THREE.Line2NodeMaterial({color: colorHex ? colorHex : 0, linewidth: FLAT_AXIS_CONSTANTS.LINE_WIDTH}),[colorHex])
   const tickLength = FLAT_AXIS_CONSTANTS.TICK_LENGTH;
   const xLine = useMemo(()=> {
     const geom = new LineSegmentsGeometry().setPositions( [(-1/(swap ? shapeRatio : 1)-tickLength/2), 0, 0, (1/(swap ? shapeRatio : 1)+tickLength/2), 0, 0]);
