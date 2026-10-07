@@ -127,7 +127,7 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 }
 
 export function uniformUpdater(){
-	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange, 
+	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskValue, valueRange, 
 		useBorderTexture, borderColor, borderWidth, is360Deg, showBorders} = usePlotStore(useShallow(s=>({
 			cScale: s.cScale, cOffset: s.cOffset, animProg: s.animProg, nanTransparency: s.nanTransparency, nanColor: s.nanColor,
 			fillValue: s.fillValue, maskTexture: s.maskTexture, maskValue: s.maskValue, valueRange: s.valueRange,
@@ -143,11 +143,26 @@ export function uniformUpdater(){
 		colormap: s.colormap, bottomLeft: s.bottomLeft, bottomRight: s.bottomRight, 
 		topLeft: s.topLeft, resolution: s.resolution, mixMode: s.mixMode, bivariateSelection: s.bivariateSelection
 	})))
+	// --- COLORS --- //
+	useEffect(() => {
+		u.nanColor.value = new THREE.Color(nanColor).convertLinearToSRGB();
+		u.borderColor.value = new THREE.Color(borderColor).convertLinearToSRGB();
+	}, [nanColor, borderColor])
+	// --- COLORMAP --- //
+	useEffect(()=>{
+		u.cmap. value = colormap;
+		u.bottomLeft.value = new THREE.Color(bottomLeft).convertLinearToSRGB();
+		u.bottomRight.value = new THREE.Color(bottomRight).convertLinearToSRGB();
+		u.topLeft.value = new THREE.Color(topLeft).convertLinearToSRGB();
+		u.resolution.value = resolution;
+		u.mixMode.value = mixMode;
+	}, [colormap, bottomLeft, bottomRight, topLeft, resolution, mixMode])
+	// ---ANIMATION --- //
+	useEffect(()=>{
+		u.animateProg.value = animProg;
+	}, [animProg])
 	useEffect(()=>{
 		u.cOffset.value = cOffset;
-		u.cmap. value = colormap;
-		u.animateProg.value = animProg;
-		u.nanColor.value = new THREE.Color(nanColor).convertLinearToSRGB();
 		u.nanAlpha.value = 1 - nanTransparency;
 		u.cScale.value = cScale;
 		u.threshold.value.set(valueRange[0], valueRange[1]);
@@ -156,23 +171,17 @@ export function uniformUpdater(){
 		u.maskValue.value = maskValue;
 		u.fillValue.value = fillValue?? NaN;
 		u.useBorderTexture.value = useBorderTexture && showBorders;
-		u.borderColor.value = new THREE.Color(borderColor).convertLinearToSRGB();
 		u.borderWidth.value = borderWidth;
 		u.is360.value = is360Deg;
 		u.textureDepths.value = new THREE.Vector3(textureArrayDepths[2], textureArrayDepths[1], textureArrayDepths[0]);
 		u.valueRange.value = new THREE.Vector2(valueScales[bivariateSelection].minVal, valueScales[bivariateSelection].maxVal);
 		u.useF16.value = useF16Textures;
-		u.bottomLeft.value = new THREE.Color(bottomLeft).convertLinearToSRGB();
-		u.bottomRight.value = new THREE.Color(bottomRight).convertLinearToSRGB();
-		u.topLeft.value = new THREE.Color(topLeft).convertLinearToSRGB();
-		u.resolution.value = resolution;
-		u.mixMode.value = mixMode;
 		u.bivariateSelection.value = bivariateSelection;
 		u.bivariate.value = bivariate;
 	},[
-		cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskTexture, maskValue, valueRange,
-		colormap, lonBounds, latBounds, useBorderTexture, borderColor, borderWidth, is360Deg, showBorders,
-		valueScales, useF16Textures, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection, 
+		cScale, cOffset, nanTransparency, fillValue, maskValue, valueRange,
+		lonBounds, latBounds, useBorderTexture, borderWidth, is360Deg, showBorders,
+		valueScales, useF16Textures, bivariateSelection, 
 		bivariate, textureArrayDepths
 	])
 	useEffect(() => {

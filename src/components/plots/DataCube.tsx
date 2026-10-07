@@ -9,33 +9,32 @@ import { useShallow } from 'zustand/shallow';
 import { createDDAMaterial, createRayMarchingMaterial } from '../textures/TSL';
 import { buildTransferLUT } from '../textures/TSL/utils/volumeHelpers';
 import { ColumnMeshes } from './TransectMeshes';
-interface DataCubeProps {
-  volTexture: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined,
-}
 import { cmap } from '../textures/TSL/utils/commonUniforms';
 import { sampleColormap } from '../textures/colormap';
-export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
+export const DataCube = ( ) => {
     const {shape, flipY, remapTexture, dataShape} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const {xRange, yRange, zRange, quality, valueRange, useRayMarch, transparency, 
 		vTransferScale, revTransparency} = usePlotStore(useShallow(s => s))
-    const meshRef = useRef<THREE.Mesh>(null!);
-    
   	const shaderMaterial = useMemo(() => useRayMarch ? createRayMarchingMaterial() : createDDAMaterial(), [useRayMarch]);
   	const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
   	const aspectRatio = shape.y/shape.x
 	const timeRatio = shape.z/shape.x;
 	const cmapFunc = (val: number) => sampleColormap(val, cmap.value as THREE.DataTexture)
+
+	// --- UPDATE VOLUME UNIFORMS ---//
 	useEffect(()=>{
 		vu.scale.value = shape;
 		vu.flatBounds.value = new THREE.Vector4(-xRange[1],-xRange[0],zRange[0] * timeRatio, zRange[1] * timeRatio);
 		vu.vertBounds.value = flipY 
 					? new THREE.Vector2(yRange[0]*aspectRatio,yRange[1]*aspectRatio)
 					: new THREE.Vector2(yRange[0]*aspectRatio,yRange[1]*aspectRatio);
-		vu.transparency.value = transparency;
-		vu.dataShape.value = new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0]);
-		vu.opacityMag.value = vTransferScale;
+		vu.dataShape.value = remapTexture 
+			? new THREE.Vector3(remapTexture.image.width, remapTexture.image.height, dataShape[0])
+			: new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])
 		vu.steps.value = quality;
-		vu.revTransparency.value = revTransparency;
+	},[shape, xRange, yRange, zRange, dataShape, quality, flipY, remapTexture])
+	// --- GENERATE LUT --- //
+	useEffect(()=>{
 		const newLUT = buildTransferLUT({ 
 			cmap:cmapFunc,
 			threshold:valueRange as [number, number], 
@@ -45,19 +44,13 @@ export const DataCube = ({ volTexture: propVolTexture }: DataCubeProps ) => {
 			useClipScale:false
 		})
 		vu.tfLUT.value = newLUT;
-
-	},[shape, transparency, xRange, yRange, zRange, dataShape, quality, vTransferScale, revTransparency])
-  useEffect(()=>{
-      vu.dataShape.value = remapTexture 
-        ? new THREE.Vector3(remapTexture.image.width, remapTexture.image.height, dataShape[0])
-        : new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])
-  },[remapTexture, dataShape])
-  uniformUpdater();
-  return (
-    <group >
-      <ColumnMeshes />
-      <UVCube />  
-      <mesh ref={meshRef} scale={[1,flipY ? -1 : 1,1]} geometry={geometry} material={shaderMaterial} />
-    </group>
-  )
+	},[valueRange, revTransparency, transparency, vTransferScale, cmap.value])
+	uniformUpdater();
+	return (
+		<group >
+		<ColumnMeshes />
+		<UVCube />  
+		<mesh scale={[1,flipY ? -1 : 1,1]} geometry={geometry} material={shaderMaterial} />
+		</group>
+	)
 }

@@ -18,6 +18,7 @@ import { reproject } from '@/components/textures/ProjectionTexture';
 import { GetCurrentArray } from '@/utils/HelperFuncs';
 import { useColormapStore } from '@/GlobalStates/ColormapStore';
 import {color} from 'three/tsl'
+import * as u from '@/components/textures/TSL/utils/commonUniforms'
 const TransectNotice = () =>{
   const selectTS = usePlotStore(s => s.selectTS)
   return (
@@ -225,8 +226,10 @@ const Plot = () => {
       const borderTexture = await loader.loadAsync('./border_distance_sdf.png');
       borderTexture.magFilter = THREE.LinearFilter;
       borderTexture.minFilter = THREE.LinearFilter;
-      borderTexture.needsUpdate = true;
-      usePlotStore.setState({borderTexture, maskTexture});
+      u.borderTexture.value = borderTexture;
+      u.maskTexture.value = maskTexture;
+      u.borderTexture.value.needsUpdate = true;
+      u.maskTexture.value.needsUpdate = true;
     }
     SetTextures()
   },[])
@@ -262,7 +265,7 @@ const Plot = () => {
         {/* <ExportCanvas show={show}/> */}
         {/* {show && <AxisLines />} */}
         {plotType == "volume" && show && 
-            <DataCube volTexture={mainTextures}/>
+            <DataCube />
         }
         {plotType == "point-cloud" && show &&
           <>
@@ -271,7 +274,7 @@ const Plot = () => {
         }
         {plotType == "sphere" && show && 
           <>
-            {displaceFaces ? <SphereBlocks textures={mainTextures} /> : <Sphere textures={mainTextures} /> }
+            {displaceFaces ? <SphereBlocks textures={mainTextures} /> : <Sphere /> }
           </>
         }
         <MemoOrbit isFlat={plotType == "flat"} />

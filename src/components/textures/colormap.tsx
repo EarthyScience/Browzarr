@@ -146,7 +146,7 @@ export function GetColorMapTexture(
   } 
     // Create a new texture if not already available
     const newTexture = new THREE.DataTexture(colData, rgbv.length + 1, 1, THREE.RGBAFormat);
-    newTexture.colorSpace = THREE.SRGBColorSpace;
+    // newTexture.colorSpace = THREE.SRGBColorSpace;
     newTexture.needsUpdate = true;
     return newTexture;
 }
