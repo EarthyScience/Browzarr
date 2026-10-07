@@ -251,6 +251,7 @@ const Plot = () => {
         gl={async (props) => {
           const renderer = new THREE.WebGPURenderer(props as any)
           await renderer.init()
+          console.log(renderer)
           const canvas = props.canvas as HTMLCanvasElement
           renderer.setPixelRatio(DPR)
           renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
@@ -261,7 +262,7 @@ const Plot = () => {
       >
         
         {/* <KeyFramePreviewer/> */}
-        {/* {show && <CountryBorders/>} */}
+        {show && <CountryBorders/>}
         {/* <ExportCanvas show={show}/> */}
         {/* {show && <AxisLines />} */}
         {plotType == "volume" && show && 

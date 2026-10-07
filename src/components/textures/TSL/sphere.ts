@@ -28,21 +28,6 @@ const giveMaskUV = Fn( ( [ position ] : [any] ) => {
 	return vec2( u, v );
 });
 
-const giveLocalCoord = Fn(() => {
-    const aPosition = positionGeometry.toVar('aPosition');
-    const sampleCoord = giveUV(aPosition).toVar('sampleCoord');
-    const normal = normalize( aPosition );
-	const zStepSize = int( u.textureDepths.y ).mul( int( u.textureDepths.x ) );
-	const yStepSize = int( u.textureDepths.x );
-	const texCoord = vec3( sampleCoord, u.animateProg );
-	const idx = clamp( ivec3( texCoord.mul( u.textureDepths ) ), ivec3( 0 ), ivec3( u.textureDepths ).sub( 1 ) );
-	const textureIdx = idx.z.mul( zStepSize ).add( idx.y.mul( yStepSize ) ).add( idx.x );
-	const localCoord = texCoord.mul( u.textureDepths );
-    const inBounds = all( greaterThanEqual( sampleCoord, vec2( 0.0 ) ) )
-        .and( all( lessThanEqual( sampleCoord, vec2( 1.0 ) ) ) );
-    return{localCoord, inBounds, textureIdx}
-})
-
 const maskAndBorder = Fn( () => {
     const result = vec4( 0, 0, 0, - 1 ).toVar( 'maskResult' );
     If( u.maskValue.notEqual( 0 ).or( u.useBorderTexture ), () => {

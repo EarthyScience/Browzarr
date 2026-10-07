@@ -4,7 +4,6 @@ import { Fn, min, max, clamp, abs, round, mix, select, bool,
     Break} from 'three/tsl';
 import { valueRange, resolution, bottomLeft, bottomRight, topLeft, reproject,
     mixMode, lonBounds, latBounds, is360, remapBorders, remapTexture, isFlat, map } from './commonUniforms';
-console.log(remapTexture)
 // --- TEXTURE SAMPLERS ---//
 const sampleMap = Fn(([p, index]: [any, any]) => {
     const result = vec4(0).toVar();

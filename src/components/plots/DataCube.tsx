@@ -12,10 +12,15 @@ import { ColumnMeshes } from './TransectMeshes';
 import { cmap } from '../textures/TSL/utils/commonUniforms';
 import { sampleColormap } from '../textures/colormap';
 export const DataCube = ( ) => {
-    const {shape, flipY, remapTexture, dataShape} = useGlobalStore(useShallow(s => s)) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
+    const {shape, flipY, remapTexture, dataShape} = useGlobalStore(useShallow(s => ({
+		shape:s.shape, flipY:s.flipY, remapTexture:s.remapTexture, dataShape:s.dataShape
+	}))) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const {xRange, yRange, zRange, quality, useOrtho, valueRange, useRayMarch, transparency, 
-		vTransferScale, revTransparency} = usePlotStore(useShallow(s => s))
-  	const shaderMaterial = useMemo(() => useRayMarch ? createRayMarchingMaterial(useOrtho) : createDDAMaterial(useOrtho), [useRayMarch, remapTexture, useOrtho]);
+		vTransferScale, revTransparency, interpPixels} = usePlotStore(useShallow(s => ({
+			xRange:s.xRange, yRange:s.yRange, zRange:s.zRange, quality:s.quality, useOrtho:s.useOrtho, valueRange:s.valueRange, useRayMarch:s.useRayMarch,
+			transparency:s.transparency, vTransferScale:s.vTransferScale, revTransparency:s.revTransparency, interpPixels:s.interpPixels
+		})))
+  	const shaderMaterial = useMemo(() => useRayMarch ? createRayMarchingMaterial(useOrtho) : createDDAMaterial(useOrtho), [useRayMarch, remapTexture, useOrtho, interpPixels]);
   	const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
   	const aspectRatio = shape.y/shape.x
 	const timeRatio = shape.z/shape.x;
