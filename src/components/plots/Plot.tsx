@@ -272,7 +272,7 @@ const Plot = () => {
         }
         {plotType == "point-cloud" && show &&
           <>
-            <PointCloud textures={{texture: mainTextures as THREE.Data3DTexture[],colormap}}/>
+            <PointCloud/>
           </> 
         }
         {plotType == "sphere" && show && 

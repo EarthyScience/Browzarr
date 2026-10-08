@@ -1,25 +1,18 @@
-import React, { useEffect, useMemo } from 'react'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
-import { useShallow } from 'zustand/shallow'
-import * as THREE from 'three'
-import { sphereBlocksFrag, sphereBlocksVert } from '../textures/shaders'
-import { invalidate } from '@react-three/fiber'
-import { usePaddedTextures } from '@/hooks/usePaddedTextures';
-import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
-import { functionInjector } from '../ui/Elements/ColorAdjuster';
-import { useCoordBounds, useDimAxis, useValueScales } from '@/hooks';
-const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined}) => {
-    const textures = usePaddedTextures(propTextures);
-    const {isFlat, remapTexture} = useGlobalStore(useShallow(s => ({
-        isFlat: s.isFlat, remapTexture: s.remapTexture
-    })))
+import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useDimAxis } from '@/hooks';
+import { invalidate, useThree } from '@react-three/fiber';
+import { useEffect, useMemo } from 'react';
+import * as THREE from 'three/webgpu';
+import { useShallow } from 'zustand/shallow';
+import { createSphereBlocksMaterial } from '../textures/TSL/sphereBlocks';
+import { resolution } from '../textures/TSL/sphereBlocks';
+
+const SphereBlocks = () => {
     const { nanColor, nanTransparency, displacement, offsetNegatives, colorScale} = usePlotStore(useShallow(s => ({
         nanColor: s.nanColor, nanTransparency: s.nanTransparency, displacement: s.displacement, 
         offsetNegatives: s.offsetNegatives, colorScale: s.colorScale
     })))
-    const valueScales = useValueScales();
     const {xArray, yArray} = useDimAxis()
     const width = xArray.length;
     const height = yArray.length;
@@ -29,68 +22,23 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
             useErrorStore.setState({ error:'largeArray' })
             return 0
         }
+        resolution.value = new THREE.Vector2(width,height);
         return count
     },[width, height])
     const geometry = useMemo(()=>{
         const sqWidth = Math.PI*2;
         const geo = new THREE.BoxGeometry(sqWidth/width, .05, sqWidth/height/2);
-        const uvs = new Float32Array(count * 2);
-        let idx = 0;
-        for (let i = 0; i < width; i++) {
-            for (let j = 0; j < height; j++) {
-                const u = (i + 0.5) / width;
-                const v = (j + 0.5) / height;
-                uvs[idx * 2] = u;
-                uvs[idx * 2 + 1] = v;
-                idx ++;
-            }
-        }
-        geo.setAttribute(
-            'instanceUV',
-            new THREE.InstancedBufferAttribute(uvs, 2)
-        );
         return geo
-    },[count])
+    },[width, height])
+    const {material, calcPositions, positions, instanceUVs} = createSphereBlocksMaterial(count)
     
-    const uniforms = useCommonUniforms()
-    const {lonBounds, latBounds} = useCoordBounds()
-    const shaderMaterial = useMemo(()=>{
-        const shader = new THREE.ShaderMaterial({
-            glslVersion: THREE.GLSL3,
-            uniforms: {
-                map: { value: textures },
-                remapTexture: { value: remapTexture },
-                displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))},
-                displacement: {value: displacement},
-                widthFactor: {value: Math.abs(lonBounds[1]-lonBounds[0])/(2.0*Math.PI)},
-                vertFactor: {value: Math.abs(latBounds[1]-latBounds[0])/(Math.PI)},
-                ...uniforms
-            },
-            defines:{
-                ...(isFlat ? { IS_FLAT: true } : {}),
-                ...(remapTexture ? { REPROJECT: true } : {})
-            },
-            vertexShader: functionInjector(sphereBlocksVert, colorScale),
-            fragmentShader: sphereBlocksFrag,
-            blending:THREE.NoBlending,
-            depthWrite:true,
-            depthTest:true,
-            side: THREE.BackSide,
-        })
-        return shader
-    },[isFlat, colorScale, remapTexture])
-    updateCommonUniforms(shaderMaterial);
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.count = count;
+    const {gl} = useThree();
     useEffect(()=>{
-        if (shaderMaterial){
-            const uniforms = shaderMaterial.uniforms;
-            uniforms.map.value = textures;
-            uniforms.displacement.value = displacement
-            uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
-            uniforms.widthFactor.value = Math.abs(lonBounds[1]-lonBounds[0])/(2.0*Math.PI)
-            uniforms.vertFactor.value =  Math.abs(latBounds[1]-latBounds[0])/(Math.PI)
-        }
-        invalidate();
-    },[valueScales, displacement, offsetNegatives, lonBounds, textures])
+        //@ts-ignore it exists but not listed in the type
+        calcPositions && gl.computeAsync(calcPositions).then(()=> console.log(positions))
+    },[calcPositions])
 
     const nanMaterial = useMemo(()=>new THREE.MeshBasicMaterial({color:nanColor, opacity:(1-nanTransparency)}),[])
     nanMaterial.transparent = true;
@@ -108,13 +56,11 @@ const SphereBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[
 
   return (
     <group scale={[1, 1, 1]}>
-        <instancedMesh 
-            args={[geometry, shaderMaterial, count]}
-            frustumCulled={false}
-        />
+        <primitive object={mesh} />
         <mesh geometry={nanSphereGeometry} material={nanMaterial}/>
     </group>
   )
 }
 
-export {SphereBlocks}
+export { SphereBlocks };
+
