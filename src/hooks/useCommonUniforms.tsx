@@ -121,7 +121,6 @@ export function updateCommonUniforms(material: THREE.ShaderMaterial){
 		valueScales, useF16Textures, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection, 
 		bivariate
 	])
-	
 	return;
 }
 
@@ -149,7 +148,9 @@ export function uniformUpdater(){
 	}, [nanColor, borderColor])
 	// --- COLORMAP --- //
 	useEffect(()=>{
-		u.cmap. value = colormap;
+		u.cmap.value = colormap;
+		u.cmap.value.colorSpace = THREE.NoColorSpace;
+		u.cmap.value.needsUpdate = true;
 		u.bottomLeft.value = new THREE.Color(bottomLeft).convertLinearToSRGB();
 		u.bottomRight.value = new THREE.Color(bottomRight).convertLinearToSRGB();
 		u.topLeft.value = new THREE.Color(topLeft).convertLinearToSRGB();

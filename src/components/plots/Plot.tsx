@@ -17,7 +17,8 @@ import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/components/textures/ProjectionTexture';
 import { GetCurrentArray } from '@/utils/HelperFuncs';
 import { useColormapStore } from '@/GlobalStates/ColormapStore';
-import {color} from 'three/tsl'
+import { Inspector } from 'three/addons/inspector/Inspector.js'
+
 import * as u from '@/components/textures/TSL/utils/commonUniforms'
 const TransectNotice = () =>{
   const selectTS = usePlotStore(s => s.selectTS)
@@ -247,15 +248,16 @@ const Plot = () => {
       <Nav />
       <ShaderEditor visible={useEditor}/>
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
-        // frameloop={useEditor ? "never" : "demand"}
+        flat
         gl={async (props) => {
           const renderer = new THREE.WebGPURenderer(props as any)
           await renderer.init()
-          console.log(renderer)
           const canvas = props.canvas as HTMLCanvasElement
+          renderer.inspector = new Inspector()
+          renderer.outputColorSpace = THREE.LinearSRGBColorSpace
           renderer.setPixelRatio(DPR)
           renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
-          renderer.toneMapping = THREE.NoToneMapping;
+          console.log(renderer)
           return renderer
         }}
         dpr={[DPR,DPR]}

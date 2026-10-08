@@ -104,7 +104,8 @@ export function buildTransferLUT(p: {
     const n = p.useClipScale ? Math.min(Math.max((af - t0) / (t1 - t0), 0), 1) : af;
     const a = Math.pow(Math.max(n, 0.001), exp);
     const [r, g, b] = p.cmap(d);
-    data.set([r * a, g * a, b * a, a].map(THREE.DataUtils.toHalfFloat), i * 4); // premultiplied
+    const newCol = new THREE.Color(r,g,b).convertLinearToSRGB()
+    data.set([newCol.r * a, newCol.g * a, newCol.b * a, a].map(THREE.DataUtils.toHalfFloat), i * 4); // premultiplied
   }
   const tex = new THREE.DataTexture(data, size, 1, THREE.RGBAFormat, THREE.HalfFloatType);
   tex.minFilter = tex.magFilter = THREE.LinearFilter;

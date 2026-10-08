@@ -98,7 +98,6 @@ export function sampleColormap(value: number, texture: THREE.DataTexture): [numb
 }
 
 
-
 export function getColormapGradientCss(name: string): string {
   const schemeName = resolveColorSchemeName(name);
   const scheme = colorschemes[schemeName];
@@ -146,7 +145,7 @@ export function GetColorMapTexture(
   } 
     // Create a new texture if not already available
     const newTexture = new THREE.DataTexture(colData, rgbv.length + 1, 1, THREE.RGBAFormat);
-    // newTexture.colorSpace = THREE.SRGBColorSpace;
+    newTexture.colorSpace = THREE.NoColorSpace
     newTexture.needsUpdate = true;
     return newTexture;
 }
