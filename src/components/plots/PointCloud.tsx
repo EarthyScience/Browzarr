@@ -9,7 +9,7 @@ import { uniformUpdater } from '@/hooks/useCommonUniforms';
 import { useThree } from '@react-three/fiber';
 import { createPointMaterial } from '../textures/TSL/points';
 import * as pu from '../textures/TSL/points';
-
+import * as vu from '../textures/TSL/utils/volumeUniforms';
 const MappingCube = () =>{
   const {dataShape, shape} = useGlobalStore(useShallow(s => s))
   const {timeScale} = usePlotStore(useShallow(s => s))
@@ -54,6 +54,16 @@ export const PointCloud = ( )=>{
       pu.timeScale.value = timeScale;
       pu.scaleByVal.value = scalePoints
     },[pointSize, scaleIntensity, timeScale, scalePoints, material])
+    useEffect(()=>{
+        vu.scale.value = shape;
+        vu.flatBounds.value = new THREE.Vector4(-xRange[1],-xRange[0],zRange[0], zRange[1]);
+        vu.vertBounds.value = flipY 
+              ? new THREE.Vector2(yRange[0],yRange[1])
+              : new THREE.Vector2(yRange[0],yRange[1]);
+        vu.dataShape.value = remapTexture 
+          ? new THREE.Vector3(remapTexture.image.width, remapTexture.image.height, dataShape[0])
+          : new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])
+      },[shape, xRange, yRange, zRange, dataShape, flipY, remapTexture])
     uniformUpdater();
 
   return (
