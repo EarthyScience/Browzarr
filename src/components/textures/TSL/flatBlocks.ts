@@ -13,7 +13,6 @@ import * as h from './utils/commonHelpers';
 import * as u from './utils/commonUniforms';
 import { displacement, displaceZero, resolution } from './utils/displacementUniforms';
 
-
 const instanceColor = Fn(([strengths] : [any])=>{
    if (u.bivariate.value){
         const flipOrder = u.bivariateSelection.notEqual( 0 );
@@ -30,14 +29,14 @@ const isBorder = Fn(([instanceUV] : [any])=>{
     If(u.useBorderTexture, ()=>{
         const thisUV = instanceUV.add(positionGeometry.xy.div(2));
         thisUV.assign(h.realCoords(thisUV))
-        const distance =  u.borderTexture.sample(thisUV).r;
+        //@ts-ignore .level does exist
+        const distance =  u.borderTexture.sample(thisUV).level(0).r;
         If(distance.lessThanEqual(u.borderWidth), () => {
             isBorder.assign(bool(true)); 
         });
     })
     return isBorder;
 })
-
 
 export function createFlatBlocksMaterial(count: number){
     const instanceUVs = instancedArray(count, 'vec2');

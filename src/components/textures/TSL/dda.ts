@@ -78,17 +78,16 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
                 });
                
                 If(alphaAcc.greaterThanEqual(0.99), () => {
-                    // If(bool(true), () => {
-                    //     const pHit = vOrigin.add(t.mul(rayDir));
-                    //     const localPosContinuous = pHit.sub(boxMin).div(vu.scale).toVar();
-                    //     // ASSUMPTION: same vec3(uv.x, uv.y, valid) convention as above
-                    //     const borderUV = vec2(0).toVar();
-                    //     const valid = shouldSkip(localPosContinuous, texCoord, borderUV).toVar();
-                    //     const borderDist = u.borderTexture.sample(borderUV.xy).r;
-                    //     If(borderDist.lessThanEqual(u.borderWidth).and(texCoord.z.greaterThan(0.5)), () => {
-                    //         borderHit.assign(bool(true)); // replaces the early `return` in GLSL
-                    //     });
-                    // });
+                    If(bool(true), () => {
+                        const pHit = vOrigin.add(t.mul(rayDir)).toVar();
+                        const localPosContinuous = pHit.xy.sub(boxMin).div(vu.scale).toVar();
+                        const borderUV = h.realCoords(localPosContinuous.xy)
+                        //@ts-ignore .level does exist
+                        const borderDist = u.borderTexture.sample(borderUV).level(0).r;
+                        If(borderDist.lessThanEqual(u.borderWidth), () => {
+                            borderHit.assign(bool(true)); // replaces the early `return` in GLSL
+                        });
+                    });
                     Break();
                 });
             });
