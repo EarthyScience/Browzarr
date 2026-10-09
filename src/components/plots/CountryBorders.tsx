@@ -176,7 +176,10 @@ const CountryBorders = () => {
     const {dataShape, shape} = useGlobalStore(useShallow(s => ({
         dataShape: s.dataShape, shape: s.shape
     })))
-    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, useBorderTexture, is360Deg} = usePlotStore(useShallow(s => s))
+    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, useBorderTexture, is360Deg} = usePlotStore(useShallow(s => ({
+        zRange: s.zRange, plotType: s.plotType, showBorders: s.showBorders, timeScale: s.timeScale, 
+        rotateFlat: s.rotateFlat, pointSize: s.pointSize, useBorderTexture: s.useBorderTexture, is360Deg: s.is360Deg
+    })))
     const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
 
     const spherize = plotType === 'sphere';

@@ -38,7 +38,7 @@ export const getLocalCoord = (thisUV : any) =>{
 		textureIdx = idx.z.mul(zStepSize).add(idx.y.mul(yStepSize)).add(idx.x);
 		localCoord = fract(texCoord.mul(u.textureDepths));
 	}
-	return localCoord
+	return {localCoord, textureIdx}
 }
 
 
@@ -100,6 +100,7 @@ export function createBivariateColor() {
   });
 }
 
+
 // --- VALUE SCALING --- //
 export const denorm = (x: any) => x.mul(u.valueRange.y.sub(u.valueRange.x)).add(u.valueRange.x);
 export const norm = (x: any) => x.sub(u.valueRange.x).div(u.valueRange.y.sub(u.valueRange.x));
@@ -129,6 +130,17 @@ export function reprojector(texCoord: any, maskUV: any) {
   // if (is360) maskUV.x.assign(fract(maskUV.x.add(0.5)));
   return valid
 }
+
+export const maskOut = Fn(([inUV] : [any])=>{
+	const remove = bool(false)
+	If(u.maskValue.notEqual(0), () => {
+		const realUV = realCoords(inUV)
+		const mask = u.maskTexture.sample(realUV).r;
+		const masked = select(u.maskValue.equal(1), mask.lessThan(0.5), mask.greaterThanEqual(0.5));
+		If(masked, () => { remove.assign(bool(true)); });
+	});
+	return remove
+})
 
 // --- NANNERS ---//
 export const isNaNBits = Fn(([x]: [any]) => {

@@ -7,7 +7,7 @@ import { uniformUpdater } from '@/hooks/useCommonUniforms';
 import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useThree } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { createFlatBlocksMaterial } from '../textures/TSL/flatBlocks';
 import * as su from '@/components/textures/TSL/sphereBlocks';
@@ -51,12 +51,15 @@ const FlatBlocks = () => {
         return geo
     },[width, height])
     const {material, calcPositions} = useMemo(() => createFlatBlocksMaterial(count) , [count])
+    material.depthWrite = true;
+    material.depthTest = true;
     const mesh = useMemo(()=>{
         const newMesh = new THREE.Mesh(geometry, material)
         newMesh.count = count;
         newMesh.frustumCulled = false;
         return newMesh
     },[geometry, material])
+
     const {gl} = useThree();
     useEffect(()=>{
         //@ts-ignore it exists but not listed in the type
@@ -73,7 +76,7 @@ const FlatBlocks = () => {
                 su.vertFactor.value =  Math.abs(latBounds[1]-latBounds[0])/(Math.PI)
         },[valueScales, displacement, offsetNegatives, lonBounds])
   return (
-    <group rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}>
+    <group rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]} scale={[1, flipY ? -1 : 1, 1]}>
         <primitive object={mesh} />
     </group>
   )
