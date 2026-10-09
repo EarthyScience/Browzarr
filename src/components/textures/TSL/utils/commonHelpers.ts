@@ -1,13 +1,14 @@
 import { Fn, min, max, clamp, abs, round, mix, select, bool,
     texture, floatBitsToUint, uint, fract, float, vec2, vec3,
-    vec4, If, texture3D, 
+    vec4, If, texture3D, ivec2, ivec3,
     Break} from 'three/tsl';
-import { valueRange, resolution, bottomLeft, bottomRight, topLeft, reproject,
-    mixMode, lonBounds, latBounds, is360, remapBorders, remapTexture, isFlat, map } from './commonUniforms';
+import * as u from './commonUniforms';
+
+
 // --- TEXTURE SAMPLERS ---//
 const sampleMap = Fn(([p, index]: [any, any]) => {
     const result = vec4(0).toVar();
-    map.forEach( ( tex, i ) => {
+    u.map.forEach( ( tex, i ) => {
         If( index.equal( i ), () => {
             result.assign( tex.sample( p ) );
         } );
@@ -22,28 +23,47 @@ export const sample2ToOrder = Fn(([p, index, variable]: [any, any, any]) => {
   return select(variable.equal(0), biVar, biVar.gr);
 });
 
+export const getLocalCoord = (thisUV : any) =>{
+	const zStepSize = uint(u.textureDepths.y).mul(uint(u.textureDepths.x));
+	const yStepSize = uint(u.textureDepths.x);
+	const sampleCoord = thisUV.toVar("sampleCoord");
+	let textureIdx, localCoord;
+	if (u.isFlat.value) {
+		const idx = clamp(ivec2(sampleCoord.mul(u.textureDepths.xy)), ivec2(0), ivec2(u.textureDepths.xy).sub(1));
+		textureIdx = idx.y.mul(yStepSize).add(idx.x);
+		localCoord = fract(sampleCoord.mul(u.textureDepths.xy));
+	} else {
+		const texCoord = vec3(sampleCoord, u.animateProg);
+		const idx = clamp(ivec3(texCoord.mul(u.textureDepths)), ivec3(0), ivec3(u.textureDepths).sub(1));
+		textureIdx = idx.z.mul(zStepSize).add(idx.y.mul(yStepSize)).add(idx.x);
+		localCoord = fract(texCoord.mul(u.textureDepths));
+	}
+	return localCoord
+}
+
+
 // --- GEOHELPER --- //
 export const realCoords = Fn(([uv]: [any]) => {
   // Radians -> fraction of a full turn. Longitudes in -180..180 need shifting by 0.5.
-  const lonRange = lonBounds.div(2 * Math.PI);
-  const normalizedLon = select(is360, lonRange, lonRange.add(0.5));
+  const lonRange = u.lonBounds.div(2 * Math.PI);
+  const normalizedLon = select(u.is360, lonRange, lonRange.add(0.5));
  
   // Latitude: -PI/2..PI/2 -> 0..1
-  const normalizedLat = latBounds.div(Math.PI).add(0.5);
+  const normalizedLat = u.latBounds.div(Math.PI).add(0.5);
  
   const lonScale = normalizedLon.y.sub(normalizedLon.x);
   const latScale = normalizedLat.y.sub(normalizedLat.x);
  
-  const u = uv.x.mul(lonScale).add(normalizedLon.x);
-  const v = uv.y.mul(latScale).add(normalizedLat.x);
+  const thisU = uv.x.mul(lonScale).add(normalizedLon.x);
+  const thisV = uv.y.mul(latScale).add(normalizedLat.x);
  
-  return vec2(u, v);
+  return vec2(thisU, thisV);
 });
 
 
 // --- BIVARIATE COLORS --- //
 export const lerpColors = Fn(([A, B, fac]: [any, any, any]) => {
-  const steps = resolution.sub(1);
+  const steps = u.resolution.sub(1);
   const snapped = round(fac.mul(steps)).div(steps);
   return mix(A, B, snapped);
 });
@@ -54,16 +74,16 @@ export const multiplyColors = (A: any, B: any) => clamp(A.mul(B), 0, 1);
 export const differenceColors = (A: any, B: any) => abs(A.sub(B));
 
 export const colorMixer = Fn(([A, B]: [any, any]) => {
-  const bottomColor = lerpColors(bottomLeft, bottomRight, A);
-  const leftColor = lerpColors(bottomLeft, topLeft, B);
+  const bottomColor = lerpColors(u.bottomLeft, u.bottomRight, A);
+  const leftColor = lerpColors(u.bottomLeft, u.topLeft, B);
  
   // Pick the blend mode (falls back to darken)
   return select(
-    mixMode.equal(1), lightenColors(bottomColor, leftColor),
+    u.mixMode.equal(1), lightenColors(bottomColor, leftColor),
     select(
-      mixMode.equal(2), multiplyColors(bottomColor, leftColor),
+      u.mixMode.equal(2), multiplyColors(bottomColor, leftColor),
       select(
-        mixMode.equal(3), differenceColors(bottomColor, leftColor),
+        u.mixMode.equal(3), differenceColors(bottomColor, leftColor),
         darkenColors(bottomColor, leftColor),
       ),
     ),
@@ -81,17 +101,17 @@ export function createBivariateColor() {
 }
 
 // --- VALUE SCALING --- //
-export const denorm = (x: any) => x.mul(valueRange.y.sub(valueRange.x)).add(valueRange.x);
-export const norm = (x: any) => x.sub(valueRange.x).div(valueRange.y.sub(valueRange.x));
+export const denorm = (x: any) => x.mul(u.valueRange.y.sub(u.valueRange.x)).add(u.valueRange.x);
+export const norm = (x: any) => x.sub(u.valueRange.x).div(u.valueRange.y.sub(u.valueRange.x));
 export const rescaler = (x: any) => x;
 
 
 // --- REPROJECTOR --- //
 export function reprojector(texCoord: any, maskUV: any) {
   const valid = bool(true).toVar()
-  if (reproject.value) {
+  if (u.reproject.value) {
     // Each output pixel looks up where it comes from in the source data
-    const remap = texture(remapTexture, texCoord.xy).rgb.toVar();
+    const remap = texture(u.remapTexture, texCoord.xy).rgb.toVar();
     texCoord.assign(vec3(remap.rg, texCoord.z));
     maskUV = realCoords(remap.rg);
     valid.assign(remap.b.greaterThan(0.5))
@@ -102,8 +122,8 @@ export function reprojector(texCoord: any, maskUV: any) {
     // Regularly gridded data: the remap texture's .ba channels hold the mask coords.
     // (Original note: not certain the y-flip is robust.)
     const flipped = vec2(originalCoord.x, float(1).sub(originalCoord.y));
-    const remappedMask = texture(remapTexture, flipped).ba;
-    maskUV.assign(select(remapBorders, remappedMask, tempV));
+    const remappedMask = texture(u.remapTexture, flipped).ba;
+    maskUV.assign(select(u.remapBorders, remappedMask, tempV));
   }
   // For 0–360 data, wrap longitude by half a turn
   // if (is360) maskUV.x.assign(fract(maskUV.x.add(0.5)));

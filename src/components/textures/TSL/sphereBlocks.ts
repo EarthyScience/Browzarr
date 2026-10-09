@@ -3,12 +3,16 @@ import * as h from './utils/commonHelpers';
 import * as THREE from 'three/webgpu'
 import { displacement, displaceZero } from './utils/displacementUniforms';
 import { Fn, instanceIndex, normalize, asin, atan, PI, mul, mod, vec2, vec4, If, vec3, float, bool,
-    fract, select, min, clamp, ivec3, all, cos, positionGeometry, greaterThanEqual, lessThanEqual, 
-    int, sin, 
+    fract, select, min, abs, ivec3, all, cos, positionGeometry, positionLocal, greaterThanEqual, lessThanEqual, 
+    int, sin, cross, mat3,
     instancedArray,
-    uniform} from 'three/tsl';
+    uniform,
+    varying} from 'three/tsl';
 
-    
+// --- UNIFORMS ---//
+export const resolution = uniform(vec2(0.0))
+export const widthFactor = uniform(1), vertFactor = uniform(1);
+
 const giveMaskUV = Fn( ( [ position ] : [any] ) => {
 	const n = normalize( position );
 	const latitude = asin( n.y );
@@ -19,36 +23,6 @@ const giveMaskUV = Fn( ( [ position ] : [any] ) => {
 	const v = latitude.add( 0.5 );
 	return vec2( u, v );
 });
-
-const maskAndBorder = Fn( () => {
-    const result = vec4( 0, 0, 0, - 1 ).toVar( 'maskResult' );
-    If( u.maskValue.notEqual( 0 ).or( u.useBorderTexture ), () => {
-        const maskUV = giveMaskUV( positionGeometry );
-        If( u.is360, () => {
-            maskUV.x.assign( fract( maskUV.x ) );
-        });
-        If( u.maskValue.notEqual( 0 ), () => {
-            //@ts-ignore level does exist on this node
-            const mask = u.maskTexture.sample( maskUV ).level(0).r;
-            const cond = select( u.maskValue.equal( 1 ), mask.lessThan( 0.5 ), mask.greaterThanEqual( 0.5 ) );
-            If( cond, () => {
-                result.assign( vec4( u.nanColor, 1. ) );
-                result.a.assign( u.nanAlpha );
-            });
-        })
-        If(u.useBorderTexture, () => {
-            //@ts-ignore level does exist on this node
-            const borderDist = u.borderTexture.sample( maskUV ).level(0).r;
-            const latFac = cos( maskUV.y );
-            If( borderDist.lessThanEqual( u.borderWidth.mul( latFac ) ), () => {
-                result.assign( vec4( u.borderColor, 1.0 ) );
-            });
-        });
-    } );
-    return result;
-});
-
-export const resolution = uniform(vec2(0.0))
 
 const giveLonLat = Fn(([inUV] : [any])=>{
     const longitude = inUV.x.mul( u.lonBounds.y.sub( u.lonBounds.x ) ).add( u.lonBounds.x );
@@ -61,20 +35,35 @@ const givePosition = Fn(([lonlat] : [any])=>{
     const longitude = lonlat.x;
 	const latitude = lonlat.y;
 	// Convert to Cartesian coordinates
-	const cosLat =  cos( latitude );
+	const cosLat =  cos( latitude ).toVar();
 	const x = cosLat.mul( cos( longitude ) );
 	const y = sin( latitude );
 	const z = cosLat.mul( sin( longitude ) );
-	return vec3( x, y, z );
+	return vec4( x, y, z, cosLat );
 })
 
-const sampleColor = Fn(([instanceUV] : [any]) => {
+const getSpherePosition= Fn(([instanceUV] : [any]) =>{
+    const lonlat = giveLonLat(instanceUV);
+    const sp = givePosition(lonlat);
+    return sp
+})
 
+const getOrientation = Fn(([spherePosition] : [any])=>{
+    const normal = normalize(spherePosition);
+    const tangent = normalize(cross(vec3(0, 1, 0), normal));
+    const bitangent = cross(normal, tangent);
+    const orientation = mat3(tangent, normal, bitangent);
+    return orientation
+})
+const instanceColor = Fn(([strength] : [any])=>{
+    const color = u.cmap.sample(vec2(strength, 0.5));
+    return vec4(color.rgb, 1)
 })
 
 export function createSphereBlocksMaterial(count : number){
     const instanceUVs = instancedArray(count, 'vec2');
-    const positions = instancedArray(count, 'vec3');
+    const positions = instancedArray(count, 'vec4');
+
     const calcPositions = Fn(() => {
         const p = positions.element(instanceIndex);
         const u = instanceUVs.element(instanceIndex);
@@ -82,12 +71,32 @@ export function createSphereBlocksMaterial(count : number){
         const h = resolution.y.toUint();
         const px = instanceIndex.mod(w);
         const py = instanceIndex.div(w).mod(h);
-        const thisUV = vec2(px.toFloat(), py.toFloat()).div(resolution).toVar();
+        const thisUV = vec2(
+            px.toFloat().add(0.5), 
+            py.toFloat().add(0.5)
+            ).div(resolution).toVar();
         u.assign(thisUV);
-        p.assign(givePosition(giveLonLat(thisUV)));
+        const vertPosition = getSpherePosition(thisUV);
+        p.assign(vertPosition);
     })().compute(count)
-    const material = new THREE.NodeMaterial();
-    material.positionNode = positionGeometry.add(positions.element(instanceIndex))
     
+    const material = new THREE.NodeMaterial();
+
+    const instanceUV = instanceUVs.element(instanceIndex);
+    const strength = h.sample1(h.getLocalCoord(instanceUV), 0).toVar();
+    const vStrength = varying(strength, 'vStrength'); // explicit vertex -> fragment
+
+    const spherePosition = positions.element(instanceIndex);
+    const heightFactor = strength.sub(displaceZero).mul(displacement);
+
+    const scaledPosition = vec3(
+        positionLocal.x.mul(spherePosition.w).mul(widthFactor),
+        positionLocal.y.mul(heightFactor),
+        positionLocal.z.mul(vertFactor),
+    );
+
+    const orientation = getOrientation(spherePosition.xyz);
+    material.positionNode = spherePosition.xyz.add(orientation.mul(scaledPosition));
+    material.colorNode = instanceColor(vStrength);
     return {material, calcPositions, positions, instanceUVs};
 }
