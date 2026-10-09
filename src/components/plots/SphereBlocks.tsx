@@ -35,9 +35,12 @@ const SphereBlocks = () => {
         return geo
     },[width, height])
     const {material, calcPositions} = createSphereBlocksMaterial(count)
-    
-    const mesh = new THREE.Mesh(geometry, material)
-    mesh.count = count;
+    const mesh = useMemo(()=>{
+        const newMesh = new THREE.Mesh(geometry, material)
+        newMesh.count = count;
+        newMesh.frustumCulled = false;
+        return newMesh
+    },[geometry, material])
     const {gl} = useThree();
     useEffect(()=>{
         //@ts-ignore it exists but not listed in the type

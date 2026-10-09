@@ -51,11 +51,12 @@ const FlatBlocks = () => {
         return geo
     },[width, height])
     const {material, calcPositions} = useMemo(() => createFlatBlocksMaterial(count) , [count])
-    const mesh = useMemo(()=> {
+    const mesh = useMemo(()=>{
         const newMesh = new THREE.Mesh(geometry, material)
         newMesh.count = count;
-        return newMesh 
-    },[geometry,material, count])
+        newMesh.frustumCulled = false;
+        return newMesh
+    },[geometry, material])
     const {gl} = useThree();
     useEffect(()=>{
         //@ts-ignore it exists but not listed in the type

@@ -17,6 +17,7 @@ const instanceColor = Fn(([strength] : [any])=>{
     const color = u.cmap.sample(vec2(strength, 0.5));
     return vec4(color.rgb, 1)
 })
+
 export function createFlatBlocksMaterial(count: number){
     const instanceUVs = instancedArray(count, 'vec2');
     const positions = instancedArray(count, 'vec2');
