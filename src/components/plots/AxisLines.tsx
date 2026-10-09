@@ -478,7 +478,7 @@ const FlatAxis = () =>{
           xResolution > FLAT_AXIS_CONSTANTS.MIN_RESOLUTION &&              
           <group key={`xGroup_${idx}`} position={[-(swap ? 1/shapeRatio : 1) + idx*xDimScale/(xResolution/2)*(swap ? 1/shapeRatio : 1), 0, 0]}>
             <primitive key={idx} object={tickLine.clone()}  rotation={[0, 0, 0]} />
-            <Text 
+            {/* <Text 
               key={`textX_${idx}`}
               anchorX={'center'}
               anchorY={'top'} 
@@ -487,20 +487,20 @@ const FlatAxis = () =>{
               material-depthTest={false}
               rotation={[-Math.PI/2, 0, 0]}
               position={[0, 0, FLAT_AXIS_CONSTANTS.TICK_LENGTH]}
-            >{parseLoc(axisArrays[widthIdx][getFactor(idx*xValDelta, true)],axisUnits[widthIdx])}</Text>
+            >{parseLoc(axisArrays[widthIdx][getFactor(idx*xValDelta, true)],axisUnits[widthIdx])}</Text> */}
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, 0]} position={[0, 0, FLAT_AXIS_CONSTANTS.X_TITLE_OFFSET]}>
-          <Text 
+          {/* <Text 
             key={'xTitle'}
             anchorX={'center'}
             anchorY={'top'} 
             fontSize={FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE} 
             color={colorHex}
             material-depthTest={false}
-          >{axisNames[widthIdx]}</Text>
+          >{axisNames[widthIdx]}</Text> */}
           <group visible={!hideAxisControls}>
-            {xResolution < FLAT_AXIS_CONSTANTS.MAX_RESOLUTION &&
+            {/* {xResolution < FLAT_AXIS_CONSTANTS.MAX_RESOLUTION &&
             <Text 
               key={'xAdd'}
               anchorX={'center'}
@@ -529,7 +529,7 @@ const FlatAxis = () =>{
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
-            </Text>}
+            </Text>} */}
           </group>
         </group>
       </group>
@@ -540,7 +540,7 @@ const FlatAxis = () =>{
         yResolution > FLAT_AXIS_CONSTANTS.MIN_RESOLUTION &&     
           <group key={`yGroup_${idx}`} position={[0, -(swap ? 1 : shapeRatio )+ idx*yDimScale/(yResolution/2)*(swap ? 1 : shapeRatio), 0]} rotation={[0, 0, Math.PI]}>
             <primitive key={idx} object={tickLine.clone()}  rotation={[0, Math.PI/2 , 0]} />
-            <Text 
+            {/* <Text 
               key={`text_${idx}`}
               anchorX={'right'}
               anchorY={'middle'} 
@@ -549,11 +549,11 @@ const FlatAxis = () =>{
               material-depthTest={false}
               rotation={[0,  0, -Math.PI]}
               position={[FLAT_AXIS_CONSTANTS.TICK_LENGTH*1.4, 0, 0]}
-            >{parseLoc(axisArrays[heightIdx][getFactor(idx*yValDelta)],axisUnits[heightIdx])}</Text>
+            >{parseLoc(axisArrays[heightIdx][getFactor(idx*yValDelta)],axisUnits[heightIdx])}</Text> */}
           </group>
         ))}
         <group rotation={[0, 0, 0]} position={[-FLAT_AXIS_CONSTANTS.Y_TITLE_OFFSET, 0, 0]}>
-          <Text 
+          {/* <Text 
             key={'yTitle'}
             anchorX={'center'}
             anchorY={'middle'} 
@@ -561,9 +561,9 @@ const FlatAxis = () =>{
             fontSize={FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE}
             color={colorHex}
             material-depthTest={false}
-          >{axisNames[heightIdx]}</Text>
+          >{axisNames[heightIdx]}</Text> */}
           <group visible={!hideAxisControls}>
-            {yResolution < FLAT_AXIS_CONSTANTS.MAX_RESOLUTION &&
+            {/* {yResolution < FLAT_AXIS_CONSTANTS.MAX_RESOLUTION &&
             <Text 
               key={'zAdd'}
               anchorX={'center'}
@@ -577,8 +577,8 @@ const FlatAxis = () =>{
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               +
-            </Text>}
-            {yResolution > FLAT_AXIS_CONSTANTS.MIN_RESOLUTION &&
+            </Text>} */}
+            {/* {yResolution > FLAT_AXIS_CONSTANTS.MIN_RESOLUTION &&
             <Text 
               key={'zSub'}
               anchorX={'center'}
@@ -592,7 +592,7 @@ const FlatAxis = () =>{
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
-            </Text>}
+            </Text>} */}
           </group>
         </group>
     </group>

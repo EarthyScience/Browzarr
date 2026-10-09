@@ -1,24 +1,20 @@
+import * as su from '@/components/textures/TSL/sphereBlocks';
+import * as d from '@/components/textures/TSL/utils/displacementUniforms';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useCoordBounds, useDimAxis } from '@/hooks';
+import { useCoordBounds, useDimAxis, useValueScales } from '@/hooks';
+import { uniformUpdater } from '@/hooks/useCommonUniforms';
 import { invalidate, useThree } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
-import { createSphereBlocksMaterial } from '../textures/TSL/sphereBlocks';
-import { resolution } from '../textures/TSL/sphereBlocks';
-import * as d from '@/components/textures/TSL/utils/displacementUniforms'
-import * as su from '@/components/textures/TSL/sphereBlocks'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useColormapStore } from '@/GlobalStates/ColormapStore';
-import { uniformUpdater } from '@/hooks/useCommonUniforms';
+import { createSphereBlocksMaterial, resolution } from '../textures/TSL/sphereBlocks';
 const SphereBlocks = () => {
     const { nanColor, nanTransparency, displacement, offsetNegatives} = usePlotStore(useShallow(s => ({
         nanColor: s.nanColor, nanTransparency: s.nanTransparency, displacement: s.displacement, 
         offsetNegatives: s.offsetNegatives, colorScale: s.colorScale, 
     })))
-    const valueScales = useGlobalStore(s => s.valueScales)
-    const bivariateSelection = useColormapStore(s => s.bivariateSelection)
+    const valueScales = useValueScales();
     const {xArray, yArray} = useDimAxis()
     const width = xArray.length;
     const height = yArray.length;
@@ -67,9 +63,8 @@ const SphereBlocks = () => {
 
     const {lonBounds, latBounds} = useCoordBounds()
     useEffect(()=>{
-            const theseVals = valueScales[bivariateSelection]
             d.displacement.value = displacement
-            d.displaceZero.value = offsetNegatives ? 0 : (-theseVals.minVal/(theseVals.maxVal-theseVals.minVal))
+            d.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
             su.widthFactor.value = Math.abs(lonBounds[1]-lonBounds[0])/(2.0*Math.PI)
             su.vertFactor.value =  Math.abs(latBounds[1]-latBounds[0])/(Math.PI)
     },[valueScales, displacement, offsetNegatives, lonBounds])

@@ -84,10 +84,10 @@ export function createSphereBlocksMaterial(count : number){
 
     const instanceUV = instanceUVs.element(instanceIndex);
     const strength = h.sample1(h.getLocalCoord(instanceUV), 0).toVar();
-    const vStrength = varying(strength, 'vStrength'); // explicit vertex -> fragment
+    const vStrength = varying(strength, 'vStrength'); 
 
     const spherePosition = positions.element(instanceIndex);
-    const heightFactor = strength.sub(displaceZero).mul(displacement);
+    const heightFactor = vStrength.sub(displaceZero).mul(displacement);
 
     const scaledPosition = vec3(
         positionLocal.x.mul(spherePosition.w).mul(widthFactor),
@@ -96,7 +96,10 @@ export function createSphereBlocksMaterial(count : number){
     );
 
     const orientation = getOrientation(spherePosition.xyz);
-    material.positionNode = spherePosition.xyz.add(orientation.mul(scaledPosition));
+    const newPos = spherePosition.xyz.add(orientation.mul(scaledPosition));
+    const clipped = vStrength.greaterThan(u.threshold.y)
+            .or(vStrength.lessThan(u.threshold.x))
+    material.positionNode = select(clipped, vec3(0), newPos);
     material.colorNode = instanceColor(vStrength);
-    return {material, calcPositions, positions, instanceUVs};
+    return {material, calcPositions};
 }
