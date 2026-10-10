@@ -26,7 +26,7 @@ export const sample2ToOrder = Fn(([p, index, variable]: [any, any, any]) => {
 export const getLocalCoord = (thisUV : any) =>{
 	const zStepSize = uint(u.textureDepths.y).mul(uint(u.textureDepths.x));
 	const yStepSize = uint(u.textureDepths.x);
-	const sampleCoord = thisUV.toVar("sampleCoord");
+	const sampleCoord = thisUV.toVar();
 	let textureIdx, localCoord;
 	if (u.isFlat.value) {
 		const idx = clamp(ivec2(sampleCoord.mul(u.textureDepths.xy)), ivec2(0), ivec2(u.textureDepths.xy).sub(1));
@@ -114,7 +114,7 @@ export function reprojector(texCoord: any, maskUV: any) {
     // Each output pixel looks up where it comes from in the source data
     const remap = texture(u.remapTexture, texCoord.xy).rgb.toVar();
     texCoord.assign(vec3(remap.rg, texCoord.z));
-    maskUV = realCoords(remap.rg);
+    maskUV.assign(realCoords(remap.rg));
     valid.assign(remap.b.greaterThan(0.5))
   } else {
     // Reprojected data is already -180..180, so no adjusting needed.
@@ -130,6 +130,19 @@ export function reprojector(texCoord: any, maskUV: any) {
   // if (is360) maskUV.x.assign(fract(maskUV.x.add(0.5)));
   return valid
 }
+
+export const isBorder = Fn(([thisUV] : [any])=>{
+    const isBorder = bool(false).toVar();
+    If(u.useBorderTexture, ()=>{
+        thisUV.x.assign(select(u.is360, fract(thisUV.x.add(0.5)), thisUV.x))
+        //@ts-ignore .level does exist
+        const distance =  u.borderTexture.sample(thisUV).level(0).r;
+        If(distance.lessThanEqual(u.borderWidth), () => {
+            isBorder.assign(bool(true)); 
+        });
+    })
+    return isBorder;
+})
 
 export const maskOut = Fn(([inUV] : [any])=>{
 	const remove = bool(false)

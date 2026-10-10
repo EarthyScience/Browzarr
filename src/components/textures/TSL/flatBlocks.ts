@@ -6,7 +6,7 @@ import {
     varying, vec3,
     vec2, vec4, clamp,
     select, float, bool,
-    positionGeometry, fract
+    positionGeometry,
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
@@ -67,7 +67,7 @@ export function createFlatBlocksMaterial(count: number){
         strength = bivar.r;
         biVal = bivar.g;
         isNan = h.isNaNBits(strength).or(h.isNaNBits(biVal))
-            .or(u.useF16.not().and(strength))
+            .or(u.useF16.not().and(strength).equal(1.0))
             .or(u.useF16.not().and(biVal.equal(1.0)))
     } else {
         strength = h.sample1(localCoord, textureIdx)

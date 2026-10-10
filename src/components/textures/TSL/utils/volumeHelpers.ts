@@ -1,6 +1,7 @@
 import {
-    any,bool,clamp,EPSILON,Fn,fract,If,int,ivec3,
-    max,min,mod,select,vec2,vec3
+    abs,
+    any,bool,clamp,EPSILON,float,Fn,fract,If,int,ivec3,
+    max,min,mod,pow,select,vec2,vec3
 } from 'three/tsl';
 import * as h from './commonHelpers';
 import * as u from './commonUniforms';
@@ -73,6 +74,28 @@ export const sampleVoxel = (texCoord: any, d: any, biVal: any, isNan: any) => {
  
     return d.greaterThanEqual(u.threshold.x).and(d.lessThanEqual(u.threshold.y)).toVar();
 };
+
+export const colorTexel = (d: any, biVal: any, isNan: any, accumColor: any, alphaAcc: any ) => {
+    isNan.assign(isNan.or(abs(d.sub(u.fillValue)).lessThan(0.005)));
+    If(isNan, () => {
+        If(u.nanAlpha.greaterThan(0.0), () => {
+            const nanA = pow(u.nanAlpha, 5.0);
+            accumColor.addAssign(float(1.0).sub(alphaAcc).mul(nanA).mul(u.nanColor));
+            alphaAcc.addAssign(nanA);
+        });
+    }).Else(() => {
+        const s = vu.tfLUT.sample(vec2(d, 0.5));
+        const opacity = float(1).sub(alphaAcc);
+        If( u.bivariate, () => {
+            const flipOrder = u.bivariateSelection.notEqual( 0 );
+            const biCol = select( flipOrder, h.colorMixer( biVal, d ), h.colorMixer( d, biVal ) ).toVar();
+            accumColor.addAssign(opacity.mul(s.a).mul(biCol.rgb));
+        }).Else( () => {
+            accumColor.addAssign(opacity.mul(s.rgb));
+        })
+        alphaAcc.addAssign(opacity.mul(s.a));
+    });
+}
 
 export const hitBox = Fn(([orig, dir]: any[]) => {
         const boxMax = vu.scale.mul(0.5);

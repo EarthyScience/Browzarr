@@ -1,14 +1,13 @@
-import * as u from './utils/commonUniforms'	
+import {
+    asin, atan,bool,clamp,cos,cross,float,Fn,fract,If,instancedArray,instanceIndex,
+    mat3,mul,normalize,PI,positionLocal,
+    positionWorld,select,sin,uniform,varying,
+    vec2,vec3,vec4
+} from 'three/tsl';
+import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
-import * as THREE from 'three/webgpu'
+import * as u from './utils/commonUniforms';
 import { displacement, displaceZero } from './utils/displacementUniforms';
-import { Fn, instanceIndex, normalize, asin, atan, PI, mul, mod, vec2, vec4, If, vec3, float, bool,
-    fract, select, min, abs, clamp, all, cos, positionGeometry, positionLocal, greaterThanEqual, lessThanEqual, 
-    int, sin, cross, mat3,
-    instancedArray,
-    uniform,
-    varying,
-    positionWorld} from 'three/tsl';
 
 // --- UNIFORMS ---//
 export const resolution = uniform(vec2(0.0))
@@ -112,7 +111,7 @@ export function createSphereBlocksMaterial(count : number){
         strength = bivar.r;
         biVal = bivar.g;
         isNan = h.isNaNBits(strength).or(h.isNaNBits(biVal))
-            .or(u.useF16.not().and(strength))
+            .or(u.useF16.not().and(strength).equal(1.0))
             .or(u.useF16.not().and(biVal.equal(1.0)))
     } else {
         strength = h.sample1(localCoord, textureIdx)

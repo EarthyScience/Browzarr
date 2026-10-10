@@ -38,18 +38,12 @@ const maskAndBorder = Fn( () => {
 
 const faceColor = Fn( () => {
     const Color = vec4( 0 ).toVar( 'Color' );
-
-    const zStepSize = int( u.textureDepths.y ).mul( int( u.textureDepths.x ) );
-    const yStepSize = int( u.textureDepths.x );
     const texCoord = vec3( uv(), u.animateProg ).toVar( 'texCoord' );
     texCoord.xy.assign( clamp( texCoord.xy, vec2( 0.0 ), sub( 1., vec2( EPSILON ) ) ) );
     const maskUV = vec2(0).toVar();
     const repValid = h.reprojector(texCoord, maskUV);
     If(repValid.not(), () =>{ Discard(); })
-    // Prevents the very edges from looping around and causing line artifacts
-    const idx = clamp( ivec3( texCoord.mul( u.textureDepths ) ), ivec3( 0 ), ivec3( u.textureDepths ).sub( 1 ) );
-    const textureIdx = idx.z.mul( zStepSize ).add( idx.y.mul( yStepSize ) ).add( idx.x );
-    const localCoord = fract( texCoord.mul( u.textureDepths ) ).toVar( 'localCoord' );
+    const {localCoord, textureIdx} = h.getLocalCoord(texCoord.xy)
 
     const strength = float( 0 ).toVar( 'strength' );
     const biVal = float( 0 ).toVar( 'biVal' );

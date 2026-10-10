@@ -7,7 +7,7 @@ import * as u from './utils/commonUniforms'
 import * as h from './utils/commonHelpers';
 import * as vu from './utils/volumeUniforms'
 import * as THREE from 'three/webgpu'
-import { hitBox, sampleVoxel, shouldSkip } from './utils/volumeHelpers';
+import { colorTexel, hitBox, sampleVoxel, shouldSkip } from './utils/volumeHelpers';
 
 const rayMarch = Fn(([vOrigin, vDirection] : [any, any]) => {
 		const rayDir = normalize(vDirection);
@@ -22,7 +22,6 @@ const rayMarch = Fn(([vOrigin, vDirection] : [any, any]) => {
 		const borderHit = bool(false).toVar('borderHit');
 	
 		const nSteps = int(ceil(bounds.y.sub(bounds.x).div(delta)));
-	
 		Loop(nSteps, ({ i }: { i: any }) => {
 			const t = bounds.x.add(float(i).mul(delta));
 			const p = vOrigin.add(rayDir.mul(t)).toVar("p");
@@ -36,28 +35,8 @@ const rayMarch = Fn(([vOrigin, vDirection] : [any, any]) => {
 				const inRange = sampleVoxel(texCoord, d, biVal, isNan);
 
 				If(inRange, () => {
-					isNan.assign(isNan.or(abs(d.sub(u.fillValue)).lessThan(0.005)));
-	
-					If(isNan, () => {
-						If(u.nanAlpha.greaterThan(0.0), () => {
-							const nanA = pow(u.nanAlpha, 5.0);
-							accumColor.addAssign(float(1.0).sub(alphaAcc).mul(nanA).mul(u.nanColor));
-							alphaAcc.addAssign(nanA);
-						});
-					}).Else(() => {
-						const s = vu.tfLUT.sample(vec2(d, 0.5));
-						const opacity = float(1).sub(alphaAcc);
-						If( u.bivariate, () => {
-							const flipOrder = u.bivariateSelection.notEqual( 0 );
-							const biCol = select( flipOrder, h.colorMixer( biVal, d ), h.colorMixer( d, biVal ) ).toVar();
-							accumColor.addAssign(opacity.mul(s.a).mul(biCol.rgb));
-						}).Else( () => {
-							accumColor.addAssign(opacity.mul(s.rgb));
-						})
-						alphaAcc.addAssign(opacity.mul(s.a));
-					});
-
-					If(alphaAcc.greaterThanEqual(1.0), () => {
+					colorTexel(d, biVal, isNan, accumColor, alphaAcc)
+					If(alphaAcc.greaterThanEqual(0.99), () => {
 						If(u.useBorderTexture, () => {
 							const realUV = h.realCoords(texCoord.xy)
 							//@ts-ignore .level does exist

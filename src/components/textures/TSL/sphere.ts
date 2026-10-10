@@ -63,12 +63,7 @@ const sphereColor = Fn( () => {
     const inBounds = all( greaterThanEqual( sampleCoord, vec2( 0.0 ) ) )
         .and( all( lessThanEqual( sampleCoord, vec2( 1.0 ) ) ) );
     If( inBounds, () => {
-        const zStepSize = int( u.textureDepths.y ).mul( int( u.textureDepths.x ) );
-        const yStepSize = int( u.textureDepths.x );
-        const texCoord = vec3( sampleCoord, u.animateProg );
-        const idx = clamp( ivec3( texCoord.mul( u.textureDepths ) ), ivec3( 0 ), ivec3( u.textureDepths ).sub( 1 ) );
-        const textureIdx = idx.z.mul( zStepSize ).add( idx.y.mul( yStepSize ) ).add( idx.x );
-        const localCoord = fract( texCoord.mul( u.textureDepths ) ).toVar( 'localCoord' );
+        const {localCoord, textureIdx} = h.getLocalCoord(sampleCoord)
         // Scale up
         localCoord.assign( fract( localCoord ) );
         const strength = float( 0 ).toVar( 'strength' );
