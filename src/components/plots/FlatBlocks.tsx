@@ -4,7 +4,6 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useCoordBounds, useDimAxis, useValueScales } from '@/hooks';
 import { uniformUpdater } from '@/hooks/useCommonUniforms';
-import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useThree } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
@@ -12,7 +11,6 @@ import { useShallow } from 'zustand/shallow';
 import { createFlatBlocksMaterial } from '../textures/TSL/flatBlocks';
 import * as su from '@/components/textures/TSL/sphereBlocks';
 import * as du from '@/components/textures/TSL/utils/displacementUniforms';
-
 const FlatBlocks = () => {
     const {isFlat, flipY, dataShape, axisDimArrays, remapTexture} = useGlobalStore(useShallow(s => ({
         isFlat: s.isFlat, flipY: s.flipY, dataShape: s.dataShape, axisDimArrays: s.axisDimArrays, 
@@ -30,8 +28,10 @@ const FlatBlocks = () => {
             : [xArray.length, yArray.length]
         if (analysisMode && axis != 0){
             const thisShape = dataShape.filter((_val, idx) => idx != axis)
+            du.resolution.value = new THREE.Vector2(thisShape[1], thisShape[0])
             return {width: thisShape[1], height: thisShape[0]}
         } else {
+            du.resolution.value = new THREE.Vector2(width, height)
             return {width, height}
         }
     },[analysisMode, axis, dataShape,xArray, yArray, axisDimArrays, remapTexture]) 
@@ -66,7 +66,7 @@ const FlatBlocks = () => {
     const {gl} = useThree();
     useEffect(()=>{
         //@ts-ignore it exists but not listed in the type
-        calcPositions && gl.computeAsync(calcPositions).then(()=>console.log("compute ran"))
+        calcPositions && gl.computeAsync(calcPositions)
     },[calcPositions])
 
     // --- UNIFORMS --- //
@@ -79,7 +79,7 @@ const FlatBlocks = () => {
                 su.vertFactor.value =  Math.abs(latBounds[1]-latBounds[0])/(Math.PI)
         },[valueScales, displacement, offsetNegatives, lonBounds])
   return (
-    <group rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]} scale={[1, flipY ? -1 : 1, 1]}>
+    <group rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]} scale={[1, flipY ? -1 : 1, 1]} >
         <primitive object={mesh} />
     </group>
   )

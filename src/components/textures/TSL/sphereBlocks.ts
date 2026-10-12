@@ -103,6 +103,7 @@ export function createSphereBlocksMaterial(count : number){
     const material = new THREE.NodeMaterial();
     material.depthWrite = true;
     material.depthTest = true;
+    material.side = THREE.DoubleSide;
     const instanceUV = instanceUVs.element(instanceIndex);
     const {localCoord, textureIdx} = h.getLocalCoord(instanceUV)
     let strength, biVal, isNan;
@@ -111,7 +112,7 @@ export function createSphereBlocksMaterial(count : number){
         strength = bivar.r;
         biVal = bivar.g;
         isNan = h.isNaNBits(strength).or(h.isNaNBits(biVal))
-            .or(u.useF16.not().and(strength).equal(1.0))
+            .or(u.useF16.not().and(strength.equal(1.0)))
             .or(u.useF16.not().and(biVal.equal(1.0)))
     } else {
         strength = h.sample1(localCoord, textureIdx)
@@ -133,6 +134,7 @@ export function createSphereBlocksMaterial(count : number){
     const newPos = spherePosition.xyz.add(orientation.mul(scaledPosition));
     const clipped = vStrength.greaterThan(u.threshold.y)
             .or(vStrength.lessThan(u.threshold.x))
+            .or(isNan)
     const masked = h.maskOut(instanceUV)
     const borderHit = isBorder()
     material.positionNode = select(clipped.or(masked), vec3(0), newPos);

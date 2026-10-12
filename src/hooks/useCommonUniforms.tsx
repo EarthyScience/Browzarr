@@ -17,7 +17,7 @@ export function uniformUpdater(){
 			useBorderTexture: s.useBorderTexture, borderColor: s.borderColor, borderWidth: s.borderWidth,
 			is360Deg: s.is360Deg, showBorders: s.showBorders, interpPixels: s.interpPixels
 		})))
-	const { valueScales, useF16Textures, bivariate, textureArrayDepths, remapTexture} = useGlobalStore(useShallow(s => ({
+	const { valueScales, useF16Textures, bivariate, textureArrayDepths, remapTexture, flipY} = useGlobalStore(useShallow(s => ({
 		valueScales: s.valueScales, useF16Textures: s.useF16Textures, bivariate: s.bivariate, 
 		mainTextures: s.mainTextures, textureArrayDepths: s.textureArrayDepths, remapTexture: s.remapTexture, flipY: s.flipY,
 	})))
@@ -70,6 +70,10 @@ export function uniformUpdater(){
 		valueScales, useF16Textures, bivariateSelection, 
 		bivariate, textureArrayDepths, remapTexture
 	])
+	// --- BLOCKS --- //
+	useEffect(()=>{
+		u.flipY.value = flipY;
+	}, [flipY])
 	// --- INTERP PIXELS --- //
 	useEffect(()=>{
 		const nodes = u.map

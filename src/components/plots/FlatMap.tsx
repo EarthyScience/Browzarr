@@ -1,25 +1,21 @@
 "use client";
 
-import React, {useMemo, useEffect, useState, useRef} from 'react'
-import * as THREE from 'three/webgpu'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { vertShader } from '@/components/textures/shaders'
-import { useShallow } from 'zustand/shallow'
-import { ThreeEvent } from '@react-three/fiber';
-import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
-import { sampleCRS } from '../textures/ProjectionUtils';
 import { evaluateColorMap } from '@/components/textures';
-import { flatFrag } from '../textures/shaders';
-import { SquareMeshes } from './TransectMeshes';
-import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices, useDimAxis } from '@/hooks';
-import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
-import { functionInjector } from '../ui/Elements/ColorAdjuster';
-import {InfoViewer} from '../ui/Elements/InfoViewer';
-import { createFlatMapMaterial } from '../textures/TSL/flatMap';
 import { uniformUpdater } from '@/hooks/useCommonUniforms';
+import { usePaddedTextures } from '@/hooks/usePaddedTextures';
+import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
+import { ThreeEvent } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import * as THREE from 'three/webgpu';
+import { useShallow } from 'zustand/shallow';
+import { sampleCRS } from '../textures/ProjectionUtils';
+import { createFlatMapMaterial } from '../textures/TSL/flatMap';
+import { InfoViewer } from '../ui/Elements/InfoViewer';
+import { SquareMeshes } from './TransectMeshes';
 const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[]}) => {
     // ---- Imports ---- //
     const textures = usePaddedTextures(propTextures);
@@ -209,4 +205,5 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
   )
 }
 
-export {FlatMap}
+export { FlatMap };
+

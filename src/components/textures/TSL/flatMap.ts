@@ -1,50 +1,30 @@
 import * as u from './utils/commonUniforms'	
 import * as h from './utils/commonHelpers';
 import * as THREE from 'three/webgpu'
-import { Fn, uv, If, fract, sub, min, abs, select, vec4, int, vec3, clamp, vec2, ivec3, EPSILON, float, bool, Discard} from 'three/tsl';
+import { Fn, uv, If, fract, sub, min, abs, select, vec4, int, vec3, clamp, vec2, ivec3, EPSILON, float, bool, Discard, struct, step, mix} from 'three/tsl';
 
-const maskAndBorder = Fn( () => {
-    const result = vec4( 0, 0, 0, - 1 ).toVar( 'maskResult' );
-    If( u.maskValue.notEqual( 0 ).or( u.useBorderTexture ), () => {
-        // Get Coordinates
-        const realUV = h.realCoords( uv() ).toVar('realUV');
-        If( u.is360, () => {
-            realUV.x.assign( fract( realUV.x.add( 0.5 ) ) );
-        } );
-        If( u.reproject, () => {
-            // All reprojected data is regularly gridded
-            const remapUV = uv().toVar('remapUV');
-            remapUV.y.assign( sub( 1.0, remapUV.y ) );
-            // I'm not certain if this is robust
-            realUV.xy.assign( u.remapTexture.sample( remapUV ).rg );
-        } );
-        If(u.maskValue.notEqual( 0 ), () => {
-            const mask = u.maskTexture.sample( realUV ).r;
-            const cond = select( u.maskValue.equal( 1 ), mask.lessThan( 0.5 ), mask.greaterThanEqual( 0.5 ) );
-            If( cond, () => {
-                result.assign( vec4( u.nanColor, 1. ) );
-                result.a.assign( u.nanAlpha );
-            } );
-        })
-        If(u.useBorderTexture, () => {
-            const borderDist = u.borderTexture.sample( realUV ).r;
-            If( borderDist.lessThanEqual( u.borderWidth ), () => {
-                result.assign( vec4( u.borderColor, 1.0 ) );
-            });
-        });
-    });
-    return result;
-} );
+const twoVs = struct({
+  remap: 'vec2',
+  maskUV: 'vec2',
+  valid: 'bool'
+});
+const getUVs = Fn(([thisUV] : [any]) =>{
+    const newV = thisUV.toVar("instanceUV");
+    const maskUV = newV.toVar('maskUV');
+    const valid = h.reprojector(newV, maskUV);
+    return twoVs(newV, maskUV, valid)
+})
 
-const faceColor = Fn( () => {
+const maskAndBorder = Fn(([thisUV] : [any]) =>{
+    const outColor = vec4(-1).toVar();
+    outColor.assign(mix(vec4(u.nanColor, u.nanAlpha), vec4(-1), float(h.maskOut(thisUV))));
+    outColor.assign(mix(vec4(-1), vec4(u.borderColor, 1), float(h.isBorder(thisUV))));
+    return outColor;
+})
+
+const faceColor = Fn( ([thisUV] : [any]) => {
     const Color = vec4( 0 ).toVar( 'Color' );
-    const texCoord = vec3( uv(), u.animateProg ).toVar( 'texCoord' );
-    texCoord.xy.assign( clamp( texCoord.xy, vec2( 0.0 ), sub( 1., vec2( EPSILON ) ) ) );
-    const maskUV = vec2(0).toVar();
-    const repValid = h.reprojector(texCoord, maskUV);
-    If(repValid.not(), () =>{ Discard(); })
-    const {localCoord, textureIdx} = h.getLocalCoord(texCoord.xy)
-
+    const {localCoord, textureIdx} = h.getLocalCoord(thisUV)
     const strength = float( 0 ).toVar( 'strength' );
     const biVal = float( 0 ).toVar( 'biVal' );
     const biNaN = bool( false ).toVar( 'biNaN' );
@@ -84,13 +64,20 @@ export function createFlatMapMaterial(){
     const material = new THREE.NodeMaterial();
     material.transparent = true;
     material.side = THREE.DoubleSide;
+
     material.colorNode = Fn( () => {
         const Color = vec4( 0 ).toVar( 'FinalColor' );
-        const maskNBorders = maskAndBorder().toVar( 'early' );
+        const texCoord = uv().toVar( 'texCoord' );
+        const uvInfo = getUVs(texCoord)
+        const maskUV = uvInfo.get('maskUV')
+        const isValid = uvInfo.get('valid')
+        const newV = uvInfo.get('remap')
+        If(isValid.not(), () =>{ Discard(); })
+        const maskNBorders = maskAndBorder(maskUV).toVar( 'early' );
         If( maskNBorders.a.greaterThanEqual( 0 ), () => {
             Color.assign( maskNBorders );              
         } ).Else( () => {
-            Color.assign( faceColor() );  
+            Color.assign( faceColor(newV) );  
         } );
         return Color;
     } )();

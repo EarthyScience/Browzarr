@@ -25,11 +25,12 @@ const instanceColor = Fn(([strengths] : [any])=>{
         return vec4(color.rgb, 1)
     }
 })
-
 const isBorder = Fn(([instanceUV] : [any])=>{
     const isBorder = bool(false).toVar();
     If(u.useBorderTexture, ()=>{
-        const thisUV = instanceUV.add(positionGeometry.xy.div(2));
+        const aspect = resolution.x.toFloat().div(resolution.y)
+        const gridExtent = vec2(2, float(2).div(aspect));
+        const thisUV = instanceUV.add(positionGeometry.xy.div(gridExtent));
         thisUV.assign(h.realCoords(thisUV))
         //@ts-ignore .level does exist
         const distance =  u.borderTexture.sample(thisUV).level(0).r;
@@ -45,10 +46,14 @@ const twoVs = struct({
   maskUV: 'vec2',
   valid: 'bool'
 });
+
 const getUVs = Fn(([thisUV] : [any]) =>{
-    const instanceUV = thisUV.toVar("instanceUV");
-    const maskUV = instanceUV.toVar('maskUV');
-    const valid = h.reprojector(instanceUV, maskUV);
+    const instanceUV = thisUV.toVar();
+    const maskUV = instanceUV.toVar();
+    const valid = h.reprojector(instanceUV, maskUV).toVar();
+    maskUV.y.assign(select(u.flipY,
+        maskUV.y.oneMinus(),
+        maskUV.y))
     return twoVs(instanceUV, maskUV, valid)
 })
 
@@ -84,7 +89,7 @@ export function createFlatBlocksMaterial(count: number){
         strength = bivar.r;
         biVal = bivar.g;
         isNan = h.isNaNBits(strength).or(h.isNaNBits(biVal))
-            .or(u.useF16.not().and(strength).equal(1.0))
+            .or(u.useF16.not().and(strength.equal(1.0)))
             .or(u.useF16.not().and(biVal.equal(1.0)))
     } else {
         strength = h.sample1(localCoord, textureIdx)
@@ -100,7 +105,9 @@ export function createFlatBlocksMaterial(count: number){
     )
     const newPos = scaledPosition.add(vec3(positions.element(instanceIndex), 0));
     const clipped = vStrength.greaterThan(u.threshold.y)
-            .or(vStrength.lessThan(u.threshold.x)).or(uvInfo.get('valid').not())
+            .or(vStrength.lessThan(u.threshold.x))
+            .or(uvInfo.get('valid').not()
+            .or(isNan))
     const masked = h.maskOut(maskUV)
     const borderHit = isBorder(maskUV)
     material.positionNode = select(clipped.or(masked), vec3(0), newPos);

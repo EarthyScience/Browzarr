@@ -65,3 +65,4 @@ export const valueRange = uniform( vec2() );
 export const useF16 = uniform( bool() );
 export const isFlat = uniform( bool() );
 export const reproject = uniform( bool(false) );
+export const flipY = uniform(bool(false));

@@ -140,6 +140,5 @@ export function createSphereMaterial(){
         } );
         return Color;
     } )();
-    // material.colorNode = sphereColor();
     return material
 }
