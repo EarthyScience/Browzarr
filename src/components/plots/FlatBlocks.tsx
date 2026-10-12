@@ -14,9 +14,9 @@ import * as su from '@/components/textures/TSL/sphereBlocks';
 import * as du from '@/components/textures/TSL/utils/displacementUniforms';
 
 const FlatBlocks = () => {
-    const {isFlat, flipY, dataShape, axisDimArrays, remapBorders} = useGlobalStore(useShallow(s => ({
+    const {isFlat, flipY, dataShape, axisDimArrays, remapTexture} = useGlobalStore(useShallow(s => ({
         isFlat: s.isFlat, flipY: s.flipY, dataShape: s.dataShape, axisDimArrays: s.axisDimArrays, 
-        remapTexture: s.remapTexture, remapBorders: s.remapBorders
+        remapTexture: s.remapTexture, 
     })))
     const { displacement, offsetNegatives, rotateFlat, colorScale} = usePlotStore(useShallow(s => ({
         displacement: s.displacement, offsetNegatives: s.offsetNegatives, rotateFlat: s.rotateFlat, colorScale: s.colorScale
@@ -25,13 +25,16 @@ const FlatBlocks = () => {
     const valueScales = useValueScales();
     const {xArray, yArray} = useDimAxis()
     const {width, height} = useMemo(()=>{
-        if (analysisMode){
+        const [width, height] = remapTexture 
+            ? [remapTexture.image.width, remapTexture.image.height] 
+            : [xArray.length, yArray.length]
+        if (analysisMode && axis != 0){
             const thisShape = dataShape.filter((_val, idx) => idx != axis)
             return {width: thisShape[1], height: thisShape[0]}
         } else {
-            return {width: xArray.length, height: yArray.length}
+            return {width, height}
         }
-    },[analysisMode, axis, dataShape,xArray, yArray, axisDimArrays]) 
+    },[analysisMode, axis, dataShape,xArray, yArray, axisDimArrays, remapTexture]) 
     const rotateMap = analysisMode && axis == 2;
     const count = useMemo(()=>{
             const count = width * height;

@@ -7,6 +7,8 @@ import {
     vec2, vec4, clamp,
     select, float, bool,
     positionGeometry,
+    texture,
+    struct,
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
@@ -38,29 +40,44 @@ const isBorder = Fn(([instanceUV] : [any])=>{
     return isBorder;
 })
 
+const twoVs = struct({
+  remap: 'vec2',
+  maskUV: 'vec2',
+  valid: 'bool'
+});
+const getUVs = Fn(([thisUV] : [any]) =>{
+    const instanceUV = thisUV.toVar("instanceUV");
+    const maskUV = instanceUV.toVar('maskUV');
+    const valid = h.reprojector(instanceUV, maskUV);
+    return twoVs(instanceUV, maskUV, valid)
+})
+
 export function createFlatBlocksMaterial(count: number){
     const instanceUVs = instancedArray(count, 'vec2');
     const positions = instancedArray(count, 'vec2');
     const calcPositions = Fn(() => {
         const p = positions.element(instanceIndex);
-        const u = instanceUVs.element(instanceIndex);
-        const w = resolution.x.toUint();
-        const h = resolution.y.toUint();
-        const px = instanceIndex.mod(w);
-        const py = instanceIndex.div(w).mod(h);
+        const uvs = instanceUVs.element(instanceIndex);
+        const width = resolution.x.toUint();
+        const height = resolution.y.toUint();
+        const px = instanceIndex.mod(width);
+        const py = instanceIndex.div(width).mod(height);
         const thisUV = vec2(
             px.toFloat().add(0.5), 
             py.toFloat().add(0.5)
             ).div(resolution).toVar();
-        u.assign(thisUV);
-        const aspect = h.toFloat().div(w)
+        uvs.assign(thisUV);
+        const aspect = height.toFloat().div(width)
         const posX = thisUV.x.sub(0.5).mul(2);
         const posY = thisUV.y.sub(0.5).mul(2).mul(aspect)
         p.assign(vec2(posX, posY));
     })().compute(count)
+
     const material = new THREE.NodeMaterial();
-    const instanceUV = instanceUVs.element(instanceIndex);
-    const {localCoord, textureIdx} = h.getLocalCoord(instanceUV)
+    
+    const uvInfo = getUVs(instanceUVs.element(instanceIndex))
+    const {localCoord, textureIdx} = h.getLocalCoord(uvInfo.get('remap'))
+    const maskUV = uvInfo.get('maskUV')
     let strength, biVal, isNan;
     if (u.bivariate.value){
         const bivar = h.sample2ToOrder(localCoord, textureIdx, u.bivariateSelection).toVar();
@@ -83,9 +100,9 @@ export function createFlatBlocksMaterial(count: number){
     )
     const newPos = scaledPosition.add(vec3(positions.element(instanceIndex), 0));
     const clipped = vStrength.greaterThan(u.threshold.y)
-            .or(vStrength.lessThan(u.threshold.x))
-    const masked = h.maskOut(instanceUV)
-    const borderHit = isBorder(instanceUV)
+            .or(vStrength.lessThan(u.threshold.x)).or(uvInfo.get('valid').not())
+    const masked = h.maskOut(maskUV)
+    const borderHit = isBorder(maskUV)
     material.positionNode = select(clipped.or(masked), vec3(0), newPos);
     material.colorNode = select(borderHit, u.borderColor, instanceColor(vec2(vStrength, vBiVal)));
     return {material, calcPositions}

@@ -107,16 +107,15 @@ export const norm = (x: any) => x.sub(u.valueRange.x).div(u.valueRange.y.sub(u.v
 export const rescaler = (x: any) => x;
 
 
-// --- REPROJECTOR --- //
-export function reprojector(texCoord: any, maskUV: any) {
+export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
   const valid = bool(true).toVar()
-  if (u.reproject.value) {
+  If(u.reproject, () => {
     // Each output pixel looks up where it comes from in the source data
     const remap = texture(u.remapTexture, texCoord.xy).rgb.toVar();
     texCoord.assign(vec3(remap.rg, texCoord.z));
     maskUV.assign(realCoords(remap.rg));
     valid.assign(remap.b.greaterThan(0.5))
-  } else {
+  }).Else(()=> {
     // Reprojected data is already -180..180, so no adjusting needed.
     const originalCoord = texCoord.xy;
     const tempV = realCoords(originalCoord).toVar();
@@ -125,11 +124,12 @@ export function reprojector(texCoord: any, maskUV: any) {
     const flipped = vec2(originalCoord.x, float(1).sub(originalCoord.y));
     const remappedMask = texture(u.remapTexture, flipped).ba;
     maskUV.assign(select(u.remapBorders, remappedMask, tempV));
-  }
+  })
   // For 0–360 data, wrap longitude by half a turn
   // if (is360) maskUV.x.assign(fract(maskUV.x.add(0.5)));
   return valid
-}
+})
+
 
 export const isBorder = Fn(([thisUV] : [any])=>{
     const isBorder = bool(false).toVar();
