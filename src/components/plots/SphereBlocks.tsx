@@ -34,7 +34,7 @@ const SphereBlocks = () => {
         geo.translate(0, boxHeight / 2, 0);
         return geo
     },[width, height])
-    const {material, calcPositions} = createSphereBlocksMaterial(count)
+    const {material, calcPositions} = useMemo(()=>createSphereBlocksMaterial(count),[count])
     const mesh = useMemo(()=>{
         const newMesh = new THREE.Mesh(geometry, material)
         newMesh.count = count;
@@ -57,13 +57,11 @@ const SphereBlocks = () => {
     // --- UNIFORMS ---//
     useEffect(()=>{
         if (nanMaterial ){
-            nanMaterial.dispose();
             nanMaterial.color.set(nanColor);
             nanMaterial.opacity = (1-nanTransparency);
             invalidate();
         }
     },[nanColor, nanTransparency])
-
     const {lonBounds, latBounds} = useCoordBounds()
     useEffect(()=>{
             d.displacement.value = displacement
@@ -71,7 +69,6 @@ const SphereBlocks = () => {
             su.widthFactor.value = Math.abs(lonBounds[1]-lonBounds[0])/(2.0*Math.PI)
             su.vertFactor.value =  Math.abs(latBounds[1]-latBounds[0])/(Math.PI)
     },[valueScales, displacement, offsetNegatives, lonBounds])
-
     uniformUpdater();
   return (
     <group scale={[1, 1, 1]}>

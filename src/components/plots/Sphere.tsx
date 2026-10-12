@@ -40,7 +40,6 @@ export const Sphere = () => {
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
     const shaderMaterial = useMemo( () => createSphereMaterial() , [interpPixels])
     // No reprojection on Sphere. Remains static and can't update
-    console.log(u.flipY.value)
     uniformUpdater();
     const backMaterial = useMemo(()=>{
       const mat = shaderMaterial.clone()

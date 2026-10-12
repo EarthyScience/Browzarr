@@ -56,7 +56,7 @@ export function uniformUpdater(){
 		u.remapBorderTexture.value.dispose();
 		u.remapBorderTexture.value = remapBorders?? new THREE.DataTexture();
 		u.remapBorders.value = Boolean(remapBorders)
-	})
+	},[remapBorders, remapTexture])
 	// --- GENERAL --- //
 	useEffect(()=>{
 		u.cOffset.value = cOffset;
