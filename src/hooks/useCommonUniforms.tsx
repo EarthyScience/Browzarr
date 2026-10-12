@@ -16,9 +16,10 @@ export function uniformUpdater(){
 			useBorderTexture: s.useBorderTexture, borderColor: s.borderColor, borderWidth: s.borderWidth,
 			is360Deg: s.is360Deg, showBorders: s.showBorders, interpPixels: s.interpPixels, colorScale: s.colorScale
 		})))
-	const { valueScales, useF16Textures, bivariate, textureArrayDepths, remapTexture, flipY, remapBorders} = useGlobalStore(useShallow(s => ({
+	const { valueScales, useF16Textures, bivariate, textureArrayDepths, remapTexture, flipY, remapBorders, isFlat} = useGlobalStore(useShallow(s => ({
 		valueScales: s.valueScales, useF16Textures: s.useF16Textures, bivariate: s.bivariate, remapBorders: s.remapBorders,
 		mainTextures: s.mainTextures, textureArrayDepths: s.textureArrayDepths, remapTexture: s.remapTexture, flipY: s.flipY,
+		isFlat: s.isFlat
 	})))
 	const {lonBounds, latBounds} = useCoordBounds()
     const {colormap, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection} = useColormapStore(useShallow(s => ({
@@ -81,11 +82,12 @@ export function uniformUpdater(){
 		u.useF16.value = useF16Textures;
 		u.bivariateSelection.value = bivariateSelection;
 		u.bivariate.value = bivariate;
+		u.isFlat.value = isFlat
 	},[
 		cScale, cOffset, nanTransparency, fillValue, maskValue, valueRange,
 		lonBounds, latBounds, useBorderTexture, borderWidth, is360Deg, showBorders,
 		valueScales, useF16Textures, bivariateSelection, 
-		bivariate, textureArrayDepths
+		bivariate, textureArrayDepths, isFlat
 	])
 	// --- BLOCKS --- //
 	useEffect(()=>{
@@ -115,7 +117,6 @@ export function uniformUpdater(){
 	useEffect(()=>{
 		if (colorScale)u.colorScale.value = colorScale;
 		u.rescaleValues.value = Boolean(colorScale)
-		console.log(u.rescaleValues)
 	},[colorScale])
 
 }

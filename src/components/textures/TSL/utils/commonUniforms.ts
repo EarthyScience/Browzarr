@@ -68,4 +68,4 @@ export const useF16 = uniform( bool() );
 export const isFlat = uniform( bool() );
 export const flipY = uniform(bool(false));
 export const rescaleValues = uniform(bool(false));
-export const colorScale = uniform(string(""));
+export const colorScale = uniform(string("x"));

@@ -1,7 +1,7 @@
-import * as u from './utils/commonUniforms'	
+import { abs, bool, Discard, float, Fn, If, min, mix, select, struct, uv, vec2, vec4 } from 'three/tsl';
+import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
-import * as THREE from 'three/webgpu'
-import { Fn, uv, If, fract, sub, min, abs, select, vec4, int, vec3, clamp, vec2, ivec3, EPSILON, float, bool, Discard, struct, step, mix, texture} from 'three/tsl';
+import * as u from './utils/commonUniforms';
 
 const twoVs = struct({
   remap: 'vec2',
