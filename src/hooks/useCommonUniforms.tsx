@@ -41,6 +41,9 @@ export function uniformUpdater(){
 		u.topLeft.value = new THREE.Color(topLeft).convertLinearToSRGB();
 		u.resolution.value = resolution;
 		u.mixMode.value = mixMode;
+		return () =>{
+			u.cmap.value.dispose()
+		}
 	}, [colormap, bottomLeft, bottomRight, topLeft, resolution, mixMode])
 	// ---ANIMATION --- //
 	useEffect(()=>{
@@ -48,15 +51,19 @@ export function uniformUpdater(){
 	}, [animProg])
 	// --- REPROJECTION --- //
 	useEffect(()=>{
-		u.remapTexture.value.dispose();
 		u.remapTexture.value = remapTexture?? new THREE.DataTexture();
 		u.reproject.value = Boolean(remapTexture);		
-	},[])
+		return () => {
+			u.remapTexture.value.dispose();
+		};
+	},[remapTexture])
 	useEffect(()=>{
-		u.remapBorderTexture.value.dispose();
 		u.remapBorderTexture.value = remapBorders?? new THREE.DataTexture();
 		u.remapBorders.value = Boolean(remapBorders)
-	},[remapBorders, remapTexture])
+		return () => {
+			u.remapBorderTexture.value.dispose();
+		}
+	},[remapBorders])
 	// --- GENERAL --- //
 	useEffect(()=>{
 		u.cOffset.value = cOffset;
