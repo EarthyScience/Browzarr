@@ -119,14 +119,16 @@ export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
     // Reprojected data is already -180..180, so no adjusting needed.
     const originalCoord = texCoord.xy;
     const tempV = realCoords(originalCoord).toVar();
-    // Regularly gridded data: the remap texture's .ba channels hold the mask coords.
-    // (Original note: not certain the y-flip is robust.)
-    const flipped = vec2(originalCoord.x, float(1).sub(originalCoord.y));
-    const remappedMask = texture(u.remapTexture, flipped).ba;
-    maskUV.assign(select(u.remapBorders, remappedMask, tempV));
+    If(u.remapBorders, ()=>{
+      tempV.xy.assign(texture(u.remapBorderTexture, tempV).ba)
+    })
+    maskUV.assign(tempV);
   })
   // For 0–360 data, wrap longitude by half a turn
-  // if (is360) maskUV.x.assign(fract(maskUV.x.add(0.5)));
+  maskUV.x.assign(select(u.is360,
+    fract(maskUV.x.add(0.5)),
+    maskUV.x
+  ));
   return valid
 })
 

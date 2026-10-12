@@ -52,7 +52,6 @@ export function resetProjection(){
         remapTexture: undefined,
         remapBorders: undefined,
     })
-    u.reproject.value = false;
     handleIrregularGrid()
 }
 
@@ -147,14 +146,15 @@ function createIrregularUV(
 	texture.wrapT = THREE.ClampToEdgeWrapping;
     texture.flipY = flipY;
     texture.needsUpdate = true;
-    useGlobalStore.setState({remapBorders: texture})
+    useGlobalStore.setState({remapBorders:texture})
 }
 
 function createInverseUV(
 	xArray: Array<number>,
 	yArray: Array<number>,
     is360: boolean,
-	resolution : number
+	resolution : number,
+    flipY: boolean
 ) {
 	// Creates an inverse UV map: for each normalized (x, y) position,
 	// stores the (i, j) index into xArray/yArray that best matches it.
@@ -180,7 +180,6 @@ function createInverseUV(
 			const iIdx = findNearestIndex(normX, u);
 			const iNorm = xArray.length > 1 ? iIdx / (xArray.length) : 0;
             const uValid = u >= xMin && u <= xMax;
-
             const valid = uValid && vValid;
 			data[ptr++] = THREE.DataUtils.toHalfFloat(iNorm);
 			data[ptr++] = THREE.DataUtils.toHalfFloat(jNorm);
@@ -188,7 +187,6 @@ function createInverseUV(
 			ptr++;
 		}
 	}
-
 	const texture = new THREE.DataTexture(
 		data,
 		width,
@@ -200,7 +198,7 @@ function createInverseUV(
 	texture.minFilter = THREE.LinearFilter;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;
-    // texture.flipY = flipY;
+    texture.flipY = flipY;
     texture.needsUpdate = true;
 	return texture;
 }
@@ -211,10 +209,10 @@ export function handleIrregularGrid(){
     const {flipY, borderCompatible} = useGlobalStore.getState()
     if (!borderCompatible) return;
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
-    if (isRegular) return;
+    if (isRegular)  return;
     const {is360Deg, plotType} = usePlotStore.getState();
 	if(plotType == 'sphere') {
-        const texture = createInverseUV(xArray, yArray, is360Deg, 1024);
+        const texture = createInverseUV(xArray, yArray, is360Deg, 1024, flipY);
         useGlobalStore.setState({remapTexture:texture});
     } else createIrregularUV(xArray, yArray, flipY)
     return
@@ -236,7 +234,7 @@ export function reproject(resolution: number = 256){
 		handleIrregularGrid()
 		return;
 	}
-    if (!checkProjString(destCRS) || !checkProjString(nativeCRS)) return; 
+    if (!checkProjString(destCRS) || !checkProjString(nativeCRS)) return;
     const {xIdx, yIdx} = getAxisIndices()
     if (is360Deg) {
 		xArray = remap360to180Monotonic(xArray) 
@@ -359,7 +357,6 @@ export function reproject(resolution: number = 256){
     texture.needsUpdate = true;
     if (remapTexture) remapTexture.dispose();
     useGlobalStore.setState({remapTexture: texture})
-    u.reproject.value = true;
     // ---- Update Axis and Shape information ----//
     const crsCheck = proj4(destCRS);
     const {axisDimArrays, axisDimUnits, axisDimNames, shape} = useGlobalStore.getState()

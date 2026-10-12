@@ -12,6 +12,8 @@ usePlotStore.subscribe((state, previousState) => {
   }
 })
 
+
+// THESE VU UNIFORMS NEED TO BE UPDATED IN THE FLATMAP. SHOULD BE HANDLED WHEN ALL UNFIROMS ARE MOVED
 const fragShader = Fn(() =>{
     If( positionGeometry.x.lessThan( vu.flatBounds.x )
         .or( positionGeometry.x.greaterThan( vu.flatBounds.y ) )

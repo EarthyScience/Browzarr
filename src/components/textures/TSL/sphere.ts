@@ -4,7 +4,8 @@ import * as THREE from 'three/webgpu'
 import { displacement, displaceZero } from './utils/displacementUniforms';
 import { Fn, normalize, asin, atan, PI, mul, mod, vec2, vec4, If, vec3, float, bool,
     fract, select, min, clamp, ivec3, all, cos, positionGeometry, greaterThanEqual, lessThanEqual, 
-    int} from 'three/tsl';
+    int,
+    texture} from 'three/tsl';
 
 const giveUV = Fn(( [position] : [any]) => {
     const n = normalize( position );
@@ -63,6 +64,9 @@ const sphereColor = Fn( () => {
     const inBounds = all( greaterThanEqual( sampleCoord, vec2( 0.0 ) ) )
         .and( all( lessThanEqual( sampleCoord, vec2( 1.0 ) ) ) );
     If( inBounds, () => {
+        If(u.reproject, ()=>{
+            sampleCoord.xy.assign(texture(u.remapTexture, sampleCoord.xy))
+        })
         const {localCoord, textureIdx} = h.getLocalCoord(sampleCoord)
         // Scale up
         localCoord.assign( fract( localCoord ) );

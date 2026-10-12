@@ -17,8 +17,8 @@ export function uniformUpdater(){
 			useBorderTexture: s.useBorderTexture, borderColor: s.borderColor, borderWidth: s.borderWidth,
 			is360Deg: s.is360Deg, showBorders: s.showBorders, interpPixels: s.interpPixels
 		})))
-	const { valueScales, useF16Textures, bivariate, textureArrayDepths, remapTexture, flipY} = useGlobalStore(useShallow(s => ({
-		valueScales: s.valueScales, useF16Textures: s.useF16Textures, bivariate: s.bivariate, 
+	const { valueScales, useF16Textures, bivariate, textureArrayDepths, remapTexture, flipY, remapBorders} = useGlobalStore(useShallow(s => ({
+		valueScales: s.valueScales, useF16Textures: s.useF16Textures, bivariate: s.bivariate, remapBorders: s.remapBorders,
 		mainTextures: s.mainTextures, textureArrayDepths: s.textureArrayDepths, remapTexture: s.remapTexture, flipY: s.flipY,
 	})))
 	const {lonBounds, latBounds} = useCoordBounds()
@@ -46,6 +46,18 @@ export function uniformUpdater(){
 	useEffect(()=>{
 		u.animateProg.value = animProg;
 	}, [animProg])
+	// --- REPROJECTION --- //
+	useEffect(()=>{
+		u.remapTexture.value.dispose();
+		u.remapTexture.value = remapTexture?? new THREE.DataTexture();
+		u.reproject.value = Boolean(remapTexture);		
+	},[])
+	useEffect(()=>{
+		u.remapBorderTexture.value.dispose();
+		u.remapBorderTexture.value = remapBorders?? new THREE.DataTexture();
+		u.remapBorders.value = Boolean(remapBorders)
+	})
+	// --- GENERAL --- //
 	useEffect(()=>{
 		u.cOffset.value = cOffset;
 		u.nanAlpha.value = 1 - nanTransparency;
@@ -63,12 +75,11 @@ export function uniformUpdater(){
 		u.useF16.value = useF16Textures;
 		u.bivariateSelection.value = bivariateSelection;
 		u.bivariate.value = bivariate;
-		u.remapTexture.value = remapTexture?? new THREE.DataTexture();
 	},[
 		cScale, cOffset, nanTransparency, fillValue, maskValue, valueRange,
 		lonBounds, latBounds, useBorderTexture, borderWidth, is360Deg, showBorders,
 		valueScales, useF16Textures, bivariateSelection, 
-		bivariate, textureArrayDepths, remapTexture
+		bivariate, textureArrayDepths
 	])
 	// --- BLOCKS --- //
 	useEffect(()=>{

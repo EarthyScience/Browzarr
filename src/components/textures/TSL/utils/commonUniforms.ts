@@ -37,8 +37,10 @@ export function setMapTextures(textures: (DataTexture | Data3DTexture | Texture)
 export const maskTexture = texture( new DataTexture() );
 export const cmap = texture( new DataTexture() );
 export const remapTexture = texture( new DataTexture() );
+export const reproject = uniform( bool(false) );
 export const borderTexture = texture( new Texture() );
 export const remapBorders = uniform( bool() );
+export const remapBorderTexture = texture( new DataTexture() );
 export const useBorderTexture = uniform( bool() );
 export const borderWidth = uniform( float() );
 export const borderColor = uniform( color() );
@@ -64,5 +66,4 @@ export const lonBounds = uniform( vec2() );
 export const valueRange = uniform( vec2() );
 export const useF16 = uniform( bool() );
 export const isFlat = uniform( bool() );
-export const reproject = uniform( bool(false) );
 export const flipY = uniform(bool(false));

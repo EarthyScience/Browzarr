@@ -12,6 +12,8 @@ import { SquareMeshes } from './TransectMeshes';
 import * as D from '@/components/textures/TSL/utils/displacementUniforms'
 import { uniformUpdater } from '@/hooks/useCommonUniforms';
 import { createSphereMaterial } from '../textures/TSL/sphere';
+import * as u from '@/components/textures/TSL/utils/commonUniforms'
+
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = -Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -38,6 +40,7 @@ export const Sphere = () => {
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
     const shaderMaterial = useMemo( () => createSphereMaterial() , [interpPixels])
     // No reprojection on Sphere. Remains static and can't update
+    console.log(u.flipY.value)
     uniformUpdater();
     const backMaterial = useMemo(()=>{
       const mat = shaderMaterial.clone()

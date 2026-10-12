@@ -1,7 +1,7 @@
 import * as u from './utils/commonUniforms'	
 import * as h from './utils/commonHelpers';
 import * as THREE from 'three/webgpu'
-import { Fn, uv, If, fract, sub, min, abs, select, vec4, int, vec3, clamp, vec2, ivec3, EPSILON, float, bool, Discard, struct, step, mix} from 'three/tsl';
+import { Fn, uv, If, fract, sub, min, abs, select, vec4, int, vec3, clamp, vec2, ivec3, EPSILON, float, bool, Discard, struct, step, mix, texture} from 'three/tsl';
 
 const twoVs = struct({
   remap: 'vec2',
@@ -64,7 +64,6 @@ export function createFlatMapMaterial(){
     const material = new THREE.NodeMaterial();
     material.transparent = true;
     material.side = THREE.DoubleSide;
-
     material.colorNode = Fn( () => {
         const Color = vec4( 0 ).toVar( 'FinalColor' );
         const texCoord = uv().toVar( 'texCoord' );

@@ -16,6 +16,7 @@ import { sampleCRS } from '../textures/ProjectionUtils';
 import { createFlatMapMaterial } from '../textures/TSL/flatMap';
 import { InfoViewer } from '../ui/Elements/InfoViewer';
 import { SquareMeshes } from './TransectMeshes';
+import * as u from '@/components/textures/TSL/utils/commonUniforms'
 const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[]}) => {
     // ---- Imports ---- //
     const textures = usePaddedTextures(propTextures);
@@ -63,7 +64,6 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
     useEffect(()=>{
         geometry.dispose()
     },[geometry])
-    
     // ----- Info Viewer----- //
     const [loc, setLoc] = useState<[number, number]>([0,0]);
     const [showInfo, setShowInfo] = useState(false);
@@ -93,7 +93,6 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
             ? [GetCurrentArray(), GetCurrentArray(undefined, variable2)]
             : [GetCurrentArray()],
     [analysisMode, analysisArray, textures, bivariate, variable2])
-
     const handleMove = (e: ThreeEvent<PointerEvent>) => {
       if (e.uv) {
         let {uv} = e;
