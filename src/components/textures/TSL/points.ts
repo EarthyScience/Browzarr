@@ -56,7 +56,8 @@ export function createPointMaterial({
         attr.array.set(array);         
         attr.needsUpdate = true; 
     }
-    const spriteValue = varying(values.element(instanceIndex).toFloat().div(255))
+    const rawValue = values.element(instanceIndex).toFloat().div(255)
+    const spriteValue = varying(h.rescaler(rawValue))
     const spriteCoord = varying(texCoords.element(instanceIndex))
     
     const pointScaler = Fn(()=>{
@@ -68,16 +69,17 @@ export function createPointMaterial({
             const strength = spriteValue.pow(scaleIntensity);
             pointScale.mulAssign(strength)
         })
+        const isNan = h.isNaNBits(spriteValue).or(u.useF16.not().and(spriteValue.equal(1.0)))
         const outOfBounds = p.x.greaterThan(vu.flatBounds.x.negate())
                 .or(p.x.lessThan(vu.flatBounds.y.negate()))
                 .or(p.z.negate().greaterThan(vu.flatBounds.z.negate()))
                 .or(p.z.negate().lessThan(vu.flatBounds.w.negate()))
                 .or(p.y.lessThan(vu.vertBounds.x))
-                .or(p.y.greaterThan(vu.vertBounds.y));
+                .or(p.y.greaterThan(vu.vertBounds.y))
+                .or(isNan);
         If(outOfBounds, ()=>{
             pointScale.assign(0)
         })
-
         return vec2(pointScale)
     })
     const material = new THREE.SpriteNodeMaterial()

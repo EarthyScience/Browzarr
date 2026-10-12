@@ -92,7 +92,8 @@ export function createFlatBlocksMaterial(count: number){
             .or(u.useF16.not().and(strength.equal(1.0)))
             .or(u.useF16.not().and(biVal.equal(1.0)))
     } else {
-        strength = h.sample1(localCoord, textureIdx)
+        strength = h.sample1(localCoord, textureIdx);
+        strength = h.rescaler(strength);
         isNan = h.isNaNBits(strength).or(u.useF16.not().and(strength.equal(1.0)))
         strength = clamp(strength.mul(u.cScale).add(u.cOffset), 0.0, 0.995)
         biVal = float(0)

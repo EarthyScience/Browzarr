@@ -1,6 +1,6 @@
 import * as THREE from 'three/webgpu'
 import { Data3DTexture, DataTexture, Texture } from 'three/webgpu';
-import { texture, uniform, bool, float, int, vec2, vec3, color, texture3D } from 'three/tsl';
+import { texture, uniform, bool, float, int, vec2, vec3, color, texture3D, string } from 'three/tsl';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
 const placeholder3D = () => {
@@ -67,3 +67,5 @@ export const valueRange = uniform( vec2() );
 export const useF16 = uniform( bool() );
 export const isFlat = uniform( bool() );
 export const flipY = uniform(bool(false));
+export const rescaleValues = uniform(bool(false));
+export const colorScale = uniform(string(""));

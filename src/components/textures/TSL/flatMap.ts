@@ -36,6 +36,7 @@ const faceColor = Fn( ([thisUV] : [any]) => {
         biNaN.assign( h.isNaNBits( strength ).or( h.isNaNBits( biVal ) ) );
     } ).Else( () => {
         strength.assign( h.sample1( localCoord, textureIdx ) );
+        strength.assign(h.rescaler(strength))
     } );
 
     const isNan = h.isNaNBits( strength ).or( biNaN ).or( u.useF16.not().and( strength.equal( 1. ) ) );

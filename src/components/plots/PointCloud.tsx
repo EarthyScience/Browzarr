@@ -26,8 +26,8 @@ const MappingCube = () =>{
 
 export const PointCloud = ( )=>{
     const { flipY, dataShape, remapTexture, shape, textureData } = useGlobalStore(useShallow(s => s))
-    const {scalePoints, scaleIntensity, pointSize, valueRange, colorScale,
-      timeScale, xRange, yRange, zRange, disablePointScale} = usePlotStore(useShallow(s => s))
+    const {scalePoints, scaleIntensity, pointSize, colorScale,
+      timeScale, xRange, yRange, zRange} = usePlotStore(useShallow(s => s))
 
     //Extract data and shape from Data3DTexture
 
@@ -37,7 +37,7 @@ export const PointCloud = ( )=>{
     const {material, calcPositions, updateValues} = useMemo(() => {
       pu.pointShape.value = new THREE.Vector3(...dataShape)
       return createPointMaterial({count})
-    },[count])
+    },[count, colorScale])
     const {gl} = useThree();
     useEffect(()=>{
       //@ts-ignore it exists but not listed in the type

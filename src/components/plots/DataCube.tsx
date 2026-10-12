@@ -16,11 +16,11 @@ export const DataCube = ( ) => {
 		shape:s.shape, flipY:s.flipY, remapTexture:s.remapTexture, dataShape:s.dataShape
 	}))) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const {xRange, yRange, zRange, quality, useOrtho, valueRange, useRayMarch, transparency, 
-		vTransferScale, revTransparency, interpPixels} = usePlotStore(useShallow(s => ({
+		vTransferScale, revTransparency, interpPixels, colorScale} = usePlotStore(useShallow(s => ({
 			xRange:s.xRange, yRange:s.yRange, zRange:s.zRange, quality:s.quality, useOrtho:s.useOrtho, valueRange:s.valueRange, useRayMarch:s.useRayMarch,
-			transparency:s.transparency, vTransferScale:s.vTransferScale, revTransparency:s.revTransparency, interpPixels:s.interpPixels
+			transparency:s.transparency, vTransferScale:s.vTransferScale, revTransparency:s.revTransparency, interpPixels:s.interpPixels, colorScale: s.colorScale
 		})))
-  	const shaderMaterial = useMemo(() => useRayMarch ? createRayMarchingMaterial(useOrtho) : createDDAMaterial(useOrtho), [useRayMarch, remapTexture, useOrtho, interpPixels]);
+  	const shaderMaterial = useMemo(() => useRayMarch ? createRayMarchingMaterial(useOrtho) : createDDAMaterial(useOrtho), [useRayMarch, remapTexture, useOrtho, interpPixels, colorScale]);
   	const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
   	const aspectRatio = shape.y/shape.x
 	const timeRatio = shape.z/shape.x;

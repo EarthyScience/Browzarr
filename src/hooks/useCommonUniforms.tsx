@@ -6,16 +6,15 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow'
 import { useCoordBounds } from './useCoordBounds'
-import { invalidate } from '@react-three/fiber'
 import * as u from '@/components/textures/TSL/utils/commonUniforms'
 
 export function uniformUpdater(){
 	const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskValue, valueRange, 
-		useBorderTexture, borderColor, borderWidth, is360Deg, showBorders, interpPixels} = usePlotStore(useShallow(s=>({
+		useBorderTexture, borderColor, borderWidth, is360Deg, showBorders, interpPixels, colorScale} = usePlotStore(useShallow(s=>({
 			cScale: s.cScale, cOffset: s.cOffset, animProg: s.animProg, nanTransparency: s.nanTransparency, nanColor: s.nanColor,
 			fillValue: s.fillValue, maskTexture: s.maskTexture, maskValue: s.maskValue, valueRange: s.valueRange,
 			useBorderTexture: s.useBorderTexture, borderColor: s.borderColor, borderWidth: s.borderWidth,
-			is360Deg: s.is360Deg, showBorders: s.showBorders, interpPixels: s.interpPixels
+			is360Deg: s.is360Deg, showBorders: s.showBorders, interpPixels: s.interpPixels, colorScale: s.colorScale
 		})))
 	const { valueScales, useF16Textures, bivariate, textureArrayDepths, remapTexture, flipY, remapBorders} = useGlobalStore(useShallow(s => ({
 		valueScales: s.valueScales, useF16Textures: s.useF16Textures, bivariate: s.bivariate, remapBorders: s.remapBorders,
@@ -112,5 +111,11 @@ export function uniformUpdater(){
 		prev = textures;
 		u.setMapTextures(textures);
 	});
+	// --- COLORSCALE --- //
+	useEffect(()=>{
+		if (colorScale)u.colorScale.value = colorScale;
+		u.rescaleValues.value = Boolean(colorScale)
+		console.log(u.rescaleValues)
+	},[colorScale])
 
 }

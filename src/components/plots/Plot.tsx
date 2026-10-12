@@ -164,11 +164,10 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {isFlat, DPR, mainTextures, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus } = useGlobalStore(useShallow(s =>({
+  const {isFlat, DPR, mainTextures, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus, setIsWebGPU } = useGlobalStore(useShallow(s =>({
     isFlat: s.isFlat, DPR: s.DPR, mainTextures: s.mainTextures, dataShape: s.dataShape, useF16Textures: s.useF16Textures,
-    setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus 
+    setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus, setIsWebGPU: s.setIsWebGPU
     })))
-  const colormap = useColormapStore(s => s.colormap)
   const keyFrameEditor = useImageExportStore(s => s.keyFrameEditor)
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => ({
     plotType: s.plotType, displaceFaces: s.displaceFaces, setPlotType: s.setPlotType
@@ -257,6 +256,7 @@ const Plot = () => {
           renderer.outputColorSpace = THREE.LinearSRGBColorSpace
           renderer.setPixelRatio(DPR)
           renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
+          setIsWebGPU(renderer.isWebGPURenderer)
           console.log(renderer)
           return renderer
         }}
@@ -277,13 +277,13 @@ const Plot = () => {
         }
         {plotType == "sphere" && show && 
           <>
-            {displaceFaces ? <SphereBlocks textures={mainTextures} /> : <Sphere /> }
+            {displaceFaces ? <SphereBlocks /> : <Sphere /> }
           </>
         }
         <MemoOrbit isFlat={plotType == "flat"} />
         {plotType == "flat" && show && <>
-          {!displaceFaces && <FlatMap textures={mainTextures as THREE.DataTexture[] | THREE.Data3DTexture[]} /> }
-          {displaceFaces && <FlatBlocks textures={mainTextures} />}
+          {!displaceFaces && <FlatMap /> }
+          {displaceFaces && <FlatBlocks />}
         </>
         }
         {/* <TestMesh /> */}

@@ -6,7 +6,6 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { evaluateColorMap } from '@/components/textures';
 import { useAxisIndices, useDimAxis } from '@/hooks';
 import { uniformUpdater } from '@/hooks/useCommonUniforms';
-import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
 import { ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -16,21 +15,18 @@ import { sampleCRS } from '../textures/ProjectionUtils';
 import { createFlatMapMaterial } from '../textures/TSL/flatMap';
 import { InfoViewer } from '../ui/Elements/InfoViewer';
 import { SquareMeshes } from './TransectMeshes';
-import * as u from '@/components/textures/TSL/utils/commonUniforms'
-const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[]}) => {
+const FlatMap = () => {
     // ---- Imports ---- //
-    const textures = usePaddedTextures(propTextures);
     const {flipY, dimNames, dimUnits, isFlat, variable2,
-      dataShape, strides, remapTexture, remapBorders, shape, 
+      dataShape, strides, remapTexture, shape, 
       bivariate, setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => ({
         flipY:s.flipY, dimNames:s.dimNames, dimUnits:s.dimUnits, 
         isFlat:s.isFlat, dataShape:s.dataShape, strides:s.strides, bivariate: s.bivariate,
-        remapTexture:s.remapTexture, remapBorders:s.remapBorders, shape:s.shape, variable2: s.variable2,
+        remapTexture:s.remapTexture, shape:s.shape, variable2: s.variable2,
         setPlotDim:s.setPlotDim, updateDimCoords:s.updateDimCoords, updateTimeSeries:s.updateTimeSeries
       })))
-    const {animProg, selectTS, colorScale,
-      getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
-        animProg:s.animProg, selectTS:s.selectTS, colorScale:s.colorScale,
+    const {animProg, selectTS, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
+        animProg:s.animProg, selectTS:s.selectTS,
         getColorIdx:s.getColorIdx, incrementColorIdx:s.incrementColorIdx
       })))
     const {analysisDim:axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
@@ -92,7 +88,8 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
         bivariate
             ? [GetCurrentArray(), GetCurrentArray(undefined, variable2)]
             : [GetCurrentArray()],
-    [analysisMode, analysisArray, textures, bivariate, variable2])
+    [analysisMode, analysisArray, bivariate, variable2])
+
     const handleMove = (e: ThreeEvent<PointerEvent>) => {
       if (e.uv) {
         let {uv} = e;
@@ -173,8 +170,6 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
 
     // ----- SHADER MATERIAL ----- //
     uniformUpdater();
-    // const shaderMaterial = useMemo(()=> new THREE.MeshBasicNodeMaterial({color: "red"})
-    // ,[isFlat, textures, remapTexture, colorScale])
     const shaderMaterial = useMemo(() => createFlatMapMaterial(), []) ;
     
     useEffect(()=>{

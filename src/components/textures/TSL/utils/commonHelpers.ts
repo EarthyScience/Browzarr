@@ -1,7 +1,8 @@
 import { Fn, min, max, clamp, abs, round, mix, select, bool,
     texture, floatBitsToUint, uint, fract, float, vec2, vec3,
     vec4, If, texture3D, ivec2, ivec3,
-    Break} from 'three/tsl';
+    Break,
+    wgslFn} from 'three/tsl';
 import * as u from './commonUniforms';
 
 
@@ -104,7 +105,23 @@ export function createBivariateColor() {
 // --- VALUE SCALING --- //
 export const denorm = (x: any) => x.mul(u.valueRange.y.sub(u.valueRange.x)).add(u.valueRange.x);
 export const norm = (x: any) => x.sub(u.valueRange.x).div(u.valueRange.y.sub(u.valueRange.x));
-export const rescaler = (x: any) => x;
+
+const makeColorScale = (expr: string) => wgslFn(`
+  fn applyColorScale( x: f32 ) -> f32 {
+    return ${expr};
+  }
+`);
+
+
+
+export const rescaler = Fn(([x]: [any]) => {
+  const result = x.toVar();
+  If(u.rescaleValues, () => {
+    const applyColorScale = makeColorScale(u.colorScale.value);
+    result.assign(norm(applyColorScale({ x: denorm(x) })));
+  });
+  return result;
+});
 
 
 export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {

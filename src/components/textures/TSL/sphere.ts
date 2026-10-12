@@ -89,6 +89,7 @@ const sphereColor = Fn( () => {
                 const flipOrder = u.bivariateSelection.notEqual( 0 );
                 Color.assign( vec4( select( flipOrder, h.colorMixer( biVal, strength ), h.colorMixer( strength, biVal ) ), 1. ) );
             } ).Else( () => {
+                strength.assign(h.rescaler(strength));
                 strength.mulAssign( u.cScale );
                 strength.assign( min( strength.add( u.cOffset ), 0.995 ) );
                 Color.assign( vec4( u.cmap.sample( vec2( strength, 0.5 ) ).rgb, 1. ) );
