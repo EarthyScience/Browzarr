@@ -34,7 +34,6 @@ const ColorAdjuster = () => {
 		const glslString = `${shader}`
 		usePlotStore.setState({colorScale:glslString})
 	}
-	console.log(colorScale)
 	return (
 		<div className='grid gap-2'>
 			{colorScale 

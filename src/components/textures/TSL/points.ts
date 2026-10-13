@@ -6,7 +6,7 @@ import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
 import * as u from './utils/uniforms';
 
-const GLOBAL_SCALE = 1/2000 
+const GLOBAL_SCALE = 1/100 
 
 export function createPointMaterial({
     count,
@@ -21,19 +21,17 @@ export function createPointMaterial({
         const depth = uint( u.pointShape.x );
         const height = uint( u.pointShape.y );
         const width = uint( u.pointShape.z ).toVar();
-        const scale = width.toFloat().mul(GLOBAL_SCALE);
-        const px = instanceIndex.mod(width).toFloat()
-        const py = instanceIndex.div(width).mod(height).toFloat() 
-        const pz = instanceIndex.div(height.mul(width)).toFloat() 
-        const offset = vec3(width,0,depth).mul(scale.div(2)).negate()
-        p.assign(vec3(
-            px, py, pz
-        ).mul(scale).add(offset))
-        t.assign(vec3(px, py,pz)
-            .div(vec3(width,height,depth))
-            .sub(0.5)
-            .mul(2)
-        )
+        const aspect = height.toFloat().div(width)
+        const timeAspect = depth.toFloat().div(width)
+        const normX = instanceIndex.mod(width).toFloat().div(width).toVar()
+        const normY = instanceIndex.div(width).mod(height).toFloat().div(height).toVar()
+        const normZ = instanceIndex.div(height.mul(width)).toFloat().div(depth).toVar()
+        const px = normX.sub(0.5).mul(2)
+        const py = normY.sub(0.5).mul(2).mul(aspect)
+        const pz = normZ.sub(0.5).mul(2).mul(timeAspect)
+        const scale = width.toFloat().mul(GLOBAL_SCALE)
+        p.assign(vec3(px, py, pz).mul(scale))
+        t.assign(vec3(normX, normY, normZ))
     })().compute(count)
 
     function updateValues(array: Uint8Array){

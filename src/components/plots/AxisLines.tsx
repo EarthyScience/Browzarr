@@ -16,12 +16,12 @@ import { parseLoc, coarsenFlatArray, linspace } from '@/utils/HelperFuncs';
 import { useCSSVariable } from '../ui';
 import { useAxisIndices, useDimAxis } from '@/hooks';
 import * as THREE from 'three/webgpu'
-
+import { CanvasText } from './utils/CanvasText';
 const AXIS_CONSTANTS = {
   INITIAL_RESOLUTION: 7,
   MAX_RESOLUTION: 20,
   MIN_RESOLUTION: 1,
-  PC_GLOBAL_SCALE_DIVISOR: 500,
+  PC_GLOBAL_SCALE_DIVISOR: 100,
   LINE_WIDTH: 2.0,
   TICK_LENGTH_FACTOR: 0.05,
   TICK_FONT_SIZE_FACTOR: 0.05,
@@ -61,18 +61,19 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
   const [verboseTime, setVerboseTime] = useState(false)
 
-  const depthRatio = useMemo(()=>shape.z/shape.x*timeScale,[shape, timeScale]);
+  const depthRatio = useMemo(()=> isPC 
+  	? dataShape[0]/dataShape[2]
+	: shape.z/shape.x*timeScale,[shape, timeScale, isPC, dataShape]);
   const shapeRatio = useMemo(()=>shape.y/shape.x, [shape])
   const timeRatio = useMemo(()=>Math.max(shape.z/shape.x * 2, 2),[shape]);
-
   const secondaryColor = useCSSVariable('--text-plot') //replace with needed variable
-  const colorHex = useMemo(()=>{
-    if (!secondaryColor){return}
+  const {colorHex, colorString} = useMemo(()=>{
+    if (!secondaryColor){return {}}
     const col = new THREE.Color(secondaryColor) 
-    return col.getHex()
+    return {colorHex: col.getHex(), colorString: `#${col.getHexString()}`}
   },[secondaryColor])
 
-  const lineMat = useMemo(()=>new THREE.Line2NodeMaterial({color: colorHex ? colorHex : 0, linewidth: AXIS_CONSTANTS.LINE_WIDTH}),[colorHex])
+  const lineMat = useMemo(()=>new THREE.Line2NodeMaterial({color: colorHex?? 0, linewidth: AXIS_CONSTANTS.LINE_WIDTH}),[colorHex])
   const tickLength = AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale;
 
   const xLine = useMemo(()=> {
@@ -105,7 +106,6 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
       const length = dimLengths[isX ? 2 : 1]
       return Math.floor(fac * (length - 1))
   }
-  
   return (
     <group visible={plotType != 'sphere' && plotType != 'flat' && !hideAxis}>
     {/* Horizontal Group */}
@@ -119,58 +119,56 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
            &&          
           <group key={`xGroup_${idx}`} position={[isPC ? -globalScale + idx*xDimScale/(xResolution/2)*globalScale : -1 + idx*xDimScale/(xResolution/2), 0, 0]}>
             <primitive key={idx} object={tickLine.clone()}  rotation={[0, flipX ? Math.PI : 0, 0]} />
-            {/* <Text 
+            <CanvasText
               key={`textX_${idx}`}
+              color={colorString}
               anchorX={idx == 0 ? (flipX ? 'right' : 'left') : idx == xResolution-1 ? (flipX ? 'left' : 'right') : 'center'}
               anchorY={'top'} 
-              fontSize={AXIS_CONSTANTS.TICK_FONT_SIZE_FACTOR*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
+              fontSize={AXIS_CONSTANTS.TICK_FONT_SIZE_FACTOR*globalScale}
               rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]}
               position={[0, 0, flipX ? -AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale : AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale]}
-            >{parseLoc(dimSlices[2]?.[getFactor(idx*xValDelta, true)] || 0,axisDimUnits[xIdx])}</Text> */}
+            >
+              {parseLoc(dimSlices[2]?.[getFactor(idx*xValDelta, true)] || 0,axisDimUnits[xIdx])}
+            </CanvasText>
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, flipX ? Math.PI : 0]} position={[(xRange[0]+xRange[1])/2*globalScale, 0, flipX ? -AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale : AXIS_CONSTANTS.X_TITLE_OFFSET_FACTOR*globalScale]}>
-          {/* <Text 
+          <CanvasText 
             key={'xTitle'}
             anchorX={'center'}
             anchorY={'top'} 
             fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
-            color={colorHex}
-            material-depthTest={false}
-          >{axisDimNames[xIdx]}</Text> */}
+            color={colorString}
+          >{axisDimNames[xIdx]}</CanvasText>
           <group visible={!hideAxisControls}>
-            {/* {xResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
-            <Text 
+            {xResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
+            <CanvasText 
               key={'xAdd'}
               anchorX={'center'}
               anchorY={'middle'} 
               fontSize={0.15*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               position={[xTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
               onClick={e=>setXResolution(x=> Math.min(x+1,AXIS_CONSTANTS.MAX_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               +
-            </Text>} */}
-            {/* { xResolution > AXIS_CONSTANTS.MIN_RESOLUTION &&
-            <Text 
+            </CanvasText>}
+            { xResolution > AXIS_CONSTANTS.MIN_RESOLUTION &&
+            <CanvasText 
               key={'xSub'}
               anchorX={'center'}
               anchorY={'middle'} 
               fontSize={0.15*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               position={[-xTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
               onClick={e=>setXResolution(x=> Math.max(x-1,AXIS_CONSTANTS.MIN_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
-            </Text>} */}
+            </CanvasText>}
           </group>
         </group>
       </group>
@@ -183,99 +181,92 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
           && 
           <group key={`zGroup_${idx}`} position={[0, 0, isPC ? -depthRatio*globalScale + idx*zDimScale/(zResolution/2)*depthRatio*(globalScale) : -0.5*timeRatio + idx*zDimScale/(zResolution/2)*timeRatio/2]}>
             <primitive key={idx} object={tickLine.clone()}  rotation={[0, flipY ? Math.PI/2 : -Math.PI/2 , 0]} />
-            {/* <Text 
+            <CanvasText 
               key={`textY_${idx}`}
               anchorX={idx == 0 ? (flipY ? 'right' : 'left') : idx == zResolution-1 ? (flipY ? 'left' : 'right') : 'center'}
               anchorY={'top'} 
               fontSize={AXIS_CONSTANTS.TICK_FONT_SIZE_FACTOR*globalScale*0.8} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]}
               position={[flipY ? AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale :-AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[0]?.[(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]] || 0,axisDimUnits[zIdx], verboseTime, timeResolution)}</Text> */}
+            >{parseLoc(dimSlices[0]?.[(Math.floor((dimLengths[0]-1)*idx*zValDelta)+Math.floor(dimLengths[0]*animProg))%dimLengths[0]] || 0,axisDimUnits[zIdx], verboseTime, timeResolution)}</CanvasText>
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, flipY ? Math.PI/2 : -Math.PI/2]} position={[flipY ? AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale : -AXIS_CONSTANTS.Z_TITLE_OFFSET_FACTOR*globalScale, 0, isPC ? (zRange[0]+zRange[1])/2*depthRatio*(globalScale) : (zRange[0]+zRange[1])/2*depthRatio]}>
-          {/* <Text 
+          <CanvasText 
             key={'zTitle'}
             anchorX={'center'}
             anchorY={'top'} 
             fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
-            color={colorHex}
-            material-depthTest={false}
-          >{axisDimNames[zIdx]}</Text> */}
+            color={colorString}
+          >{axisDimNames[zIdx]}</CanvasText>
           
           <group visible={!hideAxisControls}>
-            {/* {zResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
-            <Text 
+            {zResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
+            <CanvasText 
               key={'zAdd'}
               anchorX={'center'}
               anchorY={'middle'} 
               fontSize={0.15*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               position={[zTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
               onClick={e=>setZResolution(x=> Math.min(x+1,AXIS_CONSTANTS.MAX_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               +
-            </Text>}
+            </CanvasText>}
             {zResolution > AXIS_CONSTANTS.MIN_RESOLUTION &&
-            <Text 
+            <CanvasText 
               key={'zSub'}
               anchorX={'center'}
               anchorY={'middle'} 
               fontSize={0.15*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               position={[-zTitleOffset, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale / 2, 0]}
               onClick={e=>setZResolution(x=> Math.max(x-1,AXIS_CONSTANTS.MIN_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
-            </Text>} */}
+            </CanvasText>}
             {isTimeCompatible &&
             <>
-            {/* <Text 
+            <CanvasText 
               visible={timeResolution < 3}
               key={'zUpRes'}
               anchorX={'center'}
               anchorY={'top'} 
               fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
               position={[zTitleOffset*0.5, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale *2, 0]}
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               onClick={e=>setTimeResolution(x=> Math.min(x+1,3))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
-            >⇒</Text>
-            <Text 
+            >⇒</CanvasText>
+            <CanvasText 
               key={'zVerbose'}
               anchorX={'center'}
               anchorY={'top'} 
               fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale*0.66} 
               position={[0, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale*1.33 , 0]}
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               onClick={() => setVerboseTime(x => !x)}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
-            >① ⮀ Ⓐ</Text>
-            <Text 
+            >① ⮀ Ⓐ</CanvasText>
+            <CanvasText 
               visible={timeResolution > 0}
               key={'zDownRes'}
               anchorX={'center'}
               anchorY={'top'} 
               fontSize={AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR*globalScale} 
               position={[-zTitleOffset*0.5, -AXIS_CONSTANTS.TITLE_FONT_SIZE_FACTOR * globalScale*2, 0]}
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               onClick={e=>setTimeResolution(x=> Math.max(x-1,0))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
-            >⇐</Text> */}
+            >⇐</CanvasText>
             </>}
           </group>
         </group>
@@ -290,66 +281,62 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
            &&       
           <group key={`yGroup_${idx}`} position={[0, isPC ?  (-shapeRatio*globalScale + idx*yDimScale/(yResolution/2)*shapeRatio*globalScale) : -shapeRatio + idx*yDimScale/(yResolution/2)*shapeRatio, 0]}>
             <primitive key={idx} object={tickLine.clone()}  rotation={[0, flipY ? -Math.PI/2 :Math.PI/2 , 0]} />
-            {/* <Text 
+            <CanvasText 
               key={`text_${idx}`}
               anchorX={flipY ? flipX ? 'left' : 'right' : flipX ? 'right' : 'left'}
               anchorY={'middle'} 
               fontSize={0.05*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               rotation={[0, flipX ? Math.PI : 0, 0]}
               position={[flipY ? -0.07*globalScale : 0.07*globalScale, 0, 0]}
-            >{parseLoc(dimSlices[1]?.[getFactor(idx*yValDelta)] || 0,axisDimUnits[yIdx])}</Text> */}
+            >{parseLoc(dimSlices[1]?.[getFactor(idx*yValDelta)] || 0,axisDimUnits[yIdx])}</CanvasText>
           </group>
         ))}
         <group rotation={[0, flipX ? Math.PI : 0 , 0]} position={[flipY ? -0.32*globalScale : 0.32*globalScale, (yRange[0]+yRange[1])/2*shapeRatio*globalScale, 0]}>
-          {/* <Text 
+          <CanvasText 
             key={'yTitle'}
             anchorX={'center'}
             anchorY={'middle'} 
             fontSize={0.08*globalScale} 
-            color={colorHex}
-            material-depthTest={false}
+            color={colorString}
             rotation={[0, 0, Math.PI / 2]}
           >
             {axisDimNames[yIdx]}
-          </Text> */}
+          </CanvasText>
 
-          {/* <group visible={!hideAxisControls}>
+          <group visible={!hideAxisControls}>
             {yResolution < AXIS_CONSTANTS.MAX_RESOLUTION &&
-            <Text 
+            <CanvasText 
               key={'zAdd'}
               anchorX={'center'}
               anchorY={'middle'} 
               fontSize={AXIS_CONSTANTS.CONTROL_FONT_SIZE_FACTOR*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               position={[0, yTitleOffset, 0]}
               onClick={e=>setYResolution(x=> Math.min(x+1,AXIS_CONSTANTS.MAX_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               +
-            </Text>
+            </CanvasText>
           }
           {yResolution > AXIS_CONSTANTS.MIN_RESOLUTION &&
-            <Text 
+            <CanvasText 
               key={'zSub'}
               anchorX={'center'}
               anchorY={'middle'}
               rotation={[0, 0, Math.PI / 2]}
               fontSize={AXIS_CONSTANTS.CONTROL_FONT_SIZE_FACTOR*globalScale} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               position={[0, -yTitleOffset, 0]}
               onClick={e=>setYResolution(x=> Math.max(x-1,AXIS_CONSTANTS.MIN_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
-            </Text>
+            </CanvasText>
           }
-        </group> */}
+        </group>
       </group>
     </group>
 
@@ -435,10 +422,10 @@ const FlatAxis = () =>{
   }, [dimLengths, analysisMode, axis])
 
   const secondaryColor = useCSSVariable('--text-plot') //replace with needed variable
-  const colorHex = useMemo(()=>{
-    if (!secondaryColor){return}
+   const {colorHex, colorString} = useMemo(()=>{
+    if (!secondaryColor){return {}}
     const col = new THREE.Color(secondaryColor) 
-    return col.getHex()
+    return {colorHex: col.getHex(), colorString: `#${col.getHexString()}`}
   },[secondaryColor])
 
   const lineMat = useMemo(()=>new THREE.Line2NodeMaterial({color: colorHex ? colorHex : 0, linewidth: FLAT_AXIS_CONSTANTS.LINE_WIDTH}),[colorHex])
@@ -478,58 +465,54 @@ const FlatAxis = () =>{
           xResolution > FLAT_AXIS_CONSTANTS.MIN_RESOLUTION &&              
           <group key={`xGroup_${idx}`} position={[-(swap ? 1/shapeRatio : 1) + idx*xDimScale/(xResolution/2)*(swap ? 1/shapeRatio : 1), 0, 0]}>
             <primitive key={idx} object={tickLine.clone()}  rotation={[0, 0, 0]} />
-            {/* <Text 
+            <CanvasText 
               key={`textX_${idx}`}
               anchorX={'center'}
               anchorY={'top'} 
               fontSize={FLAT_AXIS_CONSTANTS.TICK_FONT_SIZE} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               rotation={[-Math.PI/2, 0, 0]}
               position={[0, 0, FLAT_AXIS_CONSTANTS.TICK_LENGTH]}
-            >{parseLoc(axisArrays[widthIdx][getFactor(idx*xValDelta, true)],axisUnits[widthIdx])}</Text> */}
+            >{parseLoc(axisArrays[widthIdx][getFactor(idx*xValDelta, true)],axisUnits[widthIdx])}</CanvasText>
           </group>
         ))}
         <group rotation={[-Math.PI/2, 0, 0]} position={[0, 0, FLAT_AXIS_CONSTANTS.X_TITLE_OFFSET]}>
-          {/* <Text 
+          <CanvasText 
             key={'xTitle'}
             anchorX={'center'}
             anchorY={'top'} 
             fontSize={FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE} 
-            color={colorHex}
-            material-depthTest={false}
-          >{axisNames[widthIdx]}</Text> */}
+            color={colorString}
+          >{axisNames[widthIdx]}</CanvasText>
           <group visible={!hideAxisControls}>
-            {/* {xResolution < FLAT_AXIS_CONSTANTS.MAX_RESOLUTION &&
-            <Text 
+            {xResolution < FLAT_AXIS_CONSTANTS.MAX_RESOLUTION &&
+            <CanvasText 
               key={'xAdd'}
               anchorX={'center'}
               anchorY={'middle'} 
               fontSize={0.125} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               position={[xTitleOffset, -0.05, 0]}
               onClick={e=>setXResolution(x=> Math.min(x+1,FLAT_AXIS_CONSTANTS.MAX_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               +
-            </Text>}
+            </CanvasText>}
             { xResolution > FLAT_AXIS_CONSTANTS.MIN_RESOLUTION &&
-            <Text 
+            <CanvasText 
               key={'xSub'}
               anchorX={'center'}
               anchorY={'middle'} 
               fontSize={0.125} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               position={[-xTitleOffset, -0.05, 0]}
               onClick={e=>setXResolution(x=> Math.max(x-1,FLAT_AXIS_CONSTANTS.MIN_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
-            </Text>} */}
+            </CanvasText>}
           </group>
         </group>
       </group>
@@ -540,51 +523,48 @@ const FlatAxis = () =>{
         yResolution > FLAT_AXIS_CONSTANTS.MIN_RESOLUTION &&     
           <group key={`yGroup_${idx}`} position={[0, -(swap ? 1 : shapeRatio )+ idx*yDimScale/(yResolution/2)*(swap ? 1 : shapeRatio), 0]} rotation={[0, 0, Math.PI]}>
             <primitive key={idx} object={tickLine.clone()}  rotation={[0, Math.PI/2 , 0]} />
-            {/* <Text 
+            <CanvasText 
               key={`text_${idx}`}
               anchorX={'right'}
               anchorY={'middle'} 
               fontSize={FLAT_AXIS_CONSTANTS.TICK_FONT_SIZE} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               rotation={[0,  0, -Math.PI]}
               position={[FLAT_AXIS_CONSTANTS.TICK_LENGTH*1.4, 0, 0]}
-            >{parseLoc(axisArrays[heightIdx][getFactor(idx*yValDelta)],axisUnits[heightIdx])}</Text> */}
+            >{parseLoc(axisArrays[heightIdx][getFactor(idx*yValDelta)],axisUnits[heightIdx])}</CanvasText>
           </group>
         ))}
         <group rotation={[0, 0, 0]} position={[-FLAT_AXIS_CONSTANTS.Y_TITLE_OFFSET, 0, 0]}>
-          {/* <Text 
+          <CanvasText 
             key={'yTitle'}
             anchorX={'center'}
             anchorY={'middle'} 
             rotation={[0, 0, Math.PI/2]}
             fontSize={FLAT_AXIS_CONSTANTS.TITLE_FONT_SIZE}
-            color={colorHex}
-            material-depthTest={false}
-          >{axisNames[heightIdx]}</Text> */}
+            color={colorString}
+          >{axisNames[heightIdx]}</CanvasText>
           <group visible={!hideAxisControls}>
-            {/* {yResolution < FLAT_AXIS_CONSTANTS.MAX_RESOLUTION &&
-            <Text 
+            {yResolution < FLAT_AXIS_CONSTANTS.MAX_RESOLUTION &&
+            <CanvasText 
               key={'zAdd'}
               anchorX={'center'}
               anchorY={'middle'} 
               fontSize={0.125} 
-              color={colorHex}
-              material-depthTest={false}
+              color={colorString}
               position={[ 0.0, yTitleOffset, 0]}
               onClick={e=>setYResolution(x=> Math.min(x+1,FLAT_AXIS_CONSTANTS.MAX_RESOLUTION))}
               onPointerEnter={e=>document.body.style.cursor = 'pointer'}
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               +
-            </Text>} */}
-            {/* {yResolution > FLAT_AXIS_CONSTANTS.MIN_RESOLUTION &&
-            <Text 
+            </CanvasText>}
+            {yResolution > FLAT_AXIS_CONSTANTS.MIN_RESOLUTION &&
+            <CanvasText 
               key={'zSub'}
               anchorX={'center'}
               anchorY={'middle'} 
               fontSize={0.125} 
-              color={colorHex}
+              color={colorString}
               material-depthTest={false}
               position={[0.0, -yTitleOffset, 0]}
               onClick={e=>setYResolution(x=> Math.max(x-1,FLAT_AXIS_CONSTANTS.MIN_RESOLUTION))}
@@ -592,7 +572,7 @@ const FlatAxis = () =>{
               onPointerLeave={e=>document.body.style.cursor = 'default'}
             >
               -
-            </Text>} */}
+            </CanvasText>}
           </group>
         </group>
     </group>

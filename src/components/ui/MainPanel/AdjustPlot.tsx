@@ -213,9 +213,9 @@ const PointOptions = () =>{
           <h1>Point Size</h1>
           <UISlider
               className='w-full mb-4 mt-2'
-              min={1}
-              max={50}
-              step={1}
+              min={0.01}
+              max={2}
+              step={0.02}
               value={[pointSize]}
               disabled={disablePointScale}
           onValueChange={(vals:number[]) => setPointSize(vals[0])}
