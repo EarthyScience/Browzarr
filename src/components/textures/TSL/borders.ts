@@ -1,8 +1,6 @@
-import * as u from './utils/commonUniforms'
+import * as u from './utils/uniforms'
 import { bool, Fn, If, positionGeometry, uniform, Discard, vec4 } from 'three/tsl'
-import * as vu from './utils/volumeUniforms'
 import * as THREE from 'three/webgpu'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 import { usePlotStore } from '@/GlobalStates/PlotStore'
 
 export const trim = uniform(bool(false))
@@ -15,10 +13,10 @@ usePlotStore.subscribe((state, previousState) => {
 
 // THESE VU UNIFORMS NEED TO BE UPDATED IN THE FLATMAP. SHOULD BE HANDLED WHEN ALL UNFIROMS ARE MOVED
 const fragShader = Fn(() =>{
-    If( positionGeometry.x.lessThan( vu.flatBounds.x )
-        .or( positionGeometry.x.greaterThan( vu.flatBounds.y ) )
-        .or( positionGeometry.y.lessThan( vu.vertBounds.x ) )
-        .or( positionGeometry.y.greaterThan( vu.vertBounds.y ) )
+    If( positionGeometry.x.lessThan( u.flatBounds.x )
+        .or( positionGeometry.x.greaterThan( u.flatBounds.y ) )
+        .or( positionGeometry.y.lessThan( u.vertBounds.x ) )
+        .or( positionGeometry.y.greaterThan( u.vertBounds.y ) )
         .and( trim ), () => {
 	Discard();
     });

@@ -3,7 +3,7 @@ import { Fn, min, max, clamp, abs, round, mix, select, bool,
     vec4, If, texture3D, ivec2, ivec3,
     Break,
     wgslFn} from 'three/tsl';
-import * as u from './commonUniforms';
+import * as u from './uniforms';
 
 
 // --- TEXTURE SAMPLERS ---//

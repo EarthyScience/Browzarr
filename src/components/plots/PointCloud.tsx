@@ -5,11 +5,10 @@ import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { ColumnMeshes } from './TransectMeshes';
 import { UVCube } from './UVCube';
-import { uniformUpdater } from '@/hooks/useCommonUniforms';
+import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
 import { useThree } from '@react-three/fiber';
 import { createPointMaterial } from '../textures/TSL/points';
-import * as pu from '../textures/TSL/points';
-import * as vu from '../textures/TSL/utils/volumeUniforms';
+import * as u from '@/components/textures/TSL/utils/uniforms'
 const MappingCube = () =>{
   const {dataShape, shape} = useGlobalStore(useShallow(s => s))
   const {timeScale} = usePlotStore(useShallow(s => s))
@@ -35,7 +34,7 @@ export const PointCloud = ( )=>{
     const globalscale = dataShape[2]/500
     const count = dataShape.reduce((a, b) => a * b , 1)
     const {material, calcPositions, updateValues} = useMemo(() => {
-      pu.pointShape.value = new THREE.Vector3(...dataShape)
+      u.pointShape.value = new THREE.Vector3(...dataShape)
       return createPointMaterial({count})
     },[count, colorScale])
     const {gl} = useThree();
@@ -49,18 +48,18 @@ export const PointCloud = ( )=>{
 
     // --- UNIFORMS ---//
     useEffect(()=>{
-      pu.pointSize.value = pointSize;
-      pu.scaleIntensity.value = scaleIntensity;
-      pu.timeScale.value = timeScale;
-      pu.scaleByVal.value = scalePoints
+      u.pointSize.value = pointSize;
+      u.scaleIntensity.value = scaleIntensity;
+      u.timeScale.value = timeScale;
+      u.scaleByVal.value = scalePoints
     },[pointSize, scaleIntensity, timeScale, scalePoints, material])
     useEffect(()=>{
-        vu.scale.value = shape;
-        vu.flatBounds.value = new THREE.Vector4(-xRange[1],-xRange[0],zRange[0], zRange[1]);
-        vu.vertBounds.value = flipY 
+        u.volumeScale.value = shape;
+        u.flatBounds.value = new THREE.Vector4(-xRange[1],-xRange[0],zRange[0], zRange[1]);
+        u.vertBounds.value = flipY 
               ? new THREE.Vector2(yRange[0],yRange[1])
               : new THREE.Vector2(yRange[0],yRange[1]);
-        vu.dataShape.value = remapTexture 
+        u.dataShape.value = remapTexture 
           ? new THREE.Vector3(remapTexture.image.width, remapTexture.image.height, dataShape[0])
           : new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])
       },[shape, xRange, yRange, zRange, dataShape, flipY, remapTexture])

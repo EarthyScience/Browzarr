@@ -1,7 +1,6 @@
-import * as u from './utils/commonUniforms'	
+import * as u from './utils/uniforms'	
 import * as h from './utils/commonHelpers';
 import * as THREE from 'three/webgpu'
-import { displacement, displaceZero } from './utils/displacementUniforms';
 import { Fn, normalize, asin, atan, PI, mul, mod, vec2, vec4, If, vec3, float, bool,
     fract, select, min, clamp, ivec3, all, cos, positionGeometry, greaterThanEqual, lessThanEqual, 
     int,
@@ -125,7 +124,7 @@ const sphereVertex = Fn(() =>{
         } );
         const isnan = h.isNaNBits( dispStrength ).or( u.useF16.not().and( dispStrength.equal( 1. ) ) );
         If( isnan.not(), () => {
-            newPosition.addAssign( normal.mul( dispStrength.sub( displaceZero ) ).mul( displacement ) );
+            newPosition.addAssign( normal.mul( dispStrength.sub( u.displaceZero ) ).mul( u.displacement ) );
         } )
     })
     return newPosition;

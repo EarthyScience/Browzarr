@@ -1,19 +1,11 @@
 import {
-    Fn,If,
-    instancedArray,
-    instanceIndex,
-    positionLocal,
-    varying, vec3,
-    vec2, vec4, clamp,
-    select, float, bool,
-    positionGeometry,
-    texture,
-    struct,
+    bool,clamp,float,Fn, If,instancedArray,
+    instanceIndex,positionGeometry,positionLocal,
+    select,struct,varying,vec2,vec3,vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
-import * as u from './utils/commonUniforms';
-import { displacement, displaceZero, resolution } from './utils/displacementUniforms';
+import * as u from './utils/uniforms';
 
 const instanceColor = Fn(([strengths] : [any])=>{
    if (u.bivariate.value){
@@ -28,6 +20,7 @@ const instanceColor = Fn(([strengths] : [any])=>{
 const isBorder = Fn(([instanceUV] : [any])=>{
     const isBorder = bool(false).toVar();
     If(u.useBorderTexture, ()=>{
+        const resolution = u.displacementResolution
         const aspect = resolution.x.toFloat().div(resolution.y)
         const gridExtent = vec2(2, float(2).div(aspect));
         const thisUV = instanceUV.add(positionGeometry.xy.div(gridExtent));
@@ -63,6 +56,7 @@ export function createFlatBlocksMaterial(count: number){
     const calcPositions = Fn(() => {
         const p = positions.element(instanceIndex);
         const uvs = instanceUVs.element(instanceIndex);
+        const resolution = u.displacementResolution
         const width = resolution.x.toUint();
         const height = resolution.y.toUint();
         const px = instanceIndex.mod(width);
@@ -100,7 +94,7 @@ export function createFlatBlocksMaterial(count: number){
     }
     const vStrength = varying(strength, 'vStrength'); // explicit vertex -> fragment
     const vBiVal = varying(biVal, 'biVal');
-    const heightFactor = vStrength.sub(displaceZero).mul(displacement);
+    const heightFactor = vStrength.sub(u.displaceZero).mul(u.displacement);
     const scaledPosition = vec3(
         positionLocal.x, positionLocal.y, positionLocal.z.mul(heightFactor)
     )

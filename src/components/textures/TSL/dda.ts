@@ -3,9 +3,8 @@ import { Fn, vec4, vec3, abs, any, greaterThan, If, lessThan, normalize, pow, EP
 	Break, modelWorldMatrixInverse, modelWorldMatrix, floor,sign, mix, greaterThanEqual,
 	texture, mod, clamp, ivec3, fract, 
     cameraWorldMatrix} from 'three/tsl';
-import * as u from './utils/commonUniforms'	
+import * as u from './utils/uniforms'	
 import * as h from './utils/commonHelpers';
-import * as vu from './utils/volumeUniforms'
 import * as THREE from 'three/webgpu'
 import {shouldSkip, sampleVoxel, hitBox, colorTexel} from './utils/volumeHelpers'
 
@@ -16,13 +15,13 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
     If(bounds.x.greaterThan(bounds.y), () => { Discard(); });
     bounds.x.assign(max(bounds.x, 0.0));
 
-    const gridRes = vu.dataShape;
-    const boxMin = vu.scale.mul( 0.5 ).negate();
-    const voxelSize = vu.scale.div( gridRes );
+    const gridRes = u.dataShape;
+    const boxMin = u.volumeScale.mul( 0.5 ).negate();
+    const voxelSize = u.volumeScale.div( gridRes );
 
     // Initial voxel from the ray's entry point into the box.
     const p0 = vOrigin.add( bounds.x.mul( rayDir ) );
-    const localPos = clamp( p0.sub( boxMin ).div( vu.scale ), vec3( 0.0 ), vec3( 1.0 ).sub( vec3( EPSILON ) ) ).mul( gridRes );
+    const localPos = clamp( p0.sub( boxMin ).div( u.volumeScale ), vec3( 0.0 ), vec3( 1.0 ).sub( vec3( EPSILON ) ) ).mul( gridRes );
     const voxel = clamp( ivec3( floor( localPos ) ), ivec3( 0 ), ivec3( gridRes ).sub( 1 ) ).toVar("voxel");
     // Standard 3D DDA (Amanatides & Woo) setup.
     const stepDir = sign( rayDir );
@@ -61,7 +60,7 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
                 If(alphaAcc.greaterThanEqual(0.99), () => {
                     If(u.useBorderTexture, () => {
                         const pHit = vOrigin.add(t.mul(rayDir)).toVar();
-                        const localPosContinuous = pHit.xy.sub(boxMin).div(vu.scale).toVar();
+                        const localPosContinuous = pHit.xy.sub(boxMin).div(u.volumeScale).toVar();
                         const borderUV = h.realCoords(localPosContinuous.xy)
                         //@ts-ignore .level does exist
                         const borderDist = u.borderTexture.sample(borderUV).level(0).r;

@@ -1,26 +1,12 @@
-import { Fn, vec4, vec3, abs, any, greaterThan, If, lessThan, normalize, pow, EPSILON, Discard, int, ceil, Loop,
-	min, max, vec2, select, cameraPosition, positionLocal, varying, float, bool,sub,
-	Break, modelWorldMatrixInverse, modelWorldMatrix, floor,sign, mix, greaterThanEqual,
-	texture, mod, clamp, ivec3, fract, 
-    cameraWorldMatrix,
-    instancedArray,
-    instanceIndex,
-    hash,
-    uniform,
-    uint} from 'three/tsl';
-import * as u from './utils/commonUniforms'	
-import * as vu from './utils/volumeUniforms'
+import {
+    bool,float,Fn,If,instancedArray,instanceIndex,uint,
+    uniform,varying,vec2,vec3,vec4
+} from 'three/tsl';
+import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
-import * as THREE from 'three/webgpu'
+import * as u from './utils/uniforms';
 
 const GLOBAL_SCALE = 1/1000 
-
-export const pointShape = uniform(vec3(0))
-export const globalScale = uniform(float(0))
-export const pointSize = uniform(float(0))
-export const timeScale = uniform(float(0))
-export const scaleByVal = uniform(bool(false))
-export const scaleIntensity = uniform(float(0))
 
 export function createPointMaterial({
     count,
@@ -33,9 +19,9 @@ export function createPointMaterial({
     const calcPositions = Fn(() => {
         const p = positions.element(instanceIndex)
         const t = texCoords.element(instanceIndex)
-        const depth = uint( pointShape.x );
-        const height = uint( pointShape.y );
-        const width = uint( pointShape.z ).toVar();
+        const depth = uint( u.pointShape.x );
+        const height = uint( u.pointShape.y );
+        const width = uint( u.pointShape.z ).toVar();
         const scale = width.toFloat().mul(GLOBAL_SCALE);
         const px = instanceIndex.mod(width).toFloat()
         const py = instanceIndex.div(width).mod(height).toFloat() 
@@ -61,21 +47,21 @@ export function createPointMaterial({
     const spriteCoord = varying(texCoords.element(instanceIndex))
     
     const pointScaler = Fn(()=>{
-        const pointScale = pointSize.toVar()
+        const pointScale = u.pointSize.toVar()
         const p = spriteCoord
         const multiplier = float(0.01);
         pointScale.mulAssign(multiplier)
-        If(scaleByVal, ()=>{
-            const strength = spriteValue.pow(scaleIntensity);
+        If(u.scaleByVal, ()=>{
+            const strength = spriteValue.pow(u.scaleIntensity);
             pointScale.mulAssign(strength)
         })
         const isNan = h.isNaNBits(spriteValue).or(u.useF16.not().and(spriteValue.equal(1.0)))
-        const outOfBounds = p.x.greaterThan(vu.flatBounds.x.negate())
-                .or(p.x.lessThan(vu.flatBounds.y.negate()))
-                .or(p.z.negate().greaterThan(vu.flatBounds.z.negate()))
-                .or(p.z.negate().lessThan(vu.flatBounds.w.negate()))
-                .or(p.y.lessThan(vu.vertBounds.x))
-                .or(p.y.greaterThan(vu.vertBounds.y))
+        const outOfBounds = p.x.greaterThan(u.flatBounds.x.negate())
+                .or(p.x.lessThan(u.flatBounds.y.negate()))
+                .or(p.z.negate().greaterThan(u.flatBounds.z.negate()))
+                .or(p.z.negate().lessThan(u.flatBounds.w.negate()))
+                .or(p.y.lessThan(u.vertBounds.x))
+                .or(p.y.greaterThan(u.vertBounds.y))
                 .or(isNan);
         If(outOfBounds, ()=>{
             pointScale.assign(0)
@@ -83,7 +69,7 @@ export function createPointMaterial({
         return vec2(pointScale)
     })
     const material = new THREE.SpriteNodeMaterial()
-    material.positionNode = positions.element(instanceIndex).mul(vec3(1,1,timeScale))
+    material.positionNode = positions.element(instanceIndex).mul(vec3(1,1,u.timeScale))
     material.scaleNode = pointScaler()
     material.colorNode = vec4(u.cmap.sample(vec2(spriteValue,0.5)).rgb, 1);
     return {material, calcPositions, updateValues}

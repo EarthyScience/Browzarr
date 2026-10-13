@@ -1,17 +1,12 @@
 import {
     asin, atan,bool,clamp,cos,cross,float,Fn,fract,If,instancedArray,instanceIndex,
     mat3,mul,normalize,PI,positionLocal,
-    positionWorld,select,sin,uniform,varying,
+    positionWorld,select,sin,varying,
     vec2,vec3,vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
-import * as u from './utils/commonUniforms';
-import { displacement, displaceZero } from './utils/displacementUniforms';
-
-// --- UNIFORMS ---//
-export const resolution = uniform(vec2(0.0))
-export const widthFactor = uniform(1), vertFactor = uniform(1);
+import * as u from './utils/uniforms';
 
 const giveMaskUV = Fn( ( [ position ] : [any] ) => {
 	const n = normalize( position );
@@ -85,8 +80,9 @@ export function createSphereBlocksMaterial(count : number){
     const positions = instancedArray(count, 'vec4');
 
     const calcPositions = Fn(() => {
+        const resolution = u.displacementResolution;
         const p = positions.element(instanceIndex);
-        const u = instanceUVs.element(instanceIndex);
+        const iuv = instanceUVs.element(instanceIndex);
         const w = resolution.x.toUint();
         const h = resolution.y.toUint();
         const px = instanceIndex.mod(w);
@@ -95,7 +91,7 @@ export function createSphereBlocksMaterial(count : number){
             px.toFloat().add(0.5), 
             py.toFloat().add(0.5)
             ).div(resolution).toVar();
-        u.assign(thisUV);
+        iuv.assign(thisUV);
         const vertPosition = getSpherePosition(thisUV);
         p.assign(vertPosition);
     })().compute(count)
@@ -124,12 +120,12 @@ export function createSphereBlocksMaterial(count : number){
     const vStrength = varying(strength, 'vStrength'); 
     const vBiVal = varying(biVal, 'biVal');
     const spherePosition = positions.element(instanceIndex);
-    const heightFactor = vStrength.sub(displaceZero).mul(displacement);
+    const heightFactor = vStrength.sub(u.displaceZero).mul(u.displacement);
 
     const scaledPosition = vec3(
-        positionLocal.x.mul(spherePosition.w).mul(widthFactor),
+        positionLocal.x.mul(spherePosition.w).mul(u.widthFactor),
         positionLocal.y.mul(heightFactor),
-        positionLocal.z.mul(vertFactor),
+        positionLocal.z.mul(u.vertFactor),
     ).toVar();
     const orientation = getOrientation(spherePosition.xyz);
     const newPos = spherePosition.xyz.add(orientation.mul(scaledPosition));

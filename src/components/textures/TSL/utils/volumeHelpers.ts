@@ -4,24 +4,23 @@ import {
     max,min,mod,pow,select,vec2,vec3
 } from 'three/tsl';
 import * as h from './commonHelpers';
-import * as u from './commonUniforms';
-import * as vu from './volumeUniforms';
+import * as u from './uniforms';
 import * as THREE from 'three/webgpu'
 
 export const shouldSkip = (p: any, texCoord: any, maskUV: any) => {
     const skip = bool(false).toVar();
     texCoord.assign(vec3(0.0));
  
-    const outOfBounds = p.x.greaterThan(vu.flatBounds.x.negate())
-        .or(p.x.lessThan(vu.flatBounds.y.negate()))
-        .or(p.z.negate().greaterThan(vu.flatBounds.z.negate()))
-        .or(p.z.negate().lessThan(vu.flatBounds.w.negate()))
-        .or(p.y.lessThan(vu.vertBounds.x))
-        .or(p.y.greaterThan(vu.vertBounds.y));
+    const outOfBounds = p.x.greaterThan(u.flatBounds.x.negate())
+        .or(p.x.lessThan(u.flatBounds.y.negate()))
+        .or(p.z.negate().greaterThan(u.flatBounds.z.negate()))
+        .or(p.z.negate().lessThan(u.flatBounds.w.negate()))
+        .or(p.y.lessThan(u.vertBounds.x))
+        .or(p.y.greaterThan(u.vertBounds.y));
     If(outOfBounds, () => { skip.assign(bool(true)); });
  
     If(skip.not(), () => {
-        texCoord.assign(p.div(vu.scale).add(0.5));
+        texCoord.assign(p.div(u.volumeScale).add(0.5));
         const valid = h.reprojector(texCoord, maskUV);
         If(valid.not(), () => { skip.assign(bool(true)); });
     });
@@ -84,7 +83,7 @@ export const colorTexel = (d: any, biVal: any, isNan: any, accumColor: any, alph
             alphaAcc.addAssign(nanA);
         });
     }).Else(() => {
-        const s = vu.tfLUT.sample(vec2(d, 0.5));
+        const s = u.tfLUT.sample(vec2(d, 0.5));
         const opacity = float(1).sub(alphaAcc);
         If( u.bivariate, () => {
             const flipOrder = u.bivariateSelection.notEqual( 0 );
@@ -98,7 +97,7 @@ export const colorTexel = (d: any, biVal: any, isNan: any, accumColor: any, alph
 }
 
 export const hitBox = Fn(([orig, dir]: any[]) => {
-        const boxMax = vu.scale.mul(0.5);
+        const boxMax = u.volumeScale.mul(0.5);
         const boxMin = boxMax.negate();
         const invDir = vec3(1.0).div(dir);
         const tA = boxMin.sub(orig).mul(invDir);

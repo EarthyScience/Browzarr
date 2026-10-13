@@ -19,7 +19,7 @@ import { GetCurrentArray } from '@/utils/HelperFuncs';
 import { useColormapStore } from '@/GlobalStates/ColormapStore';
 import { Inspector } from 'three/addons/inspector/Inspector.js'
 
-import * as u from '@/components/textures/TSL/utils/commonUniforms'
+import * as u from '@/components/textures/TSL/utils/uniforms'
 const TransectNotice = () =>{
   const selectTS = usePlotStore(s => s.selectTS)
   return (

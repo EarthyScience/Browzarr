@@ -1,15 +1,13 @@
 "use client";
-import React, {useEffect, useState, useMemo} from 'react'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import * as THREE from 'three/webgpu'
-import { useShallow } from 'zustand/shallow';
+import { useDimAxis } from '@/hooks';
 import { useFrame } from '@react-three/fiber';
-import {vertexShader, bordersFrag} from '../textures/shaders'
-import { invalidate } from '@react-three/fiber';
 import proj4, { Converter } from 'proj4';
-import {useDimAxis} from '@/hooks';
+import { useEffect, useMemo, useState } from 'react';
+import * as THREE from 'three/webgpu';
+import { useShallow } from 'zustand/shallow';
 import { sampleCRS } from '../textures/ProjectionUtils';
 import { createBorderMaterial } from '../textures/TSL/borders';
 
@@ -183,7 +181,6 @@ const CountryBorders = () => {
     const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
 
     const spherize = plotType === 'sphere';
-
     useFrame(({camera})=>{
         if (spherize){return;}
         if (Math.abs(camera.rotation.z) > Math.PI/2 ){
@@ -193,7 +190,6 @@ const CountryBorders = () => {
             if (swapSides){setSwapSides(false)}
         }
     })
-
     useEffect(()=>{
         fetch('./ne_110m_coastline.json')
         .then(res => res.json())
@@ -228,4 +224,5 @@ const CountryBorders = () => {
     )
 }
 
-export {CountryBorders}
+export { CountryBorders };
+

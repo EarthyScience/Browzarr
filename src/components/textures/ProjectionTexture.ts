@@ -7,7 +7,7 @@ import proj4 from 'proj4';
 import { getAxisIndices } from '@/hooks/useAxisIndices';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { getDimAxis, getAxisDimAxis} from '@/hooks';
-import * as u from '@/components/textures/TSL/utils/commonUniforms'
+import * as u from '@/components/textures/TSL/utils/uniforms'
 
 export function checkProjString(projString: string){
     const {setError} = useErrorStore.getState()

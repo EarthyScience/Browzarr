@@ -1,6 +1,6 @@
 import * as THREE from 'three/webgpu'
 import { Data3DTexture, DataTexture, Texture } from 'three/webgpu';
-import { texture, uniform, bool, float, int, vec2, vec3, color, texture3D, string } from 'three/tsl';
+import { texture, uniform, bool, float, int, vec2, vec3, vec4, color, texture3D, string } from 'three/tsl';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
 const placeholder3D = () => {
@@ -34,6 +34,7 @@ export function setMapTextures(textures: (DataTexture | Data3DTexture | Texture)
         });
     }
 }
+//  --- GENERAL --- //
 export const maskTexture = texture( new DataTexture() );
 export const cmap = texture( new DataTexture() );
 export const remapTexture = texture( new DataTexture() );
@@ -69,3 +70,30 @@ export const isFlat = uniform( bool() );
 export const flipY = uniform(bool(false));
 export const rescaleValues = uniform(bool(false));
 export const colorScale = uniform(string("x"));
+
+// --- VOLUME UNIFORMS --- //
+export const volumeScale = uniform(vec3());
+export const steps = uniform(int());
+export const flatBounds = uniform(vec4());
+export const vertBounds = uniform(vec2());
+export const transparency = uniform(float());
+export const opacityMag = uniform(float());
+export const useClipScale = uniform(bool());
+export const revTransparency = uniform(bool());
+export const dataShape = uniform(vec3())
+export const tfLUT = texture( new DataTexture() );
+
+// --- BLOCK UNIFORMS --- //
+export const displacement = uniform(float(2));
+export const displaceZero = uniform(float(0));
+export const displacementResolution = uniform(vec2(0.0))
+export const widthFactor = uniform(1), vertFactor = uniform(1);
+
+// --- POINT UNIFORMS --- //
+
+export const pointShape = uniform(vec3(0))
+export const globalScale = uniform(float(0))
+export const pointSize = uniform(float(0))
+export const timeScale = uniform(float(0))
+export const scaleByVal = uniform(bool(false))
+export const scaleIntensity = uniform(float(0))

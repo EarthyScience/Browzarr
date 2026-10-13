@@ -5,7 +5,7 @@ import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { evaluateColorMap } from '@/components/textures';
 import { useAxisIndices, useDimAxis } from '@/hooks';
-import { uniformUpdater } from '@/hooks/useCommonUniforms';
+import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
 import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
 import { ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';

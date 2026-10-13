@@ -1,18 +1,16 @@
 import { evaluateColorMap } from '@/components/textures';
+import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useDimAxis } from '@/hooks';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import * as THREE from 'three';
 import { useShallow } from 'zustand/shallow';
-import { SquareMeshes } from './TransectMeshes';
-import * as D from '@/components/textures/TSL/utils/displacementUniforms'
-import { uniformUpdater } from '@/hooks/useCommonUniforms';
 import { createSphereMaterial } from '../textures/TSL/sphere';
-import * as u from '@/components/textures/TSL/utils/commonUniforms'
+import { SquareMeshes } from './TransectMeshes';
 
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = -Math.atan2(xyz.z,xyz.x)
@@ -29,9 +27,9 @@ export const Sphere = () => {
             dataShape: s.dataShape, strides: s.strides, flipY: s.flipY, 
             setPlotDim: s.setPlotDim, updateDimCoords: s.updateDimCoords, updateTimeSeries: s.updateTimeSeries
           })))
-    const { selectTS, displacement, sphereResolution, interpPixels, colorScale,
+    const { selectTS, sphereResolution, interpPixels, colorScale,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
-        selectTS: s.selectTS, displacement: s.displacement, sphereResolution: s.sphereResolution, interpPixels: s.interpPixels, colorScale: s.colorScale,
+        selectTS: s.selectTS, sphereResolution: s.sphereResolution, interpPixels: s.interpPixels, colorScale: s.colorScale,
          getColorIdx: s.getColorIdx, incrementColorIdx: s.incrementColorIdx
       })))
     const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))   
@@ -86,9 +84,6 @@ export const Sphere = () => {
         }
         updateDimCoords({[tsID] : dimObj})
       }
-    useEffect(()=>{
-      D.displacement.value = displacement
-    },[displacement])
   return (
     <group scale={[1, 1, 1]}>
       <SquareMeshes />

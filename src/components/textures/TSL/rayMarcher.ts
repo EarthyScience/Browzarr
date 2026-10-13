@@ -3,9 +3,8 @@ import { Fn, vec4, vec3, abs, If, normalize, pow, EPSILON, Discard, int, ceil, L
 	Break, modelWorldMatrixInverse, cameraWorldMatrix, Continue,
 	texture, mod, clamp, ivec3, fract, 
 	uv} from 'three/tsl';
-import * as u from './utils/commonUniforms'	
+import * as u from './utils/uniforms'	
 import * as h from './utils/commonHelpers';
-import * as vu from './utils/volumeUniforms'
 import * as THREE from 'three/webgpu'
 import { colorTexel, hitBox, sampleVoxel, shouldSkip } from './utils/volumeHelpers';
 
@@ -16,7 +15,7 @@ const rayMarch = Fn(([vOrigin, vDirection] : [any, any]) => {
 		bounds.x.assign(max(bounds.x, 0.0));
 	
 		const inc = vec3(1.0).div(abs(rayDir));
-		const delta = min(inc.x, min(inc.y, inc.z)).div(vu.steps).toVar('delta');	
+		const delta = min(inc.x, min(inc.y, inc.z)).div(u.steps).toVar('delta');	
 		const accumColor = vec3(0.0).toVar('accumRGB');
 		const alphaAcc = float(0.0).toVar('aphaAcc');
 		const borderHit = bool(false).toVar('borderHit');

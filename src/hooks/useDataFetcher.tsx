@@ -11,7 +11,7 @@ import { handleIrregularGrid, reproject } from '@/components/textures/Projection
 import { parseExtent } from '@/utils/parseExtent';
 import { createDataTexture } from '@/components/textures/TextureMakers';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { remapTexture } from '@/components/textures/TSL/utils/commonUniforms';
+import { remapTexture } from '@/components/textures/TSL/utils/uniforms';
 
 export const useDataFetcher = () => {
     const { variable, bivariate, variable2, mainTextures, setUnits, setIsFlat, setUseF16Textures,
