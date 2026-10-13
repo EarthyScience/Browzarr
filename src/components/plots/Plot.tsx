@@ -238,7 +238,10 @@ const Plot = () => {
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
         flat
         gl={async (props) => {
-          const renderer = new THREE.WebGPURenderer(props as any)
+          const renderer = new THREE.WebGPURenderer({
+            ...(props as any),
+            forceWebGL: true,
+          })
           await renderer.init()
           const canvas = props.canvas as HTMLCanvasElement
           renderer.outputColorSpace = THREE.LinearSRGBColorSpace

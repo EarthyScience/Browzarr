@@ -2,8 +2,10 @@ import { Fn, min, max, clamp, abs, round, mix, select, bool,
     texture, floatBitsToUint, uint, fract, float, vec2, vec3,
     vec4, If, texture3D, ivec2, ivec3,
     Break,
-    wgslFn} from 'three/tsl';
+    wgslFn,
+    glslFn} from 'three/tsl';
 import * as u from './uniforms';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
 
 // --- TEXTURE SAMPLERS ---//
@@ -106,11 +108,20 @@ export function createBivariateColor() {
 export const denorm = (x: any) => x.mul(u.valueRange.y.sub(u.valueRange.x)).add(u.valueRange.x);
 export const norm = (x: any) => x.sub(u.valueRange.x).div(u.valueRange.y.sub(u.valueRange.x));
 
-const makeColorScale = (expr: string) => wgslFn(`
-  fn applyColorScale( x: f32 ) -> f32 {
+
+const makeColorScale = (expr: string) => {
+  const {isWebGPU} = useGlobalStore.getState()
+  if ( false ) return wgslFn(`
+    fn applyColorScale( x: f32 ) -> f32 {
+      return ${expr};
+    }
+  `)
+  return glslFn(`
+    float rescaler(float x){
     return ${expr};
-  }
-`);
+    }
+  `)
+};
 
 
 
