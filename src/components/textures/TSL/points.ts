@@ -6,11 +6,10 @@ import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
 import * as u from './utils/uniforms';
 
-const GLOBAL_SCALE = 1/1000 
+const GLOBAL_SCALE = 1/2000 
 
 export function createPointMaterial({
     count,
-    usePoints=false,
 } : { count: number, usePoints?: boolean}){
     const positions = instancedArray(count, 'vec3')
     const texCoords = instancedArray(count, 'vec3')

@@ -1,8 +1,7 @@
-// useCommonUniforms.ts
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { useColormapStore } from '@/GlobalStates/ColormapStore'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
@@ -13,16 +12,16 @@ export function uniformUpdater(){
     const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskValue, valueRange, 
         useBorderTexture, borderColor, borderWidth, is360Deg, showBorders, interpPixels, colorScale,
         xRange, yRange, zRange, quality, displacement, offsetNegatives, scalePoints,
-        pointSize, scaleIntensity, timeScale} = usePlotStore(useShallow(s => ({
+        pointSize, scaleIntensity, timeScale, plotType} = usePlotStore(useShallow(s => ({
             cScale: s.cScale, cOffset: s.cOffset, animProg: s.animProg, nanTransparency: s.nanTransparency, nanColor: s.nanColor, fillValue: s.fillValue, maskValue: s.maskValue, valueRange: s.valueRange,
             useBorderTexture: s.useBorderTexture, borderColor: s.borderColor, borderWidth: s.borderWidth, is360Deg: s.is360Deg, showBorders: s.showBorders, interpPixels: s.interpPixels, colorScale: s.colorScale,
             xRange: s.xRange, yRange: s.yRange, zRange: s.zRange, quality: s.quality, displacement: s.displacement, offsetNegatives: s.offsetNegatives, scalePoints: s.scalePoints,
-            pointSize: s.pointSize, scaleIntensity: s.scaleIntensity, timeScale: s.timeScale
+            pointSize: s.pointSize, scaleIntensity: s.scaleIntensity, timeScale: s.timeScale, plotType: s.plotType
         })))
     const { useF16Textures, bivariate, textureArrayDepths, remapTexture, 
-        flipY, remapBorders, isFlat, shape, dataShape} = useGlobalStore(useShallow(s => ({
+        flipY, remapBorders, isFlat, shape, dataShape, mainTextures} = useGlobalStore(useShallow(s => ({
         useF16Textures: s.useF16Textures, bivariate: s.bivariate, textureArrayDepths: s.textureArrayDepths, remapTexture: s.remapTexture,
-        flipY: s.flipY, remapBorders: s.remapBorders, isFlat: s.isFlat, shape: s.shape, dataShape: s.dataShape
+        flipY: s.flipY, remapBorders: s.remapBorders, isFlat: s.isFlat, shape: s.shape, dataShape: s.dataShape, mainTextures: s.mainTextures
         })))
     const {lonBounds, latBounds} = useCoordBounds()
     const {colormap, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection} = useColormapStore(useShallow(s => ({
@@ -109,13 +108,13 @@ export function uniformUpdater(){
             u.map[i].value = tex;
         }
     },[interpPixels])
-    let prev: any = null;
-    useGlobalStore.subscribe((state) => {
-        const textures = (state as any).mainTextures;
-        if (textures === prev) return;
-        prev = textures;
-        u.setMapTextures(textures);
-    });
+    // --- TEXTURES --- //
+    const prev = useRef<THREE.Data3DTexture[] | THREE.DataTexture[] | undefined>(undefined)
+    useEffect(()=>{
+        if (mainTextures === prev.current) return;
+        prev.current = mainTextures;
+        mainTextures && u.setMapTextures(mainTextures);
+    })
     // --- COLORSCALE --- //
     useEffect(()=>{
         if (colorScale)u.colorScale.value = colorScale;
@@ -124,6 +123,7 @@ export function uniformUpdater(){
 
     // --- VOLUME UNIFORMS ---//
     useEffect(()=>{
+        if (plotType == 'point-cloud') return;
         const aspectRatio = shape.y/shape.x
 	    const timeRatio = shape.z/shape.x;
         u.volumeScale.value = shape;
@@ -144,7 +144,7 @@ export function uniformUpdater(){
             u.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
             u.widthFactor.value = Math.abs(lonBounds[1]-lonBounds[0])/(2.0*Math.PI)
             u.vertFactor.value =  Math.abs(latBounds[1]-latBounds[0])/(Math.PI)
-    },[valueScales, displacement, offsetNegatives, lonBounds])
+    },[valueScales, displacement, offsetNegatives, lonBounds, latBounds])
     // --- POINT UNIFORMS ---//
     useEffect(()=>{
         u.pointSize.value = pointSize;

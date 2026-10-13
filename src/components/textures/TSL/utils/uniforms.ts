@@ -76,10 +76,6 @@ export const volumeScale = uniform(vec3());
 export const steps = uniform(int());
 export const flatBounds = uniform(vec4());
 export const vertBounds = uniform(vec2());
-export const transparency = uniform(float());
-export const opacityMag = uniform(float());
-export const useClipScale = uniform(bool());
-export const revTransparency = uniform(bool());
 export const dataShape = uniform(vec3())
 export const tfLUT = texture( new DataTexture() );
 
@@ -90,7 +86,6 @@ export const displacementResolution = uniform(vec2(0.0))
 export const widthFactor = uniform(1), vertFactor = uniform(1);
 
 // --- POINT UNIFORMS --- //
-
 export const pointShape = uniform(vec3(0))
 export const globalScale = uniform(float(0))
 export const pointSize = uniform(float(0))

@@ -9,9 +9,10 @@ import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
 import { useThree } from '@react-three/fiber';
 import { createPointMaterial } from '../textures/TSL/points';
 import * as u from '@/components/textures/TSL/utils/uniforms'
+
 const MappingCube = () =>{
   const {dataShape, shape} = useGlobalStore(useShallow(s => s))
-  const {timeScale} = usePlotStore(useShallow(s => s))
+  const timeScale = usePlotStore(s => s.timeScale)
   const globalScale = dataShape[2]/500
   const offset = 1/500; //I don't really understand that. But the cube is off by one pixel in each dimension
   const depthRatio = useMemo(()=> (shape && shape.x > 0 ? (shape.z / shape.x) * timeScale : 1),[shape, timeScale]);
@@ -24,11 +25,12 @@ const MappingCube = () =>{
 }
 
 export const PointCloud = ( )=>{
-    const { flipY, dataShape, remapTexture, shape, textureData } = useGlobalStore(useShallow(s => s))
-    const {scalePoints, scaleIntensity, pointSize, colorScale,
-      timeScale, xRange, yRange, zRange} = usePlotStore(useShallow(s => s))
-
-    //Extract data and shape from Data3DTexture
+    const { flipY, dataShape, remapTexture, shape, textureData } = useGlobalStore(useShallow(s => ({
+        flipY: s.flipY, dataShape: s.dataShape, remapTexture: s.remapTexture, shape: s.shape, textureData: s.textureData
+    })))
+    const { colorScale, xRange, yRange, zRange} = usePlotStore(useShallow(s => ({
+        colorScale: s.colorScale, xRange: s.xRange, yRange: s.yRange, zRange: s.zRange
+    })))
 
     // --- INITIALIZE --- //
     const globalscale = dataShape[2]/500
@@ -47,12 +49,8 @@ export const PointCloud = ( )=>{
     },[textureData, updateValues])
 
     // --- UNIFORMS ---//
-    useEffect(()=>{
-      u.pointSize.value = pointSize;
-      u.scaleIntensity.value = scaleIntensity;
-      u.timeScale.value = timeScale;
-      u.scaleByVal.value = scalePoints
-    },[pointSize, scaleIntensity, timeScale, scalePoints, material])
+    uniformUpdater();
+    // Unique scaling for points
     useEffect(()=>{
         u.volumeScale.value = shape;
         u.flatBounds.value = new THREE.Vector4(-xRange[1],-xRange[0],zRange[0], zRange[1]);
@@ -63,8 +61,6 @@ export const PointCloud = ( )=>{
           ? new THREE.Vector3(remapTexture.image.width, remapTexture.image.height, dataShape[0])
           : new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])
       },[shape, xRange, yRange, zRange, dataShape, flipY, remapTexture])
-    uniformUpdater();
-
   return (
     <group>
       <group scale={[globalscale,globalscale,globalscale]}>

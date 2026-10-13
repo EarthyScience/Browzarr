@@ -9,9 +9,6 @@ usePlotStore.subscribe((state, previousState) => {
     trim.value = state.plotType != 'sphere'
   }
 })
-
-
-// THESE VU UNIFORMS NEED TO BE UPDATED IN THE FLATMAP. SHOULD BE HANDLED WHEN ALL UNFIROMS ARE MOVED
 const fragShader = Fn(() =>{
     If( positionGeometry.x.lessThan( u.flatBounds.x )
         .or( positionGeometry.x.greaterThan( u.flatBounds.y ) )
