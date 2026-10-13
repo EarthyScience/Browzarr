@@ -9,6 +9,7 @@ import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
 import { useThree } from '@react-three/fiber';
 import { createPointMaterial } from '../textures/TSL/points';
 import * as u from '@/components/textures/TSL/utils/uniforms'
+import { useColormapStore } from '@/GlobalStates/ColormapStore';
 
 const MappingCube = () =>{
   const {dataShape, shape} = useGlobalStore(useShallow(s => s))
@@ -25,19 +26,19 @@ const MappingCube = () =>{
 }
 
 export const PointCloud = ( )=>{
-    const { flipY, dataShape, remapTexture, shape, textureData } = useGlobalStore(useShallow(s => ({
-        flipY: s.flipY, dataShape: s.dataShape, remapTexture: s.remapTexture, shape: s.shape, textureData: s.textureData
+    const { flipY, dataShape, remapTexture, shape, textureData, bivariate } = useGlobalStore(useShallow(s => ({
+        flipY: s.flipY, dataShape: s.dataShape, remapTexture: s.remapTexture, shape: s.shape, 
+        textureData: s.textureData, bivariate: s.bivariate
     })))
     const { colorScale, xRange, yRange, zRange} = usePlotStore(useShallow(s => ({
         colorScale: s.colorScale, xRange: s.xRange, yRange: s.yRange, zRange: s.zRange
     })))
-
     // --- INITIALIZE --- //
     const globalscale = dataShape[2]/500
     const count = dataShape.reduce((a, b) => a * b , 1)
     const {material, calcPositions, updateValues} = useMemo(() => {
       u.pointShape.value = new THREE.Vector3(...dataShape)
-      return createPointMaterial({count})
+      return createPointMaterial(bivariate ? count*2 : count)
     },[count, colorScale])
     const {gl} = useThree();
     useEffect(()=>{

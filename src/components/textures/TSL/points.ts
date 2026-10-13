@@ -8,9 +8,11 @@ import * as u from './utils/uniforms';
 
 const GLOBAL_SCALE = 1/100 
 
-export function createPointMaterial({
-    count,
-} : { count: number, usePoints?: boolean}){
+const colorNode = Fn(()=>{
+    
+})
+
+export function createPointMaterial(count: number){
     const positions = instancedArray(count, 'vec3')
     const texCoords = instancedArray(count, 'vec3')
     const values = instancedArray(count, 'uint')
@@ -39,6 +41,7 @@ export function createPointMaterial({
         attr.array.set(array);         
         attr.needsUpdate = true; 
     }
+
     const rawValue = values.element(instanceIndex).toFloat().div(255)
     const spriteValue = varying(h.rescaler(rawValue))
     const spriteCoord = varying(texCoords.element(instanceIndex))

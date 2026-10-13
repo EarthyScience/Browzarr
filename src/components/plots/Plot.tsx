@@ -1,4 +1,4 @@
-import { OrbitControls, useTexture } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three/webgpu';
 import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
@@ -153,8 +153,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {isFlat, DPR, mainTextures, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus, setIsWebGPU } = useGlobalStore(useShallow(s =>({
-    isFlat: s.isFlat, DPR: s.DPR, mainTextures: s.mainTextures, dataShape: s.dataShape, useF16Textures: s.useF16Textures,
+  const {isFlat, DPR, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus, setIsWebGPU } = useGlobalStore(useShallow(s =>({
+    isFlat: s.isFlat, DPR: s.DPR, dataShape: s.dataShape, useF16Textures: s.useF16Textures,
     setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus, setIsWebGPU: s.setIsWebGPU
     })))
   const keyFrameEditor = useImageExportStore(s => s.keyFrameEditor)
