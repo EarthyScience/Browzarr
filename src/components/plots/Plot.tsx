@@ -1,5 +1,5 @@
 import { OrbitControls, useTexture } from '@react-three/drei';
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three/webgpu';
 import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
@@ -16,9 +16,6 @@ import ExportCanvas from '@/utils/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/components/textures/ProjectionTexture';
 import { GetCurrentArray } from '@/utils/HelperFuncs';
-import { useColormapStore } from '@/GlobalStates/ColormapStore';
-import { Inspector } from 'three/addons/inspector/Inspector.js'
-
 import * as u from '@/components/textures/TSL/utils/uniforms'
 const TransectNotice = () =>{
   const selectTS = usePlotStore(s => s.selectTS)
@@ -28,14 +25,6 @@ const TransectNotice = () =>{
       Transect Select Mode
     </div>}
     </>
-  )
-}
-function TestMesh() {
-  const material = new THREE.MeshBasicNodeMaterial({color:'hotpink'})
-  return (
-    <mesh material={material}>
-      <boxGeometry />
-    </mesh>
   )
 }
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
@@ -252,7 +241,6 @@ const Plot = () => {
           const renderer = new THREE.WebGPURenderer(props as any)
           await renderer.init()
           const canvas = props.canvas as HTMLCanvasElement
-          renderer.inspector = new Inspector()
           renderer.outputColorSpace = THREE.LinearSRGBColorSpace
           renderer.setPixelRatio(DPR)
           renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
@@ -262,10 +250,9 @@ const Plot = () => {
         }}
         dpr={[DPR,DPR]}
       >
-        
-        {/* <KeyFramePreviewer/> */}
+        <KeyFramePreviewer/>
         {show && <CountryBorders/>}
-        {/* <ExportCanvas show={show}/> */}
+        <ExportCanvas show={show}/>
         {show && <AxisLines />}
         {plotType == "volume" && show && 
             <DataCube />
@@ -286,10 +273,7 @@ const Plot = () => {
           {displaceFaces && <FlatBlocks />}
         </>
         }
-        {/* <TestMesh /> */}
       </Canvas>
- 
-
     </div>
   )
 }

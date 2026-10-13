@@ -9,7 +9,9 @@ type Props = {
   anchorY?: 'top' | 'middle' | 'bottom';
   font?: string;               // CSS font-family
   resolution?: number;         // canvas px per em; raise for crisper text
-} & Omit<JSX.IntrinsicElements['mesh'], 'children'>;
+} & Omit<JSX.IntrinsicElements['group'], 'children'>;
+
+const UNIT_PLANE = new THREE.PlaneGeometry(1, 1);
 
 export function CanvasText({
   children, fontSize = 0.1, color = '#fff',
@@ -44,19 +46,15 @@ export function CanvasText({
         return { texture: tex, width: canvas.width * s, height: canvas.height * s };
     }, [children, color, fontSize, font, resolution]);
 
-  const geometry = useMemo(() => {
-    const g = new THREE.PlaneGeometry(width, height);
-    const offsetX = anchorX === 'left' ? width / 2 : anchorX === 'right' ? -width / 2 : 0;
-    const offsetY = anchorY === 'top' ? -height / 2 : anchorY === 'bottom' ? height / 2 : 0;
-    g.translate(offsetX, offsetY, 0); // shift geometry so rotation pivots at the anchor
-    return g;
-  }, [width, height, anchorX, anchorY]);
+  const offsetX = anchorX === 'left' ? width / 2 : anchorX === 'right' ? -width / 2 : 0;
+  const offsetY = anchorY === 'top' ? -height / 2 : anchorY === 'bottom' ? height / 2 : 0;
 
   useEffect(() => () => texture.dispose(), [texture]);
-  useEffect(() => () => geometry.dispose(), [geometry]);
 
   return (
-    <mesh {...meshProps} geometry={geometry}>
+    <group {...meshProps} >
+      <mesh  geometry={UNIT_PLANE} position={[offsetX, offsetY, 0]}
+        scale={[width, height, 1]}>
       <meshBasicMaterial
         map={texture}
         transparent
@@ -66,5 +64,7 @@ export function CanvasText({
         side={THREE.DoubleSide}
       />
     </mesh>
+    </group>
+    
   );
 }
