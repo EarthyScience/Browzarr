@@ -58,7 +58,7 @@ export function CanvasText({
       <meshBasicMaterial
         map={texture}
         transparent
-        depthTest={false}
+        depthTest={true}
         depthWrite={false}
         toneMapped={false}
         side={THREE.DoubleSide}

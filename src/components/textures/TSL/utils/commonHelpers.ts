@@ -1,11 +1,26 @@
-import { Fn, min, max, clamp, abs, round, mix, select, bool,
-    texture, floatBitsToUint, uint, fract, float, vec2, vec3,
-    vec4, If, texture3D, ivec2, ivec3,
-    Break,
-    wgslFn,
-    glslFn} from 'three/tsl';
+import {
+  abs,
+  bool,
+  clamp,
+  float,
+  floatBitsToUint,
+  Fn,
+  fract,
+  glslFn,
+  If,
+  ivec2, ivec3,
+  max,
+  min,
+  mix,
+  round,
+  select,
+  texture,
+  uint,
+  vec2, vec3,
+  vec4,
+  wgslFn
+} from 'three/tsl';
 import * as u from './uniforms';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 
 
 // --- TEXTURE SAMPLERS ---//
@@ -49,7 +64,7 @@ export const getLocalCoord = (thisUV : any) =>{
 export const realCoords = Fn(([uv]: [any]) => {
   // Radians -> fraction of a full turn. Longitudes in -180..180 need shifting by 0.5.
   const lonRange = u.lonBounds.div(2 * Math.PI);
-  const normalizedLon = select(u.is360, lonRange, lonRange.add(0.5));
+  const normalizedLon = lonRange;
  
   // Latitude: -PI/2..PI/2 -> 0..1
   const normalizedLat = u.latBounds.div(Math.PI).add(0.5);
@@ -59,7 +74,7 @@ export const realCoords = Fn(([uv]: [any]) => {
  
   const thisU = uv.x.mul(lonScale).add(normalizedLon.x);
   const thisV = uv.y.mul(latScale).add(normalizedLat.x);
- 
+  if (u.is360)thisU.assign(thisU.add(0.5).fract())
   return vec2(thisU, thisV);
 });
 
@@ -110,8 +125,7 @@ export const norm = (x: any) => x.sub(u.valueRange.x).div(u.valueRange.y.sub(u.v
 
 
 const makeColorScale = (expr: string) => {
-  const {isWebGPU} = useGlobalStore.getState()
-  if ( false ) return wgslFn(`
+  if ( u.isWebGPU.value ) return wgslFn(`
     fn applyColorScale( x: f32 ) -> f32 {
       return ${expr};
     }

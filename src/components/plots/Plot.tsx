@@ -153,9 +153,9 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {isFlat, DPR, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus, setIsWebGPU } = useGlobalStore(useShallow(s =>({
+  const {isFlat, DPR, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus, isWebGPU } = useGlobalStore(useShallow(s =>({
     isFlat: s.isFlat, DPR: s.DPR, dataShape: s.dataShape, useF16Textures: s.useF16Textures,
-    setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus, setIsWebGPU: s.setIsWebGPU
+    setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus, isWebGPU: s.isWebGPU
     })))
   const keyFrameEditor = useImageExportStore(s => s.keyFrameEditor)
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => ({
@@ -222,7 +222,6 @@ const Plot = () => {
     }
     SetTextures()
   },[])
-  
   const Nav = useMemo(()=>Navbar,[])
   return (
     <div id='main-canvas-div' className='main-canvas'
@@ -236,19 +235,14 @@ const Plot = () => {
       <Nav />
       <ShaderEditor visible={useEditor}/>
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
-        flat
+        flat={isWebGPU}
         gl={async (props) => {
-          const renderer = new THREE.WebGPURenderer({
-            ...(props as any),
-            forceWebGL: true,
-          })
+          const renderer = new THREE.WebGPURenderer(props as any)
           await renderer.init()
           const canvas = props.canvas as HTMLCanvasElement
-          renderer.outputColorSpace = THREE.LinearSRGBColorSpace
+          renderer.outputColorSpace = THREE.LinearSRGBColorSpace; 
           renderer.setPixelRatio(DPR)
           renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
-          setIsWebGPU(renderer.isWebGPURenderer)
-          console.log(renderer)
           return renderer
         }}
         dpr={[DPR,DPR]}

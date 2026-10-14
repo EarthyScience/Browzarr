@@ -76,31 +76,25 @@ const isBorder = Fn(()=>{
 })
 
 export function createSphereBlocksMaterial(count : number){
-    const instanceUVs = instancedArray(count, 'vec2');
-    const positions = instancedArray(count, 'vec4');
+    const resolution = u.displacementResolution;
 
-    const calcPositions = Fn(() => {
-        const resolution = u.displacementResolution;
-        const p = positions.element(instanceIndex);
-        const iuv = instanceUVs.element(instanceIndex);
-        const w = resolution.x.toUint();
-        const h = resolution.y.toUint();
+    const thisUV = Fn(()=>{
+        const w = resolution.x;
+        const h = resolution.y;
         const px = instanceIndex.mod(w);
         const py = instanceIndex.div(w).mod(h);
-        const thisUV = vec2(
+        return vec2(
             px.toFloat().add(0.5), 
             py.toFloat().add(0.5)
-            ).div(resolution).toVar();
-        iuv.assign(thisUV);
-        const vertPosition = getSpherePosition(thisUV);
-        p.assign(vertPosition);
-    })().compute(count)
-    
+        ).div(resolution)
+    })()
+
+    const position = getSpherePosition(thisUV);
     const material = new THREE.NodeMaterial();
     material.depthWrite = true;
     material.depthTest = true;
     material.side = THREE.DoubleSide;
-    const instanceUV = instanceUVs.element(instanceIndex);
+    const instanceUV = varying(thisUV)
     const {localCoord, textureIdx} = h.getLocalCoord(instanceUV)
     let strength, biVal, isNan;
     if (u.bivariate.value){
@@ -119,7 +113,7 @@ export function createSphereBlocksMaterial(count : number){
     }
     const vStrength = varying(strength, 'vStrength'); 
     const vBiVal = varying(biVal, 'biVal');
-    const spherePosition = positions.element(instanceIndex);
+    const spherePosition = position;
     const heightFactor = vStrength.sub(u.displaceZero).mul(u.displacement);
 
     const scaledPosition = vec3(
@@ -136,5 +130,5 @@ export function createSphereBlocksMaterial(count : number){
     const borderHit = isBorder()
     material.positionNode = select(clipped.or(masked), vec3(0), newPos);
     material.colorNode = select(borderHit, vec4(u.borderColor, 1), instanceColor(vec2(vStrength, vBiVal)));
-    return {material, calcPositions};
+    return material;
 }

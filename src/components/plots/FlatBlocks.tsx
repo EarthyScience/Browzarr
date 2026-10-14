@@ -11,7 +11,7 @@ import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { createFlatBlocksMaterial } from '../textures/TSL/flatBlocks';
 const FlatBlocks = () => {
-    const {isFlat, flipY, dataShape, axisDimArrays, remapTexture} = useGlobalStore(useShallow(s => ({
+    const {flipY, dataShape, axisDimArrays, remapTexture} = useGlobalStore(useShallow(s => ({
         isFlat: s.isFlat, flipY: s.flipY, dataShape: s.dataShape, axisDimArrays: s.axisDimArrays, 
         remapTexture: s.remapTexture, 
     })))
@@ -49,7 +49,7 @@ const FlatBlocks = () => {
         geo.translate(0, 0, boxHeight / 2,);
         return geo
     },[width, height])
-    const {material, calcPositions} = useMemo(() => createFlatBlocksMaterial(count) , [count])
+    const material = useMemo(()=>createFlatBlocksMaterial(count),[count])
     material.depthWrite = true;
     material.depthTest = true;
     const mesh = useMemo(()=>{
@@ -58,11 +58,6 @@ const FlatBlocks = () => {
         newMesh.frustumCulled = false;
         return newMesh
     },[geometry, material])
-    const {gl} = useThree();
-    useEffect(()=>{
-        //@ts-ignore it exists but not listed in the type
-        calcPositions && gl.computeAsync(calcPositions)
-    },[calcPositions])
     // --- UNIFORMS --- //
     uniformUpdater();
   return (

@@ -1,12 +1,13 @@
-import { Fn, vec4, vec3, abs, any, greaterThan, If, lessThan, normalize, pow, EPSILON, Discard, int, ceil, Loop,
-	min, max, vec2, select, cameraPosition, positionLocal, varying, float, bool,sub,
-	Break, modelWorldMatrixInverse, modelWorldMatrix, floor,sign, mix, greaterThanEqual,
-	texture, mod, clamp, ivec3, fract, 
-    cameraWorldMatrix} from 'three/tsl';
-import * as u from './utils/uniforms'	
+import {
+    abs, any, bool, Break, cameraPosition, cameraWorldMatrix, clamp,
+    Discard, EPSILON, float, floor, Fn, greaterThanEqual, If, int,
+    ivec3, lessThan, Loop, max, modelWorldMatrixInverse, normalize,
+    positionLocal, select, sign, varying, vec2, vec3, vec4
+} from 'three/tsl';
+import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
-import * as THREE from 'three/webgpu'
-import {shouldSkip, sampleVoxel, hitBox, colorTexel} from './utils/volumeHelpers'
+import * as u from './utils/uniforms';
+import { colorTexel, hitBox, sampleVoxel, shouldSkip } from './utils/volumeHelpers';
 
 const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
    

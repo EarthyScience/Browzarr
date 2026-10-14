@@ -8,33 +8,28 @@ import * as u from './utils/uniforms';
 
 const GLOBAL_SCALE = 1/100 
 
-const colorNode = Fn(()=>{
-    
-})
-
 export function createPointMaterial(count: number){
-    const positions = instancedArray(count, 'vec3')
-    const texCoords = instancedArray(count, 'vec3')
     const values = instancedArray(count, 'uint')
+   
+    const depth = uint( u.pointShape.x );
+    const height = uint( u.pointShape.y );
+    const width = uint( u.pointShape.z ).toVar();
+    const aspect = height.toFloat().div(width)
+    const timeAspect = depth.toFloat().div(width)
 
-    const calcPositions = Fn(() => {
-        const p = positions.element(instanceIndex)
-        const t = texCoords.element(instanceIndex)
-        const depth = uint( u.pointShape.x );
-        const height = uint( u.pointShape.y );
-        const width = uint( u.pointShape.z ).toVar();
-        const aspect = height.toFloat().div(width)
-        const timeAspect = depth.toFloat().div(width)
+    const texCoord = Fn(() => {
         const normX = instanceIndex.mod(width).toFloat().div(width).toVar()
         const normY = instanceIndex.div(width).mod(height).toFloat().div(height).toVar()
         const normZ = instanceIndex.div(height.mul(width)).toFloat().div(depth).toVar()
-        const px = normX.sub(0.5).mul(2)
-        const py = normY.sub(0.5).mul(2).mul(aspect)
-        const pz = normZ.sub(0.5).mul(2).mul(timeAspect)
+        return vec3(normX, normY, normZ);
+    })()
+    const positon = Fn(()=>{
+        const px = texCoord.x.sub(0.5).mul(2)
+        const py = texCoord.y.sub(0.5).mul(2).mul(aspect)
+        const pz = texCoord.z.sub(0.5).mul(2).mul(timeAspect)
         const scale = width.toFloat().mul(GLOBAL_SCALE)
-        p.assign(vec3(px, py, pz).mul(scale))
-        t.assign(vec3(normX, normY, normZ))
-    })().compute(count)
+        return vec3(px, py, pz).mul(scale);
+    })()
 
     function updateValues(array: Uint8Array){
         const attr = values.value;          
@@ -44,7 +39,7 @@ export function createPointMaterial(count: number){
 
     const rawValue = values.element(instanceIndex).toFloat().div(255)
     const spriteValue = varying(h.rescaler(rawValue))
-    const spriteCoord = varying(texCoords.element(instanceIndex))
+    const spriteCoord = varying(texCoord)
     
     const pointScaler = Fn(()=>{
         const pointScale = u.pointSize.toVar()
@@ -69,8 +64,8 @@ export function createPointMaterial(count: number){
         return vec2(pointScale)
     })
     const material = new THREE.SpriteNodeMaterial()
-    material.positionNode = positions.element(instanceIndex).mul(vec3(1,1,u.timeScale))
+    material.positionNode = positon.mul(vec3(1,1,u.timeScale))
     material.scaleNode = pointScaler()
     material.colorNode = vec4(u.cmap.sample(vec2(spriteValue,0.5)).rgb, 1);
-    return {material, calcPositions, updateValues}
+    return {material, updateValues}
 }

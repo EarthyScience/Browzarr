@@ -70,6 +70,7 @@ export const isFlat = uniform( bool() );
 export const flipY = uniform(bool(false));
 export const rescaleValues = uniform(bool(false));
 export const colorScale = uniform(string("x"));
+export const isWebGPU = uniform(bool(true))
 
 // --- VOLUME UNIFORMS --- //
 export const volumeScale = uniform(vec3());

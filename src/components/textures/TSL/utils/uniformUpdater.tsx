@@ -18,9 +18,9 @@ export function uniformUpdater(){
             xRange: s.xRange, yRange: s.yRange, zRange: s.zRange, quality: s.quality, displacement: s.displacement, offsetNegatives: s.offsetNegatives, scalePoints: s.scalePoints,
             pointSize: s.pointSize, scaleIntensity: s.scaleIntensity, timeScale: s.timeScale, plotType: s.plotType
         })))
-    const { useF16Textures, bivariate, textureArrayDepths, remapTexture, 
+    const { useF16Textures, bivariate, textureArrayDepths, remapTexture, isWebGPU, 
         flipY, remapBorders, isFlat, shape, dataShape, mainTextures} = useGlobalStore(useShallow(s => ({
-        useF16Textures: s.useF16Textures, bivariate: s.bivariate, textureArrayDepths: s.textureArrayDepths, remapTexture: s.remapTexture,
+        useF16Textures: s.useF16Textures, bivariate: s.bivariate, textureArrayDepths: s.textureArrayDepths, remapTexture: s.remapTexture, isWebGPU: s.isWebGPU,
         flipY: s.flipY, remapBorders: s.remapBorders, isFlat: s.isFlat, shape: s.shape, dataShape: s.dataShape, mainTextures: s.mainTextures
         })))
     const {lonBounds, latBounds} = useCoordBounds()
@@ -28,6 +28,10 @@ export function uniformUpdater(){
         colormap: s.colormap, bottomLeft: s.bottomLeft, bottomRight: s.bottomRight, topLeft: s.topLeft, resolution: s.resolution, mixMode: s.mixMode, bivariateSelection: s.bivariateSelection
     })))
     const valueScales = useValueScales();
+    // --- RENDERER ---//
+    useEffect(()=>{
+        u.isWebGPU.value = isWebGPU
+    },[isWebGPU])
     // --- COLORS --- //
     useEffect(() => {
         u.nanColor.value = new THREE.Color(nanColor).convertLinearToSRGB();

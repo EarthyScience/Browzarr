@@ -31,18 +31,13 @@ const SphereBlocks = () => {
         geo.translate(0, boxHeight / 2, 0);
         return geo
     },[width, height])
-    const {material, calcPositions} = useMemo(()=>createSphereBlocksMaterial(count),[count])
+    const material = useMemo(()=>createSphereBlocksMaterial(count), [count])
     const mesh = useMemo(()=>{
         const newMesh = new THREE.Mesh(geometry, material)
         newMesh.count = count;
         newMesh.frustumCulled = false;
         return newMesh
     },[geometry, material])
-    const {gl} = useThree();
-    useEffect(()=>{
-        //@ts-ignore it exists but not listed in the type
-        calcPositions && gl.computeAsync(calcPositions)
-    },[calcPositions])
     const nanMaterial = useMemo(()=>{
         const material = new THREE.MeshBasicMaterial({color:nanColor, opacity:(1-nanTransparency)})
         material.transparent = true;

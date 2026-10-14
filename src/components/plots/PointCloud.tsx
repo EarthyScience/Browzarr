@@ -1,22 +1,20 @@
+import * as u from '@/components/textures/TSL/utils/uniforms';
+import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
+import { createPointMaterial } from '../textures/TSL/points';
 import { ColumnMeshes } from './TransectMeshes';
 import { UVCube } from './UVCube';
-import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
-import { useThree } from '@react-three/fiber';
-import { createPointMaterial } from '../textures/TSL/points';
-import * as u from '@/components/textures/TSL/utils/uniforms'
-import { useColormapStore } from '@/GlobalStates/ColormapStore';
 
 const MappingCube = () =>{
   const {dataShape, shape} = useGlobalStore(useShallow(s => s))
   const timeScale = usePlotStore(s => s.timeScale)
-  const globalScale = dataShape[2]/500
-  const offset = 1/500; //I don't really understand that. But the cube is off by one pixel in each dimension
-  const depthRatio = useMemo(()=> (shape && shape.x > 0 ? (shape.z / shape.x) * timeScale : 1),[shape, timeScale]);
+  const globalScale = dataShape[2]/100
+  const offset = 1/100; //I don't really understand that. But the cube is off by one pixel in each dimension
+  const depthRatio = useMemo(()=> (shape && shape.x > 0 ? (shape.z / shape.x) * timeScale * 2: 1),[shape, timeScale]);
   const shapeRatio = useMemo(()=>dataShape[1]/dataShape[2], [dataShape])
   return(
     <group position={[-offset, -offset, -offset]}>
@@ -34,17 +32,12 @@ export const PointCloud = ( )=>{
         colorScale: s.colorScale, xRange: s.xRange, yRange: s.yRange, zRange: s.zRange
     })))
     // --- INITIALIZE --- //
-    const globalscale = dataShape[2]/500
+    const globalscale = dataShape[2]/100
     const count = dataShape.reduce((a, b) => a * b , 1)
-    const {material, calcPositions, updateValues} = useMemo(() => {
+    const {material, updateValues} = useMemo(() => {
       u.pointShape.value = new THREE.Vector3(...dataShape)
       return createPointMaterial(bivariate ? count*2 : count)
     },[count, colorScale])
-    const {gl} = useThree();
-    useEffect(()=>{
-      //@ts-ignore it exists but not listed in the type
-      calcPositions && gl.computeAsync(calcPositions)
-    },[calcPositions])
     useEffect(()=>{
       textureData && updateValues(textureData as Uint8Array)
     },[textureData, updateValues])
@@ -64,11 +57,11 @@ export const PointCloud = ( )=>{
       },[shape, xRange, yRange, zRange, dataShape, flipY, remapTexture])
   return (
     <group>
-      <group scale={[globalscale,globalscale,globalscale]}>
+      <group scale={[globalscale,globalscale,2*globalscale]}>
         <ColumnMeshes />
       </group>
       <group scale={[1, (flipY && !remapTexture) ? -1 : 1, 1]}>
-        <sprite count={count} material={material}/>
+        <sprite count={count} material={material} />
       </group>
       <MappingCube/>
     </group>
