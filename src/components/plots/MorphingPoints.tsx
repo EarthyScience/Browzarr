@@ -1,5 +1,5 @@
 "use client";
-
+import { useMemo } from 'react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { Canvas, useThree } from '@react-three/fiber';
@@ -13,7 +13,7 @@ import { pointerPos } from '../textures/TSL/morphingPoints';
 
 const MorphingPoints = () => {
   const count = 15625; // Total number of points
-  const material = createMorphingMaterial(count)
+  const material = useMemo(()=>createMorphingMaterial(count), [count])
   return (
 	<sprite count={count} material={material}/>
   );
@@ -42,6 +42,7 @@ export const LandingShapes = () =>{
 					? gl.getParameter(gl.MAX_3D_TEXTURE_SIZE)
 					: 0
 				setMaxTextureSize(max2DSize); setMax3DTextureSize(max3DSize)
+				setIsWebGPU(false)
 				return 
 			}
 		}

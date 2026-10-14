@@ -62,12 +62,7 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
                     If(u.useBorderTexture, () => {
                         const pHit = vOrigin.add(t.mul(rayDir)).toVar();
                         const localPosContinuous = pHit.xy.sub(boxMin).div(u.volumeScale).toVar();
-                        const borderUV = h.realCoords(localPosContinuous.xy)
-                        //@ts-ignore .level does exist
-                        const borderDist = u.borderTexture.sample(borderUV).level(0).r;
-                        If(borderDist.lessThanEqual(u.borderWidth), () => {
-                            borderHit.assign(bool(true)); // replaces the early `return` in GLSL
-                        });
+                        borderHit.assign(h.isBorder(localPosContinuous.xy))
                     });
                     Break();
                 });

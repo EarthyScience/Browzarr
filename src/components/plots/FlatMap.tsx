@@ -25,8 +25,8 @@ const FlatMap = () => {
         remapTexture:s.remapTexture, shape:s.shape, variable2: s.variable2,
         setPlotDim:s.setPlotDim, updateDimCoords:s.updateDimCoords, updateTimeSeries:s.updateTimeSeries
       })))
-    const {animProg, selectTS, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
-        animProg:s.animProg, selectTS:s.selectTS,
+    const {animProg, selectTS, colorScale, interpPixels, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
+        animProg:s.animProg, selectTS:s.selectTS, colorScale: s.colorScale, interpPixels: s.interpPixels,
         getColorIdx:s.getColorIdx, incrementColorIdx:s.incrementColorIdx
       })))
     const {analysisDim:axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
@@ -170,7 +170,7 @@ const FlatMap = () => {
 
     // ----- SHADER MATERIAL ----- //
     uniformUpdater();
-    const shaderMaterial = useMemo(() => createFlatMapMaterial(), []) ;
+    const shaderMaterial = useMemo(() => createFlatMapMaterial(), [colorScale, interpPixels]) ;
     
     useEffect(()=>{
       // This is duplicated. Probably shoud just move it to Plot.tsx

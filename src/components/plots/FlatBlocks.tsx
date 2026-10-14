@@ -1,12 +1,11 @@
 import * as u from '@/components/textures/TSL/utils/uniforms';
+import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useDimAxis } from '@/hooks';
-import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
-import { useThree } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { createFlatBlocksMaterial } from '../textures/TSL/flatBlocks';
@@ -15,7 +14,7 @@ const FlatBlocks = () => {
         isFlat: s.isFlat, flipY: s.flipY, dataShape: s.dataShape, axisDimArrays: s.axisDimArrays, 
         remapTexture: s.remapTexture, 
     })))
-    const rotateFlat = usePlotStore(s => s.rotateFlat)
+    const {rotateFlat, colorScale} = usePlotStore(useShallow(s => ({rotateFlat: s.rotateFlat, colorScale: s.colorScale})))
     const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
     const {xArray, yArray} = useDimAxis()
     const {width, height} = useMemo(()=>{
@@ -49,7 +48,7 @@ const FlatBlocks = () => {
         geo.translate(0, 0, boxHeight / 2,);
         return geo
     },[width, height])
-    const material = useMemo(()=>createFlatBlocksMaterial(count),[count])
+    const material = useMemo(()=>createFlatBlocksMaterial(count),[count, colorScale])
     material.depthWrite = true;
     material.depthTest = true;
     const mesh = useMemo(()=>{
@@ -61,7 +60,7 @@ const FlatBlocks = () => {
     // --- UNIFORMS --- //
     uniformUpdater();
   return (
-    <group rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]} scale={[1, flipY ? -1 : 1, 1]} >
+    <group rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]} scale={[1, (flipY || rotateMap) ? -1 : 1, 1]} >
         <primitive object={mesh} />
     </group>
   )

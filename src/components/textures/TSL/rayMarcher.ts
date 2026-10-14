@@ -38,11 +38,7 @@ const rayMarch = Fn(([vOrigin, vDirection] : [any, any]) => {
 					If(alphaAcc.greaterThanEqual(0.99), () => {
 						If(u.useBorderTexture, () => {
 							const realUV = h.realCoords(texCoord.xy)
-							//@ts-ignore .level does exist
-						    const borderDist = u.borderTexture.sample(realUV).level(0).r;
-						    If(borderDist.lessThanEqual(u.borderWidth), () => {
-						        borderHit.assign(bool(true)); // replaces the early `return` in GLSL
-						    });
+							borderHit.assign(h.isBorder(realUV))
 						});
 						Break();
 					});

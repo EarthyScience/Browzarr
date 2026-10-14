@@ -65,7 +65,7 @@ export const getLocalCoord = (thisUV : any) =>{
 export const realCoords = Fn(([uv]: [any]) => {
   // Radians -> fraction of a full turn. Longitudes in -180..180 need shifting by 0.5.
   const lonRange = u.lonBounds.div(2 * Math.PI);
-  const normalizedLon = lonRange;
+  const normalizedLon = select(u.is360, lonRange, lonRange.add(0.5));
  
   // Latitude: -PI/2..PI/2 -> 0..1
   const normalizedLat = u.latBounds.div(Math.PI).add(0.5);
@@ -75,7 +75,7 @@ export const realCoords = Fn(([uv]: [any]) => {
  
   const thisU = uv.x.mul(lonScale).add(normalizedLon.x);
   const thisV = uv.y.mul(latScale).add(normalizedLat.x);
-  if (u.is360)thisU.assign(thisU.add(0.5).fract())
+ 
   return vec2(thisU, thisV);
 });
 
@@ -138,8 +138,6 @@ const makeColorScale = (expr: string) => {
   `)
 };
 
-
-
 export const rescaler = Fn(([x]: [any]) => {
   const result = x.toVar();
   If(u.rescaleValues, () => {
@@ -175,11 +173,10 @@ export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
   return valid
 })
 
-
 export const isBorder = Fn(([thisUV] : [any])=>{
+    // Takes Real Coords. Assumes already been transformed
     const isBorder = bool(false).toVar();
     If(u.useBorderTexture, ()=>{
-        thisUV.x.assign(select(u.is360, fract(thisUV.x.add(0.5)), thisUV.x))
         //@ts-ignore .level does exist
         const distance =  u.borderTexture.sample(thisUV).level(0).r;
         If(distance.lessThanEqual(u.borderWidth), () => {

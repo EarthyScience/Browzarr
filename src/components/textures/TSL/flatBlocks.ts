@@ -24,12 +24,8 @@ const isBorder = Fn(([instanceUV] : [any])=>{
         const aspect = resolution.x.toFloat().div(resolution.y)
         const gridExtent = vec2(2, float(2).div(aspect));
         const thisUV = instanceUV.add(positionGeometry.xy.div(gridExtent));
-        thisUV.assign(h.realCoords(thisUV))
-        //@ts-ignore .level does exist
-        const distance =  u.borderTexture.sample(thisUV).level(0).r;
-        If(distance.lessThanEqual(u.borderWidth), () => {
-            isBorder.assign(bool(true)); 
-        });
+        thisUV.assign(h.realCoords(thisUV));
+        isBorder.assign(h.isBorder(thisUV.fract()));
     })
     return isBorder;
 })

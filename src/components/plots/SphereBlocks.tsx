@@ -9,8 +9,8 @@ import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { createSphereBlocksMaterial } from '../textures/TSL/sphereBlocks';
 const SphereBlocks = () => {
-    const { nanColor, nanTransparency} = usePlotStore(useShallow(s => ({
-        nanColor: s.nanColor, nanTransparency: s.nanTransparency,
+    const { nanColor, nanTransparency, colorScale} = usePlotStore(useShallow(s => ({
+        nanColor: s.nanColor, nanTransparency: s.nanTransparency, colorScale: s.colorScale
     })))
     const {xArray, yArray} = useDimAxis()
     const width = xArray.length;
@@ -31,7 +31,7 @@ const SphereBlocks = () => {
         geo.translate(0, boxHeight / 2, 0);
         return geo
     },[width, height])
-    const material = useMemo(()=>createSphereBlocksMaterial(count), [count])
+    const material = useMemo(()=>createSphereBlocksMaterial(count), [count, colorScale])
     const mesh = useMemo(()=>{
         const newMesh = new THREE.Mesh(geometry, material)
         newMesh.count = count;

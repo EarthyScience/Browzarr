@@ -65,7 +65,6 @@ const isBorder = Fn(()=>{
     const isBorder = bool(false).toVar();
     If(u.useBorderTexture, ()=>{
         const thisUV = giveMaskUV(positionWorld).toVar();
-        thisUV.x.assign(select(u.is360, fract(thisUV.x.add(0.5)), thisUV.x))
         //@ts-ignore .level does exist
         const distance =  u.borderTexture.sample(thisUV).level(0).r;
         If(distance.lessThanEqual(u.borderWidth), () => {
