@@ -9,16 +9,14 @@ import * as THREE from 'three/webgpu'
 
 export const shouldSkip = (p: any, texCoord: any, maskUV: any) => {
     const skip = bool(false).toVar();
-    texCoord.assign(vec3(0.0));
- 
     const outOfBounds = p.x.greaterThan(u.flatBounds.x.negate())
         .or(p.x.lessThan(u.flatBounds.y.negate()))
         .or(p.z.negate().greaterThan(u.flatBounds.z.negate()))
         .or(p.z.negate().lessThan(u.flatBounds.w.negate()))
-        .or(p.y.lessThan(u.vertBounds.x))
-        .or(p.y.greaterThan(u.vertBounds.y));
+    //     .or(p.y.lessThan(u.vertBounds.x))
+    //     .or(p.y.greaterThan(u.vertBounds.y));
     If(outOfBounds, () => { skip.assign(bool(true)); });
- 
+    
     If(skip.not(), () => {
         texCoord.assign(p.div(u.volumeScale).add(0.5));
         const valid = h.reprojector(texCoord, maskUV);
@@ -42,7 +40,7 @@ export const shouldSkip = (p: any, texCoord: any, maskUV: any) => {
         texCoord.assign(clamp(texCoord, vec3(0.0), vec3(1.0).sub(vec3(EPSILON))));
     });
  
-    return skip;
+    return bool(false);
 };
 
 

@@ -55,7 +55,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const [yResolution, setYResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [zResolution, setZResolution] = useState<number>(AXIS_CONSTANTS.INITIAL_RESOLUTION)
   const [timeResolution, setTimeResolution] = useState(0);
-  const isTimeCompatible = axisDimUnits[zIdx].toLowerCase().includes('since')
+  const isTimeCompatible = axisDimUnits[zIdx]?.toLowerCase().includes('since')
 
   const isPC = useMemo(()=>plotType == 'point-cloud',[plotType])
   const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1

@@ -55,7 +55,8 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
             const biVal = float(0.0).toVar();
             const isNan = bool(false).toVar();
             const inRange = sampleVoxel(texCoord, d, biVal, isNan);
-
+            // accumColor.assign(vec4(pCenter.div(u.volumeScale).add(0.5), 1))
+            // alphaAcc.assign(1)
             If(inRange, () => {
                 colorTexel(d, biVal, isNan, accumColor, alphaAcc)
                 If(alphaAcc.greaterThanEqual(0.99), () => {
