@@ -53,11 +53,10 @@ export const LandingShapes = () =>{
 		<Canvas
 			camera={{position:[0, 0, 3]}}
 			flat
+			linear
 			gl={async (props) => {
 				const renderer = new THREE.WebGPURenderer(props as any)
 				await renderer.init()
-				renderer.outputColorSpace = THREE.LinearSRGBColorSpace
-				renderer.toneMapping = 0;
 				return renderer
 			}}
 		>
