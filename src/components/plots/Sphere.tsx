@@ -6,7 +6,7 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useDimAxis } from '@/hooks';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
 import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useShallow } from 'zustand/shallow';
 import { createSphereMaterial } from '../textures/TSL/sphere';
@@ -84,6 +84,10 @@ export const Sphere = () => {
         }
         updateDimCoords({[tsID] : dimObj})
       }
+	// --- CLEANUP --- //
+	useEffect(()=>()=>{ shaderMaterial.dispose() },[shaderMaterial])
+	useEffect(()=>()=>{ geometry.dispose() },[geometry])
+	useEffect(()=>()=>{ backMaterial.dispose() },[backMaterial])
   return (
     <group scale={[1, 1, 1]}>
       <SquareMeshes />

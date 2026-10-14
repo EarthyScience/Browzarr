@@ -10,7 +10,7 @@ import './Plots.css';
 import { uniformUpdater } from '../textures/TSL/utils/uniformUpdater';
 import { useEffect } from 'react';
 import { pointerPos } from '../textures/TSL/morphingPoints';
-
+import { WebGPUPlacard } from '../ui/Elements/WebGPUPlacard';
 const MorphingPoints = () => {
   const count = 15625; // Total number of points
   const material = useMemo(()=>createMorphingMaterial(count), [count])
@@ -34,6 +34,7 @@ export const LandingShapes = () =>{
 				setMaxTextureSize(max2DSize); setMax3DTextureSize(max3DSize)
 				return 
 			} else{
+				setIsWebGPU(false)
 				const canvas = document.createElement('canvas')
 				let gl: WebGL2RenderingContext | WebGLRenderingContext | null = canvas.getContext('webgl2')
 				if (!gl) gl = canvas.getContext('webgl')
@@ -42,7 +43,6 @@ export const LandingShapes = () =>{
 					? gl.getParameter(gl.MAX_3D_TEXTURE_SIZE)
 					: 0
 				setMaxTextureSize(max2DSize); setMax3DTextureSize(max3DSize)
-				setIsWebGPU(false)
 				return 
 			}
 		}
@@ -51,6 +51,7 @@ export const LandingShapes = () =>{
   	uniformUpdater();
 	return(
 		<div className='w-[100vw] h-[100vh]'>
+		<WebGPUPlacard />
 		<Canvas
 			camera={{position:[0, 0, 3]}}
 			flat

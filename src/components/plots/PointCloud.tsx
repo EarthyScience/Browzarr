@@ -55,6 +55,9 @@ export const PointCloud = ( )=>{
           ? new THREE.Vector3(remapTexture.image.width, remapTexture.image.height, dataShape[0])
           : new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])
       },[shape, xRange, yRange, zRange, dataShape, flipY, remapTexture])
+
+	// --- CLEANUP --- //
+	useEffect(()=>()=>{ material.dispose() },[material])
   return (
     <group>
       <group scale={[globalscale,globalscale,2*globalscale]}>

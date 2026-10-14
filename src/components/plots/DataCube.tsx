@@ -20,7 +20,10 @@ export const DataCube = ( ) => {
 			useOrtho:s.useOrtho, valueRange:s.valueRange, useRayMarch:s.useRayMarch,
 			transparency:s.transparency, vTransferScale:s.vTransferScale, revTransparency:s.revTransparency, interpPixels:s.interpPixels, colorScale: s.colorScale
 		})))
-  	const shaderMaterial = useMemo(() => useRayMarch ? createRayMarchingMaterial(useOrtho) : createDDAMaterial(useOrtho), [useRayMarch, remapTexture, useOrtho, interpPixels, colorScale]);
+  	const shaderMaterial = useMemo(() => useRayMarch 
+		? createRayMarchingMaterial(useOrtho) 
+		: createDDAMaterial(useOrtho)
+	, [useRayMarch, remapTexture, useOrtho, interpPixels, colorScale]);
   	const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
 	const cmapFunc = (val: number) => sampleColormap(val, cmap.value as THREE.DataTexture)
 
@@ -37,6 +40,9 @@ export const DataCube = ( ) => {
 		u.tfLUT.value = newLUT;
 	},[valueRange, revTransparency, transparency, vTransferScale, cmap.value])
 	uniformUpdater();
+	// --- CLEANUP --- //
+    useEffect(()=>()=>{ shaderMaterial.dispose() },[shaderMaterial])
+    useEffect(()=>()=>{ geometry.dispose() },[geometry])
 	return (
 		<group >
 		<ColumnMeshes />

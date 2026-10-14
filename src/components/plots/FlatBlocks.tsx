@@ -5,13 +5,13 @@ import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useDimAxis } from '@/hooks';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { createFlatBlocksMaterial } from '../textures/TSL/flatBlocks';
 const FlatBlocks = () => {
     const {flipY, dataShape, axisDimArrays, remapTexture} = useGlobalStore(useShallow(s => ({
-        isFlat: s.isFlat, flipY: s.flipY, dataShape: s.dataShape, axisDimArrays: s.axisDimArrays, 
+        flipY: s.flipY, dataShape: s.dataShape, axisDimArrays: s.axisDimArrays, 
         remapTexture: s.remapTexture, 
     })))
     const {rotateFlat, colorScale} = usePlotStore(useShallow(s => ({rotateFlat: s.rotateFlat, colorScale: s.colorScale})))
@@ -48,17 +48,23 @@ const FlatBlocks = () => {
         geo.translate(0, 0, boxHeight / 2,);
         return geo
     },[width, height])
-    const material = useMemo(()=>createFlatBlocksMaterial(count),[count, colorScale])
-    material.depthWrite = true;
-    material.depthTest = true;
+    const material = useMemo(()=>{
+        const m = createFlatBlocksMaterial(count);
+        m.depthWrite = true;
+        m.depthTest = true;
+        return m;
+    },[count, colorScale])
     const mesh = useMemo(()=>{
         const newMesh = new THREE.Mesh(geometry, material)
         newMesh.count = count;
         newMesh.frustumCulled = false;
         return newMesh
-    },[geometry, material])
+    },[geometry, material, count])
     // --- UNIFORMS --- //
     uniformUpdater();
+    // --- CLEANUP --- //
+    useEffect(()=>()=>{ material.dispose() },[material])
+    useEffect(()=>()=>{ geometry.dispose() },[geometry])
   return (
     <group rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]} scale={[1, (flipY || rotateMap) ? -1 : 1, 1]} >
         <primitive object={mesh} />

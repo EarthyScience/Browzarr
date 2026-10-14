@@ -57,9 +57,6 @@ const FlatMap = () => {
     // --- Geometry --- //
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
     const rotateMap = analysisMode && axis == 2;
-    useEffect(()=>{
-        geometry.dispose()
-    },[geometry])
     // ----- Info Viewer----- //
     const [loc, setLoc] = useState<[number, number]>([0,0]);
     const [showInfo, setShowInfo] = useState(false);
@@ -176,6 +173,9 @@ const FlatMap = () => {
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
     },[remapTexture])
+    // --- CLEANUP --- //
+    useEffect(()=>()=>{ shaderMaterial.dispose() },[shaderMaterial])
+    useEffect(()=>()=>{ geometry.dispose() },[geometry])
   return (
     <>
     <SquareMeshes />

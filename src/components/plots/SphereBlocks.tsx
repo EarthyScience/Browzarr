@@ -43,7 +43,6 @@ const SphereBlocks = () => {
         material.transparent = true;
         return material;
     },[])
-    
     const nanSphereGeometry = useMemo(()=> new THREE.IcosahedronGeometry(1, 9),[])
     // --- UNIFORMS ---//
     useEffect(()=>{
@@ -54,6 +53,11 @@ const SphereBlocks = () => {
         }
     },[nanColor, nanTransparency])
     uniformUpdater();
+    // --- CLEANUP --- //
+    useEffect(()=>()=>{ material.dispose() },[material])
+    useEffect(()=>()=>{ nanMaterial.dispose() },[nanMaterial])
+    useEffect(()=>()=>{ geometry.dispose() },[geometry])
+    useEffect(()=>()=>{ nanSphereGeometry.dispose() },[nanSphereGeometry])
   return (
     <group scale={[1, 1, 1]}>
         <primitive object={mesh} />
