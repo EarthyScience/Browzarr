@@ -21,6 +21,7 @@ import {
   wgslFn
 } from 'three/tsl';
 import * as u from './uniforms';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
 
 
 // --- TEXTURE SAMPLERS ---//
@@ -142,7 +143,7 @@ const makeColorScale = (expr: string) => {
 export const rescaler = Fn(([x]: [any]) => {
   const result = x.toVar();
   If(u.rescaleValues, () => {
-    const applyColorScale = makeColorScale(u.colorScale.value);
+    const applyColorScale = makeColorScale(usePlotStore.getState().colorScale?? "x");
     result.assign(norm(applyColorScale({ x: denorm(x) })));
   });
   return result;

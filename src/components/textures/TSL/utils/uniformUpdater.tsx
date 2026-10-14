@@ -121,7 +121,6 @@ export function uniformUpdater(){
     })
     // --- COLORSCALE --- //
     useEffect(()=>{
-        if (colorScale)u.colorScale.value = colorScale;
         u.rescaleValues.value = Boolean(colorScale)
     },[colorScale])
 

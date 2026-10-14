@@ -61,7 +61,7 @@ const FlatBlocks = () => {
     // --- UNIFORMS --- //
     uniformUpdater();
   return (
-    <group rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]} scale={[1, flipY ? -1 : 1, 1]} >
+    <group rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]} scale={[1, flipY ? -1 : 1, 1]} >
         <primitive object={mesh} />
     </group>
   )
