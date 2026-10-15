@@ -1,118 +1,76 @@
-import React, { useEffect, useMemo } from 'react'
+import * as u from '@/components/textures/TSL/utils/uniforms';
+import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
+import { useErrorStore } from '@/GlobalStates/ErrorStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useErrorStore } from '@/GlobalStates/ErrorStore';
-import { useShallow } from 'zustand/shallow'
-import * as THREE from 'three'
-import { flatBlocksVert, sphereBlocksFrag } from '../textures/shaders'
-import { invalidate } from '@react-three/fiber'
-import { usePaddedTextures } from '@/hooks/usePaddedTextures';
-import { useDimAxis, useValueScales } from '@/hooks';
-import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
-import { functionInjector } from '../ui/Elements/ColorAdjuster';
-
-const FlatBlocks = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined}) => {
-    const textures = usePaddedTextures(propTextures);
-    const {isFlat, flipY, dataShape, axisDimArrays, remapTexture, remapBorders} = useGlobalStore(useShallow(s => ({
-        isFlat: s.isFlat, flipY: s.flipY, dataShape: s.dataShape, axisDimArrays: s.axisDimArrays, 
-        remapTexture: s.remapTexture, remapBorders: s.remapBorders
+import { useDimAxis } from '@/hooks';
+import { useMemo, useEffect } from 'react';
+import * as THREE from 'three/webgpu';
+import { useShallow } from 'zustand/shallow';
+import { createFlatBlocksMaterial } from '../textures/TSL/flatBlocks';
+const FlatBlocks = () => {
+    const {flipY, dataShape, axisDimArrays, remapTexture} = useGlobalStore(useShallow(s => ({
+        flipY: s.flipY, dataShape: s.dataShape, axisDimArrays: s.axisDimArrays, 
+        remapTexture: s.remapTexture, 
     })))
-    const { displacement, offsetNegatives, rotateFlat, colorScale} = usePlotStore(useShallow(s => ({
-        displacement: s.displacement, offsetNegatives: s.offsetNegatives, rotateFlat: s.rotateFlat, colorScale: s.colorScale
-    })))
+    const {rotateFlat, colorScale} = usePlotStore(useShallow(s => ({rotateFlat: s.rotateFlat, colorScale: s.colorScale})))
     const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
-    const valueScales = useValueScales();
     const {xArray, yArray} = useDimAxis()
     const {width, height} = useMemo(()=>{
-        if (analysisMode){
+        const [width, height] = remapTexture 
+            ? [remapTexture.image.width, remapTexture.image.height] 
+            : [xArray.length, yArray.length]
+        if (analysisMode && axis != 0){
             const thisShape = dataShape.filter((_val, idx) => idx != axis)
+            u.displacementResolution.value = new THREE.Vector2(thisShape[1], thisShape[0])
             return {width: thisShape[1], height: thisShape[0]}
         } else {
-            return {width: xArray.length, height: yArray.length}
+            u.displacementResolution.value = new THREE.Vector2(width, height)
+            return {width, height}
         }
-    },[analysisMode, axis, dataShape,xArray, yArray, axisDimArrays]) 
+    },[analysisMode, axis, dataShape,xArray, yArray, axisDimArrays, remapTexture]) 
     const rotateMap = analysisMode && axis == 2;
     const count = useMemo(()=>{
-        const count = width * height;
-        if (count * 16 *4 > 2e9){
-            useErrorStore.setState({ error:'largeArray' })
-            return 0
-        }
-        return count
-    },[width, height])
-    const geometry = useMemo(()=>{
             const count = width * height;
             if (count * 16 *4 > 2e9){
-                return undefined
+                useErrorStore.setState({ error:'largeArray' })
+                return 0
             }
-            const sqWidth = 2;
-            const aspect = width/height
-            const geo = new THREE.BoxGeometry(sqWidth/width, sqWidth/height/aspect, .01);
-            const uvs = new Float32Array(count * 2);
-            let idx = 0;
-            for (let i = 0; i < width; i++) {
-                for (let j = 0; j < height; j++) {
-                    const u = (i + 0.5) / width;
-                    const v = (j + 0.5) / height;
-                    uvs[idx * 2] = u;
-                    uvs[idx * 2 + 1] = v;
-                    idx ++;
-                }
-            }
-            geo.setAttribute(
-                'instanceUV',
-                new THREE.InstancedBufferAttribute(uvs, 2)
-            );
-            return geo
+            u.displacementResolution.value = new THREE.Vector2(width,height);
+            return count
         },[width, height])
-    const uniforms = useCommonUniforms()
-    const shaderMaterial = useMemo(()=>{
-        const shader = new THREE.ShaderMaterial({
-            glslVersion: THREE.GLSL3,
-            uniforms: {
-                map: { value: textures },
-                remapTexture: { value: remapTexture?? remapBorders},
-                aspect: {value: width/height},
-                displaceZero: {value: offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal)) },
-                displacement: {value: displacement},
-                ...uniforms
-            },
-            defines:{
-                ...(isFlat ? { IS_FLAT: true } : {}),
-                ...(remapTexture ? { REPROJECT: true } : {})
-            },
-            vertexShader: functionInjector(flatBlocksVert, colorScale),
-            fragmentShader: functionInjector(sphereBlocksFrag, colorScale),
-            blending: THREE.NoBlending,
-            depthWrite:true,
-            depthTest:true,
-        })
-        return shader
-    },[isFlat, remapTexture, colorScale])
-
-    updateCommonUniforms(shaderMaterial);
-    useEffect(()=>{
-        if (shaderMaterial){
-            const uniforms = shaderMaterial.uniforms;
-            uniforms.map.value = textures;           
-            uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
-            uniforms.displacement.value = displacement
-            uniforms.displaceZero.value = offsetNegatives ? 0 : (-valueScales.minVal/(valueScales.maxVal-valueScales.minVal))
-            uniforms.aspect.value = width/height;
-        }
-        invalidate();
-    },[valueScales, displacement, offsetNegatives, textures, width, height])
-
+    const geometry = useMemo(()=>{
+        const sqWidth = 2;
+        const aspect = width/height
+        const boxHeight = 0.05;
+        const geo = new THREE.BoxGeometry(sqWidth/width, sqWidth/height/aspect, boxHeight);
+        geo.translate(0, 0, boxHeight / 2,);
+        return geo
+    },[width, height])
+    const material = useMemo(()=>{
+        const m = createFlatBlocksMaterial(count);
+        m.depthWrite = true;
+        m.depthTest = true;
+        return m;
+    },[count, colorScale])
+    const mesh = useMemo(()=>{
+        const newMesh = new THREE.Mesh(geometry, material)
+        newMesh.count = count;
+        newMesh.frustumCulled = false;
+        return newMesh
+    },[geometry, material, count])
+    // --- UNIFORMS --- //
+    uniformUpdater();
+    // --- CLEANUP --- //
+    useEffect(()=>()=>{ material.dispose() },[material])
+    useEffect(()=>()=>{ geometry.dispose() },[geometry])
   return (
-
-    <instancedMesh 
-        scale={[((analysisMode && axis == 2) && flipY) ? -1:  1, flipY ? -1 : ((analysisMode && axis == 2) ? -1 : 1) , 1]}
-        rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]}
-        args={[geometry, shaderMaterial, count]}
-        frustumCulled={false}
-    />
+    <group rotation={[rotateFlat ? -Math.PI/2 : 0, 0, rotateMap ? Math.PI/2 : 0]} scale={[1, (flipY || rotateMap) ? -1 : 1, 1]} >
+        <primitive object={mesh} />
+    </group>
   )
 }
 
-export {FlatBlocks}
+export { FlatBlocks };
+

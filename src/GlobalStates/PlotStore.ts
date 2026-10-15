@@ -116,7 +116,7 @@ type PlotState ={
 
 export const usePlotStore = create<PlotState>((set, get) => ({
   plotType: "volume", 
-  pointSize: 5,
+  pointSize: 0.1,
   scalePoints: false,
   scaleIntensity: 1,
   quality: 200,

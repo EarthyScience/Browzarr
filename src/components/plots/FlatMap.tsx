@@ -1,38 +1,32 @@
 "use client";
 
-import React, {useMemo, useEffect, useState, useRef} from 'react'
-import * as THREE from 'three'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { vertShader } from '@/components/textures/shaders'
-import { useShallow } from 'zustand/shallow'
-import { ThreeEvent } from '@react-three/fiber';
-import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
-import { sampleCRS } from '../textures/ProjectionUtils';
 import { evaluateColorMap } from '@/components/textures';
-import { flatFrag } from '../textures/shaders';
-import { SquareMeshes } from './TransectMeshes';
-import { usePaddedTextures } from '@/hooks/usePaddedTextures';
 import { useAxisIndices, useDimAxis } from '@/hooks';
-import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
-import { functionInjector } from '../ui/Elements/ColorAdjuster';
-import {InfoViewer} from '../ui/Elements/InfoViewer';
-
-const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | THREE.Data3DTexture[]}) => {
+import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
+import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
+import { ThreeEvent } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import * as THREE from 'three/webgpu';
+import { useShallow } from 'zustand/shallow';
+import { sampleCRS } from '../textures/ProjectionUtils';
+import { createFlatMapMaterial } from '../textures/TSL/flatMap';
+import { InfoViewer } from '../ui/Elements/InfoViewer';
+import { SquareMeshes } from './TransectMeshes';
+const FlatMap = () => {
     // ---- Imports ---- //
-    const textures = usePaddedTextures(propTextures);
     const {flipY, dimNames, dimUnits, isFlat, variable2,
-      dataShape, strides, remapTexture, remapBorders, shape, 
+      dataShape, strides, remapTexture, shape, 
       bivariate, setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => ({
         flipY:s.flipY, dimNames:s.dimNames, dimUnits:s.dimUnits, 
         isFlat:s.isFlat, dataShape:s.dataShape, strides:s.strides, bivariate: s.bivariate,
-        remapTexture:s.remapTexture, remapBorders:s.remapBorders, shape:s.shape, variable2: s.variable2,
+        remapTexture:s.remapTexture, shape:s.shape, variable2: s.variable2,
         setPlotDim:s.setPlotDim, updateDimCoords:s.updateDimCoords, updateTimeSeries:s.updateTimeSeries
       })))
-    const {animProg, selectTS, colorScale,
-      getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
-        animProg:s.animProg, selectTS:s.selectTS, colorScale:s.colorScale,
+    const {animProg, selectTS, colorScale, interpPixels, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
+        animProg:s.animProg, selectTS:s.selectTS, colorScale: s.colorScale, interpPixels: s.interpPixels,
         getColorIdx:s.getColorIdx, incrementColorIdx:s.incrementColorIdx
       })))
     const {analysisDim:axis, analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))
@@ -63,10 +57,6 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
     // --- Geometry --- //
     const geometry = useMemo(()=>new THREE.PlaneGeometry(2,2*shapeRatio),[shapeRatio])
     const rotateMap = analysisMode && axis == 2;
-    useEffect(()=>{
-        geometry.dispose()
-    },[geometry])
-    
     // ----- Info Viewer----- //
     const [loc, setLoc] = useState<[number, number]>([0,0]);
     const [showInfo, setShowInfo] = useState(false);
@@ -95,7 +85,7 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
         bivariate
             ? [GetCurrentArray(), GetCurrentArray(undefined, variable2)]
             : [GetCurrentArray()],
-    [analysisMode, analysisArray, textures, bivariate, variable2])
+    [analysisMode, analysisArray, bivariate, variable2])
 
     const handleMove = (e: ThreeEvent<PointerEvent>) => {
       if (e.uv) {
@@ -176,28 +166,16 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
     }
 
     // ----- SHADER MATERIAL ----- //
-    const uniforms = useCommonUniforms()
-    const shaderMaterial = useMemo(()=>new THREE.ShaderMaterial({
-            glslVersion: THREE.GLSL3,
-            uniforms:{
-              map: {value: textures},
-              remapTexture: {value: remapTexture?? remapBorders},
-              ...uniforms
-            },
-            defines:{
-              ...(isFlat ? { IS_FLAT: true } : {}),
-              ...(remapTexture ? { REPROJECT: true } : {})
-            },
-            vertexShader: vertShader,
-            fragmentShader: functionInjector(flatFrag, colorScale),
-            side: THREE.DoubleSide,
-        }),[isFlat, textures, remapTexture, colorScale])
-    updateCommonUniforms(shaderMaterial)
+    uniformUpdater();
+    const shaderMaterial = useMemo(() => createFlatMapMaterial(), [colorScale, interpPixels]) ;
     
     useEffect(()=>{
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
     },[remapTexture])
+    // --- CLEANUP --- //
+    useEffect(()=>()=>{ shaderMaterial.dispose() },[shaderMaterial])
+    useEffect(()=>()=>{ geometry.dispose() },[geometry])
   return (
     <>
     <SquareMeshes />
@@ -221,4 +199,5 @@ const FlatMap = ({textures: propTextures} : {textures : THREE.DataTexture[] | TH
   )
 }
 
-export {FlatMap}
+export { FlatMap };
+

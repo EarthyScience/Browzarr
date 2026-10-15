@@ -7,6 +7,7 @@ import proj4 from 'proj4';
 import { getAxisIndices } from '@/hooks/useAxisIndices';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { getDimAxis, getAxisDimAxis} from '@/hooks';
+import * as u from '@/components/textures/TSL/utils/uniforms'
 
 export function checkProjString(projString: string){
     const {setError} = useErrorStore.getState()
@@ -145,14 +146,14 @@ function createIrregularUV(
 	texture.wrapT = THREE.ClampToEdgeWrapping;
     texture.flipY = flipY;
     texture.needsUpdate = true;
-    useGlobalStore.setState({remapBorders: texture})
+    useGlobalStore.setState({remapBorders:texture})
 }
 
 function createInverseUV(
 	xArray: Array<number>,
 	yArray: Array<number>,
     is360: boolean,
-	resolution : number
+	resolution : number,
 ) {
 	// Creates an inverse UV map: for each normalized (x, y) position,
 	// stores the (i, j) index into xArray/yArray that best matches it.
@@ -178,7 +179,6 @@ function createInverseUV(
 			const iIdx = findNearestIndex(normX, u);
 			const iNorm = xArray.length > 1 ? iIdx / (xArray.length) : 0;
             const uValid = u >= xMin && u <= xMax;
-
             const valid = uValid && vValid;
 			data[ptr++] = THREE.DataUtils.toHalfFloat(iNorm);
 			data[ptr++] = THREE.DataUtils.toHalfFloat(jNorm);
@@ -186,7 +186,6 @@ function createInverseUV(
 			ptr++;
 		}
 	}
-
 	const texture = new THREE.DataTexture(
 		data,
 		width,
@@ -198,7 +197,6 @@ function createInverseUV(
 	texture.minFilter = THREE.LinearFilter;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;
-    // texture.flipY = flipY;
     texture.needsUpdate = true;
 	return texture;
 }
@@ -209,7 +207,7 @@ export function handleIrregularGrid(){
     const {flipY, borderCompatible} = useGlobalStore.getState()
     if (!borderCompatible) return;
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
-    if (isRegular) return;
+    if (isRegular)  return;
     const {is360Deg, plotType} = usePlotStore.getState();
 	if(plotType == 'sphere') {
         const texture = createInverseUV(xArray, yArray, is360Deg, 1024);
@@ -221,7 +219,7 @@ export function handleIrregularGrid(){
 
 
 export function reproject(resolution: number = 256){
-    const {nativeCRS, destCRS, plotType, is360Deg} = usePlotStore.getState()
+    const {nativeCRS, destCRS, plotType, is360Deg, interpPixels} = usePlotStore.getState()
 	const {remapTexture, flipY } = useGlobalStore.getState()
     let {xArray, yArray} = getDimAxis();
 	const insufficientCRS = !nativeCRS || !destCRS
@@ -234,7 +232,7 @@ export function reproject(resolution: number = 256){
 		handleIrregularGrid()
 		return;
 	}
-    if (!checkProjString(destCRS) || !checkProjString(nativeCRS)) return; 
+    if (!checkProjString(destCRS) || !checkProjString(nativeCRS)) return;
     const {xIdx, yIdx} = getAxisIndices()
     if (is360Deg) {
 		xArray = remap360to180Monotonic(xArray) 
@@ -350,8 +348,8 @@ export function reproject(resolution: number = 256){
         THREE.RGBAFormat, // Must be RGBA as HalfFloat RGB is not supported
         THREE.HalfFloatType
     );
-    texture.magFilter = THREE.LinearFilter;
-    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = interpPixels ? THREE.LinearFilter : THREE.NearestFilter;
+    texture.minFilter = interpPixels ? THREE.LinearFilter : THREE.NearestFilter;
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
     texture.needsUpdate = true;

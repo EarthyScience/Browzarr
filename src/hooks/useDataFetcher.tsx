@@ -11,6 +11,7 @@ import { handleIrregularGrid, reproject } from '@/components/textures/Projection
 import { parseExtent } from '@/utils/parseExtent';
 import { createDataTexture } from '@/components/textures/TextureMakers';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
+import { remapTexture } from '@/components/textures/TSL/utils/uniforms';
 
 export const useDataFetcher = () => {
     const { variable, bivariate, variable2, mainTextures, setUnits, setIsFlat, setUseF16Textures,
@@ -123,22 +124,30 @@ export const useDataFetcher = () => {
     }, [reFetch]); 
 
     // ---- InterpPixels ---- //
-    useEffect(()=> {
-        if (!mainTextures) return;
-        const updated = mainTextures.map(tex => {
-        const clone = tex.clone(); 
-        if (interpPixels) {
-            clone.minFilter = THREE.LinearFilter;
-            clone.magFilter = THREE.LinearFilter;
-        } else {
-            clone.minFilter = THREE.NearestFilter;
-            clone.magFilter = THREE.NearestFilter;
-        }
-        clone.needsUpdate = true; 
-        return clone ;
-        });
-        setMainTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
-  },[interpPixels])
+//     useEffect(()=> {
+//         if (!mainTextures) return;
+//         const updated = mainTextures.map(tex => {
+//             const clone = tex.clone(); 
+//             if (interpPixels) {
+//                 clone.minFilter = THREE.LinearFilter;
+//                 clone.magFilter = THREE.LinearFilter;
+//             } else {
+//                 clone.minFilter = THREE.NearestFilter;
+//                 clone.magFilter = THREE.NearestFilter;
+//             }
+//             clone.needsUpdate = true; 
+//             return clone ;
+//         });
+//         if (interpPixels){
+//              remapTexture.value.minFilter = THREE.LinearFilter
+//              remapTexture.value.magFilter = THREE.LinearFilter
+//         } else {
+//             remapTexture.value.minFilter = THREE.NearestFilter
+//             remapTexture.value.magFilter = THREE.NearestFilter
+//         }
+//         remapTexture.value.needsUpdate = true;
+//         setMainTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
+//   },[interpPixels])
 
   useEffect(() => {
     // This cleanup function will run when the `textures` state is about to change,

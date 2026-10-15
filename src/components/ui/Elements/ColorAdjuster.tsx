@@ -7,11 +7,16 @@ import { useShallow } from 'zustand/shallow'
 import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
+
 const ColorAdjuster = () => {
     const customShader = useRef('');
-	const {setError, setCustomError} = useErrorStore(useShallow(s => s))
-	const {colorScale} = usePlotStore(useShallow( s=>s))
-	const {useF16Textures, setUseF16Textures, setStatus} = useGlobalStore(useShallow(s => s))
+	const {setError, setCustomError} = useErrorStore(useShallow(s => ({
+		setError: s.setError, setCustomError: s.setCustomError
+	})))
+	const colorScale = usePlotStore(s => s.colorScale)
+	const {useF16Textures, isWebGPU, setUseF16Textures, setStatus} = useGlobalStore(useShallow(s => ({
+		useF16Textures: s.useF16Textures, isWebGPU: s.isWebGPU, setUseF16Textures: s.setUseF16Textures, setStatus: s.setStatus
+	})))
 	const handleShader = () =>{
 		const shader = customShader.current
 		const {ok, log} = glslValidator(shader)
@@ -26,10 +31,9 @@ const ColorAdjuster = () => {
 			usePlotStore.setState({colorScale:undefined});
 			return;
 		}
-		const glslString = `x = ${shader};`
+		const glslString = `${shader}`
 		usePlotStore.setState({colorScale:glslString})
 	}
-
 	return (
 		<div className='grid gap-2'>
 			{colorScale 
@@ -59,7 +63,7 @@ const ColorAdjuster = () => {
 							{[
 								'abs(x)', 'sqrt(x)', 'min(x, y)', 'max(x, y)', 
 								'log(x)', 'log2(x)',  'exp(x)', 'exp2(x)', 
-								'pow(x, y)', 'floor(x)', 'ceil(x)',  ,'mod(x, y)',
+								'pow(x, y)', 'floor(x)', 'ceil(x)', 'mod(x, y)',
 								'round(x)', 'mix(x, y, a)', 
 								'fract(x)', 'inverseqrt(x)',
 							].map((fn)=> (
