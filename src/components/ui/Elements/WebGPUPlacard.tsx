@@ -1,5 +1,5 @@
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
-import React from 'react'
+import React, { useState } from 'react'
 
 const LABELS: Record<string, { text: string; hint: string }> = {
   webgpu: {
@@ -25,10 +25,9 @@ export async function detectGpuBackend() {
 }
 
 export const WebGPUPlacard = () => {
-    const isWebGPU = useGlobalStore(s => s.isWebGPU)
-    const active = isWebGPU ? 'webgpu' : 'webgl'
+    const [active,setActive] = useState('webgpu')
     const { text, hint } = LABELS[active];
-    detectGpuBackend().then(e=>console.log(e))
+    detectGpuBackend().then(e=>setActive(e))
     return (
         <>
             <style>{css}</style>
@@ -47,12 +46,12 @@ export const WebGPUPlacard = () => {
 const css = `
 .gpu-badge {
   --gb-fg: #1f4a44;
-  --gb-bg: rgba(63, 130, 120, 0.15);
-  --gb-border: rgba(63, 130, 120, 0.45);
+  --gb-bg: rgba(63, 130, 120, 0.06);
+  --gb-border: rgba(63, 130, 120, 0.07);
   --gb-dot: #2f9a8a;
   position: absolute;
   left:50%;
-  top: 10%;
+  top: 2%;
   transform:translatex(-50%);
   display: inline-flex;
   align-items: center;
@@ -61,9 +60,9 @@ const css = `
   border: 1px solid var(--gb-border);
   border-radius: 999px;
   background: var(--gb-bg);
-  color: var(--gb-fg);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06),
-    0 4px 12px -4px color-mix(in srgb, var(--gb-dot) 35%, transparent);
+  color: var(--text-paragraph);
+  box-shadow: 0 1px 2px var(--modal-shadow),
+    0 4px 18px -4px color-mix(in srgb, var(--gb-dot) 35%, transparent);
   font: 600 0.875rem/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -85,21 +84,5 @@ const css = `
   background: var(--gb-dot);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--gb-dot) 24%, transparent);
 }
- 
-@media (prefers-color-scheme: dark) {
-  .gpu-badge {
-    --gb-fg: #b4e3d9;
-    --gb-bg: rgba(110, 190, 175, 0.16);
-    --gb-border: rgba(110, 190, 175, 0.42);
-    --gb-dot: #6ed1bf;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3),
-      0 4px 12px -4px color-mix(in srgb, var(--gb-dot) 30%, transparent);
-  }
-  .gpu-badge--webgl {
-    --gb-fg: #ecd7a3;
-    --gb-bg: rgba(212, 180, 110, 0.16);
-    --gb-border: rgba(212, 180, 110, 0.42);
-    --gb-dot: #e0bd70;
-  }
-}
+
 `;

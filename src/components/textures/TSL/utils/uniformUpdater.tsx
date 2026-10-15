@@ -70,6 +70,10 @@ export function uniformUpdater(){
             u.remapBorderTexture.value.dispose();
         }
     },[remapBorders])
+    // --- BORDERS --- //
+    useEffect(()=>{
+        u.trim.value = plotType != 'sphere'
+    },[plotType])
     // --- GENERAL --- //
     useEffect(()=>{
         u.cOffset.value = cOffset;
@@ -132,8 +136,8 @@ export function uniformUpdater(){
         u.volumeScale.value = shape;
         u.flatBounds.value.set(-xRange[1],-xRange[0],zRange[0] * timeRatio, zRange[1] * timeRatio);
         u.vertBounds.value.set(
-            (flipY ? yRange[1] : yRange[0]) * aspectRatio,
-            (flipY ? yRange[0] : yRange[1]) * aspectRatio,
+            (flipY ? -yRange[1] : yRange[0]) * aspectRatio,
+            (flipY ? -yRange[0] : yRange[1]) * aspectRatio,
         );
         u.dataShape.value = remapTexture 
             ? new THREE.Vector3(remapTexture.image.width, remapTexture.image.height, dataShape[0])

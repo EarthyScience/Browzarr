@@ -69,7 +69,8 @@ export const useF16 = uniform( bool() );
 export const isFlat = uniform( bool() );
 export const flipY = uniform(bool(false));
 export const rescaleValues = uniform(bool(false));
-export const isWebGPU = uniform(bool(true))
+export const isWebGPU = uniform(bool(true));
+export const trim = uniform(bool(false));
 
 // --- VOLUME UNIFORMS --- //
 export const volumeScale = uniform(vec3());

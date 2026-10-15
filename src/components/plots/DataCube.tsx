@@ -26,7 +26,6 @@ export const DataCube = ( ) => {
 	, [useRayMarch, remapTexture, useOrtho, interpPixels, colorScale]);
   	const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
 	const cmapFunc = (val: number) => sampleColormap(val, cmap.value as THREE.DataTexture)
-		console.log(u.volumeScale)
 	// --- GENERATE LUT --- //
 	useEffect(()=>{
 		const newLUT = buildTransferLUT({ 
@@ -41,6 +40,7 @@ export const DataCube = ( ) => {
 	},[valueRange, revTransparency, transparency, vTransferScale, cmap.value])
 	uniformUpdater();
 	// --- CLEANUP --- //
+	console.log(u.flatBounds)
     useEffect(()=>()=>{ shaderMaterial.dispose() },[shaderMaterial])
     useEffect(()=>()=>{ geometry.dispose() },[geometry])
 	return (

@@ -10,6 +10,7 @@ import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { sampleCRS } from '../textures/ProjectionUtils';
 import { createBorderMaterial } from '../textures/TSL/borders';
+import { uniformUpdater } from '../textures/TSL/utils/uniformUpdater';
 
 function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=>THREE.Vector3, span = 1.) {
     const segments: THREE.Vector3[][] = [[]];
@@ -103,7 +104,7 @@ function Borders({features}:{features: any}){
 	},[nativeCRS, destCRS])
 
     const lineShaderMat = useMemo(() => createBorderMaterial(), [])
-    const lineGeometries = useMemo(() => {
+    const lineGeometries:THREE.BufferGeometry<THREE.NormalBufferAttributes, THREE.BufferGeometryEventMap>[] = useMemo(() => {
     	return features.flatMap((feature: any, i: number) => {
 			const lines: THREE.BufferGeometry<THREE.NormalBufferAttributes, THREE.BufferGeometryEventMap>[] = [];
 			if (feature.geometry.type === 'LineString') {
@@ -160,6 +161,9 @@ function Borders({features}:{features: any}){
             });
             return results
     }, [lineGeometries, lineShaderMat, spherize]);
+    // --- CLEANUP --- //
+    useEffect(()=>()=>{ lineShaderMat.dispose() },[lineShaderMat])
+	useEffect(()=>()=>{ lineGeometries.map(val => val.dispose()) },[lineGeometries])
     return (
         <>
             {lines}
@@ -179,7 +183,6 @@ const CountryBorders = () => {
         rotateFlat: s.rotateFlat, pointSize: s.pointSize, useBorderTexture: s.useBorderTexture, is360Deg: s.is360Deg
     })))
     const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
-
     const spherize = plotType === 'sphere';
     useFrame(({camera})=>{
         if (spherize){return;}
@@ -207,6 +210,7 @@ const CountryBorders = () => {
     const globalScale = isPC ? dataShape[2]/500 : 1
     const depthScale = isPC ? depthRatio : timeRatio/2
     const aspectRatio = (shape && shape.y > 0) ? (shape.x / shape.y) : 1;
+    uniformUpdater();
     return(
         <group
             rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}

@@ -1,13 +1,35 @@
 import {
     abs, any, bool, Break, cameraPosition, cameraWorldMatrix, clamp,
-    Discard, EPSILON, float, floor, Fn, greaterThanEqual, If, int,
+    Discard, EPSILON, float, floor, Fn, fract, greaterThanEqual, If, int,
     ivec3, lessThan, Loop, max, modelWorldMatrixInverse, normalize,
-    positionLocal, select, sign, varying, vec2, vec3, vec4
+    positionLocal, select, sign, texture, varying, vec2, vec3, vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
 import * as u from './utils/uniforms';
 import { colorTexel, hitBox, sampleVoxel, shouldSkip } from './utils/volumeHelpers';
+
+const reprojectMask = Fn(([texCoord] : [any]) =>{
+    const maskUV = vec2(0).toVar();
+    If(u.reproject, () => {
+        const remap = texture(u.remapTexture, texCoord.xy).rgb.toVar();
+        maskUV.assign(h.realCoords(remap.rg));
+    }).Else(()=> {
+        // Reprojected data is already -180..180, so no adjusting needed.
+        const originalCoord = texCoord.xy;
+        const tempV = h.realCoords(originalCoord).toVar();
+        If(u.remapBorders, ()=>{
+            tempV.xy.assign(texture(u.remapBorderTexture, tempV).ba)
+        })
+        maskUV.assign(tempV);
+    })
+    maskUV.x.assign(select(u.is360,
+        fract(maskUV.x.add(0.5)),
+        maskUV.x
+    ));
+    return maskUV;
+})
+
 
 const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
    
@@ -55,15 +77,14 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
             const biVal = float(0.0).toVar();
             const isNan = bool(false).toVar();
             const inRange = sampleVoxel(texCoord, d, biVal, isNan);
-            // accumColor.assign(vec4(pCenter.div(u.volumeScale).add(0.5), 1))
-            // alphaAcc.assign(1)
             If(inRange, () => {
                 colorTexel(d, biVal, isNan, accumColor, alphaAcc)
                 If(alphaAcc.greaterThanEqual(0.99), () => {
                     If(u.useBorderTexture, () => {
                         const pHit = vOrigin.add(t.mul(rayDir)).toVar();
                         const localPosContinuous = pHit.xy.sub(boxMin).div(u.volumeScale).toVar();
-                        borderHit.assign(h.isBorder(localPosContinuous.xy))
+                        const borderUV = reprojectMask(localPosContinuous.xy)
+                        borderHit.assign(h.isBorder(borderUV))
                     });
                     Break();
                 });

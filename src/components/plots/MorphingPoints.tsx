@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { createMorphingMaterial } from '../textures/TSL/morphingPoints';

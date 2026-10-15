@@ -13,8 +13,8 @@ export const shouldSkip = (p: any, texCoord: any, maskUV: any) => {
         .or(p.x.lessThan(u.flatBounds.y.negate()))
         .or(p.z.negate().greaterThan(u.flatBounds.z.negate()))
         .or(p.z.negate().lessThan(u.flatBounds.w.negate()))
-    //     .or(p.y.lessThan(u.vertBounds.x))
-    //     .or(p.y.greaterThan(u.vertBounds.y));
+        .or(p.y.lessThan(u.vertBounds.x))
+        .or(p.y.greaterThan(u.vertBounds.y));
     If(outOfBounds, () => { skip.assign(bool(true)); });
     
     If(skip.not(), () => {
