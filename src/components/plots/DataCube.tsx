@@ -39,6 +39,7 @@ export const DataCube = ( ) => {
 		u.tfLUT.value = newLUT;
 	},[valueRange, revTransparency, transparency, vTransferScale, cmap.value])
 	uniformUpdater();
+	console.log(u.reproject.value)
 	// --- CLEANUP --- //
     useEffect(()=>()=>{ shaderMaterial.dispose() },[shaderMaterial])
     useEffect(()=>()=>{ geometry.dispose() },[geometry])

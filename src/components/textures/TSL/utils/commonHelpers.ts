@@ -161,9 +161,6 @@ export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
     // Reprojected data is already -180..180, so no adjusting needed.
     const originalCoord = texCoord.xy;
     const tempV = realCoords(originalCoord).toVar();
-    If(u.remapBorders, ()=>{
-      tempV.xy.assign(texture(u.remapBorderTexture, tempV).ba)
-    })
     maskUV.assign(tempV);
   })
   // For 0–360 data, wrap longitude by half a turn
@@ -178,8 +175,12 @@ export const isBorder = Fn(([thisUV] : [any])=>{
     // Takes Real Coords. Assumes already been transformed
     const isBorder = bool(false).toVar();
     If(u.useBorderTexture, ()=>{
+        const newV = thisUV.toVar();
+        If(u.remapBorders, ()=>{
+          newV.assign(u.remapBorderTexture.sample(newV))
+        })
         //@ts-ignore .level does exist
-        const distance =  u.borderTexture.sample(thisUV).level(0).r;
+        const distance =  u.borderTexture.sample(newV).level(0).r;
         If(distance.lessThanEqual(u.borderWidth), () => {
             isBorder.assign(bool(true)); 
         });

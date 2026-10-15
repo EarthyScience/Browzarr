@@ -19,7 +19,8 @@ const reprojectMask = Fn(([texCoord] : [any]) =>{
         const originalCoord = texCoord.xy;
         const tempV = h.realCoords(originalCoord).toVar();
         If(u.remapBorders, ()=>{
-            tempV.xy.assign(texture(u.remapBorderTexture, tempV).ba)
+              tempV.xy.assign(texture(u.remapBorderTexture, originalCoord).ba)
+              tempV.y.assign(select(u.flipY, tempV.y.oneMinus(), tempV.y))
         })
         maskUV.assign(tempV);
     })
