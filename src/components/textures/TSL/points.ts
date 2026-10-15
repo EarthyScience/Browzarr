@@ -1,5 +1,5 @@
 import {
-    bool,float,Fn,If,instancedArray,instanceIndex,uint,
+    bool,float,Fn,If,instancedArray,instanceIndex,texture,uint,
     uniform,varying,vec2,vec3,vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
@@ -9,7 +9,7 @@ import * as u from './utils/uniforms';
 const GLOBAL_SCALE = 1/100 
 
 export function createPointMaterial(count: number){
-    const values = instancedArray(count, 'uint')
+    const values = instancedArray(Math.ceil(count / 4), 'uint');
    
     const depth = uint( u.pointShape.x );
     const height = uint( u.pointShape.y );
@@ -31,13 +31,22 @@ export function createPointMaterial(count: number){
         return vec3(px, py, pz).mul(scale);
     })()
 
-    function updateValues(array: Uint8Array){
-        const attr = values.value;          
-        attr.array.set(array);         
-        attr.needsUpdate = true; 
-    }
+    function updateValues(array: Uint8Array) {
+        const attr = values.value;
 
-    const rawValue = values.element(instanceIndex).toFloat().div(255)
+        const bytes = new Uint8Array(Math.ceil(array.length / 4) * 4);
+        bytes.set(array);
+
+        attr.array.set(new Uint32Array(bytes.buffer));
+        attr.needsUpdate = true;
+    }
+    const getByte = Fn(([index]: [any]) => {
+        const i = uint(index);
+        const word = values.element(i.shiftRight(2));   // i / 4
+        const shift = i.bitAnd(3).mul(8);               // (i % 4) * 8
+        return word.shiftRight(shift).bitAnd(0xFF);     // uint 0..255
+    });
+    const rawValue = float(getByte(instanceIndex)).div(255)
     const spriteValue = varying(h.rescaler(rawValue))
     const spriteCoord = varying(texCoord)
     

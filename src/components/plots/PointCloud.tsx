@@ -34,14 +34,12 @@ export const PointCloud = ( )=>{
     // --- INITIALIZE --- //
     const globalscale = dataShape[2]/100
     const count = dataShape.reduce((a, b) => a * b , 1)
-    const {material, updateValues} = useMemo(() => {
+    const material = useMemo(() => {
       u.pointShape.value = new THREE.Vector3(...dataShape)
-      return createPointMaterial(bivariate ? count*2 : count)
+      const {material, updateValues} = createPointMaterial(bivariate ? count*2 : count)
+      updateValues(textureData as Uint8Array);
+      return material
     },[count, colorScale])
-    useEffect(()=>{
-      textureData && updateValues(textureData as Uint8Array)
-    },[textureData, updateValues])
-
     // --- UNIFORMS ---//
     uniformUpdater();
     // Unique scaling for points
