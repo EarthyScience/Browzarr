@@ -46,9 +46,7 @@ export const PointCloud = ( )=>{
     useEffect(()=>{
         u.volumeScale.value = shape;
         u.flatBounds.value = new THREE.Vector4(-xRange[1],-xRange[0],zRange[0], zRange[1]);
-        u.vertBounds.value = flipY 
-              ? new THREE.Vector2(yRange[0],yRange[1])
-              : new THREE.Vector2(yRange[0],yRange[1]);
+        u.vertBounds.value = new THREE.Vector2(yRange[0],yRange[1]);
         u.dataShape.value = remapTexture 
           ? new THREE.Vector3(remapTexture.image.width, remapTexture.image.height, dataShape[0])
           : new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])

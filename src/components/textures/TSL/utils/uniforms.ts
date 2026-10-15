@@ -26,7 +26,6 @@ export function setMapTextures(textures: (DataTexture | Data3DTexture | Texture)
     if (kindChanged || countChanged) {
         // New nodes: materials rebuild against these when they observe mapVersion
         map = textures.map(t => is3D ? texture3D(t as Data3DTexture) : texture(t as DataTexture));
-        (useGlobalStore.getState() as any).bumpMapVersion?.();
     } else {
         // Same kind & count: hot-swap bindings, no recompile needed
         map.forEach((node, i) => {

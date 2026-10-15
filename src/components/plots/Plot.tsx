@@ -243,7 +243,6 @@ const Plot = () => {
           const canvas = props.canvas as HTMLCanvasElement
           renderer.setPixelRatio(DPR)
           renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
-          console.log(renderer)
           return renderer
         }}
         dpr={[DPR,DPR]}

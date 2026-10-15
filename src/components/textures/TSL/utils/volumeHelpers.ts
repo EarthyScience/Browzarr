@@ -40,7 +40,7 @@ export const shouldSkip = (p: any, texCoord: any, maskUV: any) => {
         texCoord.assign(clamp(texCoord, vec3(0.0), vec3(1.0).sub(vec3(EPSILON))));
     });
  
-    return bool(false);
+    return skip;
 };
 
 
