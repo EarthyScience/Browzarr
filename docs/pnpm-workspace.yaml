@@ -1,2 +1,7 @@
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+  unrs-resolver: true
+  vue-demi: true
 patchedDependencies:
   '@comark/vue': patches/@comark__vue.patch
