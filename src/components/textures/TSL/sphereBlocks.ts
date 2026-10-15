@@ -1,7 +1,7 @@
 import {
     asin, atan,bool,clamp,cos,cross,float,Fn,fract,If,instancedArray,instanceIndex,
     mat3,mul,normalize,PI,positionLocal,
-    positionWorld,select,sin,varying,
+    positionWorld,select,sin,texture,varying,
     vec2,vec3,vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
@@ -74,27 +74,29 @@ const isBorder = Fn(()=>{
     return isBorder;
 })
 
-export function createSphereBlocksMaterial(count : number){
+export function createSphereBlocksMaterial(){
     const resolution = u.displacementResolution;
 
     const thisUV = Fn(()=>{
         const w = resolution.x;
-        const h = resolution.y;
+        const hi = resolution.y;
         const px = instanceIndex.mod(w);
-        const py = instanceIndex.div(w).mod(h);
-        return vec2(
+        const py = instanceIndex.div(w).mod(hi);
+        const thisUV = vec2(
             px.toFloat().add(0.5), 
             py.toFloat().add(0.5)
         ).div(resolution)
+        return thisUV
     })()
-
+    
     const position = getSpherePosition(thisUV);
     const material = new THREE.NodeMaterial();
     material.depthWrite = true;
     material.depthTest = true;
     material.side = THREE.DoubleSide;
-    const instanceUV = varying(thisUV)
-    const {localCoord, textureIdx} = h.getLocalCoord(instanceUV)
+    const instanceUV = varying(thisUV);
+    const newV = select(u.remapBorders, texture(u.remapTexture, h.realCoords(thisUV.xy)), instanceUV);
+    const {localCoord, textureIdx} = h.getLocalCoord(newV)
     let strength, biVal, isNan;
     if (u.bivariate.value){
         const bivar = h.sample2ToOrder(localCoord, textureIdx, u.bivariateSelection).toVar();

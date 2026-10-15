@@ -3,7 +3,7 @@ import * as u from '@/components/textures/TSL/utils/uniforms';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { createDDAMaterial, createRayMarchingMaterial } from '../textures/TSL';
@@ -39,7 +39,6 @@ export const DataCube = ( ) => {
 		u.tfLUT.value = newLUT;
 	},[valueRange, revTransparency, transparency, vTransferScale, cmap.value])
 	uniformUpdater();
-	console.log(u.reproject.value)
 	// --- CLEANUP --- //
     useEffect(()=>()=>{ shaderMaterial.dispose() },[shaderMaterial])
     useEffect(()=>()=>{ geometry.dispose() },[geometry])

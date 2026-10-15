@@ -148,7 +148,6 @@ export const rescaler = Fn(([x]: [any]) => {
   return result;
 });
 
-
 export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
   const valid = bool(true).toVar()
   If(u.reproject, () => {
@@ -157,11 +156,11 @@ export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
     texCoord.assign(vec3(remap.rg, texCoord.z));
     maskUV.assign(realCoords(remap.rg));
     valid.assign(remap.b.greaterThan(0.5))
-  }).Else(()=> {
-    // Reprojected data is already -180..180, so no adjusting needed.
-    const originalCoord = texCoord.xy;
-    const tempV = realCoords(originalCoord).toVar();
-    maskUV.assign(tempV);
+  })
+  If(u.remapBorders,()=> {
+      const tempV = texCoord.xy.toVar();
+      tempV.y.assign(select(u.flipY, tempV.y.oneMinus(), tempV.y));
+      maskUV.assign(u.remapBorderTexture.sample(tempV).ba)
   })
   // For 0–360 data, wrap longitude by half a turn
   maskUV.x.assign(select(u.is360,
@@ -171,16 +170,36 @@ export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
   return valid
 })
 
+export const reprojectMask = Fn(([texCoord, dda=bool(false)] : [any, any]) => {
+  const maskUV = texCoord.toVar();
+  const remap = texCoord.toVar();
+  If(u.reproject, () => {
+    // Each output pixel looks up where it comes from in the source data
+    remap.assign(texture(u.remapTexture, texCoord.xy).rgb.toVar());
+    maskUV.assign(realCoords(remap.rg));
+  })
+  If(u.remapBorders,()=> {
+      const tempV = select(dda, remap, texCoord.xy).toVar();
+      tempV.y.assign(select(u.flipY, tempV.y.oneMinus(), tempV.y));
+      maskUV.assign(u.remapBorderTexture.sample(tempV).ba)
+  })
+  // For 0–360 data, wrap longitude by half a turn
+  maskUV.x.assign(select(u.is360,
+    fract(maskUV.x.add(0.5)),
+    maskUV.x
+  ));
+  return maskUV
+})
+
+
+
+
 export const isBorder = Fn(([thisUV] : [any])=>{
-    // Takes Real Coords. Assumes already been transformed
+    // Takes maskUV from reprojector or ___ Coords. Assumes already been transformed
     const isBorder = bool(false).toVar();
     If(u.useBorderTexture, ()=>{
-        const newV = thisUV.toVar();
-        If(u.remapBorders, ()=>{
-          newV.assign(u.remapBorderTexture.sample(newV))
-        })
         //@ts-ignore .level does exist
-        const distance =  u.borderTexture.sample(newV).level(0).r;
+        const distance =  u.borderTexture.sample(thisUV).level(0).r;
         If(distance.lessThanEqual(u.borderWidth), () => {
             isBorder.assign(bool(true)); 
         });

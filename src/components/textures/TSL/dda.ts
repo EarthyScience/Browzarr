@@ -9,31 +9,7 @@ import * as h from './utils/commonHelpers';
 import * as u from './utils/uniforms';
 import { colorTexel, hitBox, sampleVoxel, shouldSkip } from './utils/volumeHelpers';
 
-const reprojectMask = Fn(([texCoord] : [any]) =>{
-    const maskUV = vec2(0).toVar();
-    If(u.reproject, () => {
-        const remap = texture(u.remapTexture, texCoord.xy).rgb.toVar();
-        maskUV.assign(h.realCoords(remap.rg));
-    }).Else(()=> {
-        // Reprojected data is already -180..180, so no adjusting needed.
-        const originalCoord = texCoord.xy;
-        const tempV = h.realCoords(originalCoord).toVar();
-        If(u.remapBorders, ()=>{
-              tempV.xy.assign(texture(u.remapBorderTexture, originalCoord).ba)
-              tempV.y.assign(select(u.flipY, tempV.y.oneMinus(), tempV.y))
-        })
-        maskUV.assign(tempV);
-    })
-    maskUV.x.assign(select(u.is360,
-        fract(maskUV.x.add(0.5)),
-        maskUV.x
-    ));
-    return maskUV;
-})
-
-
 const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
-   
     const rayDir = normalize( vDirection ).toVar("rayDir");
     const bounds = hitBox( vOrigin, rayDir ).toVar("bounds");
     If(bounds.x.greaterThan(bounds.y), () => { Discard(); });
@@ -84,7 +60,7 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
                     If(u.useBorderTexture, () => {
                         const pHit = vOrigin.add(t.mul(rayDir)).toVar();
                         const localPosContinuous = pHit.xy.sub(boxMin).div(u.volumeScale).toVar();
-                        const borderUV = reprojectMask(localPosContinuous.xy)
+                        const borderUV = h.reprojectMask(localPosContinuous.xy, bool(true))
                         borderHit.assign(h.isBorder(borderUV))
                     });
                     Break();

@@ -24,7 +24,8 @@ const isBorder = Fn(([instanceUV] : [any])=>{
         const aspect = resolution.x.toFloat().div(resolution.y)
         const gridExtent = vec2(2, float(2).div(aspect));
         const thisUV = instanceUV.add(positionGeometry.xy.div(gridExtent));
-        thisUV.assign(h.realCoords(thisUV));
+        thisUV.assign(h.reprojectMask(thisUV, bool(true)));
+        If(u.remapBorders.and(u.flipY), ()=>{thisUV.y.assign(thisUV.y.oneMinus())})
         isBorder.assign(h.isBorder(thisUV.fract()));
     })
     return isBorder;

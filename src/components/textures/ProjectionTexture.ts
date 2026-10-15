@@ -154,7 +154,6 @@ function createInverseUV(
 	yArray: Array<number>,
     is360: boolean,
 	resolution : number,
-    flipY: boolean
 ) {
 	// Creates an inverse UV map: for each normalized (x, y) position,
 	// stores the (i, j) index into xArray/yArray that best matches it.
@@ -198,7 +197,6 @@ function createInverseUV(
 	texture.minFilter = THREE.LinearFilter;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;
-    texture.flipY = flipY;
     texture.needsUpdate = true;
 	return texture;
 }
@@ -212,7 +210,7 @@ export function handleIrregularGrid(){
     if (isRegular)  return;
     const {is360Deg, plotType} = usePlotStore.getState();
 	if(plotType == 'sphere') {
-        const texture = createInverseUV(xArray, yArray, is360Deg, 1024, flipY);
+        const texture = createInverseUV(xArray, yArray, is360Deg, 1024);
         useGlobalStore.setState({remapTexture:texture});
     } else createIrregularUV(xArray, yArray, flipY)
     return

@@ -37,8 +37,7 @@ const rayMarch = Fn(([vOrigin, vDirection] : [any, any]) => {
 					colorTexel(d, biVal, isNan, accumColor, alphaAcc)
 					If(alphaAcc.greaterThanEqual(0.99), () => {
 						If(u.useBorderTexture, () => {
-							const realUV = h.realCoords(texCoord.xy)
-							borderHit.assign(h.isBorder(realUV))
+							borderHit.assign(h.isBorder(h.reprojectMask(texCoord.xy, bool(false))))
 						});
 						Break();
 					});

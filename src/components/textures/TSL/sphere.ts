@@ -63,8 +63,8 @@ const sphereColor = Fn( () => {
     const inBounds = all( greaterThanEqual( sampleCoord, vec2( 0.0 ) ) )
         .and( all( lessThanEqual( sampleCoord, vec2( 1.0 ) ) ) );
     If( inBounds, () => {
-        If(u.reproject, ()=>{
-            sampleCoord.xy.assign(texture(u.remapTexture, sampleCoord.xy))
+        If(u.remapBorders, ()=>{
+            sampleCoord.xy.assign(texture(u.remapTexture, h.realCoords(sampleCoord.xy)))
         })
         const {localCoord, textureIdx} = h.getLocalCoord(sampleCoord)
         // Scale up

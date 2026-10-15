@@ -31,7 +31,7 @@ const SphereBlocks = () => {
         geo.translate(0, boxHeight / 2, 0);
         return geo
     },[width, height])
-    const material = useMemo(()=>createSphereBlocksMaterial(count), [count, colorScale])
+    const material = useMemo(()=>createSphereBlocksMaterial(), [colorScale])
     const mesh = useMemo(()=>{
         const newMesh = new THREE.Mesh(geometry, material)
         newMesh.count = count;
