@@ -12,7 +12,10 @@ const placeholder3D = () => {
     return t;
 };
 
-export let map: any[] = [ texture3D(placeholder3D()) ];
+const MAX_MAPS = 8
+export let map: any[] = Array.from({ length: MAX_MAPS }, () =>
+  texture3D(placeholder3D())
+);
 
 export function setMapTextures(textures: (DataTexture | Data3DTexture | Texture)[]) {
     if (!textures || !textures.length) return;

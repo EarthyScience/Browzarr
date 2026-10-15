@@ -26,10 +26,11 @@ import { usePlotStore } from '@/GlobalStates/PlotStore';
 
 // --- TEXTURE SAMPLERS ---//
 const sampleMap = Fn(([p, index]: [any, any]) => {
+    const pv = p.toVar(); // This needs to be a variable for some reason 
     const result = vec4(0).toVar();
     u.map.forEach( ( tex, i ) => {
         If( index.equal( i ), () => {
-            result.assign( tex.sample( p ) );
+            result.assign( tex.sample( pv ) );
         } );
     } );
     return result;

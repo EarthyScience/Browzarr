@@ -40,7 +40,6 @@ export const DataCube = ( ) => {
 	},[valueRange, revTransparency, transparency, vTransferScale, cmap.value])
 	uniformUpdater();
 	// --- CLEANUP --- //
-	console.log(u.flatBounds)
     useEffect(()=>()=>{ shaderMaterial.dispose() },[shaderMaterial])
     useEffect(()=>()=>{ geometry.dispose() },[geometry])
 	return (
