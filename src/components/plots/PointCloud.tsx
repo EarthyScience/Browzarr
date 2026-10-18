@@ -60,7 +60,7 @@ export const PointCloud = ( )=>{
         <ColumnMeshes />
       </group>
       <group scale={[1, (flipY && !remapTexture) ? -1 : 1, 1]}>
-        <sprite count={count} material={material} />
+        <sprite count={count} material={material} frustumCulled={false}/>
       </group>
       <MappingCube/>
     </group>
