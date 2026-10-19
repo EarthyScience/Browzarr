@@ -1,6 +1,7 @@
 import {
     bool,clamp,float,Fn, If,instancedArray,
     instanceIndex,mix,positionGeometry,positionLocal,
+    positionWorld,
     select,struct,varying,vec2,vec3,vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
@@ -21,9 +22,8 @@ const isBorder = Fn(([instanceUV] : [any])=>{
     If(u.useBorderTexture, ()=>{
         const resolution = u.displacementResolution
         const aspect = resolution.x.toFloat().div(resolution.y)
-        const gridExtent = vec2(2, float(2).div(aspect));
+        const gridExtent = vec2(4, float(4).div(aspect)).toVar();
         const thisUV = instanceUV.add(positionGeometry.xy.div(gridExtent));
-        If(u.remapBorders.and(u.flipY), ()=>{thisUV.y.assign(thisUV.y.oneMinus())})
         isBorder.assign(h.isBorder(thisUV.fract()));
     })
     return isBorder;
@@ -32,14 +32,13 @@ const getUVs = Fn(([thisUV, isValid] : [any, any]) =>{
     const instanceUV = thisUV.toVar();
     const maskUV = instanceUV.toVar();
     const valid = h.reprojector(instanceUV, maskUV).toVar();
-    maskUV.y.assign(select(u.flipY,
-        maskUV.y.oneMinus(),
-        maskUV.y))
     isValid.assign(valid)
     return vec4(instanceUV, maskUV)
 })
 
 export function createFlatBlocksMaterial(count: number){
+
+    // --- VERTEX --- //
     const resolution = u.displacementResolution
     const width = resolution.x;
     const height = resolution.y;
@@ -61,11 +60,10 @@ export function createFlatBlocksMaterial(count: number){
 
     const material = new THREE.NodeMaterial();
     const isValid = bool(true).toVar();
-    const uvInfo = getUVs(varying(thisUV), isValid)
+    const uvInfo = varying(getUVs(thisUV, isValid))
     const newV = uvInfo.xy.toVar();
     const maskUV = uvInfo.zw.toVar();
     const {localCoord, textureIdx} = h.getLocalCoord(newV)
-    
     let strength, biVal, isNan;
     let colorIn; // what the fragment stage receives: vec2(first, second), unswapped for bivariate
     if (u.bivariate.value){
@@ -94,8 +92,10 @@ export function createFlatBlocksMaterial(count: number){
             .or(isValid.not())
             .or(isNan)
     const masked = h.maskOut(maskUV)
-    const borderHit = isBorder(maskUV)
     material.positionNode = select(clipped.or(masked), vec3(0), newPos);
+
+    // --- FRAG ---//
+    const borderHit = isBorder(maskUV)
     material.colorNode = select(borderHit, u.borderColor, instanceColor(colorIn));
     return material
 }

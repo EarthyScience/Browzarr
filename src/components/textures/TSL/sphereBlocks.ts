@@ -1,8 +1,11 @@
 import {
-    asin, atan,bool,clamp,cos,cross,float,Fn,fract,If,instancedArray,instanceIndex,
-    mat3,mix,mul,normalize,PI,positionLocal,
-    positionWorld,select,sin,texture,uint,varying,
-    vec2,vec3,vec4
+    asin, atan, bool, clamp, cos, cross, float, Fn,
+    If,
+    instanceIndex,
+    mat3, mix, mul, normalize, PI, positionLocal,
+    positionWorld, select, sin, texture,
+    varying,
+    vec2, vec3, vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
@@ -88,14 +91,17 @@ export function createSphereBlocksMaterial(){
         return thisUV
     })()
     
-    const position = getSpherePosition(thisUV);
     const material = new THREE.NodeMaterial();
     material.depthWrite = true;
     material.depthTest = true;
     material.side = THREE.DoubleSide;
-    const instanceUV = varying(thisUV);
-    const newV = select(u.remapBorders, texture(u.remapTexture, h.realCoords(thisUV.xy)), instanceUV);
-    const {localCoord, textureIdx} = h.getLocalCoord(newV.xy)
+
+    // --- VERTEX --- //
+    const position = getSpherePosition(thisUV);
+    const tempUV = thisUV;
+    const newV = select(u.remapBorders, texture(u.remapTexture, h.realCoords(thisUV.xy)), tempUV);
+    const instanceUV = newV.toVar();
+    const {localCoord, textureIdx} = h.getLocalCoord(instanceUV.xy)
     let strength, biVal, isNan;
     let colorIn; // what the fragment stage receives: vec2(first, second), unswapped for bivariate
     if (u.bivariate.value){
@@ -114,21 +120,23 @@ export function createSphereBlocksMaterial(){
         biVal = float(0);
         colorIn = vec2(varying(strength, 'vStrength'), float(0));
     }
-    const spherePosition = position;
     const heightFactor = strength.sub(u.displaceZero).mul(u.displacement);
     const scaledPosition = vec3(
-        positionLocal.x.mul(spherePosition.w).mul(u.widthFactor),
+        positionLocal.x.mul(position.w).mul(u.widthFactor),
         positionLocal.y.mul(heightFactor),
         positionLocal.z.mul(u.vertFactor),
     ).toVar();
-    const orientation = getOrientation(spherePosition.xyz);
-    const newPos = spherePosition.xyz.add(orientation.mul(scaledPosition));
+    const orientation = getOrientation(position.xyz);
+    const newPos = position.xyz.add(orientation.mul(scaledPosition));
     const clipped = strength.greaterThan(u.threshold.y)
             .or(strength.lessThan(u.threshold.x))
             .or(isNan)
-    const masked = h.maskOut(instanceUV)
-    const borderHit = isBorder()
+
+    const masked = h.maskOut(giveMaskUV(position.xyz))
     material.positionNode = select(clipped.or(masked), vec3(0), newPos);
+
+    // --- Frag --- //
+    const borderHit = isBorder()
     material.colorNode = select(borderHit, vec4(u.borderColor, 1), instanceColor(colorIn));
     return material;
 }

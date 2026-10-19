@@ -153,9 +153,9 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {isFlat, DPR, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus, isWebGPU } = useGlobalStore(useShallow(s =>({
+  const {isFlat, DPR, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus, flipY } = useGlobalStore(useShallow(s =>({
     isFlat: s.isFlat, DPR: s.DPR, dataShape: s.dataShape, useF16Textures: s.useF16Textures,
-    setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus, isWebGPU: s.isWebGPU
+    setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus, flipY: s.flipY
     })))
   const keyFrameEditor = useImageExportStore(s => s.keyFrameEditor)
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => ({

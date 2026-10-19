@@ -156,17 +156,15 @@ export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
     texCoord.assign(vec3(remap.rg, texCoord.z));
     maskUV.assign(realCoords(remap.rg));
     valid.assign(remap.b.greaterThan(0.5))
+  }).Else(()=>{
+    maskUV.assign(realCoords(maskUV));
   })
   If(u.remapBorders,()=> {
       const tempV = texCoord.xy.toVar();
       tempV.y.assign(select(u.flipY, tempV.y.oneMinus(), tempV.y));
       maskUV.assign(u.remapBorderTexture.sample(tempV).ba)
   })
-  // For 0–360 data, wrap longitude by half a turn
-  maskUV.x.assign(select(u.is360,
-    fract(maskUV.x.add(0.5)),
-    maskUV.x
-  ));
+
   return valid
 })
 
@@ -191,9 +189,6 @@ export const reprojectMask = Fn(([texCoord, dda=bool(false)] : [any, any]) => {
   return maskUV
 })
 
-
-
-
 export const isBorder = Fn(([thisUV] : [any])=>{
     // Takes maskUV from reprojector or ___ Coords. Assumes already been transformed
     const isBorder = bool(false).toVar();
@@ -210,8 +205,7 @@ export const isBorder = Fn(([thisUV] : [any])=>{
 export const maskOut = Fn(([inUV] : [any])=>{
 	const remove = bool(false)
 	If(u.maskValue.notEqual(0), () => {
-		const realUV = realCoords(inUV)
-		const mask = u.maskTexture.sample(realUV).r;
+		const mask = u.maskTexture.sample(inUV).r.toVar();
 		const masked = select(u.maskValue.equal(1), mask.lessThan(0.5), mask.greaterThanEqual(0.5));
 		If(masked, () => { remove.assign(bool(true)); });
 	});

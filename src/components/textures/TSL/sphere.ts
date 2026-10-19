@@ -5,7 +5,7 @@ import { Fn, normalize, asin, atan, PI, mul, mod, vec2, vec4, If, vec3, float, b
     fract, select, min, clamp, ivec3, all, cos, positionGeometry, greaterThanEqual, lessThanEqual, 
     int,
     texture} from 'three/tsl';
-
+    
 const giveUV = Fn(( [position] : [any]) => {
     const n = normalize( position );
 	const latitude = asin( n.y ).toVar();
@@ -110,7 +110,7 @@ const sphereVertex = Fn(() =>{
         const normal = normalize( positionGeometry );
         const zStepSize = int( u.textureDepths.y ).mul( int( u.textureDepths.x ) );
         const yStepSize = int( u.textureDepths.x );
-        const texCoord = vec3( sampleCoord, u.animateProg );
+        const texCoord = vec3( sampleCoord.xy, u.animateProg );
         const idx = clamp( ivec3( texCoord.mul( u.textureDepths ) ), ivec3( 0 ), ivec3( u.textureDepths ).sub( 1 ) );
         const textureIdx = idx.z.mul( zStepSize ).add( idx.y.mul( yStepSize ) ).add( idx.x );
         const localCoord = fract( texCoord.mul( u.textureDepths ) ).toVar( 'localCoord' );
