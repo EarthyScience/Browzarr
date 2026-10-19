@@ -317,8 +317,11 @@ export function reproject(resolution: number = 256){
         yTicks = flipY 
             ? linspace(maxY, minY, targetHeight)
             : linspace(minY, maxY, targetHeight)
-
         data = new Uint16Array(targetWidth * targetHeight * 4);
+        const fallBackU = (xArray.length - 0.5) / xArray.length
+        const fallBackV = (yArray.length - 0.5) / yArray.length
+        const halfWidth = xArray.length/2;
+        const halfHeight =  yArray.length/2;
         for (let j = 0; j < targetHeight; j++) {
             for (let i = 0; i < targetWidth; i++) {
                 const [x, y, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
@@ -328,10 +331,13 @@ export function reproject(resolution: number = 256){
                 const inBounds = valid === 1 &&
                     xi !== null &&yi !== null &&
                     Number.isFinite(xi) && Number.isFinite(yi);
-                let u = 0, v = 0;
-                if (inBounds) {
+                let u, v;
+                if (inBounds){
                     u = (xi + 0.5) / xArray.length;
                     v = (yi + 0.5) / yArray.length;
+                } else{ // if invalid, we assume its near the edge. So we explicitly set the value to the edge of the UV
+                    u = j > halfWidth ? fallBackU : 0;
+                    v = i > halfHeight ? fallBackV : 0;
                 }
                 const idx = (j * targetWidth + i) * 4;
                 data[idx]     = THREE.DataUtils.toHalfFloat(u); 
