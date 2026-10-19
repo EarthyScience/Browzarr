@@ -157,14 +157,13 @@ export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
     maskUV.assign(realCoords(remap.rg));
     valid.assign(remap.b.greaterThan(0.5))
   }).Else(()=>{
-    maskUV.assign(realCoords(maskUV));
+    maskUV.assign(realCoords(texCoord.xy));
   })
   If(u.remapBorders,()=> {
       const tempV = texCoord.xy.toVar();
       tempV.y.assign(select(u.flipY, tempV.y.oneMinus(), tempV.y));
       maskUV.assign(u.remapBorderTexture.sample(tempV).ba)
   })
-
   return valid
 })
 
@@ -203,7 +202,7 @@ export const isBorder = Fn(([thisUV] : [any])=>{
 })
 
 export const maskOut = Fn(([inUV] : [any])=>{
-	const remove = bool(false)
+	const remove = bool(false).toVar();
 	If(u.maskValue.notEqual(0), () => {
 		const mask = u.maskTexture.sample(inUV).r.toVar();
 		const masked = select(u.maskValue.equal(1), mask.lessThan(0.5), mask.greaterThanEqual(0.5));

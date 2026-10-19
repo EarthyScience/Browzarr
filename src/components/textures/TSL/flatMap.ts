@@ -15,12 +15,14 @@ const getUVs = Fn(([thisUV] : [any]) =>{
     return twoVs(newV, maskUV, valid)
 })
 
-const maskAndBorder = Fn(([thisUV] : [any]) =>{
-    const outColor = vec4(-1).toVar();
-    outColor.assign(mix(vec4(u.nanColor, u.nanAlpha), vec4(-1), float(h.maskOut(thisUV))));
-    outColor.assign(mix(vec4(-1), vec4(u.borderColor, 1), float(h.isBorder(thisUV))));
-    return outColor;
-})
+const maskAndBorder = (thisUV: any) =>{
+    const masked = h.maskOut(thisUV);
+    const isBorder = h.isBorder(thisUV);
+    const maskColor = select(masked, vec4(u.nanColor, u.nanAlpha), vec4(-1),);
+    const borderColor = select(isBorder, vec4(u.borderColor, 1), vec4(-1));
+    
+    return maskColor.max(borderColor);
+}
 
 const faceColor = Fn( ([thisUV] : [any]) => {
     const Color = vec4( 0 ).toVar( 'Color' );
