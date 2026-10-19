@@ -173,7 +173,9 @@ export const reprojectMask = Fn(([texCoord, dda=bool(false)] : [any, any]) => {
   If(u.reproject, () => {
     // Each output pixel looks up where it comes from in the source data
     remap.assign(texture(u.remapTexture, texCoord.xy).rgb.toVar());
-    maskUV.assign(realCoords(remap.rg));
+    maskUV.assign(realCoords(select(dda, remap, texCoord.xy)));
+  }).Else(()=>{
+    maskUV.assign(realCoords(texCoord.xy));
   })
   If(u.remapBorders,()=> {
       const tempV = select(dda, remap, texCoord.xy).toVar();
