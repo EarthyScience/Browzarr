@@ -348,8 +348,8 @@ export function reproject(resolution: number = 256){
         THREE.RGBAFormat, // Must be RGBA as HalfFloat RGB is not supported
         THREE.HalfFloatType
     );
-    texture.magFilter = interpPixels ? THREE.LinearFilter : THREE.NearestFilter;
-    texture.minFilter = interpPixels ? THREE.LinearFilter : THREE.NearestFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearFilter;
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
     texture.needsUpdate = true;
@@ -384,7 +384,6 @@ export function reproject(resolution: number = 256){
         ySlice: [0, null],
     })
 }
-
 
 function remap360to180Monotonic(arr: number[]) {
     const wrapped = arr.map(v => ((v + 180) % 360 + 360) % 360 - 180);
