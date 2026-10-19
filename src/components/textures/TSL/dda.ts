@@ -48,7 +48,7 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
         const texCoord = vec3(0).toVar("texCoord");
         const maskUV = vec2(0).toVar("maskUV");
         const skip = shouldSkip(pCenter, texCoord, maskUV) as any;
-
+        
         If(skip.not(), () => {
             const d = float(0.0).toVar();
             const biVal = float(0.0).toVar();

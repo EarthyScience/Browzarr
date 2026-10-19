@@ -1,16 +1,16 @@
-import { UVCube } from '@/components/plots';
-import * as u from '@/components/textures/TSL/utils/uniforms';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { UVCube } from '@/components/plots';
 import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
+import * as u from '@/components/textures/TSL/utils/uniforms';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { createDDAMaterial, createRayMarchingMaterial } from '../textures/TSL';
-import { buildTransferLUT } from '../textures/TSL/utils/volumeHelpers';
-import { ColumnMeshes } from './TransectMeshes';
 import { cmap } from '../textures/TSL/utils/uniforms';
+import { buildTransferLUT } from '../textures/TSL/utils/volumeHelpers';
 import { sampleColormap } from '../textures/colormap';
+import { ColumnMeshes } from './TransectMeshes';
 export const DataCube = ( ) => {
     const {shape, flipY, remapTexture} = useGlobalStore(useShallow(s => ({
 		shape:s.shape, flipY:s.flipY, remapTexture:s.remapTexture

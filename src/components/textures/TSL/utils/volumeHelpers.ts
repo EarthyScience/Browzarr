@@ -52,7 +52,7 @@ export const sampleVoxel = (texCoord: any, d: any, biVal: any, isNan: any) => {
     const idx = clamp(ivec3(texCoord.mul(u.textureDepths)), ivec3(0), depths.sub(int(1)));
     const textureIdx = idx.z.mul(zStepSize).add(idx.y.mul(yStepSize)).add(idx.x);
     const localCoord = fract(texCoord.mul(u.textureDepths));
- 
+    
     If(u.bivariate, () => {
         const bivar = h.sample2ToOrder(localCoord, textureIdx, u.bivariateSelection).toVar();
         d.assign(bivar.r);
@@ -81,8 +81,8 @@ export const colorTexel = (d: any, biVal: any, isNan: any, accumColor: any, alph
             alphaAcc.addAssign(nanA);
         });
     }).Else(() => {
-        const s = u.tfLUT.sample(vec2(d, 0.5));
-        const opacity = float(1).sub(alphaAcc);
+        const s = u.tfLUT.sample(vec2(d, 0.5)).toVar();
+        const opacity = float(1).sub(alphaAcc).toVar();
         If( u.bivariate, () => {
             const flipOrder = u.bivariateSelection.notEqual( 0 );
             const biCol = select( flipOrder, h.colorMixer( biVal, d ), h.colorMixer( d, biVal ) ).toVar();
