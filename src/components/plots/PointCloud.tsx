@@ -36,10 +36,10 @@ export const PointCloud = ( )=>{
     const count = dataShape.reduce((a, b) => a * b , 1)
     const material = useMemo(() => {
       u.pointShape.value = new THREE.Vector3(...dataShape)
-      const {material, updateValues} = createPointMaterial(bivariate ? count*2 : count)
+      const {material, updateValues} = createPointMaterial(count, bivariate)
       updateValues(textureData as Uint8Array);
       return material
-    },[count, colorScale])
+    },[count, colorScale, bivariate])
     // --- UNIFORMS ---//
     uniformUpdater();
     // Unique scaling for points
