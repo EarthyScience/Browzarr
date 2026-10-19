@@ -15,6 +15,7 @@ import { sampleCRS } from '../textures/ProjectionUtils';
 import { createFlatMapMaterial } from '../textures/TSL/flatMap';
 import { InfoViewer } from '../ui/Elements/InfoViewer';
 import { SquareMeshes } from './TransectMeshes';
+import * as u from '@/components/textures/TSL/utils/uniforms'
 const FlatMap = () => {
     // ---- Imports ---- //
     const {flipY, dimNames, dimUnits, isFlat, variable2,
@@ -164,7 +165,6 @@ const FlatMap = () => {
       }
       updateDimCoords({[tsID] : dimObj})
     }
-
     // ----- SHADER MATERIAL ----- //
     uniformUpdater();
     const shaderMaterial = useMemo(() => createFlatMapMaterial(), [colorScale, interpPixels]) ;

@@ -1,7 +1,7 @@
 import {
     asin, atan,bool,clamp,cos,cross,float,Fn,fract,If,instancedArray,instanceIndex,
-    mat3,mul,normalize,PI,positionLocal,
-    positionWorld,select,sin,texture,varying,
+    mat3,mix,mul,normalize,PI,positionLocal,
+    positionWorld,select,sin,texture,uint,varying,
     vec2,vec3,vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
@@ -52,8 +52,7 @@ const getOrientation = Fn(([spherePosition] : [any])=>{
 })
 const instanceColor = Fn(([strengths] : [any])=>{
    if (u.bivariate.value){
-        const flipOrder = u.bivariateSelection.notEqual( 0 );
-        const biCol = select( flipOrder, h.colorMixer( strengths.y, strengths.x ), h.colorMixer( strengths.x, strengths.y ) ).toVar();
+        const biCol = h.colorMixer( strengths.x, strengths.y ).toVar();
         return vec4(biCol.rgb, 1)
     } else{
         const color = u.cmap.sample(vec2(strengths.x, 0.5))
@@ -96,27 +95,27 @@ export function createSphereBlocksMaterial(){
     material.side = THREE.DoubleSide;
     const instanceUV = varying(thisUV);
     const newV = select(u.remapBorders, texture(u.remapTexture, h.realCoords(thisUV.xy)), instanceUV);
-    const {localCoord, textureIdx} = h.getLocalCoord(newV)
+    const {localCoord, textureIdx} = h.getLocalCoord(newV.xy)
     let strength, biVal, isNan;
+    let colorIn; // what the fragment stage receives: vec2(first, second), unswapped for bivariate
     if (u.bivariate.value){
-        const bivar = h.sample2ToOrder(localCoord, textureIdx, u.bivariateSelection).toVar();
-        strength = bivar.r;
-        biVal = bivar.g;
-        isNan = h.isNaNBits(strength).or(h.isNaNBits(biVal))
-            .or(u.useF16.not().and(strength.equal(1.0)))
-            .or(u.useF16.not().and(biVal.equal(1.0)))
+        const raw = h.sample2(localCoord, textureIdx);
+        isNan = h.isNaNBits(raw.r).or(h.isNaNBits(raw.g))
+            .or(u.useF16.not().and(raw.r.equal(1.0)))
+            .or(u.useF16.not().and(raw.g.equal(1.0)));
+        strength = mix(raw.r, raw.g, u.bivariateSelection) // For some reason select and Ifs don't work as expected on vertex/varying. Mix works though
+        biVal    = mix(raw.g, raw.r, u.bivariateSelection)
+        colorIn = varying(raw, 'vBivar');
     } else {
-        strength = h.sample1(localCoord, textureIdx).toVar()
-        strength = h.rescaler(strength)
-        isNan = h.isNaNBits(strength).or(u.useF16.not().and(strength.equal(1.0)))
-        strength = clamp(strength.mul(u.cScale).add(u.cOffset), 0.0, 0.995)
-        biVal = float(0)
+        strength = h.sample1(localCoord, textureIdx).toVar();
+        strength = h.rescaler(strength);
+        isNan = h.isNaNBits(strength).or(u.useF16.not().and(strength.equal(1.0)));
+        strength = clamp(strength.mul(u.cScale).add(u.cOffset), 0.0, 0.995);
+        biVal = float(0);
+        colorIn = vec2(varying(strength, 'vStrength'), float(0));
     }
-    const vStrength = varying(strength, 'vStrength'); 
-    const vBiVal = varying(biVal, 'biVal');
     const spherePosition = position;
-    const heightFactor = vStrength.sub(u.displaceZero).mul(u.displacement);
-
+    const heightFactor = strength.sub(u.displaceZero).mul(u.displacement);
     const scaledPosition = vec3(
         positionLocal.x.mul(spherePosition.w).mul(u.widthFactor),
         positionLocal.y.mul(heightFactor),
@@ -124,12 +123,12 @@ export function createSphereBlocksMaterial(){
     ).toVar();
     const orientation = getOrientation(spherePosition.xyz);
     const newPos = spherePosition.xyz.add(orientation.mul(scaledPosition));
-    const clipped = vStrength.greaterThan(u.threshold.y)
-            .or(vStrength.lessThan(u.threshold.x))
+    const clipped = strength.greaterThan(u.threshold.y)
+            .or(strength.lessThan(u.threshold.x))
             .or(isNan)
     const masked = h.maskOut(instanceUV)
     const borderHit = isBorder()
     material.positionNode = select(clipped.or(masked), vec3(0), newPos);
-    material.colorNode = select(borderHit, vec4(u.borderColor, 1), instanceColor(vec2(vStrength, vBiVal)));
+    material.colorNode = select(borderHit, vec4(u.borderColor, 1), instanceColor(colorIn));
     return material;
 }

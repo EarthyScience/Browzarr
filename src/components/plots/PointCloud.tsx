@@ -53,6 +53,7 @@ export const PointCloud = ( )=>{
       },[shape, xRange, yRange, zRange, dataShape, flipY, remapTexture])
 
 	// --- CLEANUP --- //
+  console.log(u.vertBounds.value)
 	useEffect(()=>()=>{ material.dispose() },[material])
   return (
     <group>

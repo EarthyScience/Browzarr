@@ -6,7 +6,7 @@ import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
 import * as u from './utils/uniforms';
 
-const GLOBAL_SCALE = 1/100 
+const GLOBAL_SCALE = 1/500 
 
 // const pointColor = Fn(([c1, c2] : [any any])=>{
 //     const color = vec4(0);

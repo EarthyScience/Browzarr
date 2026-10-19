@@ -1,7 +1,6 @@
-import * as u from './utils/uniforms'
-import { bool, Fn, If, positionGeometry, uniform, Discard, vec4 } from 'three/tsl'
+import { Discard, Fn, If, positionGeometry, vec4 } from 'three/tsl'
 import * as THREE from 'three/webgpu'
-import { usePlotStore } from '@/GlobalStates/PlotStore'
+import * as u from './utils/uniforms'
 const fragShader = Fn(() =>{
     If( positionGeometry.x.lessThan( u.flatBounds.x )
         .or( positionGeometry.x.greaterThan( u.flatBounds.y ) )

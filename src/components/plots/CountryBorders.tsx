@@ -206,7 +206,7 @@ const CountryBorders = () => {
     const isPC = plotType == 'point-cloud'
     const isFlatMap = plotType == "flat"
     const timeRatio = isPC ? dataShape[0]/dataShape[2] :  Math.max(dataShape[0]/dataShape[2],2)
-    const depthRatio = (shape && shape.x > 0) ? (shape.z / shape.x) * timeScale : 1;
+    const depthRatio = (shape && shape.x > 0) ? dataShape[0]/dataShape[2] * timeScale : 1;
     const globalScale = isPC ? dataShape[2]/500 : 1
     const depthScale = isPC ? depthRatio : timeRatio/2
     const aspectRatio = (shape && shape.y > 0) ? (shape.x / shape.y) : 1;
@@ -218,7 +218,7 @@ const CountryBorders = () => {
         >
             <group 
                 visible={showBorders && !useBorderTexture && (!analysisMode || !axis)}
-                position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0)) : zRange[1]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0))]} // I don't know what value to use here. THis seems okay but not perfect
+                position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(depthScale) : zRange[1]*(depthScale)]} // I don't know what value to use here. THis seems okay but not perfect
                 rotation={[0, 0, 0]} 
             >
                 {coastLines && <Borders features={coastLines} />}
