@@ -14,6 +14,20 @@ export default defineNuxtConfig({
 
   llms: false,
 
+  content: {
+    build: {
+      markdown: {
+        highlight: {
+          langs: [
+            'bash', 'diff', 'json', 'js', 'ts', 'html', 'css',
+            'vue', 'shell', 'mdc', 'md', 'yaml',
+            'python',
+          ],
+        },
+      },
+    },
+  },
+
   // Nitro static build config
   nitro: {
     preset: 'static',

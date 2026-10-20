@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { useGlobalStore, defaultGlobals } from '@/GlobalStates/GlobalStore'
+import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { useZarrStore } from '@/GlobalStates/ZarrStore'
 import { BiExport } from "react-icons/bi";

@@ -7,6 +7,7 @@ import proj4 from 'proj4';
 import { getAxisIndices } from '@/hooks/useAxisIndices';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { getDimAxis, getAxisDimAxis} from '@/hooks';
+import * as u from '@/components/textures/TSL/utils/uniforms'
 
 export function checkProjString(projString: string){
     const {setError} = useErrorStore.getState()
@@ -145,14 +146,14 @@ function createIrregularUV(
 	texture.wrapT = THREE.ClampToEdgeWrapping;
     texture.flipY = flipY;
     texture.needsUpdate = true;
-    useGlobalStore.setState({remapBorders: texture})
+    useGlobalStore.setState({remapBorders:texture})
 }
 
 function createInverseUV(
 	xArray: Array<number>,
 	yArray: Array<number>,
     is360: boolean,
-	resolution : number
+	resolution : number,
 ) {
 	// Creates an inverse UV map: for each normalized (x, y) position,
 	// stores the (i, j) index into xArray/yArray that best matches it.
@@ -178,7 +179,6 @@ function createInverseUV(
 			const iIdx = findNearestIndex(normX, u);
 			const iNorm = xArray.length > 1 ? iIdx / (xArray.length) : 0;
             const uValid = u >= xMin && u <= xMax;
-
             const valid = uValid && vValid;
 			data[ptr++] = THREE.DataUtils.toHalfFloat(iNorm);
 			data[ptr++] = THREE.DataUtils.toHalfFloat(jNorm);
@@ -186,7 +186,6 @@ function createInverseUV(
 			ptr++;
 		}
 	}
-
 	const texture = new THREE.DataTexture(
 		data,
 		width,
@@ -198,7 +197,6 @@ function createInverseUV(
 	texture.minFilter = THREE.LinearFilter;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;
-    // texture.flipY = flipY;
     texture.needsUpdate = true;
 	return texture;
 }
@@ -209,7 +207,7 @@ export function handleIrregularGrid(){
     const {flipY, borderCompatible} = useGlobalStore.getState()
     if (!borderCompatible) return;
     const isRegular = isUniformStep(xArray) && isUniformStep(yArray)
-    if (isRegular) return;
+    if (isRegular)  return;
     const {is360Deg, plotType} = usePlotStore.getState();
 	if(plotType == 'sphere') {
         const texture = createInverseUV(xArray, yArray, is360Deg, 1024);
@@ -218,59 +216,10 @@ export function handleIrregularGrid(){
     return
 }
 
-export function sampleCRS(tex: THREE.DataTexture, u: number, v: number): [THREE.Vector2, boolean] {
-    // Linearly interpolates a texture given UV
-    const { data, width, height } = tex.image;
-    if (!data) return [new THREE.Vector2(u, v), true];
 
-    const facX = u * width - 1;
-    const facY = v * height - 1;
-
-    const x0 = Math.floor(facX);
-    const y0 = Math.floor(facY);
-    const x1 = x0 + 1;
-    const y1 = y0 + 1;
-
-    // Interpolation weights [0-1]
-    const wx = facX - x0;
-    const wy = facY - y0;
-
-    // Clamp each corner to the texture bounds
-    const clampX = (x: number) => Math.min(Math.max(x, 0), width - 1);
-    const clampY = (y: number) => Math.min(Math.max(y, 0), height - 1);
-
-    const cx0 = clampX(x0);
-    const cx1 = clampX(x1);
-    const cy0 = clampY(y0);
-    const cy1 = clampY(y1);
-
-    const getValues = (x: number, y: number) => {
-        const idx = (y * width + x) * 4;
-        return {
-            u: THREE.DataUtils.fromHalfFloat(data[idx]),
-            v: THREE.DataUtils.fromHalfFloat(data[idx + 1]),
-            valid: THREE.DataUtils.fromHalfFloat(data[idx + 2]),
-        };
-    };
-
-    const t00 = getValues(cx0, cy0);
-    const t10 = getValues(cx1, cy0);
-    const t01 = getValues(cx0, cy1);
-    const t11 = getValues(cx1, cy1);
-
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-    const newU = lerp(lerp(t00.u, t10.u, wx), lerp(t01.u, t11.u, wx), wy);
-    const newV = lerp(lerp(t00.v, t10.v, wx), lerp(t01.v, t11.v, wx), wy);
-
-    // Valid only if all four corners are valid
-    const valid = t00.valid > 0 && t10.valid > 0 && t01.valid > 0 && t11.valid > 0;
-
-    return [new THREE.Vector2(newU, newV), valid];
-}
 
 export function reproject(resolution: number = 256){
-    const {nativeCRS, destCRS, plotType, is360Deg} = usePlotStore.getState()
+    const {nativeCRS, destCRS, plotType, is360Deg, interpPixels} = usePlotStore.getState()
 	const {remapTexture, flipY } = useGlobalStore.getState()
     let {xArray, yArray} = getDimAxis();
 	const insufficientCRS = !nativeCRS || !destCRS
@@ -283,7 +232,7 @@ export function reproject(resolution: number = 256){
 		handleIrregularGrid()
 		return;
 	}
-    if (!checkProjString(destCRS) || !checkProjString(nativeCRS)) return; 
+    if (!checkProjString(destCRS) || !checkProjString(nativeCRS)) return;
     const {xIdx, yIdx} = getAxisIndices()
     if (is360Deg) {
 		xArray = remap360to180Monotonic(xArray) 
@@ -368,8 +317,11 @@ export function reproject(resolution: number = 256){
         yTicks = flipY 
             ? linspace(maxY, minY, targetHeight)
             : linspace(minY, maxY, targetHeight)
-
         data = new Uint16Array(targetWidth * targetHeight * 4);
+        const fallBackU = (xArray.length - 0.5) / xArray.length
+        const fallBackV = (yArray.length - 0.5) / yArray.length
+        const halfWidth = xArray.length/2;
+        const halfHeight =  yArray.length/2;
         for (let j = 0; j < targetHeight; j++) {
             for (let i = 0; i < targetWidth; i++) {
                 const [x, y, valid] = safeInverse(proj, [xTicks[i], yTicks[j]]);
@@ -379,10 +331,13 @@ export function reproject(resolution: number = 256){
                 const inBounds = valid === 1 &&
                     xi !== null &&yi !== null &&
                     Number.isFinite(xi) && Number.isFinite(yi);
-                let u = 0, v = 0;
-                if (inBounds) {
+                let u, v;
+                if (inBounds){
                     u = (xi + 0.5) / xArray.length;
                     v = (yi + 0.5) / yArray.length;
+                } else{ // if invalid, we assume its near the edge. So we explicitly set the value to the edge of the UV
+                    u = j > halfWidth ? fallBackU : 0;
+                    v = i > halfHeight ? fallBackV : 0;
                 }
                 const idx = (j * targetWidth + i) * 4;
                 data[idx]     = THREE.DataUtils.toHalfFloat(u); 
@@ -435,7 +390,6 @@ export function reproject(resolution: number = 256){
         ySlice: [0, null],
     })
 }
-
 
 function remap360to180Monotonic(arr: number[]) {
     const wrapped = arr.map(v => ((v + 180) % 360 + 360) % 360 - 180);

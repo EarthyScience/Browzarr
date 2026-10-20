@@ -50,15 +50,6 @@ export async function getIcechunkStore(
 				...(options?.snapshot && { snapshot: options.snapshot }),
 				...(fetchClient && { fetchClient }),
 			});
-			// console.log(icechunkStore);
-			// const storage = new HttpStorage(storePath);
-			// console.log('Storage initialized:', storage);
-			// const repo = await Repository.open({ storage });
-			// console.log('Repository opened:', repo);
-			// const branches = await repo.listBranches();
-			// const tags = await repo.listTags();
-			// console.log('Branches:', branches);
-			// console.log('Tags:', tags);
 
 			// Prime the node cache immediately after opening
 			(icechunkStore as any)._cachedNodes = icechunkStore.listNodes();
@@ -236,7 +227,6 @@ export async function getIcechunkDims(
 		nodeData.dimensionNames?.length > 0
 			? nodeData.dimensionNames
 			: undefined;
-	console.log("Being called here for some reason?")
 	cache.set(`${initStore}_${variable}_meta`, {
 		...meta,
 		shape,

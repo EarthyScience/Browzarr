@@ -1,0 +1,13 @@
+diff --git a/dist/vite.js b/dist/vite.js
+index 6f5390c151e6f8f19ce9e7ef3f26e0a577c2914c..584d2c90bd0405c3d7dc19fc838b5092f3ff06bd 100644
+--- a/dist/vite.js
++++ b/dist/vite.js
+@@ -23,7 +23,7 @@ function viteComarkSlot(node, context) {
+             if (!context.imports.some(i => String(i.exp) === importExp)) {
+                 context.imports.push({
+                     exp: importExp,
+-                    path: `${runtimeDir}/${context.ssr ? 'ssrSlot' : 'slot'}`,
++                    path: `${runtimeDir.split('\\').join('/')}/${context.ssr ? 'ssrSlot' : 'slot'}`,
+                 });
+             }
+         };

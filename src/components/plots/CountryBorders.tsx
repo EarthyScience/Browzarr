@@ -1,16 +1,16 @@
 "use client";
-import React, {useEffect, useState, useMemo} from 'react'
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import * as THREE from 'three'
-import { useShallow } from 'zustand/shallow';
+import { useDimAxis } from '@/hooks';
 import { useFrame } from '@react-three/fiber';
-import {vertexShader, bordersFrag} from '../textures/shaders'
-import { invalidate } from '@react-three/fiber';
 import proj4, { Converter } from 'proj4';
-import {useDimAxis} from '@/hooks';
-import { sampleCRS } from '../textures/ProjectionTexture';
+import { useEffect, useMemo, useState } from 'react';
+import * as THREE from 'three/webgpu';
+import { useShallow } from 'zustand/shallow';
+import { sampleCRS } from '../textures/ProjectionUtils';
+import { createBorderMaterial } from '../textures/TSL/borders';
+import { uniformUpdater } from '../textures/TSL/utils/uniformUpdater';
 
 function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=>THREE.Vector3, span = 1.) {
     const segments: THREE.Vector3[][] = [[]];
@@ -72,8 +72,12 @@ function wrapLon(lon: number, bounds: [number, number], bypass?:boolean) {
 }
 
 function Borders({features}:{features: any}){
-    const {xRange, yRange, plotType, borderColor, nativeCRS, destCRS } = usePlotStore(useShallow(s => s))
-    const {shape, axisDimArrays, remapTexture } = useGlobalStore(useShallow(s => s))
+    const { plotType, nativeCRS, destCRS } = usePlotStore(useShallow(s => ({
+        plotType:s.plotType, nativeCRS:s.nativeCRS, destCRS:s.destCRS
+    })))
+    const {axisDimArrays, remapTexture } = useGlobalStore(useShallow(s => ({
+        axisDimArrays:s.axisDimArrays, remapTexture:s.remapTexture
+    })))
     const {xArray, yArray} = useDimAxis()
     const [xBounds, yBounds] = useMemo(()=>{ 
         const minX = xArray[0]
@@ -83,7 +87,6 @@ function Borders({features}:{features: any}){
         return [[minX, maxX] as [number, number], [minY, maxY] as [number, number]]
     },[axisDimArrays, xArray, yArray ])
     const spherize = plotType ==='sphere'
-
     function toXYZ(lon: number, lat: number){
         const [x, y, z] = spherize
         ? Spherize([ -lon, lat])
@@ -100,39 +103,8 @@ function Borders({features}:{features: any}){
 		}
 	},[nativeCRS, destCRS])
 
-    const lineShaderMat = useMemo(() => {
-        const shapeX = (shape && shape.x > 0) ? shape.x : 1;
-        return new THREE.ShaderMaterial(
-            {
-                glslVersion: THREE.GLSL3,
-                vertexShader,
-                fragmentShader: bordersFrag,
-                uniforms:{
-                    xBounds: {value: new THREE.Vector2(-xRange[1],-xRange[0])},
-                    yBounds: {value: new THREE.Vector2(yRange[0]/shapeX, yRange[1]/shapeX)},
-                    borderColor: {value: new THREE.Color(borderColor)},
-                    trim: {value: !spherize},
-                },
-                defines: {
-                    USE_APOSITION: 1
-                }
-            }
-        );
-    }, [])
-
-    useEffect(()=>{
-        if (lineShaderMat){
-            const uniforms = lineShaderMat.uniforms
-            uniforms.xBounds.value = new THREE.Vector2(xRange[0], xRange[1])
-            const shapeX = (shape && shape.x > 0) ? shape.x : 1;
-            uniforms.yBounds.value = new THREE.Vector2(yRange[0]/shapeX, yRange[1]/shapeX)
-            uniforms.borderColor.value = new THREE.Color(borderColor)
-            uniforms.trim.value = !spherize
-            invalidate()
-        }
-    },[xRange, yRange, borderColor, spherize, shape])
-
-    const lineGeometries = useMemo(() => {
+    const lineShaderMat = useMemo(() => createBorderMaterial(), [])
+    const lineGeometries:THREE.BufferGeometry<THREE.NormalBufferAttributes, THREE.BufferGeometryEventMap>[] = useMemo(() => {
     	return features.flatMap((feature: any, i: number) => {
 			const lines: THREE.BufferGeometry<THREE.NormalBufferAttributes, THREE.BufferGeometryEventMap>[] = [];
 			if (feature.geometry.type === 'LineString') {
@@ -189,6 +161,9 @@ function Borders({features}:{features: any}){
             });
             return results
     }, [lineGeometries, lineShaderMat, spherize]);
+    // --- CLEANUP --- //
+    useEffect(()=>()=>{ lineShaderMat.dispose() },[lineShaderMat])
+	useEffect(()=>()=>{ lineGeometries.map(val => val.dispose()) },[lineGeometries])
     return (
         <>
             {lines}
@@ -200,12 +175,15 @@ const CountryBorders = () => {
     const [borders, setBorders] = useState<any>(null)
     const [swapSides, setSwapSides] = useState<boolean>(false)
 
-    const {dataShape, shape} = useGlobalStore(useShallow(s => s))
-    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, useBorderTexture, is360Deg} = usePlotStore(useShallow(s => s))
-    const {analysisMode, axis} = useAnalysisStore(useShallow(s => s))
-
+    const {dataShape, shape} = useGlobalStore(useShallow(s => ({
+        dataShape: s.dataShape, shape: s.shape
+    })))
+    const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, useBorderTexture, is360Deg} = usePlotStore(useShallow(s => ({
+        zRange: s.zRange, plotType: s.plotType, showBorders: s.showBorders, timeScale: s.timeScale, 
+        rotateFlat: s.rotateFlat, pointSize: s.pointSize, useBorderTexture: s.useBorderTexture, is360Deg: s.is360Deg
+    })))
+    const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
     const spherize = plotType === 'sphere';
-
     useFrame(({camera})=>{
         if (spherize){return;}
         if (Math.abs(camera.rotation.z) > Math.PI/2 ){
@@ -215,7 +193,6 @@ const CountryBorders = () => {
             if (swapSides){setSwapSides(false)}
         }
     })
-
     useEffect(()=>{
         fetch('./ne_110m_coastline.json')
         .then(res => res.json())
@@ -229,18 +206,19 @@ const CountryBorders = () => {
     const isPC = plotType == 'point-cloud'
     const isFlatMap = plotType == "flat"
     const timeRatio = isPC ? dataShape[0]/dataShape[2] :  Math.max(dataShape[0]/dataShape[2],2)
-    const depthRatio = (shape && shape.x > 0) ? (shape.z / shape.x) * timeScale : 1;
+    const depthRatio = (shape && shape.x > 0) ? dataShape[0]/dataShape[2] * timeScale : 1;
     const globalScale = isPC ? dataShape[2]/500 : 1
     const depthScale = isPC ? depthRatio : timeRatio/2
     const aspectRatio = (shape && shape.y > 0) ? (shape.x / shape.y) : 1;
+    uniformUpdater();
     return(
         <group
             rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
             scale={[globalScale, globalScale * (spherize ? 1 : (2 / aspectRatio)), globalScale]}
         >
             <group 
-                visible={showBorders && !(analysisMode && axis != 0) && !useBorderTexture} 
-                position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0)) : zRange[1]*(depthScale + (isPC ? pointSize/10000 + 0.01 : 0))]} // I don't know what value to use here. THis seems okay but not perfect
+                visible={showBorders && !useBorderTexture && (!analysisMode || !axis)}
+                position={(spherize || isFlatMap) ? [0,0,(isFlatMap ? 0.001 : 0)] : [0, 0, swapSides ? zRange[0]*(depthScale) : zRange[1]*(depthScale)]} // I don't know what value to use here. THis seems okay but not perfect
                 rotation={[0, 0, 0]} 
             >
                 {coastLines && <Borders features={coastLines} />}
@@ -250,4 +228,5 @@ const CountryBorders = () => {
     )
 }
 
-export {CountryBorders}
+export { CountryBorders };
+

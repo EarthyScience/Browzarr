@@ -111,13 +111,12 @@ type PlotState ={
   setFillValue: (fillValue: number | undefined) => void;
   setCameraPosition: (cameraPosition: THREE.Vector3) => void;
   setColorScale: (colorScale: string | undefined) => void;
-  
 }
 
 
 export const usePlotStore = create<PlotState>((set, get) => ({
   plotType: "volume", 
-  pointSize: 5,
+  pointSize: 0.1,
   scalePoints: false,
   scaleIntensity: 1,
   quality: 200,

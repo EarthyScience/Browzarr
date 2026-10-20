@@ -1,5 +1,4 @@
 "use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button-enhanced";
@@ -9,7 +8,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const logoHome = "/logo-light.svg";
+const logoHome = "./bz_logo.svg";
 
 export default function HomeButton() {
 	return (
@@ -21,7 +20,7 @@ export default function HomeButton() {
 						size="icon"
 						className="cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
 					>
-						<Image src={logoHome} alt="logoMPI" height={32} width={32} />
+						<Image src={logoHome} alt="logoMPI" height={32} width={28} />
 					</Button>
 				</Link>
 			</TooltipTrigger>

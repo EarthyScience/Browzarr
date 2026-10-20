@@ -16,6 +16,7 @@ import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { clearProjectionData } from '@/components/textures/ProjectionTexture';
 import { SliderGroup, ArrayInfo, SecondVariable } from '../MetaComponents';
 import { useColormapStore } from '@/GlobalStates/ColormapStore';
+import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
@@ -131,7 +132,6 @@ function useSizeData(
 
     const cachedChunks = useMemo(() => {
         let newCachedChunks: string | null = null;
-        
         if (meta && meta.chunks && meta.shape) {
             const chunks = meta.chunks;
             const slices: Record<string, number>[] = Array.from({length: 3}).map(() => ({start: 0, end: 1}))
@@ -154,7 +154,7 @@ function useSizeData(
                         if (isBivariate) total = total + 2;
                         else total++;
                         if (cache.has(`${cacheBase}_chunk_z${z}_y${y}_x${x}`)) accum++;
-                        if (variable2 && cache.has(`${cacheBase}_chunk_z${z}_y${y}_x${x}_${variable2}`)) accum++
+                        if (variable2 && cache.has(`${initStore}_${variable2}_chunk_z${z}_y${y}_x${x}`)) accum++
                     }
                 }
             }
@@ -198,7 +198,6 @@ function MetaInfo({
 }) {
     const maxSize = useCacheStore(s => s.maxSize);
     const compress = useZarrStore(s => s.compress);
-
     return(
         <div className="flex flex-col gap-2">
         {/* Size info badge */}
@@ -311,7 +310,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
         })
     },[setSelectionInfo])
      // --- Size States --- //
-    const sizeData = useSizeData(meta, selectionInfo, maxSize, isBivariate, variable2);
+    const sizeData = useSizeData(meta, selectionInfo, cacheSize, isBivariate, variable2);
     const smallCache = sizeData.smallCache;
 
     // --- Dim States --- //
@@ -351,19 +350,17 @@ export const MetaData = ({ meta, metadata }: Props) => {
             y: axisIdices.at(-2) as number,
             z: axisIdices.at(-3) as number
         }
+        // --- (Re)set States --- //
         useZarrStore.setState({ndSlices, axisMapping})
         useGlobalStore.setState({bivariate:isBivariate})
         useColormapStore.setState({bivariateSelection: 0})
-        if (variable === meta.name) {
-            ReFetch();
-        } else {
-            
-            setTextureArrayDepths(sizeData.texDepths);
-            setMaxSize(cacheSize);
-            setVariable(meta.name || '');
-            clearProjectionData()
-            ReFetch();
-        }
+        useAnalysisStore.setState({ analysisMode: false, analysisDim: null });
+        const {texDepths} = sizeData;
+        setTextureArrayDepths(texDepths.length === 3 ? texDepths : [1, ...texDepths]);
+        setMaxSize(cacheSize);
+        setVariable(meta.name || '');
+        clearProjectionData()
+        ReFetch();
     }
     return (
         <div className="flex flex-col gap-2 min-w-0">

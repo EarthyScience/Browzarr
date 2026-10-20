@@ -267,7 +267,7 @@ const AnalysisOptions = () => {
 					<div className='flex justify-between w-full'>
 						<Select value={String(newDim)} onValueChange={e => setNewDim(parseInt(e))}>
 							<SelectTrigger className='w-full' style={{ width: ['CUMSUM3D', 'LinearSlope'].includes(operation as string) ? '50%' : '100%'}}>
-								<SelectValue defaultValue={dimNames[activeIndices[newDim]] ?? "Select Axis"} />
+								<SelectValue placeholder="Select Axis"/>
 							</SelectTrigger>
 							<SelectContent>
 								{activeIndices.map((origIdx, dataShapeIdx) => ( dataShapeIdx != analysisDim &&
@@ -352,7 +352,7 @@ const AnalysisOptions = () => {
                 variant='pink'
                 onClick={() => {
                   setAxis((operation == 'CUMSUM3D') ? newToOrig(newDim, analysisDim) : newDim)
-                  setAnalysisDim(analysisDim?? (operation == 'CUMSUM3D') ? null : newDim)
+                  setAnalysisDim(analysisDim?? ['CUMSUM3D', 'Convolution'].includes(operation as string) ? null : newDim)
                   setTimeSeries({});
 				  setAnalysisInfo({
 					operation,

@@ -19,6 +19,7 @@ import { resetProjection } from '@/components/textures/ProjectionTexture';
 import {AxisCropper} from '../Elements/AxisCropper';
 import { Masker } from '../Elements/Masker';
 import { useColormapStore } from '@/GlobalStates/ColormapStore';
+
 export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueScales, min=-1, array, units} : 
     {
         range : number[], 
@@ -212,9 +213,9 @@ const PointOptions = () =>{
           <h1>Point Size</h1>
           <UISlider
               className='w-full mb-4 mt-2'
-              min={1}
-              max={50}
-              step={1}
+              min={0.01}
+              max={2}
+              step={0.02}
               value={[pointSize]}
               disabled={disablePointScale}
           onValueChange={(vals:number[]) => setPointSize(vals[0])}
@@ -275,7 +276,7 @@ const FlatOptions = () =>{
 				step={2}
 				value={[displacement]}
 				className='w-full mb-2'
-				onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
+				onValueChange={(vals:number[]) => {setDisplacement(vals[0])}}
 			/>
 			<div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
 				<label htmlFor="offset-switch"><h1>Offset Negatives</h1></label>
@@ -411,7 +412,6 @@ const GlobalOptions = () =>{
       throttleTimeout.current = null;
     }, 100);
   }, []);
-
   return (
     <div className='grid gap-y-[5px] items-center w-full text-center mt-2 bg-[var(--global-settings)] rounded-md p-4'>
       <span className='text-lg font-bold'>Global Settings</span>
@@ -451,8 +451,7 @@ const GlobalOptions = () =>{
       </>}
       <Masker/>
       <Reprojection />
-      {!(analysisMode && axis != 0) && // Hide if Analysismode and Axis != 0
-      <>
+
       <QuickTip 
         asChild={borderCompatible} // Won't trigger when button below is disabled
         message={borderCompatible ? 'Show political boundaries' : "Browzarr was unable to parse spatal extent"}>
@@ -460,10 +459,12 @@ const GlobalOptions = () =>{
           variant="pink" 
           size="sm" 
           className="w-[100%] cursor-[pointer] mb-2 mt-2" 
-          disabled={!borderCompatible}
+          disabled={!borderCompatible ||
+            (analysisMode && Boolean(axis))
+          }
           onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
       </QuickTip>
-      <Hider show={showBorders}>
+      <Hider show={showBorders && !(analysisMode && !axis)}>
         <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
           ()=>usePlotStore.setState({useBorderTexture:!useBorderTexture})
         } />
@@ -486,8 +487,6 @@ const GlobalOptions = () =>{
           />
         </div>
         </Hider>
-      </>
-      }
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="secondary" size="sm" className='w-[100%] cursor-pointer mb-2'>

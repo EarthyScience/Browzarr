@@ -1,7 +1,6 @@
 "use client";
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import * as THREE from 'three';
-import { GetColorMapTexture } from "@/components/textures";
 
 const ESDC = 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr'
 
@@ -60,6 +59,7 @@ type StoreState = {
   useF16Textures: boolean;
   borderCompatible: boolean;
   mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined;
+  isWebGPU: boolean;
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -103,6 +103,7 @@ type StoreState = {
   setClampExtremes: (clampExtremes: boolean) => void;
   setUseF16Textures: (useF16Textures: boolean) => void;
   setMainTextures: (mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined) => void;
+  setIsWebGPU: (isWebGPU: boolean) => void;
 };
 
 const createStore = () => create<StoreState>((set, get) => ({
@@ -149,6 +150,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   useF16Textures: false,
   borderCompatible: true,
   mainTextures: undefined,
+  isWebGPU: true,
 
   // setters
   setDataShape: (dataShape) => set({ dataShape }),
@@ -210,14 +212,13 @@ const createStore = () => create<StoreState>((set, get) => ({
   setScalingFactors: (scalingFactors) => set({ scalingFactors }),
   setClampExtremes: (clampExtremes) => set({ clampExtremes }),
   setUseF16Textures: (useF16Textures) => set({ useF16Textures }),
-  setMainTextures: (mainTextures) => set({ mainTextures })
+  setMainTextures: (mainTextures) => set({ mainTextures }),
+  setIsWebGPU: (isWebGPU) => set({ isWebGPU }),
 }));
 
 declare global {
   var __appStore: UseBoundStore<StoreApi<StoreState>> | undefined
 }
-
-export const defaultGlobals = createStore().getState()
 
 // Supposedly this makes it a global that cannot be duplicated by Next into different code chunks
 export const useGlobalStore =

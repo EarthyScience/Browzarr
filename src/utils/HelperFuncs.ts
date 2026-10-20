@@ -205,6 +205,29 @@ export function GetTimeSeries(array : arrayInfo, TimeSeriesInfo:TimeSeriesInfo){
 		return ts;
 }
 
+function globalIndex(shape: number[], indices: number[]){
+	const [_d0, d1, d2] = shape;
+	const [i, j, k] = indices;
+	return i * d1 * d2 + j * d2 + k;
+}
+
+export function getCRSTimeSeries(array: Uint8Array | Float16Array, TimeSeriesInfo:TimeSeriesInfo, shape: number[], CRSStrip: [number, number][]){
+	// This function only ever triggers along non-z normals. 
+	const {uv,normal} = TimeSeriesInfo;
+	const ts = [];
+	let iFac = (Math.abs(normal.x) > 0) ? uv.x : uv.y;
+	if (normal.x < 0 || normal.y < 0) iFac = 1-iFac;
+	const i = Math.floor(shape[0]*iFac);
+	for (const thisUV of CRSStrip){
+		if (thisUV[0] < 0) {ts.push(NaN); continue;}
+		const j = Math.floor(thisUV[1] * shape[1]);
+		const k =  Math.floor(thisUV[0] * shape[2]);
+		const gIdx = globalIndex(shape, [i, j, k]);
+		ts.push(array[gIdx]);
+	}
+	return ts;
+}
+
 function DecompressArray(compressed : Uint8Array){
 	const decompressed = decompressSync(compressed)
 	const floatArray = new Float16Array(decompressed.buffer)

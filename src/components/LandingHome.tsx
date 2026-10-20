@@ -61,7 +61,6 @@ export function LandingHome() {
       isMounted = false;
     };
   }, [currentStore, setZMeta, setVariables, setTitleDescription, setOpenVariables, setStoreFromURL]);
-
   useEffect(()=>{
     if (process.env.NODE_ENV !== "development") {
       sendPing()
