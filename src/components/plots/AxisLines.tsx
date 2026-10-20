@@ -61,9 +61,7 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
   const globalScale = isPC ? dataShape[2]/AXIS_CONSTANTS.PC_GLOBAL_SCALE_DIVISOR : 1
   const [verboseTime, setVerboseTime] = useState(false)
 
-  const depthRatio = useMemo(()=> isPC 
-  	? dataShape[0]/dataShape[2]
-	: shape.z/shape.x*timeScale,[shape, timeScale, isPC, dataShape]);
+  const depthRatio = useMemo(()=> dataShape[0]/dataShape[2]*timeScale, [timeScale, dataShape]);
   const shapeRatio = useMemo(()=>shape.y/shape.x, [shape])
   const timeRatio = useMemo(()=>Math.max(shape.z/shape.x * 2, 2),[shape]);
   const secondaryColor = useCSSVariable('--text-plot') //replace with needed variable
@@ -72,7 +70,6 @@ const CubeAxis = ({flipX, flipY, flipDown}: {flipX: boolean, flipY: boolean, fli
     const col = new THREE.Color(secondaryColor) 
     return {colorHex: col.getHex(), colorString: `#${col.getHexString()}`}
   },[secondaryColor])
-
   const lineMat = useMemo(()=>new THREE.Line2NodeMaterial({color: colorHex?? 0, linewidth: AXIS_CONSTANTS.LINE_WIDTH}),[colorHex])
   const tickLength = AXIS_CONSTANTS.TICK_LENGTH_FACTOR*globalScale;
 
