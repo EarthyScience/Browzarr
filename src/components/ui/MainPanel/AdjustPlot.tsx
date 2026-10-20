@@ -213,9 +213,9 @@ const PointOptions = () =>{
           <h1>Point Size</h1>
           <UISlider
               className='w-full mb-4 mt-2'
-              min={1}
-              max={50}
-              step={1}
+              min={0.01}
+              max={2}
+              step={0.02}
               value={[pointSize]}
               disabled={disablePointScale}
           onValueChange={(vals:number[]) => setPointSize(vals[0])}
@@ -276,7 +276,7 @@ const FlatOptions = () =>{
 				step={2}
 				value={[displacement]}
 				className='w-full mb-2'
-				onValueChange={(vals:number[]) => (setDisplacement(vals[0]))}
+				onValueChange={(vals:number[]) => {setDisplacement(vals[0])}}
 			/>
 			<div className='grid grid-cols-[auto_20%] items-center gap-2 text-left'>
 				<label htmlFor="offset-switch"><h1>Offset Negatives</h1></label>
@@ -464,7 +464,7 @@ const GlobalOptions = () =>{
           }
           onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
       </QuickTip>
-      <Hider show={showBorders && (analysisMode && !axis)}>
+      <Hider show={showBorders && !(analysisMode && !axis)}>
         <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
           ()=>usePlotStore.setState({useBorderTexture:!useBorderTexture})
         } />

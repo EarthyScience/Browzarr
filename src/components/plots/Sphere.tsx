@@ -1,18 +1,17 @@
-import React, {useRef, useMemo, useState, useEffect} from 'react'
-import * as THREE from 'three'
+import { evaluateColorMap } from '@/components/textures';
+import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useShallow } from 'zustand/shallow'
-import { parseUVCoords, GetTimeSeries, GetCurrentArray } from '@/utils/HelperFuncs';
-import { evaluateColorMap } from '@/components/textures';
-import { useCoordBounds } from '@/hooks/useCoordBounds'
+import { useDimAxis } from '@/hooks';
+import { useCoordBounds } from '@/hooks/useCoordBounds';
+import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
+import { useMemo, useEffect } from 'react';
+import * as THREE from 'three';
+import { useShallow } from 'zustand/shallow';
+import { createSphereMaterial } from '../textures/TSL/sphere';
 import { SquareMeshes } from './TransectMeshes';
-import { usePaddedTextures } from '@/hooks/usePaddedTextures';
-import { useDimAxis, useValueScales } from '@/hooks';
-import { sphereVertex, sphereFrag } from '@/components/textures/shaders'
-import { updateCommonUniforms, useCommonUniforms } from '@/hooks/useCommonUniforms';
-import { functionInjector } from '../ui/Elements/ColorAdjuster';
+
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){
     const lon = -Math.atan2(xyz.z,xyz.x)
     const lat = Math.asin(xyz.y);
@@ -21,78 +20,33 @@ function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number
     return new THREE.Vector2(u,v)
 }
 
-export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture[] | THREE.DataTexture[] | undefined}) => {
-    const textures = usePaddedTextures(propTextures);
-    const {isFlat, dimNames, dimUnits, dataShape, strides, flipY, remapTexture,
+export const Sphere = () => {
+    const { dimNames, dimUnits, dataShape, strides, flipY,
           setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => ({
-            isFlat: s.isFlat, dimNames: s.dimNames, dimUnits: s.dimUnits, 
-            dataShape: s.dataShape, strides: s.strides, flipY: s.flipY, remapTexture: s.remapTexture,
+            dimNames: s.dimNames, dimUnits: s.dimUnits, 
+            dataShape: s.dataShape, strides: s.strides, flipY: s.flipY, 
             setPlotDim: s.setPlotDim, updateDimCoords: s.updateDimCoords, updateTimeSeries: s.updateTimeSeries
           })))
-    const { selectTS, displacement, sphereResolution, fillValue, colorScale,
+    const { selectTS, sphereResolution, interpPixels, colorScale,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
-        selectTS: s.selectTS, displacement: s.displacement, sphereResolution: s.sphereResolution, fillValue: s.fillValue,
-        colorScale: s.colorScale, getColorIdx: s.getColorIdx, incrementColorIdx: s.incrementColorIdx
+        selectTS: s.selectTS, sphereResolution: s.sphereResolution, interpPixels: s.interpPixels, colorScale: s.colorScale,
+         getColorIdx: s.getColorIdx, incrementColorIdx: s.incrementColorIdx
       })))
     const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))   
-    const valueScales = useValueScales();
     const {xArray, yArray, zArray} = useDimAxis();
     const dimSlices = [zArray, yArray, xArray];
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
-    const uniforms = useCommonUniforms()
-
-    const shaderMaterial = useMemo(()=>{
-        const shader = new THREE.ShaderMaterial({
-            glslVersion: THREE.GLSL3,
-            uniforms: {
-                map: { value: textures },
-                remapTexture: { value: remapTexture },
-                displaceZero: {value: -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)},
-                displacement: {value: displacement},
-                ...uniforms
-            },
-            defines:{
-                ...(isFlat ? { IS_FLAT: true } : {}),
-                ...(remapTexture ? { REPROJECT: true } : {})
-            },
-            vertexShader: functionInjector(sphereVertex, colorScale),
-            fragmentShader: functionInjector(sphereFrag, colorScale),
-            blending: THREE.NormalBlending,
-            side:THREE.FrontSide,
-            transparent: true,
-            depthWrite:true,
-        })
-        return shader
-    },[isFlat, colorScale, remapTexture])
+    const shaderMaterial = useMemo( () => createSphereMaterial() , [interpPixels, colorScale])
     // No reprojection on Sphere. Remains static and can't update
-    
+    uniformUpdater();
     const backMaterial = useMemo(()=>{
       const mat = shaderMaterial.clone()
       mat.side = THREE.BackSide;
       return mat;
     },[shaderMaterial])
-
-    const updateMaterial = (material: THREE.ShaderMaterial) => {
-      const uniforms = material.uniforms;
-      uniforms.map.value = textures;
-      uniforms.displaceZero.value = -valueScales.minVal/(valueScales.maxVal-valueScales.minVal)
-      uniforms.displacement.value = displacement
-    }
-    updateCommonUniforms(shaderMaterial);
-    updateCommonUniforms(backMaterial)
-    useEffect(()=>{
-      if (shaderMaterial){
-        updateMaterial(shaderMaterial)
-      }
-      if (backMaterial){
-        updateMaterial(backMaterial)
-      }
-    },[textures, displacement, fillValue, valueScales])
-    
     const {lonBounds, latBounds} = useCoordBounds()
     function HandleTimeSeries(event: THREE.Intersection){
         const point = event.point.normalize();
-
         //const uv = XYZtoUV(point, texture?.source.data.width, texture?.source.data.height);
         const uv = XYZtoRemap(point, latBounds, lonBounds);
         uv.y = flipY ? 1 - uv.y : uv.y;
@@ -130,7 +84,10 @@ export const Sphere = ({textures: propTextures} : {textures: THREE.Data3DTexture
         }
         updateDimCoords({[tsID] : dimObj})
       }
-
+	// --- CLEANUP --- //
+	useEffect(()=>()=>{ shaderMaterial.dispose() },[shaderMaterial])
+	useEffect(()=>()=>{ geometry.dispose() },[geometry])
+	useEffect(()=>()=>{ backMaterial.dispose() },[backMaterial])
   return (
     <group scale={[1, 1, 1]}>
       <SquareMeshes />

@@ -1,6 +1,6 @@
-import { OrbitControls, useTexture } from '@react-three/drei';
-import React, { useMemo, useRef, useState, useEffect } from 'react';
-import * as THREE from 'three';
+import { OrbitControls } from '@react-three/drei';
+import React, { useMemo, useRef, useEffect } from 'react';
+import * as THREE from 'three/webgpu';
 import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, createDataTexture } from '@/components/textures';
@@ -16,8 +16,7 @@ import ExportCanvas from '@/utils/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/components/textures/ProjectionTexture';
 import { GetCurrentArray } from '@/utils/HelperFuncs';
-import { useColormapStore } from '@/GlobalStates/ColormapStore';
-
+import * as u from '@/components/textures/TSL/utils/uniforms'
 const TransectNotice = () =>{
   const selectTS = usePlotStore(s => s.selectTS)
   return (
@@ -28,7 +27,6 @@ const TransectNotice = () =>{
     </>
   )
 }
-
 const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
   const {resetCamera, useOrtho, displaceFaces, cameraPosition, overRideCamera} = usePlotStore(useShallow(s => ({
     resetCamera: s.resetCamera, useOrtho: s.useOrtho, displaceFaces: s.displaceFaces, 
@@ -155,11 +153,10 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {isFlat, DPR, mainTextures, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus } = useGlobalStore(useShallow(s =>({
-    isFlat: s.isFlat, DPR: s.DPR, mainTextures: s.mainTextures, dataShape: s.dataShape, useF16Textures: s.useF16Textures,
-    setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus 
+  const {isFlat, DPR, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus, flipY } = useGlobalStore(useShallow(s =>({
+    isFlat: s.isFlat, DPR: s.DPR, dataShape: s.dataShape, useF16Textures: s.useF16Textures,
+    setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus, flipY: s.flipY
     })))
-  const colormap = useColormapStore(s => s.colormap)
   const keyFrameEditor = useImageExportStore(s => s.keyFrameEditor)
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => ({
     plotType: s.plotType, displaceFaces: s.displaceFaces, setPlotType: s.setPlotType
@@ -167,10 +164,6 @@ const Plot = () => {
   const {analysisMode, analysisArray, useEditor} = useAnalysisStore(useShallow(s => ({
     analysisMode: s.analysisMode, analysisArray: s.analysisArray, useEditor: s.useEditor
   })))
-  const coords = useRef<number[]>([0,0])
-  const val = useRef<number>(0)
-  const [showInfo, setShowInfo] = useState<boolean>(false)
-  const [loc, setLoc] = useState<number[]>([0,0])
   
   //DATA LOADING
   const {show, stableMetadata} = useDataFetcher()
@@ -202,12 +195,6 @@ const Plot = () => {
     } setStatus(null)
   },[useF16Textures])
 
-  const infoSetters = useMemo(()=>({
-    setLoc,
-    setShowInfo,
-    coords,
-    val
-  }),[])
   const prevUniqueRep = useRef(false);
     `
     Point cloud and sphere need unique reprojections. However, reprojecting from volume
@@ -228,12 +215,13 @@ const Plot = () => {
       const borderTexture = await loader.loadAsync('./border_distance_sdf.png');
       borderTexture.magFilter = THREE.LinearFilter;
       borderTexture.minFilter = THREE.LinearFilter;
-      borderTexture.needsUpdate = true;
-      usePlotStore.setState({borderTexture, maskTexture});
+      u.borderTexture.value = borderTexture;
+      u.maskTexture.value = maskTexture;
+      u.borderTexture.value.needsUpdate = true;
+      u.maskTexture.value.needsUpdate = true;
     }
     SetTextures()
   },[])
-  
   const Nav = useMemo(()=>Navbar,[])
   return (
     <div id='main-canvas-div' className='main-canvas'
@@ -247,8 +235,17 @@ const Plot = () => {
       <Nav />
       <ShaderEditor visible={useEditor}/>
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
+        flat
+        linear
         frameloop={useEditor ? "never" : "demand"}
-        gl={{ preserveDrawingBuffer: true }}
+        gl={async (props) => {
+          const renderer = new THREE.WebGPURenderer(props as any)
+          await renderer.init()
+          const canvas = props.canvas as HTMLCanvasElement
+          renderer.setPixelRatio(DPR)
+          renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
+          return renderer
+        }}
         dpr={[DPR,DPR]}
       >
         <KeyFramePreviewer/>
@@ -256,28 +253,25 @@ const Plot = () => {
         <ExportCanvas show={show}/>
         {show && <AxisLines />}
         {plotType == "volume" && show && 
-            <DataCube volTexture={mainTextures}/>
+            <DataCube />
         }
         {plotType == "point-cloud" && show &&
           <>
-            <PointCloud textures={{texture: mainTextures as THREE.Data3DTexture[],colormap}}/>
+            <PointCloud/>
           </> 
         }
         {plotType == "sphere" && show && 
           <>
-            {displaceFaces ? <SphereBlocks textures={mainTextures} /> : <Sphere textures={mainTextures} /> }
+            {displaceFaces ? <SphereBlocks /> : <Sphere /> }
           </>
         }
         <MemoOrbit isFlat={plotType == "flat"} />
         {plotType == "flat" && show && <>
-          {!displaceFaces && <FlatMap textures={mainTextures as THREE.DataTexture[] | THREE.Data3DTexture[]} /> }
-          {displaceFaces && <FlatBlocks textures={mainTextures} />}
+          {!displaceFaces && <FlatMap /> }
+          {displaceFaces && <FlatBlocks />}
         </>
         }
-
       </Canvas>
- 
-
     </div>
   )
 }
