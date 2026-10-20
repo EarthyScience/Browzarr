@@ -12,12 +12,13 @@ import {
 import { isMobile } from '../MobileUIHider';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import {fromArrayBuffer} from 'geotiff'
+import { loadGeoTiff } from '@/utils/loadGeoTiff';
 
 interface LocalNCType {
   setOpenVariables: (open: boolean) => void;
 }
 
-
+const TIF_EXTENSIONS = ['.tif','.tiff','.geotiff','.gtif']
 
 const LocalFile = ({ setOpenVariables}:LocalNCType) => {
     const {setStatus } = useGlobalStore.getState()
@@ -29,10 +30,14 @@ const LocalFile = ({ setOpenVariables}:LocalNCType) => {
 		const files = event.target.files;
 		if (!files || files.length === 0) { setStatus(null); return; }
 		const file = files[0];
-    const arrBuff = await file.arrayBuffer()
-    const geotiff = await fromArrayBuffer(arrBuff)
-    const image = await geotiff.getImage()
-    console.log(image.fileDirectory.toObject())
+    const isGeoTiff = TIF_EXTENSIONS.some(e => file.name.includes(e))
+    if (isGeoTiff){
+      try{
+        await loadGeoTiff(file);
+      } catch (e) {
+        setError("Failed to load file:")
+      }
+    }
 		if (!NETCDF_EXT_REGEX.test(file.name)) {
 			setError('Please select a valid NetCDF (.nc, .netcdf, .nc3, .nc4) file.');
 			return;
