@@ -42,7 +42,9 @@ export const PointCloud = ( )=>{
         const offset = i * maxPoints;
         const thisCount = Math.min(count-offset, maxPoints)
         const {material, updateValues} = createPointMaterial(thisCount, bivariate)
-        updateValues(textureData.subarray(offset, offset+thisCount) as Uint8Array);
+        const biMul = bivariate ? 2 : 1
+        const arrayOffset = offset*biMul
+        updateValues(textureData.subarray(arrayOffset, arrayOffset+(thisCount*biMul)) as Uint8Array);
         objectList.push({
           material,
           offset,

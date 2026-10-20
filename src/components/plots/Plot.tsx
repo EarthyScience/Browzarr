@@ -237,6 +237,7 @@ const Plot = () => {
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
         flat
         linear
+        frameloop={useEditor ? "never" : "demand"}
         gl={async (props) => {
           const renderer = new THREE.WebGPURenderer(props as any)
           await renderer.init()

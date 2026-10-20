@@ -64,12 +64,12 @@ export function createPointMaterial(count: number, bivariate: boolean){
             isNaN.assign(v1Nan.or(v2Nan))
         }).Else(()=>{
             color.assign(u.cmap.sample(vec2(spriteValue,0.5)).rgb)
-             isNaN.assign(h.isNaNBits(rawValue).or(u.useF16.not().and(rawValue.equal(1.0))))
+            isNaN.assign(h.isNaNBits(rawValue).or(u.useF16.not().and(rawValue.equal(1.0))))
         })
         return color;
     })()
-    const spriteValue = varying(h.rescaler(rawValue))
-    const spriteCoord = varying(texCoord)
+    const spriteValue = h.rescaler(rawValue)
+    const spriteCoord = texCoord
 
     const pointScaler = Fn(()=>{
         const pointScale = u.pointSize.toVar()
