@@ -86,6 +86,8 @@ export function createPointMaterial(count: number, bivariate: boolean){
                 .or(p.z.negate().lessThan(u.flatBounds.w.negate()))
                 .or(p.y.lessThan(u.vertBounds.x))
                 .or(p.y.greaterThan(u.vertBounds.y))
+                .or(spriteValue.greaterThan(u.threshold.y))
+                .or(spriteValue.lessThan(u.threshold.x))
                 .or(isNaN);
         If(outOfBounds, ()=>{
             pointScale.assign(0)
