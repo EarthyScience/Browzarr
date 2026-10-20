@@ -34,11 +34,23 @@ export const PointCloud = ( )=>{
     // --- INITIALIZE --- //
     const globalscale = dataShape[2]/100
     const count = dataShape.reduce((a, b) => a * b , 1)
-    const material = useMemo(() => {
+    const materialObjects = useMemo(() => {
+      const maxPoints = 1e5
+      const iterations = Math.ceil(count/maxPoints) // 100k maximum per object
+      const objectList = []
+      for (let i = 0; i < iterations; i++){
+        const offset = i * maxPoints;
+        const thisCount = Math.min(count-offset, maxPoints)
+        const {material, updateValues} = createPointMaterial(thisCount, bivariate)
+        updateValues(textureData.subarray(offset, offset+thisCount) as Uint8Array);
+        objectList.push({
+          material,
+          offset,
+          count:thisCount
+        })
+      }
       u.pointShape.value = new THREE.Vector3(...dataShape)
-      const {material, updateValues} = createPointMaterial(count, bivariate)
-      updateValues(textureData as Uint8Array);
-      return material
+      return objectList
     },[count, colorScale, bivariate])
     // --- UNIFORMS ---//
     uniformUpdater();
@@ -53,15 +65,17 @@ export const PointCloud = ( )=>{
       },[shape, xRange, yRange, zRange, dataShape, flipY, remapTexture])
 
 	// --- CLEANUP --- //
-  console.log(u.vertBounds.value)
-	useEffect(()=>()=>{ material.dispose() },[material])
+	useEffect(()=>()=>{ materialObjects.forEach(e=> e.material.dispose()) },[materialObjects])
   return (
     <group>
       <group scale={[globalscale,globalscale,2*globalscale]}>
         <ColumnMeshes />
       </group>
       <group scale={[1, (flipY && !remapTexture) ? -1 : 1, 1]}>
-        <sprite count={count} material={material} frustumCulled={false}/>
+        {materialObjects.map((e, idx)=>(
+          <sprite key={idx} count={e.count} material={e.material} frustumCulled={false} userData={{'offset' : e.offset}}/>
+        ))}
+        
       </group>
       <MappingCube/>
     </group>

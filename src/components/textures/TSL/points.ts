@@ -1,6 +1,6 @@
 import {
     bool,float,Fn,If,instancedArray,instanceIndex,int,texture,uint,
-    uniform,varying,vec2,vec3,vec4
+    uniform,userData,varying,vec2,vec3,vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
@@ -8,35 +8,21 @@ import * as u from './utils/uniforms';
 
 const GLOBAL_SCALE = 1/500 
 
-// const pointColor = Fn(([c1, c2] : [any any])=>{
-//     const color = vec4(0);
-//     If( u.bivariate, () => {
-
-//         const bivar = h.sample2ToOrder( localCoord, textureIdx, u.bivariateSelection );
-//         strength.assign( bivar.r );
-//         biVal.assign( bivar.g );
-//         biNaN.assign( h.isNaNBits( strength ).or( h.isNaNBits( biVal ) ) );
-//     } ).Else( () => {
-//         strength.assign( h.sample1( localCoord, textureIdx ) );
-//         strength.assign(h.rescaler(strength))
-//     } );
-// })
-
-
 export function createPointMaterial(count: number, bivariate: boolean){
     const thisCount = bivariate ? count*2: count;
     const values = instancedArray(Math.ceil(thisCount / 4), 'uint');
-   
+    
     const depth = uint( u.pointShape.x );
     const height = uint( u.pointShape.y );
     const width = uint( u.pointShape.z ).toVar();
     const aspect = height.toFloat().div(width)
     const timeAspect = depth.toFloat().div(width)
-
+    const offset = userData('offset', 'int')
+    const globalIndex = instanceIndex.add(offset)
     const texCoord = Fn(() => {
-        const normX = instanceIndex.mod(width).toFloat().div(width).toVar()
-        const normY = instanceIndex.div(width).mod(height).toFloat().div(height).toVar()
-        const normZ = instanceIndex.div(height.mul(width)).toFloat().div(depth).toVar()
+        const normX = globalIndex.mod(width).toFloat().div(width.sub(1)).toVar()
+        const normY = globalIndex.div(width).mod(height).toFloat().div(height.sub(1)).toVar()
+        const normZ = globalIndex.div(height.mul(width)).toFloat().div(depth.sub(1)).toVar()
         return vec3(normX, normY, normZ);
     })()
     const positon = Fn(()=>{
@@ -49,13 +35,13 @@ export function createPointMaterial(count: number, bivariate: boolean){
 
     function updateValues(array: Uint8Array) {
         const attr = values.value;
-        const bytes = new Uint8Array(Math.ceil(array.length / 4) * 4);
-        bytes.set(array);
-        attr.array.set(new Uint32Array(bytes.buffer));
-        attr.needsUpdate = true;
+        const u8 = new Uint8Array(attr.array.buffer, attr.array.byteOffset, attr.array.byteLength)
+        // u8.fill(0)
+        u8.set(array)
+        attr.needsUpdate = true
     }
     const getByte = Fn(([index]: [any]) => {
-        // This is an AI function. I don't understand it. 
+        // This is an AI function. I don't understand it fully. 
         const i = uint(index);
         const word = values.element(i.shiftRight(2));   // i / 4
         const shift = i.bitAnd(3).mul(8);               // (i % 4) * 8

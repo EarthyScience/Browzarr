@@ -60,7 +60,6 @@ const FlatBlocks = () => {
         newMesh.frustumCulled = false;
         return newMesh
     },[geometry, material, count])
-    console.log(u.displacementResolution.value)
     // --- UNIFORMS --- //
     uniformUpdater();
     // --- CLEANUP --- //

@@ -8,6 +8,13 @@ import { usePlotStore } from '@/GlobalStates/PlotStore'
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { useGlobalStore } from '@/GlobalStates/GlobalStore'
 
+const sharedFunctions = [
+	'abs(x)', 'sqrt(x)', 'min(x, y)', 'max(x, y)', 
+	'log(x)', 'log2(x)',  'exp(x)', 'exp2(x)', 
+	'pow(x, y)', 'floor(x)', 'ceil(x)', 'fract(x)',
+	'round(x)', 'clamp(x, a, b)'
+]
+
 const ColorAdjuster = () => {
     const customShader = useRef('');
 	const {setError, setCustomError} = useErrorStore(useShallow(s => ({
@@ -60,13 +67,7 @@ const ColorAdjuster = () => {
 					<PopoverContent>
 						<p>Along with general arithmetic operations. The following globals can also be used:</p>
 						<ul className='grid grid-cols-2 !list-none bg-[var(--background-modal)] rounded-lg border-solid border-2'>
-							{[
-								'abs(x)', 'sqrt(x)', 'min(x, y)', 'max(x, y)', 
-								'log(x)', 'log2(x)',  'exp(x)', 'exp2(x)', 
-								'pow(x, y)', 'floor(x)', 'ceil(x)', 'mod(x, y)',
-								'round(x)', 'mix(x, y, a)', 
-								'fract(x)', 'inverseqrt(x)',
-							].map((fn)=> (
+							{sharedFunctions.map((fn)=> (
 								<li key={fn} className='font-mono '>{fn}</li>
 							))}
 						</ul>
