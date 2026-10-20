@@ -1,5 +1,5 @@
 import {
-    bool,float,Fn,If,instancedArray,instanceIndex,int,texture,uint,
+    bool,float,Fn,fract,If,instancedArray,instanceIndex,int,min,mod,texture,uint,
     uniform,userData,varying,vec2,vec3,vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
@@ -23,7 +23,7 @@ export function createPointMaterial(count: number, bivariate: boolean){
         const normX = globalIndex.mod(width).toFloat().div(width.sub(1)).toVar()
         const normY = globalIndex.div(width).mod(height).toFloat().div(height.sub(1)).toVar()
         const normZ = globalIndex.div(height.mul(width)).toFloat().div(depth.sub(1)).toVar()
-        return vec3(normX, normY, normZ);
+        return vec3(normX, normY, fract(normZ.sub(u.animateProg)));
     })()
     const positon = Fn(()=>{
         const px = texCoord.x.sub(0.5).mul(2)
@@ -50,9 +50,10 @@ export function createPointMaterial(count: number, bivariate: boolean){
 
     const thisIndex = instanceIndex.mul(int(Number(bivariate) + 1)).toVar()
     const sizeIndex = bivariate ? thisIndex.add(int(u.bivariateSelection)) : thisIndex // The index used for scaling the points
-    const rawValue = float(getByte(sizeIndex)).div(255)
+    const rawValue = float(getByte(sizeIndex)).div(255).toVar();
     const isNaN = bool(false).toVar();
-
+    const spriteValue = varying(h.rescaler(rawValue))
+    const spriteCoord = texCoord
     const pointColor = Fn(()=>{
         const color = vec3(0);
         If(u.bivariate, ()=>{
@@ -63,14 +64,15 @@ export function createPointMaterial(count: number, bivariate: boolean){
             const v2Nan = h.isNaNBits(v2).or(u.useF16.not().and(v2.equal(1.0)))
             isNaN.assign(v1Nan.or(v2Nan))
         }).Else(()=>{
-            color.assign(u.cmap.sample(vec2(spriteValue,0.5)).rgb)
+            const remapped = spriteValue.mul( u.cScale ).toVar();
+            remapped.assign( min( remapped.add( u.cOffset ), 0.995 ) );
+            color.assign(u.cmap.sample(vec2(remapped,0.5)).rgb)
             isNaN.assign(h.isNaNBits(rawValue).or(u.useF16.not().and(rawValue.equal(1.0))))
+
         })
         return color;
     })()
-    const spriteValue = h.rescaler(rawValue)
-    const spriteCoord = texCoord
-
+    
     const pointScaler = Fn(()=>{
         const pointScale = u.pointSize.toVar()
         const p = spriteCoord
