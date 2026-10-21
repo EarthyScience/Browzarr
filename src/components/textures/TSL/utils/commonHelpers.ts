@@ -162,7 +162,11 @@ export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
   If(u.remapBorders,()=> {
       const tempV = texCoord.xy.toVar();
       tempV.y.assign(select(u.flipY, tempV.y.oneMinus(), tempV.y));
-      maskUV.assign(u.remapBorderTexture.sample(tempV).ba)
+      maskUV.assign(u.remapBorderTexture.sample(tempV).ba);
+  }).Else(()=>{
+    maskUV.x.assign(select(u.is360,
+    fract(maskUV.x.add(0.5)),
+    maskUV.x))
   })
   return valid
 })

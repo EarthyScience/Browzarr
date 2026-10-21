@@ -11,7 +11,6 @@ interface Array {
 
 function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales?: {maxVal: number, minVal: number}, useF16=false): {minVal: number, maxVal: number}{
     const { setTextureData } = useGlobalStore.getState()
-    console.log(array)
     const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(array)
     const textureData = useF16 ? new Uint16Array(array.length) : new Uint8Array(array.length)
     const range = (maxVal - minVal)
