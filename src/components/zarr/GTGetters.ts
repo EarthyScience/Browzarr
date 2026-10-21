@@ -58,6 +58,7 @@ export async function getRasterData(overrideVar?: string){
 
     const xSlice = ndSlices[axisMapping.x]
     const ySlice = ndSlices[axisMapping.y]
+    
     usePlotStore.setState({ xSlice, ySlice, zSlice:[0,1] });
     useZarrStore.setState({ xSlice, ySlice, zSlice:[0,1] });
 
