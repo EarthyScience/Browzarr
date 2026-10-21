@@ -11,7 +11,7 @@ import { handleIrregularGrid, reproject } from '@/components/textures/Projection
 import { parseExtent } from '@/utils/parseExtent';
 import { createDataTexture } from '@/components/textures/TextureMakers';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { remapTexture } from '@/components/textures/TSL/utils/uniforms';
+import { getRasterData } from '@/components/zarr/GTGetters';
 
 export const useDataFetcher = () => {
     const { variable, bivariate, variable2, mainTextures, setUnits, setIsFlat, setUseF16Textures,
@@ -22,15 +22,17 @@ export const useDataFetcher = () => {
         setShape: s.setShape, setDataShape: s.setDataShape, setFlipY: s.setFlipY, setMainTextures: s.setMainTextures,
         setMetadata: s.setMetadata, setPlotOn: s.setPlotOn, setStatus: s.setStatus, setScalingFactors: s.setScalingFactors
     })))
-    const {plotType, interpPixels, preProject, setPlotType} = usePlotStore(useShallow(s => ({
-        plotType: s.plotType, interpPixels: s.interpPixels, preProject: s.preProject, setPlotType: s.setPlotType
+    const {plotType, preProject, setPlotType} = usePlotStore(useShallow(s => ({
+        plotType: s.plotType, preProject: s.preProject, setPlotType: s.setPlotType
     })))
-    const reFetch = useZarrStore(s => s.reFetch)
+    const {reFetch, useGT} = useZarrStore(useShallow(s => ({
+        reFetch: s.reFetch, useGT: s.useGT
+    })))
 
     //---- Local State ----//
     const [show, setShow] = useState<boolean>(false);
     const [stableMetadata, setStableMetadata] = useState<Record<string, any>>({});
-
+    const arrayGetter = useGT ? getRasterData : GetArray
     useEffect(() => {
         if (variable) {
             // Could remove this. But I think it looks better to just wipe then have an empty texture.
@@ -57,10 +59,10 @@ export const useDataFetcher = () => {
                 //---- Main Fetch ----//
                 const scalingFactors: number[] = [];
                 const promises: Promise<any>[] = [];
-                if ( bivariate ) promises.push(GetArray(variable2).then(
+                if ( bivariate ) promises.push(arrayGetter(variable2).then(
                     result => {scalingFactors[1] = result.scalingFactor?? 0}
                 ));
-                promises.push(GetArray().then((result) => {
+                promises.push(arrayGetter().then((result) => {
                     setDataShape(result.shape);
                     const shape = result.shape.filter((val) => val != 1);
                     const activeIndices = result.indices.filter((_, idx) => result.shape[idx] != 1);

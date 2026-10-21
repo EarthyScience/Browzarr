@@ -26,6 +26,7 @@ function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales?: {max
 			:	normed * 254;
       }
     };
+    
     setTextureData(textureData)
     return {minVal, maxVal}
 }

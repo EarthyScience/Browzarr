@@ -167,7 +167,6 @@ const Plot = () => {
   
   //DATA LOADING
   const {show, stableMetadata} = useDataFetcher()
-  
   useEffect(()=>{
     if (analysisMode || !show) return;
     const isEffectivelyFlat = dataShape.length === 2 || (dataShape.length === 3 && dataShape.includes(1));
@@ -179,7 +178,6 @@ const Plot = () => {
       setIsFlat(false)
     }
   },[analysisMode])
-
   useEffect(()=>{ // Reset texture after analysis mode
     if(!analysisMode && show){
       createDataTexture();
@@ -239,7 +237,13 @@ const Plot = () => {
         linear
         frameloop={useEditor ? "never" : "demand"}
         gl={async (props) => {
-          const renderer = new THREE.WebGPURenderer(props as any)
+          const adapter = await navigator.gpu?.requestAdapter()
+          const maxDim = adapter?.limits.maxTextureDimension2D ?? 8192
+          const renderer = new THREE.WebGPURenderer({...(props as any), 
+            requiredLimits:{
+            maxTextureDimension2D: Math.min(16384, maxDim),
+            }
+          })
           await renderer.init()
           const canvas = props.canvas as HTMLCanvasElement
           renderer.setPixelRatio(DPR)

@@ -90,7 +90,8 @@ const RemoteZarr = ({ initStore, setInitStore, onOpenDescription, selectedUrl = 
         useZarrStore.setState({
           icechunkOptions:null,
           fetchOptions: fetchOptions.fetch !== undefined ? fetchOptions : null,
-          useNC: false
+          useNC: false,
+          useGT: false,
         })
         useGlobalStore.getState().setStatus('Fetching...');
 

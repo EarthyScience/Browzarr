@@ -11,6 +11,7 @@ import { RxReset } from "react-icons/rx";
 import { Robinson } from './Icons'
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { useIsMobile } from '@/hooks'
+import { epsgToProj } from '@/utils/epsgToProj'
 
 const crsClass = 'text-[var(--chart-2)]'
 
@@ -25,12 +26,29 @@ export const Reprojection = () => {
 
     const tempCRS = useRef('')
     const repRes = useRef(256)
+    const [epsg, setEPSG] = useState<number>()
+    const [showFetchError, setShowFetchError] = useState(false)
+    const fadeTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
 
     function handleNativeCRS(){
         const valid = checkProjString(tempCRS.current)
         if (valid){
             usePlotStore.setState({ nativeCRS: tempCRS.current })
             setChangeNativeCRS(false)
+        }
+    }
+    function showFetchErrorPopup(){
+        clearTimeout(fadeTimeout.current)
+        setShowFetchError(true)
+        fadeTimeout.current = setTimeout(() => setShowFetchError(false), 1000)
+    }
+    function getEPSG(){
+        try{
+            epsg && epsgToProj(epsg)
+                .then(pString => usePlotStore.setState({destCRS:pString}))
+                .catch(showFetchErrorPopup)
+        } catch{
+            showFetchErrorPopup()
         }
     }
     const isMobile = useIsMobile();
@@ -120,6 +138,33 @@ export const Reprojection = () => {
                                     onChange={e => { const val = parseInt(e.target.value); repRes.current = isNaN(val) ? 256 : val; }}
                                     placeholder="Resolution"
                                 />
+                            </div>
+                            <div className='col-span-2 grid grid-cols-[35%_65%] place-items-center'>
+                                <Input
+                                    type="number"
+                                    defaultValue={epsg}
+                                    onChange={e => setEPSG(parseInt(e.target.value))}
+                                    placeholder="EPSG"
+                                />
+                                <Button
+                                    variant='secondary'
+                                    className="cursor-pointer"
+                                    disabled={!epsg}
+                                    onClick={getEPSG}
+                                >
+                                    Fetch EPSG
+                                </Button>
+                                <div
+                                    className={`absolute text-red-500 col-span-2 justify-center w-full transition-all duration-300 ease-out ${
+                                        showFetchError
+                                            ? 'opacity-100 scale-100'
+                                            : 'opacity-0 scale-0 pointer-events-none'
+                                    }`}
+                                >
+                                    <div className="overflow-hidden">
+                                        <p className="text-red-500 text-center">Failed to fetch</p>
+                                    </div>
+                                </div>
                             </div>
                             <Button
                                 variant='pink'

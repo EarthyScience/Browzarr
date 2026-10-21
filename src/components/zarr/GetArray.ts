@@ -98,7 +98,6 @@ export async function GetArray(varOveride?: string) {
     const yIndexInRaw = activeDims.indexOf(yDimIndex);
     const xIndexInRaw = activeDims.indexOf(xDimIndex);
     const sliceStart = rank > 2 ? [ndSlices[zIndexInRaw][0], ndSlices[yIndexInRaw][0], ndSlices[xIndexInRaw][0]] : [ndSlices[yIndexInRaw][0], ndSlices[xIndexInRaw][0]]
-    
     setStatus("Downloading...");
     setProgress(0);
     for (let z = zDim.start; z < zDim.end; z++) {

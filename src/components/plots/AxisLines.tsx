@@ -365,8 +365,9 @@ const FlatAxis = () =>{
   const {xArray, yArray, zArray} = useDimAxis()
   const dimSlices = useMemo(()=> {
     return originallyFlat ? 
-    [yArray, xArray] :[zArray, yArray, xArray]
+    [yArray, xArray] : [zArray, yArray, xArray]
   },[xArray, yArray, zArray])
+
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
       return dimSlices.map((val) => val.length)
@@ -384,7 +385,6 @@ const FlatAxis = () =>{
   const [yResolution, setYResolution] = useState<number>(FLAT_AXIS_CONSTANTS.INITIAL_RESOLUTION)
 
   const { axisArrays, axisUnits, axisNames } = useMemo(() => {
-  
     if (originallyFlat) {
       return {
         axisArrays: dimSlices,

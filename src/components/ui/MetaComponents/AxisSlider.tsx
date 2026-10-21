@@ -90,7 +90,7 @@ export const AxisSlider = React.memo(({isSlice, itemIdx, removable, style, updat
                         className="rounded p-0.5 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                         onClick={updateDimCount}
                     />}
-                    {isSlice && <span className={`text-xs font-bold px-2 py-1 h-6 flex items-center border rounded-md text-${style.color}`}>
+                    {isSlice && <span className={`text-xs font-bold px-2 py-1 h-6 flex items-center border rounded-md ${style.color}`}>
                     {style.name}
                     </span>}
                 </div>

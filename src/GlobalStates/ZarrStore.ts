@@ -22,9 +22,10 @@ type ZarrState = {
   abortController: AbortController | null;
   fetchKey: number;
   blobKey: string | undefined; // The key for the stored File blob for a local NC
-  
   ndSlices: [number, number][];
   axisMapping: { x: number, y: number, z: number };
+  useGT: boolean;
+  gtBlob: File | undefined; //Geotiff file reference
 
   setZSlice: (zSlice: [number , number | null]) => void;
   setYSlice: (ySlice: [number , number | null]) => void;
@@ -68,6 +69,8 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   abortController: null,
   fetchKey: 0,
   blobKey: undefined,
+  useGT: false,
+  gtBlob: undefined,
 
   setZSlice: (zSlice) => set({ zSlice }),
   setYSlice: (ySlice) => set({ ySlice }),

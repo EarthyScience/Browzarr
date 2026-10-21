@@ -5,10 +5,13 @@ import '../css/MainPanel.css'
 import {PlotType, Variables, Colormaps, AdjustPlot, Dataset, PlayButton, AnalysisOptions} from '../index'
 import { Card } from "@/components/ui/card"
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useShallow } from 'zustand/shallow';
 
 
 const MainPanel = () => {
-  const bivariate = useGlobalStore( s=> s.bivariate);
+  const {bivariate, isFlat} = useGlobalStore(useShallow(s=> ({
+    bivariate: s.bivariate, isFlat: s.isFlat
+  })));
   return (
     <Card className="panel-container">
       <Dataset />
@@ -16,10 +19,9 @@ const MainPanel = () => {
       <PlotType />
       <Colormaps />
       <AdjustPlot  />
-      <PlayButton />
+      {!isFlat && <PlayButton />}
       {!bivariate && <AnalysisOptions />}
     </Card>
-
   )
 }
 
