@@ -26,7 +26,7 @@ export async function loadNetCDF(file: Blob, filename: string) {
         description: attrs.history ?? '',
       },
     });
-    useZarrStore.setState({ useNC: true, ncModule: data });
+    useZarrStore.setState({ useNC: true, useGT:false, ncModule: data });
   } finally {
     setStatus(null);
   }

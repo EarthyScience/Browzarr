@@ -8,8 +8,8 @@ export const SliderGroup = ({ dimCount, collapsed, canShrink, updateSelectionInf
     }, [updateSelectionInfo])
 
     const axisStyling= dimCount == 3
-		? [{name: 'z',color: 'blue-500'}, {name: 'y',color: 'green-500' },{name: 'x',color: 'pink-500'}]
-		: [{name: 'y',color: 'green-500' },{name: 'x',color: 'pink-500'}]
+		? [{name: 'z',color: 'text-blue-500'}, {name: 'y',color: 'text-green-500' },{name: 'x',color: 'text-pink-500'}]
+		: [{name: 'y',color: 'text-green-500' },{name: 'x',color: 'text-pink-500'}]
     
   return (
     <div className='grid gap-2'>

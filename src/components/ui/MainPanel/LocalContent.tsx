@@ -24,7 +24,7 @@ const LocalContent = ({
     <div className="mt-2">
       <Switcher
         leftText='Zarr'
-        rightText='NetCDF'
+        rightText='NC/TIFF'
         state={!useNC}
         onClick={() => setUseNC(x => !x)}
       />

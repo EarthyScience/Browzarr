@@ -151,6 +151,10 @@ const RemoteIcechunk = ({ setInitStore, onOpenDescription, selectedUrl = '' }: P
       retryDelay,
     });
     useGlobalStore.getState().setStatus('Fetching...');
+    useZarrStore.setState({
+      useNC:false,
+      useGT:false
+    })
     setInitStore(url);
     initializeStore();
     onOpenDescription();

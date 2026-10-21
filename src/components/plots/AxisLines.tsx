@@ -367,10 +367,7 @@ const FlatAxis = () =>{
     return originallyFlat ? 
     [yArray, xArray] : [zArray, yArray, xArray]
   },[xArray, yArray, zArray])
-  console.log(yArray[0], yArray.at(-1))
-  console.log(xArray[0], xArray.at(-1))
-  console.log(yArray.length, xArray.length)
-  
+
   const dimLengths = useMemo(()=>{
     if (analysisMode && !originallyFlat){
       return dimSlices.map((val) => val.length)

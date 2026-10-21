@@ -64,8 +64,10 @@ export async function getRasterData(overrideVar?: string){
 
     const sample = parseInt(thisVar.split('_').at(-1) as string)
     const image = await geotiff.getImage()
+    const winX = ndSlices[1]
+    const winY = ndSlices[0]
     const data = await image.readRasters({
-        window: [xSlice[0], ySlice[0], xSlice[1], ySlice[1]],
+        window: [winX[0], winY[0], winX[1], winY[1]],
         samples: [sample]
     })
     const src = data[0]
