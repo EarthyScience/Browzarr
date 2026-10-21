@@ -4,7 +4,6 @@ import { useZarrStore } from "@/GlobalStates/ZarrStore";
 import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 
 export async function loadGeoTiff(file: File){
-    //Maybe just need blob
     const geotiff = await fromBlob(file)
     const image = await geotiff.getImage()
     const bandCount = image.getSamplesPerPixel()

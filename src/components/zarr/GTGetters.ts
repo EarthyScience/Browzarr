@@ -10,10 +10,10 @@ export async function getGTDims(){
     const {gtBlob} = useZarrStore.getState()
     const {cache} = useCacheStore.getState();
     const {initStore} = useGlobalStore.getState();
-    const cacheName = `${initStore}_raster_meta`
+    const cacheName = `${initStore}_raster_dimfo`
     if (cache.has(cacheName)){
-        const meta = cache.get(cacheName)
-        const {dimNames, dimArrays, dimUnits} = meta
+        const dimfo = cache.get(cacheName)
+        const {dimNames, dimArrays, dimUnits} = dimfo
         return {dimNames, dimArrays, dimUnits};
     }
     const geotiff = await fromBlob(gtBlob as File)
@@ -29,7 +29,9 @@ export async function getGTDims(){
     const dimArrays = [yArray, xArray]
     const dimNames = Object.values(parsedGK.axes).toReversed() // geotiff is x --> y so flip
     const dimUnits = [parsedGK.units,parsedGK.units]
-    return {dimNames, dimArrays, dimUnits};
+    const dimfo = {dimNames, dimArrays, dimUnits}
+    cache.set(cacheName, dimfo)
+    return dimfo;
 }   
 
 export async function getGTMetadata(){
@@ -46,6 +48,7 @@ export async function getGTMetadata(){
     const parsedGK = parseGeoKeys(geoKeys as Record<string, any>);
     delete parsedGK['units' as keyof typeof parsedGK];
     const meta = {...parsedGK, shape:[image.getHeight(), image.getWidth()]}
+    cache.set(cacheName, meta)
     return meta
 }
 

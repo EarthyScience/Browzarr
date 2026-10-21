@@ -63,7 +63,6 @@ export const useDataFetcher = () => {
                     result => {scalingFactors[1] = result.scalingFactor?? 0}
                 ));
                 promises.push(arrayGetter().then((result) => {
-                    console.log(result.shape)
                     setDataShape(result.shape);
                     const shape = result.shape.filter((val) => val != 1);
                     const activeIndices = result.indices.filter((_, idx) => result.shape[idx] != 1);

@@ -29,7 +29,7 @@ const LocalFile = ({ setOpenVariables}:LocalNCType) => {
 		const files = event.target.files;
 		if (!files || files.length === 0) { setStatus(null); return; }
 		const file = files[0];
-    const isGeoTiff = TIF_EXTENSIONS.some(e => file.name.includes(e))
+    const isGeoTiff = TIF_EXTENSIONS.some(e => file.name.toLowerCase().includes(e))
     if (isGeoTiff){
       try{
         await loadGeoTiff(file);

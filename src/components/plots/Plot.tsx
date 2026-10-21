@@ -167,7 +167,6 @@ const Plot = () => {
   
   //DATA LOADING
   const {show, stableMetadata} = useDataFetcher()
-  
   useEffect(()=>{
     if (analysisMode || !show) return;
     const isEffectivelyFlat = dataShape.length === 2 || (dataShape.length === 3 && dataShape.includes(1));
@@ -179,7 +178,6 @@ const Plot = () => {
       setIsFlat(false)
     }
   },[analysisMode])
-
   useEffect(()=>{ // Reset texture after analysis mode
     if(!analysisMode && show){
       createDataTexture();

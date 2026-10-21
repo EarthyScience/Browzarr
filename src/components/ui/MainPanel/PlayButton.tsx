@@ -121,7 +121,7 @@ const PlayInterFace = ({visible, setKeepOpen, setShowSelf}:{visible : boolean, s
   // CHUNK INFO
   const [chunkTimeLength, chunkDivWidth, chunkSize] = useMemo(()=>{
     const meta = (zMeta as {name : string, chunks:number[], chunkSize:number}[])?.find(e => e.name === variable)
-    if(meta) {
+    if(meta && meta.chunks) {
       const chunkTimeSize = meta.chunks[zIdx] ?? meta.chunks[meta.chunks.length - 3]
       const tempWidth = (chunkTimeSize / zLength) * 100
       const chunkSize = meta.chunkSize
@@ -410,7 +410,7 @@ const PlayButton = () => {
         </TooltipContent>
 
       </Tooltip>
-      {/* <PlayInterFace visible={(showOptions && enableCond)} setKeepOpen={setKeepOpen} setShowSelf={setShowOptions}/> */}
+      <PlayInterFace visible={(showOptions && enableCond)} setKeepOpen={setKeepOpen} setShowSelf={setShowOptions}/>
     </>
   )
 }

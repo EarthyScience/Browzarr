@@ -1,4 +1,4 @@
-export async function epsgToProj(code: string){
+export async function epsgToProj(code: number){
     //Fetch string from spatialreference.org
     const response = await fetch(`https://spatialreference.org/ref/epsg/${code}/proj4.txt`);
     if(!response.ok){
