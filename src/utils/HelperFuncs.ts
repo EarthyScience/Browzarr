@@ -8,6 +8,7 @@ import { decompressSync } from 'fflate';
 import { copyChunkToArray } from '@/components/zarr/utils';
 import { GetNCDims } from '@/components/zarr/NCGetters';
 import { GetZarrDims } from '@/components/zarr/ZarrLoaderLRU';
+import { getGTDims } from '@/components/zarr/GTGetters';
 
 export type TypedArray =
   | Float32Array | Float64Array
@@ -282,15 +283,11 @@ export function GetCurrentArray(overrideStore?: string, overrideVariable?: strin
 }
 
 export async function GetDimInfo(variable:string){
-  const {useNC} = useZarrStore.getState()
-    if (useNC){
-      const output = GetNCDims(variable)
-      return output
-    } else {
-      const output = GetZarrDims(variable)
-      return output
-    }
-  }      
+  const {useNC, useGT} = useZarrStore.getState()
+  if (useGT) return getGTDims()
+  if (useNC) return GetNCDims(variable)
+  else return GetZarrDims(variable)
+}      
 
 export function HandleKernelNums(e: string){
   const newVal = parseInt(e);

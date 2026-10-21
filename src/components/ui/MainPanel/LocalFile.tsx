@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/alert';
 import { isMobile } from '../MobileUIHider';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import {fromArrayBuffer} from 'geotiff'
 import { loadGeoTiff } from '@/utils/loadGeoTiff';
 
 interface LocalNCType {
@@ -34,26 +33,22 @@ const LocalFile = ({ setOpenVariables}:LocalNCType) => {
     if (isGeoTiff){
       try{
         await loadGeoTiff(file);
+        setOpenVariables(true)
       } catch (e) {
         setError("Failed to load file:")
       }
+    } else{
+      try {
+        await loadNetCDF(file, file.name);
+        const blobKey = `local_${file.name}`
+        await saveFile(file, blobKey)
+        useZarrStore.setState({blobKey})
+        setOpenVariables(true)
+      } catch (e) {
+        setError(`Failed to load file: ${e instanceof Error ? e.message : String(e)}`);
+      }
+      };
     }
-		if (!NETCDF_EXT_REGEX.test(file.name)) {
-			setError('Please select a valid NetCDF (.nc, .netcdf, .nc3, .nc4) file.');
-			return;
-		}
-
-		try {
-			await loadNetCDF(file, file.name);
-			const blobKey = `local_${file.name}`
-			await saveFile(file, blobKey)
-			useZarrStore.setState({blobKey})
-			setOpenVariables(true)
-		} catch (e) {
-			setError(`Failed to load file: ${e instanceof Error ? e.message : String(e)}`);
-		}
-  	};
-
   return (
     <div className="w-full">
       <Input

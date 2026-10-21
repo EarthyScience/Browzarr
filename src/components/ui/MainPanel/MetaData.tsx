@@ -17,6 +17,7 @@ import { clearProjectionData } from '@/components/textures/ProjectionTexture';
 import { SliderGroup, ArrayInfo, SecondVariable } from '../MetaComponents';
 import { useColormapStore } from '@/GlobalStates/ColormapStore';
 import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
+import { getRasterData } from '@/components/zarr/GTGetters';
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
@@ -312,7 +313,6 @@ export const MetaData = ({ meta, metadata }: Props) => {
      // --- Size States --- //
     const sizeData = useSizeData(meta, selectionInfo, cacheSize, isBivariate, variable2);
     const smallCache = sizeData.smallCache;
-
     // --- Dim States --- //
     const [deactiveDims, setDeactiveDims] = useState(Math.max(0, dataLength - 3))
     const [activeDims, setActiveDims] = useState(Math.min(dataLength, 3))
@@ -359,7 +359,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
         setTextureArrayDepths(texDepths.length === 3 ? texDepths : [1, ...texDepths]);
         setMaxSize(cacheSize);
         setVariable(meta.name || '');
-        clearProjectionData()
+        clearProjectionData();
         ReFetch();
     }
     return (
@@ -511,5 +511,3 @@ export const MetaData = ({ meta, metadata }: Props) => {
         </div>
     )
 }
-
-

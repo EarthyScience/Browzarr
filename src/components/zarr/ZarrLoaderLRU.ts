@@ -24,6 +24,7 @@ import {
 	getIcechunkDims,
 } from "./icechunk-store";
 import { GetNCMetadata } from "./NCGetters";
+import { getGTMetadata } from "./GTGetters";
 
 type GroupType = zarr.Group<
 	zarr.FetchStore | zarr.Listable<zarr.FetchStore> | IcechunkStore
@@ -138,12 +139,16 @@ export async function GetZarrDims(variable: string) {
 export async function GetAttributes(thisVariable?: string) {
 	const { initStore, variable } = useGlobalStore.getState();
 	const { cache } = useCacheStore.getState();
-	const { useNC } = useZarrStore.getState();
+	const { useNC, useGT } = useZarrStore.getState();
 	const cacheName = `${initStore}_${thisVariable ?? variable}_meta`;
 	if (cache.has(cacheName)) {
 		const meta = cache.get(cacheName);
 		return useNC ? meta.attributes : meta;
 	} else {
+		if (useGT) {
+			const meta = await getGTMetadata();
+			return meta;
+		}
 		if (useNC) {
 			const meta = await GetNCMetadata(thisVariable);
 			return meta.attributes;

@@ -410,7 +410,7 @@ const PlayButton = () => {
         </TooltipContent>
 
       </Tooltip>
-      <PlayInterFace visible={(showOptions && enableCond)} setKeepOpen={setKeepOpen} setShowSelf={setShowOptions}/>
+      {/* <PlayInterFace visible={(showOptions && enableCond)} setKeepOpen={setKeepOpen} setShowSelf={setShowOptions}/> */}
     </>
   )
 }

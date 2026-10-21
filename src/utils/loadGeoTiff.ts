@@ -1,23 +1,30 @@
 import { parseGeoKeys } from "./geoKeyParser";
 import {fromBlob} from 'geotiff'
 import { useZarrStore } from "@/GlobalStates/ZarrStore";
-import {epsgToProj} from "./epsgToProj";
+import { useGlobalStore } from "@/GlobalStates/GlobalStore";
+
 export async function loadGeoTiff(file: File){
     //Maybe just need blob
     const geotiff = await fromBlob(file)
     const image = await geotiff.getImage()
+    const bandCount = image.getSamplesPerPixel()
+    const bands = Array.from({length: bandCount}).map((_val, idx) => `band_${idx}`)
     const geoKeys = image.getGeoKeys()
-    const parsedGK = parseGeoKeys(geoKeys);
+    const parsedGK = parseGeoKeys(geoKeys as Record<string, any>);
     const fd = image.getFileDirectory();  
-    const [xOrg, yOrg] = image.getOrigin()
-    const [xRes, yRes] = image.getResolution()
     const width = image.getWidth()
     const height = image.getHeight()
-    const xArray = Array.from({length: width}).map((_val,idx) => xOrg + idx*xRes);
-    const yArray = Array.from({length: height}).map((_val,idx) => yOrg + idx*yRes);
-    console.log(xArray, yArray)
-    console.log(image)
-    console.log(parsedGK)
-    console.log(fd.toObject())
-    console.log(fd.parseGeoKeyDirectory())
+    const shape = [height, width]
+    const baseMeta = {...parsedGK, bandCount, shape, chunkShape:shape}
+    useGlobalStore.setState({
+        variables: bands,
+        zMeta: bands.map(e => ({...baseMeta, name:e})),
+        initStore: `local:${file.name}`,
+        titleDescription: {
+        title: file.name,
+        description: '',
+        },
+    });
+    useZarrStore.setState({gtBlob:file, useGT:true, useNC:false})
 }
+

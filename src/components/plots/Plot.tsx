@@ -239,7 +239,13 @@ const Plot = () => {
         linear
         frameloop={useEditor ? "never" : "demand"}
         gl={async (props) => {
-          const renderer = new THREE.WebGPURenderer(props as any)
+          const adapter = await navigator.gpu?.requestAdapter()
+          const maxDim = adapter?.limits.maxTextureDimension2D ?? 8192
+          const renderer = new THREE.WebGPURenderer({...(props as any), 
+            requiredLimits:{
+            maxTextureDimension2D: Math.min(16384, maxDim),
+            }
+          })
           await renderer.init()
           const canvas = props.canvas as HTMLCanvasElement
           renderer.setPixelRatio(DPR)

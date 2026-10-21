@@ -131,7 +131,6 @@ const Variables = () => {
 
     Promise.all([GetDimInfo(val), GetAttributes(val)]).then(([dimInfo, attr]) => {
       if (activeRequest.current !== val) return;
-
       const relevant = zMeta?.find((e: any) => e.name === val);
       if (relevant) {
         setMeta({
