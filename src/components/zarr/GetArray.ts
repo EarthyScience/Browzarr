@@ -141,7 +141,11 @@ export async function GetArray(varOveride?: string) {
                     const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, ndSlices, axisMapping });
 
                     jobs.push((async ()=>{
-                        const {chunkF16, thisShape, chunkStride, newScalingFactor} = await pool.dispatch('processChunk', {raw, coarsen, compress, hasZ, kernelInfo, indices, scalingFactor, fillValue})
+                        const {chunkF16, thisShape, chunkStride, newScalingFactor} = 
+                            await pool.dispatch('processChunk', 
+                                {raw, coarsen, compress, hasZ, kernelInfo, indices, scalingFactor, fillValue}, 
+                                [raw.data.buffer]
+                            )
 
                         //This block is not in the worker as it needs access to the cache. 
                         if (newScalingFactor != null && newScalingFactor !== scalingFactor) {
