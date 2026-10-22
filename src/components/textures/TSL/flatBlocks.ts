@@ -22,9 +22,9 @@ const isBorder = Fn(([instanceUV] : [any])=>{
     If(u.useBorderTexture, ()=>{
         const resolution = u.displacementResolution
         const aspect = resolution.x.toFloat().div(resolution.y)
-        const gridExtent = vec2(4, float(4).div(aspect)).toVar();
+        const gridExtent = vec2(2, float(2).div(aspect)).toVar();
         const thisUV = instanceUV.add(positionGeometry.xy.div(gridExtent));
-        isBorder.assign(h.isBorder(thisUV.fract()));
+        isBorder.assign(h.isBorder(h.reprojectMask(thisUV.fract(), bool(false))));
     })
     return isBorder;
 })
@@ -95,7 +95,7 @@ export function createFlatBlocksMaterial(count: number){
     material.positionNode = select(clipped.or(masked), vec3(0), newPos);
 
     // --- FRAG ---//
-    const borderHit = isBorder(maskUV)
+    const borderHit = isBorder(thisUV)
     material.colorNode = select(borderHit, u.borderColor, instanceColor(colorIn));
     return material
 }
