@@ -41,7 +41,7 @@ export function RescaleArray(array: Float16Array | Float32Array, scalingFactor: 
 export function ToFloat16(
 	array: Float32Array,
 	scalingFactor?: number,
-): [Float16Array, number | null] {
+): [Float16Array, number | undefined] {
 	const initialScale = scalingFactor ?? 0;
 	let denominator = Math.pow(10, initialScale);
 	let multiplier = 1 / denominator;
@@ -57,7 +57,7 @@ export function ToFloat16(
 		for (let i = 0; i < array.length; i++) {
 			newArray[i] = array[i] === 0 ? 0 : NaN;
 		}
-		return [newArray, initialScale !== 0 ? initialScale : null];
+		return [newArray, initialScale !== 0 ? initialScale : undefined];
 	}
 
 	const additionalScaling = Math.ceil(Math.log10(maxVal / 65504));
@@ -73,7 +73,7 @@ export function ToFloat16(
 	for (let i = 0; i < array.length; i++) {
 		newArray[i] = array[i] * multiplier;
 	}
-	return [newArray, newScalingFactor != 0 ? newScalingFactor : null];
+	return [newArray, newScalingFactor != 0 ? newScalingFactor : undefined];
 }
 
 export function calculateTotalElements(shape: number[]): number {
