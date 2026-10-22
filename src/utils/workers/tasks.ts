@@ -1,5 +1,7 @@
 import { fromBlob } from 'geotiff'
 import * as THREE from 'three/webgpu'
+import { TypedArray } from '../HelperFuncs';
+import { decompressSync } from 'fflate';
 
 interface normalizeIn{
     data: Uint8Array | Float16Array;
@@ -46,10 +48,15 @@ function printInputs({input}:{input:any}){
     console.log(input)
 }
 
-
+function decompressArray({array}:{array:Uint8Array}){
+    const decompressed = decompressSync(array)
+	const newArray = new Float16Array(decompressed.buffer)
+	return {newArray}
+}
 
 export const tasks = {
     normalizeData: (d: normalizeIn): {textureData: Uint8Array | Uint16Array} => normalizeTextureData(d),
     readRasterData: (d: readRasterIn): Promise<{data: any}> => readRasterData(d),
     printIn: (d: any): void => printInputs(d),
+    decompress: (d: {array:Uint8Array}): {newArray: Float16Array} => decompressArray(d),
 };
