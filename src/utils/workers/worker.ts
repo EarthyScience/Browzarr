@@ -1,3 +1,4 @@
+"use client"
 import { tasks } from './tasks';
 
 self.onmessage = async ({ data: { task, data } }) => {

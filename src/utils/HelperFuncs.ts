@@ -256,6 +256,7 @@ export function GetCurrentArray(overrideStore?: string, overrideVariable?: strin
     const [zStartIdx, zEndIdx] = currentChunks.z
 
     for (let z = zStartIdx; z < zEndIdx; z++) {
+      
       for (let y = yStartIdx; y < yEndIdx; y++) {
         for (let x = xStartIdx; x < xEndIdx; x++) {
           const chunkID = `z${z}_y${y}_x${x}`
