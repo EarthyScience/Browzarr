@@ -5,6 +5,7 @@ import { fromBlob, type GeoTIFFImage } from "geotiff";
 import { parseGeoKeys } from "@/utils/geoKeyParser";
 import { calculateStrides } from "@/utils/HelperFuncs";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
+import { usePool } from "@/utils/workers/pool";
 
 export async function getGTDims(){
     const {gtBlob} = useZarrStore.getState()
@@ -55,10 +56,10 @@ export async function getGTMetadata(){
 export async function getRasterData(overrideVar?: string){
     const {gtBlob, ndSlices, axisMapping, coarsen, kernelSize, kernelDepth, setCurrentChunks, setArraySize} = useZarrStore.getState()
     const {cache} = useCacheStore.getState()
-    const {initStore, variable, setStrides} = useGlobalStore.getState()
+    const {initStore, variable, setStrides, setStatus} = useGlobalStore.getState()
     const thisVar = overrideVar?? variable as string
-    const geotiff = await fromBlob(gtBlob as File)
-
+    setStatus("Fetching...")
+    const pool = usePool();
     const xSlice = ndSlices[axisMapping.x]
     const ySlice = ndSlices[axisMapping.y]
     
@@ -66,13 +67,10 @@ export async function getRasterData(overrideVar?: string){
     useZarrStore.setState({ xSlice, ySlice, zSlice:[0,1] });
 
     const sample = parseInt(thisVar.split('_').at(-1) as string)
-    const image = await geotiff.getImage()
     const winX = ndSlices[1]
     const winY = ndSlices[0]
-    const data = await image.readRasters({
-        window: [winX[0], winY[0], winX[1], winY[1]],
-        samples: [sample]
-    })
+
+    const {data} = await pool.dispatch('readRasterData', {gtBlob: gtBlob as File, winX, winY, sample})
     const src = data[0]
     const width = data.width 
     const height = data.height 
@@ -95,5 +93,6 @@ export async function getRasterData(overrideVar?: string){
         sliceStart: [0, 0, 0],
     }
     cache.set(`${initStore}_${thisVar}_chunk_z0_y0_x0`, cacheChunk)
+    setStatus(null)
     return { shape: thisShape, indices: [axisMapping.y, axisMapping.x], scalingFactor: 0 }
 }
