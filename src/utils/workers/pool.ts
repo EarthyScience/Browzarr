@@ -45,4 +45,4 @@ class Pool {
 const pool = new Pool(typeof navigator !== 'undefined' && navigator.hardwareConcurrency
   ? Math.min(8, navigator.hardwareConcurrency)
   : 8);
-export const usePool = () => pool;   // optional, for your preferred call style
+export const getPool = () => pool;   // optional, for your preferred call style

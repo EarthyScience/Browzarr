@@ -1,8 +1,8 @@
 import { fromBlob } from 'geotiff'
 import * as THREE from 'three/webgpu'
-import { TypedArray } from '../HelperFuncs';
 import { decompressSync } from 'fflate';
 import {processChunk, processIn, processOut} from './tasks/processChunk';
+import { createTextureData, textureIn, textureOut } from './tasks/createTextureData';
 
 interface normalizeIn{
     data: Uint8Array | Float16Array;
@@ -60,5 +60,6 @@ export const tasks = {
     readRasterData: (d: readRasterIn): Promise<{data: any}> => readRasterData(d),
     printIn: (d: any): void => printInputs(d),
     decompress: (d: {array:Uint8Array}): {newArray: Float16Array} => decompressArray(d),
-    processChunk: (d: processIn) : Promise<processOut> => processChunk(d)
+    processChunk: (d: processIn) : Promise<processOut> => processChunk(d),
+    textureData: (d: textureIn) : textureOut => createTextureData(d)
 };

@@ -186,10 +186,12 @@ const Plot = () => {
 
   useEffect(()=>{ // Switch Texture array bit-depth
     if(show){
-      const [newText, _valueScales] = ArrayToTexture({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape},undefined,useF16Textures);
-      if (newText){
-        setMainTextures(newText)
-      }
+      (async () =>{
+        const [newText, _valueScales] = await ArrayToTexture({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape},undefined,useF16Textures);
+        if (newText){
+          setMainTextures(newText)
+        }
+      })()
     } setStatus(null)
   },[useF16Textures])
 

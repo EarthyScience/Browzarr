@@ -1,14 +1,12 @@
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
-import { useZarrStore } from "@/GlobalStates/ZarrStore";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { useErrorStore } from "@/GlobalStates/ErrorStore";
-import { calculateStrides } from "@/utils/HelperFuncs";
-import { ToFloat16, CompressArray, RescaleArray } from "./utils";
-import { NCFetcher, zarrFetcher } from "./dataFetchers";
-import { Convolve } from "../computation/webGPU";
-import { coarsen3DArray } from "@/utils/HelperFuncs";
+import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
-import { usePool } from "@/utils/workers/pool";
+import { useZarrStore } from "@/GlobalStates/ZarrStore";
+import { calculateStrides } from "@/utils/HelperFuncs";
+import { getPool } from "@/utils/workers/pool";
+import { NCFetcher, zarrFetcher } from "./dataFetchers";
+import { RescaleArray } from "./utils";
 
 export async function GetArray(varOveride?: string) {
     const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
@@ -19,7 +17,7 @@ export async function GetArray(varOveride?: string) {
     const meta = await fetcher.getMetadata(targetVariable as string);
     const { shape, chunkShape, fillValue, dtype } = meta;
     const rank = shape.length;
-    const pool = usePool();
+    const pool = getPool();
     // Explicit mappings first (-1 if unmapped/NaN), then fill gaps with
     // the remaining dims from last to first, in x, y, z order.
     const mapped = [axisMapping.x, axisMapping.y, axisMapping.z]
@@ -105,13 +103,8 @@ export async function GetArray(varOveride?: string) {
     setProgress(0);
     // --- WORKER INPUTS ---//
     const jobs: Promise<void>[] = []
-    
-    const indices = {
-        zIndexInRaw, yIndexInRaw, xIndexInRaw
-    }
-    const kernelInfo = {
-        kernelDepth, kernelSize
-    }
+    const indices   = {zIndexInRaw, yIndexInRaw, xIndexInRaw}
+    const kernelInfo = {kernelDepth, kernelSize}
     // --- PROGRESS --- //
     let workerProgress = 0;
     let cumulativeProgress = 0;
@@ -139,7 +132,6 @@ export async function GetArray(varOveride?: string) {
                     continue;
                 } else {
                     const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, ndSlices, axisMapping });
-
                     jobs.push((async ()=>{
                         const {chunkF16, thisShape, chunkStride, newScalingFactor} = 
                             await pool.dispatch('processChunk', 
@@ -173,8 +165,11 @@ export async function GetArray(varOveride?: string) {
                 }
             }
     }
-    await Promise.all(jobs)
-    clearInterval(thisProgress);
-    setProgress(0);
+    try{
+        await Promise.all(jobs)
+    } finally {
+        clearInterval(thisProgress);
+        setProgress(0);
+    }
     return { shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor };
 }

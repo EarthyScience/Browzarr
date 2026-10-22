@@ -2,7 +2,6 @@
 import * as THREE from 'three'
 import { useCacheStore } from '@/GlobalStates/CacheStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { decompressSync } from 'fflate';
 import { copyChunkToArray } from '@/components/zarr/utils';
@@ -163,8 +162,9 @@ export function ArrayMinMax(array:number[] | TypedArray | TypedArrayBufferLike){
   let minVal = Infinity;
   let maxVal = -Infinity;
   for (let i = 0; i < array.length; i++){
-    minVal = array[i] < minVal ? array[i] : minVal
-    maxVal = array[i] > maxVal ? array[i] : maxVal
+    const v = array[i];
+    if (v < minVal) minVal = v; 
+    else if (v > maxVal) maxVal = v;
   }
   return [minVal,maxVal]
 }

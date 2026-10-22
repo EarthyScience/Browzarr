@@ -5,7 +5,7 @@ import { fromBlob, type GeoTIFFImage } from "geotiff";
 import { parseGeoKeys } from "@/utils/geoKeyParser";
 import { calculateStrides } from "@/utils/HelperFuncs";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
-import { usePool } from "@/utils/workers/pool";
+import { getPool } from "@/utils/workers/pool";
 
 export async function getGTDims(){
     const {gtBlob} = useZarrStore.getState()
@@ -59,7 +59,7 @@ export async function getRasterData(overrideVar?: string){
     const {initStore, variable, setStrides, setStatus} = useGlobalStore.getState()
     const thisVar = overrideVar?? variable as string
     setStatus("Fetching...")
-    const pool = usePool();
+    const pool = getPool();
     const xSlice = ndSlices[axisMapping.x]
     const ySlice = ndSlices[axisMapping.y]
     
