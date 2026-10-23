@@ -34,7 +34,7 @@ export const PointCloud = ( )=>{
     // --- INITIALIZE --- //
     const globalscale = dataShape[2]/100
     const count = dataShape.reduce((a, b) => a * b , 1)
-    const buffers = useMemo(()=>{
+    const materialObjects = useMemo(() => {
       const maxPoints = 1e5
       const iterations = Math.ceil(count/maxPoints) // 100k maximum per object
       const objectList = []
@@ -42,22 +42,7 @@ export const PointCloud = ( )=>{
       for (let i = 0; i < iterations; i++){
         const offset = i * maxPoints;
         const thisCount = Math.min(count-offset, maxPoints)*biMul
-        const {buffer, updateValues} = createBuffer(thisCount, useF16Textures)
-        const arrayOffset = offset*biMul
-        updateValues(textureData.subarray(arrayOffset, arrayOffset+(thisCount)) as Uint8Array);
-        objectList.push({
-          buffer,
-          offset,
-          thisCount
-        })
-      }
-      return objectList
-    }, [count, bivariate, textureData, useF16Textures])
-    const materialObjects = useMemo(() => {
-      const objectList = []
-      for (const bufferObj of buffers){
-        const {buffer, thisCount, offset} = bufferObj
-        const material = createPointMaterial(buffer, bivariate, useF16Textures)
+        const material = createPointMaterial(bivariate)
         objectList.push({
           material,
           offset,
@@ -66,7 +51,7 @@ export const PointCloud = ( )=>{
       }
       u.pointShape.value = new THREE.Vector3(...dataShape)
       return objectList
-    },[colorScale, buffers, bivariate, useF16Textures])
+    },[colorScale, bivariate, useF16Textures])
     // --- UNIFORMS ---//
     uniformUpdater();
     // Unique scaling for points
@@ -81,7 +66,6 @@ export const PointCloud = ( )=>{
 
 	// --- CLEANUP --- //
 	useEffect(()=>()=>{ materialObjects.forEach(e=> e.material.dispose()) },[materialObjects])
-  useEffect(()=>()=>{ buffers.forEach(e=> e.buffer.dispose()) },[buffers])
   return (
     <group>
       <group scale={[globalscale,globalscale,2*globalscale]}>

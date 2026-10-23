@@ -32,7 +32,7 @@ const faceColor = Fn( ([thisUV] : [any]) => {
     const biNaN = bool( false ).toVar( 'biNaN' );
 
     If( u.bivariate, () => {
-        const bivar = h.sample2ToOrder( localCoord, textureIdx, u.bivariateSelection );
+        const bivar = h.sample2ToOrder( localCoord, textureIdx );
         strength.assign( bivar.r );
         biVal.assign( bivar.g );
         biNaN.assign( h.isNaNBits( strength ).or( h.isNaNBits( biVal ) ) );

@@ -73,7 +73,7 @@ const sphereColor = Fn( () => {
         const biVal = float( 0 ).toVar( 'biVal' );
         const biNaN = bool( false ).toVar( 'biNaN' );
         If( u.bivariate, () => {
-            const bivar = h.sample2ToOrder( localCoord, textureIdx, u.bivariateSelection );
+            const bivar = h.sample2ToOrder( localCoord, textureIdx );
             strength.assign( bivar.r );
             biVal.assign( bivar.g );
             biNaN.assign( h.isNaNBits( strength ).or( h.isNaNBits( biVal ) ) );
@@ -118,7 +118,7 @@ const sphereVertex = Fn(() =>{
         localCoord.assign( fract( localCoord ) );
         const dispStrength = float( 0 ).toVar( 'dispStrength' );
         If( u.bivariate, () => {
-            dispStrength.assign( h.sample2ToOrder( localCoord, textureIdx, u.bivariateSelection ).r );
+            dispStrength.assign( h.sample2ToOrder( localCoord, textureIdx ).r );
         } ).Else( () => {
             dispStrength.assign( h.sample1( localCoord, textureIdx ) );
         } );

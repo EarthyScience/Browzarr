@@ -54,7 +54,7 @@ export const sampleVoxel = (texCoord: any, d: any, biVal: any, isNan: any) => {
     const localCoord = fract(texCoord.mul(u.textureDepths));
     
     If(u.bivariate, () => {
-        const bivar = h.sample2ToOrder(localCoord, textureIdx, u.bivariateSelection).toVar();
+        const bivar = h.sample2ToOrder(localCoord, textureIdx).toVar();
         d.assign(bivar.r);
         biVal.assign(bivar.g);
         isNan.assign(

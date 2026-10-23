@@ -38,10 +38,31 @@ const sampleMap = Fn(([p, index]: [any, any]) => {
 export const sample1 = Fn(([p, index]: [any, any]) => sampleMap(p, index).r);
 export const sample2 = Fn(([p, index]: [any, any]) => sampleMap(p, index).rg);
 
-export const sample2ToOrder = Fn(([p, index, variable]: [any, any, any]) => {
+export const sample2ToOrder = Fn(([p, index]: [any, any]) => {
+  const variable = u.bivariateSelection
   const biVar = sample2(p, index);
   return select(variable.equal(0), biVar, biVar.gr);
 });
+
+const loadMap = Fn(([p, index]: [any, any]) => {
+    const pv = p.toVar(); // This needs to be a variable for some reason 
+    const result = vec4(0).toVar();
+    u.map.forEach( ( tex, i ) => {
+        If( index.equal( i ), () => {
+            result.assign( tex.load( pv ) );
+        } );
+    } );
+    return result;
+  });
+
+export const load1 = Fn(([p, index]: [any, any]) => loadMap(p, index).r);
+export const load2 = Fn(([p, index]: [any, any]) => loadMap(p, index).rg);
+export const load2ToOrder = Fn(([p, index]: [any, any]) => {
+  const variable = u.bivariateSelection
+  const biVar = load2(p, index);
+  return select(variable.equal(0), biVar, biVar.gr);
+});
+
 
 export const getLocalCoord = (thisUV : any) =>{
 	const zStepSize = uint(u.textureDepths.y).mul(uint(u.textureDepths.x));

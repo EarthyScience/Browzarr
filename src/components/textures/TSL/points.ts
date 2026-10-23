@@ -1,5 +1,5 @@
 import {
-    bool,float,Fn,fract,If,instancedArray,instanceIndex,int,min,mod,texture,uint,
+    bool,float,Fn,fract,If,instancedArray,instanceIndex,int,ivec3,min,mod,select,texture,uint,
     uniform,unpackHalf2x16,userData,varying,vec2,vec3,vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
@@ -22,8 +22,7 @@ export function createBuffer(count: number, useF16: boolean){
     return {buffer, updateValues}
 }
 
-export function createPointMaterial(buffer: THREE.StorageBufferNode, bivariate: boolean, useF16: boolean){
-    const values = buffer;
+export function createPointMaterial(bivariate: boolean){
     const depth = uint( u.pointShape.x );
     const height = uint( u.pointShape.y );
     const width = uint( u.pointShape.z ).toVar();
@@ -31,10 +30,14 @@ export function createPointMaterial(buffer: THREE.StorageBufferNode, bivariate: 
     const timeAspect = depth.toFloat().div(width)
     const offset = userData('offset', 'int')
     const globalIndex = instanceIndex.add(offset)
+    const iX = globalIndex.mod(width).toFloat()
+    const iY = globalIndex.div(width).mod(height)
+    const iZ = globalIndex.div(height.mul(width))
+    const globalCoord = ivec3(iX, iY, iZ); // PixelIndex
     const texCoord = Fn(() => {
-        const normX = globalIndex.mod(width).toFloat().div(width.sub(1)).toVar()
-        const normY = globalIndex.div(width).mod(height).toFloat().div(height.sub(1)).toVar()
-        const normZ = globalIndex.div(height.mul(width)).toFloat().div(depth.sub(1)).toVar()
+        const normX = globalCoord.x.toFloat().div(width.sub(1)).toVar()
+        const normY = globalCoord.y.toFloat().div(height.sub(1)).toVar()
+        const normZ = globalCoord.z.toFloat().div(depth.sub(1)).toVar()
         return vec3(normX, normY, fract(normZ.sub(u.animateProg)));
     })()
     const positon = Fn(()=>{
@@ -44,44 +47,29 @@ export function createPointMaterial(buffer: THREE.StorageBufferNode, bivariate: 
         const scale = width.toFloat().mul(GLOBAL_SCALE)
         return vec3(px, py, pz).mul(scale);
     })()
-    const getByte = useF16 
-        ? Fn(([index]: [any]) => {
-            // This is an AI function. I don't understand it fully. 
-            const i = uint(index);
-            const word = values.element(i.shiftRight(1));   // i / 2 (two uint16 per uint32 word)
-            const shift = i.bitAnd(1).mul(16);              // (i % 2) * 16
-            const halfFloat = word.shiftRight(shift).bitAnd(0xFFFF);
-            return    unpackHalf2x16(halfFloat) 
-        })
-        : Fn(([index]: [any]) => {
-            // This is an AI function. I don't understand it fully. 
-            const i = uint(index);
-            const word = values.element(i.shiftRight(2));   // i / 4
-            const shift = i.bitAnd(3).mul(8);               // (i % 4) * 8
-            return word.shiftRight(shift).bitAnd(0xFF);     // uint 0..255
-        })
 
-    const thisIndex = instanceIndex.mul(int(Number(bivariate) + 1)).toVar()
-    const sizeIndex = bivariate ? thisIndex.add(int(u.bivariateSelection)) : thisIndex // The index used for scaling the points
-    const normalizer = useF16 ? 1 : 255
-    const rawValue = float(getByte(sizeIndex)).div(normalizer).toVar();
+    const rawValue = h.load2ToOrder(globalCoord, uint(0))
     const isNaN = bool(false).toVar();
-    const spriteValue = varying(h.rescaler(rawValue))
+    const spriteValue = varying(h.rescaler(rawValue.r))
     const spriteCoord = texCoord
     const pointColor = Fn(()=>{
         const color = vec3(0);
-        If(u.bivariate, ()=>{
-            const v1 = float(getByte(thisIndex)).div(255)
-            const v2 = float(getByte(thisIndex.add(1))).div(255)
-            color.assign(h.colorMixer(v1, v2))
-            const v1Nan = h.isNaNBits(v1).or(u.useF16.not().and(v1.equal(1.0)))
-            const v2Nan = h.isNaNBits(v2).or(u.useF16.not().and(v2.equal(1.0)))
-            isNaN.assign(v1Nan.or(v2Nan))
+        If(bool(false), ()=>{
+            const c1 = rawValue.r;
+            const c2 = rawValue.g
+            color.assign(select(u.bivariateSelection, 
+                h.colorMixer(c1, c2),
+                h.colorMixer(c2, c1)
+            ))
+            // isNaN.assign(
+            //     h.isNaNBits(c1).or(u.useF16.not().and(c1.equal(1.0)))
+            //     .or(h.isNaNBits(c2).or(u.useF16.not().and(c2.equal(1.0))))
+            // )
         }).Else(()=>{
             const remapped = spriteValue.mul( u.cScale ).toVar();
             remapped.assign( min( remapped.add( u.cOffset ), 0.995 ) );
             color.assign(u.cmap.sample(vec2(remapped,0.5)).rgb)
-            isNaN.assign(h.isNaNBits(rawValue).or(u.useF16.not().and(rawValue.equal(1.0))))
+            isNaN.assign(h.isNaNBits(rawValue.r).or(u.useF16.not().and(rawValue.r.equal(1.0))))
 
         })
         return color;
@@ -113,6 +101,6 @@ export function createPointMaterial(buffer: THREE.StorageBufferNode, bivariate: 
     const material = new THREE.SpriteNodeMaterial()
     material.positionNode = positon.mul(vec3(1,1,u.timeScale))
     material.scaleNode = pointScaler()
-    material.colorNode = vec4(pointColor, 1);
+    material.colorNode = vec4(u.cmap.sample(vec2(rawValue.g,0.5)).rgb, 1);
     return material
 }
