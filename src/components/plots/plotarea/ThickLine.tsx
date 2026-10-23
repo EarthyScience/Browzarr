@@ -11,6 +11,7 @@ import { invalidate } from '@react-three/fiber';
 import { useGraphStore } from '@/stores/GraphStore';
 import { useColormapStore } from '@/stores/ColormapStore';
 import { useValueScales } from '@/hooks';
+import { usePlotStore } from '@/stores/PlotStore';
 
 function linspace(start: number, stop: number, num: number): number[] {
     const step = (stop - start) / (num - 1);
@@ -26,15 +27,16 @@ interface pointSetters{
 interface ThickLineProps {
 	height: number;
 	yScale: number,
-  xScale: number,
+  	xScale: number,
 	pointSetters: pointSetters
 }
 
 const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
     const timeSeries = useGlobalStore(s => s.timeSeries);
+	const valueRange = usePlotStore( s=> s.valueRange)
     const colormap = useColormapStore(s => s.colormap);
     const {lineWidth, useLineColor, lineColor, showPoints, lineResolution, useCustomColor} = useGraphStore(useShallow(s => s));
-	  const {camera} = useThree()
+	const {camera} = useThree()
 
   const {maxVal, minVal} = useValueScales();
   const materials = useMemo(()=>{
@@ -55,7 +57,8 @@ const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
                     useMapColors: {value: useLineColor},
                     lineColor: {value: new THREE.Color().setRGB(r/255, g/255, b/255)},
                     userColor: {value: new THREE.Color(lineColor)},
-                    zoom: {value: camera.zoom}
+                    zoom: {value: camera.zoom},
+                    threshold: {value: new THREE.Vector2(valueRange[0], valueRange[1])}
                 },
                 vertexShader,
                 fragmentShader:`
@@ -65,9 +68,11 @@ const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
                 uniform bool useMapColors;
                 uniform vec3 lineColor;
                 uniform vec3 userColor;
+				uniform vec2 threshold;
                 in float vNormed;
 
                 void main() {
+					if (vNormed < threshold.x || vNormed > threshold.y) discard;
                     vec4 texColor = texture(cmap, vec2(vNormed, 0.1));
                     texColor.a = 1.;
                     Color = useLineColor ? vec4(userColor, 1.0) : useMapColors ? texColor : vec4(lineColor, 1.0) ;
@@ -92,21 +97,24 @@ const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
         uniforms.useMapColors.value = useLineColor
         uniforms.userColor.value = new THREE.Color(lineColor)
         uniforms.zoom.value = camera.zoom
+		uniforms.threshold.value.set(valueRange[0], valueRange[1])
         invalidate()
       }
     }
-  },[colormap,lineWidth,xScale,yScale,window.innerWidth, window.innerHeight, useLineColor, lineColor, camera.zoom, useCustomColor,])
+  },[colormap,lineWidth,xScale,yScale,window.innerWidth, window.innerHeight, valueRange, useLineColor, lineColor, camera.zoom, useCustomColor,])
 
 
   const viewWidth = useMemo(()=>window.innerWidth,[window.innerWidth])
   const viewHeight = useMemo(()=>window.innerHeight - height, [window.innerWidth, height])
 
-  const {geometries, instancePoints} = useMemo(()=>{
+  const {geometries, instancePoints, instanceVals} = useMemo(()=>{
     const geomObj: Record<string, THREE.BufferGeometry> = {}
     const tempInstances: Record<string, THREE.Vector3[]> = {}
+	const instanceVals: Record<string, number[]> = {}
     Object.keys(timeSeries).map((val, idx)=>{ 
       const tempTS = timeSeries[val]['data'] as number[]
       const normed = tempTS.map((i) => (i - minVal) / (maxVal - minVal))
+	  instanceVals[val] = normed
       const size = tempTS.length;
       const xCoords = linspace(-viewWidth,viewWidth,size)
       const points = normed.map((val,idx) => new THREE.Vector3(xCoords[idx], (val-.5)*viewHeight, 5));
@@ -164,9 +172,8 @@ const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
       geomObj[val] = geometry
     })
 
-    return {geometries:geomObj, instancePoints:tempInstances}
+    return {geometries:geomObj, instancePoints:tempInstances, instanceVals }
   },[timeSeries, lineResolution]) 
-
   useEffect(()=>{
     invalidate()
   },[showPoints])
@@ -176,7 +183,7 @@ const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
       {Object.keys(timeSeries).map((val, idx)=>(
         <mesh key={`lineMesh_${idx}`} geometry={geometries[val]} material={ materials[val]} />))}
       {showPoints && Object.keys(timeSeries).map((val, idx)=> 
-        <PlotPoints key={`plotPoints_${idx}`} points={instancePoints[val]} tsID={val}  pointSetters={pointSetters} scalers={{xScale,yScale}}/>
+        <PlotPoints key={`plotPoints_${idx}`} points={instancePoints[val]} tsID={val} instanceVals={instanceVals[val]} pointSetters={pointSetters} scalers={{xScale,yScale}}/>
       )}
 		</group>
 		</>
