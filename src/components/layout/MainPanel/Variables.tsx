@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { TbVariable } from "react-icons/tb";
 import { Loader2 } from "lucide-react";
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { useShallow } from "zustand/shallow";
 import { Separator } from "@/components/ui/separator";
-import { GetDimInfo } from "@/utils/HelperFuncs";
-import { GetAttributes } from "@/components/zarr/ZarrLoaderLRU";
+import { GetDimInfo } from "@/lib/helpers";
+import { GetAttributes } from "@/data/zarr/ZarrLoaderLRU";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button-enhanced";
-import { Input } from "../input";
+import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
@@ -25,7 +25,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { MetaData } from './MetaData'
-import { QuickTip } from "../Widgets/QuickTip";
+import { QuickTip } from "@/components/widgets/QuickTip";
 
 const Variables = () => {
   const isMobile = useIsMobile();

@@ -4,11 +4,11 @@ import {
 	ZarrMetadata,
 	ZarrTitleDescription,
 	FetchStoreOptions,
-} from "./Interfaces";
-import { IcechunkStoreOptions } from "./Interfaces";
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
-import { useCacheStore } from "@/GlobalStates/CacheStore";
-import { useZarrStore } from "@/GlobalStates/ZarrStore";
+} from "@/types/Interfaces";
+import { IcechunkStoreOptions } from "@/types/Interfaces";
+import { useGlobalStore } from "@/stores/GlobalStore";
+import { useCacheStore } from "@/stores/CacheStore";
+import { useZarrStore } from "@/stores/ZarrStore";
 import {
 	getFetchStore,
 	getFetchStoreMetadata,
@@ -23,7 +23,7 @@ import {
 	getIcechunkAttributes,
 	getIcechunkDims,
 } from "./icechunk-store";
-import { GetNCMetadata } from "./NCGetters";
+import { getNCMetadata } from "./NCGetters";
 import { getGTMetadata } from "./GTGetters";
 
 type GroupType = zarr.Group<
@@ -150,7 +150,7 @@ export async function GetAttributes(thisVariable?: string) {
 			return meta;
 		}
 		if (useNC) {
-			const meta = await GetNCMetadata(thisVariable);
+			const meta = await getNCMetadata(thisVariable);
 			return meta.attributes;
 		} else {
 			const meta = await GetZarrAttributes(thisVariable);

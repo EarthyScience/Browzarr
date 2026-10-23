@@ -1,11 +1,11 @@
 "use client";
 import React, { useState } from 'react';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { Input } from '@/components/ui/';
 import { Button } from '@/components/ui/button-enhanced';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { initializeStore } from '@/components/StoreInitializer';
+import { useZarrStore } from '@/stores/ZarrStore';
+import { initializeStore } from '@/components/layout/StoreInitializer';
 
 type HeaderRow  = { key: string; value: string };
 type AuthPreset = 'none' | 'bearer' | 'basic' | 'apikey';

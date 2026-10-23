@@ -1,6 +1,6 @@
-import { Convolve } from "@/components/computation/webGPU"
-import { coarsen3DArray, calculateStrides } from "@/utils/arrayMath"
-import { ToFloat16, CompressArray } from "@/components/zarr/utils"
+import { Convolve } from "@/gpu/webGPU"
+import { coarsen3DArray, calculateStrides } from "@/lib/arrayMath"
+import { ToFloat16, CompressArray } from "@/data/zarr/utils"
 interface FetchOutput{
     data: Float32Array
     shape: number[]

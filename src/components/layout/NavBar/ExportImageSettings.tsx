@@ -3,10 +3,10 @@ import React, {useEffect, useState} from 'react'
 import { IoImage } from "react-icons/io5";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Input, Switch, Hider, Button, Switcher, QuickTip } from "@/components/ui";
-import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { useImageExportStore } from '@/stores/ImageExportStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
+import { useZarrStore } from '@/stores/ZarrStore';
 import { useShallow } from 'zustand/shallow';
 import { ChevronDown, ChevronLeft } from 'lucide-react';
 import {

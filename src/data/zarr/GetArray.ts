@@ -1,10 +1,10 @@
-import { useCacheStore } from "@/GlobalStates/CacheStore";
-import { useErrorStore } from "@/GlobalStates/ErrorStore";
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
-import { usePlotStore } from "@/GlobalStates/PlotStore";
-import { useZarrStore } from "@/GlobalStates/ZarrStore";
-import { calculateStrides } from "@/utils/HelperFuncs";
-import { getPool } from "@/utils/workers/pool";
+import { useCacheStore } from "@/stores/CacheStore";
+import { useErrorStore } from "@/stores/ErrorStore";
+import { useGlobalStore } from "@/stores/GlobalStore";
+import { usePlotStore } from "@/stores/PlotStore";
+import { useZarrStore } from "@/stores/ZarrStore";
+import { calculateStrides } from "@/lib/helpers";
+import { getPool } from "@/workers/pool";
 import { NCFetcher, zarrFetcher } from "./dataFetchers";
 import { RescaleArray } from "./utils";
 

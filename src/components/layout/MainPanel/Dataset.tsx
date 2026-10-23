@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { useShallow } from 'zustand/shallow';
 import { Button } from '@/components/ui/button-enhanced';
 import { TbDatabasePlus } from "react-icons/tb";
@@ -18,7 +18,7 @@ import RemoteZarr from './RemoteZarr';
 import RemoteIcechunk from './RemoteIcechunk';
 import LocalContent from './LocalContent';
 import DatasetsModal from './DataSetsModal';
-import { Switcher } from '../Widgets/Switcher';
+import { Switcher } from '@/components/widgets/Switcher';
 
 const Dataset = () => {
   const [showStoreInput, setShowStoreInput] = useState(false);

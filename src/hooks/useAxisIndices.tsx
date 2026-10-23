@@ -1,5 +1,5 @@
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
-import { useZarrStore } from '@/GlobalStates/ZarrStore'
+import { useGlobalStore } from '@/stores/GlobalStore'
+import { useZarrStore } from '@/stores/ZarrStore'
 import React from 'react'
 
 export const useAxisIndices = () => {

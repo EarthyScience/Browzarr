@@ -1,7 +1,7 @@
 //This File will have functions converting the array information into 2D or 3D textures that we will pass to the corresponding 2D or 3D object
 import * as THREE from 'three'
-import { ArrayMinMax, GetCurrentArray, TypedArray, TypedArrayBufferLike  } from '@/utils/HelperFuncs';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { ArrayMinMax, GetCurrentArray, TypedArray, TypedArrayBufferLike  } from '@/lib/helpers';
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { clamp } from 'three/src/math/MathUtils.js';
 
 interface Array {

@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu'
 import { Data3DTexture, DataTexture, Texture } from 'three/webgpu';
 import { texture, uniform, bool, float, int, vec2, vec3, vec4, color, texture3D } from 'three/tsl';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
 
 const placeholder3D = () => {
     const t = new THREE.Data3DTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, 1);

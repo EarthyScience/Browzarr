@@ -1,15 +1,15 @@
-import { evaluateColorMap } from '@/components/textures';
-import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { evaluateColorMap } from '@/gpu/textures';
+import { uniformUpdater } from '@/gpu/tsl/utils/uniformUpdater';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { useDimAxis } from '@/hooks';
 import { useCoordBounds } from '@/hooks/useCoordBounds';
-import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
+import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/lib/helpers';
 import { useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useShallow } from 'zustand/shallow';
-import { createSphereMaterial } from '../textures/TSL/sphere';
+import { createSphereMaterial } from '@/gpu/tsl/sphere';
 import { SquareMeshes } from './TransectMeshes';
 
 function XYZtoRemap(xyz : THREE.Vector3, latBounds: number[], lonBounds : number[]){

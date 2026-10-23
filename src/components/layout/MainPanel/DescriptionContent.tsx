@@ -1,6 +1,6 @@
 "use client";
 import React, { ReactNode } from 'react';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { useShallow } from 'zustand/shallow';
 import { Button } from '@/components/ui/button-enhanced';
 import { TbVariable, TbInfoCircle } from "react-icons/tb";

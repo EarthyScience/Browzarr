@@ -1,19 +1,19 @@
 "use client";
 
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { evaluateColorMap } from '@/components/textures';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
+import { evaluateColorMap } from '@/gpu/textures';
 import { useAxisIndices, useDimAxis } from '@/hooks';
-import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
-import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
+import { uniformUpdater } from '@/gpu/tsl/utils/uniformUpdater';
+import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/lib/helpers';
 import { ThreeEvent } from '@react-three/fiber';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
-import { sampleCRS } from '../textures/ProjectionUtils';
-import { createFlatMapMaterial } from '../textures/TSL/flatMap';
-import { InfoViewer } from '../ui/Elements/InfoViewer';
+import { sampleCRS } from '@/gpu/textures/ProjectionUtils';
+import { createFlatMapMaterial } from '@/gpu/tsl/flatMap';
+import { InfoViewer } from '@/components/elements/InfoViewer';
 import { SquareMeshes } from './TransectMeshes';
 const FlatMap = () => {
     // ---- Imports ---- //

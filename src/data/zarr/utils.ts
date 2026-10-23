@@ -1,5 +1,5 @@
 import { decompressSync, gzipSync } from "fflate";
-import { ZarrMetadata } from "./Interfaces";
+import { ZarrMetadata } from "@/types/Interfaces";
 
 export function formatBytes(bytes: number): string {
 	const units = ["bytes", "KB", "MB", "GB", "TB", "PB"];

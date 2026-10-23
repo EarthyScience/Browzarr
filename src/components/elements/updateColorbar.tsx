@@ -1,4 +1,4 @@
-import { evaluateColorMap } from '@/components/textures';
+import { evaluateColorMap } from '@/gpu/textures';
 
 interface UpdateColorbarParams {
   colorbarId: string;

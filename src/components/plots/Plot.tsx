@@ -3,20 +3,20 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three/webgpu';
 import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
-import { ArrayToTexture, createDataTexture } from '@/components/textures';
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
+import { ArrayToTexture, createDataTexture } from '@/gpu/textures';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
+import { useImageExportStore } from '@/stores/ImageExportStore';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar, ExportExtent, ShaderEditor, KeyFrames } from '../ui';
-import { overLayTunnel } from '../ui/Elements/InfoViewer';
+import { overLayTunnel } from '@/components/elements/InfoViewer';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import ExportCanvas from '@/utils/ExportCanvas';
+import ExportCanvas from '@/components/elements/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
-import { reproject } from '@/components/textures/ProjectionTexture';
-import { GetCurrentArray } from '@/utils/HelperFuncs';
-import * as u from '@/components/textures/TSL/utils/uniforms'
+import { reproject } from '@/gpu/textures/ProjectionTexture';
+import { GetCurrentArray } from '@/lib/helpers';
+import * as u from '@/gpu/tsl/utils/uniforms'
 const TransectNotice = () =>{
   const selectTS = usePlotStore(s => s.selectTS)
   return (

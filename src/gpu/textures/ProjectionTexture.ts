@@ -1,11 +1,11 @@
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { ArrayMinMax, linspace } from '@/utils/HelperFuncs';
-import { useErrorStore } from '@/GlobalStates/ErrorStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
+import { ArrayMinMax, linspace } from '@/lib/helpers';
+import { useErrorStore } from '@/stores/ErrorStore';
 import * as THREE from 'three';
 import proj4 from 'proj4';
 import { getAxisIndices } from '@/hooks/useAxisIndices';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { useZarrStore } from '@/stores/ZarrStore';
 import { getDimAxis, getAxisDimAxis} from '@/hooks';
 
 export function checkProjString(projString: string){

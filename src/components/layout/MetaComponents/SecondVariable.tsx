@@ -1,4 +1,4 @@
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
+import { useGlobalStore } from '@/stores/GlobalStore'
 import { useIsMobile } from '@/hooks'
 import React, { useEffect, useState } from 'react'
 import { useShallow } from 'zustand/shallow'
@@ -7,7 +7,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { renderAttributes, defaultAttributes } from '../MetaData'
 import { Badge, Switch, Hider } from '@/components/ui'
-import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU'
+import { GetAttributes } from '@/data/zarr/ZarrLoaderLRU'
 
 const sameShape = (mainShape: number[], newShape: number[]): boolean =>{
     return mainShape.every((val, idx) => val === newShape[idx])

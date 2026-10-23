@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { useShallow } from 'zustand/shallow';
 import {
   Dialog,

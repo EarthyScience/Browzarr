@@ -1,13 +1,13 @@
-import * as u from '@/components/textures/TSL/utils/uniforms';
-import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
-import { useErrorStore } from '@/GlobalStates/ErrorStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import * as u from '@/gpu/tsl/utils/uniforms';
+import { uniformUpdater } from '@/gpu/tsl/utils/uniformUpdater';
+import { useErrorStore } from '@/stores/ErrorStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { invalidate } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
-import { createSphereBlocksMaterial } from '../textures/TSL/sphereBlocks';
+import { createSphereBlocksMaterial } from '@/gpu/tsl/sphereBlocks';
 const SphereBlocks = () => {
     const { nanColor, nanTransparency, colorScale} = usePlotStore(useShallow(s => ({
         nanColor: s.nanColor, nanTransparency: s.nanTransparency, colorScale: s.colorScale

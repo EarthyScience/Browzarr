@@ -1,11 +1,11 @@
-import { useCacheStore } from "@/GlobalStates/CacheStore";
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
-import { useZarrStore } from "@/GlobalStates/ZarrStore";
+import { useCacheStore } from "@/stores/CacheStore";
+import { useGlobalStore } from "@/stores/GlobalStore";
+import { useZarrStore } from "@/stores/ZarrStore";
 import { fromBlob, type GeoTIFFImage } from "geotiff";
-import { parseGeoKeys } from "@/utils/geoKeyParser";
-import { calculateStrides } from "@/utils/HelperFuncs";
-import { usePlotStore } from "@/GlobalStates/PlotStore";
-import { getPool } from "@/utils/workers/pool";
+import { parseGeoKeys } from "@/data/geo/geoKeyParser";
+import { calculateStrides } from "@/lib/helpers";
+import { usePlotStore } from "@/stores/PlotStore";
+import { getPool } from "@/workers/pool";
 
 export async function getGTDims(){
     const {gtBlob} = useZarrStore.getState()

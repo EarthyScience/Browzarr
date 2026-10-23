@@ -1,7 +1,7 @@
 // Pure, dependency-free array math helpers.
 // This module must not import anything else so it is safe to use
 // inside the Web Worker module graph (see workers/pool.ts).
-import type { TypedArray, TypedArrayBufferLike } from './HelperFuncs';
+import type { TypedArray, TypedArrayBufferLike } from './helpers';
 
 export function ArrayMinMax(array:number[] | TypedArray | TypedArrayBufferLike){
   let minVal = Infinity;

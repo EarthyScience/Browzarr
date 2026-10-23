@@ -9,16 +9,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import './css/ShaderEditor.css'
-import { Button } from './button-enhanced';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
+import { Button } from '@/components/ui/button-enhanced';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
 import { IoCloseCircleSharp } from "react-icons/io5";
 import { useShallow } from 'zustand/shallow';
-import {Hider, Input, Switcher} from '../ui';
+import {Hider, Input, Switcher} from '@/components/ui';
 import { templates } from './ShaderTemplates';
 import { HiMiniWrench } from "react-icons/hi2";
-import { Popover, PopoverContent, PopoverTrigger } from '../ui';
-import { HandleKernelNums } from '@/utils/HelperFuncs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui';
+import { HandleKernelNums } from '@/lib/helpers';
 
 const selectedPlates = {
     None: " ",

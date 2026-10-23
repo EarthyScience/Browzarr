@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react'
 import { getAxisIndices, useAxisIndices } from './useAxisIndices'
-import { usePlotStore } from '@/GlobalStates/PlotStore'
+import { usePlotStore } from '@/stores/PlotStore'
 import { useShallow } from 'zustand/shallow'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
+import { useGlobalStore } from '@/stores/GlobalStore'
 
 export const useDimAxis = () => {
     const {axisDimArrays, flipY} = useGlobalStore(useShallow(s => ({

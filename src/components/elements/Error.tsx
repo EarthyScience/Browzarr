@@ -1,7 +1,7 @@
 import React from 'react'
-import '../css/Error.css'
-import { useErrorStore } from '@/GlobalStates/ErrorStore'
-import { ErrorList } from './ErrorList'
+import '../layout/css/Error.css'
+import { useErrorStore } from '@/stores/ErrorStore'
+import { errorList } from './errorList'
 import { useShallow } from 'zustand/shallow'
 import { Button } from '@/components/ui'
 import {
@@ -17,10 +17,10 @@ export const Error = () => {
     {error && <Dialog open={true} onOpenChange={e=>setError(null)}>
         <DialogContent aria-describedby='Error Message' >
             <DialogTitle className="text-center text-lg font-semibold">
-                Error: {ErrorList[error as keyof typeof ErrorList].title}
+                Error: {errorList[error as keyof typeof errorList].title}
             </DialogTitle>
             <div className='error-message'>
-                {ErrorList[error as keyof typeof ErrorList].description}
+                {errorList[error as keyof typeof errorList].description}
                 {customError &&
                 <div className='bg-red-50 p-2 mt-2 rounded-md border-solid border-1'>
                     {customError}

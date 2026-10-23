@@ -1,12 +1,12 @@
 import React, { useRef, useState } from 'react'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
-import { usePlotStore } from '@/GlobalStates/PlotStore'
-import { useZarrStore } from '@/GlobalStates/ZarrStore'
+import { useGlobalStore } from '@/stores/GlobalStore'
+import { usePlotStore } from '@/stores/PlotStore'
+import { useZarrStore } from '@/stores/ZarrStore'
 import { BiExport } from "react-icons/bi";
 import { FiCopy } from "react-icons/fi";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Button } from '../button';
-import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
+import { Button } from '@/components/ui/button';
+import { useImageExportStore } from '@/stores/ImageExportStore';
 import { Select, SelectValue, SelectItem, SelectContent, SelectTrigger, QuickTip } from '@/components/ui'
 import { BsFiletypeJson } from "react-icons/bs";
 import { IoLink } from "react-icons/io5";

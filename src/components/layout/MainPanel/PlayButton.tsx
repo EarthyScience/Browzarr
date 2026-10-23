@@ -1,14 +1,14 @@
 "use client";
-import { useCacheStore } from '@/GlobalStates/CacheStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { useCacheStore } from '@/stores/CacheStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
+import { useZarrStore } from '@/stores/ZarrStore';
 import {useEffect, useMemo, useState, useRef} from 'react'
 import { useShallow } from 'zustand/shallow'
 import '../css/MainPanel.css'
 import { PiPlayPauseFill } from "react-icons/pi";
 import { FaPlay, FaPause, FaForwardStep , FaBackwardStep  } from "react-icons/fa6";
-import { coarsenFlatArray, parseLoc } from '@/utils/HelperFuncs';
+import { coarsenFlatArray, parseLoc } from '@/lib/helpers';
 import { Button, Slider, Card, CardContent } from "@/components/ui";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { RiCloseLargeLine } from "react-icons/ri";

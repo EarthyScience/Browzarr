@@ -1,16 +1,16 @@
 "use client";
 import { useMemo } from 'react';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
-import { createMorphingMaterial } from '../textures/TSL/morphingPoints';
+import { createMorphingMaterial } from '@/gpu/tsl/morphingPoints';
 import './Plots.css';
-import { uniformUpdater } from '../textures/TSL/utils/uniformUpdater';
+import { uniformUpdater } from '@/gpu/tsl/utils/uniformUpdater';
 import { useEffect } from 'react';
-import { pointerPos } from '../textures/TSL/morphingPoints';
-import { WebGPUPlacard } from '../ui/Elements/WebGPUPlacard';
+import { pointerPos } from '@/gpu/tsl/morphingPoints';
+import { WebGPUPlacard } from '@/components/elements/WebGPUPlacard';
 const MorphingPoints = () => {
   const count = 15625; // Total number of points
   const material = useMemo(()=>createMorphingMaterial(count), [count])

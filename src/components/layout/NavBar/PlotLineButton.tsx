@@ -2,12 +2,12 @@
 
 import React, { useEffect } from 'react'
 import { VscGraphLine } from "react-icons/vsc"; //Use this if you hate the svg
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { useShallow } from 'zustand/shallow';
 import '../css/PlotLineButton.css'
 import { Button } from "@/components/ui/button-enhanced"
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { QuickTip } from '../Widgets/QuickTip';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { QuickTip } from '@/components/widgets/QuickTip';
 
 const PlotLineButton = () => {
     const {selectTS, resetAnim, displaceFaces, plotType, setSelectTS, setResetAnim} = usePlotStore(useShallow(s => s))

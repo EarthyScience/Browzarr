@@ -1,11 +1,11 @@
 import {useRef, useState, useMemo, useEffect} from 'react'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useColormapStore } from '@/GlobalStates/ColormapStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useColormapStore } from '@/stores/ColormapStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { useShallow } from 'zustand/shallow';
 import { useValueScales } from '@/hooks';
 import { Num2String } from './colorbarUtils';
-import { linspace } from '@/utils/HelperFuncs';
+import { linspace } from '@/lib/helpers';
 import { RxReset } from "react-icons/rx";
 
 interface UCBProps{

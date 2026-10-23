@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, } from 'react'
-import { getColormapGradientCss } from '@/components/textures';
+import { getColormapGradientCss } from '@/gpu/textures';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button-enhanced";
-import { QuickTip } from '../Widgets/QuickTip';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useColormapStore } from '@/GlobalStates/ColormapStore';
-import UnivariateColor from '../Elements/UnivariateColor';
-import {BivariateColormap, getBivariateCss} from '../Elements/BivariateColor';
+import { QuickTip } from '@/components/widgets/QuickTip';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useColormapStore } from '@/stores/ColormapStore';
+import UnivariateColor from '@/components/elements/UnivariateColor';
+import {BivariateColormap, getBivariateCss} from '@/components/elements/BivariateColor';
 
 const Colormaps = () => {
     const {colormapName, flipColormap, bottomLeft, bottomRight, topLeft, mixMode, resolution} = useColormapStore(s => s)

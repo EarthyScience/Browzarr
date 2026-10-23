@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import {Select, SelectTrigger, SelectContent, SelectItem, SelectValue, Input, Button} from '@/components/ui'
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import {normalize, denormalize} from '@/utils/HelperFuncs'
-import { usePlotStore } from '@/GlobalStates/PlotStore'
+import {normalize, denormalize} from '@/lib/helpers'
+import { usePlotStore } from '@/stores/PlotStore'
 import { useShallow } from 'zustand/shallow'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
+import { useGlobalStore } from '@/stores/GlobalStore'
 import { useIsMobile, useValueScales } from '@/hooks'
 import { ChevronLeft } from 'lucide-react'
 export const Masker = () => {

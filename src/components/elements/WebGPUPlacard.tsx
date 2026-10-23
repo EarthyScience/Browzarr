@@ -1,4 +1,4 @@
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
+import { useGlobalStore } from '@/stores/GlobalStore'
 import React, { useState } from 'react'
 
 const LABELS: Record<string, { text: string; hint: string }> = {

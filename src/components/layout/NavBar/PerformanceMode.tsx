@@ -3,9 +3,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import { MdOutlineRocketLaunch } from "react-icons/md";
 import { FaCarSide } from "react-icons/fa6";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { Button } from "@/components/ui/button-enhanced"
-import { QuickTip } from '../Widgets/QuickTip';
+import { QuickTip } from '@/components/widgets/QuickTip';
 import { LuSnail } from "react-icons/lu";
 
 const icons = {

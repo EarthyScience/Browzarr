@@ -2,14 +2,14 @@
 
 import React, {useEffect, useMemo, useRef, useState} from 'react'
 import * as THREE from 'three'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { useShallow } from 'zustand/shallow'
-import vertexShader from '@/components/textures/shaders/thickLineVert.glsl'
+import vertexShader from '@/gpu/shaders/thickLineVert.glsl'
 import { PlotPoints } from './PlotPoints';
 import { useThree } from '@react-three/fiber';
 import { invalidate } from '@react-three/fiber';
-import { useGraphStore } from '@/GlobalStates/GraphStore';
-import { useColormapStore } from '@/GlobalStates/ColormapStore';
+import { useGraphStore } from '@/stores/GraphStore';
+import { useColormapStore } from '@/stores/ColormapStore';
 import { useValueScales } from '@/hooks';
 
 function linspace(start: number, stop: number, num: number): number[] {

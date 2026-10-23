@@ -1,12 +1,12 @@
 import { Canvas } from '@react-three/fiber'
-import { parseLoc } from '@/utils/HelperFuncs'
+import { parseLoc } from '@/lib/helpers'
 import { FixedTicks, ThickLine } from '@/components/plots'
 import {  useEffect, useRef, useState } from 'react'
 import { ResizeBar, YScaler, XScaler, ShowLinePlot } from '@/components/ui'
 import './LinePlot.css'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
+import { useGlobalStore } from '@/stores/GlobalStore'
 import { useShallow } from 'zustand/shallow'
-import PlotLineOptions from '@/components/ui/LinePlotArea/PlotLineOptions'
+import PlotLineOptions from '@/components/layout/LinePlotArea/PlotLineOptions'
 import { IoCloseCircleSharp } from "react-icons/io5";
 import { FaThumbtack } from "react-icons/fa";
 

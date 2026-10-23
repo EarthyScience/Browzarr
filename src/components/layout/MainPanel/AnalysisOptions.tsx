@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useZarrStore } from '@/stores/ZarrStore';
 import { useShallow } from 'zustand/shallow';
 import '../css/MainPanel.css';
 import { PiMathOperationsBold } from "react-icons/pi";
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import {Hider, KernelVisualizer, QuickTip, Button, Input} from "@/components/ui";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { Switch } from '../switch';
-import { HandleKernelNums } from '@/utils/HelperFuncs';
+import { Switch } from '@/components/ui/switch';
+import { HandleKernelNums } from '@/lib/helpers';
 import {
   Select,
   SelectContent,
@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { BsBoxArrowLeft } from "react-icons/bs";
 import { RxReset } from "react-icons/rx";
-import { Analysis } from '@/components/computation/Analysis';
+import { Analysis } from '@/gpu/Analysis';
 
 const singleVarReductionOps = ['Mean', 'Min', 'Max', 'Standard Deviation', 'Linear Slope']
 

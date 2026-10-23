@@ -1,6 +1,6 @@
 import { type CSSProperties } from "react";
 import {Input, Button} from '@/components/ui'
-import { useColormapStore } from "@/GlobalStates/ColormapStore";
+import { useColormapStore } from "@/stores/ColormapStore";
 import {
   Select,
   SelectTrigger,

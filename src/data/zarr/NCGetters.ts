@@ -1,8 +1,8 @@
-import { useZarrStore } from "@/GlobalStates/ZarrStore";
-import { useCacheStore } from "@/GlobalStates/CacheStore";
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
+import { useZarrStore } from "@/stores/ZarrStore";
+import { useCacheStore } from "@/stores/CacheStore";
+import { useGlobalStore } from "@/stores/GlobalStore";
 
-export async function GetNCDims(variable: string){
+export async function getNCDims(variable: string){
     const {ncModule} = useZarrStore.getState()
     const {cache} = useCacheStore.getState();
     const {initStore} = useGlobalStore.getState();
@@ -32,7 +32,7 @@ export async function GetNCDims(variable: string){
     return {dimNames, dimArrays, dimUnits};
 }
 
-export async function GetNCMetadata(thisVariable? : string){
+export async function getNCMetadata(thisVariable? : string){
     const {ncModule} = useZarrStore.getState();
     const {cache} = useCacheStore.getState();
     const {initStore, variable} = useGlobalStore.getState();

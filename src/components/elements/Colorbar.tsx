@@ -2,20 +2,20 @@
 "use client";
 import { FaPlus, FaMinus } from "react-icons/fa";
 import React, {useRef, useEffect, useMemo, useState} from 'react'
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { useShallow } from 'zustand/shallow'
-import './css/Colorbar.css'
-import Metadata from "./MetaData";
+import '../layout/css/Colorbar.css'
+import Metadata from "../layout/MetaData";
 import { LuSettings } from "react-icons/lu";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import ColorAdjuster from "./Elements/ColorAdjuster";
+import ColorAdjuster from "./ColorAdjuster";
 import {Button} from '@/components/ui'
 import { PiSwap } from "react-icons/pi";
-import { UnivariateColorbar } from "./Elements/UnivariateColorbar";
-import { operationMap } from "./Elements/colorbarUtils";
-import { BivariateColorbar } from "./Elements/BivariateColorbar";
+import { UnivariateColorbar } from "./UnivariateColorbar";
+import { operationMap } from "./colorbarUtils";
+import { BivariateColorbar } from "./BivariateColorbar";
 import { useIsMobile } from "@/hooks";
 
 const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {

@@ -1,12 +1,12 @@
 import React, {useRef} from 'react'
 import { Button, Input } from '@/components/ui'
-import { glslValidator } from '@/utils/glslValidator'
-import { QuickTip } from '../Widgets/QuickTip'
-import { useErrorStore } from '@/GlobalStates/ErrorStore'
+import { glslValidator } from '@/lib/glslValidator'
+import { QuickTip } from '../widgets/QuickTip'
+import { useErrorStore } from '@/stores/ErrorStore'
 import { useShallow } from 'zustand/shallow'
-import { usePlotStore } from '@/GlobalStates/PlotStore'
+import { usePlotStore } from '@/stores/PlotStore'
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
+import { useGlobalStore } from '@/stores/GlobalStore'
 
 const sharedFunctions = [
 	'abs(x)', 'sqrt(x)', 'min(x, y)', 'max(x, y)', 

@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button-enhanced';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { MinusIcon, PlusIcon } from 'lucide-react';
-import { clamp, findClosest, findClosestBigInt, parseLoc, parseTimeScale } from '@/utils/HelperFuncs';
+import { clamp, findClosest, findClosestBigInt, parseLoc, parseTimeScale } from '@/lib/helpers';
 import { parse } from 'date-fns';
 
 interface InputProps{

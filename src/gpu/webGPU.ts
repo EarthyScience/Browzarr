@@ -4,8 +4,8 @@ import {
 } from 'webgpu-utils';
 
 import { createShaders } from './WGSLShaders';
-import { ArrayMinMax } from '@/utils/arrayMath';
-import { RescaleArray } from '../zarr/utils';
+import { ArrayMinMax } from '@/lib/arrayMath';
+import { RescaleArray } from '@/data/zarr/utils';
 
 // WebGPU requires all buffer sizes, writeBuffer and copyBufferToBuffer sizes to be multiples of 4 bytes.
 const align4 = (bytes: number) => Math.ceil(bytes / 4) * 4;

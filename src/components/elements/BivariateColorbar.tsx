@@ -1,14 +1,14 @@
-import { useColormapStore } from '@/GlobalStates/ColormapStore'
+import { useColormapStore } from '@/stores/ColormapStore'
 import React, {useCallback, useEffect, useState, useMemo} from 'react'
 import { useShallow } from 'zustand/shallow'
-import { rgbToCss, Rgb, hexToRgb, mixColors, lerpColor } from "@/utils/colorUtils";
+import { rgbToCss, Rgb, hexToRgb, mixColors, lerpColor } from "@/lib/colorUtils";
 import { BivariateCanvas } from './BivariateCanvas';
 import {Button} from '@/components/ui'
 import { TbLayoutNavbarCollapse } from "react-icons/tb";
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { linspace, clamp } from '@/utils/HelperFuncs';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { linspace, clamp } from '@/lib/helpers';
 import { Num2String } from './colorbarUtils';
-import { lerp } from '@/utils/colorUtils';
+import { lerp } from '@/lib/colorUtils';
 import { useIsMobile } from '@/hooks';
 import { InfoViewer } from './InfoViewer'
 

@@ -1,17 +1,17 @@
-import { usePlotStore } from '@/GlobalStates/PlotStore'
+import { usePlotStore } from '@/stores/PlotStore'
 import React, { useRef, useState } from 'react'
 import { useShallow } from 'zustand/shallow'
-import { Hider } from '../Widgets/Hider'
+import { Hider } from '@/components/ui'
 import { ChevronLeft } from 'lucide-react'
-import { Input } from '../input'
+import { Input } from '@/components/ui/input'
 import { Button, QuickTip } from '@/components/ui'
-import { checkProjString, reproject, resetProjection } from '@/components/textures/ProjectionTexture'
+import { checkProjString, reproject, resetProjection } from '@/gpu/textures/ProjectionTexture'
 import { TbReplace } from "react-icons/tb";
 import { RxReset } from "react-icons/rx";
-import { Robinson } from './Icons'
+import { Robinson } from '../widgets/Icons'
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { useIsMobile } from '@/hooks'
-import { epsgToProj } from '@/utils/epsgToProj'
+import { epsgToProj } from '@/data/geo/epsgToProj'
 
 const crsClass = 'text-[var(--chart-2)]'
 

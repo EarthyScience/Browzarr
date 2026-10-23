@@ -1,4 +1,4 @@
-import * as u from '@/components/textures/TSL/utils/uniforms';
+import * as u from '@/gpu/tsl/utils/uniforms';
 import { clamp, cos, float, instancedArray, instanceIndex, min, positionWorld, rotate, sin, smoothstep, texture, time, uniform, vec2, vec3, vec4 } from "three/tsl";
 import * as THREE from 'three/webgpu';
 

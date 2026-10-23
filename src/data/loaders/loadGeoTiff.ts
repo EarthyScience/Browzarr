@@ -1,7 +1,7 @@
-import { parseGeoKeys } from "./geoKeyParser";
+import { parseGeoKeys } from "@/data/geo/geoKeyParser";
 import {fromBlob} from 'geotiff'
-import { useZarrStore } from "@/GlobalStates/ZarrStore";
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
+import { useZarrStore } from "@/stores/ZarrStore";
+import { useGlobalStore } from "@/stores/GlobalStore";
 
 export async function loadGeoTiff(file: File){
     const geotiff = await fromBlob(file)

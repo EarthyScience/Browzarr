@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useShallow } from 'zustand/shallow'
 import { Slider } from "@/components/ui/slider"
-import { useGraphStore } from '@/GlobalStates/GraphStore'
+import { useGraphStore } from '@/stores/GraphStore'
 
 // Memoized Point Options
 const PointOptions = React.memo(function PointOptions(){

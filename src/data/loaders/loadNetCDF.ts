@@ -1,7 +1,7 @@
 // utils/loadNetCDF.ts
 import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useZarrStore } from '@/stores/ZarrStore';
 
 const NETCDF_EXT_REGEX = /\.(nc|netcdf|nc3|nc4)$/i;
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import * as THREE from 'three';
-import { GetColorMapTexture } from "@/components/textures";
+import { GetColorMapTexture } from "@/gpu/textures";
 
 type StoreState = {
     colormapName: string;

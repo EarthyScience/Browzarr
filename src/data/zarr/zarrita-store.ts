@@ -1,8 +1,8 @@
 import * as zarr from "zarrita";
-import { ZarrMetadata, ZarrItem, ZarrTitleDescription, FetchStoreOptions } from "./Interfaces";
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
-import { useErrorStore, ZarrError } from "@/GlobalStates/ErrorStore";
-import { useCacheStore } from "@/GlobalStates/CacheStore";
+import { ZarrMetadata, ZarrItem, ZarrTitleDescription, FetchStoreOptions } from "@/types/Interfaces";
+import { useGlobalStore } from "@/stores/GlobalStore";
+import { useErrorStore, ZarrError } from "@/stores/ErrorStore";
+import { useCacheStore } from "@/stores/CacheStore";
 import { getDtypeSize, calculateTotalElements, calculateChunkCount, formatBytes } from "./utils";
 
 export async function getFetchStore(

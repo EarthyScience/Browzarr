@@ -1,10 +1,10 @@
 "use client";
 
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
+import { useZarrStore } from '@/stores/ZarrStore';
+import { useImageExportStore } from '@/stores/ImageExportStore';
 import React, {useState, useMemo} from 'react'
 import { useShallow } from 'zustand/shallow'
 import { Text } from '@react-three/drei'
@@ -12,7 +12,7 @@ import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js
 import { LineSegments2 } from 'three/addons/lines/webgpu/LineSegments2.js';
 import { LineMaterial } from 'three-stdlib';
 import { useFrame } from '@react-three/fiber';
-import { parseLoc, coarsenFlatArray, linspace } from '@/utils/HelperFuncs';
+import { parseLoc, coarsenFlatArray, linspace } from '@/lib/helpers';
 import { useCSSVariable } from '../ui';
 import { useAxisIndices, useDimAxis } from '@/hooks';
 import * as THREE from 'three/webgpu'

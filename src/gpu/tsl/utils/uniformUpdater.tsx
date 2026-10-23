@@ -1,11 +1,11 @@
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
-import { usePlotStore } from '@/GlobalStates/PlotStore'
-import { useColormapStore } from '@/GlobalStates/ColormapStore'
+import { useGlobalStore } from '@/stores/GlobalStore'
+import { usePlotStore } from '@/stores/PlotStore'
+import { useColormapStore } from '@/stores/ColormapStore'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
-import * as u from '@/components/textures/TSL/utils/uniforms'
+import * as u from '@/gpu/tsl/utils/uniforms'
 import { useValueScales } from '@/hooks'
 
 export function uniformUpdater(){

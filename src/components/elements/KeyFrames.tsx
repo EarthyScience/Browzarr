@@ -1,13 +1,13 @@
 "use client";
 import React, {useEffect, useRef, useState } from 'react'
-import { Button } from '../button'
+import { Button } from '@/components/ui/button'
 import { ButtonGroup } from "@/components/ui/button-group"
-import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useImageExportStore } from '@/stores/ImageExportStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { useShallow } from 'zustand/shallow'
-import { Slider } from '../slider'
-import '../css/KeyFrames.css'
-import { Input } from '../input';
+import { Slider } from '@/components/ui/slider'
+import '../layout/css/KeyFrames.css'
+import { Input } from '@/components/ui/input';
 import { IoCloseCircleSharp } from "react-icons/io5";
 import { FaPlusCircle } from "react-icons/fa";
 import { MdDeleteForever } from "react-icons/md";
@@ -16,7 +16,7 @@ import { TbKeyframeFilled } from "react-icons/tb";
 import { TbKeyframesFilled } from "react-icons/tb";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner"
-import { QuickTip } from '../Widgets/QuickTip';
+import { QuickTip } from '../widgets/QuickTip';
 import { KeyFramesHelper } from './KeyFramesHelper';
 import { KeyFrameInfo } from './KeyFrameInfo';
 import { BsBoxArrowUp } from 'react-icons/bs';

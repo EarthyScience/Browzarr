@@ -1,14 +1,14 @@
 'use client';
 import * as THREE from 'three'
 THREE.Cache.enabled = true;
-import { GetZarrMetadata, GetTitleDescription } from '@/components/zarr/ZarrLoaderLRU';
-import { GetVariableNames } from './zarr/utils';
+import { GetZarrMetadata, GetTitleDescription } from '@/data/zarr/ZarrLoaderLRU';
+import { GetVariableNames } from '@/data/zarr/utils';
 import { useEffect, useRef } from 'react';
 import { PlotArea, Plot, LandingShapes } from '@/components/plots';
 import { MainPanel } from '@/components/ui';
 import { Loading, Error as ErrorComponent } from '@/components/ui';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useZarrStore } from '@/stores/ZarrStore';
 import { useShallow } from 'zustand/shallow';
 
 async function sendPing() {

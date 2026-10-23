@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useRef, useMemo} from 'react'
 import {Button} from '@/components/ui'
-import { GetColorMapTexture, colormaps, getColormapGradientCss, colormapIndex } from '@/components/textures';
+import { GetColorMapTexture, colormaps, getColormapGradientCss, colormapIndex } from '@/gpu/textures';
 import { useShallow } from 'zustand/shallow';
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Separator } from "@/components/ui/separator";
@@ -17,8 +17,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { QuickTip } from '../Widgets/QuickTip';
-import { useColormapStore } from '@/GlobalStates/ColormapStore';
+import { QuickTip } from '../widgets/QuickTip';
+import { useColormapStore } from '@/stores/ColormapStore';
 const UnivariateColor = () => {
 	const [searchQuery, setSearchQuery] = useState<string>('');
 	const [selectedCategory, setSelectedCategory] = useState<string>('');

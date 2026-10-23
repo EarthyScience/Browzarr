@@ -13,10 +13,10 @@ import { RiCloseLargeLine, RiMenu2Line } from "react-icons/ri";
 import { useShallow } from "zustand/shallow";
 import { Button, AxisBars } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { ParameterExport } from "./ParameterExport";
-import { Orthographic, Perspective } from "../Elements/Icons";
+import { Orthographic, Perspective } from "@/components/widgets/Icons";
 import PerformanceMode from "./PerformanceMode";
 
 const Navbar = React.memo(function Navbar() {

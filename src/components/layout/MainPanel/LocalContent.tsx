@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import LocalZarr from './LocalZarr';
 import LocalFile from './LocalFile';
-import { Switcher } from '../Widgets/Switcher';
+import { Switcher } from '@/components/widgets/Switcher';
 
 type Props = {
   setShowLocal?: React.Dispatch<React.SetStateAction<boolean>>;

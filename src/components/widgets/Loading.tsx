@@ -1,7 +1,7 @@
 import { useShallow } from "zustand/shallow"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Progress } from "@/components/ui/progress"
-import { useGlobalStore } from "@/GlobalStates/GlobalStore"
+import { useGlobalStore } from "@/stores/GlobalStore"
 
 export function Loading() {
   const { progress, status } = useGlobalStore(useShallow(s => s))

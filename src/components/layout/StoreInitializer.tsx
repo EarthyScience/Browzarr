@@ -1,16 +1,16 @@
 "use client";
 import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { usePlotStore } from "@/GlobalStates/PlotStore";
-import { loadNetCDF } from "@/utils/loadNetCDF";
-import { loadFile } from "@/utils/IndexDB";
-import { LoadLocalZarr } from "./ui/MainPanel/LocalZarr";
-import { isRemoteStore } from "@/utils/isRemoteStore";
-import { GetStore } from "./zarr/ZarrLoaderLRU";
-import { useImageExportStore } from "@/GlobalStates/ImageExportStore";
-import { useColormapStore } from "@/GlobalStates/ColormapStore";
+import { useGlobalStore } from "@/stores/GlobalStore";
+import { useZarrStore } from '@/stores/ZarrStore';
+import { usePlotStore } from "@/stores/PlotStore";
+import { loadNetCDF } from "@/data/loaders/loadNetCDF";
+import { loadFile } from "@/lib/IndexDB";
+import { LoadLocalZarr } from "./MainPanel/LocalZarr";
+import { isRemoteStore } from "@/data/geo/isRemoteStore";
+import { GetStore } from "@/data/zarr/ZarrLoaderLRU";
+import { useImageExportStore } from "@/stores/ImageExportStore";
+import { useColormapStore } from "@/stores/ColormapStore";
 
 export function initializeStore(){
 	const {initStore} = useGlobalStore.getState()

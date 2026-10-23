@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import MemoryLRU from "../utils/MemoryLRU";
+import MemoryLRU from "../lib/MemoryLRU";
 
 type CacheState = {
   cache: MemoryLRU<string, any>;

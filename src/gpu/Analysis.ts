@@ -1,10 +1,10 @@
-import { useAnalysisStore } from "@/GlobalStates/AnalysisStore";
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
-import { GetArray } from "../zarr/GetArray";
-import { ArrayMinMax, GetCurrentArray, calculateStrides } from "@/utils/HelperFuncs";
+import { useAnalysisStore } from "@/stores/AnalysisStore";
+import { useGlobalStore } from "@/stores/GlobalStore";
+import { GetArray } from "@/data/zarr/GetArray";
+import { ArrayMinMax, GetCurrentArray, calculateStrides } from "@/lib/helpers";
 import { DataProcess } from "./webGPU";
-import { CreateTexture } from "../textures";
-import { usePlotStore } from "@/GlobalStates/PlotStore";
+import { CreateTexture } from "./textures";
+import { usePlotStore } from "@/stores/PlotStore";
 import { getValueScales } from "@/hooks";
 
 export async function Analysis(){

@@ -1,19 +1,19 @@
 "use client";
 
 import React, { useEffect, useRef } from 'react'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
+import { useImageExportStore } from '@/stores/ImageExportStore';
 import { useThree } from '@react-three/fiber'
 import { useCSSVariable } from '@/components/ui';
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow';
 import { lerp } from 'three/src/math/MathUtils.js';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { deg2rad, linspace } from './HelperFuncs';
+import { deg2rad, linspace } from '@/lib/helpers';
 import { getValueScales } from '@/hooks';
-import { getBivariateCanvas } from '@/components/ui/Elements/BivariateCanvas';
-import { Num2String } from '@/components/ui/Elements/colorbarUtils';
+import { getBivariateCanvas } from '@/components/elements/BivariateCanvas';
+import { Num2String } from '@/components/elements/colorbarUtils';
 
 const GetBivariateCbarGeometry = (width: number, height: number) => {
     const { doubleSize, cbarLoc } = useImageExportStore.getState()

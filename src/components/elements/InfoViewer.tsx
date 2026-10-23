@@ -1,7 +1,7 @@
 import React from 'react'
 import '@/components/plots/Plots.css'
-import { parseLoc } from '@/utils/HelperFuncs'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { parseLoc } from '@/lib/helpers'
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { useShallow } from 'zustand/shallow';
 import tunnel from 'tunnel-rat';
 

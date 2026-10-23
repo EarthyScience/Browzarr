@@ -1,9 +1,9 @@
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { useErrorStore, ZarrError } from '@/GlobalStates/ErrorStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useZarrStore } from '@/stores/ZarrStore';
+import { useErrorStore, ZarrError } from '@/stores/ErrorStore';
 import { GetSize } from './utils';
 import * as zarr from 'zarrita';
-import { calculateStrides } from '@/utils/HelperFuncs';
+import { calculateStrides } from '@/lib/helpers';
 
 interface FetchOutput{
     data: Float32Array

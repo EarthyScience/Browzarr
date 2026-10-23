@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import { usePlotStore } from "@/GlobalStates/PlotStore";
+import { usePlotStore } from "@/stores/PlotStore";
 import { useShallow } from "zustand/shallow";
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
-import { deg2rad } from "@/utils/HelperFuncs";
+import { useGlobalStore } from "@/stores/GlobalStore";
+import { deg2rad } from "@/lib/helpers";
 
 export const useCoordBounds = ()=>{
     const {flipY, borderCompatible} = useGlobalStore(useShallow(s => ({

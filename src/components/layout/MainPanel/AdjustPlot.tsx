@@ -1,24 +1,24 @@
 "use client";
 import React, {useState, useEffect, useRef, useCallback} from 'react'
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import '../css/MainPanel.css'
 import { useShallow } from 'zustand/shallow';
-import { SliderThumbs } from '@/components/ui/Widgets/SliderThumbs';
+import { SliderThumbs } from '@/components/widgets/SliderThumbs';
 import { RxReset } from "react-icons/rx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Input, Switch, Hider, Button, Slider as UISlider, Switcher, Slider, QuickTip, QuickSelect, SelectItem } from '@/components/ui';
-import { parseLoc, normalize, denormalize } from '@/utils/HelperFuncs';
+import { parseLoc, normalize, denormalize } from '@/lib/helpers';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { RiCloseLargeLine } from "react-icons/ri";
-import { Reprojection } from '../Elements/Reprojection';
+import { Reprojection } from '@/components/elements/Reprojection';
 import { FaLongArrowAltUp } from "react-icons/fa";
 import { HiAdjustmentsHorizontal } from "react-icons/hi2";
-import { resetProjection } from '@/components/textures/ProjectionTexture';
-import {AxisCropper} from '../Elements/AxisCropper';
-import { Masker } from '../Elements/Masker';
-import { useColormapStore } from '@/GlobalStates/ColormapStore';
+import { resetProjection } from '@/gpu/textures/ProjectionTexture';
+import {AxisCropper} from '@/components/elements/AxisCropper';
+import { Masker } from '@/components/elements/Masker';
+import { useColormapStore } from '@/stores/ColormapStore';
 
 export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueScales, min=-1, array, units} : 
     {

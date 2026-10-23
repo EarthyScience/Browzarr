@@ -1,13 +1,13 @@
 'use client';
 import * as THREE from 'three'
-import { useCacheStore } from '@/GlobalStates/CacheStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { useCacheStore } from '@/stores/CacheStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useZarrStore } from '@/stores/ZarrStore';
 import { decompressSync } from 'fflate';
-import { copyChunkToArray } from '@/components/zarr/utils';
-import { GetNCDims } from '@/components/zarr/NCGetters';
-import { GetZarrDims } from '@/components/zarr/ZarrLoaderLRU';
-import { getGTDims } from '@/components/zarr/GTGetters';
+import { copyChunkToArray } from '@/data/zarr/utils';
+import { getNCDims } from '@/data/zarr/NCGetters';
+import { GetZarrDims } from '@/data/zarr/ZarrLoaderLRU';
+import { getGTDims } from '@/data/zarr/GTGetters';
 
 export type TypedArray =
   | Float32Array | Float64Array
@@ -277,7 +277,7 @@ export function GetCurrentArray(overrideStore?: string, overrideVariable?: strin
 export async function GetDimInfo(variable:string){
   const {useNC, useGT} = useZarrStore.getState()
   if (useGT) return getGTDims()
-  if (useNC) return GetNCDims(variable)
+  if (useNC) return getNCDims(variable)
   else return GetZarrDims(variable)
 }      
 

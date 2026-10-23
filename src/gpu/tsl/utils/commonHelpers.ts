@@ -21,7 +21,7 @@ import {
   wgslFn
 } from 'three/tsl';
 import * as u from './uniforms';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { usePlotStore } from '@/stores/PlotStore';
 
 
 // --- TEXTURE SAMPLERS ---//

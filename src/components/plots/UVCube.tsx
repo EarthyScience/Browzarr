@@ -1,14 +1,14 @@
 import * as THREE from 'three'
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray, getCRSTimeSeries } from '@/utils/HelperFuncs';
-import { sampleCRS } from '../textures/ProjectionUtils';
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { parseUVCoords, getUnitAxis, GetTimeSeries, GetCurrentArray, getCRSTimeSeries } from '@/lib/helpers';
+import { sampleCRS } from '@/gpu/textures/ProjectionUtils';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { useShallow } from 'zustand/shallow';
-import { evaluateColorMap } from '@/components/textures';
+import { evaluateColorMap } from '@/gpu/textures';
 import { useDimAxis } from '@/hooks';
-import { getCRSStrip } from '../textures/ProjectionUtils';
+import { getCRSStrip } from '@/gpu/textures/ProjectionUtils';
 
 function normalizeUV(uv:number, scale:number, pos:number){
   return (uv*scale) + (pos-0.5*scale+0.5)

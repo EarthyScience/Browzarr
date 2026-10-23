@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { DataProcess, Convolve } from '../components/computation/webGPU'
+import { DataProcess, Convolve } from '@/gpu/webGPU'
 import { setMockGPUResult } from './setup'
 
 describe('WebGPU Functions - NaN Statistics', () => {

@@ -1,6 +1,6 @@
 
-import { useColormapStore } from "@/GlobalStates/ColormapStore";
-import { rgbToCss, Rgb, hexToRgb, mixColors, lerpColor } from "@/utils/colorUtils";
+import { useColormapStore } from "@/stores/ColormapStore";
+import { rgbToCss, Rgb, hexToRgb, mixColors, lerpColor } from "@/lib/colorUtils";
 import { useCallback, useRef, useEffect } from "react";
 function getCellColor(
     col: number,

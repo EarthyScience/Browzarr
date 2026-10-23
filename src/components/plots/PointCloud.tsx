@@ -1,11 +1,11 @@
-import * as u from '@/components/textures/TSL/utils/uniforms';
-import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import * as u from '@/gpu/tsl/utils/uniforms';
+import { uniformUpdater } from '@/gpu/tsl/utils/uniformUpdater';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
-import { createBuffer, createPointMaterial } from '../textures/TSL/points';
+import { createBuffer, createPointMaterial } from '@/gpu/tsl/points';
 import { ColumnMeshes } from './TransectMeshes';
 import { UVCube } from './UVCube';
 

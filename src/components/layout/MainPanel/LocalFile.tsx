@@ -1,17 +1,17 @@
 "use client";
 import React, {ChangeEvent, useState} from 'react'
-import { Input } from '../input'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { loadNetCDF, NETCDF_EXT_REGEX } from '@/utils/loadNetCDF';
-import { saveFile } from '@/utils/IndexDB';
+import { Input } from '@/components/ui/input'
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { loadNetCDF, NETCDF_EXT_REGEX } from '@/data/loaders/loadNetCDF';
+import { saveFile } from '@/lib/IndexDB';
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from '@/components/ui/alert';
 import { isMobile } from '../MobileUIHider';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
-import { loadGeoTiff } from '@/utils/loadGeoTiff';
+import { useZarrStore } from '@/stores/ZarrStore';
+import { loadGeoTiff } from '@/data/loaders/loadGeoTiff';
 
 interface LocalNCType {
   setOpenVariables: (open: boolean) => void;

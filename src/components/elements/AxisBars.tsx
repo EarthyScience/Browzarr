@@ -1,6 +1,6 @@
 import React from 'react'
-import "../css/AxisBars.css"
-import { usePlotStore } from '@/GlobalStates/PlotStore'
+import "../layout/css/AxisBars.css"
+import { usePlotStore } from '@/stores/PlotStore'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 

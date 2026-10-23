@@ -2,9 +2,9 @@
 
 import React from 'react'
 import '../css/MainPanel.css'
-import {PlotType, Variables, Colormaps, AdjustPlot, Dataset, PlayButton, AnalysisOptions} from '../index'
+import {PlotType, Variables, Colormaps, AdjustPlot, Dataset, PlayButton, AnalysisOptions} from '@/components/ui'
 import { Card } from "@/components/ui/card"
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { useShallow } from 'zustand/shallow';
 
 

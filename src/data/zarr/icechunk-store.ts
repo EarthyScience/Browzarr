@@ -3,16 +3,16 @@
 import type { NodeSnapshot } from "icechunk-js";
 import { IcechunkStore } from "icechunk-js";
 import * as zarr from "zarrita";
-import "@/codecs/gribberish";
-import { useCacheStore } from "@/GlobalStates/CacheStore";
-import { useErrorStore, ZarrError } from "@/GlobalStates/ErrorStore";
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
+import "@/data/codecs/gribberish";
+import { useCacheStore } from "@/stores/CacheStore";
+import { useErrorStore, ZarrError } from "@/stores/ErrorStore";
+import { useGlobalStore } from "@/stores/GlobalStore";
 // import { Repository, HttpStorage } from "icechunk-js";
 import {
 	IcechunkStoreOptions,
 	ZarrMetadata,
 	ZarrTitleDescription,
-} from "./Interfaces";
+} from "@/types/Interfaces";
 import {
 	buildDimCoordinateResult,
 	computeZarrSizeSummary,

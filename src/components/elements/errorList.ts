@@ -1,4 +1,4 @@
-export const ErrorList = {
+export const errorList = {
     oom: {
         title: "Out of Memory",
         description: "The application has run out of memory. Please try closing other applications or restarting your device."
