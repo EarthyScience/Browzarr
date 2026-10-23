@@ -112,7 +112,7 @@ const FlatMap = () => {
         vals.current = dataVal;
         coords.current = (analysisMode && axis == 2) ? [yArray[yId], xArray[xId]] : [xArray[xId],yArray[yId]]
       }
-    }, [sampleArrays, remapTexture, xArray, yArray, zArray, analysisMode, setLoc, isFlat, animProg])
+    }, [sampleArrays, remapTexture, xArray, yArray, zArray, analysisMode, setLoc, isFlat, animProg, axis])
     // ----- TIMESERIES ----- //
     function HandleTimeSeries(event: THREE.Intersection){
       const uv = event.uv;

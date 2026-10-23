@@ -70,11 +70,7 @@ export async function getRasterData(overrideVar?: string){
     const winX = ndSlices[1]
     const winY = ndSlices[0]
 
-    const {data} = await pool.dispatch('readRasterData', {gtBlob: gtBlob as File, winX, winY, sample})
-    const src = data[0]
-    const width = data.width 
-    const height = data.height 
-
+    const {data, width, height} = await pool.dispatch('readRasterData', {gtBlob: gtBlob as File, winX, winY, sample})
     const transpose = axisMapping.x !== 1;
     const thisShape = transpose ? [width, height] : [height, width]
     const thisStride = transpose ? [1, width] : [width, 1]
@@ -84,7 +80,7 @@ export async function getRasterData(overrideVar?: string){
     setCurrentChunks({ x: [0, 1], y: [0, 1], z: [0, 1] }) 
 
     const cacheChunk = {
-        data: src,
+        data,
         shape: thisShape,
         stride: thisStride,
         scaling: 0, compressed: false, coarsened: coarsen,

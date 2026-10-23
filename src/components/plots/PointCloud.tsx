@@ -53,7 +53,6 @@ export const PointCloud = ( )=>{
       }
       return objectList
     }, [count, bivariate, textureData, useF16Textures])
-    console.log(buffers[0].buffer.value)
     const materialObjects = useMemo(() => {
       const objectList = []
       for (const bufferObj of buffers){
@@ -82,6 +81,7 @@ export const PointCloud = ( )=>{
 
 	// --- CLEANUP --- //
 	useEffect(()=>()=>{ materialObjects.forEach(e=> e.material.dispose()) },[materialObjects])
+  useEffect(()=>()=>{ buffers.forEach(e=> e.buffer.dispose()) },[buffers])
   return (
     <group>
       <group scale={[globalscale,globalscale,2*globalscale]}>

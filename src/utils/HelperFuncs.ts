@@ -163,8 +163,8 @@ export function ArrayMinMax(array:number[] | TypedArray | TypedArrayBufferLike){
   let maxVal = -Infinity;
   for (let i = 0; i < array.length; i++){
     const v = array[i];
-    if (v < minVal) minVal = v; 
-    else if (v > maxVal) maxVal = v;
+    minVal = v < minVal ? v : minVal
+    maxVal = v > maxVal ? v : maxVal
   }
   return [minVal,maxVal]
 }
