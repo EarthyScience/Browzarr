@@ -1,9 +1,9 @@
 import * as u from '@/components/textures/TSL/utils/uniforms';
-import { useErrorStore } from '@/GlobalStates/ErrorStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useDimAxis } from '@/hooks';
 import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
-import { invalidate, useThree } from '@react-three/fiber';
+import { useErrorStore } from '@/GlobalStates/ErrorStore';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { invalidate } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
@@ -12,9 +12,9 @@ const SphereBlocks = () => {
     const { nanColor, nanTransparency, colorScale} = usePlotStore(useShallow(s => ({
         nanColor: s.nanColor, nanTransparency: s.nanTransparency, colorScale: s.colorScale
     })))
-    const {xArray, yArray} = useDimAxis()
-    const width = xArray.length;
-    const height = yArray.length;
+    const dataShape = useGlobalStore(s => s.dataShape)
+    const width = dataShape.at(-1) as number;
+    const height = dataShape.at(-2) as number;
     const count = useMemo(()=>{
         const count = width * height;
         if (count * 16 *4 > 2e9){

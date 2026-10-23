@@ -8,14 +8,13 @@ import { useAxisIndices, useDimAxis } from '@/hooks';
 import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
 import { GetCurrentArray, GetTimeSeries, parseUVCoords } from '@/utils/HelperFuncs';
 import { ThreeEvent } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { sampleCRS } from '../textures/ProjectionUtils';
 import { createFlatMapMaterial } from '../textures/TSL/flatMap';
 import { InfoViewer } from '../ui/Elements/InfoViewer';
 import { SquareMeshes } from './TransectMeshes';
-import * as u from '@/components/textures/TSL/utils/uniforms'
 const FlatMap = () => {
     // ---- Imports ---- //
     const {flipY, dimNames, dimUnits, isFlat, variable2,
@@ -87,8 +86,7 @@ const FlatMap = () => {
             ? [GetCurrentArray(), GetCurrentArray(undefined, variable2)]
             : [GetCurrentArray()],
     [analysisMode, analysisArray, bivariate, variable2])
-
-    const handleMove = (e: ThreeEvent<PointerEvent>) => {
+    const handleMove = useCallback((e: ThreeEvent<PointerEvent>) => {
       if (e.uv) {
         let {uv} = e;
         if (!uv) return;
@@ -109,12 +107,12 @@ const FlatMap = () => {
         const yId = Math.floor(y * ySize);
         let dataIdx = xSize * yId + xId;
         const zOffset = isFlat ? 0 : Math.floor((zArray.length-1) * animProg)
-        dataIdx += (analysisMode ? 1 : zOffset) * xSize*ySize
+        dataIdx += zOffset * xSize*ySize
         const dataVal = sampleArrays.map(val => val ? val[dataIdx] : 0);
         vals.current = dataVal;
         coords.current = (analysisMode && axis == 2) ? [yArray[yId], xArray[xId]] : [xArray[xId],yArray[yId]]
       }
-    }
+    }, [sampleArrays, remapTexture, xArray, yArray, zArray, analysisMode, setLoc, isFlat, animProg, axis])
     // ----- TIMESERIES ----- //
     function HandleTimeSeries(event: THREE.Intersection){
       const uv = event.uv;
@@ -168,7 +166,6 @@ const FlatMap = () => {
     // ----- SHADER MATERIAL ----- //
     uniformUpdater();
     const shaderMaterial = useMemo(() => createFlatMapMaterial(), [colorScale, interpPixels]) ;
-    
     useEffect(()=>{
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})

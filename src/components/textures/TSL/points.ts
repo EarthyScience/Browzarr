@@ -1,6 +1,6 @@
 import {
     bool,float,Fn,fract,If,instancedArray,instanceIndex,int,min,mod,texture,uint,
-    uniform,userData,varying,vec2,vec3,vec4
+    uniform,unpackHalf2x16,userData,varying,vec2,vec3,vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
@@ -8,10 +8,22 @@ import * as u from './utils/uniforms';
 
 const GLOBAL_SCALE = 1/500 
 
-export function createPointMaterial(count: number, bivariate: boolean){
-    const thisCount = bivariate ? count*2: count;
-    const values = instancedArray(Math.ceil(thisCount / 4), 'uint');
-    
+export function createBuffer(count: number, useF16: boolean){
+    const buffer = instancedArray(Math.ceil(count / (useF16 ? 2 : 4)), 'uint');
+    function updateValues(array: Uint8Array | Uint16Array) {
+        const attr = buffer.value;
+        const { buffer: ab, byteOffset } = attr.array;
+        const view = useF16
+            ? new Uint16Array(ab, byteOffset, array.length)
+            : new Uint8Array(ab, byteOffset, array.length)
+        view.set(array)
+        attr.needsUpdate = true
+    }
+    return {buffer, updateValues}
+}
+
+export function createPointMaterial(buffer: THREE.StorageBufferNode, bivariate: boolean, useF16: boolean){
+    const values = buffer;
     const depth = uint( u.pointShape.x );
     const height = uint( u.pointShape.y );
     const width = uint( u.pointShape.z ).toVar();
@@ -32,25 +44,27 @@ export function createPointMaterial(count: number, bivariate: boolean){
         const scale = width.toFloat().mul(GLOBAL_SCALE)
         return vec3(px, py, pz).mul(scale);
     })()
-
-    function updateValues(array: Uint8Array) {
-        const attr = values.value;
-        const u8 = new Uint8Array(attr.array.buffer, attr.array.byteOffset, attr.array.byteLength)
-        // u8.fill(0)
-        u8.set(array)
-        attr.needsUpdate = true
-    }
-    const getByte = Fn(([index]: [any]) => {
-        // This is an AI function. I don't understand it fully. 
-        const i = uint(index);
-        const word = values.element(i.shiftRight(2));   // i / 4
-        const shift = i.bitAnd(3).mul(8);               // (i % 4) * 8
-        return word.shiftRight(shift).bitAnd(0xFF);     // uint 0..255
-    });
+    const getByte = useF16 
+        ? Fn(([index]: [any]) => {
+            // This is an AI function. I don't understand it fully. 
+            const i = uint(index);
+            const word = values.element(i.shiftRight(1));   // i / 2 (two uint16 per uint32 word)
+            const shift = i.bitAnd(1).mul(16);              // (i % 2) * 16
+            const halfFloat = word.shiftRight(shift).bitAnd(0xFFFF);
+            return    unpackHalf2x16(halfFloat) 
+        })
+        : Fn(([index]: [any]) => {
+            // This is an AI function. I don't understand it fully. 
+            const i = uint(index);
+            const word = values.element(i.shiftRight(2));   // i / 4
+            const shift = i.bitAnd(3).mul(8);               // (i % 4) * 8
+            return word.shiftRight(shift).bitAnd(0xFF);     // uint 0..255
+        })
 
     const thisIndex = instanceIndex.mul(int(Number(bivariate) + 1)).toVar()
     const sizeIndex = bivariate ? thisIndex.add(int(u.bivariateSelection)) : thisIndex // The index used for scaling the points
-    const rawValue = float(getByte(sizeIndex)).div(255).toVar();
+    const normalizer = useF16 ? 1 : 255
+    const rawValue = float(getByte(sizeIndex)).div(normalizer).toVar();
     const isNaN = bool(false).toVar();
     const spriteValue = varying(h.rescaler(rawValue))
     const spriteCoord = texCoord
@@ -100,5 +114,5 @@ export function createPointMaterial(count: number, bivariate: boolean){
     material.positionNode = positon.mul(vec3(1,1,u.timeScale))
     material.scaleNode = pointScaler()
     material.colorNode = vec4(pointColor, 1);
-    return {material, updateValues}
+    return material
 }

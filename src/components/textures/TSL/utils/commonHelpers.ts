@@ -61,6 +61,16 @@ export const getLocalCoord = (thisUV : any) =>{
 	return {localCoord, textureIdx}
 }
 
+export const getLocalCoord3D = (sampleCoord : any) =>{
+	const zStepSize = uint(u.textureDepths.y).mul(uint(u.textureDepths.x));
+	const yStepSize = uint(u.textureDepths.x);
+  const texCoord = vec3(sampleCoord);
+  const idx = clamp(ivec3(texCoord.mul(u.textureDepths)), ivec3(0), ivec3(u.textureDepths).sub(1));
+  const textureIdx = idx.z.mul(zStepSize).add(idx.y.mul(yStepSize)).add(idx.x);
+  const localCoord = fract(texCoord.mul(u.textureDepths));
+	return {localCoord, textureIdx}
+}
+
 
 // --- GEOHELPER --- //
 export const realCoords = Fn(([uv]: [any]) => {
@@ -110,15 +120,13 @@ export const colorMixer = Fn(([A, B]: [any, any]) => {
   );
 });
 
-export function createBivariateColor() {
-  return Fn(([p, index]: [any, any]) => {
+export const createBivariateColor = Fn(([p, index]: [any, any]) =>  {
     const biValues = sample2(p, index);
     const hasNaN = isNaNBits(biValues.r).or(isNaNBits(biValues.g));
  
     const color = select(hasNaN, vec3(0, 0, 0), colorMixer(biValues.r, biValues.g));
     return vec4(color, select(hasNaN, float(1), float(0)));
-  });
-}
+});
 
 
 // --- VALUE SCALING --- //
@@ -192,6 +200,27 @@ export const reprojectMask = Fn(([texCoord, dda=bool(false)] : [any, any]) => {
     maskUV.x
   ));
   return maskUV
+})
+
+export const reprojectUV = Fn(([thisUV] : [any]) => {
+  const remap = thisUV.toVar();
+  If(u.reproject, () => {
+    // Each output pixel looks up where it comes from in the source data
+    const newCoords = texture(u.remapTexture, thisUV.xy).rgb;
+    remap.assign(realCoords(newCoords.xy));
+  }).Else(()=>{
+    remap.assign(realCoords(thisUV.xy));
+  })
+  If(u.remapBorders,()=> {
+      remap.y.assign(select(u.flipY, remap.y.oneMinus(), remap.y));
+      remap.assign(u.remapBorderTexture.sample(remap).ba)
+  })
+  // For 0–360 data, wrap longitude by half a turn
+  remap.x.assign(select(u.is360,
+    fract(remap.x.add(0.5)),
+    remap.x
+  ));
+  return remap
 })
 
 export const isBorder = Fn(([thisUV] : [any])=>{
