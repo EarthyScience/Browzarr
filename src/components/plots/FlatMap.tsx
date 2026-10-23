@@ -87,7 +87,6 @@ const FlatMap = () => {
             ? [GetCurrentArray(), GetCurrentArray(undefined, variable2)]
             : [GetCurrentArray()],
     [analysisMode, analysisArray, bivariate, variable2])
-
     const handleMove = (e: ThreeEvent<PointerEvent>) => {
       if (e.uv) {
         let {uv} = e;
@@ -109,7 +108,7 @@ const FlatMap = () => {
         const yId = Math.floor(y * ySize);
         let dataIdx = xSize * yId + xId;
         const zOffset = isFlat ? 0 : Math.floor((zArray.length-1) * animProg)
-        dataIdx += (analysisMode ? 1 : zOffset) * xSize*ySize
+        dataIdx += zOffset * xSize*ySize
         const dataVal = sampleArrays.map(val => val ? val[dataIdx] : 0);
         vals.current = dataVal;
         coords.current = (analysisMode && axis == 2) ? [yArray[yId], xArray[xId]] : [xArray[xId],yArray[yId]]
@@ -168,7 +167,6 @@ const FlatMap = () => {
     // ----- SHADER MATERIAL ----- //
     uniformUpdater();
     const shaderMaterial = useMemo(() => createFlatMapMaterial(), [colorScale, interpPixels]) ;
-    
     useEffect(()=>{
       // This is duplicated. Probably shoud just move it to Plot.tsx
       useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
