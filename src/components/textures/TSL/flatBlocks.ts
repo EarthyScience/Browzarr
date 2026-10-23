@@ -2,6 +2,7 @@ import {
     bool, clamp, float, Fn, If,
     instanceIndex, mix, positionGeometry, positionLocal,
     select,
+    texture,
     varying, vec2, vec3, vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
@@ -17,17 +18,7 @@ const instanceColor = Fn(([strengths] : [any])=>{
         return vec4(color.rgb, 1)
     }
 })
-const isBorder = Fn(([instanceUV] : [any])=>{
-    const isBorder = bool(false).toVar();
-    If(u.useBorderTexture, ()=>{
-        const resolution = u.displacementResolution
-        const aspect = resolution.x.toFloat().div(resolution.y)
-        const gridExtent = vec2(2, float(2).div(aspect)).toVar();
-        const thisUV = instanceUV.add(positionGeometry.xy.div(gridExtent));
-        isBorder.assign(h.isBorder(h.reprojectMask(thisUV.fract(), bool(false))));
-    })
-    return isBorder;
-})
+
 const getUVs = Fn(([thisUV, isValid] : [any, any]) =>{
     const instanceUV = thisUV.toVar();
     const maskUV = instanceUV.toVar();
@@ -60,6 +51,7 @@ export function createFlatBlocksMaterial(count: number){
 
     const material = new THREE.NodeMaterial();
     const isValid = bool(true).toVar();
+    
     const uvInfo = varying(getUVs(thisUV, isValid))
     const newV = uvInfo.xy.toVar();
     const maskUV = uvInfo.zw.toVar();
@@ -93,9 +85,12 @@ export function createFlatBlocksMaterial(count: number){
             .or(isNan)
     const masked = h.maskOut(maskUV)
     material.positionNode = select(clipped.or(masked), vec3(0), newPos);
-
-    // --- FRAG ---//
-    const borderHit = isBorder(thisUV)
+    const aspect = width.toFloat().div(height);
+    const gridExtent = vec2(2, float(2).div(aspect));
+    const vertUV = varying(thisUV.add(positionGeometry.xy.div(gridExtent))).toVar();
+    // fragment stage
+     const vertMask = h.reprojectUV(vertUV)
+    const borderHit = h.isBorder(vertMask.rg);
     material.colorNode = select(borderHit, u.borderColor, instanceColor(colorIn));
     return material
 }

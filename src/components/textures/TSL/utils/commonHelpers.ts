@@ -202,6 +202,27 @@ export const reprojectMask = Fn(([texCoord, dda=bool(false)] : [any, any]) => {
   return maskUV
 })
 
+export const reprojectUV = Fn(([thisUV] : [any]) => {
+  const remap = thisUV.toVar();
+  If(u.reproject, () => {
+    // Each output pixel looks up where it comes from in the source data
+    const newCoords = texture(u.remapTexture, thisUV.xy).rgb;
+    remap.assign(realCoords(newCoords.xy));
+  }).Else(()=>{
+    remap.assign(realCoords(thisUV.xy));
+  })
+  If(u.remapBorders,()=> {
+      remap.y.assign(select(u.flipY, remap.y.oneMinus(), remap.y));
+      remap.assign(u.remapBorderTexture.sample(remap).ba)
+  })
+  // For 0–360 data, wrap longitude by half a turn
+  remap.x.assign(select(u.is360,
+    fract(remap.x.add(0.5)),
+    remap.x
+  ));
+  return remap
+})
+
 export const isBorder = Fn(([thisUV] : [any])=>{
     // Takes maskUV from reprojector or ___ Coords. Assumes already been transformed
     const isBorder = bool(false).toVar();
