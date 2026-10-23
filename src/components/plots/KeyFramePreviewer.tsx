@@ -1,13 +1,13 @@
 "use client";
-import { useImageExportStore } from '@/GlobalStates/ImageExportStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useImageExportStore } from '@/stores/ImageExportStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { invalidate, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/shallow'
 import * as THREE from 'three'
 import { lerp } from 'three/src/math/MathUtils.js';
-import { deg2rad } from '@/utils/HelperFuncs';
+import { deg2rad } from '@/lib/helpers';
 
 export const KeyFramePreviewer = () => {
     const {keyFrames, currentFrame, previewKeyFrames, frames, 

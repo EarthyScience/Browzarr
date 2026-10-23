@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import * as THREE from 'three';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
-import { useZarrStore } from '@/GlobalStates/ZarrStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
+import { useZarrStore } from '@/stores/ZarrStore';
 import { useShallow } from 'zustand/shallow';
-import { GetDimInfo } from '@/utils/HelperFuncs';
-import { GetAttributes } from '@/components/zarr/ZarrLoaderLRU';
-import { GetArray } from '@/components/zarr/GetArray';
-import { handleIrregularGrid, reproject } from '@/components/textures/ProjectionTexture';
-import { parseExtent } from '@/utils/parseExtent';
-import { createDataTexture } from '@/components/textures/TextureMakers';
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { getRasterData } from '@/components/zarr/GTGetters';
+import { GetDimInfo } from '@/lib/helpers';
+import { GetAttributes } from '@/data/zarr/ZarrLoaderLRU';
+import { GetArray } from '@/data/zarr/GetArray';
+import { handleIrregularGrid, reproject } from '@/gpu/textures/ProjectionTexture';
+import { parseExtent } from '@/data/geo/parseExtent';
+import { createDataTexture } from '@/gpu/textures/TextureMakers';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
+import { getRasterData } from '@/data/zarr/GTGetters';
 
 export const useDataFetcher = () => {
     const { variable, bivariate, variable2, mainTextures, setUnits, setIsFlat, setUseF16Textures,

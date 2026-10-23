@@ -1,10 +1,10 @@
 import { Text, OrbitControls } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { parseTimeUnit } from '@/utils/HelperFuncs'
+import { parseTimeUnit } from '@/lib/helpers'
 import { Fragment } from 'react'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import { useAxisIndices, useValueScales } from '@/hooks'
 

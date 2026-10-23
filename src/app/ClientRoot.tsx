@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { ThemeProvider } from "next-themes";
 import { Footer, VersionSelector } from "@/components/ui";
-import GithubButton from "@/components/ui/Elements/GithubButton";
-import HomeButton from "@/components/ui/Elements/HomeButton";
-import MobileUIHider from "@/components/ui/MobileUIHider";
-import ThemeSwitch from "@/components/ui/Elements/ThemeSwitch";
-import { BrowZarrPopover } from "./BrowZarrPopover";
-import { StoreInitializer } from "@/components/StoreInitializer";
+import GithubButton from "@/components/elements/GithubButton";
+import HomeButton from "@/components/elements/HomeButton";
+import MobileUIHider from "@/components/layout/MobileUIHider";
+import ThemeSwitch from "@/components/widgets/ThemeSwitch";
+import { BrowZarrPopover } from "@/components/elements/BrowZarrPopover";
+import { StoreInitializer } from "@/components/layout/StoreInitializer";
 
 export default function ClientRoot({
 	children,

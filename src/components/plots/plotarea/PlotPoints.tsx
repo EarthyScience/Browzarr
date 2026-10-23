@@ -1,9 +1,9 @@
 import React, {useRef, useMemo, useEffect, useState} from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { useShallow } from 'zustand/shallow'
-import { useGraphStore } from '@/GlobalStates/GraphStore';
+import { useGraphStore } from '@/stores/GraphStore';
 
 interface pointSetters{
   setPointID:React.Dispatch<React.SetStateAction<[string,number]>>,

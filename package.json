@@ -48,10 +48,10 @@
   "scripts": {
     "prBuild": "pnpm buildRepo",
     "prLint": "pnpm lint",
-    "dev": "node src/hooks/copy-wasm.mjs && next dev",
+    "dev": "node src/lib/copy-wasm.mjs && next dev",
     "buildRepo": "pnpm rmBuild && pnpm build",
     "rmBuild": "pnpm -r exec rm -rf out",
-    "build": "node src/hooks/copy-wasm.mjs && next build",
+    "build": "node src/lib/copy-wasm.mjs && next build",
     "start": "next start",
     "prepublishOnly": "pnpm run rmBuild && pnpm run build",
     "test": "vitest",

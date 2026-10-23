@@ -1,16 +1,16 @@
 "use client";
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { useDimAxis } from '@/hooks';
 import { useFrame } from '@react-three/fiber';
 import proj4, { Converter } from 'proj4';
 import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
-import { sampleCRS } from '../textures/ProjectionUtils';
-import { createBorderMaterial } from '../textures/TSL/borders';
-import { uniformUpdater } from '../textures/TSL/utils/uniformUpdater';
+import { sampleCRS } from '@/gpu/textures/ProjectionUtils';
+import { createBorderMaterial } from '@/gpu/tsl/borders';
+import { uniformUpdater } from '@/gpu/tsl/utils/uniformUpdater';
 
 function toSegments(coords: [number, number][], toXYZ: (lon:number, lat:number)=>THREE.Vector3, span = 1.) {
     const segments: THREE.Vector3[][] = [[]];

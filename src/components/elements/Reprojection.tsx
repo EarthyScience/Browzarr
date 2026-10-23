@@ -1,0 +1,185 @@
+import { usePlotStore } from '@/stores/PlotStore'
+import React, { useRef, useState } from 'react'
+import { useShallow } from 'zustand/shallow'
+import { Hider } from '@/components/ui'
+import { ChevronLeft } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Button, QuickTip } from '@/components/ui'
+import { checkProjString, reproject, resetProjection } from '@/gpu/textures/ProjectionTexture'
+import { TbReplace } from "react-icons/tb";
+import { RxReset } from "react-icons/rx";
+import { Robinson } from '../widgets/Icons'
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { useIsMobile } from '@/hooks'
+import { epsgToProj } from '@/data/geo/epsgToProj'
+
+const crsClass = 'text-[var(--chart-2)]'
+
+export const Reprojection = () => {
+    const {destCRS, nativeCRS, is360Deg} = usePlotStore(useShallow(s => ({
+        destCRS: s.destCRS,
+        nativeCRS: s.nativeCRS,
+        is360Deg: s.is360Deg
+    })))
+    const [showRepro, setShowRepro] = useState(false)
+    const [changeNativeCRS, setChangeNativeCRS] = useState(false)
+
+    const tempCRS = useRef('')
+    const repRes = useRef(256)
+    const [epsg, setEPSG] = useState<number>()
+    const [showFetchError, setShowFetchError] = useState(false)
+    const fadeTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+    function handleNativeCRS(){
+        const valid = checkProjString(tempCRS.current)
+        if (valid){
+            usePlotStore.setState({ nativeCRS: tempCRS.current })
+            setChangeNativeCRS(false)
+        }
+    }
+    function showFetchErrorPopup(){
+        clearTimeout(fadeTimeout.current)
+        setShowFetchError(true)
+        fadeTimeout.current = setTimeout(() => setShowFetchError(false), 1000)
+    }
+    function getEPSG(){
+        try{
+            epsg && epsgToProj(epsg)
+                .then(pString => usePlotStore.setState({destCRS:pString}))
+                .catch(showFetchErrorPopup)
+        } catch{
+            showFetchErrorPopup()
+        }
+    }
+    const isMobile = useIsMobile();
+    const popoverSide = isMobile ? "top" : "left";
+    return (
+        <div className="space-y-2">
+            <Popover open={showRepro} onOpenChange={setShowRepro}>
+                <PopoverTrigger asChild>
+                    <div className='flex items-center justify-between mb-2'>
+                    <ChevronLeft className={`h-4 w-4 transition-transform duration-200 ${
+                        showRepro ? '' : 'rotate-180'} z-5`} />
+                    <Button
+                        variant='secondary'
+                        className="flex items-center flex-grow justify-center gap-2 p-1 h-auto border-solid border-gray border-[1px]"
+                    >
+                        Reprojection
+                        <Robinson strokeWidth={2} className="size-8" />
+                    </Button>
+                    </div>
+                </PopoverTrigger>
+                <PopoverContent side={popoverSide}>
+                    <div className="space-y-3">
+                        { is360Deg && 
+                        <div className='warn-box'>
+                            360° coordinates may behave unexpectedly. 
+                        </div>
+                        }
+                        <div className="grid grid-cols-[auto_30px] items-center gap-1">
+                            <div
+                                className="flex justify-center min-w-0 break-all max-h-20 overflow-scroll no-scrollbar rounded-md border border-[#333] bg-[var(--background-modal)] px-1 py-2 font-mono text-sm text-[#d4d4d4] whitespace-pre-wrap"
+                            >
+                                {nativeCRS
+                                    ? <div className='text-[var(--text-plot)]'>Native CRS: <span className={crsClass}>{nativeCRS}</span></div>
+                                    : "No CRS detected"}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <button 
+                                    className="shrink-0 rounded-md p-2 hover:bg-muted cursor-pointer transition-colors"
+                                    onClick={resetProjection}
+                                >
+                                    <QuickTip message='Reset reprojection back to native' side='top'>
+                                        <RxReset className="h-4 w-4" />
+                                    </QuickTip>
+                                </button>
+                                <button 
+                                    className="shrink-0 rounded-md p-2 hover:bg-muted cursor-pointer transition-colors"
+                                    onClick={()=>setChangeNativeCRS(x=>!x)}
+                                >
+                                    <QuickTip message='Update/change the native CRS' side='top'>
+                                        <TbReplace className="h-4 w-4" />
+                                    </QuickTip>
+                                </button>
+                            </div>
+                            
+                        </div>
+                        <Hider show={!nativeCRS || changeNativeCRS}>
+                            <div className="flex flex-col gap-2 rounded-md border border-dashed border-muted-foreground/30 p-3">
+                                <Input
+                                    type="string"
+                                    defaultValue={tempCRS.current}
+                                    onChange={e => (tempCRS.current = e.target.value)}
+                                    placeholder={`${nativeCRS ? "Update" : "Enter" } native CRS`}
+                                />
+                                <Button
+                                    className="cursor-pointer w-full"
+                                    onClick={handleNativeCRS}
+                                >
+                                    Set native CRS
+                                </Button>
+                            </div>
+                        </Hider>
+                        <div className="grid grid-cols-[60%_35%] gap-2 pt-1">
+                            <div className='col-span-2 grid grid-cols-[65%_30%]'>
+                                <p>Target Projection</p>
+                                <p>Resolution</p>
+                                <Input
+                                    type="string"
+                                    defaultValue={destCRS}
+                                    onChange={e => usePlotStore.setState({ destCRS: e.target.value })}
+                                    placeholder="Target projection"
+                                />
+                                <Input
+                                    className='appearance-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+                                    type="number"
+                                    defaultValue={repRes.current}
+                                    step={1}
+                                    onChange={e => { const val = parseInt(e.target.value); repRes.current = isNaN(val) ? 256 : val; }}
+                                    placeholder="Resolution"
+                                />
+                            </div>
+                            <div className='col-span-2 grid grid-cols-[35%_65%] place-items-center'>
+                                <Input
+                                    type="number"
+                                    defaultValue={epsg}
+                                    onChange={e => setEPSG(parseInt(e.target.value))}
+                                    placeholder="EPSG"
+                                />
+                                <Button
+                                    variant='secondary'
+                                    className="cursor-pointer"
+                                    disabled={!epsg}
+                                    onClick={getEPSG}
+                                >
+                                    Fetch EPSG
+                                </Button>
+                                <div
+                                    className={`absolute text-red-500 col-span-2 justify-center w-full transition-all duration-300 ease-out ${
+                                        showFetchError
+                                            ? 'opacity-100 scale-100'
+                                            : 'opacity-0 scale-0 pointer-events-none'
+                                    }`}
+                                >
+                                    <div className="overflow-hidden">
+                                        <p className="text-red-500 text-center">Failed to fetch</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <Button
+                                variant='pink'
+                                className="cursor-pointer col-span-2"
+                                onClick={()=>reproject(repRes.current)}
+                                disabled={!destCRS || !nativeCRS || isNaN(repRes.current)}
+                            >
+                                Reproject
+                            </Button>
+                        </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
+        </div>
+    )
+}
+
+

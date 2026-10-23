@@ -1,0 +1,359 @@
+'use client';
+import * as THREE from 'three'
+import { useCacheStore } from '@/stores/CacheStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useZarrStore } from '@/stores/ZarrStore';
+import { decompressSync } from 'fflate';
+import { copyChunkToArray } from '@/data/zarr/utils';
+import { getNCDims } from '@/data/zarr/NCGetters';
+import { GetZarrDims } from '@/data/zarr/ZarrLoaderLRU';
+import { getGTDims } from '@/data/zarr/GTGetters';
+
+export type TypedArray =
+  | Float32Array | Float64Array
+  | Int8Array | Uint8Array | Uint8ClampedArray
+  | Int16Array | Uint16Array
+  | Int32Array | Uint32Array;
+
+export type TypedArrayBufferLike = 
+  | Uint8Array<ArrayBufferLike> | Int16Array<ArrayBufferLike> 
+  | Float16Array<ArrayBufferLike>  | Float32Array<ArrayBufferLike> 
+  | Int32Array<ArrayBufferLike> | Uint32Array<ArrayBufferLike> 
+  | Float32Array<ArrayBufferLike> | Float64Array<ArrayBufferLike>
+
+export function parseTimeScale(units:string){
+  const match = units.match(/^(\w+)\s+since\s+(.+)$/i);
+  if (!match) {
+    throw new Error(`Invalid time unit format: expected "<unit> since <date>", got "${units}"`);
+  }
+  
+  const [_, unit, referenceDate] = match;
+  const normalizedUnit = unit.toLowerCase();
+  return [normalizedUnit, referenceDate]
+}  
+
+export function parseTimeUnit(units: string | undefined): [number, number] {
+    if (units === "Default"){
+        return [1, 0];
+    }
+
+    if (!units || typeof units !== 'string' || units.trim() === '') {
+      return [1, 0]; 
+    }
+    
+    const [normalizedUnit, referenceDate] = parseTimeScale(units);
+    
+    // Map of time units to milliseconds per unit
+    const unitToMilliseconds: Record<string, number> = {
+      millisecond: 1,
+      milliseconds: 1,
+      second: 1000,
+      seconds: 1000,
+      minute: 60 * 1000,
+      minutes: 60 * 1000,
+      hour: 60 * 60 * 1000,
+      hours: 60 * 60 * 1000,
+      day: 24 * 60 * 60 * 1000,
+      days: 24 * 60 * 60 * 1000,
+    };
+    // Handle singular/plural variations (e.g., "second" vs "seconds")
+    const singularUnit = normalizedUnit.endsWith('s') ? normalizedUnit.slice(0, -1) : normalizedUnit;
+    const effectiveUnit = unitToMilliseconds[normalizedUnit] !== undefined ? normalizedUnit : singularUnit;
+    let baseDate;
+    if (referenceDate.length <= 10){
+      const [year, month, day] = referenceDate.split('-');
+      baseDate = new Date(Date.UTC(parseInt(year),parseInt(month)-1,parseInt(day)))
+    } else {
+     baseDate = referenceDate ? new Date(referenceDate) : new Date();
+    }
+    if (!(effectiveUnit in unitToMilliseconds)) {
+      throw new Error(`Unsupported time unit: "${units}". Supported units: ${Object.keys(unitToMilliseconds).join(', ')}`);
+    }
+    return [unitToMilliseconds[effectiveUnit], baseDate.getTime()];
+}
+
+const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+];
+  
+export function parseLoc(input: any, units: string | undefined, verbose: boolean = false, resolution: number = 0) {
+    if (!units){
+      if (typeof(input) == 'bigint'){
+        return input;
+      } else if (typeof(input) == 'number'){
+        return input?.toFixed(2);
+      } else {
+        return input
+      }
+        
+    }
+    if (typeof(input) === 'bigint' || units.match(/^(\w+)\s+since\s+(.+)$/i)){
+      if (!units){
+        return Number(input)
+      }
+
+      try{
+        const [scale, offset] = parseTimeUnit(units)
+        const timeStamp = Number(input) * scale;
+        const date = new Date(timeStamp + offset);
+        const day = date.getUTCDate();
+        const month = date.getUTCMonth() + 1; // Months are 0-indexed
+        const year = date.getUTCFullYear();
+        const hours = date.getUTCHours();
+        const mins = date.getUTCMinutes();
+        const secs = date.getUTCSeconds();
+        let dateStr;
+        if (verbose) dateStr = `${day} ${months[month - 1]} ${year}`
+        else dateStr = `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
+        if (resolution > 0){
+          const thisRes = Math.min(resolution, 3);
+          dateStr += [
+            ` ${String(hours).padStart(2, '0')}`,
+            `${String(mins).padStart(2, '0')}`,
+            `${String(secs).padStart(2, '0')}`].slice(0,thisRes).join(':')
+        }
+        return dateStr;
+      }
+      catch{
+
+        return input;
+      }
+    }
+    if ( units && units.match(/(degree|degrees|deg|°)/i) ){
+        if (input !== undefined && input !== null){
+          return `${Number(input).toFixed(2)}°`
+        } else{
+          return input
+        } 
+    }
+    else {
+        return (input !== undefined && input !== null && typeof input !== 'string') ? Number(input).toFixed(2) : input;
+    }
+}
+
+export function parseUVCoords({normal,uv}:{normal:THREE.Vector3,uv:THREE.Vector2}){
+  switch(true){
+    case normal.z === 1:
+      return [null, uv.y, uv.x]
+    case normal.z === -1:
+      return [null, uv.y, 1-uv.x]
+    case normal.x === 1:
+      return [1-uv.x, uv.y, null]
+    case normal.x === -1:
+      return [uv.x, uv.y, null]
+    case normal.y === 1:
+      return [1-uv.y, null, uv.x]
+    case normal.y === -1:
+      return [uv.y, null, uv.x]
+    default:
+      return [0,0,0]
+  }
+}
+
+export function getUnitAxis(vec: THREE.Vector3) { //Takes the normal of a cube interaction to figure out which axis to move along within the data for the timeseries
+  if (Math.abs(vec.x) === 1) return 2;
+  if (Math.abs(vec.y) === 1) return 1;
+  if (Math.abs(vec.z) === 1) return 0;
+  return null;
+}
+
+export { ArrayMinMax, coarsen3DArray, calculateStrides } from './arrayMath';
+
+export function linspace(start: number, stop: number, num: number): number[] {
+    const step = (stop - start) / (num - 1);
+    return Array.from({ length: num }, (_, i) => start + step * i);
+  }
+
+interface TimeSeriesInfo{
+  uv:THREE.Vector2,
+  normal:THREE.Vector3
+}
+interface arrayInfo{
+  data: Uint8Array<ArrayBufferLike> | Float32Array<ArrayBufferLike>,
+  shape:number[],
+  stride:number[]
+}
+
+export function GetTimeSeries(array : arrayInfo, TimeSeriesInfo:TimeSeriesInfo){
+  const {uv,normal} = TimeSeriesInfo
+  const {data, shape, stride} = array
+
+  //This is a complicated logic check but it works bb
+  const sliceSize = parseUVCoords({normal,uv})
+  const slice = sliceSize.map((value, index) =>
+    value === null || shape[index] === null ? null : Math.floor(value * shape[index]));
+  const mapDim = slice.indexOf(null);
+  const dimStride = stride[mapDim];
+  const pz = slice[0] == null ? 0 : stride[0]*slice[0]
+  const py = slice[1] == null ? 0 : stride[1]*slice[1]
+  const px = slice[2] == null ? 0 : stride[2]*slice[2]
+  const ts = [];
+
+  for (let i = 0; i < shape[mapDim] ; i++){
+    const idx = i*dimStride+pz+py+px
+    ts.push(data[idx])
+  }
+		return ts;
+}
+
+function globalIndex(shape: number[], indices: number[]){
+	const [_d0, d1, d2] = shape;
+	const [i, j, k] = indices;
+	return i * d1 * d2 + j * d2 + k;
+}
+
+export function getCRSTimeSeries(array: Uint8Array | Float16Array, TimeSeriesInfo:TimeSeriesInfo, shape: number[], CRSStrip: [number, number][]){
+	// This function only ever triggers along non-z normals. 
+	const {uv,normal} = TimeSeriesInfo;
+	const ts = [];
+	let iFac = (Math.abs(normal.x) > 0) ? uv.x : uv.y;
+	if (normal.x < 0 || normal.y < 0) iFac = 1-iFac;
+	const i = Math.floor(shape[0]*iFac);
+	for (const thisUV of CRSStrip){
+		if (thisUV[0] < 0) {ts.push(NaN); continue;}
+		const j = Math.floor(thisUV[1] * shape[1]);
+		const k =  Math.floor(thisUV[0] * shape[2]);
+		const gIdx = globalIndex(shape, [i, j, k]);
+		ts.push(array[gIdx]);
+	}
+	return ts;
+}
+
+function DecompressArray(compressed : Uint8Array){
+	const decompressed = decompressSync(compressed)
+	const floatArray = new Float16Array(decompressed.buffer)
+	return floatArray
+}
+
+export function GetCurrentArray(overrideStore?: string, overrideVariable?: string){
+  const { variable, is4D, idx4D, initStore, strides, dataShape }= useGlobalStore.getState()
+  const { arraySize, currentChunks, ndSlices } = useZarrStore.getState()
+  const {cache} = useCacheStore.getState();
+  const store = overrideStore ? overrideStore : initStore
+  const thisVar = overrideVariable?? variable
+  const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : (idx4D ?? "");
+  const cacheBase = scalarIndices !== "" ? `${store}_${thisVar}_${scalarIndices}` : `${store}_${thisVar}`;
+  if (cache.has(cacheBase)){
+      const chunk = cache.get(cacheBase)
+      const compressed = chunk?.compressed
+      const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
+			return thisData
+  }
+  else{
+    const typedArray = new Float16Array(arraySize)
+    const [xStartIdx, xEndIdx] = currentChunks.x
+    const [yStartIdx, yEndIdx] = currentChunks.y
+    const [zStartIdx, zEndIdx] = currentChunks.z
+
+    for (let z = zStartIdx; z < zEndIdx; z++) {
+      
+      for (let y = yStartIdx; y < yEndIdx; y++) {
+        for (let x = xStartIdx; x < xEndIdx; x++) {
+          const chunkID = `z${z}_y${y}_x${x}`
+          const cacheName = `${cacheBase}_chunk_${chunkID}`
+          const chunk = cache.get(cacheName)
+          if (!chunk) continue;
+          const compressed = chunk.compressed
+          const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
+          copyChunkToArray(
+            thisData,
+            chunk.shape,
+            chunk.stride,
+            typedArray,
+            dataShape,
+            strides as [number, number, number], 
+            [z, y, x], 
+            chunk.fullChunkDim || [1, 1, 1],
+            chunk.sliceStart || [0, 0, 0]
+          )
+        }
+      }
+    }
+    return typedArray
+  }
+}
+
+export async function GetDimInfo(variable:string){
+  const {useNC, useGT} = useZarrStore.getState()
+  if (useGT) return getGTDims()
+  if (useNC) return getNCDims(variable)
+  else return GetZarrDims(variable)
+}      
+
+export function HandleKernelNums(e: string){
+  const newVal = parseInt(e);
+  if (newVal % 2 == 0){
+    return Math.max(1, newVal - 1)
+  }
+  else{
+    return newVal
+  }
+}
+
+export function HandleCoarselNums(e: string){
+  const newVal = parseInt(e);
+  if (newVal % 2 == 1){
+    return Math.max(1, newVal - 1 )
+  }
+  else{
+    return newVal
+  }
+}
+
+export function deg2rad(deg: number){
+  return deg*Math.PI/180;
+}
+
+export function normalize(val: number | null | undefined, min:number, max:number){
+  if (!val && val !=0) return undefined;
+  return (val-min)/(max-min)
+}
+
+export function denormalize(  norm: number | null | undefined,  min: number,  max: number) {
+  if (!norm && norm !== 0) return undefined;
+  return norm * (max - min) + min;
+}
+
+export function coarsenFlatArray(
+  array: any,
+  factor: number
+) {
+  const offset = Math.floor(factor/2);
+  const output = [];
+  for ( let i = offset; i < array.length-offset; i += factor){
+    output.push(array[i])
+  }
+  return output
+}
+
+export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
+
+export function findClosest(arr: number[], target:number): [number, number] {
+  let closest = arr[0];
+  let minDiff = Math.abs(target - closest);
+  let idx = 0;
+  for (let i = 1; i < arr.length; i++) {
+    const diff = Math.abs(target - arr[i]);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = arr[i];
+      idx = i;
+    }
+  }
+  return [closest, idx];
+}
+export function findClosestBigInt(arr: bigint[], target:bigint): [bigint, number] {
+  let closest = arr[0];
+  let minDiff = Math.abs(Number(target) - Number(closest));
+  let idx = 0;
+  for (let i = 1; i < arr.length; i++) {
+    const diff = Math.abs(Number(target) - Number(arr[i]));
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = arr[i];
+      idx = i;
+    }
+  }
+  return [closest, idx];
+}

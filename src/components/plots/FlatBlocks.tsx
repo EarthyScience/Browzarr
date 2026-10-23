@@ -1,14 +1,14 @@
-import * as u from '@/components/textures/TSL/utils/uniforms';
-import { uniformUpdater } from '@/components/textures/TSL/utils/uniformUpdater';
-import { useAnalysisStore } from '@/GlobalStates/AnalysisStore';
-import { useErrorStore } from '@/GlobalStates/ErrorStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
+import * as u from '@/gpu/tsl/utils/uniforms';
+import { uniformUpdater } from '@/gpu/tsl/utils/uniformUpdater';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
+import { useErrorStore } from '@/stores/ErrorStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { usePlotStore } from '@/stores/PlotStore';
 import { useDimAxis } from '@/hooks';
 import { useMemo, useEffect } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
-import { createFlatBlocksMaterial } from '../textures/TSL/flatBlocks';
+import { createFlatBlocksMaterial } from '@/gpu/tsl/flatBlocks';
 const FlatBlocks = () => {
     const {flipY, dataShape, axisDimArrays, remapTexture} = useGlobalStore(useShallow(s => ({
         flipY: s.flipY, dataShape: s.dataShape, axisDimArrays: s.axisDimArrays, 

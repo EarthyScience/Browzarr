@@ -1,5 +1,5 @@
-import { useColormapStore } from '@/GlobalStates/ColormapStore';
-import { useGlobalStore } from '@/GlobalStates/GlobalStore'
+import { useColormapStore } from '@/stores/ColormapStore';
+import { useGlobalStore } from '@/stores/GlobalStore'
 import React from 'react'
 
 export const useValueScales = () => {
