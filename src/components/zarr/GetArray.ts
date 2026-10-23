@@ -1,13 +1,12 @@
-import { useGlobalStore } from "@/GlobalStates/GlobalStore";
-import { useZarrStore } from "@/GlobalStates/ZarrStore";
 import { useCacheStore } from "@/GlobalStates/CacheStore";
 import { useErrorStore } from "@/GlobalStates/ErrorStore";
-import { calculateStrides } from "@/utils/HelperFuncs";
-import { ToFloat16, CompressArray, RescaleArray } from "./utils";
-import { NCFetcher, zarrFetcher } from "./dataFetchers";
-import { Convolve } from "../computation/webGPU";
-import { coarsen3DArray } from "@/utils/HelperFuncs";
+import { useGlobalStore } from "@/GlobalStates/GlobalStore";
 import { usePlotStore } from "@/GlobalStates/PlotStore";
+import { useZarrStore } from "@/GlobalStates/ZarrStore";
+import { calculateStrides } from "@/utils/HelperFuncs";
+import { getPool } from "@/utils/workers/pool";
+import { NCFetcher, zarrFetcher } from "./dataFetchers";
+import { RescaleArray } from "./utils";
 
 export async function GetArray(varOveride?: string) {
     const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
@@ -18,6 +17,7 @@ export async function GetArray(varOveride?: string) {
     const meta = await fetcher.getMetadata(targetVariable as string);
     const { shape, chunkShape, fillValue, dtype } = meta;
     const rank = shape.length;
+    const pool = getPool();
     // Explicit mappings first (-1 if unmapped/NaN), then fill gaps with
     // the remaining dims from last to first, in x, y, z order.
     const mapped = [axisMapping.x, axisMapping.y, axisMapping.z]
@@ -97,9 +97,22 @@ export async function GetArray(varOveride?: string) {
     const zIndexInRaw = activeDims.indexOf(zDimIndex);
     const yIndexInRaw = activeDims.indexOf(yDimIndex);
     const xIndexInRaw = activeDims.indexOf(xDimIndex);
+
     const sliceStart = rank > 2 ? [ndSlices[zIndexInRaw][0], ndSlices[yIndexInRaw][0], ndSlices[xIndexInRaw][0]] : [ndSlices[yIndexInRaw][0], ndSlices[xIndexInRaw][0]]
     setStatus("Downloading...");
     setProgress(0);
+    // --- WORKER INPUTS ---//
+    const jobs: Promise<void>[] = []
+    const indices   = {zIndexInRaw, yIndexInRaw, xIndexInRaw}
+    const kernelInfo = {kernelDepth, kernelSize}
+    // --- PROGRESS --- //
+    let workerProgress = 0;
+    let cumulativeProgress = 0;
+    const thisProgress = setInterval(()=>{
+        cumulativeProgress = Math.max(workerProgress, cumulativeProgress)
+        setProgress(cumulativeProgress)
+    },100)
+
     for (let z = zDim.start; z < zDim.end; z++) {
         for (let y = yDim.start; y < yDim.end; y++) {
             for (let x = xDim.start; x < xDim.end; x++) {
@@ -119,53 +132,44 @@ export async function GetArray(varOveride?: string) {
                     continue;
                 } else {
                     const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, ndSlices, axisMapping });
-                    const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
+                    jobs.push((async ()=>{
+                        const {chunkF16, thisShape, chunkStride, newScalingFactor} = 
+                            await pool.dispatch('processChunk', 
+                                {raw, coarsen, compress, hasZ, kernelInfo, indices, scalingFactor, fillValue}, 
+                                [raw.data.buffer]
+                            )
 
-                    let [chunkF16, newScalingFactor] = ToFloat16(rawData, scalingFactor);
-
-                    let thisShape = hasZ ? [raw.shape[zIndexInRaw], raw.shape[yIndexInRaw], raw.shape[xIndexInRaw]] : [raw.shape[yIndexInRaw], raw.shape[xIndexInRaw]];
-                    let chunkStride = hasZ ? [raw.stride[zIndexInRaw], raw.stride[yIndexInRaw], raw.stride[xIndexInRaw]] : [raw.stride[yIndexInRaw], raw.stride[xIndexInRaw]];
-
-                    if (coarsen) {
-                        const origShape = [...thisShape];
-                        if (hasZ) {
-                            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, { kernelSize, kernelDepth }) as Float16Array;
-                            thisShape = origShape.map((dim, idx) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)));
-                            chunkF16 = coarsen3DArray(chunkF16, origShape as [number, number, number], chunkStride as [number, number, number], kernelSize, kernelDepth, thisShape.reduce((a, b) => a * b, 1));
-                        } else {
-                            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, { kernelSize, kernelDepth:1 }) as Float16Array;
-                            thisShape = origShape.map((dim, idx) => Math.floor(dim / kernelSize));
-                            const paddedShape = [1, origShape[0], origShape[1]] as [number, number, number];
-                            const paddedStride = [1, chunkStride[0], chunkStride[1]] as [number, number, number];
-                            chunkF16 = coarsen3DArray(chunkF16, paddedShape, paddedStride, kernelSize, 1, thisShape.reduce((a, b) => a * b, 1));
+                        //This block is not in the worker as it needs access to the cache. 
+                        if (newScalingFactor != null && newScalingFactor !== scalingFactor) {
+                            const delta = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor;
+                            scalingFactor = newScalingFactor;
+                            for (const id of rescaleIDs) {
+                                const tempChunk = cache.get(`${cacheBase}_chunk_${id}`);
+                                tempChunk.scaling = scalingFactor;
+                                RescaleArray(tempChunk.data, delta);
+                                cache.set(`${cacheBase}_chunk_${id}`, tempChunk);
+                            }
                         }
-                        chunkStride = calculateStrides(thisShape);
-                    }
-
-                    if (newScalingFactor != null && newScalingFactor !== scalingFactor) {
-                        const delta = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor;
-                        scalingFactor = newScalingFactor;
-                        for (const id of rescaleIDs) {
-                            const tempChunk = cache.get(`${cacheBase}_chunk_${id}`);
-                            tempChunk.scaling = scalingFactor;
-                            RescaleArray(tempChunk.data, delta);
-                            cache.set(`${cacheBase}_chunk_${id}`, tempChunk);
-                        }
-                    }
-                    cache.set(cacheName, {
-                        data: compress ? CompressArray(chunkF16, 7) : chunkF16,
-                        shape: thisShape.slice(-3), stride: chunkStride.slice(-3),
-                        scaling: scalingFactor, compressed: compress, coarsened: coarsen,
-                        kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined },
-                        fullChunkDim: [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
-                        sliceStart
-                    });
-                    rescaleIDs.push(chunkID);
+                        cache.set(cacheName, {
+                            data: chunkF16,
+                            shape: thisShape.slice(-3), stride: chunkStride.slice(-3),
+                            scaling: scalingFactor, compressed: compress, coarsened: coarsen,
+                            kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined },
+                            fullChunkDim: [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
+                            sliceStart
+                        });
+                        rescaleIDs.push(chunkID);
+                        workerProgress = Math.round(iter++ / totalChunks * 100);
+                    })())
                 }
-                setProgress(Math.round(iter++ / totalChunks * 100));
-            }
+                }
             }
     }
-    setProgress(0);
+    try{
+        await Promise.all(jobs)
+    } finally {
+        clearInterval(thisProgress);
+        setProgress(0);
+    }
     return { shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor };
 }

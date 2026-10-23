@@ -2,7 +2,6 @@
 import * as THREE from 'three'
 import { useCacheStore } from '@/GlobalStates/CacheStore';
 import { useGlobalStore } from '@/GlobalStates/GlobalStore';
-import { usePlotStore } from '@/GlobalStates/PlotStore';
 import { useZarrStore } from '@/GlobalStates/ZarrStore';
 import { decompressSync } from 'fflate';
 import { copyChunkToArray } from '@/components/zarr/utils';
@@ -159,15 +158,7 @@ export function getUnitAxis(vec: THREE.Vector3) { //Takes the normal of a cube i
   return null;
 }
 
-export function ArrayMinMax(array:number[] | TypedArray | TypedArrayBufferLike){
-  let minVal = Infinity;
-  let maxVal = -Infinity;
-  for (let i = 0; i < array.length; i++){
-    minVal = array[i] < minVal ? array[i] : minVal
-    maxVal = array[i] > maxVal ? array[i] : maxVal
-  }
-  return [minVal,maxVal]
-}
+export { ArrayMinMax, coarsen3DArray, calculateStrides } from './arrayMath';
 
 export function linspace(start: number, stop: number, num: number): number[] {
     const step = (stop - start) / (num - 1);
@@ -256,6 +247,7 @@ export function GetCurrentArray(overrideStore?: string, overrideVariable?: strin
     const [zStartIdx, zEndIdx] = currentChunks.z
 
     for (let z = zStartIdx; z < zEndIdx; z++) {
+      
       for (let y = yStartIdx; y < yEndIdx; y++) {
         for (let x = xStartIdx; x < xEndIdx; x++) {
           const chunkID = `z${z}_y${y}_x${x}`
@@ -323,34 +315,6 @@ export function denormalize(  norm: number | null | undefined,  min: number,  ma
   return norm * (max - min) + min;
 }
 
-export function coarsen3DArray(
-  array: Float16Array,
-  shape: [number, number, number],
-  strides: [number, number, number],
-  spatialFactor: number,
-  depthFactor: number,
-  newSize: number
-) {
-  const [dimZ, dimY, dimX] = shape;
-  const [strideZ, strideY, strideX] = strides;
-  const spatialOffset = Math.floor(spatialFactor / 2);
-  const depthOffset = Math.floor(depthFactor / 2);
-  const outputArray = new Float16Array(newSize)
-
-  let outputIdx = 0;
-  for (let z = depthOffset; z < dimZ; z += depthFactor) {
-    for (let y = spatialOffset; y < dimY; y += spatialFactor) {
-      for (let x = spatialOffset; x < dimX; x += spatialFactor) {
-        // Calculate the flat index using strides
-        const flatIndex = z * strideZ + y * strideY + x * strideX;
-        outputArray[outputIdx] = array[flatIndex];
-        outputIdx++;
-      }
-    }
-  }
-  return outputArray
-}
-
 export function coarsenFlatArray(
   array: any,
   factor: number
@@ -361,15 +325,6 @@ export function coarsenFlatArray(
     output.push(array[i])
   }
   return output
-}
-
-export function calculateStrides(
-  shape: number[]
-){
-  const newStrides = shape.map((_val, idx) => {
-    return shape.reduce((a: number, b: number, i: number) => a * (i > idx ? b : 1), 1)
-  })
-  return newStrides
 }
 
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
