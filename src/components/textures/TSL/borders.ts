@@ -2,10 +2,11 @@ import { Discard, Fn, If, positionGeometry, positionWorld, vec4 } from 'three/ts
 import * as THREE from 'three/webgpu'
 import * as u from './utils/uniforms'
 const colorShader = Fn(() =>{
-    If( positionWorld.x.lessThan( u.flatBounds.x )
-        .or( positionWorld.x.greaterThan( u.flatBounds.y ) )
-        .or( positionWorld.y.lessThan( u.vertBounds.x ) )
-        .or( positionWorld.y.greaterThan( u.vertBounds.y ) )
+    const bounds = u.shape.div(2);
+    If( positionGeometry.x.lessThan( bounds.x.negate() )
+        .or( positionGeometry.x.greaterThan( bounds.x ) )
+        .or( positionGeometry.y.lessThan( bounds.y.negate() ) )
+        .or( positionGeometry.y.greaterThan( bounds.y ) )
         .and( u.trim ), () => {
 	Discard();
     });

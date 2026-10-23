@@ -84,11 +84,12 @@ export function uniformUpdater(){
         u.bivariateSelection.value = bivariateSelection;
         u.bivariate.value = bivariate;
         u.isFlat.value = isFlat
+        u.shape.value.set(shape.x, shape.y,shape.z)
     },[
         cScale, cOffset, nanTransparency, fillValue, maskValue, valueRange,
         lonBounds, latBounds, useBorderTexture, borderWidth, is360Deg, showBorders,
         valueScales, useF16Textures, bivariateSelection, 
-        bivariate, textureArrayDepths, isFlat
+        bivariate, textureArrayDepths, isFlat, shape
     ])
     // --- BLOCKS --- //
     useEffect(()=>{
