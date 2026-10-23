@@ -1,7 +1,6 @@
 import { Convolve } from "@/components/computation/webGPU"
-import { coarsen3DArray } from "@/utils/HelperFuncs"
+import { coarsen3DArray, calculateStrides } from "@/utils/arrayMath"
 import { ToFloat16, CompressArray } from "@/components/zarr/utils"
-import { calculateStrides } from "@/utils/HelperFuncs"
 interface FetchOutput{
     data: Float32Array
     shape: number[]
@@ -37,7 +36,8 @@ export async function processChunk({raw, fillValue, scalingFactor, coarsen, comp
     const {zIndexInRaw, yIndexInRaw, xIndexInRaw} = indices;
     const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
     
-    let [chunkF16, newScalingFactor] = ToFloat16(rawData, scalingFactor);
+    const [chunkF16Raw, newScalingFactor] = ToFloat16(rawData, scalingFactor);
+    let chunkF16 = chunkF16Raw;
 
     let thisShape = hasZ ? [raw.shape[zIndexInRaw], raw.shape[yIndexInRaw], raw.shape[xIndexInRaw]] : [raw.shape[yIndexInRaw], raw.shape[xIndexInRaw]];
     let chunkStride = hasZ ? [raw.stride[zIndexInRaw], raw.stride[yIndexInRaw], raw.stride[xIndexInRaw]] : [raw.stride[yIndexInRaw], raw.stride[xIndexInRaw]];

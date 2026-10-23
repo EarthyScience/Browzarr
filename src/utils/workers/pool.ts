@@ -1,4 +1,3 @@
-"use client";
 import type { tasks } from './tasks';
 type T = typeof tasks;
 type Job = { task: string; data: unknown; transfer: Transferable[]; ok: (v: any) => void; fail: (e: any) => void };
@@ -45,4 +44,4 @@ class Pool {
 const pool = new Pool(typeof navigator !== 'undefined' && navigator.hardwareConcurrency
   ? Math.min(8, navigator.hardwareConcurrency)
   : 8);
-export const getPool = () => pool;   // optional, for your preferred call style
+export const getPool = () => pool;   

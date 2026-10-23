@@ -1,4 +1,4 @@
-import { ArrayMinMax } from "@/utils/HelperFuncs";
+import { ArrayMinMax } from "@/utils/arrayMath";
 import { toHalfFloat } from "three/src/extras/DataUtils.js";
 export interface textureIn{
     array: Uint8Array | Float16Array;

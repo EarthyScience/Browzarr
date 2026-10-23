@@ -4,7 +4,7 @@ import {
 } from 'webgpu-utils';
 
 import { createShaders } from './WGSLShaders';
-import { ArrayMinMax } from '@/utils/HelperFuncs';
+import { ArrayMinMax } from '@/utils/arrayMath';
 import { RescaleArray } from '../zarr/utils';
 
 // WebGPU requires all buffer sizes, writeBuffer and copyBufferToBuffer sizes to be multiples of 4 bytes.
