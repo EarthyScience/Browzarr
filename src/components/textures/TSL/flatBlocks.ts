@@ -1,8 +1,8 @@
 import {
-    bool,clamp,float,Fn, If,instancedArray,
-    instanceIndex,mix,positionGeometry,positionLocal,
-    positionWorld,
-    select,struct,varying,vec2,vec3,vec4
+    bool, clamp, float, Fn, If,
+    instanceIndex, mix, positionGeometry, positionLocal,
+    select,
+    varying, vec2, vec3, vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';

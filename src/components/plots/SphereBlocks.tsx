@@ -8,13 +8,14 @@ import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { createSphereBlocksMaterial } from '../textures/TSL/sphereBlocks';
+import { useGlobalStore } from '@/GlobalStates/GlobalStore';
 const SphereBlocks = () => {
     const { nanColor, nanTransparency, colorScale} = usePlotStore(useShallow(s => ({
         nanColor: s.nanColor, nanTransparency: s.nanTransparency, colorScale: s.colorScale
     })))
-    const {xArray, yArray} = useDimAxis()
-    const width = xArray.length;
-    const height = yArray.length;
+    const dataShape = useGlobalStore(s => s.dataShape)
+    const width = dataShape.at(-1) as number;
+    const height = dataShape.at(-2) as number;
     const count = useMemo(()=>{
         const count = width * height;
         if (count * 16 *4 > 2e9){
