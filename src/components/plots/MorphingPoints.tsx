@@ -11,6 +11,7 @@ import { uniformUpdater } from '@/gpu/tsl/utils/uniformUpdater';
 import { useEffect } from 'react';
 import { pointerPos } from '@/gpu/tsl/morphingPoints';
 import { WebGPUPlacard } from '@/components/elements/WebGPUPlacard';
+import { MainLogo } from '../elements/MainLogo';
 const MorphingPoints = () => {
   const count = 15625; // Total number of points
   const material = useMemo(()=>createMorphingMaterial(count), [count])
@@ -18,6 +19,8 @@ const MorphingPoints = () => {
 	<sprite count={count} material={material}/>
   );
 };
+
+
 
 export const LandingShapes = () =>{
 	const setIsWebGPU = useGlobalStore(s => s.setIsWebGPU)
@@ -49,9 +52,11 @@ export const LandingShapes = () =>{
 		getLimits()
 	}, [])
   	uniformUpdater();
+
 	return(
 		<div className='w-[100vw] h-[100vh]'>
 		<WebGPUPlacard />
+		<MainLogo />
 		<Canvas
 			camera={{position:[0, 0, 3]}}
 			flat
