@@ -41,7 +41,7 @@ export async function getGTMetadata(variable: string){
     const {gtBlob} = useZarrStore.getState()
     const {cache} = useCacheStore.getState();
     const {initStore}  = useGlobalStore.getState();
-    const cacheName = `${initStore}_${variable}_dimfo`
+    const cacheName = `${initStore}_${variable}_meta`
     if (cache.has(cacheName)){
         return cache.get(cacheName)
     }
