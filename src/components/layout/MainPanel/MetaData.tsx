@@ -1,23 +1,22 @@
-import React, { useState, useEffect, useMemo, createContext, useContext, useCallback } from 'react'
-import { useIsMobile } from '@/hooks';
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Badge, Switch, Switcher, Input, Hider, QuickTip, Button } from "@/components/ui";
 import { defaultAttributes, renderAttributes } from "@/components/layout/MetaComponents/Helpers";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ChevronDown, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Badge, Button, Hider, Input, QuickTip, Switch } from "@/components/ui";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { SliderThumbs } from "@/components/widgets/SliderThumbs";
+import { clearProjectionData } from '@/gpu/textures/ProjectionTexture';
+import { useIsMobile } from '@/hooks';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
 import { useCacheStore } from "@/stores/CacheStore";
+import { useColormapStore } from '@/stores/ColormapStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
 import { usePlotStore } from '@/stores/PlotStore';
 import { useZarrStore } from '@/stores/ZarrStore';
-import { useShallow } from 'zustand/shallow';
-import { useGlobalStore } from '@/stores/GlobalStore';
-import { SliderThumbs } from "@/components/widgets/SliderThumbs";
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
-import { clearProjectionData } from '@/gpu/textures/ProjectionTexture';
-import { SliderGroup, ArrayInfo, SecondVariable } from '../MetaComponents';
-import { useColormapStore } from '@/stores/ColormapStore';
-import { useAnalysisStore } from '@/stores/AnalysisStore';
-import { getRasterData } from '@/data/zarr/GTGetters';
+import { useShallow } from 'zustand/shallow';
+import { ArrayInfo, SecondVariable, SliderGroup } from '../MetaComponents';
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
@@ -174,7 +173,6 @@ function useSizeData(
         texDepths
     }
 }
-
 
 function MetaInfo({
     tooBig,
@@ -333,6 +331,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
     },[selectionInfo])
     // --- PLOT FUNCTION --- //
     function handlePlot(){
+        console.log(dimArrays)
         setDimArrays(dimArrays);
         setDimNames(dimNames);
         setDimUnits(dimUnits);

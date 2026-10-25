@@ -7,22 +7,24 @@ import { calculateStrides } from "@/lib/helpers";
 import { usePlotStore } from "@/stores/PlotStore";
 import { getPool } from "@/workers/pool";
 
-export async function getGTDims(){
+export async function getGTDims(variable: string){
     const {gtBlob} = useZarrStore.getState()
     const {cache} = useCacheStore.getState();
     const {initStore} = useGlobalStore.getState();
-    const cacheName = `${initStore}_raster_dimfo`
+    const cacheName = `${initStore}_${variable}_dimfo`
     if (cache.has(cacheName)){
         const dimfo = cache.get(cacheName)
         const {dimNames, dimArrays, dimUnits} = dimfo
         return {dimNames, dimArrays, dimUnits};
     }
     const geotiff = await fromBlob(gtBlob as File)
-    const image = await geotiff.getImage()
-    const geoKeys = image.getGeoKeys()
+    const baseImage = await geotiff.getImage()
+    const geoKeys = baseImage.getGeoKeys()
     const parsedGK = parseGeoKeys(geoKeys as Record<string, any>);
-    const [xOrg, yOrg] = image.getOrigin()
-    const [xRes, yRes] = image.getResolution()
+    const imageNum = parseInt(variable.split('/')[0])
+    const [xOrg, yOrg] = baseImage.getOrigin()
+    const image = await geotiff.getImage(imageNum??0)
+    const [xRes, yRes] = image.getResolution(baseImage)
     const width = image.getWidth()
     const height = image.getHeight()
     const xArray = Array.from({length: width}).map((_val,idx) => xOrg + idx*xRes);
@@ -33,19 +35,21 @@ export async function getGTDims(){
     const dimfo = {dimNames, dimArrays, dimUnits}
     cache.set(cacheName, dimfo)
     return dimfo;
-}   
+}
 
-export async function getGTMetadata(){
+export async function getGTMetadata(variable: string){
     const {gtBlob} = useZarrStore.getState()
     const {cache} = useCacheStore.getState();
     const {initStore}  = useGlobalStore.getState();
-    const cacheName = `${initStore}_raster_meta`
+    const cacheName = `${initStore}_${variable}_dimfo`
     if (cache.has(cacheName)){
         return cache.get(cacheName)
     }
     const geotiff = await fromBlob(gtBlob as File)
-    const image = await geotiff.getImage()
-    const geoKeys = image.getGeoKeys()
+    const imageNum = parseInt(variable.split('/')[0])
+    const baseImage = await geotiff.getImage()
+    const geoKeys = baseImage.getGeoKeys()
+    const image = await geotiff.getImage(imageNum??0)
     const parsedGK = parseGeoKeys(geoKeys as Record<string, any>);
     delete parsedGK['units' as keyof typeof parsedGK];
     const meta = {...parsedGK, shape:[image.getHeight(), image.getWidth()]}
