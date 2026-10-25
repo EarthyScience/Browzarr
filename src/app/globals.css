@@ -91,6 +91,7 @@
   --transect-bg: rgb(255, 243, 133);
   --global-settings: rgba(175, 244, 253, 0.514);
   --plot-settings: rgba(248, 253, 175, 0.281);
+  --logo-text: #333
 }
 
 /* Dark Theme */
@@ -154,6 +155,7 @@
   --transect-bg: rgb(252, 59, 59);
   --global-settings: rgba(175, 244, 253, 0.281);
   --plot-settings: rgba(245, 253, 175, 0.281);
+  --logo-text: #fff
 }
 
 @layer utilities {
@@ -480,4 +482,15 @@ a[href]:hover::after {
 .glow-effect {
   animation: glow-pulse 2s ease-in-out infinite;
   border-radius: 0.275rem;
+}
+
+@keyframes logo-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 0.5rem color-mix(in srgb, var(--logo-text) 50%, transparent))
+
+  }
+  50% {
+    filter: drop-shadow(0 0 2rem color-mix(in srgb, var(--logo-text) 50%, transparent))
+
+  }
 }

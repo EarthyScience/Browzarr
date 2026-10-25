@@ -1,7 +1,7 @@
 <div align="center">
 <div style="justify-content: center;">
   <a href="https://browzarr.io">
-    <img src="./public/logo_banner.png" alt="Launch browzarr" height="100">
+    <img src="./src/assets/brow-z_logo.svg" alt="Launch browzarr" height="150">
   </a>
 </div>
 

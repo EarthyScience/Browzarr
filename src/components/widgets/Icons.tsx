@@ -111,5 +111,301 @@ const Robinson = ({
   </svg>
 );
 
+const MainLogo1 = ({ //Browzarr
+  z1 = "#ffd06f",
+  z2 = "#e76254",
+  b1 = "#1e466e",
+  b2 = "#72bcd5",
+  evolution = 0,
+  style = {}
+}) => (
+  <svg
+   style={style}
+   viewBox="0 0 90.626686 41.817253"
+   version="1.1"
+   id="svg1"
+   xmlnsXlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg">
+   <defs>
+      <linearGradient id="a"
+        x1={136.338}
+        x2={135.218}
+        y1={-30.737}
+        y2={67.38}
+        gradientTransform="matrix(.38937 0 0 .38937 95.12 102.52)"
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop
+          offset={0}
+          style={{
+            stopColor: z1,
+            stopOpacity: 1,
+          }}
+        />
+        <stop
+          offset={1}
+          style={{
+            stopColor: z2,
+            stopOpacity: 1,
+          }}
+        />
+      </linearGradient>
+      <linearGradient id="b"
+        x1={145.102}
+        x2={53.317}
+        y1={-125.885}
+        y2={-86.83}
+        gradientTransform={`rotate(60 -40.741 134.039) scale(.38937)`}
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop
+          offset={0}
+          style={{
+            stopColor: b1,
+            stopOpacity: 1,
+          }}
+        />
+        <stop
+          offset={1}
+          style={{
+            stopColor: b2,
+            stopOpacity: 1,
+          }}
+        />
+      </linearGradient>
+    </defs>
+  <g
+     id="g5"
+     transform="rotate(30,252.15716,-193.13177)">
+    <path
+       id="path2"
+      style={{
+        fill: "url(#b)",
+        strokeWidth: 1.28474,
+        paintOrder: "fill markers stroke",
+      }}
+       d="m 134.34818,104.21358 c 2.04841,3.54853 4.09702,7.09685 6.14583,10.64514 0.0464,-0.1378 0.0989,-0.27386 0.15856,-0.40725 1.10272,-2.02156 2.24956,-4.01881 3.40311,-6.01203 -0.76491,-1.32525 -1.52973,-2.6505 -2.29463,-3.97575 -1.95838,-0.001 -3.91665,-0.003 -5.875,-0.0141 -0.52919,0.0445 -1.05306,-0.0441 -1.53787,-0.23602 z m 9.97933,17.28535 c 2.22002,3.84983 4.42971,7.70566 6.68689,11.53289 0.94197,1.33082 2.93129,1.87935 4.35726,1.00989 1.10832,-0.59974 1.71491,-1.76048 2.28255,-2.83046 1.85196,-3.19707 3.70387,-6.39414 5.55588,-9.59119 -2.42168,3.9e-4 -4.8433,7.8e-4 -7.26498,0.002 -0.71075,1.2329 -1.42217,2.46528 -2.14371,3.69184 -0.71284,-1.22935 -1.4229,-2.4602 -2.13346,-3.69084 -1.55223,3.5e-4 -3.10443,7.8e-4 -4.65666,0.001 -0.88481,0.0246 -1.80711,0.0438 -2.68377,-0.12455 z" />
+    <path
+       id="path3"
+       style={{
+        fill: "url(#a)",
+        strokeWidth: 0.973424,
+        paintOrder: "fill markers stroke",
+      }}
+       d="m 135.2745,97.756312 c -1.63932,0.05517 -3.0879,1.556836 -3.03234,3.206518 0.004,1.45143 1.23875,2.80033 2.7031,2.85813 0.8653,0.0576 1.73337,-0.007 2.59991,0.022 3.24175,0.005 6.48355,-0.007 9.72527,0.0132 -1.8542,3.18875 -3.70171,6.38334 -5.52671,9.58853 -0.42119,0.78667 -0.98706,1.53034 -1.11427,2.43743 -0.29985,1.60843 0.33892,3.39695 1.71377,4.32757 0.95069,0.6928 2.1677,0.85929 3.31513,0.79542 5.94265,-0.001 11.8853,-0.003 17.82796,-0.004 0.0335,-1.47285 -0.2543,-3.03528 -1.2296,-4.18975 -1.09387,-1.37654 -2.88606,-2.13816 -4.63602,-2.00983 -3.29358,0.0441 -6.58656,0.12496 -9.88028,0.15902 1.01113,-1.80088 1.98923,-3.62254 2.99302,-5.42854 0.96252,-1.76866 1.94806,-3.52646 2.87381,-5.314 0.76114,-1.83797 0.14859,-4.19217 -1.53314,-5.306583 -0.95695,-0.689765 -2.1743,-0.857673 -3.32598,-0.81825 -4.4911,-0.115716 -8.98216,-0.239833 -13.47363,-0.337002 z" />
+  </g>
+  <text
+     xmlSpace="preserve"
+     style={{
+        fontStyle: "normal",
+        fontVariant: "normal",
+        fontWeight: 500,
+        fontStretch: "normal",
+        fontSize: "19.7556px",
+        lineHeight: 0,
+        fontFamily: "&quot",
+        textAlign: "start",
+        writingMode: "horizontal-tb",
+        direction: "ltr",
+        textAnchor: "start",
+        fill: "currentColor",
+        stroke: "currentColor",
+        strokeWidth: 0.4,
+        strokeDasharray: "none",
+        paintOrder: "fill markers stroke",
+      }} x="19.870007"
+     y="34.579861"
+     id="text4"><tspan
+       id="tspan4"
+       style={{
+          fontStyle: "normal",
+          fontVariant: "normal",
+          fontWeight: 500,
+          fontStretch: "normal",
+          fontSize: "19.7556px",
+          fontFamily: "&quot",
+          fill: "currentColor",
+          stroke: "currentColor",
+          strokeWidth: 0.4,
+          strokeDasharray: "none",
+        }}x="19.870007"
+       y="34.579861">rowzarr</tspan></text>
+</svg>
+)
 
-export { Perspective, Orthographic, Potato, Robinson };
+const MainLogo2 = ({ //browZarr
+  z1 = "#ffd06f",
+  z2 = "#e76254",
+  b1 = "#1e466e",
+  b2 = "#72bcd5",
+  evolution = 0,
+  style = {}
+}) => (
+  <svg
+    style={style}
+    xmlns="http://www.w3.org/2000/svg"
+    xmlnsXlink="http://www.w3.org/1999/xlink"
+    viewBox="-3 0 95.871 36.706"
+  >
+    <defs>
+      <linearGradient id="a">
+        <stop
+          offset={0}
+          style={{
+            stopColor: z1,
+            stopOpacity: 1,
+          }}
+        />
+        <stop
+          offset={1}
+          style={{
+            stopColor: z2,
+            stopOpacity: 1,
+          }}
+        />
+      </linearGradient>
+      <linearGradient id="b">
+        <stop
+          offset={0}
+          style={{
+            stopColor: b1,
+            stopOpacity: 1,
+          }}
+        />
+        <stop
+          offset={1}
+          style={{
+            stopColor: b2,
+            stopOpacity: 1,
+          }}
+        />
+      </linearGradient>
+      <linearGradient
+        xlinkHref="#a"
+        id="d"
+        x1={136.338}
+        x2={135.218}
+        y1={-30.737}
+        y2={67.38}
+        gradientTransform="matrix(.38937 0 0 .38937 -.628 4.763)"
+        gradientUnits="userSpaceOnUse"
+      />
+      <linearGradient
+        xlinkHref="#b"
+        id="c"
+        x1={145.102}
+        x2={53.317}
+        y1={-125.885}
+        y2={-86.83}
+        gradientTransform="rotate(60 -3.956 2.24) scale(.38937)"
+        gradientUnits="userSpaceOnUse"
+      />
+    </defs>
+    
+    <text
+      xmlSpace="preserve"
+      x={-1.143}
+      y={23.38}
+      style={{
+        fontStyle: "normal",
+        fontVariant: "normal",
+        fontWeight: 500,
+        fontStretch: "normal",
+        fontSize: "19.7556px",
+        lineHeight: 0,
+        fontFamily: "&quot",
+        textAlign: "start",
+        writingMode: "horizontal-tb",
+        direction: "ltr",
+        textAnchor: "start",
+        fill: "currentColor",
+        stroke: "currentColor",
+        strokeWidth: 0.4,
+        strokeDasharray: "none",
+        paintOrder: "fill markers stroke",
+      }}
+    >
+      <tspan
+        x={-4.143}
+        y={23.38}
+        style={{
+          fontStyle: "normal",
+          fontVariant: "normal",
+          fontWeight: 500,
+          fontStretch: "normal",
+          fontSize: "19.7556px",
+          fontFamily: "&quot",
+          fill: "currentColor",
+          stroke: "currentColor",
+          strokeWidth: 0.4,
+          strokeDasharray: "none",
+        }}
+      >
+        {"brow"}
+      </tspan>
+    </text>
+    <text
+      xmlSpace="preserve"
+      x={68.016}
+      y={23.38}
+      style={{
+        fontStyle: "normal",
+        fontVariant: "normal",
+        fontWeight: 500,
+        fontStretch: "normal",
+        fontSize: "19.7556px",
+        lineHeight: 0,
+        fontFamily: "&quot",
+        textAlign: "start",
+        writingMode: "horizontal-tb",
+        direction: "ltr",
+        textAnchor: "start",
+        fill: "currentColor",
+        stroke: "currentColor",
+        strokeWidth: 0.4,
+        strokeDasharray: "none",
+        paintOrder: "fill markers stroke",
+      }}
+    >
+      <tspan
+        x={68.016}
+        y={23.38}
+        style={{
+          fontStyle: "normal",
+          fontVariant: "normal",
+          fontWeight: 500,
+          fontStretch: "normal",
+          fontSize: "19.7556px",
+          fontFamily: "&quot",
+          fill: "currentColor",
+          stroke: "currentColor",
+          strokeWidth: 0.4,
+          strokeDasharray: "none",
+        }}
+      >
+        {"arr"}
+      </tspan>
+    </text>
+    <path
+      d="m38.6 6.457 6.145 10.646c.047-.138.1-.274.159-.408a273.364 273.364 0 0 1 3.403-6.012l-2.294-3.976c-1.959 0-3.917-.003-5.875-.014a3.401 3.401 0 0 1-1.538-.236zm9.979 17.286c2.22 3.85 4.43 7.705 6.687 11.533.942 1.33 2.931 1.879 4.357 1.01 1.108-.6 1.715-1.761 2.283-2.831l5.556-9.591c-2.422 0-4.844 0-7.265.002a485.44 485.44 0 0 1-2.144 3.692c-.713-1.23-1.423-2.46-2.134-3.691h-4.656c-.885.025-1.807.045-2.684-.124z"
+      style={{
+        fill: "url(#c)",
+        strokeWidth: 1.28474,
+        paintOrder: "fill markers stroke",
+      }}
+    />
+    <path
+      d="M39.526 0c-1.64.055-3.088 1.557-3.032 3.207.004 1.451 1.238 2.8 2.703 2.858.865.057 1.733-.007 2.6.022 3.241.005 6.483-.008 9.725.013a1218.351 1218.351 0 0 0-5.527 9.589c-.421.786-.987 1.53-1.114 2.437-.3 1.608.339 3.397 1.714 4.328.95.692 2.167.859 3.315.795l17.828-.004c.033-1.473-.255-3.035-1.23-4.19-1.094-1.376-2.886-2.138-4.636-2.01-3.293.044-6.586.125-9.88.16 1.011-1.802 1.99-3.623 2.993-5.43.962-1.768 1.948-3.526 2.874-5.313.76-1.838.148-4.192-1.533-5.307C55.369.465 54.15.298 53 .337 48.508.221 44.017.097 39.526 0z"
+      style={{
+        fill: "url(#d)",
+        strokeWidth: 0.973424,
+        paintOrder: "fill markers stroke",
+      }}
+    />
+  </svg>
+)
+
+
+
+
+export { Perspective, Orthographic, Potato, Robinson, MainLogo1, MainLogo2 };
