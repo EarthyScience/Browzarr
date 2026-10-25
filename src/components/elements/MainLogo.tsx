@@ -1,6 +1,6 @@
 "use client";
+import { useEffect, useState } from 'react';
 import { MainLogo1, MainLogo2 } from '../widgets/Icons';
-import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 const gradientVariants = {
   // ─── Original ───
@@ -141,16 +141,14 @@ const gradientVariants = {
 export const MainLogo = () => {
 	const [variant, setVariant] = useState<boolean | undefined>(undefined);
   const [colorScheme, setColorScheme] = useState<any>({})
-  const [evolution, setEvolution] = useState(0)
 	const {z1, z2, b1, b2} = colorScheme;
   // const intervalRef = useRef();
   useEffect(() => {
-    setVariant(Math.random() > 0.5);
+    setVariant(Math.random() >= 0.5);
     const gradients = Object.keys(gradientVariants);
     const thisGradient = gradients[Math.floor(Math.random() * gradients.length)]
+    console.log(thisGradient)
     setColorScheme(gradientVariants[thisGradient as keyof typeof gradientVariants])
-    // intervalRef.current = setInterval(()=> setEvolution(x => x+0.05), 30)
-    // return () => intervalRef.current && clearInterval(intervalRef.current)
   }, []);
 
   const style = {
@@ -159,7 +157,6 @@ export const MainLogo = () => {
     left:'50%',
     bottom:'20%',
     transform:'translateX(-50%)',
-    filter: `drop-shadow(0 0 ${Math.abs(Math.cos(evolution))}rem var(--logo-text))`,
     color: 'var(--logo-text)',
     animation: 'logo-pulse 5s ease-in-out infinite'
   }
@@ -168,11 +165,12 @@ export const MainLogo = () => {
 			position:'absolute',
 			zIndex:5,
       width:"100%",
-      height:'100%'
+      height:'100%',
+      pointerEvents:'none'
 		}}>
 			{colorScheme.z1 && (variant 
-				? <MainLogo2 style={style} z1={z1} z2={z2} b1={b1} b2={b2} evolution={evolution}/>
-				: <MainLogo1 style={style} z1={z1} z2={z2} b1={b1} b2={b2} evolution={evolution}/>
+				? <MainLogo2 style={style} z1={z1} z2={z2} b1={b1} b2={b2} />
+				: <MainLogo1 style={style} z1={z1} z2={z2} b1={b1} b2={b2} />
 			)}
 		</div>
 	)
