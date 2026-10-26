@@ -276,7 +276,7 @@ export function GetCurrentArray(overrideStore?: string, overrideVariable?: strin
 
 export async function GetDimInfo(variable:string){
   const {useNC, useGT} = useZarrStore.getState()
-  if (useGT) return getGTDims()
+  if (useGT) return getGTDims(variable)
   if (useNC) return getNCDims(variable)
   else return GetZarrDims(variable)
 }      

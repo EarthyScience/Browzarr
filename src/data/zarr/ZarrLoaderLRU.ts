@@ -146,7 +146,7 @@ export async function GetAttributes(thisVariable?: string) {
 		return useNC ? meta.attributes : meta;
 	} else {
 		if (useGT) {
-			const meta = await getGTMetadata();
+			const meta = await getGTMetadata(thisVariable as string);
 			return meta;
 		}
 		if (useNC) {

@@ -12,6 +12,7 @@ interface normalizeIn{
 }
 interface readRasterIn {
     gtBlob: File;
+    imageNum: number;
     winX: [number, number];
     winY: [number, number];
     sample:number
@@ -35,9 +36,9 @@ function normalizeTextureData({data, minVal, range, useF16}: normalizeIn){
     return {textureData}
 }
 
-async function readRasterData({gtBlob, winX, winY, sample}: readRasterIn){
+async function readRasterData({gtBlob, imageNum, winX, winY, sample}: readRasterIn){
     const geotiff = await fromBlob(gtBlob as File)
-    const image = await geotiff.getImage()
+    const image = await geotiff.getImage(imageNum)
     const data = await image.readRasters({
         window: [winX[0], winY[0], winX[1], winY[1]],
         samples: [sample]
