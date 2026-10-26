@@ -20,8 +20,7 @@ export async function loadGeoTiff(file: File){
     const geoKeys = image.getGeoKeys()
     const parsedGK = parseGeoKeys(geoKeys as Record<string, any>);
     const fd = image.getFileDirectory();  
-    const baseMeta = {...parsedGK, imageCount}
-    console.log(allBands.map((e, idx) => ({...baseMeta, name:e, shape:shapes[idx], chunkShape:shapes[idx]})))
+    const baseMeta = {...parsedGK, imageCount} 
     useGlobalStore.setState({
         variables: allBands,
         zMeta: allBands.map((e, idx) => ({...baseMeta, name:e, shape:shapes[idx], chunkShape:shapes[idx]})),

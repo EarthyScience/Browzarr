@@ -451,10 +451,11 @@ const GlobalOptions = () =>{
       </>}
       <Masker/>
       <Reprojection />
-
-      <QuickTip 
-        asChild={borderCompatible} // Won't trigger when button below is disabled
-        message={borderCompatible ? 'Show political boundaries' : "Browzarr was unable to parse spatal extent"}>
+      <div className='flex '>
+        {!borderCompatible && <QuickTip 
+          message={"Browzarr was unable to parse spatal extent"}>
+            <BsFillQuestionCircleFill />
+        </QuickTip>}
         <Button 
           variant="pink" 
           size="sm" 
@@ -462,8 +463,9 @@ const GlobalOptions = () =>{
           disabled={!borderCompatible ||
             (analysisMode && Boolean(axis))
           }
-          onClick={() => setShowBorders(!showBorders)}>{showBorders ? "Hide Borders" : "Show Borders" }</Button>
-      </QuickTip>
+          onClick={() => setShowBorders(!showBorders)}
+        >{showBorders ? "Hide Borders" : "Show Borders" }</Button>
+      </div>
       <Hider show={showBorders && !(analysisMode && !axis)}>
         <Switcher leftText='Texture' rightText='Lines' state={useBorderTexture} onClick={
           ()=>usePlotStore.setState({useBorderTexture:!useBorderTexture})

@@ -1,11 +1,12 @@
 import { useCacheStore } from "@/stores/CacheStore";
 import { useGlobalStore } from "@/stores/GlobalStore";
 import { useZarrStore } from "@/stores/ZarrStore";
-import { fromBlob, type GeoTIFFImage } from "geotiff";
+import { fromBlob } from "geotiff";
 import { parseGeoKeys } from "@/data/geo/geoKeyParser";
 import { calculateStrides } from "@/lib/helpers";
 import { usePlotStore } from "@/stores/PlotStore";
 import { getPool } from "@/workers/pool";
+import { epsgToProj } from "../geo/epsgToProj";
 
 export async function getGTDims(variable: string){
     const {gtBlob} = useZarrStore.getState()
@@ -86,6 +87,15 @@ export async function getRasterData(overrideVar?: string){
     setArraySize(thisShape.reduce((a, b) => a * b, 1))
     setCurrentChunks({ x: [0, 1], y: [0, 1], z: [0, 1] }) 
 
+    const meta = cache.get(`${initStore}_${variable}_meta`)
+    if (meta.epsg){
+        const epsg = meta.epsg
+        try{
+            epsgToProj(epsg).then(e=>{
+                usePlotStore.setState({nativeCRS:e})
+            })
+        }catch{console.log(`Failed to fetch EPSG: ${epsg}`)}
+    }
     const cacheChunk = {
         data,
         shape: thisShape,

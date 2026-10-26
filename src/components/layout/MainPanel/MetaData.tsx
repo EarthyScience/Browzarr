@@ -331,7 +331,6 @@ export const MetaData = ({ meta, metadata }: Props) => {
     },[selectionInfo])
     // --- PLOT FUNCTION --- //
     function handlePlot(){
-        console.log(dimArrays)
         setDimArrays(dimArrays);
         setDimNames(dimNames);
         setDimUnits(dimUnits);
