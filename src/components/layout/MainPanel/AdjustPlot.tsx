@@ -459,7 +459,7 @@ const GlobalOptions = () =>{
         <Button 
           variant="pink" 
           size="sm" 
-          className="w-[100%] cursor-[pointer] mb-2 mt-2" 
+          className="flex-1 cursor-[pointer] mb-2 mt-2" 
           disabled={!borderCompatible ||
             (analysisMode && Boolean(axis))
           }
