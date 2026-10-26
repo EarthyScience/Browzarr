@@ -21,9 +21,10 @@ export async function getGTDims(variable: string){
     const baseImage = await geotiff.getImage()
     const geoKeys = baseImage.getGeoKeys()
     const parsedGK = parseGeoKeys(geoKeys as Record<string, any>);
-    const imageNum = parseInt(variable.split('/')[0])
+    let imageNum = parseInt(variable.split('/')[0])
+    imageNum = Number.isNaN(imageNum) ? 0 : imageNum
     const [xOrg, yOrg] = baseImage.getOrigin()
-    const image = await geotiff.getImage(imageNum??0)
+    const image = await geotiff.getImage(imageNum)
     const [xRes, yRes] = image.getResolution(baseImage)
     const width = image.getWidth()
     const height = image.getHeight()
@@ -46,10 +47,11 @@ export async function getGTMetadata(variable: string){
         return cache.get(cacheName)
     }
     const geotiff = await fromBlob(gtBlob as File)
-    const imageNum = parseInt(variable.split('/')[0])
+    let imageNum = parseInt(variable.split('/')[0])
+    imageNum = Number.isNaN(imageNum) ? 0 : imageNum
     const baseImage = await geotiff.getImage()
     const geoKeys = baseImage.getGeoKeys()
-    const image = await geotiff.getImage(imageNum??0)
+    const image = await geotiff.getImage(imageNum)
     const parsedGK = parseGeoKeys(geoKeys as Record<string, any>);
     delete parsedGK['units' as keyof typeof parsedGK];
     const meta = {...parsedGK, shape:[image.getHeight(), image.getWidth()]}
@@ -73,8 +75,9 @@ export async function getRasterData(overrideVar?: string){
     const sample = parseInt(thisVar.split('_').at(-1) as string)
     const winX = ndSlices[1]
     const winY = ndSlices[0]
-
-    const {data, width, height} = await pool.dispatch('readRasterData', {gtBlob: gtBlob as File, winX, winY, sample})
+    let imageNum = parseInt(thisVar.split('/')[0])
+    imageNum = Number.isNaN(imageNum) ? 0 : imageNum
+    const {data, width, height} = await pool.dispatch('readRasterData', {gtBlob: gtBlob as File, imageNum, winX, winY, sample})
     const transpose = axisMapping.x !== 1;
     const thisShape = transpose ? [width, height] : [height, width]
     const thisStride = transpose ? [1, width] : [width, 1]
