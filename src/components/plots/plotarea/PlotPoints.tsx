@@ -28,36 +28,25 @@ function PlotPoints({ points, tsID, instanceVals, pointSetters, scalers }: { poi
   const material = useMemo(()=> new THREE.MeshBasicMaterial({color: new THREE.Color().setRGB(r/300, g/300, b/300).convertSRGBToLinear()}),[pointColor, useCustomPointColor, timeSeries])  // It was converting to sRGB colorspace while the line shader uses linear
 
   useEffect(() => {
-    if (ref.current){
-      const dummy = new THREE.Object3D()
-      for (let i = 0 ; i< count; i++){
-        const position = points[i].toArray()
-        if (position.every((val)=>isFinite(val)))dummy.position.set(position[0]*(xScale/2), position[1]*yScale, 1);
-        else dummy.position.set(0, 0, 110) //If NaN position, Place the point behind the camera (z=100)
-        // Apply both zoom scaling and data scaling to the instance matrix
-        dummy.scale.set(pointSize/zoom, pointSize/zoom, pointSize/zoom)
-        dummy.updateMatrix()
-        ref.current.setMatrixAt(i, dummy.matrix)
-      }
-      ref.current.instanceMatrix.needsUpdate = true
-      ref.current.computeBoundingSphere();
+    if (!ref.current) return
+    const dummy = new THREE.Object3D()
+    const s = pointSize / zoom
+
+    for (let i = 0; i < count; i++) {
+      const [x, y, z] = points[i].toArray()
+      const val = instanceVals?.[i]
+      const outOfRange = val !== undefined && (val > valueRange[1] || val < valueRange[0])
+      const valid = [x, y, z].every(Number.isFinite)
+      if (!valid || outOfRange) dummy.position.set(0, 0, 110)
+      else dummy.position.set(x * (xScale / 2), y * yScale, 1)
+      dummy.scale.setScalar(s)
+      dummy.updateMatrix()
+      ref.current.setMatrixAt(i, dummy.matrix)
     }
-  }, [points, zoom, geometry, material, xScale, yScale, pointSize]) // Add xScale, yScale as dependencies
-  useEffect(()=>{
-    if (ref.current && instanceVals){
-      const dummy = new THREE.Object3D()
-      for (let i = 0 ; i< count; i++){
-        const val = instanceVals[i]
-        const position = points[i].toArray()
-        if (val > valueRange[1] || val < valueRange[0]){
-          dummy.position.set(0, 0, 110)
-          dummy.updateMatrix()
-          ref.current.setMatrixAt(i, dummy.matrix)
-        } else dummy.position.set(position[0]*(xScale/2), position[1]*yScale, 1);
-      }
-      ref.current.instanceMatrix.needsUpdate = true
-      ref.current.computeBoundingSphere();
-  }},[valueRange, count, geometry, material])
+
+    ref.current.instanceMatrix.needsUpdate = true
+    ref.current.computeBoundingSphere()
+  }, [points, instanceVals, valueRange, count, zoom, xScale, yScale, pointSize, geometry, material])
 
   useFrame(({camera})=>{
     if (camera.zoom !== zoom){

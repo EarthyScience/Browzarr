@@ -7,7 +7,7 @@ import { useGlobalStore } from '@/stores/GlobalStore';
 import { usePlotStore } from '@/stores/PlotStore';
 import { useShallow } from 'zustand/shallow'
 import { useAxisIndices, useValueScales } from '@/hooks'
-
+import { CanvasText } from '../utils/CanvasText'
 interface ViewportBounds {
   left: number;
   right: number;
@@ -195,7 +195,7 @@ export function FixedTicks({
 
                   {/* Only show labels for non-edge ticks */}
                   {i !== 0 && i !== xTickCount-1 && (
-                    <Text
+                    <CanvasText
                       position={[0, sizes.tickSize/4 - sizes.labelOffset, 0]}
                       fontSize={sizes.fontSize/zoom**2}
                       color={colorTicks}
@@ -203,7 +203,7 @@ export function FixedTicks({
                       anchorY="top"
                     >
                       {textArray?.[Math.round(normX*xDimSize-.5)] ?? ''}
-                    </Text>
+                    </CanvasText>
                   )}
                 </group>
               </Fragment>
@@ -251,7 +251,7 @@ export function FixedTicks({
                   </line>
                   {/* Only show labels for non-edge ticks */}
                   {i !== 0 && i !== yTickCount-1 && (
-                    <Text
+                    <CanvasText
                       position={[-sizes.tickSize - sizes.labelOffset, 0, 0]}
                       fontSize={sizes.fontSize/zoom**2}
                       color={colorTicks}
@@ -261,7 +261,7 @@ export function FixedTicks({
                       {(valueScales.minVal+(normY*yDimSize)).toFixed(1)}
 
 
-                    </Text>
+                    </CanvasText>
                   )}
                 </group>
               </Fragment>

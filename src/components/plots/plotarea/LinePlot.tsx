@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { parseLoc } from '@/lib/helpers'
+import {WebGPURenderer} from 'three/webgpu'
 import { FixedTicks, ThickLine } from '@/components/plots'
 import {  useEffect, useRef, useState } from 'react'
 import { ResizeBar, YScaler, XScaler, ShowLinePlot } from '@/components/ui'
@@ -9,6 +10,7 @@ import { useShallow } from 'zustand/shallow'
 import PlotLineOptions from '@/components/layout/LinePlotArea/PlotLineOptions'
 import { IoCloseCircleSharp } from "react-icons/io5";
 import { FaThumbtack } from "react-icons/fa";
+import { useDimAxis } from '@/hooks'
 
 interface pointInfo{
   pointID:[string, number],
@@ -19,8 +21,10 @@ interface pointInfo{
 const MIN_HEIGHT = 10;
 
 function PointInfo({pointID,pointLoc,showPointInfo, plotUnits}:pointInfo){
-  const {plotDim, axisDimArrays, axisDimNames, axisDimUnits, timeSeries} = useGlobalStore(
+  const {plotDim, axisDimNames, axisDimUnits, timeSeries} = useGlobalStore(
     useShallow(s => s));
+  const axisArrays = useDimAxis()
+  const axisDimArrays = [axisArrays.zArray, axisArrays.yArray, axisArrays.xArray]
   let pointY = 0;
   let pointX = 0;
   if (Object.entries(pointID).length > 0 && Object.entries(timeSeries).length > 0){
@@ -258,9 +262,16 @@ export function PlotArea() {
         <YScaler scale={yScale} setScale={setYScale} />
         <XScaler scale={xScale} setScale={setXScale} />
         <Canvas
+          flat
+          linear
           orthographic
           camera={{ position: [0, 0, 100] }}
           frameloop="demand"
+          gl={async (props) => {
+            const renderer = new WebGPURenderer((props as any)) 
+            await renderer.init()
+            return renderer
+          }}
         >
           <ThickLine height={height} yScale={yScale} pointSetters={pointSetters} xScale={xScale}/>
           <FixedTicks height={height} yScale={yScale} xScale={xScale}/>
