@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { useShallow } from 'zustand/shallow'
 import { useGraphStore } from '@/stores/GraphStore';
+import { usePlotStore } from '@/stores/PlotStore';
 
 interface pointSetters{
   setPointID:React.Dispatch<React.SetStateAction<[string,number]>>,
@@ -11,7 +12,7 @@ interface pointSetters{
   setShowPointInfo:React.Dispatch<React.SetStateAction<boolean>>,
 }
 
-function PlotPoints({ points, tsID, pointSetters, scalers }: { points: THREE.Vector3[]; tsID: string, pointSetters:pointSetters; scalers:{xScale:number,yScale:number} }) {
+function PlotPoints({ points, tsID, instanceVals, pointSetters, scalers }: { points: THREE.Vector3[]; tsID: string, instanceVals:number[], pointSetters:pointSetters; scalers:{xScale:number,yScale:number} }) {
   const ref = useRef<THREE.InstancedMesh | null>(null);
   const count = points.length;
   const lastID = useRef<number | null>(null);
@@ -21,26 +22,31 @@ function PlotPoints({ points, tsID, pointSetters, scalers }: { points: THREE.Vec
   const {pointColor, pointSize, useCustomPointColor} = useGraphStore(useShallow(s => s))
   const {xScale, yScale} = scalers;
   const {timeSeries} = useGlobalStore(useShallow(s => s))
+  const valueRange = usePlotStore(s => s.valueRange)
   const [r, g, b] = timeSeries[tsID]['color']
   const geometry = useMemo(() => new THREE.SphereGeometry(pointSize), [pointSize])
   const material = useMemo(()=> new THREE.MeshBasicMaterial({color: new THREE.Color().setRGB(r/300, g/300, b/300).convertSRGBToLinear()}),[pointColor, useCustomPointColor, timeSeries])  // It was converting to sRGB colorspace while the line shader uses linear
 
   useEffect(() => {
-    if (ref.current){
-      const dummy = new THREE.Object3D()
-      for (let i = 0 ; i< count; i++){
-        const position = points[i].toArray()
-        if (position.every((val)=>isFinite(val)))dummy.position.set(position[0]*(xScale/2), position[1]*yScale, 1);
-        else dummy.position.set(0, 0, 110) //If NaN position, Place the point behind the camera (z=100)
-        // Apply both zoom scaling and data scaling to the instance matrix
-        dummy.scale.set(pointSize/zoom, pointSize/zoom, pointSize/zoom)
-        dummy.updateMatrix()
-        ref.current.setMatrixAt(i, dummy.matrix)
-      }
-      ref.current.instanceMatrix.needsUpdate = true
-      ref.current.computeBoundingSphere();
+    if (!ref.current) return
+    const dummy = new THREE.Object3D()
+    const s = pointSize / zoom
+
+    for (let i = 0; i < count; i++) {
+      const [x, y, z] = points[i].toArray()
+      const val = instanceVals?.[i]
+      const outOfRange = val !== undefined && (val > valueRange[1] || val < valueRange[0])
+      const valid = [x, y, z].every(Number.isFinite)
+      if (!valid || outOfRange) dummy.position.set(0, 0, 110)
+      else dummy.position.set(x * (xScale / 2), y * yScale, 1)
+      dummy.scale.setScalar(s)
+      dummy.updateMatrix()
+      ref.current.setMatrixAt(i, dummy.matrix)
     }
-  }, [points, zoom, geometry, material, xScale, yScale, pointSize]) // Add xScale, yScale as dependencies
+
+    ref.current.instanceMatrix.needsUpdate = true
+    ref.current.computeBoundingSphere()
+  }, [points, instanceVals, valueRange, count, zoom, xScale, yScale, pointSize, geometry, material])
 
   useFrame(({camera})=>{
     if (camera.zoom !== zoom){

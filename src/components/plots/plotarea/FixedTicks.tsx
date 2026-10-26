@@ -1,19 +1,11 @@
-import { Text, OrbitControls } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, Fragment } from 'react'
 import { parseTimeUnit } from '@/lib/helpers'
-import { Fragment } from 'react'
 import { useGlobalStore } from '@/stores/GlobalStore';
-import { usePlotStore } from '@/stores/PlotStore';
 import { useShallow } from 'zustand/shallow'
-import { useAxisIndices, useValueScales } from '@/hooks'
-
-interface ViewportBounds {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-}
+import { useDimAxis, useValueScales } from '@/hooks'
+import { CanvasText } from '../utils/CanvasText'
 
 interface FixedTicksProps {
   colorTicks?: string;
@@ -26,7 +18,26 @@ interface FixedTicksProps {
   xScale:number,
 }
 
-export function FixedTicks({ 
+// Shared <line> renderer: dashed for grid lines, solid for tick marks
+function PlotLine({ points, dashed, colorTicks, gridOpacity }: {
+  points: number[], dashed?: boolean, colorTicks: string, gridOpacity: number,
+}) {
+  return (
+    <line>
+      <bufferGeometry>
+        <float32BufferAttribute
+          attach="attributes-position"
+          args={[new Float32Array(points), 3]}
+        />
+      </bufferGeometry>
+      {dashed
+        ? <lineDashedMaterial color={colorTicks} opacity={gridOpacity} transparent dashSize={0.5} gapSize={0.5} />
+        : <lineBasicMaterial color={colorTicks} />}
+    </line>
+  )
+}
+
+export function FixedTicks({
   colorTicks = 'grey',
   tickSize = 4,
   fontSize = 14,
@@ -37,24 +48,14 @@ export function FixedTicks({
   xScale=1,
 }: FixedTicksProps) {
   const { camera, size } = useThree()
-  const initSize = useRef(size)
-  const [bounds, setBounds] = useState<ViewportBounds>({ left: 0, right: 0, top: 0, bottom: 0 })
-  const {dimCoords, axisDimArrays, plotDim} = useGlobalStore(useShallow(s => ({
-    dimCoords: s.dimCoords, axisDimArrays: s.axisDimArrays, plotDim: s.plotDim
+  // Single snapshot of the camera; anything that moves/zooms it re-renders the grid
+  const [cam, setCam] = useState({ x: camera.position.x, y: camera.position.y, zoom: camera.zoom })
+  const {dimCoords, plotDim} = useGlobalStore(useShallow(s => ({
+    dimCoords: s.dimCoords, plotDim: s.plotDim
   })))
-  const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(s => ({
-    zSlice: s.zSlice, ySlice: s.ySlice, xSlice: s.xSlice
-  })))
-  const {xIdx, yIdx, zIdx} = useAxisIndices()
   const valueScales = useValueScales();
-  const dimSlices = useMemo(() => {
-    return [
-      axisDimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
-      axisDimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
-      axisDimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
-    ]
-  }, [axisDimArrays, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
-  const xDimArray = useMemo(() => dimSlices[plotDim], [dimSlices, plotDim])
+  const {xArray, yArray, zArray} = useDimAxis()
+  const xDimArray = [zArray, yArray, xArray][plotDim]
   const xTickCount = 10;
   const yTickCount = 8;
 
@@ -72,11 +73,8 @@ export function FixedTicks({
         const timeStrings = []
         for (let i = 0 ; i < xDimArray.length; i++){
           const timeStamp = Number(xDimArray[i])*unit
-          // timeStrings.push(new Date(timeStamp).toDateString())
           const date = new Date(timeStamp+offset);
-          // const dateString = date.toDateString().replace(/\s(\d{4})$/, '\n$1');
           const dateString = `${date.getDate().toString().padStart(2, '0')} ${months[date.getMonth()]}\n${date.getFullYear()}`;
-          // // timeStrings.push(dateString);
           timeStrings.push(dateString);
         }
         return timeStrings
@@ -85,193 +83,87 @@ export function FixedTicks({
     }
   },[xDimArray,dimCoords])
 
-  const [zoom, setZoom] = useState(camera.zoom)
-  
-  const sizes = useMemo(() => {
-    // Convert from pixels to scene units
-    const pixelsPerUnit = 1 / camera.zoom 
-    return {
-      tickSize: tickSize * pixelsPerUnit,
-      fontSize: fontSize / pixelsPerUnit,
-      labelOffset: tickSize * pixelsPerUnit
-    }
-  }, [camera.zoom, tickSize, fontSize])
-
-
   useFrame(() => {
-    if (camera.zoom !== zoom) {
-      setZoom(camera.zoom) 
-    }
-    const worldWidth = size.width / camera.zoom
-    const worldHeight = size.height / camera.zoom
-    const newBounds = {
-      left: -worldWidth / 2 + camera.position.x,
-      right: worldWidth / 2 + camera.position.x,
-      top: worldHeight / 2 + camera.position.y,
-      bottom: -worldHeight / 2 + camera.position.y
-    }
-    if (JSON.stringify(bounds) != JSON.stringify(newBounds)){ 
-      setBounds(newBounds) //This was firing every frame. Changed to only fire if it's different
+    if (camera.position.x !== cam.x || camera.position.y !== cam.y || camera.zoom !== cam.zoom) {
+      setCam({ x: camera.position.x, y: camera.position.y, zoom: camera.zoom })
     }
   })
 
+  // Must match the data coordinate system built in ThickLine/PlotPoints:
+  // world x = (u - .5) * viewWidth * xScale, world y = (v - .5) * viewHeight * yScale
+  const viewWidth = window.innerWidth
+  const viewHeight = window.innerHeight - height
+
+  const worldPerPx = 1 / cam.zoom
+  const worldWidth = size.width * worldPerPx   // visible width in world units
+  const worldHeight = size.height * worldPerPx // visible height in world units
+  const tickLen = tickSize * worldPerPx        // tickSize px expressed in world units
+  const labelFont = fontSize * worldPerPx      // fontSize px expressed in world units
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   // @ts-expect-error why J?
   const cameraRef = useRef<OrbitControls | null>(null)
 
-  //This reset the camera position when the window is rescaled
-  useEffect(() => {
-    // Clear existing timeout if height changes
-    if (timeoutRef.current){
-      clearTimeout(timeoutRef.current);
-    }
-    if (cameraRef.current){
-          // Set a timeout for 0.1 seconds
-      timeoutRef.current = setTimeout(() => {
-      if (cameraRef.current) {
-        cameraRef.current.reset();
-      }
-      }, 100);
-    }
-    // Cleanup timeout when component unmounts or height changes
-    return () => {
-      if (timeoutRef.current !== null) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [height]);
-  const vertY = (bounds.top+bounds.bottom)/2
-  const horX = (bounds.left+bounds.right)/2 //Moved calcs here to reduce calcs
-  const rescaleSizes = {
-    width: initSize.current.width/size.width,
-    height: initSize.current.height/size.height
-  }
   return (
     <group >
-      {/* Grid Lines */}
       {showGrid && (
         <>
-          {/* Vertical grid lines */}
+          {/* Vertical grid lines, fixed to the viewport */}
           {Array.from({ length: xTickCount }, (_, i) => {
             if (i === 0 || i === xTickCount-1) return null; // Skip edges
-            const x = (size.width*(i / (xTickCount-1))-size.width/2 + camera.position.x)
-            const normX = (x/(rescaleSizes.width))/xScale/size.width+.5;
-            const y = vertY
+            const x = size.width*(i/(xTickCount-1)-.5)/cam.zoom + cam.x
+            const normX = x/(viewWidth*xScale)+.5; // invert the data transform
             return (
-              <Fragment key={`vert-group-${i}`}>
-                <group position={[x,y,0]}>
-                    <line key={`vgrid-${i}`} >
-                      <bufferGeometry >
-                        <float32BufferAttribute
-                          attach="attributes-position"
-                          args={[new Float32Array([
-                            0, bounds.top-y, 0,
-                            0, bounds.bottom-y, 0
-                          ]), 3]}
-                        />
-                      </bufferGeometry >
-                      <lineDashedMaterial 
-                        color={colorTicks} 
-                        opacity={gridOpacity} 
-                        transparent 
-                        dashSize={0.5}
-                        gapSize={0.5}
-                        
-                      />
-                    </line>
+              <Fragment key={`xtick-${i}`}>
+                <group position={[x, cam.y, 0]}>
+                  <PlotLine points={[0, worldHeight/2, 0, 0, -worldHeight/2, 0]} dashed colorTicks={colorTicks} gridOpacity={gridOpacity} />
                 </group>
-                
-                <group key={`top-tick-${i}`} position={[x, bounds.top, 0]}>
-                  <line>
-                    <bufferGeometry>
-                      <float32BufferAttribute
-                        attach="attributes-position"
-                        args={[new Float32Array([0, 0, 0, 0, -sizes.tickSize, 0]), 3]}
-                      />
-                    </bufferGeometry>
-                    <lineBasicMaterial color={colorTicks} />
-                  </line>
-
-                  {/* Only show labels for non-edge ticks */}
-                  {i !== 0 && i !== xTickCount-1 && (
-                    <Text
-                      position={[0, sizes.tickSize/4 - sizes.labelOffset, 0]}
-                      fontSize={sizes.fontSize/zoom**2}
-                      color={colorTicks}
-                      anchorX="center"
-                      anchorY="top"
-                    >
-                      {textArray?.[Math.round(normX*xDimSize-.5)] ?? ''}
-                    </Text>
-                  )}
+                <group position={[x, cam.y + worldHeight/2, 0]}>
+                  <PlotLine points={[0, 0, 0, 0, -tickLen, 0]} colorTicks={colorTicks} gridOpacity={gridOpacity} />
+                  <CanvasText
+                    position={[0, -0.75*tickLen, 0]}
+                    fontSize={labelFont}
+                    color={colorTicks}
+                    anchorX="center"
+                    anchorY="top"
+                  >
+                    {textArray?.[Math.round(normX*(xDimSize-1))] ?? ''}
+                  </CanvasText>
                 </group>
               </Fragment>
             )
           })}
 
-          {/* Horizontal grid lines */}
+          {/* Horizontal grid lines, fixed to the viewport */}
           {Array.from({ length: yTickCount }, (_, i) => {
             if (i === 0 || i === yTickCount-1) return null; // Skip edges
-            const y = (size.height*(i / (yTickCount-1))-size.height/2 + camera.position.y)
-            const normY = (y/(rescaleSizes.height))/yScale/size.height+.5;
-            const x = horX
+            const y = size.height*(i/(yTickCount-1)-.5)/cam.zoom + cam.y
+            const normY = y/(viewHeight*yScale)+.5; // invert the data transform
             return (
-              <Fragment key={`vert-group-${i}`}>
-                <group key={`hgrid-${i}`} position={[x,y,0]}>
-                  <line >
-                    <bufferGeometry>
-                      <float32BufferAttribute
-                        attach="attributes-position"
-                        args={[new Float32Array([
-                          bounds.left-x, 0, 0,
-                          bounds.right-x, 0, 0
-                        ]), 3]}
-                      />
-                    </bufferGeometry>
-                    <lineDashedMaterial 
-                      color={colorTicks} 
-                      opacity={gridOpacity} 
-                      transparent 
-                      dashSize={0.}
-                      gapSize={0.5}
-                      linewidth={1}
-                    />
-                  </line>
+              <Fragment key={`ytick-${i}`}>
+                <group position={[cam.x, y, 0]}>
+                  <PlotLine points={[worldWidth/2, 0, 0, -worldWidth/2, 0, 0]} dashed colorTicks={colorTicks} gridOpacity={gridOpacity} />
                 </group>
-                <group key={`right-tick-${i}`} position={[bounds.right, y, 0]}>
-                  <line>
-                    <bufferGeometry>
-                      <float32BufferAttribute
-                        attach="attributes-position"
-                        args={[new Float32Array([0, 0, 0, -sizes.tickSize, 0, 0]), 3]}
-                      />
-                    </bufferGeometry>
-                    <lineBasicMaterial color={colorTicks} />
-                  </line>
-                  {/* Only show labels for non-edge ticks */}
-                  {i !== 0 && i !== yTickCount-1 && (
-                    <Text
-                      position={[-sizes.tickSize - sizes.labelOffset, 0, 0]}
-                      fontSize={sizes.fontSize/zoom**2}
-                      color={colorTicks}
-                      anchorX="right"
-                      anchorY="middle"
-                    >
-                      {(valueScales.minVal+(normY*yDimSize)).toFixed(1)}
-
-
-                    </Text>
-                  )}
+                <group position={[cam.x + worldWidth/2, y, 0]}>
+                  <PlotLine points={[0, 0, 0, -tickLen, 0, 0]} colorTicks={colorTicks} gridOpacity={gridOpacity} />
+                  <CanvasText
+                    position={[-2*tickLen, 0, 0]}
+                    fontSize={labelFont}
+                    color={colorTicks}
+                    anchorX="right"
+                    anchorY="middle"
+                  >
+                    {(valueScales.minVal+(normY*yDimSize)).toFixed(1)}
+                  </CanvasText>
                 </group>
               </Fragment>
             )
           })}
         </>
       )}
-      <OrbitControls 
+      <OrbitControls
         ref={cameraRef}
-        enableRotate={false} 
+        enableRotate={false}
         enablePan={true}
         enableZoom={true}
         zoomSpeed={0.85}

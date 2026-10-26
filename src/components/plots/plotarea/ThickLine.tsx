@@ -1,16 +1,13 @@
 "use client";
 
-import React, {useEffect, useMemo, useRef, useState} from 'react'
-import * as THREE from 'three'
-import { useGlobalStore } from '@/stores/GlobalStore';
-import { useShallow } from 'zustand/shallow'
-import vertexShader from '@/gpu/shaders/thickLineVert.glsl'
-import { PlotPoints } from './PlotPoints';
-import { useThree } from '@react-three/fiber';
-import { invalidate } from '@react-three/fiber';
-import { useGraphStore } from '@/stores/GraphStore';
-import { useColormapStore } from '@/stores/ColormapStore';
+import { createPlotLineMaterial, lu } from '@/gpu/tsl/line';
 import { useValueScales } from '@/hooks';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useGraphStore } from '@/stores/GraphStore';
+import React, { useEffect, useMemo } from 'react';
+import * as THREE from 'three/webgpu';
+import { useShallow } from 'zustand/shallow';
+import { PlotPoints } from './PlotPoints';
 
 function linspace(start: number, stop: number, num: number): number[] {
     const step = (stop - start) / (num - 1);
@@ -26,87 +23,36 @@ interface pointSetters{
 interface ThickLineProps {
 	height: number;
 	yScale: number,
-  xScale: number,
+  	xScale: number,
 	pointSetters: pointSetters
 }
 
 const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
-    const timeSeries = useGlobalStore(s => s.timeSeries);
-    const colormap = useColormapStore(s => s.colormap);
-    const {lineWidth, useLineColor, lineColor, showPoints, lineResolution, useCustomColor} = useGraphStore(useShallow(s => s));
-	  const {camera} = useThree()
-
+  const timeSeries = useGlobalStore(s => s.timeSeries);
+  const {lineWidth, useLineColor, lineColor, showPoints, lineResolution, useCustomColor} = useGraphStore(useShallow(s => s));
   const {maxVal, minVal} = useValueScales();
-  const materials = useMemo(()=>{
-        const materialObj: { [key: string]: THREE.ShaderMaterial } = {};
-        Object.keys(timeSeries).reverse().map((val, idx)=>{ 
-        const [r,g,b] = timeSeries[val]['color']
-        materialObj[val] = 
-        new THREE.ShaderMaterial({
-                glslVersion: THREE.GLSL3,
-                uniforms: {
-                    cmap:{value: colormap},
-                    xScale: {value: xScale},
-                    yScale: {value: yScale},
-                    aspect: {value : window.innerWidth / window.innerHeight},
-                    thickness:{value:lineWidth},
-                    miter: {value: 1},
-                    useLineColor: {value: useCustomColor},
-                    useMapColors: {value: useLineColor},
-                    lineColor: {value: new THREE.Color().setRGB(r/255, g/255, b/255)},
-                    userColor: {value: new THREE.Color(lineColor)},
-                    zoom: {value: camera.zoom}
-                },
-                vertexShader,
-                fragmentShader:`
-                out vec4 Color;
-                uniform sampler2D cmap;
-                uniform bool useLineColor;
-                uniform bool useMapColors;
-                uniform vec3 lineColor;
-                uniform vec3 userColor;
-                in float vNormed;
-
-                void main() {
-                    vec4 texColor = texture(cmap, vec2(vNormed, 0.1));
-                    texColor.a = 1.;
-                    Color = useLineColor ? vec4(userColor, 1.0) : useMapColors ? texColor : vec4(lineColor, 1.0) ;
-                }
-                `,
-                depthWrite: false,
-                })
-          })
-          return materialObj},[timeSeries])
+  const material = useMemo(()=>createPlotLineMaterial(),[])
 
   useEffect(()=>{
-    if (Object.values(materials)){
-      for (const material of Object.values(materials)){
-        const uniforms = material.uniforms
-        uniforms.cmap.value = colormap
-        uniforms.xScale.value = xScale
-        uniforms.yScale.value = yScale
-        uniforms.aspect.value = window.innerWidth / window.innerHeight
-        uniforms.thickness.value =lineWidth
-        uniforms.miter.value = 1
-        uniforms.useLineColor.value = useCustomColor
-        uniforms.useMapColors.value = useLineColor
-        uniforms.userColor.value = new THREE.Color(lineColor)
-        uniforms.zoom.value = camera.zoom
-        invalidate()
-      }
-    }
-  },[colormap,lineWidth,xScale,yScale,window.innerWidth, window.innerHeight, useLineColor, lineColor, camera.zoom, useCustomColor,])
-
+    lu.xScale.value = xScale
+    lu.yScale.value = yScale
+    lu.thickness.value = lineWidth
+    lu.useLineColor.value = useCustomColor
+    lu.useMapColors.value = useLineColor
+    lu.userColor.value = new THREE.Color(lineColor)
+  },[lineWidth, xScale, yScale, useLineColor, useCustomColor, lineColor])
 
   const viewWidth = useMemo(()=>window.innerWidth,[window.innerWidth])
-  const viewHeight = useMemo(()=>window.innerHeight - height, [window.innerWidth, height])
+  const viewHeight = useMemo(()=>window.innerHeight - height, [window.innerHeight, height])
 
-  const {geometries, instancePoints} = useMemo(()=>{
-    const geomObj: Record<string, THREE.BufferGeometry> = {}
-    const tempInstances: Record<string, THREE.Vector3[]> = {}
+  const {geometries, instancePoints, instanceVals} = useMemo(()=>{
+  const geomObj: Record<string, THREE.BufferGeometry> = {}
+  const tempInstances: Record<string, THREE.Vector3[]> = {}
+	const instanceVals: Record<string, number[]> = {}
     Object.keys(timeSeries).map((val, idx)=>{ 
       const tempTS = timeSeries[val]['data'] as number[]
       const normed = tempTS.map((i) => (i - minVal) / (maxVal - minVal))
+	    instanceVals[val] = normed
       const size = tempTS.length;
       const xCoords = linspace(-viewWidth,viewWidth,size)
       const points = normed.map((val,idx) => new THREE.Vector3(xCoords[idx], (val-.5)*viewHeight, 5));
@@ -163,24 +109,28 @@ const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
       geometry.setIndex(new THREE.Uint16BufferAttribute(indices, 1));
       geomObj[val] = geometry
     })
+    return {geometries:geomObj, instancePoints:tempInstances, instanceVals }
+  },[timeSeries, lineResolution, minVal, maxVal, viewWidth, viewHeight]) 
 
-    return {geometries:geomObj, instancePoints:tempInstances}
-  },[timeSeries, lineResolution]) 
-
-  useEffect(()=>{
-    invalidate()
-  },[showPoints])
+  // --- CLEANUP --- //
+  useEffect(()=> {return ()=>material.dispose() },[material])
+  useEffect(()=> {return ()=>Object.values(geometries).forEach(g => g.dispose()) },[geometries])
   return (
     <>
 		<group>
       {Object.keys(timeSeries).map((val, idx)=>(
-        <mesh key={`lineMesh_${idx}`} geometry={geometries[val]} material={ materials[val]} />))}
+        <mesh key={`lineMesh_${idx}`} 
+          geometry={geometries[val]} 
+          material={material} 
+          userData={{lineColor: new THREE.Vector3(...timeSeries[val].color)}}
+        />))}
       {showPoints && Object.keys(timeSeries).map((val, idx)=> 
-        <PlotPoints key={`plotPoints_${idx}`} points={instancePoints[val]} tsID={val}  pointSetters={pointSetters} scalers={{xScale,yScale}}/>
+        <PlotPoints key={`plotPoints_${idx}`} points={instancePoints[val]} tsID={val} instanceVals={instanceVals[val]} pointSetters={pointSetters} scalers={{xScale,yScale}}/>
       )}
 		</group>
 		</>
   )
 }
 
-export {ThickLine}
+export { ThickLine };
+
