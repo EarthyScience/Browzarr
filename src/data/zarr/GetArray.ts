@@ -69,11 +69,8 @@ export async function GetArray(varOveride?: string) {
     setArraySize(totalElements);
     setCurrentChunks({ x: [xDim.start, xDim.end], y: [yDim.start, yDim.end], z: [zDim.start, zDim.end] }); // These are used in GetCurrentArray() function
 
-    let scalingFactor: number | undefined;
     const totalChunks = (zDim.end - zDim.start) * (yDim.end - yDim.start) * (xDim.end - xDim.start);
     let iter = 1;
-    const rescaleIDs: string[] = [];
-
     const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : "";
     let cacheBase = scalarIndices !== "" ? `${initStore}_${targetVariable}_${scalarIndices}` : `${initStore}_${targetVariable}`;
     if (rank >= 4 && idx4D !== undefined && idx4D !== null) {
@@ -113,6 +110,8 @@ export async function GetArray(varOveride?: string) {
         setProgress(cumulativeProgress)
     },100)
 
+    // --- CHUNK FETCH --- //
+    const chunkScalingFactors: Record<string, number | undefined> = {};
     for (let z = zDim.start; z < zDim.end; z++) {
         for (let y = yDim.start; y < yDim.end; y++) {
             for (let x = xDim.start; x < xDim.end; x++) {
@@ -129,36 +128,25 @@ export async function GetArray(varOveride?: string) {
                             sliceStart
                         });
                     }
+                    chunkScalingFactors[chunkID] = cachedChunk.scaling;
                     continue;
                 } else {
                     const raw = await fetcher.fetchChunk({ variable:targetVariable, rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, ndSlices, axisMapping });
                     jobs.push((async ()=>{
-                        const {chunkF16, thisShape, chunkStride, newScalingFactor} = 
-                            await pool.dispatch('processChunk', 
-                                {raw, coarsen, compress, hasZ, kernelInfo, indices, scalingFactor, fillValue}, 
+                        const {chunkF16, thisShape, chunkStride, newScalingFactor} =
+                            await pool.dispatch('processChunk',
+                                {raw, coarsen, compress, hasZ, kernelInfo, indices, scalingFactor: undefined, fillValue},
                                 [raw.data.buffer]
                             )
-
-                        //This block is not in the worker as it needs access to the cache. 
-                        if (newScalingFactor != null && newScalingFactor !== scalingFactor) {
-                            const delta = scalingFactor ? newScalingFactor - scalingFactor : newScalingFactor;
-                            scalingFactor = newScalingFactor;
-                            for (const id of rescaleIDs) {
-                                const tempChunk = cache.get(`${cacheBase}_chunk_${id}`);
-                                tempChunk.scaling = scalingFactor;
-                                RescaleArray(tempChunk.data, delta);
-                                cache.set(`${cacheBase}_chunk_${id}`, tempChunk);
-                            }
-                        }
+                        chunkScalingFactors[chunkID] = newScalingFactor;
                         cache.set(cacheName, {
                             data: chunkF16,
                             shape: thisShape.slice(-3), stride: chunkStride.slice(-3),
-                            scaling: scalingFactor, compressed: compress, coarsened: coarsen,
+                            scaling: newScalingFactor, compressed: compress, coarsened: coarsen,
                             kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined },
                             fullChunkDim: [zDim.chunkDim, yDim.chunkDim, xDim.chunkDim],
                             sliceStart
                         });
-                        rescaleIDs.push(chunkID);
                         workerProgress = Math.round(iter++ / totalChunks * 100);
                     })())
                 }
@@ -171,5 +159,32 @@ export async function GetArray(varOveride?: string) {
         clearInterval(thisProgress);
         setProgress(0);
     }
+
+    // --- CHUNK SCALING --- //
+    let scalingFactor: number | undefined;
+    const factors = Object.values(chunkScalingFactors).map(f => f ?? 0);
+    const rescaleJobs = []
+    if (factors.length > 0) {
+        const allSame = factors.every(f => f === factors[0]);
+        if (allSame) {
+            scalingFactor = factors[0] !== 0 ? factors[0] : undefined;
+        } else {
+            const maxScalingFactor = Math.max(...factors);
+            for (const [id, factor] of Object.entries(chunkScalingFactors)) {
+                const current = factor ?? 0;
+                if (current !== maxScalingFactor) {
+                    const delta = maxScalingFactor - current;
+                    const tempChunk = cache.get(`${cacheBase}_chunk_${id}`);
+                    tempChunk.scaling = maxScalingFactor;
+                    rescaleJobs.push(async () =>{
+                        const {array} = await pool.dispatch('rescaler', {array: tempChunk.data, delta}, [tempChunk.data])
+                        cache.set(`${cacheBase}_chunk_${id}`, array);
+                    })
+                }
+            }
+            scalingFactor = maxScalingFactor;
+        }
+    }
+    await Promise.all(rescaleJobs)
     return { shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor };
 }

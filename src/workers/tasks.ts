@@ -3,6 +3,7 @@ import { toHalfFloat } from 'three/src/extras/DataUtils.js';
 import { decompressSync } from 'fflate';
 import {processChunk, processIn, processOut} from './tasks/processChunk';
 import { createTextureData, textureIn, textureOut } from './tasks/createTextureData';
+import { RescaleArray } from '@/data/zarr/utils';
 
 interface normalizeIn{
     data: Uint8Array | Float16Array;
@@ -53,10 +54,16 @@ function decompressArray({array}:{array:Uint8Array}){
 	return {newArray}
 }
 
+function rescaler({array, delta}:{array:Float16Array, delta:number}){
+    RescaleArray(array, delta);
+    return {array}
+}
+
 export const tasks = {
     normalizeData: (d: normalizeIn): {textureData: Uint8Array | Uint16Array} => normalizeTextureData(d),
     readRasterData: (d: readRasterIn): Promise<{data: any, width:number, height: number}> => readRasterData(d),
     decompress: (d: {array:Uint8Array}): {newArray: Float16Array} => decompressArray(d),
     processChunk: (d: processIn) : Promise<processOut> => processChunk(d),
-    textureData: (d: textureIn) : textureOut => createTextureData(d)
+    textureData: (d: textureIn) : textureOut => createTextureData(d),
+    rescaler: (d: {array:Float16Array, delta:number}) : {array: Float16Array} => rescaler(d)
 };
