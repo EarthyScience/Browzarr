@@ -43,7 +43,7 @@ const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
   },[lineWidth, xScale, yScale, useLineColor, useCustomColor, lineColor])
 
   const viewWidth = useMemo(()=>window.innerWidth,[window.innerWidth])
-  const viewHeight = useMemo(()=>window.innerHeight - height, [window.innerWidth, height])
+  const viewHeight = useMemo(()=>window.innerHeight - height, [window.innerHeight, height])
 
   const {geometries, instancePoints, instanceVals} = useMemo(()=>{
   const geomObj: Record<string, THREE.BufferGeometry> = {}
@@ -127,10 +127,6 @@ const ThickLine = ({height, xScale, yScale, pointSetters} : ThickLineProps) => {
       {showPoints && Object.keys(timeSeries).map((val, idx)=> 
         <PlotPoints key={`plotPoints_${idx}`} points={instancePoints[val]} tsID={val} instanceVals={instanceVals[val]} pointSetters={pointSetters} scalers={{xScale,yScale}}/>
       )}
-      <mesh>
-        <boxGeometry />
-        <meshNormalMaterial />
-      </mesh>
 		</group>
 		</>
   )

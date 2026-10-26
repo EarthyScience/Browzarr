@@ -6,7 +6,7 @@ import { Fragment } from 'react'
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { usePlotStore } from '@/stores/PlotStore';
 import { useShallow } from 'zustand/shallow'
-import { useAxisIndices, useValueScales } from '@/hooks'
+import { useAxisIndices, useDimAxis, useValueScales } from '@/hooks'
 import { CanvasText } from '../utils/CanvasText'
 interface ViewportBounds {
   left: number;
@@ -39,21 +39,12 @@ export function FixedTicks({
   const { camera, size } = useThree()
   const initSize = useRef(size)
   const [bounds, setBounds] = useState<ViewportBounds>({ left: 0, right: 0, top: 0, bottom: 0 })
-  const {dimCoords, axisDimArrays, plotDim} = useGlobalStore(useShallow(s => ({
-    dimCoords: s.dimCoords, axisDimArrays: s.axisDimArrays, plotDim: s.plotDim
+  const {dimCoords, plotDim} = useGlobalStore(useShallow(s => ({
+    dimCoords: s.dimCoords, plotDim: s.plotDim
   })))
-  const {zSlice, ySlice, xSlice} = usePlotStore(useShallow(s => ({
-    zSlice: s.zSlice, ySlice: s.ySlice, xSlice: s.xSlice
-  })))
-  const {xIdx, yIdx, zIdx} = useAxisIndices()
   const valueScales = useValueScales();
-  const dimSlices = useMemo(() => {
-    return [
-      axisDimArrays[zIdx]?.slice(zSlice[0], zSlice[1] ? zSlice[1] : undefined) ?? [],
-      axisDimArrays[yIdx]?.slice(ySlice[0], ySlice[1] ? ySlice[1] : undefined) ?? [],
-      axisDimArrays[xIdx]?.slice(xSlice[0], xSlice[1] ? xSlice[1] : undefined) ?? [],
-    ]
-  }, [axisDimArrays, xSlice, ySlice, zSlice, xIdx, yIdx, zIdx])
+  const {xArray, yArray, zArray} = useDimAxis()
+  const dimSlices = [zArray, yArray, xArray]
   const xDimArray = useMemo(() => dimSlices[plotDim], [dimSlices, plotDim])
   const xTickCount = 10;
   const yTickCount = 8;
@@ -72,11 +63,8 @@ export function FixedTicks({
         const timeStrings = []
         for (let i = 0 ; i < xDimArray.length; i++){
           const timeStamp = Number(xDimArray[i])*unit
-          // timeStrings.push(new Date(timeStamp).toDateString())
           const date = new Date(timeStamp+offset);
-          // const dateString = date.toDateString().replace(/\s(\d{4})$/, '\n$1');
           const dateString = `${date.getDate().toString().padStart(2, '0')} ${months[date.getMonth()]}\n${date.getFullYear()}`;
-          // // timeStrings.push(dateString);
           timeStrings.push(dateString);
         }
         return timeStrings
