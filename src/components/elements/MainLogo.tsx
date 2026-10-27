@@ -147,7 +147,6 @@ export const MainLogo = () => {
     setVariant(Math.random() >= 0.5);
     const gradients = Object.keys(gradientVariants);
     const thisGradient = gradients[Math.floor(Math.random() * gradients.length)]
-    console.log(thisGradient)
     setColorScheme(gradientVariants[thisGradient as keyof typeof gradientVariants])
   }, []);
 

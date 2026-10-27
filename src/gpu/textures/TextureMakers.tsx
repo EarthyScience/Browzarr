@@ -1,32 +1,35 @@
 //This File will have functions converting the array information into 2D or 3D textures that we will pass to the corresponding 2D or 3D object
 import * as THREE from 'three'
-import { ArrayMinMax, GetCurrentArray, TypedArray, TypedArrayBufferLike  } from '@/lib/helpers';
+import { ArrayMinMax, GetCurrentArray, TypedArray, TypedArrayBufferLike, workerMinMax  } from '@/lib/helpers';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { clamp } from 'three/src/math/MathUtils.js';
+import { getPool } from '@/workers/pool';
 
 interface Array {
     data: TypedArray | TypedArrayBufferLike;
     shape: number[];
 }
 
-function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales?: {maxVal: number, minVal: number}, useF16=false): {minVal: number, maxVal: number}{
+async function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales?: {maxVal: number, minVal: number}, useF16=false)
+  :Promise<{minVal: number, maxVal: number}>{
     const { setTextureData } = useGlobalStore.getState()
-    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : ArrayMinMax(array)
+    const [minVal,maxVal] = valueScales ? [valueScales.minVal, valueScales.maxVal] : await workerMinMax(array as Uint8Array | Float16Array)
     const textureData = useF16 ? new Uint16Array(array.length) : new Uint8Array(array.length)
     const range = (maxVal - minVal)
-    for (let i = 0; i < array.length; i++){
-      const normed = (array[i] - minVal) / range;
-      if (isNaN(normed)){
-        textureData[i] = useF16 
-			?	THREE.DataUtils.toHalfFloat(NaN)
-			:	255;
-      } else {
-        textureData[i] = useF16
-			?	THREE.DataUtils.toHalfFloat(normed)
-			:	normed * 254;
-      }
-    };
-    
+    const pool = getPool();
+    const poolSize = pool.poolSize;
+    const arrayLength = textureData.length;
+    const sliceSize = Math.ceil(arrayLength/poolSize);
+    const jobs: Promise<void>[] = []
+    for (let i = 0; i < poolSize; i++){
+        const start = i*sliceSize;
+        const end = Math.min(start+sliceSize, arrayLength)
+        jobs.push((async () => {
+          const {normedArray} = await pool.dispatch('normalizeData', {data: array.subarray(start, end), minVal, range, useF16} )
+          textureData.set(normedArray, start)
+        })())
+    }
+    await Promise.all(jobs)
     setTextureData(textureData)
     return {minVal, maxVal}
 }
@@ -35,10 +38,8 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
   const {textureArrayDepths, bivariate} = useGlobalStore.getState()
   const textureData = data ?? useGlobalStore.getState().textureData
   if (!textureData) return;
-
   const numComponents = bivariate ? 2 : 1;
   const format = bivariate ? THREE.RGFormat : THREE.RedFormat;
-
   if (shape.length == 2){
     const width = shape[1];
     const height = shape[0];
@@ -84,21 +85,22 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
   }
 }
 
-export function createDataTexture(){
+export async function createDataTexture(){
   const { dataShape, bivariate, setMainTextures, setValueScales} = useGlobalStore.getState();
   if (bivariate){
     setValueScales(storeBivariate());
   }
   else{
     const dataArray = GetCurrentArray();
-    setValueScales([StoreData(dataArray)]);
+    setValueScales([await StoreData(dataArray)]);
   }
   const textures = CreateTexture(dataShape);
   setMainTextures(textures);
 }
 
-export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}, useF16=false): [ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]{
-    const scales = StoreData(array.data, valueScales, useF16);
+export async function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minVal: number}, useF16=false)
+  : Promise<[ THREE.Data3DTexture[] | THREE.DataTexture[], {minVal: number, maxVal: number}]>{
+    const scales = await StoreData(array.data, valueScales, useF16);
     const textures = CreateTexture(array.shape, undefined, useF16)
     return [textures as THREE.Data3DTexture[] | THREE.DataTexture[], scales];
 }

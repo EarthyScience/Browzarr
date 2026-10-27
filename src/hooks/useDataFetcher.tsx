@@ -107,14 +107,15 @@ export const useDataFetcher = () => {
                 }))
                 Promise.all(promises).then(() =>{
                     parseExtent();  
-                    createDataTexture();
+                    setUnits(units);
+                    setScalingFactors(scalingFactors);
                     if(preProject)reproject();
                     else handleIrregularGrid();   
-                    setShow(true);
-                    setPlotOn(true);
-                    setStatus(null);
-                    setUnits(units)
-                    setScalingFactors(scalingFactors)
+                    createDataTexture().then(()=>{
+                        setShow(true);
+                        setPlotOn(true);
+                        setStatus(null);
+                    })
                 });
             } catch (error) {
                 setStatus(null);

@@ -8,7 +8,7 @@ import { copyChunkToArray } from '@/data/zarr/utils';
 import { getNCDims } from '@/data/zarr/NCGetters';
 import { GetZarrDims } from '@/data/zarr/ZarrLoaderLRU';
 import { getGTDims } from '@/data/zarr/GTGetters';
-
+import { getPool } from '@/workers/pool';
 export type TypedArray =
   | Float32Array | Float64Array
   | Int8Array | Uint8Array | Uint8ClampedArray
@@ -159,6 +159,30 @@ export function getUnitAxis(vec: THREE.Vector3) { //Takes the normal of a cube i
 }
 
 export { ArrayMinMax, coarsen3DArray, calculateStrides } from './arrayMath';
+
+export async function workerMinMax(array: Uint8Array | Float16Array){
+  const pool = getPool()
+  const poolSize = pool.poolSize
+  const arrayLength = array.length;
+  const sliceSize = Math.ceil(arrayLength/poolSize);
+  const values = {
+    mins: [] as number[],
+    maxs: [] as number[]
+  }
+  const jobs: Promise<void>[] = []
+  for (let i = 0; i < poolSize; i++){
+      const start = i*sliceSize;
+      const end = Math.min(start+sliceSize, arrayLength)
+      jobs.push((async () => {
+        const {maxVal, minVal} = await pool.dispatch('minMax', {array: array.subarray(start, end)} )
+        values.mins.push(minVal)
+        values.maxs.push(maxVal)
+      })())
+  }
+  await Promise.all(jobs)
+  return [Math.min(...values.mins), Math.max(...values.maxs)]
+}
+
 
 export function linspace(start: number, stop: number, num: number): number[] {
     const step = (stop - start) / (num - 1);

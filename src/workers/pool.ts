@@ -12,6 +12,9 @@ class Pool {
     this.size = size;
   }
 
+  get poolSize(){
+    return this.size
+  }
   private ensureWorkers() {
     if (!this.initialized && typeof Worker !== 'undefined') {
       this.initialized = true;
