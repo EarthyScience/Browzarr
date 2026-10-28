@@ -195,24 +195,22 @@ export function copyChunkToArray(
 	destArray: Float16Array,
 	destShape: number[],
 	destStride: number[],
-	chunkGridPos: number[],
-	fullChunkDim: number[],
-	sliceStart: number[],
+	chunkOrigin: number[], // absolute index of chunkData[0] per dim
+	sliceStart: number[],  // absolute index of destArray[0] per dim
 ): void {
 	// ---- This is a vibecoded function and I don't really know how it works. 
 	const ndim = chunkShape.length;
-	chunkGridPos = chunkGridPos.slice(-ndim);
-	fullChunkDim = fullChunkDim.slice(-ndim);
-	sliceStart   = sliceStart.slice(-ndim);
+	chunkOrigin = chunkOrigin.slice(-ndim);
+	sliceStart  = sliceStart.slice(-ndim);
 	const start = new Array<number>(ndim);
 	const end = new Array<number>(ndim);
-	const destBase = new Array<number>(ndim); // abs offset - sliceStart, per dim
+	const destBase = new Array<number>(ndim); // dest index of chunk element 0, per dim
 
 	for (let i = 0; i < ndim; i++) {
-		const abs = chunkGridPos[i] * fullChunkDim[i];
-		start[i] = Math.max(0, sliceStart[i] - abs);
-		end[i] = Math.min(chunkShape[i], sliceStart[i] + destShape[i] - abs);
-		destBase[i] = abs - sliceStart[i];
+		// floor: origins can be fractional when coarsened
+		destBase[i] = Math.floor(chunkOrigin[i] - sliceStart[i]);
+		start[i] = Math.max(0, -destBase[i]);
+		end[i] = Math.min(chunkShape[i], destShape[i] - destBase[i]);
 	}
 
 	const last = ndim - 1;

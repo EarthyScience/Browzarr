@@ -102,8 +102,9 @@ export async function getRasterData(overrideVar?: string){
         stride: thisStride,
         scaling: 0, compressed: false, coarsened: coarsen,
         kernel: { kernelDepth: coarsen ? kernelDepth : undefined, kernelSize: coarsen ? kernelSize : undefined },
-        fullChunkDim: thisShape,
+        origin: [0, 0, 0],
         sliceStart: [0, 0, 0],
+        complete: true,
     }
     cache.set(`${initStore}_${thisVar}_chunk_z0_y0_x0`, cacheChunk)
     setStatus(null)

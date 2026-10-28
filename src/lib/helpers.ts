@@ -263,8 +263,7 @@ export function GetCurrentArray(overrideStore?: string, overrideVariable?: strin
             typedArray,
             dataShape,
             strides as [number, number, number], 
-            [z, y, x], 
-            chunk.fullChunkDim || [1, 1, 1],
+            chunk.origin || [0, 0, 0],
             chunk.sliceStart || [0, 0, 0]
           )
         }
