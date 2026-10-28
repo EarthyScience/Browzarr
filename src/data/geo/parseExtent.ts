@@ -1,10 +1,8 @@
 import { GetAttributes } from '@/data/zarr/ZarrLoaderLRU'
+import { getDimAxis } from '@/hooks'
 import { useGlobalStore } from '@/stores/GlobalStore'
 import { usePlotStore } from '@/stores/PlotStore'
-import { useZarrStore } from '@/stores/ZarrStore'
-import { getDimAxis, useAxisIndices } from '@/hooks'
 import proj4 from 'proj4'
-import React from 'react'
 
 const COMMON_CRS_NAMES = [
 	'esri_pe_string',
@@ -33,7 +31,7 @@ const checkForCRS = (metadata: Record<string, string>): string | undefined =>{
 	}
 }
 
-export const parseExtent = () => {
+export const parseExtent = async () => {
 	const {xArray, yArray} = getDimAxis()
 	const {metadata, variables, flipY} = useGlobalStore.getState()
 	const hasCRS = metadata ? hasAny(metadata, COMMON_CRS_NAMES) : false;
@@ -43,18 +41,16 @@ export const parseExtent = () => {
 	if (hasCRS && metadata){ // Metadata can't be undefined while hasCRS is true, but whatever
 		validCRS = checkForCRS(metadata)
 	}else if (hasPointer && metadata){
-		for (const varName in COMMON_POINTER_NAMES){
+		for (const varName of COMMON_POINTER_NAMES){
 			if (!(varName in variables)) continue;
-			GetAttributes(varName).then(varMeta =>{
-				validCRS = checkForCRS(varMeta)
-			})
+			validCRS = checkForCRS(await GetAttributes(varName));
+			if (validCRS) break;
 		}
 	}else if (hasCRSVar){
-		for (const varName in COMMON_CRS_NAMES){
+		for (const varName of COMMON_CRS_NAMES){
 			if (!(varName in variables)) continue;
-			GetAttributes(varName).then(varMeta =>{
-				validCRS = checkForCRS(varMeta);
-			})
+			validCRS = checkForCRS(await GetAttributes(varName));
+			if (validCRS) break;
 		}
 	}
 	const xMin = xArray[0];
