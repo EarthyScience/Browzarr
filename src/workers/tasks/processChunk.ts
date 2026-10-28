@@ -45,11 +45,11 @@ export async function processChunk({raw, fillValue, scalingFactor, coarsen, comp
     if (coarsen) {
         const origShape = [...thisShape];
         if (hasZ) {
-            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, { kernelSize, kernelDepth }) as Float16Array;
+            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, { kernelSize, kernelDepth }) as Float16Array ?? chunkF16;
             thisShape = origShape.map((dim, idx) => Math.floor(dim / (idx === 0 ? kernelDepth : kernelSize)));
             chunkF16 = coarsen3DArray(chunkF16, origShape as [number, number, number], chunkStride as [number, number, number], kernelSize, kernelDepth, thisShape.reduce((a, b) => a * b, 1));
         } else {
-            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, { kernelSize, kernelDepth:1 }) as Float16Array;
+            chunkF16 = await Convolve(chunkF16, { shape: origShape, strides: chunkStride }, { kernelSize, kernelDepth:1 }) as Float16Array ?? chunkF16;
             thisShape = origShape.map((dim, idx) => Math.floor(dim / kernelSize));
             const paddedShape = [1, origShape[0], origShape[1]] as [number, number, number];
             const paddedStride = [1, chunkStride[0], chunkStride[1]] as [number, number, number];

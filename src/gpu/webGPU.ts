@@ -44,7 +44,14 @@ const multiVariate = {
     Covariance:"CovarianceReduction"
 }
 
-const InitializeDevice = async () => {
+let devicePromise: Promise<{device: GPUDevice | undefined, hasF16: boolean}> | null = null;
+
+const InitializeDevice = () => {
+    if (!devicePromise) devicePromise = CreateDevice();
+    return devicePromise;
+}
+
+const CreateDevice = async () => {
     const adapter = await navigator.gpu?.requestAdapter();
     const maxSize = adapter?.limits.maxBufferSize;
     const maxStorage = adapter?.limits.maxStorageBufferBindingSize;
@@ -57,11 +64,11 @@ const InitializeDevice = async () => {
             maxStorageBufferBindingSize: maxStorage 
     }});
     if (!device) {
-        Error('need a browser that supports WebGPU');
+        devicePromise = null;
         return {device, hasF16};
-    } else{
-        return {device, hasF16}
     }
+    device.lost.then(() => { devicePromise = null; }); // Recreate on next call if lost
+    return {device, hasF16};
 }
 
 export async function DataProcess(
@@ -235,6 +242,11 @@ export async function DataProcess(
 
     // Clean up
     readBuffer.unmap();
+    inputBuffer.destroy();
+    secondInputBuffer?.destroy();
+    outputBuffer.destroy();
+    uniformBuffer.destroy();
+    readBuffer.destroy();
     return {array:results, shape:thisShape, scalingFactor};
 }
 
