@@ -20,7 +20,7 @@ const links = [
 	},
 	{
 		title:"Follow Development",
-		description:"Get an overview on the systems and workflows in Browzarr",
+		description:"Get updates, request features, or report issues on Github",
 		href: "https://github.com/EarthyScience/Browzarr",
 		icon: <TbExternalLink />
 	},
