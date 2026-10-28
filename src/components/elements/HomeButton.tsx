@@ -20,7 +20,7 @@ export default function HomeButton() {
 						size="icon"
 						className="cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
 					>
-						<Image src={logoHome} alt="logoBZ" height={32} width={28} />
+						<Image src={logoHome} alt="logoBZ" height={32} width={28} style={{ height: 32, width: "auto" }}/>
 					</Button>
 				</Link>
 			</TooltipTrigger>

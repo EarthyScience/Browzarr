@@ -103,7 +103,7 @@
   --modal-gradient: hsla(0, 0%, 0%, 1);
   --modal-p: hsla(0, 0%, 100%, 0.5);
   --background-funding: hsla(0, 0%, 15%, 1);
-  --toggle-hover: gold;
+  --toggle-hover: rgb(121, 121, 121);
   --accent-1: gold;
   --accent-2: hsla(0, 0%, 20%, 1);
   --accent-3: hsla(0, 0%, 20%, 0.6);

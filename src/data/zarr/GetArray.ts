@@ -6,7 +6,6 @@ import { useZarrStore } from "@/stores/ZarrStore";
 import { calculateStrides } from "@/lib/helpers";
 import { getPool } from "@/workers/pool";
 import { NCFetcher, zarrFetcher } from "./dataFetchers";
-import { RescaleArray } from "./utils";
 
 export async function GetArray(varOveride?: string) {
     const { idx4D, initStore, variable, setProgress, setStrides, setStatus } = useGlobalStore.getState();
@@ -28,11 +27,14 @@ export async function GetArray(varOveride?: string) {
     const hasZ = zDimIndex >= 0;
 
     // ndSlices is in datashape order, so a dim's slice is just ndSlices[dim]
-    const sliceOf = (dimIdx: number): [number, number] => (dimIdx >= 0 ? ndSlices[dimIdx] : [0, 1]);
+    const sliceOf = (dimIdx: number): [number, number] => {
+        const slice = dimIdx >= 0 ? ndSlices[dimIdx] : [0, 1]
+        slice[1] = slice[1]?? shape[dimIdx] // Cast nulls
+        return slice as [number, number]
+    };
     const xSlice = sliceOf(xDimIndex);
     const ySlice = sliceOf(yDimIndex);
     const zSlice = sliceOf(zDimIndex);
-
     // Carry slices to stores so we know what to slice from the axisDimarrays
     usePlotStore.setState({ xSlice, ySlice, zSlice });
     useZarrStore.setState({ xSlice, ySlice, zSlice });

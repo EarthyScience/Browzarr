@@ -138,28 +138,27 @@ const gradientVariants = {
 };
 
 
-export const MainLogo = () => {
+export const MainLogo = ({style} : {style?:React.CSSProperties}) => {
 	const [variant, setVariant] = useState<boolean | undefined>(undefined);
   const [colorScheme, setColorScheme] = useState<any>({})
 	const {z1, z2, b1, b2} = colorScheme;
-  // const intervalRef = useRef();
   useEffect(() => {
     setVariant(Math.random() >= 0.5);
     const gradients = Object.keys(gradientVariants);
     const thisGradient = gradients[Math.floor(Math.random() * gradients.length)]
-    console.log(thisGradient)
     setColorScheme(gradientVariants[thisGradient as keyof typeof gradientVariants])
   }, []);
 
-  const style = {
+  const defaultStyle = {
     position:'absolute',
     width:'50%',
     left:'50%',
-    bottom:'20%',
+    bottom:'10%',
     transform:'translateX(-50%)',
     color: 'var(--logo-text)',
     animation: 'logo-pulse 5s ease-in-out infinite'
   }
+  const thisStyle = {...defaultStyle, ...style}
 	return (
 		<div style={{
 			position:'absolute',
@@ -169,8 +168,8 @@ export const MainLogo = () => {
       pointerEvents:'none'
 		}}>
 			{colorScheme.z1 && (variant 
-				? <MainLogo2 style={style} z1={z1} z2={z2} b1={b1} b2={b2} />
-				: <MainLogo1 style={style} z1={z1} z2={z2} b1={b1} b2={b2} />
+				? <MainLogo2 style={thisStyle} z1={z1} z2={z2} b1={b1} b2={b2} />
+				: <MainLogo1 style={thisStyle} z1={z1} z2={z2} b1={b1} b2={b2} />
 			)}
 		</div>
 	)

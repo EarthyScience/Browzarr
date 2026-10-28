@@ -39,6 +39,8 @@ export const useDataFetcher = () => {
             // ---- RESET STATES ---- //
             setShow(false);
             setUseF16Textures(false);
+            // Keep URL-provided crs through the reset when preprojecting
+            const {nativeCRS: urlNativeCRS, destCRS: urlDestCRS} = usePlotStore.getState();
             usePlotStore.setState({nativeCRS:undefined, destCRS:undefined})
             useGlobalStore.setState({remapTexture: undefined, remapBorders:undefined, });
             // ---- FETCH DATA ---- //
@@ -105,11 +107,21 @@ export const useDataFetcher = () => {
                     const shouldFlip = (targetDim && targetDim.length >= 2) ? targetDim[1] < targetDim[0] : false;
                     setFlipY(shouldFlip);   
                 }))
-                Promise.all(promises).then(() =>{
-                    parseExtent();  
+                Promise.all(promises).then(async () =>{
+                    try{
+                        await parseExtent();
+                    } catch{}
+                    
                     createDataTexture();
-                    if(preProject)reproject();
-                    else handleIrregularGrid();   
+                    if (preProject) {
+                        usePlotStore.setState({
+                            nativeCRS: urlNativeCRS ?? usePlotStore.getState().nativeCRS,
+                            destCRS: urlDestCRS,
+                            preProject: false
+                        });
+                        reproject();
+                    }
+                    else handleIrregularGrid();
                     setShow(true);
                     setPlotOn(true);
                     setStatus(null);
@@ -124,32 +136,6 @@ export const useDataFetcher = () => {
             setMetadata(null);
         }
     }, [reFetch]); 
-
-    // ---- InterpPixels ---- //
-//     useEffect(()=> {
-//         if (!mainTextures) return;
-//         const updated = mainTextures.map(tex => {
-//             const clone = tex.clone(); 
-//             if (interpPixels) {
-//                 clone.minFilter = THREE.LinearFilter;
-//                 clone.magFilter = THREE.LinearFilter;
-//             } else {
-//                 clone.minFilter = THREE.NearestFilter;
-//                 clone.magFilter = THREE.NearestFilter;
-//             }
-//             clone.needsUpdate = true; 
-//             return clone ;
-//         });
-//         if (interpPixels){
-//              remapTexture.value.minFilter = THREE.LinearFilter
-//              remapTexture.value.magFilter = THREE.LinearFilter
-//         } else {
-//             remapTexture.value.minFilter = THREE.NearestFilter
-//             remapTexture.value.magFilter = THREE.NearestFilter
-//         }
-//         remapTexture.value.needsUpdate = true;
-//         setMainTextures(updated as THREE.Data3DTexture[] | THREE.DataTexture[]);
-//   },[interpPixels])
 
   useEffect(() => {
     // This cleanup function will run when the `textures` state is about to change,
