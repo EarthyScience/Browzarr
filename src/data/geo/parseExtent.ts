@@ -48,7 +48,7 @@ export const parseExtent = async () => {
 		}
 	}else if (hasCRSVar){
 		for (const varName of COMMON_CRS_NAMES){
-			if (!(varName in variables)) continue;
+			if (!variables.includes(varName)) continue;
 			validCRS = checkForCRS(await GetAttributes(varName));
 			if (validCRS) break;
 		}

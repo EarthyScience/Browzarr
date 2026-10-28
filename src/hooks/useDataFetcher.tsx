@@ -108,7 +108,10 @@ export const useDataFetcher = () => {
                     setFlipY(shouldFlip);   
                 }))
                 Promise.all(promises).then(async () =>{
-                    await parseExtent();
+                    try{
+                        await parseExtent();
+                    } catch{}
+                    
                     createDataTexture();
                     if (preProject) {
                         usePlotStore.setState({

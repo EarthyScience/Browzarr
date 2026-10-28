@@ -27,7 +27,7 @@ const links = [
 ]
 
 const WelcomeSplash = () => {
-	const [hideSplash, setHideSplash] = useState(false)
+	const [hideSplash, setHideSplash] = useState(true)
 	useEffect(()=>{
 		const cookieVal = getCookie("hideSplash") as boolean | undefined
 		setHideSplash(Boolean(cookieVal))

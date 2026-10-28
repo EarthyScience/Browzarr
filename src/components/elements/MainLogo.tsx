@@ -138,7 +138,7 @@ const gradientVariants = {
 };
 
 
-export const MainLogo = ({style} : {style?:Record<string, any>}) => {
+export const MainLogo = ({style} : {style?:React.CSSProperties}) => {
 	const [variant, setVariant] = useState<boolean | undefined>(undefined);
   const [colorScheme, setColorScheme] = useState<any>({})
 	const {z1, z2, b1, b2} = colorScheme;
