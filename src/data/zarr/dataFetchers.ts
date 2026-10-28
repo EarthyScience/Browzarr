@@ -11,6 +11,14 @@ interface FetchOutput{
     stride: number[]
 }
 
+// Per-dim selection: [start, end) range keeps the dim, a scalar index collapses it
+export type Selection = ([number, number] | number)[];
+
+function selectionShape(selection: Selection): number[] {
+    const shape = selection.filter((s): s is [number, number] => Array.isArray(s)).map(([lo, hi]) => hi - lo);
+    return shape.length ? shape : [1];
+}
+
 //---- Zarr Fetch ----//
 
 async function fetchWithRetry<T>(
@@ -60,47 +68,15 @@ export function zarrFetcher() {
                 _outVar: outVar, // carry through for fetchChunk
             } as any;
         },
-        async fetchChunk({ rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, variable, ndSlices }: any): Promise<FetchOutput> {
-            const chunkSlice = new Array(rank).fill(0);
-            if (ndSlices && ndSlices.length === rank) {
-                for (let i = 0; i < rank; i++) {
-                    if (i === xDimIndex) {
-                        chunkSlice[i] = zarr.slice(x * chunkShape[i], Math.min((x + 1) * chunkShape[i], shape[i]));
-                    } else if (i === yDimIndex) {
-                        chunkSlice[i] = zarr.slice(y * chunkShape[i], Math.min((y + 1) * chunkShape[i], shape[i]));
-                    } else if (i === zDimIndex) {
-                        chunkSlice[i] = zarr.slice(z * chunkShape[i], Math.min((z + 1) * chunkShape[i], shape[i]));
-                    } else {
-                        const sel = ndSlices[i];
-                        if (Array.isArray(sel)) {
-                            chunkSlice[i] = zarr.slice(sel[0], sel[1]);
-                        } else {
-                            chunkSlice[i] = sel;
-                        }
-                    }
-                }
-            } else {
-                chunkSlice[xDimIndex] = zarr.slice(x * chunkShape[xDimIndex], (x + 1) * chunkShape[xDimIndex]);
-                chunkSlice[yDimIndex] = zarr.slice(y * chunkShape[yDimIndex], (y + 1) * chunkShape[yDimIndex]);
-                if (zDimIndex >= 0) {
-                    chunkSlice[zDimIndex] = zarr.slice(z * chunkShape[zDimIndex], (z + 1) * chunkShape[zDimIndex]);
-                }
-                if (rank >= 4) {
-                    chunkSlice[0] = idx4D;
-                }
-            }
-
+        async fetchChunk(variable: string, selection: Selection): Promise<FetchOutput> {
+            const chunkSlice = selection.map(s => Array.isArray(s) ? zarr.slice(s[0], s[1]) : s);
             const chunk = await fetchWithRetry(() => zarr.get(outVar, chunkSlice), `variable ${variable}`, useGlobalStore.getState().setStatus);
             if (!chunk || chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
                 throw new Error("BigInt arrays not supported.");
             }
             
-            let outShape = chunk.shape;
-            if (!outShape || outShape.length === 0) {
-                outShape = chunkShape; // fallback if Zarrita doesn't collapse
-            }
-            
-            return { data: chunk.data as Float32Array, shape: outShape as number[], stride: chunk.stride as number[] };
+            const outShape = chunk.shape?.length ? chunk.shape : selectionShape(selection);
+            return { data: chunk.data as Float32Array, shape: outShape, stride: chunk.stride as number[] };
         },
     };
 }
@@ -127,50 +103,13 @@ export function NCFetcher() {
 
             return { shape, chunkShape, fillValue, validRange, preScaling, dtype: varInfo.dtype };
         },
-        async fetchChunk({ rank, shape, chunkShape, x, y, z, xDimIndex, yDimIndex, zDimIndex, idx4D, variable, ndSlices }: any): Promise<FetchOutput> {
-            const starts = new Array(rank).fill(0);
-            const counts = new Array(rank).fill(1);
-
-            if (ndSlices && ndSlices.length === rank) {
-                for (let i = 0; i < rank; i++) {
-                    if (i === xDimIndex) {
-                        starts[i] = x * chunkShape[i];
-                        counts[i] = Math.min(chunkShape[i], shape[i] - starts[i]);
-                    } else if (i === yDimIndex) {
-                        starts[i] = y * chunkShape[i];
-                        counts[i] = Math.min(chunkShape[i], shape[i] - starts[i]);
-                    } else if (i === zDimIndex) {
-                        starts[i] = z * chunkShape[i];
-                        counts[i] = Math.min(chunkShape[i], shape[i] - starts[i]);
-                    } else {
-                        const sel = ndSlices[i];
-                        if (Array.isArray(sel)) {
-                            starts[i] = sel[0];
-                            counts[i] = sel[1] - sel[0];
-                        } else {
-                            starts[i] = sel;
-                            counts[i] = 1;
-                        }
-                    }
-                }
-            } else {
-                if (rank > 3) { starts[0] = idx4D; counts[0] = 1; }
-                starts[xDimIndex] = x * chunkShape[xDimIndex];
-                counts[xDimIndex] = Math.min(chunkShape[xDimIndex], shape[xDimIndex] - starts[xDimIndex]);
-                starts[yDimIndex] = y * chunkShape[yDimIndex];
-                counts[yDimIndex] = Math.min(chunkShape[yDimIndex], shape[yDimIndex] - starts[yDimIndex]);
-                if (zDimIndex >= 0) {
-                    starts[zDimIndex] = z * chunkShape[zDimIndex];
-                    counts[zDimIndex] = Math.min(chunkShape[zDimIndex], shape[zDimIndex] - starts[zDimIndex]);
-                }
-            }
-
-            let data = await ncModule.getSlicedVariableArray(variable, starts, counts);
-
-            // Filter out collapsed dims so shape matches Zarrita behavior
-            let collapsedShape = counts.filter((c, i) => ndSlices ? (!Array.isArray(ndSlices[i]) && i !== xDimIndex && i !== yDimIndex && i !== zDimIndex ? false : true) : c !== 1);
-            if (collapsedShape.length === 0) collapsedShape = [1];
-            return { data, shape: collapsedShape, stride: calculateStrides(collapsedShape) };
+        async fetchChunk(variable: string, selection: Selection): Promise<FetchOutput> {
+            const starts = selection.map(s => Array.isArray(s) ? s[0] : s);
+            const counts = selection.map(s => Array.isArray(s) ? s[1] - s[0] : 1);
+            const data = await ncModule.getSlicedVariableArray(variable, starts, counts);
+            // Scalar dims are collapsed so shape matches Zarrita behavior
+            const shape = selectionShape(selection);
+            return { data, shape, stride: calculateStrides(shape) };
         },
     };
 }

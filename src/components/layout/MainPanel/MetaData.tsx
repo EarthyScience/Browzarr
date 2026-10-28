@@ -153,8 +153,8 @@ function useSizeData(
                     for (let x = xDim.start; x < xDim.end; x++) {
                         if (isBivariate) total = total + 2;
                         else total++;
-                        if (cache.has(`${cacheBase}_chunk_z${z}_y${y}_x${x}`)) accum++;
-                        if (variable2 && cache.has(`${initStore}_${variable2}_chunk_z${z}_y${y}_x${x}`)) accum++
+                        if (cache.get(`${cacheBase}_chunk_z${z}_y${y}_x${x}`)?.complete) accum++;
+                        if (variable2 && cache.get(`${initStore}_${variable2}_chunk_z${z}_y${y}_x${x}`)?.complete) accum++
                     }
                 }
             }

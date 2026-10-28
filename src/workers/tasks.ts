@@ -3,7 +3,7 @@ import { toHalfFloat } from 'three/src/extras/DataUtils.js';
 import { decompressSync } from 'fflate';
 import {processChunk, processIn, processOut} from './tasks/processChunk';
 import { createTextureData, textureIn, textureOut } from './tasks/createTextureData';
-import { RescaleArray } from '@/data/zarr/utils';
+import { CompressArray, DecompressArray, RescaleArray } from '@/data/zarr/utils';
 
 interface normalizeIn{
     data: Uint8Array | Float16Array;
@@ -53,11 +53,22 @@ function decompressArray({array}:{array:Uint8Array}){
 	const newArray = new Float16Array(decompressed.buffer)
 	return {newArray}
 }
-
-function rescaler({array, delta}:{array:Float16Array, delta:number}){
-    RescaleArray(array, delta);
-    return {array}
+interface RescalerIn{array:Float16Array | Uint8Array; 
+    delta:number; 
+    compressed: boolean
 }
+
+function rescaler({array, delta, compressed}:RescalerIn){
+    if (compressed){
+        const decompressed = DecompressArray(array as Uint8Array)
+        RescaleArray(decompressed, delta);
+        return { array: CompressArray(decompressed, 7) }
+    } else {
+        RescaleArray(array as Float16Array, delta);
+        return {array}
+    }
+}
+    
 
 export const tasks = {
     normalizeData: (d: normalizeIn): {textureData: Uint8Array | Uint16Array} => normalizeTextureData(d),
@@ -65,5 +76,5 @@ export const tasks = {
     decompress: (d: {array:Uint8Array}): {newArray: Float16Array} => decompressArray(d),
     processChunk: (d: processIn) : Promise<processOut> => processChunk(d),
     textureData: (d: textureIn) : textureOut => createTextureData(d),
-    rescaler: (d: {array:Float16Array, delta:number}) : {array: Float16Array} => rescaler(d)
+    rescaler: (d: RescalerIn) : {array: Float16Array | Uint8Array} => rescaler(d)
 };
