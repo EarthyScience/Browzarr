@@ -91,7 +91,6 @@ export async function GetArray(varOveride?: string) {
                     const chunkID = `z${z}_y${y}_x${x}`;
                     const cacheName = `${cacheBase}_chunk_${chunkID}`;
                     const cached = cache.get(cacheName);
-                    // Partial chunks are always refetched, as they may not cover this request
                     if (cached?.complete &&
                         cached.kernel.kernelSize === kernel.kernelSize &&
                         cached.kernel.kernelDepth === kernel.kernelDepth) {
@@ -100,7 +99,6 @@ export async function GetArray(varOveride?: string) {
                         setProgress(Math.round(++done / totalChunks * 100));
                         continue;
                     }
-
                     // Only fetch the part of the chunk that overlaps the request
                     const bounds = [z, y, x].map((c, i): Range => [c * chunkDims[i], Math.min((c + 1) * chunkDims[i], extents[i])]);
                     const piece = bounds.map(([lo, hi], i): Range => [Math.max(lo, slices[i][0]), Math.min(hi, slices[i][1])]);
