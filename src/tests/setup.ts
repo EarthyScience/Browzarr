@@ -62,7 +62,8 @@ const mockGPU = {
         writeBuffer: vi.fn(),
         submit: vi.fn()
       },
-      destroy: vi.fn()
+      destroy: vi.fn(),
+      lost: new Promise(() => {}) // Never resolves; device is never lost in tests
     })
   })
 }
