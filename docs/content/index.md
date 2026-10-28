@@ -104,7 +104,7 @@ Explore your data in different ways
   :::u-page-feature
   ---
   icon: i-lucide-box
-  to: /essentials/plot-settings
+  to: /menus/plot-types
   ---
   #title
   Visualize a [Cube]{.text-secondary}
@@ -115,7 +115,7 @@ Explore your data in different ways
   :::u-page-feature
   ---
   icon: i-lucide-globe
-  to: /essentials/plot-settings
+  to: /menus/plot-types
   ---
   #title
   Project onto a [Sphere]{.text-primary}
@@ -126,7 +126,7 @@ Explore your data in different ways
   :::u-page-feature
   ---
   icon: i-lucide-rectangle-horizontal
-  to: /essentials/plot-settings
+  to: /menus/plot-types
   ---
   #title
   Flat [map]{.text-primary}
@@ -137,7 +137,7 @@ Explore your data in different ways
   :::u-page-feature
   ---
   icon: i-lucide-chart-line
-  to: /essentials/plot-settings
+  to: /menus/plot-types
   ---
   #title
   Plot [time series]{.text-primary}
@@ -148,7 +148,7 @@ Explore your data in different ways
   :::u-page-feature
   ---
   icon: i-lucide-grip
-  to: /essentials/plot-settings
+  to: /menus/plot-types
   ---
   #title
   Explore [point clouds]{.text-primary}
@@ -159,7 +159,7 @@ Explore your data in different ways
   :::u-page-feature
   ---
   icon: i-lucide-brain
-  to: /essentials/plot-settings
+  to: /menus/analytics
   ---
   #title
   Run [analytics]{.text-primary}
