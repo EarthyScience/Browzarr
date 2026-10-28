@@ -1,12 +1,11 @@
+import { calculateStrides } from "@/lib/helpers";
 import { useCacheStore } from "@/stores/CacheStore";
 import { useErrorStore } from "@/stores/ErrorStore";
 import { useGlobalStore } from "@/stores/GlobalStore";
 import { usePlotStore } from "@/stores/PlotStore";
 import { useZarrStore } from "@/stores/ZarrStore";
-import { calculateStrides } from "@/lib/helpers";
 import { getPool } from "@/workers/pool";
-import { NCFetcher, zarrFetcher, Selection } from "./dataFetchers";
-import { CompressArray, DecompressArray } from "./utils";
+import { NCFetcher, Selection, zarrFetcher } from "./dataFetchers";
 
 type Range = [number, number];
 
