@@ -35,6 +35,17 @@ const sampleMap = Fn(([p, index]: [any, any]) => {
     } );
     return result;
   });
+// Exact texel fetch (no filtering). p is an integer texel coordinate inside chunk `index`
+export const loadMap = Fn(([p, index]: [any, any]) => {
+	const pv = p.toVar();
+	const result = vec4(0).toVar();
+	u.map.forEach( ( tex, i ) => {
+		If( index.equal( i ), () => {
+			result.assign( tex.load( pv ) );
+		} );
+	} );
+	return result;
+});
 export const sample1 = Fn(([p, index]: [any, any]) => sampleMap(p, index).r);
 export const sample2 = Fn(([p, index]: [any, any]) => sampleMap(p, index).rg);
 
