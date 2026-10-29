@@ -5,7 +5,7 @@ import { usePlotStore } from '@/stores/PlotStore';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
-import { createBuffer, createPointMaterial } from '@/gpu/tsl/points';
+import { createPointMaterial } from '@/gpu/tsl/points';
 import { ColumnMeshes } from './TransectMeshes';
 import { UVCube } from './UVCube';
 
@@ -24,9 +24,9 @@ const MappingCube = () =>{
 }
 
 export const PointCloud = ( )=>{
-    const { flipY, dataShape, remapTexture, shape, textureData, bivariate, useF16Textures } = useGlobalStore(useShallow(s => ({
-        flipY: s.flipY, dataShape: s.dataShape, remapTexture: s.remapTexture, shape: s.shape, 
-        textureData: s.textureData, bivariate: s.bivariate, useF16Textures: s.useF16Textures
+    const { flipY, dataShape, remapTexture, shape, mainTextures, bivariate, useF16Textures } = useGlobalStore(useShallow(s => ({
+        flipY: s.flipY, dataShape: s.dataShape, remapTexture: s.remapTexture, shape: s.shape,
+        mainTextures: s.mainTextures, bivariate: s.bivariate, useF16Textures: s.useF16Textures
     })))
     const { colorScale, xRange, yRange, zRange} = usePlotStore(useShallow(s => ({
         colorScale: s.colorScale, xRange: s.xRange, yRange: s.yRange, zRange: s.zRange
@@ -34,39 +34,21 @@ export const PointCloud = ( )=>{
     // --- INITIALIZE --- //
     const globalscale = dataShape[2]/100
     const count = dataShape.reduce((a, b) => a * b , 1)
-    const buffers = useMemo(()=>{
-      const maxPoints = 1e5
-      const iterations = Math.ceil(count/maxPoints) // 100k maximum per object
-      const objectList = []
-      const biMul = bivariate ? 2 : 1
-      for (let i = 0; i < iterations; i++){
-        const offset = i * maxPoints;
-        const thisCount = Math.min(count-offset, maxPoints)*biMul
-        const {buffer, updateValues} = createBuffer(thisCount, useF16Textures)
-        const arrayOffset = offset*biMul
-        updateValues(textureData.subarray(arrayOffset, arrayOffset+(thisCount)) as Uint8Array);
-        objectList.push({
-          buffer,
-          offset,
-          thisCount
-        })
-      }
-      return objectList
-    }, [count, bivariate, textureData, useF16Textures])
-    const materialObjects = useMemo(() => {
-      const objectList = []
-      for (const bufferObj of buffers){
-        const {buffer, thisCount, offset} = bufferObj
-        const material = createPointMaterial(buffer, bivariate, useF16Textures)
-        objectList.push({
-          material,
-          offset,
-          count:thisCount
-        })
-      }
-      u.pointShape.value = new THREE.Vector3(...dataShape)
-      return objectList
-    },[colorScale, buffers, bivariate, useF16Textures])
+	const materialObjects = useMemo(() => {
+		const maxPoints = 1e5
+		const iterations = Math.ceil(count/maxPoints) // 100k maximum per object
+		const objectList = []
+		for (let i = 0; i < iterations; i++){
+			const offset = i * maxPoints;
+			objectList.push({
+				material: createPointMaterial(bivariate),
+				offset,
+				count: Math.min(count-offset, maxPoints)
+			})
+		}
+		u.pointShape.value = new THREE.Vector3(...dataShape)
+		return objectList
+	},[colorScale, count, bivariate, useF16Textures, mainTextures])
     // --- UNIFORMS ---//
     uniformUpdater();
     // Unique scaling for points
@@ -81,7 +63,6 @@ export const PointCloud = ( )=>{
 
 	// --- CLEANUP --- //
 	useEffect(()=>()=>{ materialObjects.forEach(e=> e.material.dispose()) },[materialObjects])
-  useEffect(()=>()=>{ buffers.forEach(e=> e.buffer.dispose()) },[buffers])
   return (
     <group>
       <group scale={[globalscale,globalscale,2*globalscale]}>
