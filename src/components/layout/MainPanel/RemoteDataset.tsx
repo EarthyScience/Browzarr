@@ -19,8 +19,7 @@ export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '
   const [url, setUrl] = useState(selectedUrl)
   const [format, setFormat] = useState<Format>(fixedFormat ?? 'zarr')
   const [opts, setOpts] = useState<FetchOpts>(DEFAULT_FETCH_OPTS)
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     if (!url) return;
     const headers = buildHeaders(opts);
     const hasHeaders = Object.keys(headers).length > 0;
@@ -29,7 +28,6 @@ export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '
       return;
     }
     const { maxRetries, retryDelay } = opts;
-
     useZarrStore.setState({
       fetchOptions: format === 'zarr' ? {
         maxRetries,
@@ -62,7 +60,7 @@ export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '
   };
 
   return (
-    <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2 mt-2">
         <Input
           className="w-full"
@@ -70,7 +68,7 @@ export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '
           value={url}
           onChange={e => setUrl(e.target.value)}
         />
-        <Button type="submit" variant="outline" className="cursor-pointer">
+        <Button onClick={handleSubmit} variant="outline" className="cursor-pointer">
           Fetch
         </Button>
       </div>
@@ -91,6 +89,6 @@ export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '
       <Collapsible label="Fetch options">
         <FetchOptions value={opts} onChange={setOpts} />
       </Collapsible>
-    </form>
+    </div>
   )
 }
