@@ -13,14 +13,13 @@ import { useImageExportStore } from "@/stores/ImageExportStore";
 import { useColormapStore } from "@/stores/ColormapStore";
 import { GetZarrMetadata, GetTitleDescription } from '@/data/zarr/ZarrLoaderLRU';
 import { GetVariableNames } from '@/data/zarr/utils';
+import { loadGeoTiff } from "@/data/loaders/loadGeoTiff";
 
 async function setupZarr(activeStore: Promise<any> ){
 	const {setTitleDescription, setVariables, setZMeta, setStoreFromURL, setOpenVariables} = useGlobalStore.getState()
 	GetTitleDescription(activeStore).then((result) => setTitleDescription(result));
-
 	const fullmetadata = GetZarrMetadata(activeStore);
 	const variables = GetVariableNames(fullmetadata);
-
 	fullmetadata.then((e) => setZMeta(e));
 	variables.then((e) => {
 		setVariables(e);
@@ -32,6 +31,9 @@ async function setupZarr(activeStore: Promise<any> ){
 	});
 }
 
+const NC_EXT = ['.nc','.netcdf','.nc3','.nc4']
+const TIF_EXT = ['.tif','.tiff','.geotiff','.gtif']
+const test_url = "https://s3.amazonaws.com/noaa-goes16/ABI-L1b-RadC/2017/242/00/OR_ABI-L1b-RadC-M3C01_G16_s20172420002168_e20172420004540_c20172420004583.nc"
 export function initializeStore(){
 	const {initStore} = useGlobalStore.getState()
 	const {useNC, ReFetch, setCurrentStore} = useZarrStore.getState()
@@ -48,7 +50,6 @@ export function initializeStore(){
 			})
 			.then(async blob => {
 				await loadNetCDF(blob as File);
-				ReFetch();
 				return;
 			})
 			.catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
@@ -63,15 +64,25 @@ export function initializeStore(){
 		}
 	} else {
 		if (!isRemoteStore(initStore)) return; // Localzarr and LocalNetCDF create & set custom stores that bypasses this step
-		// ---- Remote Zarr ---- //
-		const { icechunkOptions, fetchOptions } = useZarrStore.getState();
-		const newStore = GetStore(
-			initStore,
-			fetchOptions   ?? undefined,
-			icechunkOptions ?? undefined
-		);
-		setCurrentStore(newStore);
-		setupZarr(newStore)
+		const isNC = NC_EXT.some(e => initStore.toLowerCase().endsWith(e))
+		const isGT = TIF_EXT.some(e => initStore.toLowerCase().endsWith(e))
+		if (isNC){
+			loadNetCDF(initStore).then(()=>ReFetch());
+			return;
+		} else if (isGT){
+			loadGeoTiff(initStore).then(()=>ReFetch());
+			return;
+		} else {
+			// ---- Remote Zarr ---- //
+			const { icechunkOptions, fetchOptions } = useZarrStore.getState();
+			const newStore = GetStore(
+				initStore,
+				fetchOptions   ?? undefined,
+				icechunkOptions ?? undefined
+			);
+			setCurrentStore(newStore);
+			setupZarr(newStore)
+		}
 	}
 	// ---- Clear after use ---- //
 	const {remapTexture} = useGlobalStore.getState();

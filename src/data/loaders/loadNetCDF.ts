@@ -5,14 +5,16 @@ import { useZarrStore } from '@/stores/ZarrStore';
 
 const NETCDF_EXT_REGEX = /\.(nc|netcdf|nc3|nc4)$/i;
 
-export async function loadNetCDF(file: File) {
+export async function loadNetCDF(file: File | string) {
   const { setStatus } = useGlobalStore.getState();
   const { ncModule } = useZarrStore.getState();
   if (ncModule) ncModule.close();
   setStatus("Loading...");
-  const fileName = file.name
+  const isURL = typeof file === 'string'
+  const fileName = isURL ? file.split('/').at(-1) : file.name
+  const fetcher = isURL ? NetCDF4.fromUrl : NetCDF4.fromBlobLazy
   try {
-    const data = await NetCDF4.fromBlobLazy(file);
+    const data = await fetcher(file);
     const [variables, attrs, metadata] = await Promise.all([
       data.getVariables(),
       data.getGlobalAttributes(),
@@ -28,7 +30,8 @@ export async function loadNetCDF(file: File) {
       },
     });
     useZarrStore.setState({ useNC: true, useGT:false, ncModule: data });
-  } finally {
+  } catch{ console.log("Yes failed"); console.log(fetcher); console.log(typeof file)
+  }finally {
     setStatus(null);
   }
 }

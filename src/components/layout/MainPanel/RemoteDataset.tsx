@@ -14,12 +14,11 @@ type Props = {
 };
 
 
-const test_url = "'https://s3.amazonaws.com/noaa-goes16/ABI-L1b-RadC/2017/242/00/OR_ABI-L1b-RadC-M3C01_G16_s20172420002168_e20172420004540_c20172420004583.nc"
+const test_url = "https://s3.amazonaws.com/noaa-goes16/ABI-L1b-RadC/2017/242/00/OR_ABI-L1b-RadC-M3C01_G16_s20172420002168_e20172420004540_c20172420004583.nc"
 export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '', format: fixedFormat }: Props) => {
   const [url, setUrl] = useState(selectedUrl)
   const [format, setFormat] = useState<Format>(fixedFormat ?? 'zarr')
   const [opts, setOpts] = useState<FetchOpts>(DEFAULT_FETCH_OPTS)
-
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!url) return;

@@ -1,10 +1,12 @@
 import { parseGeoKeys } from "@/data/geo/geoKeyParser";
-import {fromBlob} from 'geotiff'
 import { useZarrStore } from "@/stores/ZarrStore";
 import { useGlobalStore } from "@/stores/GlobalStore";
+import { getBaseImage } from "../zarr/GTGetters";
 
-export async function loadGeoTiff(file: File){
-    const geotiff = await fromBlob(file)
+export async function loadGeoTiff(source: File | string){
+    const isURL = typeof source === "string"
+    const name = (isURL ? source.split("/").at(-1) : source.name) || "geotiff.tif"
+    const geotiff = await getBaseImage(source)
     const imageCount = await geotiff.getImageCount()
     const allBands: string[] = []
     const shapes: [number, number][] = []
@@ -24,12 +26,13 @@ export async function loadGeoTiff(file: File){
     useGlobalStore.setState({
         variables: allBands,
         zMeta: allBands.map((e, idx) => ({...baseMeta, name:e, shape:shapes[idx], chunkShape:shapes[idx]})),
-        initStore: `local:${file.name}`,
+        initStore: `local:${name}`,
         titleDescription: {
-        title: file.name,
-        description: '',
+            title: name,
+            description: '',
         },
+        status: null
     });
-    useZarrStore.setState({gtBlob:file, useGT:true, useNC:false})
+    useZarrStore.setState({gtSource:source, useGT:true, useNC:false})
 }
 
