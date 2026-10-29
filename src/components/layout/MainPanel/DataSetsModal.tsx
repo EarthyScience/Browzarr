@@ -14,9 +14,8 @@ import { Button } from "@/components/ui/button-enhanced";
 import { DescriptionContent } from './DescriptionContent';
 import StoreCatalog from './StoreCatalog';
 import { ZARR_CATALOG, ICECHUNK_CATALOG } from "@/assets/index";
-import RemoteZarr from './RemoteZarr';
+import { RemoteDataset } from './RemoteDataset';
 import LocalContent from './LocalContent';
-import RemoteIcechunk from './RemoteIcechunk';
 
 type Tab = 'remote' | 'local' | 'icechunk';
 
@@ -115,9 +114,9 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
                 setActiveOption={setActiveOption}
                 setInitStore={setSelectedUrl}
               />
-              <RemoteZarr
+              <RemoteDataset
                 key={selectedUrl}
-                initStore={initStore}
+                format="zarr"
                 setInitStore={setInitStore}
                 onOpenDescription={openDescription}
                 selectedUrl={selectedUrl}
@@ -141,8 +140,9 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
                 setActiveOption={setActiveOption}
                 setInitStore={setSelectedIcechunkUrl}
               />
-              <RemoteIcechunk
+              <RemoteDataset
                 key={selectedIcechunkUrl}
+                format="icechunk"
                 setInitStore={setInitStore}
                 onOpenDescription={openDescription}
                 selectedUrl={selectedIcechunkUrl}

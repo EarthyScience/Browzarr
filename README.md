@@ -19,7 +19,6 @@
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-38bdf8)](https://tailwindcss.com/)<br>
 [![Three.js](https://img.shields.io/badge/Three.js-0.182-black)](https://threejs.org/)
 [![React Three Fiber](https://img.shields.io/badge/React%20Three%20Fiber-9.x-000000)](https://docs.pmnd.rs/react-three-fiber)
-[![GSAP](https://img.shields.io/badge/GSAP-3.x-88ce02)](https://gsap.com/)
 [![GLSL](https://img.shields.io/badge/GLSL-5586A4)](https://wikis.khronos.org/opengl/Core_Language_(GLSL))
 [![WebGPU](https://img.shields.io/badge/WebGPU-Enabled-purple)](https://github.com/greggman/webgpu-utils)<br>
 [![Zustand](https://img.shields.io/badge/Zustand-5.x-orange)](https://zustand-demo.pmnd.rs/)

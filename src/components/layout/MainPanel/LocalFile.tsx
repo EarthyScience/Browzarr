@@ -39,7 +39,7 @@ const LocalFile = ({ setOpenVariables}:LocalNCType) => {
       }
     } else{
       try {
-        await loadNetCDF(file, file.name);
+        await loadNetCDF(file);
         const blobKey = `local_${file.name}`
         await saveFile(file, blobKey)
         useZarrStore.setState({blobKey})

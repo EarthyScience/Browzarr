@@ -5,11 +5,12 @@ import { useZarrStore } from '@/stores/ZarrStore';
 
 const NETCDF_EXT_REGEX = /\.(nc|netcdf|nc3|nc4)$/i;
 
-export async function loadNetCDF(file: Blob, filename: string) {
+export async function loadNetCDF(file: File) {
   const { setStatus } = useGlobalStore.getState();
   const { ncModule } = useZarrStore.getState();
   if (ncModule) ncModule.close();
   setStatus("Loading...");
+  const fileName = file.name
   try {
     const data = await NetCDF4.fromBlobLazy(file);
     const [variables, attrs, metadata] = await Promise.all([
@@ -20,9 +21,9 @@ export async function loadNetCDF(file: Blob, filename: string) {
     useGlobalStore.setState({
       variables: Object.keys(variables),
       zMeta: metadata,
-      initStore: `local:${filename}`,
+      initStore: `local:${fileName}`,
       titleDescription: {
-        title: attrs.title ?? filename,
+        title: attrs.title ?? fileName,
         description: attrs.history ?? '',
       },
     });

@@ -14,11 +14,10 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from '@/components/ui/separator';
 import { DatasetOption, DescriptionContent } from './DescriptionContent';
-import RemoteZarr from './RemoteZarr';
-import RemoteIcechunk from './RemoteIcechunk';
 import LocalContent from './LocalContent';
 import DatasetsModal from './DataSetsModal';
 import { Switcher } from '@/components/widgets/Switcher';
+import { RemoteDataset } from './RemoteDataset';
 
 const Dataset = () => {
   const [showStoreInput, setShowStoreInput] = useState(false);
@@ -29,7 +28,6 @@ const Dataset = () => {
   const [popoverOpen, setPopoverOpen] = useState<boolean>(false);
   const [isSafari, setIsSafari] = useState<boolean>(false);
   const [openDatasetsModal, setOpenDatasetsModal] = useState<boolean>(false);
-  const [useIcechunk, setUseIcechunk] = useState(false);
 
   const { initStore, setInitStore, setOpenVariables } = useGlobalStore(
     useShallow(s => s));
@@ -115,35 +113,14 @@ const Dataset = () => {
                   setShowLocalInput(false);
                   setActiveOption('remote');
                   setShowDescription(false);
-                  if (opening) setUseIcechunk(false);
                 }}
               >
                 Remote
               </DatasetOption>
               {showStoreInput && (
-                <div className="mt-2">
-                  <Switcher
-                    leftText="Zarr"
-                    rightText="Icechunk"
-                    state={!useIcechunk}
-                    onClick={() => setUseIcechunk(prev => !prev)}
-                  />
-                  {useIcechunk ? (
-                    <RemoteIcechunk
-                      setInitStore={setInitStore}
-                      onOpenDescription={() => setShowDescription(true)}
-                    />
-                  ) : (
-                    <RemoteZarr
-                      initStore={initStore}
-                      setInitStore={setInitStore}
-                      onOpenDescription={() => setShowDescription(true)}
-                    />
-                  )}
-                </div>
+                <RemoteDataset setInitStore={setInitStore} onOpenDescription={() => setShowDescription(true)} />
               )}
             </div>
-
             <Separator className='mt-2' />
 
             <div className="w-full">
@@ -154,7 +131,6 @@ const Dataset = () => {
                   setShowStoreInput(false);
                   setActiveOption('local');
                   setShowDescription(false);
-                  setUseIcechunk(false);
                 }}
               >
                 Local

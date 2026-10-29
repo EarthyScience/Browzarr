@@ -11,6 +11,26 @@ import { isRemoteStore } from "@/data/geo/isRemoteStore";
 import { GetStore } from "@/data/zarr/ZarrLoaderLRU";
 import { useImageExportStore } from "@/stores/ImageExportStore";
 import { useColormapStore } from "@/stores/ColormapStore";
+import { GetZarrMetadata, GetTitleDescription } from '@/data/zarr/ZarrLoaderLRU';
+import { GetVariableNames } from '@/data/zarr/utils';
+
+async function setupZarr(activeStore: Promise<any> ){
+	const {setTitleDescription, setVariables, setZMeta, setStoreFromURL, setOpenVariables} = useGlobalStore.getState()
+	GetTitleDescription(activeStore).then((result) => setTitleDescription(result));
+
+	const fullmetadata = GetZarrMetadata(activeStore);
+	const variables = GetVariableNames(fullmetadata);
+
+	fullmetadata.then((e) => setZMeta(e));
+	variables.then((e) => {
+		setVariables(e);
+		const { storeFromURL } = useGlobalStore.getState();
+		if (storeFromURL) {
+			setOpenVariables(true);
+			setStoreFromURL(false);
+		}
+	});
+}
 
 export function initializeStore(){
 	const {initStore} = useGlobalStore.getState()
@@ -27,7 +47,7 @@ export function initializeStore(){
 				return res.blob();
 			})
 			.then(async blob => {
-				await loadNetCDF(blob, filename);
+				await loadNetCDF(blob as File);
 				ReFetch();
 				return;
 			})
@@ -50,7 +70,7 @@ export function initializeStore(){
 			fetchOptions   ?? undefined,
 			icechunkOptions ?? undefined
 		);
-		setCurrentStore(newStore);
+		setupZarr(newStore)
 	}
 	// ---- Clear after use ---- //
 	const {remapTexture} = useGlobalStore.getState();
@@ -163,3 +183,4 @@ export function StoreInitializer() {
     </Suspense>
   );
 }
+
