@@ -20,8 +20,6 @@ import {
 	ensureLeadingSlash,
 	groupPathFromRelativeName,
 	isRemoteZarrStorePath,
-	resolveStoreRetryDefaults,
-	sleep,
 	stripLeadingSlash,
 } from "./utils";
 
@@ -38,39 +36,44 @@ export async function getIcechunkStore(
 	storePath: string,
 	options?: IcechunkStoreOptions,
 ): Promise<zarr.Group<IcechunkStore> | undefined> {
-	const { maxRetries, retryDelay } = resolveStoreRetryDefaults(options);
-	const fetchClient = options?.fetchClient;
+	const headers = options?.headers;
+	const withCredentials = options?.withCredentials;
+	const needsClient =
+		withCredentials || (headers && Object.keys(headers).length > 0);
 
-	for (let attempt = 0; attempt <= maxRetries; attempt++) {
-		try {
-			const icechunkStore = await IcechunkStore.open(storePath, {
-				branch: options?.branch ?? "main",
-				// formatVersion: "v1",
-				...(options?.tag && { tag: options.tag }),
-				...(options?.snapshot && { snapshot: options.snapshot }),
-				...(fetchClient && { fetchClient }),
-			});
+	try {
+		const icechunkStore = await IcechunkStore.open(storePath, {
+			branch: options?.branch ?? "main",
+			// formatVersion: "v1",
+			...(options?.tag && { tag: options.tag }),
+			...(options?.snapshot && { snapshot: options.snapshot }),
+			...(needsClient && {
+				fetchClient: {
+					fetch: (input: string, init?: RequestInit) =>
+						globalThis.fetch(input, {
+							...init,
+							headers: { ...init?.headers, ...headers },
+							...(withCredentials && { credentials: "include" }),
+						}),
+				},
+			}),
+		});
 
-			// Prime the node cache immediately after opening
-			(icechunkStore as any)._cachedNodes = icechunkStore.listNodes();
-			// console.log('icechunk nodes:', (icechunkStore as any)._cachedNodes);
-			const gs = await zarr.open(icechunkStore, { kind: "group" });
+		// Prime the node cache immediately after opening
+		(icechunkStore as any)._cachedNodes = icechunkStore.listNodes();
+		const gs = await zarr.open(icechunkStore, { kind: "group" });
+		useGlobalStore.setState({ status: null });
+
+		return gs;
+	} catch (error) {
+		if (isRemoteZarrStorePath(storePath)) {
+			useErrorStore.getState().setError("zarrFetch");
 			useGlobalStore.setState({ status: null });
-
-			return gs;
-		} catch (error) {
-			if (attempt === maxRetries) {
-				if (isRemoteZarrStorePath(storePath)) {
-					useErrorStore.getState().setError("zarrFetch");
-					useGlobalStore.setState({ status: null });
-				}
-				throw new ZarrError(
-					`Failed to initialize store at ${storePath}`,
-					error,
-				);
-			}
-			await sleep(retryDelay);
 		}
+		throw new ZarrError(
+			`Failed to initialize store at ${storePath} (check URL, CORS, or auth)`,
+			error,
+		);
 	}
 }
 

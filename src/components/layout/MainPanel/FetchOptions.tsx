@@ -1,30 +1,24 @@
 import React, { useState } from 'react'
 import { Input, Button } from '@/components/ui'
 import { ChevronDown, ChevronUp, Trash2, Plus } from 'lucide-react'
+import type { FetchStoreOptions } from '@/types/Interfaces'
 
 export type Format     = 'zarr' | 'icechunk';
 type HeaderRow  = { key: string; value: string };
 type AuthPreset = 'none' | 'bearer' | 'basic' | 'apikey';
-type RefType    = 'branch' | 'tag' | 'snapshot';
 
 export type FetchOpts = {
   preset: AuthPreset;
   presetValue: string;
   headers: HeaderRow[];
-  maxRetries: number;
-  retryDelay: number;
-  refType: RefType;
-  refValue: string;
+  withCredentials: boolean;
 };
 
 export const DEFAULT_FETCH_OPTS: FetchOpts = {
   preset: 'none',
   presetValue: '',
   headers: [{ key: '', value: '' }],
-  maxRetries: 10,
-  retryDelay: 500,
-  refType: 'branch',
-  refValue: 'main',
+  withCredentials: false,
 };
 
 const PRESETS: { value: AuthPreset; label: string; key: string; prefix: string; placeholder: string }[] = [
@@ -32,12 +26,6 @@ const PRESETS: { value: AuthPreset; label: string; key: string; prefix: string; 
   { value: 'bearer', label: 'Bearer',  key: 'Authorization', prefix: 'Bearer ', placeholder: 'eyJhbGc...'   },
   { value: 'basic',  label: 'Basic',   key: 'Authorization', prefix: 'Basic ',  placeholder: 'dXNlcjpwYXNz' },
   { value: 'apikey', label: 'API Key', key: 'X-Api-Key',     prefix: '',        placeholder: 'api-key-here' },
-];
-
-const REF_TABS: { value: RefType; label: string }[] = [
-  { value: 'branch',   label: 'Branch'   },
-  { value: 'tag',      label: 'Tag'      },
-  { value: 'snapshot', label: 'Snapshot' },
 ];
 
 export const buildHeaders = (opts: FetchOpts): Record<string, string> => {
@@ -52,9 +40,15 @@ export const buildHeaders = (opts: FetchOpts): Record<string, string> => {
   return built;
 };
 
+// Form state -> options shared by every remote loader
+export const buildFetchOptions = (opts: FetchOpts): FetchStoreOptions => ({
+  headers: buildHeaders(opts),
+  withCredentials: opts.withCredentials,
+});
+
 export const toggleClass = "flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-auto p-0";
 
-const selectClass = "h-9 rounded-md border border-input bg-transparent px-2 text-sm cursor-pointer";
+export const selectClass = "h-9 rounded-md border border-input bg-transparent px-2 text-sm cursor-pointer";
 
 export const Collapsible = ({ label, open: controlled, onToggle, children }: {
   label: React.ReactNode;
@@ -81,35 +75,12 @@ type Props = {
   onChange: (v: FetchOpts) => void;
 };
 
-// Branch / Tag / Snapshot selector for Icechunk stores
-export const IcechunkRef = ({ value, onChange }: Props) => {
-  const { refType, refValue } = value;
-  return (
-    <div className="flex items-center gap-1 mt-2">
-      <select
-        className={selectClass}
-        value={refType}
-        onChange={e => onChange({ ...value, refType: e.target.value as RefType })}
-      >
-        {REF_TABS.map(({ value: v, label }) => <option key={v} value={v}>{label}</option>)}
-      </select>
-      <Input
-        className="w-full"
-        placeholder={refType === 'branch' ? 'main' : refType}
-        value={refValue}
-        onChange={e => onChange({ ...value, refValue: e.target.value })}
-      />
-    </div>
-  );
-};
-
 export const FetchOptions = ({ value, onChange }: Props) => {
   const set = (patch: Partial<FetchOpts>) => onChange({ ...value, ...patch });
-  const { preset, presetValue, headers, maxRetries, retryDelay } = value;
+  const { preset, presetValue, headers, withCredentials } = value;
   const setHeaders = (h: HeaderRow[]) => set({ headers: h });
   const updateHeader = (i: number, field: 'key' | 'value', val: string) =>
     setHeaders(headers.map((row, idx) => idx === i ? { ...row, [field]: val } : row));
-  const toInt = (s: string) => Math.max(0, parseInt(s, 10) || 0);
 
   return (
     <div className="flex flex-col gap-3 mt-2">
@@ -135,6 +106,15 @@ export const FetchOptions = ({ value, onChange }: Props) => {
           />
         )}
       </div>
+
+      <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+        <input
+          type="checkbox"
+          checked={withCredentials}
+          onChange={e => set({ withCredentials: e.target.checked })}
+        />
+        Send cookies (credentials)
+      </label>
 
       <Collapsible label="Custom headers">
         <div className="flex flex-col gap-1 mt-2">
@@ -172,21 +152,6 @@ export const FetchOptions = ({ value, onChange }: Props) => {
           >
             <Plus size={12} /> Add header
           </Button>
-        </div>
-      </Collapsible>
-
-      <Collapsible label="Advanced">
-        <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
-          <div className="flex items-center gap-2 text-xs">
-            <label className="text-muted-foreground whitespace-nowrap">Max retries</label>
-            <Input type="number" className="w-16" value={maxRetries}
-              onChange={e => set({ maxRetries: toInt(e.target.value) })} />
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <label className="text-muted-foreground whitespace-nowrap">Retry delay (ms)</label>
-            <Input type="number" className="w-20" value={retryDelay}
-              onChange={e => set({ retryDelay: toInt(e.target.value) })} />
-          </div>
         </div>
       </Collapsible>
 

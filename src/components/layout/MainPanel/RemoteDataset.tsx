@@ -4,7 +4,8 @@ import { Input, Button } from '@/components/ui'
 import { useGlobalStore } from '@/stores/GlobalStore'
 import { useZarrStore } from '@/stores/ZarrStore'
 import { initializeStore } from '@/components/layout/StoreInitializer'
-import { FetchOptions, IcechunkRef, Collapsible, FetchOpts, Format, DEFAULT_FETCH_OPTS, buildHeaders } from './FetchOptions'
+import { FetchOptions, Collapsible, FetchOpts, Format, DEFAULT_FETCH_OPTS, buildFetchOptions } from './FetchOptions'
+import { IcechunkOptions, IcechunkOpts, DEFAULT_ICECHUNK_OPTS, buildIcechunkOptions } from './IcechunkOptions'
 
 type Props = {
   setInitStore: (v: string) => void;
@@ -19,37 +20,17 @@ export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '
   const [url, setUrl] = useState(selectedUrl)
   const [format, setFormat] = useState<Format>(fixedFormat ?? 'zarr')
   const [opts, setOpts] = useState<FetchOpts>(DEFAULT_FETCH_OPTS)
+  const [icOpts, setIcOpts] = useState<IcechunkOpts>(DEFAULT_ICECHUNK_OPTS)
   const handleSubmit = () => {
     if (!url) return;
-    const headers = buildHeaders(opts);
-    const hasHeaders = Object.keys(headers).length > 0;
-    if (hasHeaders && url.startsWith('http://')) {
+    const fetchOptions = buildFetchOptions(opts);
+    if (Object.keys(fetchOptions.headers ?? {}).length > 0 && url.startsWith('http://')) {
       useGlobalStore.getState().setStatus('Error: Cannot send auth headers over plain HTTP — use HTTPS.');
       return;
     }
-    const { maxRetries, retryDelay } = opts;
     useZarrStore.setState({
-      fetchOptions: format === 'zarr' ? {
-        maxRetries,
-        retryDelay,
-        ...(hasHeaders && {
-          fetch: (request: Request) => {
-            Object.entries(headers).forEach(([k, v]) => request.headers.set(k, v));
-            return fetch(request);
-          },
-        }),
-      } : null,
-      icechunkOptions: format === 'icechunk' ? {
-        [opts.refType]: opts.refValue,
-        maxRetries,
-        retryDelay,
-        ...(hasHeaders && {
-          fetchClient: {
-            fetch: (input: string, init?: RequestInit) =>
-              globalThis.fetch(input, { ...init, headers: { ...init?.headers, ...headers } }),
-          },
-        }),
-      } : null,
+      fetchOptions: format === 'zarr' ? fetchOptions : null,
+      icechunkOptions: format === 'icechunk' ? { ...fetchOptions, ...buildIcechunkOptions(icOpts) } : null,
       useNC: false,
       useGT: false,
     });
@@ -74,15 +55,15 @@ export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '
       </div>
 
       {fixedFormat === 'icechunk' ? (
-        <IcechunkRef value={opts} onChange={setOpts} />
+        <IcechunkOptions value={icOpts} onChange={setIcOpts} />
       ) : !fixedFormat && (
         // Expanding this section switches the fetch to Icechunk
         <Collapsible
-          label={format === 'icechunk' ? `Icechunk · ${opts.refType}: ${opts.refValue || '—'}` : 'Icechunk store'}
+          label={format === 'icechunk' ? `Icechunk · ${icOpts.refType}: ${icOpts.refValue || '—'}` : 'Icechunk store'}
           open={format === 'icechunk'}
           onToggle={open => setFormat(open ? 'icechunk' : 'zarr')}
         >
-          <IcechunkRef value={opts} onChange={setOpts} />
+          <IcechunkOptions value={icOpts} onChange={setIcOpts} />
         </Collapsible>
       )}
 

@@ -84,24 +84,9 @@ export function calculateChunkCount(shape: number[], chunks: number[]): number {
 	return shape.reduce((acc, dim, i) => acc * Math.ceil(dim / chunks[i]), 1);
 }
 
-/** Promise-based delay for retry/backoff loops. */
-export function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /** Paths that do not start with `local` are treated as remote for error reporting. */
 export function isRemoteZarrStorePath(storePath: string): boolean {
 	return storePath.slice(0, 5) !== "local";
-}
-
-export function resolveStoreRetryDefaults(options?: {
-	maxRetries?: number;
-	retryDelay?: number;
-}): { maxRetries: number; retryDelay: number } {
-	return {
-		maxRetries: options?.maxRetries ?? 10,
-		retryDelay: options?.retryDelay ?? 500,
-	};
 }
 
 export function stripLeadingSlash(path: string): string {

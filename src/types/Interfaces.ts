@@ -1,18 +1,12 @@
-import type { FetchClient } from "icechunk-js";
-
 export interface FetchStoreOptions {
-  fetch?: (request: Request) => Promise<Response>;
-  maxRetries?: number;
-  retryDelay?: number;
+  headers?: Record<string, string>;
+  withCredentials?: boolean;
 }
 
-export interface IcechunkStoreOptions {
+export interface IcechunkStoreOptions extends FetchStoreOptions {
   branch?: string;
   tag?: string;
   snapshot?: string;
-  fetchClient?: FetchClient;
-  maxRetries?: number;
-  retryDelay?: number;
 }
 
 export interface ZarrMetadata {
