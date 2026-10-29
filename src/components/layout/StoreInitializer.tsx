@@ -70,6 +70,7 @@ export function initializeStore(){
 			fetchOptions   ?? undefined,
 			icechunkOptions ?? undefined
 		);
+		setCurrentStore(newStore);
 		setupZarr(newStore)
 	}
 	// ---- Clear after use ---- //
