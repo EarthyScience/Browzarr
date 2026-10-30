@@ -12,11 +12,10 @@ type Props = {
   onOpenDescription: () => void;
   selectedUrl?: string;
   format?: Format; // fixed format hides the format switch
+  inlineOptions?: boolean; // render fetch options inline instead of in a popover
 };
 
-
-const test_url = "https://s3.amazonaws.com/noaa-goes16/ABI-L1b-RadC/2017/242/00/OR_ABI-L1b-RadC-M3C01_G16_s20172420002168_e20172420004540_c20172420004583.nc"
-export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '', format: fixedFormat }: Props) => {
+export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '', format: fixedFormat, inlineOptions = false }: Props) => {
 	const [url, setUrl] = useState(selectedUrl)
 	const [opts, setOpts] = useState<FetchOpts>(DEFAULT_FETCH_OPTS)
 	const handleSubmit = () => {
@@ -53,7 +52,7 @@ export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '
       <Button onClick={handleSubmit} variant="outline" className="cursor-pointer h-6">
         Fetch
       </Button>
-      <FetchOptions value={opts} onChange={setOpts} />
+      <FetchOptions value={opts} onChange={setOpts} inline={inlineOptions} />
     </div>
   )
 }

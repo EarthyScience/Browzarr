@@ -1,11 +1,9 @@
-import React, { useState } from 'react'
-import { Input, Button } from '@/components/ui'
-import { ChevronDown, ChevronUp, Trash2, Plus } from 'lucide-react'
-import type { FetchStoreOptions } from '@/types/Interfaces'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button, Input, Popover, PopoverContent, PopoverTrigger } from '@/components/ui'
 import { useIsMobile } from '@/hooks'
-import { IcechunkOptions, IcechunkOpts, DEFAULT_ICECHUNK_OPTS, buildIcechunkOptions } from './IcechunkOptions'
+import type { FetchStoreOptions } from '@/types/Interfaces'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus, Trash2 } from 'lucide-react'
+import React, { useState } from 'react'
+import { IcechunkOptions, IcechunkOpts } from './IcechunkOptions'
 export type Format     = 'zarr' | 'icechunk';
 type HeaderRow  = { key: string; value: string };
 type AuthPreset = 'none' | 'bearer' | 'basic' | 'apikey';
@@ -80,18 +78,35 @@ export const Collapsible = ({ label, open: controlled, onToggle, children }: {
 type Props = {
   value: FetchOpts;
   onChange: (v: FetchOpts) => void;
+  inline?: boolean; // expand in place instead of opening a popover
 };
 
-export const FetchOptions = ({ value, onChange }: Props) => {
-	const set = (patch: Partial<FetchOpts>) => onChange({ ...value, ...patch });
+export const FetchOptions = ({ value, onChange, inline = false }: Props) => {
 	const [showOptions, setShowOptions] = useState(false)
-	const [showCookieHelp, setShowCookieHelp] = useState(false)
-	const { preset, presetValue, headers, withCredentials } = value;
-	const setHeaders = (h: HeaderRow[]) => set({ headers: h });
-	const updateHeader = (i: number, field: 'key' | 'value', val: string) =>
-		setHeaders(headers.map((row, idx) => idx === i ? { ...row, [field]: val } : row));
 	const isMobile = useIsMobile();
 	const popoverSide = isMobile ? "top" : "left";
+	const content = <FetchOptionsBody value={value} onChange={onChange} />;
+
+	if (inline) {
+		return (
+			<div className='flex flex-col mb-2'>
+				<Button
+					type="button"
+					variant='secondary'
+					className="flex items-center justify-center gap-2 p-1 h-auto border-solid border-gray border-[1px]"
+					onClick={() => setShowOptions(!showOptions)}
+				>
+					{showOptions ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+					Fetch Options
+				</Button>
+				{showOptions && (
+					<div className="flex flex-col gap-4 mt-2 p-3 rounded-md border">
+						{content}
+					</div>
+				)}
+			</div>
+		)
+	}
   	return (
 		<Popover open={showOptions} onOpenChange={setShowOptions}>
 			<PopoverTrigger asChild>
@@ -107,6 +122,21 @@ export const FetchOptions = ({ value, onChange }: Props) => {
 				</div>
 			</PopoverTrigger>
 			<PopoverContent className="flex flex-col gap-4 mt-2" side={popoverSide}>
+				{content}
+			</PopoverContent>
+		</Popover>
+  )
+}
+
+const FetchOptionsBody = ({ value, onChange }: Props) => {
+	const set = (patch: Partial<FetchOpts>) => onChange({ ...value, ...patch });
+	const [showCookieHelp, setShowCookieHelp] = useState(false)
+	const { preset, presetValue, headers, withCredentials } = value;
+	const setHeaders = (h: HeaderRow[]) => set({ headers: h });
+	const updateHeader = (i: number, field: 'key' | 'value', val: string) =>
+		setHeaders(headers.map((row, idx) => idx === i ? { ...row, [field]: val } : row));
+	return (
+		<>
 				{/* Authentication */}
 				<div className="flex flex-col gap-1">
 					<span className={sectionLabelClass}>Authentication</span>
@@ -197,7 +227,6 @@ export const FetchOptions = ({ value, onChange }: Props) => {
 					</Button>
 					</div>
 				</Collapsible>
-			</PopoverContent>
-		</Popover>
-  )
+		</>
+	)
 }

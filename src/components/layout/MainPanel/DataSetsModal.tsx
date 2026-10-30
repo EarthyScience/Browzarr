@@ -12,23 +12,42 @@ import {
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Button } from "@/components/ui/button-enhanced";
 import { DescriptionContent } from './DescriptionContent';
-import StoreCatalog from './StoreCatalog';
-import { ZARR_CATALOG, ICECHUNK_CATALOG } from "@/assets/index";
+import StoreCatalog, { CatalogEntry, GradientPreset } from './StoreCatalog';
+import { ZARR_CATALOG, ICECHUNK_CATALOG, NETCDF_CATALOG, GEOTIFF_CATALOG } from "@/data/catalogs";
 import { RemoteDataset } from './RemoteDataset';
+import { Format } from './FetchOptions';
 import LocalContent from './LocalContent';
 
-type Tab = 'remote' | 'local' | 'icechunk';
+type RemoteTab = 'remote' | 'icechunk' | 'netcdf' | 'geotiff';
+type Tab = RemoteTab | 'local';
 
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'remote',   label: 'Remote Zarr' },
-  { value: 'icechunk', label: 'Icechunk'    },
-  { value: 'local',    label: 'Local'       },
+  { value: 'remote',   label: 'Zarr'     },
+  { value: 'icechunk', label: 'Icechunk' },
+  { value: 'netcdf',   label: 'NetCDF'   },
+  { value: 'geotiff',  label: 'GeoTIFF'  },
+  { value: 'local',    label: 'Local'    },
 ];
 
 const TAB_DESCRIPTIONS: Record<Tab, string> = {
   remote: 'Browse and open remote Zarr stores via URL or from the catalog.',
   icechunk: 'Connect to versioned Icechunk stores for transactional data access.',
+  netcdf: 'Browse remote NetCDF files. (Coming soon)',
+  geotiff: 'Browse remote GeoTIFF / COG files. (Coming soon)',
   local: 'Open a Zarr dataset stored on your local filesystem.',
+};
+
+// format: null marks a placeholder catalog with no remote loader yet
+const REMOTE_SOURCES: Record<RemoteTab, {
+  catalog: CatalogEntry[];
+  placeholder: string;
+  gradient: GradientPreset;
+  format: Format | null;
+}> = {
+  remote:   { catalog: ZARR_CATALOG,     placeholder: 'Search Zarr Stores...',     gradient: 'zarr',     format: 'zarr'     },
+  icechunk: { catalog: ICECHUNK_CATALOG, placeholder: 'Search Icechunk Stores...', gradient: 'icechunk', format: 'icechunk' },
+  netcdf:   { catalog: NETCDF_CATALOG,   placeholder: 'Search NetCDF Files...',    gradient: 'netcdf',   format: null       },
+  geotiff:  { catalog: GEOTIFF_CATALOG,  placeholder: 'Search GeoTIFF Files...',   gradient: 'geotiff',  format: null       },
 };
 
 type Props = {
@@ -40,12 +59,13 @@ type Props = {
 const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
   const [activeOption, setActiveOption] = useState<string>('');
   const [selectedUrl, setSelectedUrl] = useState<string>('');
-  const [selectedIcechunkUrl, setSelectedIcechunkUrl] = useState<string>('');
   const [hasFetched, setHasFetched] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('remote');
+  const remoteSource = activeTab === 'local' ? null : REMOTE_SOURCES[activeTab];
 
-  const { initStore, setInitStore, setOpenVariables, status } = useGlobalStore(
-    useShallow(s => s));
+  const { setInitStore, setOpenVariables, status } = useGlobalStore(useShallow(s => ({
+    setInitStore: s.setInitStore, setOpenVariables: s.setOpenVariables, status: s.status
+  })));
 
   const showDescription = hasFetched && status === null;
   const openDescription = () => setHasFetched(true);
@@ -54,14 +74,12 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
     setActiveTab(tab);
     setHasFetched(false);
     setSelectedUrl('');
-    setSelectedIcechunkUrl('');
     setActiveOption('');
   };
 
   const handleOpenChange = (v: boolean) => {
     if (!v) {
       setSelectedUrl('');
-      setSelectedIcechunkUrl('');
       setActiveOption('');
       setHasFetched(false);
     }
@@ -104,23 +122,27 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
         </div>
 
         <div className="p-4 flex flex-col gap-1 -mt-4">
-          {activeTab === 'remote' && (
+          {remoteSource && (
             <>
               <StoreCatalog
-                catalog={ZARR_CATALOG}
-                placeholder="Search Zarr Stores..."
-                gradient="zarr"
+                key={activeTab}
+                catalog={remoteSource.catalog}
+                placeholder={remoteSource.placeholder}
+                gradient={remoteSource.gradient}
                 activeOption={activeOption}
                 setActiveOption={setActiveOption}
                 setInitStore={setSelectedUrl}
               />
-              <RemoteDataset
-                key={selectedUrl}
-                format="zarr"
-                setInitStore={setInitStore}
-                onOpenDescription={openDescription}
-                selectedUrl={selectedUrl}
-              />
+              {remoteSource.format && (
+                <RemoteDataset
+                  key={`${activeTab}-${selectedUrl}`}
+                  format={remoteSource.format}
+                  inlineOptions
+                  setInitStore={setInitStore}
+                  onOpenDescription={openDescription}
+                  selectedUrl={selectedUrl}
+                />
+              )}
             </>
           )}
           {activeTab === 'local' && (
@@ -129,25 +151,6 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
               onOpenDescription={openDescription}
               isSafari={isSafari}
             />
-          )}
-          {activeTab === 'icechunk' && (
-            <>
-              <StoreCatalog
-                catalog={ICECHUNK_CATALOG}
-                placeholder="Search Icechunk Stores..."
-                gradient="icechunk"
-                activeOption={activeOption}
-                setActiveOption={setActiveOption}
-                setInitStore={setSelectedIcechunkUrl}
-              />
-              <RemoteDataset
-                key={selectedIcechunkUrl}
-                format="icechunk"
-                setInitStore={setInitStore}
-                onOpenDescription={openDescription}
-                selectedUrl={selectedIcechunkUrl}
-              />
-            </>
           )}
           {showDescription && (
             <DescriptionContent
