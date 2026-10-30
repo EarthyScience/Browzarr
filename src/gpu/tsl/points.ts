@@ -43,8 +43,7 @@ export function createPointMaterial(bivariate: boolean){
 
 	const rawValue = (bivariate ? select(u.bivariateSelection.equal(0), texel.r, texel.g) : texel.r).toVar(); // The value used for scaling the points
 	// Vertex stage only: instanceIndex doesn't exist in the fragment, so anything colorNode needs goes through a varying
-	const nanCheck = (v: any) => h.isNaNBits(v).or(u.useF16.not().and(v.equal(1.0)))
-	const isNaN = select(u.bivariate, nanCheck(texel.r).or(nanCheck(texel.g)), nanCheck(rawValue)).toVar();
+	const isNaN = select(u.bivariate, h.isNanVal(texel.r).or(h.isNanVal(texel.g)), h.isNanVal(rawValue)).toVar();
 	const biValues = varying(texel.rg)
     const spriteValue = varying(h.rescaler(rawValue))
     const spriteCoord = texCoord

@@ -1,7 +1,7 @@
 import {
     abs,
-    any,bool,clamp,EPSILON,float,Fn,fract,If,int,ivec3,
-    max,min,mod,pow,select,vec2,vec3
+    any,bool,cameraPosition,cameraWorldMatrix,clamp,Discard,EPSILON,float,Fn,If,
+    max,min,mod,modelWorldMatrixInverse,normalize,positionLocal,pow,select,varying,vec2,vec3,vec4
 } from 'three/tsl';
 import * as h from './commonHelpers';
 import * as u from './uniforms';
@@ -16,59 +16,50 @@ export const shouldSkip = (p: any, texCoord: any, maskUV: any) => {
         .or(p.y.lessThan(u.vertBounds.x))
         .or(p.y.greaterThan(u.vertBounds.y));
     If(outOfBounds, () => { skip.assign(bool(true)); });
-    
+
     If(skip.not(), () => {
         texCoord.assign(p.div(u.volumeScale).add(0.5));
         const valid = h.reprojector(texCoord, maskUV);
         If(valid.not(), () => { skip.assign(bool(true)); });
     });
- 
+
     If(skip.not(), () => {
         If(any(maskUV.greaterThan(vec2(1.0))).or(any(maskUV.lessThan(vec2(0.0)))), () => {
             skip.assign(bool(true));
         });
     });
- 
+
     If(skip.not().and(u.maskValue.notEqual(0)), () => {
         const mask = u.maskTexture.sample(maskUV).r;
         const masked = select(u.maskValue.equal(1), mask.lessThan(0.5), mask.greaterThanEqual(0.5));
         If(masked, () => { skip.assign(bool(true)); });
     });
- 
+
     If(skip.not(), () => {
         texCoord.z.assign(mod(texCoord.z.add(u.animateProg), 1.0001));
         texCoord.assign(clamp(texCoord, vec3(0.0), vec3(1.0).sub(vec3(EPSILON))));
     });
- 
+
     return skip;
 };
 
 
 export const sampleVoxel = (texCoord: any, d: any, biVal: any, isNan: any) => {
     // This gets the sample value. If d is clipped by value-range return false
-    const depths = ivec3(u.textureDepths);
-    const yStepSize = depths.x;
-    const zStepSize = depths.y.mul(depths.x);
-    const idx = clamp(ivec3(texCoord.mul(u.textureDepths)), ivec3(0), depths.sub(int(1)));
-    const textureIdx = idx.z.mul(zStepSize).add(idx.y.mul(yStepSize)).add(idx.x);
-    const localCoord = fract(texCoord.mul(u.textureDepths));
-    
+    const {localCoord, textureIdx} = h.getLocalCoord3D(texCoord);
+
     If(u.bivariate, () => {
         const bivar = h.sample2ToOrder(localCoord, textureIdx, u.bivariateSelection).toVar();
         d.assign(bivar.r);
         biVal.assign(bivar.g);
-        isNan.assign(
-            h.isNaNBits(d).or(h.isNaNBits(biVal))
-                .or(u.useF16.not().and(d.equal(1.0)))
-                .or(u.useF16.not().and(biVal.equal(1.0)))
-        );
+        isNan.assign(h.isNanVal(d).or(h.isNanVal(biVal)));
     }).Else(() => {
         d.assign(h.sample1(localCoord, textureIdx));
         d.assign(h.rescaler(d)); // GLSL rescaler(inout d) -> returns the rescaled value here
-        isNan.assign(h.isNaNBits(d).or(u.useF16.not().and(d.equal(1.0))));
+        isNan.assign(h.isNanVal(d));
         d.assign(max(min(d.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
     });
- 
+
     return d.greaterThanEqual(u.threshold.x).and(d.lessThanEqual(u.threshold.y)).toVar();
 };
 
@@ -106,6 +97,38 @@ export const hitBox = Fn(([orig, dir]: any[]) => {
         const t1 = min(tmax.x, min(tmax.y, tmax.z));
     return vec2(t0, t1);
 });
+
+// --- RAY MARCHING SKELETON --- //
+// Ray origin/direction varyings in local space. Perspective rays render from the back faces.
+export const rayVaryings = (material: THREE.NodeMaterial, isOrtho: boolean) => {
+    if (isOrtho){
+        const viewDirWorld = cameraWorldMatrix.mul(vec4(0.0, 0.0, -1.0, 0.0));
+        const viewDirLocal = modelWorldMatrixInverse.mul(viewDirWorld).xyz;
+        return { vOrigin: varying(positionLocal, 'vOrigin'), vDirection: varying(normalize(viewDirLocal), 'vDirection') };
+    }
+    material.side = THREE.BackSide;
+    const vOrigin = varying(modelWorldMatrixInverse.mul(vec4(cameraPosition, 1)).xyz);
+    return { vOrigin, vDirection: varying(positionLocal.sub(vOrigin)) };
+}
+
+// Entry/exit distances, discarding rays that miss the box
+export const rayBounds = (vOrigin: any, rayDir: any) => {
+    const bounds = hitBox( vOrigin, rayDir ).toVar("bounds");
+    If(bounds.x.greaterThan(bounds.y), () => { Discard(); });
+    bounds.x.assign(max(bounds.x, 0.0));
+    return bounds;
+}
+
+export const rayAccumulators = () => ({
+    accumColor: vec3( 0.0 ).toVar('accumColor'),
+    alphaAcc: float( 0.0 ).toVar('alphaAcc'),
+    borderHit: bool(false).toVar('borderHit'),
+})
+
+export const finishRay = (acc: ReturnType<typeof rayAccumulators>) => {
+    If( acc.alphaAcc.lessThanEqual( 0.0 ), () => Discard());
+    return select(acc.borderHit, vec4(u.borderColor, 1.0), vec4(acc.accumColor, acc.alphaAcc));
+}
 
 export function buildTransferLUT(p: {
   cmap: (d: number) => [number, number, number];

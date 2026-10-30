@@ -1,19 +1,15 @@
 import {
-    abs, any, bool, Break, cameraPosition, cameraWorldMatrix, clamp,
-    Discard, EPSILON, float, floor, Fn, fract, greaterThanEqual, If, int,
-    ivec3, lessThan, Loop, max, modelWorldMatrixInverse, normalize,
-    positionLocal, select, sign, texture, varying, vec2, vec3, vec4
+    abs, any, bool, Break, clamp, EPSILON, float, floor, Fn, greaterThanEqual, If, int,
+    ivec3, lessThan, Loop, max, normalize, select, sign, vec2, vec3
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
 import * as u from './utils/uniforms';
-import { colorTexel, hitBox, sampleVoxel, shouldSkip } from './utils/volumeHelpers';
+import { colorTexel, finishRay, rayAccumulators, rayBounds, rayVaryings, sampleVoxel, shouldSkip } from './utils/volumeHelpers';
 
 const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
     const rayDir = normalize( vDirection ).toVar("rayDir");
-    const bounds = hitBox( vOrigin, rayDir ).toVar("bounds");
-    If(bounds.x.greaterThan(bounds.y), () => { Discard(); });
-    bounds.x.assign(max(bounds.x, 0.0));
+    const bounds = rayBounds( vOrigin, rayDir );
 
     const gridRes = u.dataShape;
     const boxMin = u.volumeScale.mul( 0.5 ).negate();
@@ -36,32 +32,30 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
     tDelta.assign( select(  degenerate, vec3( 1e30 ), tDelta ));
     const t = bounds.x.toVar('t');
     const maxSteps = int( gridRes.x.add( gridRes.y ).add( gridRes.z ) ).mul( 2 ).add( 8 );
-    const accumColor = vec3( 0.0 ).toVar('accumColor');
-    const alphaAcc = float( 0.0 ).toVar('alphaAcc');
-    const borderHit = bool(false).toVar("borderHit");
+    const acc = rayAccumulators();
 
     // //Steps
     Loop( maxSteps, () => {
         If( t.greaterThan( bounds.y ), () => {Break();});
-        // Sample at the center of the current voxel. 
+        // Sample at the center of the current voxel.
         const pCenter = boxMin.add( vec3( voxel ).add( 0.5 ).mul( voxelSize ) );
         const texCoord = vec3(0).toVar("texCoord");
         const maskUV = vec2(0).toVar("maskUV");
         const skip = shouldSkip(pCenter, texCoord, maskUV) as any;
-        
+
         If(skip.not(), () => {
             const d = float(0.0).toVar();
             const biVal = float(0.0).toVar();
             const isNan = bool(false).toVar();
             const inRange = sampleVoxel(texCoord, d, biVal, isNan);
             If(inRange, () => {
-                colorTexel(d, biVal, isNan, accumColor, alphaAcc)
-                If(alphaAcc.greaterThanEqual(0.99), () => {
+                colorTexel(d, biVal, isNan, acc.accumColor, acc.alphaAcc)
+                If(acc.alphaAcc.greaterThanEqual(0.99), () => {
                     If(u.useBorderTexture, () => {
                         const pHit = vOrigin.add(t.mul(rayDir)).toVar();
                         const localPosContinuous = pHit.xy.sub(boxMin).div(u.volumeScale).toVar();
-                        const borderUV = h.reprojectMask(localPosContinuous.xy, bool(true))
-                        borderHit.assign(h.isBorder(borderUV))
+                        const borderUV = h.reprojectMask(localPosContinuous.xy)
+                        acc.borderHit.assign(h.isBorder(borderUV))
                     });
                     Break();
                 });
@@ -86,25 +80,13 @@ const ddaColor = Fn(([vOrigin, vDirection] : [any, any]) =>{
             Break();
         });
     })
-    If( alphaAcc.lessThanEqual( 0.0 ), () => Discard());
-    return select(borderHit, vec4(u.borderColor, 1.0), vec4(accumColor, alphaAcc));
+    return finishRay(acc);
 })
 
 export const createDDAMaterial = (isOrtho=false) => {
     const material = new THREE.NodeMaterial();
     material.transparent = true;
-    let vOrigin, vDirection;
-    if (isOrtho){
-        vOrigin = varying(positionLocal, 'vOrigin');
-        const viewDirWorld = cameraWorldMatrix.mul(vec4(0.0, 0.0, -1.0, 0.0));
-        const viewDirLocal = modelWorldMatrixInverse.mul(viewDirWorld).xyz;
-        vDirection = varying(normalize(viewDirLocal), 'vDirection');
-    } else {
-        vOrigin = varying(modelWorldMatrixInverse.mul(vec4(cameraPosition, 1)).xyz);
-        vDirection = varying(positionLocal.sub(vOrigin));
-        material.side = THREE.BackSide;
-    }
+    const { vOrigin, vDirection } = rayVaryings(material, isOrtho);
     material.colorNode = ddaColor(vOrigin, vDirection);
-
     return material
 }
