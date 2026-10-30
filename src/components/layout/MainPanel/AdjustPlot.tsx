@@ -408,7 +408,9 @@ const GlobalOptions = () =>{
   const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, useBorderTexture,
     setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels} = usePlotStore(useShallow(s => s))
   const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
-  const {borderCompatible, transferFunc} = useGlobalStore( s=> s)
+  const {borderCompatible, transferFunc} = useGlobalStore(useShallow(s => ({
+    borderCompatible: s.borderCompatible, transferFunc: s.transferFunc
+  })))
   const isPC = plotType == 'point-cloud'
 	const valueScales = useValueScales()
   // Slider labels in transferFunc space, matching what the shader thresholds against
