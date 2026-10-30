@@ -6,6 +6,7 @@ import { useGlobalStore } from '@/stores/GlobalStore';
 import { Input } from '@/components/ui/input';
 import ZarrParser from '@/data/zarr/ZarrParser';
 import { saveFile } from '@/lib/IndexDB';
+import { setupZarr } from '@/components/layout/StoreInitializer';
 
 interface LocalZarrType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -45,7 +46,9 @@ export async function LoadLocalZarr(files:File[]){
       const gs = await zarr.open(store, {kind: 'group'});
       const blobKey = `local_${baseDir}`
       useGlobalStore.setState({initStore:blobKey})
-      useZarrStore.setState({ useNC: false, useGT:false, blobKey, currentStore:gs})
+      const currentStore = Promise.resolve(gs)
+      useZarrStore.setState({ useNC: false, useGT:false, blobKey, currentStore})
+      await setupZarr(currentStore)
     } catch (error) {
       
       if (error instanceof Error) {

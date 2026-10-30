@@ -41,39 +41,55 @@ export async function getIcechunkStore(
 	const needsClient =
 		withCredentials || (headers && Object.keys(headers).length > 0);
 
-	try {
-		const icechunkStore = await IcechunkStore.open(storePath, {
-			branch: options?.branch ?? "main",
-			// formatVersion: "v1",
-			...(options?.tag && { tag: options.tag }),
-			...(options?.snapshot && { snapshot: options.snapshot }),
-			...(needsClient && {
-				fetchClient: {
-					fetch: (input: string, init?: RequestInit) =>
-						globalThis.fetch(input, {
-							...init,
-							headers: { ...init?.headers, ...headers },
-							...(withCredentials && { credentials: "include" }),
-						}),
-				},
-			}),
-		});
+	// Only send credentials to the repo's own host, never to virtual-chunk hosts
+	const repoOrigin = new URL(storePath).origin;
+	const isRepoRequest = (input: string) => {
+		try { return new URL(input, storePath).origin === repoOrigin; } catch { return false; }
+	};
+	const maxRetries = 10;
+	const retryDelay = 500;
 
-		// Prime the node cache immediately after opening
-		(icechunkStore as any)._cachedNodes = icechunkStore.listNodes();
-		const gs = await zarr.open(icechunkStore, { kind: "group" });
-		useGlobalStore.setState({ status: null });
+	for (let attempt = 0; ; attempt++) {
+		try {
+			const icechunkStore = await IcechunkStore.open(storePath, {
+				branch: options?.branch ?? "main",
+				// formatVersion: "v1",
+				...(options?.tag && { tag: options.tag }),
+				...(options?.snapshot && { snapshot: options.snapshot }),
+				...(needsClient && {
+					fetchClient: {
+						fetch: (input: string, init?: RequestInit) =>
+							isRepoRequest(input)
+								? globalThis.fetch(input, {
+									...init,
+									headers: { ...init?.headers, ...headers },
+									...(withCredentials && { credentials: "include" }),
+								})
+								: globalThis.fetch(input, init),
+					},
+				}),
+			});
 
-		return gs;
-	} catch (error) {
-		if (isRemoteZarrStorePath(storePath)) {
-			useErrorStore.getState().setError("zarrFetch");
+			// Prime the node cache immediately after opening
+			(icechunkStore as any)._cachedNodes = icechunkStore.listNodes();
+			const gs = await zarr.open(icechunkStore, { kind: "group" });
 			useGlobalStore.setState({ status: null });
+
+			return gs;
+		} catch (error) {
+			if (attempt < maxRetries) {
+				await new Promise((resolve) => setTimeout(resolve, retryDelay));
+				continue;
+			}
+			if (isRemoteZarrStorePath(storePath)) {
+				useErrorStore.getState().setError("zarrFetch");
+				useGlobalStore.setState({ status: null });
+			}
+			throw new ZarrError(
+				`Failed to initialize store at ${storePath} (check URL, CORS, or auth)`,
+				error,
+			);
 		}
-		throw new ZarrError(
-			`Failed to initialize store at ${storePath} (check URL, CORS, or auth)`,
-			error,
-		);
 	}
 }
 

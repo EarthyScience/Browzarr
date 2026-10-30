@@ -1,16 +1,20 @@
 import { parseGeoKeys } from "@/data/geo/geoKeyParser";
 import { useZarrStore } from "@/stores/ZarrStore";
 import { useGlobalStore } from "@/stores/GlobalStore";
-import { getBaseImage } from "../zarr/GTGetters";
+import { getBaseImage } from "@/data/geo/baseImage";
+import { setGTFetchOptions } from "../zarr/GTGetters";
+import { FetchStoreOptions } from "@/types/Interfaces";
 
-export async function loadGeoTiff(source: File | string): Promise<boolean> {
+export const GEOTIFF_EXT_REGEX = /\.(tif|tiff|geotiff|gtif)$/i;
+
+export async function loadGeoTiff(source: File | string, fetchOptions?: FetchStoreOptions | null): Promise<boolean> {
     const { setStatus } = useGlobalStore.getState();
     const isURL = typeof source === "string";
     const name = (isURL ? source.split("/").at(-1) : source.name) || "geotiff.tif";
 
     setStatus("Loading...");
     try {
-        const geotiff = await getBaseImage(source);
+        const geotiff = await getBaseImage(source, fetchOptions);
         const imageCount = await geotiff.getImageCount();
         // Single-image files get flat band names; multi-image files are prefixed by image index
         const flat = imageCount === 1;
@@ -39,6 +43,7 @@ export async function loadGeoTiff(source: File | string): Promise<boolean> {
                 description: "",
             },
         });
+        setGTFetchOptions(isURL ? fetchOptions ?? null : null);
         useZarrStore.setState({ gtSource: source, useGT: true, useNC: false });
         return true;
     } catch (error) {

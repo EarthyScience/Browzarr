@@ -1,12 +1,17 @@
 import { useCacheStore } from "@/stores/CacheStore";
 import { useGlobalStore } from "@/stores/GlobalStore";
 import { useZarrStore } from "@/stores/ZarrStore";
-import { fromBlob, fromUrl } from "geotiff";
+import { getBaseImage } from "@/data/geo/baseImage";
+import { FetchStoreOptions } from "@/types/Interfaces";
 import { parseGeoKeys } from "@/data/geo/geoKeyParser";
 import { calculateStrides } from "@/lib/helpers";
 import { usePlotStore } from "@/stores/PlotStore";
 import { getPool } from "@/workers/pool";
 import { epsgToProj } from "../geo/epsgToProj";
+
+// Kept out of zustand so auth headers never end up in exported/shared state
+let gtFetchOptions: FetchStoreOptions | null = null;
+export function setGTFetchOptions(options: FetchStoreOptions | null){ gtFetchOptions = options }
 
 export async function getGTDims(variable: string){
     const {gtSource} = useZarrStore.getState()
@@ -18,7 +23,7 @@ export async function getGTDims(variable: string){
         const {dimNames, dimArrays, dimUnits} = dimfo
         return {dimNames, dimArrays, dimUnits};
     }
-    const geotiff = await getBaseImage(gtSource as File)
+    const geotiff = await getBaseImage(gtSource as File, gtFetchOptions)
     const baseImage = await geotiff.getImage()
     const geoKeys = baseImage.getGeoKeys()
     const parsedGK = parseGeoKeys(geoKeys as Record<string, any>);
@@ -47,7 +52,7 @@ export async function getGTMetadata(variable: string){
     if (cache.has(cacheName)){
         return cache.get(cacheName)
     }
-    const geotiff = await getBaseImage(gtSource as File)
+    const geotiff = await getBaseImage(gtSource as File, gtFetchOptions)
     let imageNum = parseInt(variable.split('/')[0])
     imageNum = Number.isNaN(imageNum) ? 0 : imageNum
     const baseImage = await geotiff.getImage()
@@ -78,7 +83,7 @@ export async function getRasterData(overrideVar?: string){
     const winY = ndSlices[0]
     let imageNum = parseInt(thisVar.split('/')[0])
     imageNum = Number.isNaN(imageNum) ? 0 : imageNum
-    const {data, width, height} = await pool.dispatch('readRasterData', {gtSource: gtSource as string | File, imageNum, winX, winY, sample})
+    const {data, width, height} = await pool.dispatch('readRasterData', {gtSource: gtSource as string | File, fetchOptions: gtFetchOptions, imageNum, winX, winY, sample})
     const transpose = axisMapping.x !== 1;
     const thisShape = transpose ? [width, height] : [height, width]
     const thisStride = transpose ? [1, width] : [width, 1]
@@ -109,17 +114,4 @@ export async function getRasterData(overrideVar?: string){
     cache.set(`${initStore}_${thisVar}_chunk_z0_y0_x0`, cacheChunk)
     setStatus(null)
     return { shape: thisShape, indices: [axisMapping.y, axisMapping.x], scalingFactor: 0 }
-}
-
-export async function getBaseImage(source: File | string){
-    const {fetchOptions} = useZarrStore.getState()
-    const thisOptions = fetchOptions 
-        ? {
-            headers:fetchOptions.headers,
-            credentials: fetchOptions.withCredentials ? "include" : "same-origin"
-        }
-        : undefined
-    const isURL = typeof source === "string"
-    if (isURL) return fromUrl(source, thisOptions)
-    else return fromBlob(source)
 }

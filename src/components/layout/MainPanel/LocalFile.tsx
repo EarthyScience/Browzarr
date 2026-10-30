@@ -11,13 +11,11 @@ import {
 } from '@/components/ui/alert';
 import { isMobile } from '../MobileUIHider';
 import { useZarrStore } from '@/stores/ZarrStore';
-import { loadGeoTiff } from '@/data/loaders/loadGeoTiff';
+import { loadGeoTiff, GEOTIFF_EXT_REGEX } from '@/data/loaders/loadGeoTiff';
 
 interface LocalNCType {
   setOpenVariables: (open: boolean) => void;
 }
-
-const TIF_EXTENSIONS = ['.tif','.tiff','.geotiff','.gtif']
 
 const LocalFile = ({ setOpenVariables}:LocalNCType) => {
     const {setStatus } = useGlobalStore.getState()
@@ -29,7 +27,7 @@ const LocalFile = ({ setOpenVariables}:LocalNCType) => {
 		const files = event.target.files;
 		if (!files || files.length === 0) { setStatus(null); return; }
 		const file = files[0];
-    const isGeoTiff = TIF_EXTENSIONS.some(e => file.name.toLowerCase().includes(e))
+    const isGeoTiff = GEOTIFF_EXT_REGEX.test(file.name)
     if (isGeoTiff){
       try{
         if (!(await loadGeoTiff(file))) throw new Error('Could not open GeoTIFF');

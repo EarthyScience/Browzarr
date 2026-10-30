@@ -9,24 +9,33 @@ export async function getFetchStore(
   storePath: string,
   fetchOptions?: FetchStoreOptions
 ): Promise<zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore>> | undefined> {
-  try {
-    const store = await zarr.withMaybeConsolidatedMetadata(
-      new zarr.FetchStore(storePath, {
-        overrides: {
-          headers: fetchOptions?.headers,
-          ...(fetchOptions?.withCredentials && { credentials: 'include' }),
-        },
-      })
-    );
-    const gs = await zarr.open(store, { kind: 'group' });
-    useGlobalStore.setState({ status: null });
-    return gs;
-  } catch (error) {
-    if (storePath.slice(0, 5) !== 'local') {
-      useErrorStore.getState().setError('zarrFetch');
+  const maxRetries = 10;
+  const retryDelay = 500;
+
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const store = await zarr.withMaybeConsolidatedMetadata(
+        new zarr.FetchStore(storePath, {
+          overrides: {
+            headers: fetchOptions?.headers,
+            ...(fetchOptions?.withCredentials && { credentials: 'include' }),
+          },
+        })
+      );
+      const gs = await zarr.open(store, { kind: 'group' });
       useGlobalStore.setState({ status: null });
+      return gs;
+    } catch (error) {
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        continue;
+      }
+      if (storePath.slice(0, 5) !== 'local') {
+        useErrorStore.getState().setError('zarrFetch');
+        useGlobalStore.setState({ status: null });
+      }
+      throw new ZarrError(`Failed to initialize store at ${storePath} (check URL, CORS, or auth)`, error);
     }
-    throw new ZarrError(`Failed to initialize store at ${storePath} (check URL, CORS, or auth)`, error);
   }
 }
 

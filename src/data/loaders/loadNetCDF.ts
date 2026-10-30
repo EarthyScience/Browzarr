@@ -2,11 +2,11 @@ import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { useZarrStore } from '@/stores/ZarrStore';
 import { useErrorStore } from '@/stores/ErrorStore';
+import { FetchStoreOptions } from '@/types/Interfaces';
 
 export const NETCDF_EXT_REGEX = /\.(nc|netcdf|nc3|nc4)$/i;
 
-async function openNetCDF(source: File | string) {
-  const {fetchOptions} = useZarrStore.getState()
+async function openNetCDF(source: File | string, fetchOptions?: FetchStoreOptions | null) {
   const thisOptions = fetchOptions 
     ? {
       headers: fetchOptions.headers,
@@ -24,13 +24,13 @@ async function openNetCDF(source: File | string) {
   });
 }
 
-export async function loadNetCDF(source: File | string): Promise<boolean> {
+export async function loadNetCDF(source: File | string, fetchOptions?: FetchStoreOptions | null): Promise<boolean> {
   const { setStatus } = useGlobalStore.getState();
   const isURL = typeof source === 'string';
   const fileName = (isURL ? source.split('/').at(-1) : source.name) || 'dataset.nc';
   setStatus('Loading...');
   try {
-    const data = await openNetCDF(source);
+    const data = await openNetCDF(source, fetchOptions);
     const [variables, attrs, metadata] = await Promise.all([
       data.getVariables(),
       data.getGlobalAttributes(),
