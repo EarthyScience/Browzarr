@@ -19,11 +19,13 @@ export type CatalogEntry = {
   store: string;
 };
 
-type GradientPreset = 'zarr' | 'icechunk';
+export type GradientPreset = 'zarr' | 'icechunk' | 'netcdf' | 'geotiff';
 
 const GRADIENTS: Record<GradientPreset, string> = {
   zarr:     'linear-gradient(90deg, #EC4899, #facc15)',
   icechunk: 'linear-gradient(90deg, #3b82f6, #a5f3fc)',
+  netcdf:   'linear-gradient(90deg, #10b981, #a3e635)',
+  geotiff:  'linear-gradient(90deg, #8b5cf6, #f472b6)',
 };
 
 const gradientTextStyle = (gradient: string): React.CSSProperties => ({

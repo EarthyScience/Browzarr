@@ -25,7 +25,7 @@ type ZarrState = {
   ndSlices: [number, number][];
   axisMapping: { x: number, y: number, z: number };
   useGT: boolean;
-  gtBlob: File | undefined; //Geotiff file reference
+  gtSource: Blob | string | undefined; //Geotiff file reference
 
   setZSlice: (zSlice: [number , number | null]) => void;
   setYSlice: (ySlice: [number , number | null]) => void;
@@ -70,7 +70,7 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   fetchKey: 0,
   blobKey: undefined,
   useGT: false,
-  gtBlob: undefined,
+  gtSource: undefined,
 
   setZSlice: (zSlice) => set({ zSlice }),
   setYSlice: (ySlice) => set({ ySlice }),

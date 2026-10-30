@@ -7,6 +7,10 @@ export const errorList = {
         title: "CORS Error",
         description: "There was a Cross-Origin Resource Sharing (CORS) error. Please check your network settings or try again later."
     },
+    ncFail: {
+        title: "Failed to Fetch",
+        description: "Couldn't fetch the NetCDF. Check the console for specific reasons. Retrying may solve the problem."
+    },
     404: {
         title: "Resource Not Found",    
         description: "The requested resource could not be found. Please check the URL or try again later."
@@ -32,7 +36,7 @@ export const errorList = {
         description: "The projection string provided is not recognized. Please check the string and try again."
     },
     glsl :{
-        title: "Invalid GLSL Code",
-        description: "The given function is invalid. Check the error message for additional information"
+        title: "Invalid Shader Code",
+        description: "The given function is invalid. Check the console error message for additional information"
     }
 }

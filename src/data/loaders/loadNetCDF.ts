@@ -1,35 +1,59 @@
-// utils/loadNetCDF.ts
 import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { useZarrStore } from '@/stores/ZarrStore';
+import { useErrorStore } from '@/stores/ErrorStore';
+import { FetchStoreOptions } from '@/types/Interfaces';
 
-const NETCDF_EXT_REGEX = /\.(nc|netcdf|nc3|nc4)$/i;
+export const NETCDF_EXT_REGEX = /\.(nc|netcdf|nc3|nc4)$/i;
 
-export async function loadNetCDF(file: Blob, filename: string) {
+async function openNetCDF(source: File | string, fetchOptions?: FetchStoreOptions | null) {
+  const thisOptions = fetchOptions 
+    ? {
+      headers: fetchOptions.headers,
+      withCredentials: fetchOptions.withCredentials
+    }
+    : undefined
+  if (typeof source !== 'string') return NetCDF4.fromBlobLazy(source);
+  // The first remote open often fails; retry once after a short delay
+  return NetCDF4.fromUrl(source, thisOptions).catch(async () => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return NetCDF4.fromUrl(source, thisOptions).catch(error => {
+      useErrorStore.getState().setError('ncFail');
+      throw error;
+    });
+  });
+}
+
+export async function loadNetCDF(source: File | string, fetchOptions?: FetchStoreOptions | null): Promise<boolean> {
   const { setStatus } = useGlobalStore.getState();
-  const { ncModule } = useZarrStore.getState();
-  if (ncModule) ncModule.close();
-  setStatus("Loading...");
+  const isURL = typeof source === 'string';
+  const fileName = (isURL ? source.split('/').at(-1) : source.name) || 'dataset.nc';
+  setStatus('Loading...');
   try {
-    const data = await NetCDF4.fromBlobLazy(file);
+    const data = await openNetCDF(source, fetchOptions);
     const [variables, attrs, metadata] = await Promise.all([
       data.getVariables(),
       data.getGlobalAttributes(),
       data.getFullMetadata(),
     ]);
+
+    // Only release the previous file once the new one has opened successfully
+    useZarrStore.getState().ncModule?.close();
     useGlobalStore.setState({
       variables: Object.keys(variables),
       zMeta: metadata,
-      initStore: `local:${filename}`,
+      initStore: isURL ? source : `local:${fileName}`,
       titleDescription: {
-        title: attrs.title ?? filename,
+        title: attrs.title ?? fileName,
         description: attrs.history ?? '',
       },
     });
-    useZarrStore.setState({ useNC: true, useGT:false, ncModule: data });
+    useZarrStore.setState({ useNC: true, useGT: false, ncModule: data });
+    return true;
+  } catch (error) {
+    console.error(`Failed to load NetCDF file "${fileName}":`, error);
+    return false;
   } finally {
     setStatus(null);
   }
 }
-
-export { NETCDF_EXT_REGEX };

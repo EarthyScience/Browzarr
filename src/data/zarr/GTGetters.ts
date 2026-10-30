@@ -1,15 +1,20 @@
 import { useCacheStore } from "@/stores/CacheStore";
 import { useGlobalStore } from "@/stores/GlobalStore";
 import { useZarrStore } from "@/stores/ZarrStore";
-import { fromBlob } from "geotiff";
+import { getBaseImage } from "@/data/geo/baseImage";
+import { FetchStoreOptions } from "@/types/Interfaces";
 import { parseGeoKeys } from "@/data/geo/geoKeyParser";
 import { calculateStrides } from "@/lib/helpers";
 import { usePlotStore } from "@/stores/PlotStore";
 import { getPool } from "@/workers/pool";
 import { epsgToProj } from "../geo/epsgToProj";
 
+// Kept out of zustand so auth headers never end up in exported/shared state
+let gtFetchOptions: FetchStoreOptions | null = null;
+export function setGTFetchOptions(options: FetchStoreOptions | null){ gtFetchOptions = options }
+
 export async function getGTDims(variable: string){
-    const {gtBlob} = useZarrStore.getState()
+    const {gtSource} = useZarrStore.getState()
     const {cache} = useCacheStore.getState();
     const {initStore} = useGlobalStore.getState();
     const cacheName = `${initStore}_${variable}_dimfo`
@@ -18,7 +23,7 @@ export async function getGTDims(variable: string){
         const {dimNames, dimArrays, dimUnits} = dimfo
         return {dimNames, dimArrays, dimUnits};
     }
-    const geotiff = await fromBlob(gtBlob as File)
+    const geotiff = await getBaseImage(gtSource as File, gtFetchOptions)
     const baseImage = await geotiff.getImage()
     const geoKeys = baseImage.getGeoKeys()
     const parsedGK = parseGeoKeys(geoKeys as Record<string, any>);
@@ -40,14 +45,14 @@ export async function getGTDims(variable: string){
 }
 
 export async function getGTMetadata(variable: string){
-    const {gtBlob} = useZarrStore.getState()
+    const {gtSource} = useZarrStore.getState()
     const {cache} = useCacheStore.getState();
     const {initStore}  = useGlobalStore.getState();
     const cacheName = `${initStore}_${variable}_meta`
     if (cache.has(cacheName)){
         return cache.get(cacheName)
     }
-    const geotiff = await fromBlob(gtBlob as File)
+    const geotiff = await getBaseImage(gtSource as File, gtFetchOptions)
     let imageNum = parseInt(variable.split('/')[0])
     imageNum = Number.isNaN(imageNum) ? 0 : imageNum
     const baseImage = await geotiff.getImage()
@@ -61,7 +66,7 @@ export async function getGTMetadata(variable: string){
 }
 
 export async function getRasterData(overrideVar?: string){
-    const {gtBlob, ndSlices, axisMapping, coarsen, kernelSize, kernelDepth, setCurrentChunks, setArraySize} = useZarrStore.getState()
+    const {gtSource, ndSlices, axisMapping, coarsen, kernelSize, kernelDepth, setCurrentChunks, setArraySize} = useZarrStore.getState()
     const {cache} = useCacheStore.getState()
     const {initStore, variable, setStrides, setStatus} = useGlobalStore.getState()
     const thisVar = overrideVar?? variable as string
@@ -78,7 +83,7 @@ export async function getRasterData(overrideVar?: string){
     const winY = ndSlices[0]
     let imageNum = parseInt(thisVar.split('/')[0])
     imageNum = Number.isNaN(imageNum) ? 0 : imageNum
-    const {data, width, height} = await pool.dispatch('readRasterData', {gtBlob: gtBlob as File, imageNum, winX, winY, sample})
+    const {data, width, height} = await pool.dispatch('readRasterData', {gtSource: gtSource as string | File, fetchOptions: gtFetchOptions, imageNum, winX, winY, sample})
     const transpose = axisMapping.x !== 1;
     const thisShape = transpose ? [width, height] : [height, width]
     const thisStride = transpose ? [1, width] : [width, 1]

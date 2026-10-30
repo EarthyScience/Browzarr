@@ -1,15 +1,11 @@
 'use client';
-import * as THREE from 'three'
-THREE.Cache.enabled = true;
-import { GetZarrMetadata, GetTitleDescription } from '@/data/zarr/ZarrLoaderLRU';
-import { GetVariableNames } from '@/data/zarr/utils';
-import { useEffect, useRef } from 'react';
-import { PlotArea, Plot, LandingShapes } from '@/components/plots';
-import { MainPanel } from '@/components/ui';
-import { Loading, Error as ErrorComponent } from '@/components/ui';
+import { LandingShapes, Plot, PlotArea } from '@/components/plots';
+import { Error as ErrorComponent, Loading, MainPanel } from '@/components/ui';
 import { useGlobalStore } from '@/stores/GlobalStore';
-import { useZarrStore } from '@/stores/ZarrStore';
+import { useEffect } from 'react';
+import * as THREE from 'three';
 import { useShallow } from 'zustand/shallow';
+THREE.Cache.enabled = true;
 
 async function sendPing() {
   const url = "https://www.bgc-jena.mpg.de/~jpoehls/browzarr/visitor_logger.php";
@@ -22,45 +18,9 @@ async function sendPing() {
 }
 
 export function LandingHome() {
-  const {timeSeries, variable, setZMeta, setVariables, setTitleDescription, 
-    setOpenVariables, setStoreFromURL} = useGlobalStore(useShallow(s => ({
-      timeSeries: s.timeSeries, variable: s.variable, setZMeta: s.setZMeta, setVariables: s.setVariables,
-      setTitleDescription: s.setTitleDescription, setOpenVariables: s.setOpenVariables, setStoreFromURL: s.setStoreFromURL
-    })))
-  const { currentStore, useNC} = useZarrStore(useShallow(s => ({
-    currentStore: s.currentStore, useNC: s.useNC
-  })))
+  const {timeSeries, variable} = useGlobalStore(useShallow(s => ({
+      timeSeries: s.timeSeries, variable: s.variable })))
 
-  useEffect(() => {
-    // LocalNetCDF --> loadNetCDF grabs metadata during loading. Maybe move this logic to GetStore. 
-    if (useNC) return;
-    let isMounted = true;
-    const activeStore = currentStore;
-
-    GetTitleDescription(activeStore).then((result) => {
-      if (isMounted && currentStore === activeStore) setTitleDescription(result);
-    });
-
-    const fullmetadata = GetZarrMetadata(activeStore);
-    const variables = GetVariableNames(fullmetadata);
-
-    fullmetadata.then((e) => {
-      if (isMounted && currentStore === activeStore) setZMeta(e);
-    });
-    variables.then((e) => {
-      if (isMounted && currentStore === activeStore) {
-        setVariables(e);
-        const { storeFromURL } = useGlobalStore.getState();
-        if (storeFromURL) {
-          setOpenVariables(true);
-          setStoreFromURL(false);
-        }
-      }
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, [currentStore, setZMeta, setVariables, setTitleDescription, setOpenVariables, setStoreFromURL]);
   useEffect(()=>{
     if (process.env.NODE_ENV !== "development") {
       sendPing()

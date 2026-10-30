@@ -1,24 +1,22 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { useGlobalStore } from '@/stores/GlobalStore';
-import { useShallow } from 'zustand/shallow';
 import { Button } from '@/components/ui/button-enhanced';
-import { TbDatabasePlus } from "react-icons/tb";
-import { BsBoxArrowLeft, BsBoxArrowRight } from 'react-icons/bs';
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from '@/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Separator } from '@/components/ui/separator';
-import { DatasetOption, DescriptionContent } from './DescriptionContent';
-import RemoteZarr from './RemoteZarr';
-import RemoteIcechunk from './RemoteIcechunk';
-import LocalContent from './LocalContent';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useEffect, useState } from 'react';
+import { BsBoxArrowLeft, BsBoxArrowRight } from 'react-icons/bs';
+import { TbDatabasePlus } from "react-icons/tb";
+import { useShallow } from 'zustand/shallow';
 import DatasetsModal from './DataSetsModal';
-import { Switcher } from '@/components/widgets/Switcher';
+import { DatasetOption, DescriptionContent } from './DescriptionContent';
+import LocalContent from './LocalContent';
+import { RemoteDataset } from './RemoteDataset';
 
 const Dataset = () => {
   const [showStoreInput, setShowStoreInput] = useState(false);
@@ -29,10 +27,9 @@ const Dataset = () => {
   const [popoverOpen, setPopoverOpen] = useState<boolean>(false);
   const [isSafari, setIsSafari] = useState<boolean>(false);
   const [openDatasetsModal, setOpenDatasetsModal] = useState<boolean>(false);
-  const [useIcechunk, setUseIcechunk] = useState(false);
 
-  const { initStore, setInitStore, setOpenVariables } = useGlobalStore(
-    useShallow(s => s));
+  const {setInitStore, setOpenVariables } = useGlobalStore(useShallow(s => ({
+    setInitStore: s.setInitStore, setOpenVariables: s.setOpenVariables})));
 
   useEffect(() => {
     const handleResize = () => {
@@ -115,35 +112,14 @@ const Dataset = () => {
                   setShowLocalInput(false);
                   setActiveOption('remote');
                   setShowDescription(false);
-                  if (opening) setUseIcechunk(false);
                 }}
               >
                 Remote
               </DatasetOption>
               {showStoreInput && (
-                <div className="mt-2">
-                  <Switcher
-                    leftText="Zarr"
-                    rightText="Icechunk"
-                    state={!useIcechunk}
-                    onClick={() => setUseIcechunk(prev => !prev)}
-                  />
-                  {useIcechunk ? (
-                    <RemoteIcechunk
-                      setInitStore={setInitStore}
-                      onOpenDescription={() => setShowDescription(true)}
-                    />
-                  ) : (
-                    <RemoteZarr
-                      initStore={initStore}
-                      setInitStore={setInitStore}
-                      onOpenDescription={() => setShowDescription(true)}
-                    />
-                  )}
-                </div>
+                <RemoteDataset setInitStore={setInitStore} onOpenDescription={() => setShowDescription(true)} />
               )}
             </div>
-
             <Separator className='mt-2' />
 
             <div className="w-full">
@@ -154,7 +130,6 @@ const Dataset = () => {
                   setShowStoreInput(false);
                   setActiveOption('local');
                   setShowDescription(false);
-                  setUseIcechunk(false);
                 }}
               >
                 Local
@@ -162,7 +137,6 @@ const Dataset = () => {
               {showLocalInput && (
                 <LocalContent
                   setShowLocal={setShowLocalInput}
-                  setInitStore={setInitStore}
                   onOpenDescription={() => setShowDescription(true)}
                   isSafari={isSafari}
                 />

@@ -4,6 +4,8 @@ import { decompressSync } from 'fflate';
 import {processChunk, processIn, processOut} from './tasks/processChunk';
 import { createTextureData, textureIn, textureOut } from './tasks/createTextureData';
 import { CompressArray, DecompressArray, RescaleArray } from '@/data/zarr/utils';
+import { getBaseImage } from '@/data/geo/baseImage';
+import { FetchStoreOptions } from '@/types/Interfaces';
 
 interface normalizeIn{
     data: Uint8Array | Float16Array;
@@ -12,7 +14,8 @@ interface normalizeIn{
     useF16: boolean;
 }
 interface readRasterIn {
-    gtBlob: File;
+    gtSource: File | string;
+    fetchOptions?: FetchStoreOptions | null;
     imageNum: number;
     winX: [number, number];
     winY: [number, number];
@@ -37,8 +40,8 @@ function normalizeTextureData({data, minVal, range, useF16}: normalizeIn){
     return {textureData}
 }
 
-async function readRasterData({gtBlob, imageNum, winX, winY, sample}: readRasterIn){
-    const geotiff = await fromBlob(gtBlob as File)
+async function readRasterData({gtSource, fetchOptions, imageNum, winX, winY, sample}: readRasterIn){
+    const geotiff = await getBaseImage(gtSource, fetchOptions)
     const image = await geotiff.getImage(imageNum)
     const data = await image.readRasters({
         window: [winX[0], winY[0], winX[1], winY[1]],

@@ -1,11 +1,12 @@
 "use client";
-import React, {useState, useEffect, ChangeEvent} from 'react'
+import React, {ChangeEvent} from 'react'
 import * as zarr from 'zarrita'
 import { useZarrStore } from '@/stores/ZarrStore';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { Input } from '@/components/ui/input';
 import ZarrParser from '@/data/zarr/ZarrParser';
 import { saveFile } from '@/lib/IndexDB';
+import { setupZarr } from '@/components/layout/StoreInitializer';
 
 interface LocalZarrType {
   setShowLocal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -45,7 +46,9 @@ export async function LoadLocalZarr(files:File[]){
       const gs = await zarr.open(store, {kind: 'group'});
       const blobKey = `local_${baseDir}`
       useGlobalStore.setState({initStore:blobKey})
-      useZarrStore.setState({ useNC: false, blobKey, currentStore:gs})
+      const currentStore = Promise.resolve(gs)
+      useZarrStore.setState({ useNC: false, useGT:false, blobKey, currentStore})
+      await setupZarr(currentStore)
     } catch (error) {
       
       if (error instanceof Error) {
@@ -76,7 +79,7 @@ const LocalZarr = ({setShowLocal, setOpenVariables}:LocalZarrType) => {
 		<div>
 			<Input type="file" id="filepicker"
         className='hover:drop-shadow-md hover:scale-[110%]'
-        style={{width:'200px', cursor:'pointer'}}
+        style={{cursor:'pointer'}}
         // @ts-expect-error `webkitdirectory` is non-standard attribute. TS doesn't know about it. It's used for cross-browser compatibility.
         directory=''
         webkitdirectory='true'

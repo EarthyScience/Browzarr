@@ -4,15 +4,49 @@ import { useSearchParams } from "next/navigation";
 import { useGlobalStore } from "@/stores/GlobalStore";
 import { useZarrStore } from '@/stores/ZarrStore';
 import { usePlotStore } from "@/stores/PlotStore";
-import { loadNetCDF } from "@/data/loaders/loadNetCDF";
+import { loadNetCDF, NETCDF_EXT_REGEX } from "@/data/loaders/loadNetCDF";
 import { loadFile } from "@/lib/IndexDB";
 import { LoadLocalZarr } from "./MainPanel/LocalZarr";
-import { isRemoteStore } from "@/data/geo/isRemoteStore";
+import { isRemoteStore, toHttps } from "@/data/geo/isRemoteStore";
 import { GetStore } from "@/data/zarr/ZarrLoaderLRU";
 import { useImageExportStore } from "@/stores/ImageExportStore";
 import { useColormapStore } from "@/stores/ColormapStore";
+import { GetZarrMetadata, GetTitleDescription } from '@/data/zarr/ZarrLoaderLRU';
+import { GetVariableNames } from '@/data/zarr/utils';
+import { loadGeoTiff, GEOTIFF_EXT_REGEX } from "@/data/loaders/loadGeoTiff";
 
-export function initializeStore(){
+// Bumped on every setupZarr call so a slower, older store can't overwrite a newer one
+let loadToken = 0;
+
+export async function setupZarr(activeStore: Promise<any> ): Promise<boolean> {
+	const token = ++loadToken;
+	const isCurrent = () => token === loadToken;
+	const {setTitleDescription, setVariables, setZMeta, setStoreFromURL, setOpenVariables} = useGlobalStore.getState()
+	GetTitleDescription(activeStore).then((result) => { if (isCurrent()) setTitleDescription(result) }).catch(() => {});
+	const fullmetadata = GetZarrMetadata(activeStore);
+	const variables = GetVariableNames(fullmetadata);
+	fullmetadata.then((e) => { if (isCurrent()) setZMeta(e) }).catch(() => {});
+	try {
+		const vars = await variables;
+		if (!isCurrent()) return false;
+		setVariables(vars);
+		const { storeFromURL } = useGlobalStore.getState();
+		if (storeFromURL) {
+			setOpenVariables(true);
+			setStoreFromURL(false);
+		}
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function urlPath(url: string): string {
+	try { return new URL(url).pathname; } catch { return url; }
+}
+
+// Resolves true once the store's variables are available, false if loading failed
+export async function initializeStore(): Promise<boolean> {
 	const {initStore} = useGlobalStore.getState()
 	const {useNC, ReFetch, setCurrentStore} = useZarrStore.getState()
 	// ---- Handle Code Inputs ---- //
@@ -20,42 +54,52 @@ export function initializeStore(){
 		const path = initStore.replace('local:', '');  
 		if (useNC){
 			// ---- Local NC ----//
-			const filename = path.split('/').pop() ?? 'file.nc';
-			fetch(`file?path=${encodeURIComponent(path)}`)
+			const filename = path.split('/').pop() || 'file.nc';
+			return fetch(`file?path=${encodeURIComponent(path)}`)
 			.then(res => {
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				return res.blob();
 			})
-			.then(async blob => {
-				await loadNetCDF(blob, filename);
-				ReFetch();
-				return;
-			})
-			.catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
+			.then(blob => loadNetCDF(new File([blob], filename)))
+			.then(ok => { if (ok) ReFetch(); return ok; })
+			.catch(e => {
+				useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`);
+				return false;
+			});
 		} else {
 			// ---- Local Zarr ---- //
 			const encodedPath = encodeURIComponent(path);
 			const zarrPath = `${window.location.origin}/zarr/${encodedPath}`;
 			const newStore = GetStore(zarrPath);
-			newStore.then(()=>ReFetch())
 			setCurrentStore(newStore);
-			return;
+			return setupZarr(newStore).then(ok => { if (ok) ReFetch(); return ok; });
 		}
 	} else {
-		if (!isRemoteStore(initStore)) return; // Localzarr and LocalNetCDF create & set custom stores that bypasses this step
-		// ---- Remote Zarr ---- //
+		if (!isRemoteStore(initStore)) return false; // Localzarr and LocalNetCDF create & set custom stores that bypasses this step
+		const url = toHttps(initStore);
+		if (url !== initStore) useGlobalStore.getState().setInitStore(url);
+		// ---- Take credentials out of shared state before anything else ---- //
 		const { icechunkOptions, fetchOptions } = useZarrStore.getState();
-		const newStore = GetStore(
-			initStore,
-			fetchOptions   ?? undefined,
-			icechunkOptions ?? undefined
-		);
-		setCurrentStore(newStore);
+		useZarrStore.setState({icechunkOptions: null, fetchOptions: null});
+		const path = urlPath(url);
+
+		if (NETCDF_EXT_REGEX.test(path)){
+			return loadNetCDF(url, fetchOptions);
+		} else if (GEOTIFF_EXT_REGEX.test(path)){
+			return loadGeoTiff(url, fetchOptions);
+		} else {
+			// ---- Remote Zarr ---- //
+			const newStore = GetStore(
+				url,
+				fetchOptions   ?? undefined,
+				icechunkOptions ?? undefined
+			);
+			setCurrentStore(newStore);
+			const {remapTexture} = useGlobalStore.getState();
+			if (remapTexture) remapTexture.dispose();
+			return setupZarr(newStore);
+		}
 	}
-	// ---- Clear after use ---- //
-	const {remapTexture} = useGlobalStore.getState();
-	if (remapTexture) remapTexture.dispose();
-	useZarrStore.setState({icechunkOptions: null, fetchOptions:null});
 }
 
 const safeJsonParse = (val: string | null): unknown => {
@@ -105,7 +149,7 @@ function StoreInitializerInner() {
 					} else {
 						//@ts-ignore cache is what we want
 						const file = cache.blob as File
-						loadNetCDF(file, file.name).then(() => {
+						loadNetCDF(file).then(() => {
 							setAllStates()
 						})
 					}
@@ -138,7 +182,7 @@ function StoreInitializerInner() {
 		const store = searchParams.get("initStore") || searchParams.get("dataset"); // dataset is julia convention. 
 		if (store){
 			const isRemoteZarr = isRemoteStore(store);
-			setInitStore(isRemoteZarr ? store : "local:" + store)
+			setInitStore(isRemoteZarr ? toHttps(store) : "local:" + store)
 		}
 		// --- CONDITIONALS ---- //
 		// ---- Handle Export ---- //
@@ -163,3 +207,4 @@ export function StoreInitializer() {
     </Suspense>
   );
 }
+

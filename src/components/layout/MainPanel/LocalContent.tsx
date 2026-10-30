@@ -7,14 +7,12 @@ import { Switcher } from '@/components/widgets/Switcher';
 
 type Props = {
   setShowLocal?: React.Dispatch<React.SetStateAction<boolean>>;
-  setInitStore: (v: string) => void;
   onOpenDescription: () => void;
   isSafari: boolean;
 };
 
 const LocalContent = ({
   setShowLocal,
-  setInitStore,
   onOpenDescription,
   isSafari,
 }: Props) => {

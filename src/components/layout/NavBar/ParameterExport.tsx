@@ -93,7 +93,6 @@ const zarrValues = [
     'kernelSize',
     'kernelDepth',
     'icechunkOptions',
-    'fetchOptions',
     'fetchKey',
     'blobKey'
 ]
