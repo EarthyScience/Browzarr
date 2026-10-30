@@ -43,11 +43,9 @@ export const shouldSkip = (p: any, texCoord: any, maskUV: any) => {
     return skip;
 };
 
-
 export const sampleVoxel = (texCoord: any, d: any, biVal: any, isNan: any) => {
     // This gets the sample value. If d is clipped by value-range return false
     const {localCoord, textureIdx} = h.getLocalCoord3D(texCoord);
-
     If(u.bivariate, () => {
         const bivar = h.sample2ToOrder(localCoord, textureIdx, u.bivariateSelection).toVar();
         d.assign(bivar.r);
@@ -55,7 +53,7 @@ export const sampleVoxel = (texCoord: any, d: any, biVal: any, isNan: any) => {
         isNan.assign(h.isNanVal(d).or(h.isNanVal(biVal)));
     }).Else(() => {
         d.assign(h.sample1(localCoord, textureIdx));
-        d.assign(h.rescaler(d)); // GLSL rescaler(inout d) -> returns the rescaled value here
+        d.assign(h.rescaler(d)); 
         isNan.assign(h.isNanVal(d));
         d.assign(max(min(d.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
     });
@@ -63,8 +61,11 @@ export const sampleVoxel = (texCoord: any, d: any, biVal: any, isNan: any) => {
     return d.greaterThanEqual(u.threshold.x).and(d.lessThanEqual(u.threshold.y)).toVar();
 };
 
+// NaN or the dataset's fill value
+export const isMissing = (d: any, isNan: any) => isNan.or(abs(d.sub(u.fillValue)).lessThan(0.005));
+
 export const colorTexel = (d: any, biVal: any, isNan: any, accumColor: any, alphaAcc: any ) => {
-    isNan.assign(isNan.or(abs(d.sub(u.fillValue)).lessThan(0.005)));
+    isNan.assign(isMissing(d, isNan));
     If(isNan, () => {
         If(u.nanAlpha.greaterThan(0.0), () => {
             const nanA = pow(u.nanAlpha, 5.0);

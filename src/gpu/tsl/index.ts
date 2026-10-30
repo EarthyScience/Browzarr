@@ -1,2 +1,3 @@
-export {createRayMarchingMaterial} from './rayMarcher'
-export {createDDAMaterial} from './dda'
+export {createVolumeMaterial} from './volume'
+export type {VolumeTraversal} from './volume'
+export type {VolumeMode} from './utils/compositors'
