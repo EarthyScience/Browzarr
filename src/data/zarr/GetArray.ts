@@ -95,6 +95,8 @@ export async function GetArray(varOveride?: string) {
                         cached.kernel.kernelDepth === kernel.kernelDepth) {
                         cache.set(cacheName, { ...cached, sliceStart });
                         chunkScalingFactors[chunkID] = cached.scaling;
+                        Number.isFinite(cached.range.min) && minVals.push(cached.range.min)
+                        Number.isFinite(cached.range.max) && maxVals.push(cached.range.max)
                         setProgress(Math.round(++done / totalChunks * 100));
                         continue;
                     }
@@ -104,15 +106,14 @@ export async function GetArray(varOveride?: string) {
                     const complete = piece.every(([lo, hi], i) => lo === bounds[i][0] && hi === bounds[i][1]);
                     const selection = [...baseSelection];
                     dims.forEach((d, i) => { if (d >= 0) selection[d] = piece[i]; });
-
                     const raw = await fetcher.fetchChunk(targetVariable, selection);
                     jobs.push(pool.dispatch('processChunk',
                         { raw, coarsen, compress, hasZ, kernelInfo, indices, scalingFactor: undefined, fillValue },
                         [raw.data.buffer]
                     ).then(({ chunkF16, thisShape, chunkStride, newScalingFactor, range }) => {
                         chunkScalingFactors[chunkID] = newScalingFactor;
-                        minVals.push(range.min)
-                        maxVals.push(range.max)
+                        Number.isFinite(range.min) && minVals.push(range.min)
+                        Number.isFinite(range.max) && maxVals.push(range.max)
                         cache.set(cacheName, {
                             data: chunkF16,
                             shape: thisShape.slice(-3), stride: chunkStride.slice(-3),
@@ -120,6 +121,7 @@ export async function GetArray(varOveride?: string) {
                             origin: piece.map(([lo], i) => lo / kernels[i]),
                             sliceStart,
                             complete,
+                            range
                         });
                         setProgress(Math.round(++done / totalChunks * 100));
                     }));

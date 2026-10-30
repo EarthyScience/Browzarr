@@ -153,9 +153,9 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {isFlat, DPR, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus, flipY } = useGlobalStore(useShallow(s =>({
+  const {isFlat, DPR, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus, valueScales } = useGlobalStore(useShallow(s =>({
     isFlat: s.isFlat, DPR: s.DPR, dataShape: s.dataShape, useF16Textures: s.useF16Textures,
-    setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus, flipY: s.flipY
+    setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus, valueScales: s.valueScales
     })))
   const keyFrameEditor = useImageExportStore(s => s.keyFrameEditor)
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => ({
@@ -187,7 +187,7 @@ const Plot = () => {
   useEffect(()=>{ // Switch Texture array bit-depth
     if(show){
       (async () =>{
-        const [newText, _valueScales] = await ArrayToTexture({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape},undefined,useF16Textures);
+        const newText = await ArrayToTexture({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape},valueScales[0],useF16Textures);
         if (newText){
           setMainTextures(newText)
         }
