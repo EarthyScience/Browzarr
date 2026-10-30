@@ -1,5 +1,5 @@
 import {
-    cos, cross, Fn,
+    bool, cos, cross, Fn, If,
     mat3, normalize, positionLocal,
     positionWorld, select, sin, texture,
     vec2, vec3, vec4
@@ -71,7 +71,12 @@ export function createSphereBlocksMaterial(){
     material.positionNode = select(clipped.or(masked), vec3(0), newPos);
 
     // --- Frag --- //
-    const borderHit = h.isBorder(h.giveMaskUV(positionWorld))
+    // Only build the mask UV when borders are on
+    const borderHit = Fn(() => {
+        const hit = bool(false).toVar();
+        If(u.useBorderTexture, () => { hit.assign(h.isBorder(h.giveMaskUV(positionWorld))); });
+        return hit;
+    })();
     material.colorNode = select(borderHit, vec4(u.borderColor, 1), instanceColor(colorIn));
     return material;
 }

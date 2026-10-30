@@ -67,7 +67,6 @@ const ddaTraverse: Traversal = (vOrigin, rayDir, bounds, comp) => {
 }
 
 // --- RAYMARCH --- //
-// Fixed-size steps along the ray
 const marchTraverse: Traversal = (vOrigin, rayDir, bounds, comp) => {
     const inc = vec3(1.0).div(abs(rayDir));
     const delta = min(inc.x, min(inc.y, inc.z)).div(u.steps).toVar('delta');

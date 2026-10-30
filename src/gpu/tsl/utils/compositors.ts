@@ -1,4 +1,4 @@
-import { bool, Break, float, Fn, If, normalize, vec2, vec3 } from 'three/tsl';
+import { bool, Break, float, Fn, If, max, min, normalize, select, vec2, vec3 } from 'three/tsl';
 import * as h from './commonHelpers';
 import * as u from './uniforms';
 import { colorTexel, finishRay, isMissing, rayAccumulators, rayBounds, sampleVoxel, shouldSkip } from './volumeHelpers';
@@ -22,9 +22,7 @@ const additive = (): Compositor => {
         sample: ({ d, biVal, isNan, borderUV }) => {
             colorTexel(d, biVal, isNan, acc.accumColor, acc.alphaAcc);
             If(acc.alphaAcc.greaterThanEqual(0.99), () => {
-                If(u.useBorderTexture, () => {
-                    acc.borderHit.assign(h.isBorder(borderUV()));
-                });
+                acc.borderHit.assign(h.isBorder(borderUV()));
                 Break();
             });
         },
@@ -37,6 +35,10 @@ const intensityProjection = (isMax: boolean): Compositor => {
     const bestUV = vec2(0).toVar('bestUV');
     const found = bool(false).toVar('found');
     const sawNan = bool(false).toVar('sawNan');
+    // Largest/smallest value a sample can take: the threshold edge, tightened by sampleVoxel's [0, 0.995] clamp (univariate only)
+    const limit = isMax
+        ? select(u.bivariate, u.threshold.y, min(u.threshold.y, 0.995))
+        : select(u.bivariate, u.threshold.x, max(u.threshold.x, 0.0));
     return {
         sample: ({ d, biVal, isNan, borderUV }) => {
             If(isMissing(d, isNan), () => {
@@ -46,8 +48,8 @@ const intensityProjection = (isMax: boolean): Compositor => {
                 bestBi.assign(biVal);
                 found.assign(bool(true));
                 If(u.useBorderTexture, () => { bestUV.assign(borderUV()); });
-                // Nothing in the threshold range can beat its edge
-                If(isMax ? best.greaterThanEqual(u.threshold.y) : best.lessThanEqual(u.threshold.x), () => { Break(); });
+                // Nothing can beat the limit
+                If(isMax ? best.greaterThanEqual(limit) : best.lessThanEqual(limit), () => { Break(); });
             });
         },
         finish: () => {
