@@ -7,6 +7,7 @@ import { useValueScales } from '@/hooks';
 import { Num2String } from './colorbarUtils';
 import { linspace } from '@/lib/helpers';
 import { RxReset } from "react-icons/rx";
+import { compileShaderExpression, transformedRange } from '@/lib/shaderToJs';
 
 interface UCBProps{
     width: number;
@@ -15,7 +16,9 @@ interface UCBProps{
 }
 
 export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
-    const scalingFactors = useGlobalStore(s => s.scalingFactors)
+    const {scalingFactors, transferFunc} = useGlobalStore(useShallow(s => ({
+        scalingFactors: s.scalingFactors, transferFunc: s.transferFunc
+    })))
     const colormap = useColormapStore(s => s.colormap);
     const {cScale, cOffset,colorScale, setColorScale, setCScale, setCOffset} = usePlotStore(useShallow(s => ({
         cScale: s.cScale, cOffset: s.cOffset, colorScale: s.colorScale, 
@@ -92,6 +95,16 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
         setCOffset(offset)
         setCScale(scale)
     },[newMin, newMax, range, origMin])
+
+    useEffect(() => {
+        const trans = transformedRange(transferFunc, origMin, origMax)
+        if (!trans) return
+        const factor = Math.pow(10, scalingFactors[0])
+        setDisplayMin(Num2String(trans.minVal*factor))
+        setDisplayMax(Num2String(trans.maxVal*factor))
+        setNewMin(trans.minVal)
+        setNewMax(trans.maxVal)
+    },[transferFunc])
 
     useEffect(()=>{ // Update internal vals when global vals change
         setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactors[0])))
@@ -197,6 +210,7 @@ export const UnivariateColorbar = ({width, height, tickCount} : UCBProps) =>{
                     setDisplayMax(Num2String(origMax*Math.pow(10, scalingFactors[0]))); 
                     setDisplayMin(Num2String(origMin*Math.pow(10, scalingFactors[0])));
                     setColorScale(undefined)
+                    useGlobalStore.setState({transferFunc: compileShaderExpression(undefined)})
                 }}
             />}
         </> 

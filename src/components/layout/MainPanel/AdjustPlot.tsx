@@ -1,5 +1,5 @@
 "use client";
-import React, {useState, useEffect, useRef, useCallback} from 'react'
+import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react'
 import { useAnalysisStore } from '@/stores/AnalysisStore';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { usePlotStore } from '@/stores/PlotStore';
@@ -19,6 +19,8 @@ import { resetProjection } from '@/gpu/textures/ProjectionTexture';
 import {AxisCropper} from '@/components/elements/AxisCropper';
 import { Masker } from '@/components/elements/Masker';
 import { useColormapStore } from '@/stores/ColormapStore';
+import { useValueScales } from '@/hooks';
+import { transformedRange } from '@/lib/shaderToJs';
 
 export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueScales, min=-1, array, units} : 
     {
@@ -406,9 +408,16 @@ const GlobalOptions = () =>{
   const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, useBorderTexture,
     setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels} = usePlotStore(useShallow(s => s))
   const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
-  const {valueScales, borderCompatible} = useGlobalStore(useShallow(s => ({valueScales: s.valueScales, borderCompatible: s.borderCompatible})))
+  const {borderCompatible, transferFunc} = useGlobalStore(useShallow(s => ({
+    borderCompatible: s.borderCompatible, transferFunc: s.transferFunc
+  })))
   const isPC = plotType == 'point-cloud'
-	const bivariateSelection = useColormapStore(s => s.bivariateSelection)
+	const valueScales = useValueScales()
+  // Slider labels in transferFunc space, matching what the shader thresholds against
+  const theseScales = useMemo(() => {
+    const trans = transformedRange(transferFunc, valueScales.minVal, valueScales.maxVal)
+    return trans ? {...valueScales, ...trans} : valueScales
+  }, [transferFunc, valueScales])
   const throttleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestValue = useRef(borderColor);
   const handleColorChange = useCallback((setter: (color:string) => void)=>(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -426,12 +435,12 @@ const GlobalOptions = () =>{
       <span className='text-lg font-bold'>Global Settings</span>
       <div className="flex flex-col items-center w-[200px] gap-4">
         <h1>Value Cropping</h1>
-		<BivariateSelector />
+		    <BivariateSelector />
         <MinMaxSlider 
           range={valueRange} 
           setRange={setValueRange} 
-          valueScales={valueScales[bivariateSelection]} 
-          min={0} 
+          valueScales={theseScales}
+          min={0}
         />
       </div>
       {!isPC &&

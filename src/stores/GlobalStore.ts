@@ -60,6 +60,7 @@ type StoreState = {
   borderCompatible: boolean;
   mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined;
   isWebGPU: boolean;
+
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -104,6 +105,7 @@ type StoreState = {
   setUseF16Textures: (useF16Textures: boolean) => void;
   setMainTextures: (mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined) => void;
   setIsWebGPU: (isWebGPU: boolean) => void;
+  transferFunc: (x: number) => number;
 };
 
 const createStore = () => create<StoreState>((set, get) => ({
@@ -214,6 +216,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   setUseF16Textures: (useF16Textures) => set({ useF16Textures }),
   setMainTextures: (mainTextures) => set({ mainTextures }),
   setIsWebGPU: (isWebGPU) => set({ isWebGPU }),
+  transferFunc: (x: number) => x
 }));
 
 declare global {

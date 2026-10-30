@@ -19,11 +19,12 @@ const FlatMap = () => {
     // ---- Imports ---- //
     const {flipY, dimNames, dimUnits, isFlat, variable2,
       dataShape, strides, remapTexture, shape, 
-      bivariate, setPlotDim,updateDimCoords, updateTimeSeries} = useGlobalStore(useShallow(s => ({
+      bivariate, setPlotDim,updateDimCoords, updateTimeSeries, transferFunc} = useGlobalStore(useShallow(s => ({
         flipY:s.flipY, dimNames:s.dimNames, dimUnits:s.dimUnits, 
         isFlat:s.isFlat, dataShape:s.dataShape, strides:s.strides, bivariate: s.bivariate,
         remapTexture:s.remapTexture, shape:s.shape, variable2: s.variable2,
-        setPlotDim:s.setPlotDim, updateDimCoords:s.updateDimCoords, updateTimeSeries:s.updateTimeSeries
+        setPlotDim:s.setPlotDim, updateDimCoords:s.updateDimCoords, 
+        updateTimeSeries:s.updateTimeSeries, transferFunc: s.transferFunc
       })))
     const {animProg, selectTS, colorScale, interpPixels, getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
         animProg:s.animProg, selectTS:s.selectTS, colorScale: s.colorScale, interpPixels: s.interpPixels,
@@ -106,13 +107,13 @@ const FlatMap = () => {
         const xId = Math.floor(x * xSize);
         const yId = Math.floor(y * ySize);
         let dataIdx = xSize * yId + xId;
-        const zOffset = isFlat ? 0 : Math.floor((zArray.length-1) * animProg)
+        const zOffset = isFlat ? 0 : Math.floor(zArray.length * animProg)
         dataIdx += zOffset * xSize*ySize
         const dataVal = sampleArrays.map(val => val ? val[dataIdx] : 0);
-        vals.current = dataVal;
+        vals.current = dataVal.map(num => transferFunc(num));
         coords.current = (analysisMode && axis == 2) ? [yArray[yId], xArray[xId]] : [xArray[xId],yArray[yId]]
       }
-    }, [sampleArrays, remapTexture, xArray, yArray, zArray, analysisMode, setLoc, isFlat, animProg, axis])
+    }, [sampleArrays, remapTexture, xArray, yArray, zArray, analysisMode, setLoc, transferFunc, isFlat, animProg, axis])
     // ----- TIMESERIES ----- //
     function HandleTimeSeries(event: THREE.Intersection){
       const uv = event.uv;
