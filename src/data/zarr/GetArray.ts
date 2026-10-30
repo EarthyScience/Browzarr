@@ -95,8 +95,8 @@ export async function GetArray(varOveride?: string) {
                         cached.kernel.kernelDepth === kernel.kernelDepth) {
                         cache.set(cacheName, { ...cached, sliceStart });
                         chunkScalingFactors[chunkID] = cached.scaling;
-                        Number.isFinite(cached.range.min) && minVals.push(cached.range.min)
-                        Number.isFinite(cached.range.max) && maxVals.push(cached.range.max)
+                        if(Number.isFinite(cached.range.min)) minVals.push(cached.range.min)
+                        if(Number.isFinite(cached.range.max)) maxVals.push(cached.range.max)
                         setProgress(Math.round(++done / totalChunks * 100));
                         continue;
                     }
@@ -112,8 +112,8 @@ export async function GetArray(varOveride?: string) {
                         [raw.data.buffer]
                     ).then(({ chunkF16, thisShape, chunkStride, newScalingFactor, range }) => {
                         chunkScalingFactors[chunkID] = newScalingFactor;
-                        Number.isFinite(range.min) && minVals.push(range.min)
-                        Number.isFinite(range.max) && maxVals.push(range.max)
+                        if(Number.isFinite(range.min)) minVals.push(range.min)
+                        if(Number.isFinite(range.max)) maxVals.push(range.max)
                         cache.set(cacheName, {
                             data: chunkF16,
                             shape: thisShape.slice(-3), stride: chunkStride.slice(-3),
