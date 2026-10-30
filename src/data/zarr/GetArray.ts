@@ -149,5 +149,7 @@ export async function GetArray(varOveride?: string) {
     const scalingFactor = maxScaling !== 0 ? maxScaling : undefined;
     const maxVal = maxVals.reduce((a, b) => Math.max(a, b), -Infinity); 
     const minVal = minVals.reduce((a, b) => Math.min(a, b), Infinity);
-    return { shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor, valueScale: {minVal, maxVal} };
+    const scale = Math.pow(10, -maxScaling);
+    return { shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], 
+        dtype, scalingFactor, valueScale: { minVal: minVal * scale, maxVal: maxVal * scale } };
 }
