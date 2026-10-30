@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,62064,t=>{t.q("/latest/_next/static/media/index.342_2-ti45d4g.js")},89273,t=>{t.q("/latest/_next/static/media/netcdf4-wasm.2kcg7j08g6khx.wasm")}]);
