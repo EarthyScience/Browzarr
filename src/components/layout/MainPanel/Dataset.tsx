@@ -1,22 +1,21 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { useGlobalStore } from '@/stores/GlobalStore';
-import { useShallow } from 'zustand/shallow';
 import { Button } from '@/components/ui/button-enhanced';
-import { TbDatabasePlus } from "react-icons/tb";
-import { BsBoxArrowLeft, BsBoxArrowRight } from 'react-icons/bs';
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from '@/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Separator } from '@/components/ui/separator';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { useEffect, useState } from 'react';
+import { BsBoxArrowLeft, BsBoxArrowRight } from 'react-icons/bs';
+import { TbDatabasePlus } from "react-icons/tb";
+import { useShallow } from 'zustand/shallow';
+import DatasetsModal from './DataSetsModal';
 import { DatasetOption, DescriptionContent } from './DescriptionContent';
 import LocalContent from './LocalContent';
-import DatasetsModal from './DataSetsModal';
-import { Switcher } from '@/components/widgets/Switcher';
 import { RemoteDataset } from './RemoteDataset';
 
 const Dataset = () => {
@@ -29,8 +28,8 @@ const Dataset = () => {
   const [isSafari, setIsSafari] = useState<boolean>(false);
   const [openDatasetsModal, setOpenDatasetsModal] = useState<boolean>(false);
 
-  const { initStore, setInitStore, setOpenVariables } = useGlobalStore(
-    useShallow(s => s));
+  const {setInitStore, setOpenVariables } = useGlobalStore(useShallow(s => ({
+    setInitStore: s.setInitStore, setOpenVariables: s.setOpenVariables})));
 
   useEffect(() => {
     const handleResize = () => {

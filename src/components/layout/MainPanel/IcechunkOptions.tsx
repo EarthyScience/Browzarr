@@ -1,7 +1,7 @@
 import React from 'react'
-import { Input } from '@/components/ui'
+import { Button, Input } from '@/components/ui'
 import type { IcechunkStoreOptions } from '@/types/Interfaces'
-import { selectClass } from './FetchOptions'
+import { FetchOpts } from './FetchOptions';
 
 type RefType = 'branch' | 'tag' | 'snapshot';
 
@@ -27,27 +27,35 @@ export const buildIcechunkOptions = ({ refType, refValue }: IcechunkOpts): Icech
 });
 
 type Props = {
-  value: IcechunkOpts;
-  onChange: (v: IcechunkOpts) => void;
+  value: FetchOpts;
+  onChange: (v: FetchOpts) => void;
 };
 
 // Branch / Tag / Snapshot selector for Icechunk stores
 export const IcechunkOptions = ({ value, onChange }: Props) => {
-  const { refType, refValue } = value;
+  const iceOpts = value.iceOpts ?? DEFAULT_ICECHUNK_OPTS;
+  const { refType, refValue } = iceOpts;
+  const setIce = (patch: Partial<IcechunkOpts>) =>
+    onChange({ ...value, iceOpts: { ...iceOpts, ...patch } });
   return (
-    <div className="flex items-center gap-1 mt-2">
-      <select
-        className={selectClass}
-        value={refType}
-        onChange={e => onChange({ ...value, refType: e.target.value as RefType })}
-      >
-        {REF_TABS.map(({ value: v, label }) => <option key={v} value={v}>{label}</option>)}
-      </select>
+    <div className="flex flex-col gap-1 mt-2">
+      <div className="grid grid-cols-3 gap-1">
+        {REF_TABS.map(({ value: v, label }) => (
+          <Button
+            key={v}
+            size="sm"
+            variant={refType === v ? 'default' : 'outline'}
+            onClick={() => setIce({ refType: v })}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
       <Input
         className="w-full"
         placeholder={refType === 'branch' ? 'main' : refType}
         value={refValue}
-        onChange={e => onChange({ ...value, refValue: e.target.value })}
+        onChange={e => setIce({ refValue: e.target.value })}
       />
     </div>
   );
