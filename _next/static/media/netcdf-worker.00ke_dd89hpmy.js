@@ -1,10 +1,14 @@
 import * as NCGet from './netcdf-getters.js';
 import { WasmModuleLoader } from "./wasm-module.js";
 import { NC_CONSTANTS } from "./constants.js";
+import { RemoteFile, XhrRangeSource, checkRangeSupport, createRemoteFileNode } from "./remote-read.js";
 let netcdfModule;
 let mod;
-// Wait for runtime initialization
-const waitForModule = new Promise(async (resolve) => {
+let remoteFile;
+// Wait for runtime initialization.
+// An async IIFE (rather than `new Promise(async ...)`) so that a failed
+// import or WASM load rejects this promise instead of leaving it pending.
+const waitForModule = (async () => {
     const netcdf4Module = await import('./netcdf4-wasm.js');
     const createNetCDF4Module = netcdf4Module.default;
     netcdfModule = await createNetCDF4Module({
@@ -17,8 +21,8 @@ const waitForModule = new Promise(async (resolve) => {
             return file;
         }
     });
-    resolve(netcdfModule);
-});
+    return netcdfModule;
+})();
 // @ts-ignore worker scope
 self.onmessage = async (e) => {
     const data = e.data;
@@ -27,7 +31,14 @@ self.onmessage = async (e) => {
         // ---------------- INIT ----------------
         if (type === 'init') {
             mod = WasmModuleLoader.wrapModule(await waitForModule);
-            const { blob, filename } = data;
+            const { blob, url, remote, filename } = data;
+            if (url) {
+                await checkRangeSupport(url, remote);
+                remoteFile = new RemoteFile(new XhrRangeSource(url, remote), remote);
+                createRemoteFileNode(mod.FS, filename, remoteFile);
+                self.postMessage({ id, success: true });
+                return;
+            }
             const pathParts = filename.split('/');
             const baseName = pathParts.pop();
             const mountPoint = pathParts.join('/') || '/';
@@ -51,6 +62,9 @@ self.onmessage = async (e) => {
         if (!mod) {
             mod = WasmModuleLoader.wrapModule(await waitForModule);
         }
+        // Only report read errors raised by this request
+        if (remoteFile)
+            remoteFile.lastError = undefined;
         let result;
         switch (type) {
             case 'open': {
@@ -147,8 +161,13 @@ self.onmessage = async (e) => {
         self.postMessage({ id, success: true, result });
     }
     catch (err) {
+        // netCDF-C only sees EIO for a failed remote read; attach the actual cause
+        let message = err.message;
+        if (remoteFile?.lastError) {
+            message += ` (${remoteFile.lastError.message})`;
+        }
         console.error(`Worker Error [${type}]:`, err);
-        self.postMessage({ id, success: false, error: err.message });
+        self.postMessage({ id, success: false, error: message });
     }
 };
 //# sourceMappingURL=netcdf-worker.js.map
