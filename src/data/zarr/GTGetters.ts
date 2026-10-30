@@ -83,7 +83,7 @@ export async function getRasterData(overrideVar?: string){
     const winY = ndSlices[0]
     let imageNum = parseInt(thisVar.split('/')[0])
     imageNum = Number.isNaN(imageNum) ? 0 : imageNum
-    const {data, width, height} = await pool.dispatch('readRasterData', {gtSource: gtSource as string | File, fetchOptions: gtFetchOptions, imageNum, winX, winY, sample})
+    const {data, width, height, valueScale} = await pool.dispatch('readRasterData', {gtSource: gtSource as string | File, fetchOptions: gtFetchOptions, imageNum, winX, winY, sample})
     const transpose = axisMapping.x !== 1;
     const thisShape = transpose ? [width, height] : [height, width]
     const thisStride = transpose ? [1, width] : [width, 1]
@@ -113,5 +113,5 @@ export async function getRasterData(overrideVar?: string){
     }
     cache.set(`${initStore}_${thisVar}_chunk_z0_y0_x0`, cacheChunk)
     setStatus(null)
-    return { shape: thisShape, indices: [axisMapping.y, axisMapping.x], scalingFactor: 0 }
+    return { shape: thisShape, indices: [axisMapping.y, axisMapping.x], scalingFactor: 0, valueScale }
 }

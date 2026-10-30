@@ -14,11 +14,11 @@ import { useAnalysisStore } from '@/stores/AnalysisStore';
 import { getRasterData } from '@/data/zarr/GTGetters';
 
 export const useDataFetcher = () => {
-    const { variable, bivariate, variable2, mainTextures, setUnits, setIsFlat, setUseF16Textures,
+    const { variable, bivariate, variable2, mainTextures, setUnits, setIsFlat, setUseF16Textures, setValueScales,
     setShape, setDataShape, setFlipY, setMainTextures, setMetadata, setPlotOn, setStatus, setScalingFactors} = useGlobalStore(
     useShallow(s => ({
         variable: s.variable, bivariate: s.bivariate, variable2: s.variable2, mainTextures: s.mainTextures,
-        setUnits: s.setUnits, setIsFlat: s.setIsFlat, setUseF16Textures: s.setUseF16Textures,
+        setUnits: s.setUnits, setIsFlat: s.setIsFlat, setUseF16Textures: s.setUseF16Textures, setValueScales: s.setValueScales,
         setShape: s.setShape, setDataShape: s.setDataShape, setFlipY: s.setFlipY, setMainTextures: s.setMainTextures,
         setMetadata: s.setMetadata, setPlotOn: s.setPlotOn, setStatus: s.setStatus, setScalingFactors: s.setScalingFactors
     })))
@@ -61,8 +61,13 @@ export const useDataFetcher = () => {
                 //---- Main Fetch ----//
                 const scalingFactors: number[] = [];
                 const promises: Promise<any>[] = [];
+                const valueScales: {minVal: number, maxVal:number}[] = []
                 if ( bivariate ) promises.push(arrayGetter(variable2).then(
-                    result => {scalingFactors[1] = result.scalingFactor?? 0}
+                    result => {
+                        scalingFactors[1] = result.scalingFactor?? 0;
+                        valueScales[1] = result.valueScale
+                    }
+
                 ));
                 promises.push(arrayGetter().then((result) => {
                     setDataShape(result.shape);
@@ -71,6 +76,7 @@ export const useDataFetcher = () => {
                     useGlobalStore.getState().setActiveIndices(activeIndices);
                     // Create textures and store valuescales
                     scalingFactors[0] = result.scalingFactor?? 0;
+                    valueScales[0] = result.valueScale;
                     useAnalysisStore.setState({originalScalingFactor: result.scalingFactor})
                     const shapeLength = shape.length;
                     if (shapeLength === 2) {
@@ -87,6 +93,7 @@ export const useDataFetcher = () => {
                 }))
                 //---- Metadata ----//
                 const units: string[] = []
+                
                 promises.push(GetAttributes(variable).then((result) => {
                     setMetadata(result);
                     setStableMetadata(result);
@@ -111,7 +118,7 @@ export const useDataFetcher = () => {
                     try{
                         await parseExtent();
                     } catch{}
-                    
+                    setValueScales(valueScales)
                     createDataTexture();
                     if (preProject) {
                         usePlotStore.setState({

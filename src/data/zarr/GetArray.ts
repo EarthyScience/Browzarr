@@ -82,7 +82,7 @@ export async function GetArray(varOveride?: string) {
     let done = 0;
     const chunkScalingFactors: Record<string, number | undefined> = {};
     const jobs: Promise<void>[] = [];
-
+    const minVals: number[] = []; const maxVals: number[] = [];
     try {
         for (let z = zChunks[0]; z < zChunks[1]; z++) {
             for (let y = yChunks[0]; y < yChunks[1]; y++) {
@@ -109,8 +109,10 @@ export async function GetArray(varOveride?: string) {
                     jobs.push(pool.dispatch('processChunk',
                         { raw, coarsen, compress, hasZ, kernelInfo, indices, scalingFactor: undefined, fillValue },
                         [raw.data.buffer]
-                    ).then(({ chunkF16, thisShape, chunkStride, newScalingFactor }) => {
+                    ).then(({ chunkF16, thisShape, chunkStride, newScalingFactor, range }) => {
                         chunkScalingFactors[chunkID] = newScalingFactor;
+                        minVals.push(range.min)
+                        maxVals.push(range.max)
                         cache.set(cacheName, {
                             data: chunkF16,
                             shape: thisShape.slice(-3), stride: chunkStride.slice(-3),
@@ -143,6 +145,7 @@ export async function GetArray(varOveride?: string) {
             cache.set(cacheName, { ...chunk, data: array, scaling: maxScaling });
         }));
     const scalingFactor = maxScaling !== 0 ? maxScaling : undefined;
-
-    return { shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor };
+    const maxVal = maxVals.reduce((a, b) => Math.max(a, b), -Infinity); 
+    const minVal = minVals.reduce((a, b) => Math.min(a, b), Infinity);
+    return { shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor, valueScale: {minVal, maxVal} };
 }

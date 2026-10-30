@@ -28,7 +28,8 @@ export interface processOut{
     chunkF16: Float16Array | Uint8Array;
     newScalingFactor: number | undefined;
     thisShape: number[];
-    chunkStride: number[]
+    chunkStride: number[];
+    range: {min: number, max: number}
 }
 
 export async function processChunk({raw, fillValue, scalingFactor, coarsen, compress, hasZ, indices, kernelInfo}:processIn): Promise<processOut>{
@@ -36,7 +37,7 @@ export async function processChunk({raw, fillValue, scalingFactor, coarsen, comp
     const {zIndexInRaw, yIndexInRaw, xIndexInRaw} = indices;
     const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
     
-    const [chunkF16Raw, newScalingFactor] = ToFloat16(rawData, scalingFactor);
+    const [chunkF16Raw, newScalingFactor, range] = ToFloat16(rawData, scalingFactor);
     let chunkF16 = chunkF16Raw;
 
     let thisShape = hasZ ? [raw.shape[zIndexInRaw], raw.shape[yIndexInRaw], raw.shape[xIndexInRaw]] : [raw.shape[yIndexInRaw], raw.shape[xIndexInRaw]];
@@ -58,5 +59,5 @@ export async function processChunk({raw, fillValue, scalingFactor, coarsen, comp
         chunkStride = calculateStrides(thisShape);
     }
 
-    return {chunkF16: compress ? CompressArray(chunkF16, 7) : chunkF16, newScalingFactor, thisShape, chunkStride}
+    return {chunkF16: compress ? CompressArray(chunkF16, 7) : chunkF16, newScalingFactor, thisShape, chunkStride, range}
 }

@@ -85,13 +85,13 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
 }
 
 export function createDataTexture(){
-  const { dataShape, bivariate, setMainTextures, setValueScales} = useGlobalStore.getState();
+  const { dataShape, bivariate, valueScales, setMainTextures} = useGlobalStore.getState();
   if (bivariate){
-    setValueScales(storeBivariate());
+    storeBivariate(valueScales);
   }
   else{
     const dataArray = GetCurrentArray();
-    setValueScales([StoreData(dataArray)]);
+    StoreData(dataArray, valueScales[0]);
   }
   const textures = CreateTexture(dataShape);
   setMainTextures(textures);
@@ -103,16 +103,18 @@ export function ArrayToTexture(array: Array, valueScales?: {maxVal: number, minV
     return [textures as THREE.Data3DTexture[] | THREE.DataTexture[], scales];
 }
 
-export function storeBivariate(useF16=false): {minVal: number, maxVal: number}[]{
+export function storeBivariate(valueScales: {minVal: number, maxVal: number}[], useF16=false): {minVal: number, maxVal: number}[]{
 	const {variable, variable2, shareScale, dataShape, setTextureData} = useGlobalStore.getState();
 	const dataLength = dataShape.reduce((a, b) => a * b , 1)
-	let minVal: number, maxVal: number;
 	const textureData = useF16 ? new Uint16Array(dataLength * 2) : new Uint8Array(dataLength * 2)
 	const variables = [variable, variable2];
-  const valueScales: {minVal:number, maxVal:number}[] = []
+  const absoluteScales = {
+    minVal: Math.min(valueScales[0].minVal, valueScales[0].maxVal),
+    maxVal: Math.max(valueScales[1].minVal, valueScales[1].maxVal)
+  }
 	variables.forEach((thisVar, idx) =>{
 		const array = GetCurrentArray(undefined, thisVar);
-		if (!shareScale || idx == 0) [minVal, maxVal] = ArrayMinMax(array);
+		const {minVal, maxVal} = shareScale ? absoluteScales : valueScales[idx];
     valueScales.push({minVal,maxVal})
 		const range = (maxVal - minVal)
 		for (let i = 0; i < dataLength; i++){

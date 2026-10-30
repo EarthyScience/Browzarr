@@ -14,6 +14,11 @@ export function ArrayMinMax(array:number[] | TypedArray | TypedArrayBufferLike){
   return [minVal,maxVal]
 }
 
+export function arrayRange(array: Float16Array | Uint8Array | Float32Array){
+  const [minVal, maxVal] = ArrayMinMax(array)
+  return {minVal, maxVal}
+}
+
 export function coarsen3DArray(
   array: Float16Array,
   shape: [number, number, number],
