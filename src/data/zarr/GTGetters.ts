@@ -112,7 +112,14 @@ export async function getRasterData(overrideVar?: string){
 }
 
 export async function getBaseImage(source: File | string){
+    const {fetchOptions} = useZarrStore.getState()
+    const thisOptions = fetchOptions 
+        ? {
+            headers:fetchOptions.headers,
+            credentials: fetchOptions.withCredentials ? "include" : "same-origin"
+        }
+        : undefined
     const isURL = typeof source === "string"
-    if (isURL) return fromUrl(source)
+    if (isURL) return fromUrl(source, thisOptions)
     else return fromBlob(source)
 }

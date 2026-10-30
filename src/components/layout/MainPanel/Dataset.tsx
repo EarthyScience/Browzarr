@@ -137,7 +137,6 @@ const Dataset = () => {
               {showLocalInput && (
                 <LocalContent
                   setShowLocal={setShowLocalInput}
-                  setInitStore={setInitStore}
                   onOpenDescription={() => setShowDescription(true)}
                   isSafari={isSafari}
                 />

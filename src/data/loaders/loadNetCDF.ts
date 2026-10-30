@@ -1,13 +1,27 @@
 import { NetCDF4 } from '@earthyscience/netcdf4-wasm';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { useZarrStore } from '@/stores/ZarrStore';
+import { useErrorStore } from '@/stores/ErrorStore';
 
 export const NETCDF_EXT_REGEX = /\.(nc|netcdf|nc3|nc4)$/i;
 
-function openNetCDF(source: File | string) {
-  return typeof source === 'string'
-    ? NetCDF4.fromUrl(source)
-    : NetCDF4.fromBlobLazy(source);
+async function openNetCDF(source: File | string) {
+  const {fetchOptions} = useZarrStore.getState()
+  const thisOptions = fetchOptions 
+    ? {
+      headers: fetchOptions.headers,
+      withCredentials: fetchOptions.withCredentials
+    }
+    : undefined
+  if (typeof source !== 'string') return NetCDF4.fromBlobLazy(source);
+  // The first remote open often fails; retry once after a short delay
+  return NetCDF4.fromUrl(source, thisOptions).catch(async () => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return NetCDF4.fromUrl(source, thisOptions).catch(error => {
+      useErrorStore.getState().setError('ncFail');
+      throw error;
+    });
+  });
 }
 
 export async function loadNetCDF(source: File | string) {

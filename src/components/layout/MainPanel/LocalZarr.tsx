@@ -1,5 +1,5 @@
 "use client";
-import React, {useState, useEffect, ChangeEvent} from 'react'
+import React, {ChangeEvent} from 'react'
 import * as zarr from 'zarrita'
 import { useZarrStore } from '@/stores/ZarrStore';
 import { useGlobalStore } from '@/stores/GlobalStore';
@@ -45,7 +45,7 @@ export async function LoadLocalZarr(files:File[]){
       const gs = await zarr.open(store, {kind: 'group'});
       const blobKey = `local_${baseDir}`
       useGlobalStore.setState({initStore:blobKey})
-      useZarrStore.setState({ useNC: false, blobKey, currentStore:gs})
+      useZarrStore.setState({ useNC: false, useGT:false, blobKey, currentStore:gs})
     } catch (error) {
       
       if (error instanceof Error) {

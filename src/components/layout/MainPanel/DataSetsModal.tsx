@@ -147,7 +147,6 @@ const DatasetsModal = ({ open, onOpenChange, isSafari }: Props) => {
           )}
           {activeTab === 'local' && (
             <LocalContent
-              setInitStore={setInitStore}
               onOpenDescription={openDescription}
               isSafari={isSafari}
             />

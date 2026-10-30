@@ -7,7 +7,7 @@ import { usePlotStore } from "@/stores/PlotStore";
 import { loadNetCDF } from "@/data/loaders/loadNetCDF";
 import { loadFile } from "@/lib/IndexDB";
 import { LoadLocalZarr } from "./MainPanel/LocalZarr";
-import { isRemoteStore } from "@/data/geo/isRemoteStore";
+import { isRemoteStore, toHttps } from "@/data/geo/isRemoteStore";
 import { GetStore } from "@/data/zarr/ZarrLoaderLRU";
 import { useImageExportStore } from "@/stores/ImageExportStore";
 import { useColormapStore } from "@/stores/ColormapStore";
@@ -66,11 +66,12 @@ export function initializeStore(){
 		if (!isRemoteStore(initStore)) return; // Localzarr and LocalNetCDF create & set custom stores that bypasses this step
 		const isNC = NC_EXT.some(e => initStore.toLowerCase().endsWith(e))
 		const isGT = TIF_EXT.some(e => initStore.toLowerCase().endsWith(e))
+
 		if (isNC){
-			loadNetCDF(initStore).then(()=>ReFetch());
+			loadNetCDF(initStore);
 			return;
 		} else if (isGT){
-			loadGeoTiff(initStore).then(()=>ReFetch());
+			loadGeoTiff(initStore);
 			return;
 		} else {
 			// ---- Remote Zarr ---- //
@@ -137,7 +138,7 @@ function StoreInitializerInner() {
 					} else {
 						//@ts-ignore cache is what we want
 						const file = cache.blob as File
-						loadNetCDF(file, file.name).then(() => {
+						loadNetCDF(file).then(() => {
 							setAllStates()
 						})
 					}
@@ -170,7 +171,7 @@ function StoreInitializerInner() {
 		const store = searchParams.get("initStore") || searchParams.get("dataset"); // dataset is julia convention. 
 		if (store){
 			const isRemoteZarr = isRemoteStore(store);
-			setInitStore(isRemoteZarr ? store : "local:" + store)
+			setInitStore(isRemoteZarr ? toHttps(store) : "local:" + store)
 		}
 		// --- CONDITIONALS ---- //
 		// ---- Handle Export ---- //
