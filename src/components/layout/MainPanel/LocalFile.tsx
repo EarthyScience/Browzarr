@@ -32,14 +32,14 @@ const LocalFile = ({ setOpenVariables}:LocalNCType) => {
     const isGeoTiff = TIF_EXTENSIONS.some(e => file.name.toLowerCase().includes(e))
     if (isGeoTiff){
       try{
-        await loadGeoTiff(file);
+        if (!(await loadGeoTiff(file))) throw new Error('Could not open GeoTIFF');
         setOpenVariables(true)
       } catch (e) {
         setError("Failed to load file:")
       }
     } else{
       try {
-        await loadNetCDF(file);
+        if (!(await loadNetCDF(file))) throw new Error('Could not open NetCDF');
         const blobKey = `local_${file.name}`
         await saveFile(file, blobKey)
         useZarrStore.setState({blobKey})

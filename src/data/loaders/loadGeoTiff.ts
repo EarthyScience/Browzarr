@@ -3,7 +3,7 @@ import { useZarrStore } from "@/stores/ZarrStore";
 import { useGlobalStore } from "@/stores/GlobalStore";
 import { getBaseImage } from "../zarr/GTGetters";
 
-export async function loadGeoTiff(source: File | string) {
+export async function loadGeoTiff(source: File | string): Promise<boolean> {
     const { setStatus } = useGlobalStore.getState();
     const isURL = typeof source === "string";
     const name = (isURL ? source.split("/").at(-1) : source.name) || "geotiff.tif";
@@ -40,8 +40,10 @@ export async function loadGeoTiff(source: File | string) {
             },
         });
         useZarrStore.setState({ gtSource: source, useGT: true, useNC: false });
+        return true;
     } catch (error) {
         console.error(`Failed to load GeoTIFF "${name}":`, error);
+        return false;
     } finally {
         setStatus(null);
     }

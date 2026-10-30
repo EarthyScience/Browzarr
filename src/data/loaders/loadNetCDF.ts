@@ -24,7 +24,7 @@ async function openNetCDF(source: File | string) {
   });
 }
 
-export async function loadNetCDF(source: File | string) {
+export async function loadNetCDF(source: File | string): Promise<boolean> {
   const { setStatus } = useGlobalStore.getState();
   const isURL = typeof source === 'string';
   const fileName = (isURL ? source.split('/').at(-1) : source.name) || 'dataset.nc';
@@ -49,8 +49,10 @@ export async function loadNetCDF(source: File | string) {
       },
     });
     useZarrStore.setState({ useNC: true, useGT: false, ncModule: data });
+    return true;
   } catch (error) {
     console.error(`Failed to load NetCDF file "${fileName}":`, error);
+    return false;
   } finally {
     setStatus(null);
   }

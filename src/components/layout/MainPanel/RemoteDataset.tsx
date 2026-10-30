@@ -37,8 +37,7 @@ export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '
 		});
 		useGlobalStore.getState().setStatus('Fetching...');
 		setInitStore(url);
-		initializeStore();
-		onOpenDescription();
+		initializeStore().then(ok => { if (ok) onOpenDescription(); });
   	};
 
   return (

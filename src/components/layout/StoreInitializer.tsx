@@ -15,26 +15,31 @@ import { GetZarrMetadata, GetTitleDescription } from '@/data/zarr/ZarrLoaderLRU'
 import { GetVariableNames } from '@/data/zarr/utils';
 import { loadGeoTiff } from "@/data/loaders/loadGeoTiff";
 
-async function setupZarr(activeStore: Promise<any> ){
+async function setupZarr(activeStore: Promise<any> ): Promise<boolean> {
 	const {setTitleDescription, setVariables, setZMeta, setStoreFromURL, setOpenVariables} = useGlobalStore.getState()
-	GetTitleDescription(activeStore).then((result) => setTitleDescription(result));
+	GetTitleDescription(activeStore).then((result) => setTitleDescription(result)).catch(() => {});
 	const fullmetadata = GetZarrMetadata(activeStore);
 	const variables = GetVariableNames(fullmetadata);
-	fullmetadata.then((e) => setZMeta(e));
-	variables.then((e) => {
-		setVariables(e);
+	fullmetadata.then((e) => setZMeta(e)).catch(() => {});
+	try {
+		const vars = await variables;
+		setVariables(vars);
 		const { storeFromURL } = useGlobalStore.getState();
 		if (storeFromURL) {
 			setOpenVariables(true);
 			setStoreFromURL(false);
 		}
-	});
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 const NC_EXT = ['.nc','.netcdf','.nc3','.nc4']
 const TIF_EXT = ['.tif','.tiff','.geotiff','.gtif']
 const test_url = "https://s3.amazonaws.com/noaa-goes16/ABI-L1b-RadC/2017/242/00/OR_ABI-L1b-RadC-M3C01_G16_s20172420002168_e20172420004540_c20172420004583.nc"
-export function initializeStore(){
+// Resolves true once the store's variables are available, false if loading failed
+export async function initializeStore(): Promise<boolean> {
 	const {initStore} = useGlobalStore.getState()
 	const {useNC, ReFetch, setCurrentStore} = useZarrStore.getState()
 	// ---- Handle Code Inputs ---- //
@@ -43,36 +48,33 @@ export function initializeStore(){
 		if (useNC){
 			// ---- Local NC ----//
 			const filename = path.split('/').pop() ?? 'file.nc';
-			fetch(`file?path=${encodeURIComponent(path)}`)
+			return fetch(`file?path=${encodeURIComponent(path)}`)
 			.then(res => {
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				return res.blob();
 			})
-			.then(async blob => {
-				await loadNetCDF(blob as File);
-				return;
-			})
-			.catch(e => useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`));
+			.then(blob => loadNetCDF(blob as File))
+			.catch(e => {
+				useGlobalStore.getState().setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`);
+				return false;
+			});
 		} else {
 			// ---- Local Zarr ---- //
 			const encodedPath = encodeURIComponent(path);
 			const zarrPath = `${window.location.origin}/zarr/${encodedPath}`;
 			const newStore = GetStore(zarrPath);
-			newStore.then(()=>ReFetch())
 			setCurrentStore(newStore);
-			return;
+			return newStore.then(() => { ReFetch(); return true; }, () => false);
 		}
 	} else {
-		if (!isRemoteStore(initStore)) return; // Localzarr and LocalNetCDF create & set custom stores that bypasses this step
+		if (!isRemoteStore(initStore)) return false; // Localzarr and LocalNetCDF create & set custom stores that bypasses this step
 		const isNC = NC_EXT.some(e => initStore.toLowerCase().endsWith(e))
 		const isGT = TIF_EXT.some(e => initStore.toLowerCase().endsWith(e))
 
 		if (isNC){
-			loadNetCDF(initStore);
-			return;
+			return loadNetCDF(initStore);
 		} else if (isGT){
-			loadGeoTiff(initStore);
-			return;
+			return loadGeoTiff(initStore);
 		} else {
 			// ---- Remote Zarr ---- //
 			const { icechunkOptions, fetchOptions } = useZarrStore.getState();
@@ -82,13 +84,13 @@ export function initializeStore(){
 				icechunkOptions ?? undefined
 			);
 			setCurrentStore(newStore);
-			setupZarr(newStore)
+			// ---- Clear after use ---- //
+			const {remapTexture} = useGlobalStore.getState();
+			if (remapTexture) remapTexture.dispose();
+			useZarrStore.setState({icechunkOptions: null, fetchOptions:null});
+			return setupZarr(newStore);
 		}
 	}
-	// ---- Clear after use ---- //
-	const {remapTexture} = useGlobalStore.getState();
-	if (remapTexture) remapTexture.dispose();
-	useZarrStore.setState({icechunkOptions: null, fetchOptions:null});
 }
 
 const safeJsonParse = (val: string | null): unknown => {
