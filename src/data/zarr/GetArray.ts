@@ -82,7 +82,7 @@ export async function GetArray(varOveride?: string) {
     let done = 0;
     const chunkScalingFactors: Record<string, number | undefined> = {};
     const jobs: Promise<void>[] = [];
-
+    const minVals: number[] = []; const maxVals: number[] = [];
     try {
         for (let z = zChunks[0]; z < zChunks[1]; z++) {
             for (let y = yChunks[0]; y < yChunks[1]; y++) {
@@ -95,6 +95,8 @@ export async function GetArray(varOveride?: string) {
                         cached.kernel.kernelDepth === kernel.kernelDepth) {
                         cache.set(cacheName, { ...cached, sliceStart });
                         chunkScalingFactors[chunkID] = cached.scaling;
+                        if(Number.isFinite(cached.range.min)) minVals.push(cached.range.min)
+                        if(Number.isFinite(cached.range.max)) maxVals.push(cached.range.max)
                         setProgress(Math.round(++done / totalChunks * 100));
                         continue;
                     }
@@ -104,13 +106,14 @@ export async function GetArray(varOveride?: string) {
                     const complete = piece.every(([lo, hi], i) => lo === bounds[i][0] && hi === bounds[i][1]);
                     const selection = [...baseSelection];
                     dims.forEach((d, i) => { if (d >= 0) selection[d] = piece[i]; });
-
                     const raw = await fetcher.fetchChunk(targetVariable, selection);
                     jobs.push(pool.dispatch('processChunk',
                         { raw, coarsen, compress, hasZ, kernelInfo, indices, scalingFactor: undefined, fillValue },
                         [raw.data.buffer]
-                    ).then(({ chunkF16, thisShape, chunkStride, newScalingFactor }) => {
+                    ).then(({ chunkF16, thisShape, chunkStride, newScalingFactor, range }) => {
                         chunkScalingFactors[chunkID] = newScalingFactor;
+                        if(Number.isFinite(range.min)) minVals.push(range.min)
+                        if(Number.isFinite(range.max)) maxVals.push(range.max)
                         cache.set(cacheName, {
                             data: chunkF16,
                             shape: thisShape.slice(-3), stride: chunkStride.slice(-3),
@@ -118,6 +121,7 @@ export async function GetArray(varOveride?: string) {
                             origin: piece.map(([lo], i) => lo / kernels[i]),
                             sliceStart,
                             complete,
+                            range
                         });
                         setProgress(Math.round(++done / totalChunks * 100));
                     }));
@@ -143,6 +147,9 @@ export async function GetArray(varOveride?: string) {
             cache.set(cacheName, { ...chunk, data: array, scaling: maxScaling });
         }));
     const scalingFactor = maxScaling !== 0 ? maxScaling : undefined;
-
-    return { shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], dtype, scalingFactor };
+    const maxVal = maxVals.reduce((a, b) => Math.max(a, b), -Infinity); 
+    const minVal = minVals.reduce((a, b) => Math.min(a, b), Infinity);
+    const scale = Math.pow(10, -maxScaling);
+    return { shape: outputShape, indices: hasZ ? [zDimIndex, yDimIndex, xDimIndex] : [yDimIndex, xDimIndex], 
+        dtype, scalingFactor, valueScale: { minVal: minVal * scale, maxVal: maxVal * scale } };
 }

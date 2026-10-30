@@ -1,11 +1,12 @@
-import { fromBlob } from 'geotiff'
-import { toHalfFloat } from 'three/src/extras/DataUtils.js';
-import { decompressSync } from 'fflate';
-import {processChunk, processIn, processOut} from './tasks/processChunk';
-import { createTextureData, textureIn, textureOut } from './tasks/createTextureData';
-import { CompressArray, DecompressArray, RescaleArray } from '@/data/zarr/utils';
 import { getBaseImage } from '@/data/geo/baseImage';
+import { CompressArray, DecompressArray, RescaleArray } from '@/data/zarr/utils';
+import { arrayRange } from '@/lib/arrayMath';
 import { FetchStoreOptions } from '@/types/Interfaces';
+import { decompressSync } from 'fflate';
+import { toHalfFloat } from 'three/src/extras/DataUtils.js';
+import { createTextureData, textureIn, textureOut } from './tasks/createTextureData';
+import { processChunk, processIn, processOut } from './tasks/processChunk';
+import { TypedArray } from '@/lib/helpers';
 
 interface normalizeIn{
     data: Uint8Array | Float16Array;
@@ -20,6 +21,13 @@ interface readRasterIn {
     winX: [number, number];
     winY: [number, number];
     sample:number
+}
+
+interface readRasterOut{
+    data: TypedArray;
+    width: number;
+    height: number;
+    valueScale:{minVal:number, maxVal:number}
 }
 
 
@@ -48,7 +56,8 @@ async function readRasterData({gtSource, fetchOptions, imageNum, winX, winY, sam
         samples: [sample]
     })
     const {width,height} = data
-    return {data:data[0], width, height}
+    const valueScale = arrayRange(data[0] as Uint8Array)
+    return {data:data[0], width, height, valueScale}
 }
 
 function decompressArray({array}:{array:Uint8Array}){
@@ -75,7 +84,7 @@ function rescaler({array, delta, compressed}:RescalerIn){
 
 export const tasks = {
     normalizeData: (d: normalizeIn): {textureData: Uint8Array | Uint16Array} => normalizeTextureData(d),
-    readRasterData: (d: readRasterIn): Promise<{data: any, width:number, height: number}> => readRasterData(d),
+    readRasterData: (d: readRasterIn): Promise<readRasterOut> => readRasterData(d),
     decompress: (d: {array:Uint8Array}): {newArray: Float16Array} => decompressArray(d),
     processChunk: (d: processIn) : Promise<processOut> => processChunk(d),
     textureData: (d: textureIn) : textureOut => createTextureData(d),

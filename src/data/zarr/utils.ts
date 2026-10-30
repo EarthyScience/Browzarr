@@ -41,39 +41,41 @@ export function RescaleArray(array: Float16Array | Float32Array, scalingFactor: 
 export function ToFloat16(
 	array: Float32Array,
 	scalingFactor?: number,
-): [Float16Array, number | undefined] {
+): [Float16Array, number | undefined, {min: number, max: number}] {
 	const initialScale = scalingFactor ?? 0;
-	let denominator = Math.pow(10, initialScale);
-	let multiplier = 1 / denominator;
-	let maxVal = 0;
-	for (let i = 0; i < array.length; i++) {
-		const val = Math.abs(array[i] * multiplier);
-		if (val > maxVal && isFinite(val)) {
-			maxVal = val;
-		}
+	const len = array.length;
+	const newArray = new Float16Array(len);
+
+	// Single pass for finite min/max of the raw (unscaled) data
+	let min = Infinity;
+	let max = -Infinity;
+	for (let i = 0; i < len; i++) {
+		const v = array[i];
+		if (v < min && isFinite(v)) min = v;
+		if (v > max && isFinite(v)) max = v;
 	}
-	if (maxVal === 0) {
-		const newArray = new Float16Array(array.length);
-		for (let i = 0; i < array.length; i++) {
-			newArray[i] = array[i] === 0 ? 0 : NaN;
-		}
-		return [newArray, initialScale !== 0 ? initialScale : undefined];
+	if (min === Infinity) {
+		min = NaN;
+		max = NaN;
 	}
 
-	const additionalScaling = Math.ceil(Math.log10(maxVal / 65504));
-	const needsRescale = additionalScaling > 0 || additionalScaling <= -6;
-	//I think this is complicating things. Because if it was already scaled then there should already by enough variance in the data it doesn't need to go further
-	// (scalingFactor && scalingFactor <= -6 && additionalScaling < 0)
-	const newScalingFactor = needsRescale
-		? additionalScaling + initialScale
-		: initialScale;
-	denominator = Math.pow(10, newScalingFactor);
-	multiplier = 1 / denominator;
-	const newArray = new Float16Array(array.length);
-	for (let i = 0; i < array.length; i++) {
+	const maxAbs = Math.max(Math.abs(min), Math.abs(max)) * Math.pow(10, -initialScale);
+	if (!(maxAbs > 0)) {
+		for (let i = 0; i < len; i++) {
+			newArray[i] = array[i] === 0 ? 0 : NaN;
+		}
+		return [newArray, initialScale || undefined, {min, max}];
+	}
+	const additionalScaling = Math.ceil(Math.log10(maxAbs / 65504));
+	const newScalingFactor =
+		additionalScaling > 0 || additionalScaling <= -6
+			? initialScale + additionalScaling
+			: initialScale;
+	const multiplier = Math.pow(10, -newScalingFactor);
+	for (let i = 0; i < len; i++) {
 		newArray[i] = array[i] * multiplier;
 	}
-	return [newArray, newScalingFactor != 0 ? newScalingFactor : undefined];
+	return [newArray, newScalingFactor || undefined, {min, max}];
 }
 
 export function calculateTotalElements(shape: number[]): number {
