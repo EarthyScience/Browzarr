@@ -1,4 +1,4 @@
-import { abs, bool, Discard, float, Fn, If, min, mix, select, struct, uv, vec2, vec4 } from 'three/tsl';
+import { abs, Discard, Fn, If, select, struct, uv, vec4 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
 import * as u from './utils/uniforms';
@@ -20,47 +20,17 @@ const maskAndBorder = (thisUV: any) =>{
     const isBorder = h.isBorder(thisUV);
     const maskColor = select(masked, vec4(u.nanColor, u.nanAlpha), vec4(-1),);
     const borderColor = select(isBorder, vec4(u.borderColor, 1), vec4(-1));
-    
+
     return maskColor.max(borderColor);
 }
 
 const faceColor = Fn( ([thisUV] : [any]) => {
-    const Color = vec4( 0 ).toVar( 'Color' );
     const {localCoord, textureIdx} = h.getLocalCoord(thisUV)
-    const strength = float( 0 ).toVar( 'strength' );
-    const biVal = float( 0 ).toVar( 'biVal' );
-    const biNaN = bool( false ).toVar( 'biNaN' );
-
-    If( u.bivariate, () => {
-        const bivar = h.sample2ToOrder( localCoord, textureIdx, u.bivariateSelection );
-        strength.assign( bivar.r );
-        biVal.assign( bivar.g );
-        biNaN.assign( h.isNaNBits( strength ).or( h.isNaNBits( biVal ) ) );
-    } ).Else( () => {
-        strength.assign( h.sample1( localCoord, textureIdx ) );
-        strength.assign(h.rescaler(strength))
+    const { color, strength } = h.sampleSurfaceColor(localCoord, textureIdx);
+    If( abs( strength.sub( u.fillValue ) ).lessThan( 0.005 ), () => {
+        color.assign( vec4( 0. ) );
     } );
-
-    const isNan = h.isNaNBits( strength ).or( biNaN ).or( u.useF16.not().and( strength.equal( 1. ) ) );
-
-    If( isNan, () => {
-        Color.assign( vec4( u.nanColor, u.nanAlpha ) );
-    } ).Else( () => {
-        If( u.bivariate, () => {
-            const flipOrder = u.bivariateSelection.notEqual( 0 );
-            Color.assign( vec4( select( flipOrder, h.colorMixer( biVal, strength ), h.colorMixer( strength, biVal ) ), 1. ) );
-        } ).Else( () => {
-            strength.mulAssign( u.cScale );
-            strength.assign( min( strength.add( u.cOffset ), 0.995 ) );
-            Color.assign( vec4( u.cmap.sample( vec2( strength, 0.5 ) ).rgb, 1. ) );
-        } );
-    } );
-
-    const valid = strength.greaterThanEqual( u.threshold.x ).and( strength.lessThanEqual( u.threshold.y ) );
-    If( valid.not().or( abs( strength.sub( u.fillValue ) ).lessThan( 0.005 ) ), () => {
-        Color.assign( vec4( 0. ) );
-    } );
-    return Color;
+    return color;
 } );
 
 export function createFlatMapMaterial(){
@@ -68,7 +38,6 @@ export function createFlatMapMaterial(){
     material.transparent = true;
     material.side = THREE.DoubleSide;
     material.colorNode = Fn( () => {
-        const Color = vec4( 0 ).toVar( 'FinalColor' );
         const texCoord = uv().toVar( 'texCoord' );
         const uvInfo = getUVs(texCoord)
         const maskUV = uvInfo.get('maskUV')
@@ -76,12 +45,7 @@ export function createFlatMapMaterial(){
         const newV = uvInfo.get('remap')
         If(isValid.not(), () =>{ Discard(); })
         const maskNBorders = maskAndBorder(maskUV).toVar( 'early' );
-        If( maskNBorders.a.greaterThanEqual( 0 ), () => {
-            Color.assign( maskNBorders );              
-        } ).Else( () => {
-            Color.assign( faceColor(newV) );  
-        } );
-        return Color;
+        return h.overlayOr(maskNBorders, () => faceColor(newV));
     } )();
     return material
 }

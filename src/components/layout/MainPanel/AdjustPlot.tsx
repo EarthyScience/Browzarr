@@ -100,8 +100,8 @@ const BivariateSelector = ({className} : {className?: string})=>{
 }
 
 const VolumeOptions = ()=>{
-  const { useRayMarch, quality, transparency, vTransferRange, vTransferScale, interpPixels, revTransparency,
-    setQuality, setUseRayMarch, setTransparency, setVTransferRange, setVTransferScale, setRevTransparency} = usePlotStore(useShallow(s => s))
+  const { useRayMarch, volumeMode, quality, transparency, vTransferRange, vTransferScale, interpPixels, revTransparency,
+    setQuality, setUseRayMarch, setVolumeMode, setTransparency, setVTransferRange, setVTransferScale, setRevTransparency} = usePlotStore(useShallow(s => s))
   useEffect(()=>{
     if (!useRayMarch && interpPixels) setUseRayMarch(true)
   }, [interpPixels, useRayMarch])
@@ -139,6 +139,15 @@ const VolumeOptions = ()=>{
         </div>
       </Hider>
       <Switcher className={interpPixels ? 'opacity-40 !cursor-default' : undefined} leftText='DDA' rightText='Raymarch' state={!useRayMarch} onClick={()=> setUseRayMarch(!useRayMarch)}/>
+      <QuickSelect
+        value={volumeMode}
+        onValueChange={(val: string) => setVolumeMode(val as typeof volumeMode)}
+        className='w-full min-w-0'
+      >
+        <SelectItem value='additive'>Additive</SelectItem>
+        <SelectItem value='max'>Max Intensity</SelectItem>
+        <SelectItem value='min'>Min Intensity</SelectItem>
+      </QuickSelect>
 		<BivariateSelector />
       <div className='grid grid-cols-3 justify-between place-items-center'>
         <h1>Transparency</h1>
@@ -592,7 +601,7 @@ const AdjustPlot = () => {
         </div>
         
         <div className={`overflow-y-auto no-scrollbar -mx-4 px-1 pt-2 ${popoverSide === 'top' ? 'max-h-[80vh]' : 'max-h-[70vh]'}`}>    
-          <div className='bg-[var(--plot-settings)] rounded-md p-4 text-center'>
+          <div className='bg-[var(--plot-settings)] rounded-md px-4 py-1 text-center'>
             <span className='text-lg font-bold'>Plot Settings</span>
             {plotType === 'volume' && <VolumeOptions />}
             {plotType === 'point-cloud' && <PointOptions />}

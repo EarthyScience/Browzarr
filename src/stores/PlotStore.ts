@@ -19,6 +19,7 @@ type PlotState ={
   cOffset: number;
   cScale: number;
   useRayMarch: boolean;
+  volumeMode: 'additive' | 'max' | 'min';
   resetCamera: boolean;
   transparency: number;
   revTransparency: boolean;
@@ -81,6 +82,7 @@ type PlotState ={
   setCOffset: (cOffset: number) => void;
   setCScale: (cScale: number) => void;
   setUseRayMarch: (useRayMarch: boolean) => void;
+  setVolumeMode: (volumeMode: 'additive' | 'max' | 'min') => void;
   setResetCamera: (resetCamera: boolean) => void;
   setTransparency: (transparency: number) => void;
   setRevTransparency: (revTransparency: boolean) => void;
@@ -132,6 +134,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   cOffset: 0,
   cScale: 1,
   useRayMarch: false,
+  volumeMode: 'additive',
   resetCamera: false,
   transparency: 0,
   revTransparency: false,
@@ -196,6 +199,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setCOffset: (cOffset) => set({ cOffset }),
   setCScale: (cScale) => set({ cScale }),
   setUseRayMarch: (useRayMarch) => set({ useRayMarch }),
+  setVolumeMode: (volumeMode) => set({ volumeMode }),
   setResetCamera: (resetCamera) => set({ resetCamera }),
   setTransparency: (transparency) => set({ transparency}),
   setRevTransparency: (revTransparency) => set({ revTransparency }),

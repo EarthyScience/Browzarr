@@ -1,23 +1,12 @@
 import {
-    bool, clamp, float, Fn, If,
-    instanceIndex, mix, positionGeometry, positionLocal,
+    bool, float, Fn, positionGeometry, positionLocal,
     select,
-    texture,
     varying, vec2, vec3, vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
 import * as u from './utils/uniforms';
-
-const instanceColor = Fn(([strengths] : [any])=>{
-   if (u.bivariate.value){
-        const biCol = h.colorMixer( strengths.x, strengths.y ).toVar();
-        return vec4(biCol.rgb, 1)
-    } else{
-        const color = u.cmap.sample(vec2(strengths.x, 0.5))
-        return vec4(color.rgb, 1)
-    }
-})
+import { instanceColor, instanceUV, sampleBlockStrength } from './utils/blockHelpers';
 
 const getUVs = Fn(([thisUV, isValid] : [any, any]) =>{
     const instanceUV = thisUV.toVar();
@@ -33,15 +22,7 @@ export function createFlatBlocksMaterial(count: number){
     const resolution = u.displacementResolution
     const width = resolution.x;
     const height = resolution.y;
-    const thisUV = Fn(() => {
-        const resolution = u.displacementResolution
-        const px = instanceIndex.mod(width);
-        const py = instanceIndex.div(width).mod(height);
-        return vec2(
-            px.toFloat().add(0.5), 
-            py.toFloat().add(0.5)
-            ).div(resolution)
-    })()
+    const thisUV = instanceUV()
     const position = Fn(() => {
         const aspect = height.toFloat().div(width)
         const posX = thisUV.x.sub(0.5).mul(2);
@@ -51,29 +32,12 @@ export function createFlatBlocksMaterial(count: number){
 
     const material = new THREE.NodeMaterial();
     const isValid = bool(true).toVar();
-    
+
     const uvInfo = varying(getUVs(thisUV, isValid))
     const newV = uvInfo.xy.toVar();
     const maskUV = uvInfo.zw.toVar();
     const {localCoord, textureIdx} = h.getLocalCoord(newV)
-    let strength, biVal, isNan;
-    let colorIn; // what the fragment stage receives: vec2(first, second), unswapped for bivariate
-    if (u.bivariate.value){
-        const raw = h.sample2(localCoord, textureIdx);
-        isNan = h.isNaNBits(raw.r).or(h.isNaNBits(raw.g))
-            .or(u.useF16.not().and(raw.r.equal(1.0)))
-            .or(u.useF16.not().and(raw.g.equal(1.0)));
-        strength = mix(raw.r, raw.g, u.bivariateSelection) // For some reason select and Ifs don't work as expected on vertex/varying. Mix works though
-        biVal    = mix(raw.g, raw.r, u.bivariateSelection)
-        colorIn = varying(raw, 'vBivar');
-    } else {
-        strength = h.sample1(localCoord, textureIdx).toVar();
-        strength = h.rescaler(strength);
-        isNan = h.isNaNBits(strength).or(u.useF16.not().and(strength.equal(1.0)));
-        strength = clamp(strength.mul(u.cScale).add(u.cOffset), 0.0, 0.995);
-        biVal = float(0);
-        colorIn = vec2(varying(strength, 'vStrength'), float(0));
-    }
+    const {strength, isNan, colorIn} = sampleBlockStrength(localCoord, textureIdx);
     const heightFactor = strength.sub(u.displaceZero).mul(u.displacement);
     const scaledPosition = vec3(
         positionLocal.x, positionLocal.y, positionLocal.z.mul(heightFactor)

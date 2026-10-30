@@ -1,7 +1,6 @@
 import * as THREE from 'three/webgpu'
 import { Data3DTexture, DataTexture, Texture } from 'three/webgpu';
 import { texture, uniform, bool, float, int, vec2, vec3, vec4, color, texture3D } from 'three/tsl';
-import { useGlobalStore } from '@/stores/GlobalStore';
 
 const placeholder3D = () => {
     const t = new THREE.Data3DTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, 1);
@@ -91,7 +90,6 @@ export const widthFactor = uniform(1), vertFactor = uniform(1);
 
 // --- POINT UNIFORMS --- //
 export const pointShape = uniform(vec3(0))
-export const globalScale = uniform(float(0))
 export const pointSize = uniform(float(0))
 export const timeScale = uniform(float(0))
 export const scaleByVal = uniform(bool(false))

@@ -1,5 +1,7 @@
 import {
   abs,
+  asin,
+  atan,
   bool,
   clamp,
   float,
@@ -12,6 +14,9 @@ import {
   max,
   min,
   mix,
+  mul,
+  normalize,
+  PI,
   round,
   select,
   texture,
@@ -26,7 +31,7 @@ import { usePlotStore } from '@/stores/PlotStore';
 
 // --- TEXTURE SAMPLERS ---//
 const sampleMap = Fn(([p, index]: [any, any]) => {
-    const pv = p.toVar(); // This needs to be a variable for some reason 
+    const pv = p.toVar(); // This needs to be a variable for some reason
     const result = vec4(0).toVar();
     u.map.forEach( ( tex, i ) => {
         If( index.equal( i ), () => {
@@ -57,30 +62,22 @@ export const sample2ToOrder = Fn(([p, index, variable]: [any, any, any]) => {
 });
 
 export const getLocalCoord = (thisUV : any) =>{
-	const zStepSize = uint(u.textureDepths.y).mul(uint(u.textureDepths.x));
-	const yStepSize = uint(u.textureDepths.x);
 	const sampleCoord = thisUV.toVar();
-	let textureIdx, localCoord;
 	if (u.isFlat.value) {
 		const idx = clamp(ivec2(sampleCoord.mul(u.textureDepths.xy)), ivec2(0), ivec2(u.textureDepths.xy).sub(1));
-		textureIdx = idx.y.mul(yStepSize).add(idx.x);
-		localCoord = fract(sampleCoord.mul(u.textureDepths.xy));
-	} else {
-		const texCoord = vec3(sampleCoord, u.animateProg);
-		const idx = clamp(ivec3(texCoord.mul(u.textureDepths)), ivec3(0), ivec3(u.textureDepths).sub(1));
-		textureIdx = idx.z.mul(zStepSize).add(idx.y.mul(yStepSize)).add(idx.x);
-		localCoord = fract(texCoord.mul(u.textureDepths));
+		const textureIdx = idx.y.mul(uint(u.textureDepths.x)).add(idx.x);
+		const localCoord = fract(sampleCoord.mul(u.textureDepths.xy));
+		return {localCoord, textureIdx}
 	}
-	return {localCoord, textureIdx}
+	return getLocalCoord3D(vec3(sampleCoord, u.animateProg))
 }
 
-export const getLocalCoord3D = (sampleCoord : any) =>{
+export const getLocalCoord3D = (texCoord : any) =>{
 	const zStepSize = uint(u.textureDepths.y).mul(uint(u.textureDepths.x));
 	const yStepSize = uint(u.textureDepths.x);
-  const texCoord = vec3(sampleCoord);
-  const idx = clamp(ivec3(texCoord.mul(u.textureDepths)), ivec3(0), ivec3(u.textureDepths).sub(1));
-  const textureIdx = idx.z.mul(zStepSize).add(idx.y.mul(yStepSize)).add(idx.x);
-  const localCoord = fract(texCoord.mul(u.textureDepths));
+	const idx = clamp(ivec3(texCoord.mul(u.textureDepths)), ivec3(0), ivec3(u.textureDepths).sub(1));
+	const textureIdx = idx.z.mul(zStepSize).add(idx.y.mul(yStepSize)).add(idx.x);
+	const localCoord = fract(texCoord.mul(u.textureDepths));
 	return {localCoord, textureIdx}
 }
 
@@ -90,22 +87,32 @@ export const realCoords = Fn(([uv]: [any]) => {
   // Radians -> fraction of a full turn. Longitudes in -180..180 need shifting by 0.5.
   const lonRange = u.lonBounds.div(2 * Math.PI);
   const normalizedLon = select(u.is360, lonRange, lonRange.add(0.5));
- 
+
   // Latitude: -PI/2..PI/2 -> 0..1
   const normalizedLat = u.latBounds.div(Math.PI).add(0.5);
- 
+
   const lonScale = normalizedLon.y.sub(normalizedLon.x);
   const latScale = normalizedLat.y.sub(normalizedLat.x);
- 
+
   const thisU = uv.x.mul(lonScale).add(normalizedLon.x);
   const thisV = uv.y.mul(latScale).add(normalizedLat.x);
- 
+
   return vec2(thisU, thisV);
+});
+
+// Sphere position -> global equirectangular UV (for mask/border textures)
+export const giveMaskUV = Fn( ( [ position ] : [any] ) => {
+	const n = normalize( position );
+	const latitude = asin( n.y );
+	const longitude = atan( n.z, n.x ).negate();
+	latitude.divAssign( PI );
+	longitude.divAssign( mul( 2., PI ) );
+	return vec2( longitude.add( 0.5 ), latitude.add( 0.5 ) );
 });
 
 
 // --- BIVARIATE COLORS --- //
-export const lerpColors = Fn(([A, B, fac]: [any, any, any]) => {
+const lerpColors = Fn(([A, B, fac]: [any, any, any]) => {
   const steps = u.resolution.sub(1);
   const snapped = round(fac.mul(steps)).div(steps);
   return mix(A, B, snapped);
@@ -119,7 +126,7 @@ export const differenceColors = (A: any, B: any) => abs(A.sub(B));
 export const colorMixer = Fn(([A, B]: [any, any]) => {
   const bottomColor = lerpColors(u.bottomLeft, u.bottomRight, A);
   const leftColor = lerpColors(u.bottomLeft, u.topLeft, B);
- 
+
   // Pick the blend mode (falls back to darken)
   return select(
     u.mixMode.equal(1), lightenColors(bottomColor, leftColor),
@@ -131,14 +138,6 @@ export const colorMixer = Fn(([A, B]: [any, any]) => {
       ),
     ),
   );
-});
-
-export const createBivariateColor = Fn(([p, index]: [any, any]) =>  {
-    const biValues = sample2(p, index);
-    const hasNaN = isNaNBits(biValues.r).or(isNaNBits(biValues.g));
- 
-    const color = select(hasNaN, vec3(0, 0, 0), colorMixer(biValues.r, biValues.g));
-    return vec4(color, select(hasNaN, float(1), float(0)));
 });
 
 
@@ -169,72 +168,95 @@ export const rescaler = Fn(([x]: [any]) => {
   return result;
 });
 
-export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
-  const valid = bool(true).toVar()
+
+// --- SURFACE COLORING --- //
+// rescaleFirst: apply rescaler before the NaN check (flat) instead of only on the colormap path (sphere).
+export const sampleSurfaceColor = (localCoord: any, textureIdx: any) => {
+    const color = vec4( 0 ).toVar( 'color' );
+    const strength = float( 0 ).toVar( 'strength' );
+    const biVal = float( 0 ).toVar( 'biVal' );
+    const biNaN = bool( false ).toVar( 'biNaN' );
+
+    If( u.bivariate, () => {
+        const bivar = sample2ToOrder( localCoord, textureIdx, u.bivariateSelection );
+        strength.assign( bivar.r );
+        biVal.assign( bivar.g );
+        biNaN.assign( isNaNBits( strength ).or( isNaNBits( biVal ) ) );
+    } ).Else( () => {
+        strength.assign( sample1( localCoord, textureIdx ) );
+        strength.assign( rescaler( strength ) );
+    } );
+
+    If( isNanVal( strength ).or( biNaN ), () => {
+        color.assign( vec4( u.nanColor, u.nanAlpha ) );
+    } ).Else( () => {
+        If( u.bivariate, () => {
+            const flipOrder = u.bivariateSelection.notEqual( 0 );
+            color.assign( vec4( select( flipOrder, colorMixer( biVal, strength ), colorMixer( strength, biVal ) ), 1. ) );
+        } ).Else( () => {
+            strength.mulAssign( u.cScale );
+            strength.assign( clamp( strength.add( u.cOffset ), 0.0, 0.995 ) );
+            color.assign( vec4( u.cmap.sample( vec2( strength, 0.5 ) ).rgb, 1. ) );
+        } );
+    } );
+
+    const valid = strength.greaterThanEqual( u.threshold.x ).and( strength.lessThanEqual( u.threshold.y ) );
+    If( valid.not(), () => {
+        color.assign( vec4( 0. ) );
+    } );
+    return { color, strength };
+}
+
+// Mask/border overlay (alpha >= 0) wins over the base color. Must be called inside an Fn.
+export const overlayOr = (overlay: any, base: () => any) => {
+    const color = vec4( 0 ).toVar( 'FinalColor' );
+    If( overlay.a.greaterThanEqual( 0 ), () => {
+        color.assign( overlay );
+    } ).Else( () => {
+        color.assign( base() );
+    } );
+    return color;
+}
+
+
+// --- REPROJECTION --- //
+// Shared core: optional remap texture lookup -> realCoords -> optional border remap -> 360 wrap.
+// wrapAlways: wrap longitude even when border remap is used.
+// borderFromMaskUV: sample the border remap at the projected maskUV rather than the data UV.
+const reprojectCore = (texCoord: any, opts: { wrapAlways: boolean, borderFromMaskUV?: boolean, onRemap?: (remap: any) => void }) => {
+  const valid = bool(true).toVar();
+  const src = texCoord.xy.toVar();
   If(u.reproject, () => {
     // Each output pixel looks up where it comes from in the source data
     const remap = texture(u.remapTexture, texCoord.xy).rgb.toVar();
-    texCoord.assign(vec3(remap.rg, texCoord.z));
-    maskUV.assign(realCoords(remap.rg));
-    valid.assign(remap.b.greaterThan(0.5))
-  }).Else(()=>{
-    maskUV.assign(realCoords(texCoord.xy));
+    opts.onRemap?.(remap);
+    src.assign(remap.rg);
+    valid.assign(remap.b.greaterThan(0.5));
   })
-  If(u.remapBorders,()=> {
-      const tempV = texCoord.xy.toVar();
+  const maskUV = realCoords(src).toVar();
+  const wrap = () => { maskUV.x.assign(select(u.is360, fract(maskUV.x.add(0.5)), maskUV.x)); };
+  const borders = If(u.remapBorders, () => {
+      const tempV = (opts.borderFromMaskUV ? maskUV : src).toVar();
       tempV.y.assign(select(u.flipY, tempV.y.oneMinus(), tempV.y));
       maskUV.assign(u.remapBorderTexture.sample(tempV).ba);
-  }).Else(()=>{
-    maskUV.x.assign(select(u.is360,
-    fract(maskUV.x.add(0.5)),
-    maskUV.x))
-  })
-  return valid
-})
-
-export const reprojectMask = Fn(([texCoord, dda=bool(false)] : [any, any]) => {
-  const maskUV = texCoord.toVar();
-  const remap = texCoord.toVar();
-  If(u.reproject, () => {
-    // Each output pixel looks up where it comes from in the source data
-    remap.assign(texture(u.remapTexture, texCoord.xy).rgb.toVar());
-    maskUV.assign(realCoords(select(dda, remap, texCoord.xy)));
-  }).Else(()=>{
-    maskUV.assign(realCoords(texCoord.xy));
-  })
-  If(u.remapBorders,()=> {
-      const tempV = select(dda, remap, texCoord.xy).toVar();
-      tempV.y.assign(select(u.flipY, tempV.y.oneMinus(), tempV.y));
-      maskUV.assign(u.remapBorderTexture.sample(tempV).ba)
   })
   // For 0–360 data, wrap longitude by half a turn
-  maskUV.x.assign(select(u.is360,
-    fract(maskUV.x.add(0.5)),
-    maskUV.x
-  ));
-  return maskUV
+  if (opts.wrapAlways) wrap(); else borders.Else(wrap);
+  return { maskUV, valid };
+}
+
+export const reprojector = Fn(([texCoord, maskUV] : [any, any]) => {
+  const res = reprojectCore(texCoord, {
+    wrapAlways: false,
+    onRemap: remap => { texCoord.assign(vec3(remap.rg, texCoord.z)); },
+  });
+  maskUV.assign(res.maskUV);
+  return res.valid
 })
 
-export const reprojectUV = Fn(([thisUV] : [any]) => {
-  const remap = thisUV.toVar();
-  If(u.reproject, () => {
-    // Each output pixel looks up where it comes from in the source data
-    const newCoords = texture(u.remapTexture, thisUV.xy).rgb;
-    remap.assign(realCoords(newCoords.xy));
-  }).Else(()=>{
-    remap.assign(realCoords(thisUV.xy));
-  })
-  If(u.remapBorders,()=> {
-      remap.y.assign(select(u.flipY, remap.y.oneMinus(), remap.y));
-      remap.assign(u.remapBorderTexture.sample(remap).ba)
-  })
-  // For 0–360 data, wrap longitude by half a turn
-  remap.x.assign(select(u.is360,
-    fract(remap.x.add(0.5)),
-    remap.x
-  ));
-  return remap
-})
+export const reprojectMask = Fn(([texCoord] : [any]) => reprojectCore(texCoord, { wrapAlways: true }).maskUV)
+
+export const reprojectUV = Fn(([thisUV] : [any]) => reprojectCore(thisUV, { wrapAlways: true, borderFromMaskUV: true }).maskUV)
 
 export const isBorder = Fn(([thisUV] : [any])=>{
     // Takes maskUV from reprojector or ___ Coords. Assumes already been transformed
@@ -243,7 +265,7 @@ export const isBorder = Fn(([thisUV] : [any])=>{
         //@ts-ignore .level does exist
         const distance =  u.borderTexture.sample(thisUV).level(0).r;
         If(distance.lessThanEqual(u.borderWidth), () => {
-            isBorder.assign(bool(true)); 
+            isBorder.assign(bool(true));
         });
     })
     return isBorder;
@@ -266,3 +288,6 @@ export const isNaNBits = Fn(([x]: [any]) => {
   const mantissa = bits.bitAnd(uint(0x007fffff));
   return exponent.equal(uint(0x7f800000)).and(mantissa.notEqual(uint(0)));
 });
+
+// NaN, or the 1.0 sentinel used for missing values in non-F16 textures
+export const isNanVal = (x: any) => isNaNBits(x).or(u.useF16.not().and(x.equal(1.0)));
