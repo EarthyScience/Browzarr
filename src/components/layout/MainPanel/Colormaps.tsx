@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, } from 'react'
+import React, { useMemo } from 'react'
 import { getColormapGradientCss } from '@/gpu/textures';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button-enhanced";
@@ -9,45 +9,35 @@ import { useGlobalStore } from '@/stores/GlobalStore';
 import { useColormapStore } from '@/stores/ColormapStore';
 import UnivariateColor from '@/components/elements/UnivariateColor';
 import {BivariateColormap, getBivariateCss} from '@/components/elements/BivariateColor';
+import { usePanelSide } from './PanelButton';
 
 const Colormaps = () => {
-    const {colormapName, flipColormap, bottomLeft, bottomRight, topLeft, mixMode, resolution} = useColormapStore(s => s)
-    const bivariate = useGlobalStore(s => s.bivariate)
-    const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
-    useEffect(() => {
-        const handleResize = () => {
-          setPopoverSide(window.innerWidth < 768 ? "top" : "left");
-        };
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-      }, []);
-    const colormapBG = useMemo(()=> bivariate 
-                      ? getBivariateCss(bottomLeft, bottomRight, topLeft, mixMode, resolution)
-                      : getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral')
-    ,[bottomLeft, bottomRight, topLeft, mixMode, colormapName, bivariate, resolution])
+  const {colormapName, flipColormap, bottomLeft, bottomRight, topLeft, mixMode, resolution} = useColormapStore(s => s)
+  const bivariate = useGlobalStore(s => s.bivariate)
+  const popoverSide = usePanelSide();
+  const colormapBG = useMemo(()=> bivariate
+    ? getBivariateCss(bottomLeft, bottomRight, topLeft, mixMode, resolution)
+    : getColormapGradientCss((colormapName === 'Default' ? 'Spectral' : colormapName) || 'Spectral')
+  ,[bottomLeft, bottomRight, topLeft, mixMode, colormapName, bivariate, resolution])
   return (
     <div className="relative">
       <Popover>
       <PopoverTrigger asChild>
         <div>
-        <QuickTip message='Change Colormap' side={popoverSide}>
-          <div>
-              <Button
-                size="icon"
-                className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full cmap-trigger'
-                style={{
-                  backgroundImage: colormapBG,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'center',
-                  backgroundSize: '100% 100%',
-                  imageRendering: "pixelated",
-                  transform: (flipColormap && !bivariate) ? "scaleX(-1)" : "",
-                  width: "32px",
-                  height: "32px",
-                }} /> 
-            </div>
-        </QuickTip>
+          <QuickTip message='Change colormap' side={popoverSide}>
+            <Button
+              size="icon"
+              aria-label="Change colormap"
+              className='size-8 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out rounded-full cmap-trigger'
+              style={{
+                backgroundImage: colormapBG,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'center',
+                backgroundSize: '100% 100%',
+                imageRendering: "pixelated",
+                transform: (flipColormap && !bivariate) ? "scaleX(-1)" : "",
+              }} />
+          </QuickTip>
         </div>
       </PopoverTrigger>
       <PopoverContent

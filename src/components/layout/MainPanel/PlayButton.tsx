@@ -10,9 +10,9 @@ import { PiPlayPauseFill } from "react-icons/pi";
 import { FaPlay, FaPause, FaForwardStep , FaBackwardStep  } from "react-icons/fa6";
 import { coarsenFlatArray, parseLoc } from '@/lib/helpers';
 import { Button, Slider, Card, CardContent } from "@/components/ui";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { RiCloseLargeLine } from "react-icons/ri";
 import { useAxisIndices } from '@/hooks';
+import { PanelButton } from './PanelButton';
 
 const frameRates = [1, 2, 4, 6, 8, 12, 16, 24, 36, 48, 54, 60, 80, 120]
 
@@ -37,7 +37,7 @@ const ChunkVisualizer = ({zSlice, timeLength, chunkWidth, showNext, showPrev, an
         position: "relative",
         display: "flex",
         width: "100%",
-        height: "20px", // or whatever height you want
+        height: "20px",
         border: "1px var(--text-paragraph) solid",
         background: "none"
       }}
@@ -47,7 +47,7 @@ const ChunkVisualizer = ({zSlice, timeLength, chunkWidth, showNext, showPrev, an
         style={{
           position: "absolute",
           left: `${leftPercentage}%`,
-          right: `${(1 - (zSlice[1] ? zSlice[1]/timeLength : 1)) * 100}%`,
+          right: `${rightPercentage}%`,
           background: "var(--play-background)",
           top:0,
           bottom:0,
@@ -360,7 +360,6 @@ const PlayButton = () => {
       return !isFlat && plotOn && hasTime;
     }, [isFlat, plotOn, dimArrays])
     
-    const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
     const [keepOpen, setKeepOpen] = useState(false)
 
     useEffect(() => {
@@ -372,44 +371,16 @@ const PlayButton = () => {
         // Always reset keepOpen flag
         setKeepOpen(true);
       }
-    }, [reFetch, keepOpen, setShowOptions, setKeepOpen])
+    }, [reFetch, keepOpen])
 
-    useEffect(() => {
-        const handleResize = () => {
-          setPopoverSide(window.innerWidth < 768 ? "top" : "left");
-        };
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-      }, []);
-    
   return (
     <>
-      <Tooltip delayDuration={500} >
-        <TooltipTrigger asChild>
-          <div style={!enableCond ? { pointerEvents: 'none' } : {}}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
-              style={{
-                color: enableCond ? '' : 'var(--text-disabled)'
-              }}
-              onClick={() => {if (enableCond) {setShowOptions(x => !x)}}}
-            >
-              <PiPlayPauseFill className="size-8" />
-            </Button>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent
-          side={popoverSide === "left" ? "left" : "top"}
-          align={popoverSide === "left" ? "start" : "center"}
-          className="flex flex-col"
-        >
-          <span>Animation controls</span>
-        </TooltipContent>
-
-      </Tooltip>
+      <PanelButton
+        icon={<PiPlayPauseFill className="size-8" />}
+        tooltip="Animation controls"
+        disabled={!enableCond}
+        onClick={() => setShowOptions(x => !x)}
+      />
       <PlayInterFace visible={(showOptions && enableCond)} setKeepOpen={setKeepOpen} setShowSelf={setShowOptions}/>
     </>
   )

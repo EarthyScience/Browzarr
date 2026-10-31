@@ -11,7 +11,6 @@ import { GetAttributes } from "@/data/zarr/ZarrLoaderLRU";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button-enhanced";
 import { Input } from "@/components/ui/input";
-import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
   DialogContent,
@@ -25,11 +24,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { MetaData } from './MetaData'
-import { QuickTip } from "@/components/widgets/QuickTip";
+import { PanelButton, usePanelSide } from './PanelButton';
 
 const Variables = () => {
-  const isMobile = useIsMobile();
-  const popoverSide = isMobile ? "top" : "left";
+  const popoverSide = usePanelSide();
   const [openMetaPopover, setOpenMetaPopover] = useState(false);
 
   const [showMeta, setShowMeta] = useState(false);
@@ -112,14 +110,12 @@ const Variables = () => {
     setOpenVariables(open);
   };
 
+  const openMeta = () => popoverSide === "left" ? setOpenMetaPopover(true) : setShowMeta(true);
+
   // Handle variable selection
-  const handleVariableSelect = (val: string, idx: number) => {
+  const handleVariableSelect = (val: string) => {
     if (selectedVar === val && meta?.name === val && metadata) {
-      if (popoverSide === "left") {
-        setOpenMetaPopover(true);
-      } else {
-        setShowMeta(true);
-      }
+      openMeta();
       return;
     }
 
@@ -144,12 +140,7 @@ const Variables = () => {
       }
       setMetadata(attr);
       setIsLoadingVar(null);
-
-      if (popoverSide === "left") {
-        setOpenMetaPopover(true);
-      } else {
-        setShowMeta(true);
-      }
+      openMeta();
     }).catch((err) => {
       if (activeRequest.current === val) {
         setIsLoadingVar(null);
@@ -177,7 +168,7 @@ const Variables = () => {
               ? "bg-primary text-primary-foreground" 
               : "hover:bg-muted"
           }`}
-          onClick={() => handleVariableSelect(val, idx)}
+          onClick={() => handleVariableSelect(val)}
         >
           <span>{variableName}</span>
           {isLoadingVar === val && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
@@ -266,21 +257,7 @@ const Variables = () => {
     <>
       <Popover open={openVariables} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
-          <div>
-            <QuickTip message='Select Variable' side={popoverSide}>
-                <div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
-                    tabIndex={0}
-                    aria-label="Select variable"
-                  >
-                    <TbVariable className="size-8" />
-                  </Button>
-                </div>
-              </QuickTip>
-          </div>
+          <PanelButton icon={<TbVariable className="size-8" />} tooltip="Select variable" />
         </PopoverTrigger>
         <PopoverContent
           side={popoverSide}

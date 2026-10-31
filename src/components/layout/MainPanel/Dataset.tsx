@@ -3,11 +3,6 @@
 import { Button } from '@/components/ui/button-enhanced';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from '@/components/ui/separator';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { useEffect, useState } from 'react';
 import { BsBoxArrowLeft, BsBoxArrowRight } from 'react-icons/bs';
@@ -16,12 +11,13 @@ import { useShallow } from 'zustand/shallow';
 import DatasetsModal from './DataSetsModal';
 import { DatasetOption, DescriptionContent } from './DescriptionContent';
 import LocalContent from './LocalContent';
+import { PanelButton, usePanelSide } from './PanelButton';
 import { RemoteDataset } from './RemoteDataset';
 
 const Dataset = () => {
   const [showStoreInput, setShowStoreInput] = useState(false);
   const [showLocalInput, setShowLocalInput] = useState(false);
-  const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
+  const popoverSide = usePanelSide();
   const [activeOption, setActiveOption] = useState<string>('');
   const [showDescription, setShowDescription] = useState<boolean>(false);
   const [popoverOpen, setPopoverOpen] = useState<boolean>(false);
@@ -30,15 +26,6 @@ const Dataset = () => {
 
   const {setInitStore, setOpenVariables } = useGlobalStore(useShallow(s => ({
     setInitStore: s.setInitStore, setOpenVariables: s.setOpenVariables})));
-
-  useEffect(() => {
-    const handleResize = () => {
-      setPopoverSide(window.innerWidth < 768 ? "top" : "left");
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined') {
@@ -57,29 +44,7 @@ const Dataset = () => {
     <>
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
-          <div>
-            <Tooltip delayDuration={500}>
-              <TooltipTrigger asChild>
-                <div>
-                  <Button
-                    tabIndex={0}
-                    variant="ghost"
-                    size="icon"
-                    className='cursor-pointer hover:scale-90 transition-transform duration-100 ease-out'
-                    aria-label="Select dataset"
-                  >
-                    <TbDatabasePlus className="size-8" />
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent
-                side={popoverSide === "left" ? "left" : "top"}
-                align={popoverSide === "left" ? "start" : "center"}
-              >
-                <span>Select dataset</span>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+          <PanelButton icon={<TbDatabasePlus className="size-8" />} tooltip="Select dataset" />
         </PopoverTrigger>
 
         <PopoverContent

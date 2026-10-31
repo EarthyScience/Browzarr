@@ -9,7 +9,7 @@ import '../css/MainPanel.css';
 import { PiMathOperationsBold } from "react-icons/pi";
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import {Hider, KernelVisualizer, QuickTip, Button, Input} from "@/components/ui";
-import { BsFillQuestionCircleFill } from "react-icons/bs";
+import { BsFillQuestionCircleFill, BsBoxArrowLeft } from "react-icons/bs";
 import { Switch } from '@/components/ui/switch';
 import { HandleKernelNums } from '@/lib/helpers';
 import {
@@ -21,9 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { BsBoxArrowLeft } from "react-icons/bs";
 import { RxReset } from "react-icons/rx";
 import { Analysis } from '@/gpu/Analysis';
+import { PanelButton, usePanelSide } from './PanelButton';
 
 const singleVarReductionOps = ['Mean', 'Min', 'Max', 'Standard Deviation', 'Linear Slope']
 
@@ -88,9 +88,8 @@ const AnalysisOptions = () => {
 		checkWebGPU();
 	}, [plotOn]);
 
-	useEffect(()=>{ // Changing stores makes it so you can't use two variable operations. 
-		if(initStore != previousStore.current)setIncompatible(true)
-		else setIncompatible(false)
+	useEffect(()=>{ // Changing stores makes it so you can't use two variable operations.
+		setIncompatible(initStore != previousStore.current)
 	},[initStore])
 
 	useEffect(()=>{ // When data is downloaded (indicated by changes in refetch) The newly plotted and any future variables are compatible until initStore changes. 
@@ -100,8 +99,7 @@ const AnalysisOptions = () => {
 	},[reFetch])
 
 	useEffect(()=>{
-		if (isFlat)setKernelDepth(1)
-		else setKernelDepth(3)
+		setKernelDepth(isFlat ? 1 : 3)
 	},[isFlat])
 
 	useEffect(()=>{
@@ -110,32 +108,15 @@ const AnalysisOptions = () => {
 		setAnalysisMode(false)
 	},[variable])
 
-	const [popoverSide, setPopoverSide] = useState<"left" | "top">("left");
-	useEffect(() => {
-		const handleResize = () => {
-		setPopoverSide(window.innerWidth < 768 ? "top" : "left");
-		};
-		handleResize();
-		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
-	}, []);
+	const popoverSide = usePanelSide();
   return (
       <Popover>
         <PopoverTrigger asChild>
-          <div style={plotOn ? {} : { pointerEvents: 'none' } }>
-           <QuickTip message='Apply operations'>
-				<Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-10 cursor-pointer hover:scale-90 transition-transform duration-100 ease-out"
-                  style={{
-                      color: plotOn ? '' : 'var(--text-disabled)'
-                    }}
-                >
-					<PiMathOperationsBold className="size-8"/>
-                </Button>
-		   </QuickTip>
-          </div>
+          <PanelButton
+            icon={<PiMathOperationsBold className="size-8"/>}
+            tooltip="Apply operations"
+            disabled={!plotOn}
+          />
         </PopoverTrigger>
         <PopoverContent
           side={popoverSide}
@@ -145,8 +126,7 @@ const AnalysisOptions = () => {
             webGPUError
           ) : (
             <>
-              {/*  */}
-              {!isFlat && 
+              {!isFlat &&
                 <Button
 				variant='secondary'
                 disabled={incompatible}
