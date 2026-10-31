@@ -64,7 +64,9 @@ export function uniformUpdater(){
     // --- BORDERS --- //
     useEffect(()=>{
         u.trim.value = plotType != 'sphere'
-    },[plotType])
+        // Point cloud vertBounds are raw yRange [-1,1]; volume/flat vertBounds are scaled by aspect (shape.y = 2*aspect)
+        u.borderYScale.value = plotType == 'point-cloud' ? 2 : shape.y
+    },[plotType, shape])
     // --- GENERAL --- //
     useEffect(()=>{
         u.cOffset.value = cOffset;

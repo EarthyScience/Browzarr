@@ -72,6 +72,7 @@ export const flipY = uniform(bool(false));
 export const rescaleValues = uniform(bool(false));
 export const isWebGPU = uniform(bool(true));
 export const trim = uniform(bool(false));
+export const borderYScale = uniform(float(1)); // for pointcloud
 export const shape = uniform(vec3())
 
 // --- VOLUME UNIFORMS --- //
