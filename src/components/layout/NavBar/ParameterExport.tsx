@@ -77,7 +77,6 @@ const plotValues = [
     'maskValue',
     'borderWidth',
     'cameraPosition',
-    'disablePointScale',
     'is360Deg',
 ]
 

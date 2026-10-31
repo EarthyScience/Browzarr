@@ -8,9 +8,8 @@ import { useShallow } from 'zustand/shallow';
 import { SliderThumbs } from '@/components/widgets/SliderThumbs';
 import { RxReset } from "react-icons/rx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Input, Hider, Button, Slider as UISlider, Switcher, QuickTip, QuickSelect, SelectItem } from '@/components/ui';
+import { Input, Hider, Button, Switcher, QuickTip, QuickSelect, SelectItem } from '@/components/ui';
 import { parseLoc, normalize, denormalize } from '@/lib/helpers';
-import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { RiCloseLargeLine } from "react-icons/ri";
 import { Reprojection } from '@/components/elements/Reprojection';
 import { FaLongArrowAltUp } from "react-icons/fa";
@@ -22,6 +21,7 @@ import { useColormapStore } from '@/stores/ColormapStore';
 import { useValueScales } from '@/hooks';
 import { transformedRange } from '@/lib/shaderToJs';
 import { PanelButton, usePanelSide } from './PanelButton';
+import { FieldLabel, Section, Group, Field, SliderField, SwitchField, ColorField } from '@/components/widgets/SettingFields';
 
 export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueScales, min=-1, array, units} :
     {
@@ -64,100 +64,6 @@ export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, v
         </div>
     )
 })
-
-// ---- Layout primitives so every setting row looks the same ---- //
-
-const FieldLabel = ({children, help, htmlFor} : {children: React.ReactNode, help?: React.ReactNode, htmlFor?: string}) => (
-    <label htmlFor={htmlFor} className='flex items-center gap-1.5 text-sm font-medium'>
-        {children}
-        {help &&
-            <QuickTip message={help} className='max-w-80'>
-                <BsFillQuestionCircleFill className='size-3 shrink-0 text-muted-foreground' />
-            </QuickTip>
-        }
-    </label>
-)
-
-const Section = ({title, className, children} : {title: string, className?: string, children: React.ReactNode}) => (
-    <div className={`flex flex-col gap-3 rounded-md p-3 text-left ${className ?? ''}`}>
-        <span className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>{title}</span>
-        {children}
-    </div>
-)
-
-// Hider wraps children in a plain div, so re-apply the column spacing inside it
-const Group = ({children} : {children: React.ReactNode}) => (
-    <div className='flex flex-col gap-3'>{children}</div>
-)
-
-const SliderField = ({label, help, action, value, onChange, min, max, step, disabled, ends} : {
-    label: string,
-    help?: React.ReactNode,
-    action?: React.ReactNode,
-    value: number,
-    onChange: (val: number) => void,
-    min: number,
-    max: number,
-    step: number,
-    disabled?: boolean,
-    ends?: [string, string],
-}) => (
-    <div className='flex flex-col gap-2'>
-        <div className='flex items-center justify-between gap-2 min-h-6'>
-            <FieldLabel help={help}>{label}</FieldLabel>
-            {action}
-        </div>
-        {/* py keeps the thumb from being clipped by Hider's overflow-hidden */}
-        <div className='flex items-center gap-2 py-1.5 text-xs text-muted-foreground'>
-            {ends?.[0]}
-            <UISlider
-                className='flex-1'
-                min={min}
-                max={max}
-                step={step}
-                value={[value]}
-                disabled={disabled}
-                onValueChange={(vals: number[]) => onChange(vals[0])}
-            />
-            {ends?.[1]}
-        </div>
-    </div>
-)
-
-const SwitchField = ({id, label, help, checked, onChange, disabled} : {
-    id: string,
-    label: string,
-    help?: React.ReactNode,
-    checked: boolean,
-    onChange: (val: boolean) => void,
-    disabled?: boolean,
-}) => (
-    <div className='flex items-center justify-between gap-2'>
-        <FieldLabel htmlFor={id} help={help}>{label}</FieldLabel>
-        <Button
-            id={id}
-            size='sm'
-            variant={checked ? 'default' : 'outline'}
-            className='h-7 w-1/2 cursor-pointer'
-            disabled={disabled}
-            aria-pressed={checked}
-            onClick={() => onChange(!checked)}
-        >
-            {checked ? 'On' : 'Off'}
-        </Button>
-    </div>
-)
-
-const ColorField = ({label, defaultValue, onChange} : {
-    label: string,
-    defaultValue: string,
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
-}) => (
-    <div className='flex items-center justify-between gap-2'>
-        <FieldLabel>{label}</FieldLabel>
-        <input type="color" className='h-7 w-[50%] cursor-pointer' defaultValue={defaultValue} onChange={onChange} />
-    </div>
-)
 
 const BivariateSelector = () => {
     const {bivariate, variable, variable2} = useGlobalStore(useShallow(s => ({
@@ -252,12 +158,12 @@ const VolumeOptions = () => {
                     </QuickTip>
                 }
             />
-            <div className='flex items-center justify-between gap-2'>
-                <FieldLabel help='This is the raised power for transparency. Higher values "Squash" lower values while lower values help bring them out. 1 is linear.'>
-                    Transparency scale
-                </FieldLabel>
-                <Input className='h-7 w-16' type='number' value={vTransferScale} step={0.1} min={0} onChange={e => setVTransferScale(parseFloat(e.target.value))} />
-            </div>
+            <Field
+                label='Transparency scale'
+                help='This is the raised power for transparency. Higher values "Squash" lower values while lower values help bring them out. 1 is linear.'
+            >
+                <Input className='h-7' type='number' value={vTransferScale} step={0.1} min={0} onChange={e => setVTransferScale(parseFloat(e.target.value))} />
+            </Field>
             <SwitchField
                 id='scale-by-clip'
                 label='Scale by clip'
@@ -270,23 +176,16 @@ const VolumeOptions = () => {
 }
 
 const PointOptions = () => {
-    const {scalePoints, scaleIntensity, pointSize, timeScale, disablePointScale,
+    const {scalePoints, scaleIntensity, pointSize, timeScale,
         setPointSize, setScaleIntensity, setScalePoints, setTimeScale} = usePlotStore(useShallow(s => s))
 
     return (
         <>
-            <SwitchField
-                id='point-scaling'
-                label='Point scaling'
-                checked={!disablePointScale}
-                onChange={e => usePlotStore.setState({disablePointScale: !e})}
-            />
             <SliderField
                 label='Point size'
                 min={0.01} max={2} step={0.02}
                 value={pointSize}
                 onChange={setPointSize}
-                disabled={disablePointScale}
             />
             <BivariateSelector />
             <SwitchField
@@ -294,7 +193,6 @@ const PointOptions = () => {
                 label='Scale by value'
                 checked={scalePoints}
                 onChange={setScalePoints}
-                disabled={disablePointScale}
             />
             <Hider show={scalePoints}>
                 <SliderField
@@ -542,7 +440,6 @@ function resetViz(){
         displaceFaces: true,
         fillValue: undefined,
         maskValue: 0,
-        disablePointScale: false,
     })
     resetProjection();
 }

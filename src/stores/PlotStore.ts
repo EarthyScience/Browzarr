@@ -57,7 +57,6 @@ type PlotState ={
   borderWidth:number;
   maskValue: number;
   cameraPosition: THREE.Vector3;
-  disablePointScale: boolean;
   camera: THREE.Camera | undefined;
   nativeCRS: string | undefined;
   destCRS: string | undefined;
@@ -172,7 +171,6 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   maskValue: 0, // This value is for which feature to mask. Not what value to mask out. 
   borderWidth: 0.05,
   cameraPosition: new THREE.Vector3(0, 0, 5),
-  disablePointScale: false,
   camera: undefined,
   nativeCRS: undefined,
   destCRS: undefined,
