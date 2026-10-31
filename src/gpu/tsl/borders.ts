@@ -1,11 +1,14 @@
-import { abs, any, Discard, Fn, If, positionGeometry, vec4 } from 'three/tsl'
+import { Discard, Fn, If, positionGeometry, vec2, vec4 } from 'three/tsl'
 import * as THREE from 'three/webgpu'
 import * as u from './utils/uniforms'
 const colorShader = Fn(() =>{
-    const bounds = u.shape.div(2);
-	// Trim border lines that fall outside the plot's extent
-	If( u.trim.and( any( abs( positionGeometry.xy ).greaterThan( bounds.xy ) ) ), () => {
-	Discard();
+    const p = positionGeometry.xy.mul(vec2(1, u.borderYScale));
+    const outOfBounds = p.x.greaterThan(u.flatBounds.x.negate())
+        .or(p.x.lessThan(u.flatBounds.y.negate()))
+        .or(p.y.lessThan(u.vertBounds.x))
+        .or(p.y.greaterThan(u.vertBounds.y));
+	If( u.trim.and(outOfBounds), () => {
+	    Discard();
     });
     return vec4(u.borderColor, 1);
 })
