@@ -2,7 +2,6 @@
 import { GetCurrentArray, TypedArray, TypedArrayBufferLike } from '@/lib/helpers';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import * as THREE from 'three';
-import { clamp } from 'three/src/math/MathUtils.js';
 
 interface Array {
     data: TypedArray | TypedArrayBufferLike;
@@ -12,21 +11,25 @@ interface Array {
 function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxVal: number, minVal: number}, useF16=false){
     const { setTextureData } = useGlobalStore.getState()
     const {minVal, maxVal} = valueScales;
-    const textureData = useF16 ? new Uint16Array(array.length) : new Uint8Array(array.length)
-    const range = (maxVal - minVal)
-    for (let i = 0; i < array.length; i++){
-      const normed = (array[i] - minVal) / range;
-      if (isNaN(normed)){
-        textureData[i] = useF16 
-			?	THREE.DataUtils.toHalfFloat(NaN)
-			:	255;
-      } else {
-        textureData[i] = useF16
-			?	THREE.DataUtils.toHalfFloat(normed)
-			:	normed * 254;
-      }
-    };
-    
+    const len = array.length
+    const invRange = 1 / (maxVal - minVal)
+    let textureData: Uint8Array | Uint16Array
+    if (useF16) {
+        textureData = new Uint16Array(len)
+        const nanHalf = THREE.DataUtils.toHalfFloat(NaN)
+        for (let i = 0; i < len; i++) {
+            const normed = (array[i] - minVal) * invRange
+            textureData[i] = normed !== normed ? nanHalf : THREE.DataUtils.toHalfFloat(normed)
+        }
+    } else {
+        textureData = new Uint8Array(len)
+        const scale = 254 * invRange
+        for (let i = 0; i < len; i++) {
+            const scaled = (array[i] - minVal) * scale
+            textureData[i] = scaled !== scaled ? 255 : scaled
+        }
+    }
+
     setTextureData(textureData)
 }
 
@@ -70,7 +73,6 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
     const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, useF16, numComponents)
     const chunks = []
     for (const chunk of chunkData){   
-        //@ts-ignore stop whining
         const volTexture = new THREE.Data3DTexture(chunk.data, chunk.dims.x, chunk.dims.y, chunk.dims.z);
         volTexture.format = format;
         volTexture.minFilter = THREE.NearestFilter;
@@ -114,19 +116,20 @@ export function storeBivariate(valueScales: {minVal: number, maxVal: number}[], 
 	variables.forEach((thisVar, idx) =>{
 		const array = GetCurrentArray(undefined, thisVar);
 		const {minVal, maxVal} = shareScale ? absoluteScales : valueScales[idx];
-		const range = (maxVal - minVal)
-		for (let i = 0; i < dataLength; i++){
-			let normed = (array[i] - minVal) / range;
-			if (isNaN(normed)){
-				textureData[i * 2 + idx] = useF16 
-					?	THREE.DataUtils.toHalfFloat(NaN)
-					:	255;
-			} else {
-				textureData[i * 2 + idx] = useF16
-					?	THREE.DataUtils.toHalfFloat(normed)
-					:	clamp(normed, 0, 1) * 254;
-			}
-		};
+        const invRange = 1 / (maxVal - minVal)
+        if (useF16) {
+            const nanHalf = THREE.DataUtils.toHalfFloat(NaN)
+            for (let i = 0, j = idx; i < dataLength; i++, j += 2) {
+                const normed = (array[i] - minVal) * invRange
+                textureData[j] = normed !== normed ? nanHalf : THREE.DataUtils.toHalfFloat(normed)
+            }
+        } else {
+            const scale = 254 * invRange
+            for (let i = 0, j = idx; i < dataLength; i++, j += 2) {
+                const scaled = (array[i] - minVal) * scale
+                textureData[j] = scaled !== scaled ? 255 : scaled < 0 ? 0 : scaled > 254 ? 254 : scaled
+            }
+        }
 	})
 	setTextureData(textureData)
 }
