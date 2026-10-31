@@ -46,7 +46,7 @@ export const AxisSlider = React.memo(({isSlice, itemIdx, removable, style, updat
             plotDim: isSlice ? itemIdx : -1,
             dataDim: plotIndex,
             start: startIndex,
-            stop: isSlice ? stopIndex : startIndex + 1
+            stop: isSlice ? stopIndex : startIndex 
         }
         updateDimSelection(`${isSlice ? 'plot' : 'collapsed'}_${itemIdx}`, selectionObject)
     },[startIndex, stopIndex, plotIndex, itemIdx, updateDimSelection])
