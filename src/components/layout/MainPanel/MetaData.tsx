@@ -1,5 +1,6 @@
 import { defaultAttributes, renderAttributes } from "@/components/layout/MetaComponents/Helpers";
-import { Badge, Button, Hider, Input, QuickTip, Switch } from "@/components/ui";
+import { Badge, Button, Hider, Input, QuickTip } from "@/components/ui";
+import { Field, Group, SwitchField } from "@/components/widgets/SettingFields";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -399,34 +400,49 @@ export const MetaData = ({ meta, metadata }: Props) => {
                         )}
                     </div>
                     <SecondVariable dataShape={dataShape} isBivariate={isBivariate} setIsBivariate={setIsBivariate}/>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm w-full min-w-0">
-                        <div className="flex items-center gap-2">
-                            <label htmlFor="coarsen" className="font-semibold cursor-pointer">Coarsen</label>
-                            <Switch id="coarsen" className='cursor-pointer' checked={coarsen} onCheckedChange={(e) => setCoarsen(e)} />
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <label htmlFor="compress-data" className="font-semibold cursor-pointer flex items-center">
-                            Compress
-                            <QuickTip message='Compress data to preserve memory at the expense of slightly longer load times'>
-                                <BsFillQuestionCircleFill className="ml-1.5 h-3.5 w-3.5 text-muted-foreground" />
-                            </QuickTip>
-                            </label>
-                            <Switch id="compress-data" className='cursor-pointer' checked={compress} onCheckedChange={(e) => setCompress(e)} />
-                        </div>
-
-                        <div className="flex items-center justify-end ml-auto min-w-0">
-                            <Button
-                                disabled={smallCache || Boolean(duplicateWarning)}
-                                variant={'pink'}
-                                className="cursor-pointer hover:scale-[1.05] shadow-sm h-8 px-4"
-                                onClick={handlePlot}
-                            >
-                            Plot
-                            </Button>
-                        </div>
-                    </div>
-                    <MetaInfo 
+                    <SwitchField
+                        id="compress-data"
+                        label="Compress"
+                        help="Compress data to preserve memory at the expense of slightly longer load times"
+                        checked={compress}
+                        onChange={setCompress}
+                    />
+                    <SwitchField id="coarsen" label="Coarsen" checked={coarsen} onChange={setCoarsen} />
+                    <Hider show={coarsen}>
+                        <Group>
+                            {dataShape.length >= 3 &&
+                                <Field label="Temporal (2ⁿ)" htmlFor="coarsen-depth">
+                                    <Input
+                                        id="coarsen-depth"
+                                        type='number'
+                                        min='0'
+                                        step={1}
+                                        value={displayDepth}
+                                        className="h-7"
+                                        onChange={(e) => {
+                                            setDisplayDepth(e.target.value);
+                                            setKernelDepth(Math.pow(2, parseInt(e.target.value)));
+                                        }}
+                                    />
+                                </Field>
+                            }
+                            <Field label="Spatial (2ⁿ)" htmlFor="coarsen-size">
+                                <Input
+                                    id="coarsen-size"
+                                    type='number'
+                                    min='0'
+                                    step={1}
+                                    value={displaySpat}
+                                    className="h-7"
+                                    onChange={(e) => {
+                                        setDisplaySpat(e.target.value);
+                                        setKernelSize(Math.pow(2, parseInt(e.target.value)));
+                                    }}
+                                />
+                            </Field>
+                        </Group>
+                    </Hider>
+                    <MetaInfo
                         tooBig={sizeData.tooBig} 
                         setCacheSize={setCacheSize} 
                         meta={meta} 
@@ -437,55 +453,17 @@ export const MetaData = ({ meta, metadata }: Props) => {
                         texCount={sizeData.texCount}
                         smallCache={smallCache}
                     />
-                </div>
-                <Hider show={coarsen}>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 bg-background p-3 rounded-md border text-sm">
-                    <div
-                        className="flex items-center justify-between sm:justify-start sm:gap-4"
-                        style={{ visibility: dataShape.length >= 3 ? 'visible' : 'hidden' }}
+                    <Button
+                        disabled={smallCache || Boolean(duplicateWarning)}
+                        variant={'pink'}
+                        className="w-full cursor-pointer shadow-sm"
+                        onClick={handlePlot}
                     >
-                        <span className="font-semibold">Temporal Coarsening</span>
-                        <div className="flex items-center gap-2">
-                        <Input
-                            type='number'
-                            min='0'
-                            step={1}
-                            value={displayDepth}
-                            className="w-16 h-8 text-center"
-                            onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            setDisplayDepth(e.target.value);
-                            setKernelDepth(Math.pow(2, val));
-                            }}
-                        />
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-start sm:gap-4">
-                        <span className="font-semibold">Spatial Coarsening</span>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                type='number'
-                                min='0'
-                                step={1}
-                                value={displaySpat}
-                                className="w-16 h-8 text-center"
-                                onChange={(e) => {
-                                const val = parseInt(e.target.value);
-                                setDisplaySpat(e.target.value);
-                                setKernelSize(Math.pow(2, val));
-                                }}
-                            />
-                        </div>
-                    </div>
-                    <div className="col-span-1 sm:col-span-2 text-xs text-muted-foreground/70 italic sm:text-center mt-1">
-                        Values represent 2ⁿ
-                    </div>
-                    </div>
-                </Hider>
+                        Plot
+                    </Button>
+                </div>
             </div>
-            <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-foreground/80">Active Dimensions</h3>
-            </div>
+            <span className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Dimensions</span>
             <div className='warn-box' style={{display: duplicateWarning ? '' : 'none'}}>
                 <b>{duplicateWarning}</b> set to multiple dimensions
             </div>
@@ -494,10 +472,10 @@ export const MetaData = ({ meta, metadata }: Props) => {
                 <div className="mt-6 mb-2" style={{display: deactiveDims ? '' : 'none'}}>
                     <button
                     onClick={() => setCollapsedOpen((o) => !o)}
-                    className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     >
                         {collapsedOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                        Collapsed dimensions
+                        Collapsed Dimensions
                     <span className="ml-1 text-muted-foreground/60 text-xs font-normal bg-muted px-1.5 py-0.5 rounded-full">{deactiveDims}</span>
                     </button>
                     <Hider show={collapsedOpen} className='ml-4'>

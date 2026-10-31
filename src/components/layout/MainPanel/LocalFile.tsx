@@ -19,7 +19,6 @@ interface LocalNCType {
 
 const LocalFile = ({ setOpenVariables}:LocalNCType) => {
     const {setStatus } = useGlobalStore.getState()
-    // const {ncModule} = useZarrStore.getState()
     const [ncError, setError] = useState<string | null>(null);
 
 	const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {

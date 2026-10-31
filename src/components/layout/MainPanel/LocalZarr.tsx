@@ -39,7 +39,6 @@ export async function LoadLocalZarr(files:File[]){
       // Open the Zarr store using the custom store
       let store = await zarr.withMaybeConsolidatedMetadata(customStore);
       if (!('contents' in store)){
-        console.log("Trying to parse?")
         // Metadata is missing. We will need to parse variables here. 
         store = await ZarrParser(files, customStore)
       }
