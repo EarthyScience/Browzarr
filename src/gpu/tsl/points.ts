@@ -46,7 +46,7 @@ export function createPointMaterial(bivariate: boolean){
 	const isNaN = select(u.bivariate, h.isNanVal(texel.r).or(h.isNanVal(texel.g)), h.isNanVal(rawValue)).toVar();
 	const biValues = varying(texel.rg)
     const spriteValue = varying(h.rescaler(rawValue))
-    const spriteCoord = texCoord
+    const spriteCoord = texCoord.mul(2).sub(1) // [-1, 1] to match raw x/y/zRange
     const pointColor = Fn(()=>{
         const color = vec3(0);
         If(u.bivariate, ()=>{
@@ -61,7 +61,7 @@ export function createPointMaterial(bivariate: boolean){
     
     const pointScaler = Fn(()=>{
         const pointScale = u.pointSize.toVar()
-        const p = spriteCoord
+        const p = spriteCoord;
         const multiplier = float(0.01);
         pointScale.mulAssign(multiplier)
         If(u.scaleByVal, ()=>{
