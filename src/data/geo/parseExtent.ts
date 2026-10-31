@@ -33,6 +33,17 @@ const checkForCRS = (metadata: Record<string, string>): string | undefined =>{
 
 export const parseExtent = async () => {
 	const {xArray, yArray} = getDimAxis()
+	if (typeof xArray[0] === 'bigint' || typeof yArray[0] === 'bigint'){ // e.g. transposed time axis. Not geographic
+		usePlotStore.setState({
+			nativeCRS: undefined,
+			lonExtent: [-180, 180], latExtent: [-90, 90],
+			lonResolution: 1, latResolution: 1,
+			originalExtent: [-180, 180, -90, 90],
+			is360Deg: false
+		})
+		useGlobalStore.setState({ borderCompatible: false })
+		return
+	}
 	const {metadata, variables, flipY} = useGlobalStore.getState()
 	const hasCRS = metadata ? hasAny(metadata, COMMON_CRS_NAMES) : false;
 	const hasPointer = metadata ? hasAny(metadata, COMMON_POINTER_NAMES) : false;

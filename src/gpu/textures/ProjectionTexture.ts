@@ -219,13 +219,14 @@ export function handleIrregularGrid(){
 
 export function reproject(resolution: number = 256){
     const {nativeCRS, destCRS, plotType, is360Deg, interpPixels} = usePlotStore.getState()
-	const {remapTexture, flipY } = useGlobalStore.getState()
+	const {remapTexture, flipY, borderCompatible } = useGlobalStore.getState()
     let {xArray, yArray} = getDimAxis();
 	const insufficientCRS = !nativeCRS || !destCRS
     if (remapTexture) remapTexture.dispose();
     useGlobalStore.setState({
         remapTexture:undefined
     })
+    if (!borderCompatible) return;
 	if (insufficientCRS || plotType == 'sphere'){
 		// If sphere, we check if irregularGrid. If so then create new texture. 
 		handleIrregularGrid()

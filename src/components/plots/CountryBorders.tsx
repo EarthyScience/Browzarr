@@ -175,8 +175,8 @@ const CountryBorders = () => {
     const [borders, setBorders] = useState<any>(null)
     const [swapSides, setSwapSides] = useState<boolean>(false)
 
-    const {dataShape, shape} = useGlobalStore(useShallow(s => ({
-        dataShape: s.dataShape, shape: s.shape
+    const {dataShape, shape, borderCompatible} = useGlobalStore(useShallow(s => ({
+        dataShape: s.dataShape, shape: s.shape, borderCompatible: s.borderCompatible
     })))
     const {zRange, plotType, showBorders, timeScale, rotateFlat, pointSize, useBorderTexture, is360Deg} = usePlotStore(useShallow(s => ({
         zRange: s.zRange, plotType: s.plotType, showBorders: s.showBorders, timeScale: s.timeScale, 
@@ -211,6 +211,7 @@ const CountryBorders = () => {
     const depthScale = isPC ? depthRatio : timeRatio/2
     const aspectRatio = (shape && shape.y > 0) ? (shape.x / shape.y) : 1;
     uniformUpdater();
+    if (!borderCompatible) return null; // e.g. bigint coords on x/y
     return(
         <group
             rotation={[rotateFlat ? -Math.PI/2 : 0, 0, 0]}
