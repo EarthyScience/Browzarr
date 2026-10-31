@@ -328,26 +328,12 @@ export function coarsenFlatArray(
 
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
 
-export function findClosest(arr: number[], target:number): [number, number] {
+export function findClosest(arr: ArrayLike<number | bigint>, target:number): [number | bigint, number] {
   let closest = arr[0];
-  let minDiff = Math.abs(target - closest);
+  let minDiff = Math.abs(target - Number(closest));
   let idx = 0;
   for (let i = 1; i < arr.length; i++) {
-    const diff = Math.abs(target - arr[i]);
-    if (diff < minDiff) {
-      minDiff = diff;
-      closest = arr[i];
-      idx = i;
-    }
-  }
-  return [closest, idx];
-}
-export function findClosestBigInt(arr: bigint[], target:bigint): [bigint, number] {
-  let closest = arr[0];
-  let minDiff = Math.abs(Number(target) - Number(closest));
-  let idx = 0;
-  for (let i = 1; i < arr.length; i++) {
-    const diff = Math.abs(Number(target) - Number(arr[i]));
+    const diff = Math.abs(target - Number(arr[i]));
     if (diff < minDiff) {
       minDiff = diff;
       closest = arr[i];

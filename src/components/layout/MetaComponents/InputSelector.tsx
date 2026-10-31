@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button-enhanced';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { MinusIcon, PlusIcon } from 'lucide-react';
-import { clamp, findClosest, findClosestBigInt, parseLoc, parseTimeScale } from '@/lib/helpers';
+import { clamp, findClosest, parseLoc, parseTimeScale } from '@/lib/helpers';
 import { parse } from 'date-fns';
 
 interface InputProps{
@@ -53,12 +53,12 @@ export const InputSelector = ({array, idx, units, useRaw, setIdx} : InputProps) 
         }
         if (!isTime){
             const numberVal = parseFloat(val)
-            const [nearestVal, newIdx] = findClosest(array as number[], numberVal);
-            setLocal(nearestVal);
+            const [nearestVal, newIdx] = findClosest(array, numberVal);
+            setLocal(String(nearestVal));
             setIdx(newIdx);
         } else {
             const numberVal = dateToNumber(val, units)
-            const [nearestVal, newIdx] = findClosestBigInt(array as bigint[], BigInt(numberVal));
+            const [nearestVal, newIdx] = findClosest(array, numberVal);
             setLocal(parseLoc(nearestVal, units));
             setIdx(newIdx);
         }
