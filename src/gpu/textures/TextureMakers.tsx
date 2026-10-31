@@ -14,7 +14,6 @@ function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxV
     const len = array.length
     const invRange = 1 / (maxVal - minVal)
     let textureData: Uint8Array | Uint16Array
-    // Branch once outside the loop; normed !== normed is a cheap NaN check
     if (useF16) {
         textureData = new Uint16Array(len)
         const nanHalf = THREE.DataUtils.toHalfFloat(NaN)
@@ -74,7 +73,6 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
     const chunkData = chunkArray(textureData, {z:lz, y:ly, x:lx}, chunkSize, useF16, numComponents)
     const chunks = []
     for (const chunk of chunkData){   
-        //@ts-ignore stop whining
         const volTexture = new THREE.Data3DTexture(chunk.data, chunk.dims.x, chunk.dims.y, chunk.dims.z);
         volTexture.format = format;
         volTexture.minFilter = THREE.NearestFilter;
@@ -119,7 +117,6 @@ export function storeBivariate(valueScales: {minVal: number, maxVal: number}[], 
 		const array = GetCurrentArray(undefined, thisVar);
 		const {minVal, maxVal} = shareScale ? absoluteScales : valueScales[idx];
         const invRange = 1 / (maxVal - minVal)
-        // Branch once outside the loop; x !== x is a cheap NaN check
         if (useF16) {
             const nanHalf = THREE.DataUtils.toHalfFloat(NaN)
             for (let i = 0, j = idx; i < dataLength; i++, j += 2) {
