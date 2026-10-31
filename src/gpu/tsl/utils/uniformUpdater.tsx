@@ -124,7 +124,15 @@ export function uniformUpdater(){
 
     // --- VOLUME UNIFORMS ---//
     useEffect(()=>{
-        if (plotType == 'point-cloud') return;
+        if (plotType == 'point-cloud') {
+            // Point cloud compares against unscaled [-1,1] coords
+            u.flatBounds.value.set(-xRange[1], -xRange[0], zRange[0], zRange[1]);
+            u.vertBounds.value.set(
+                flipY ? -yRange[1] : yRange[0],
+                flipY ? -yRange[0] : yRange[1],
+            );
+            return;
+        }
         const aspectRatio = shape.y/shape.x
 	    const timeRatio = shape.z/shape.x;
         u.volumeScale.value = shape;
@@ -137,7 +145,7 @@ export function uniformUpdater(){
             ? new THREE.Vector3(remapTexture.image.width, remapTexture.image.height, dataShape[0])
             : new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])
         u.steps.value = quality;
-    },[shape, xRange, yRange, zRange, dataShape, quality, flipY, remapTexture])
+    },[shape, xRange, yRange, zRange, dataShape, quality, flipY, remapTexture, plotType])
 
     // --- DISPLACEMENT UNIFORMS ---//
      useEffect(()=>{
