@@ -71,13 +71,16 @@ interface RescalerIn{array:Float16Array | Uint8Array;
 }
 
 function rescaler({array, delta, compressed}:RescalerIn){
+    const t0 = performance.now();
+    const ms = () => performance.now() - t0;
     if (compressed){
         const decompressed = DecompressArray(array as Uint8Array)
         RescaleArray(decompressed, delta);
-        return { array: CompressArray(decompressed, 7) }
+        const out = CompressArray(decompressed, 7);
+        return { array: out, ms: ms() }
     } else {
         RescaleArray(array as Float16Array, delta);
-        return {array}
+        return {array, ms: ms()}
     }
 }
     
@@ -88,5 +91,5 @@ export const tasks = {
     decompress: (d: {array:Uint8Array}): {newArray: Float16Array} => decompressArray(d),
     processChunk: (d: processIn) : Promise<processOut> => processChunk(d),
     textureData: (d: textureIn) : textureOut => createTextureData(d),
-    rescaler: (d: RescalerIn) : {array: Float16Array | Uint8Array} => rescaler(d)
+    rescaler: (d: RescalerIn) : {array: Float16Array | Uint8Array, ms: number} => rescaler(d)
 };

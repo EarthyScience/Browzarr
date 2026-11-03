@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as perf from '@/lib/perf';
 import * as THREE from 'three';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { usePlotStore } from '@/stores/PlotStore';
@@ -35,6 +36,7 @@ export const useDataFetcher = () => {
     const arrayGetter = useGT ? getRasterData : GetArray
     useEffect(() => {
         if (variable) {
+            perf.beginLoad(`${useGlobalStore.getState().initStore}/${variable}`);
             // Could remove this. But I think it looks better to just wipe then have an empty texture.
             // ---- RESET STATES ---- //
             setShow(false);

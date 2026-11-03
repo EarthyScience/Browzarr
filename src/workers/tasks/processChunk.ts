@@ -30,15 +30,21 @@ export interface processOut{
     thisShape: number[];
     chunkStride: number[];
     range: {min: number, max: number}
+    timings: {stage: string, start: number, ms: number}[]
 }
 
 export async function processChunk({raw, fillValue, scalingFactor, coarsen, compress, hasZ, indices, kernelInfo}:processIn): Promise<processOut>{
     const {kernelSize, kernelDepth} = kernelInfo;
     const {zIndexInRaw, yIndexInRaw, xIndexInRaw} = indices;
+    // Bench timings; start is absolute (timeOrigin-based) so the main thread can place it
+    const timings: processOut['timings'] = [];
+    let t0 = performance.now();
+    const lap = (stage: string) => { const t = performance.now(); timings.push({stage, start: performance.timeOrigin + t0, ms: t - t0}); t0 = t; };
     const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
     
     const [chunkF16Raw, newScalingFactor, range] = ToFloat16(rawData, scalingFactor);
     let chunkF16 = chunkF16Raw;
+    lap('float16');
 
     let thisShape = hasZ ? [raw.shape[zIndexInRaw], raw.shape[yIndexInRaw], raw.shape[xIndexInRaw]] : [raw.shape[yIndexInRaw], raw.shape[xIndexInRaw]];
     let chunkStride = hasZ ? [raw.stride[zIndexInRaw], raw.stride[yIndexInRaw], raw.stride[xIndexInRaw]] : [raw.stride[yIndexInRaw], raw.stride[xIndexInRaw]];
@@ -57,7 +63,11 @@ export async function processChunk({raw, fillValue, scalingFactor, coarsen, comp
             chunkF16 = coarsen3DArray(chunkF16, paddedShape, paddedStride, kernelSize, 1, thisShape.reduce((a, b) => a * b, 1));
         }
         chunkStride = calculateStrides(thisShape);
+        lap('coarsen');
     }
 
-    return {chunkF16: compress ? CompressArray(chunkF16, 7) : chunkF16, newScalingFactor, thisShape, chunkStride, range}
+    t0 = performance.now();
+    const out = compress ? CompressArray(chunkF16, 7) : chunkF16;
+    if (compress) lap('gzip');
+    return {chunkF16: out, newScalingFactor, thisShape, chunkStride, range, timings}
 }

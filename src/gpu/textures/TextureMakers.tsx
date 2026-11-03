@@ -2,6 +2,7 @@
 import { GetCurrentArray, TypedArray, TypedArrayBufferLike } from '@/lib/helpers';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import * as THREE from 'three';
+import * as perf from '@/lib/perf';
 
 interface Array {
     data: TypedArray | TypedArrayBufferLike;
@@ -88,13 +89,14 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
 export function createDataTexture(){
   const { dataShape, bivariate, valueScales, setMainTextures} = useGlobalStore.getState();
   if (bivariate){
-    storeBivariate(valueScales);
+    perf.note('bivariate: cache assembly included in uint8Normalize');
+    perf.time('uint8Normalize', () => storeBivariate(valueScales));
   }
   else{
-    const dataArray = GetCurrentArray();
-    StoreData(dataArray, valueScales[0]);
+    const dataArray = perf.time('cacheAssemble', () => GetCurrentArray());
+    perf.time('uint8Normalize', () => StoreData(dataArray, valueScales[0]));
   }
-  const textures = CreateTexture(dataShape);
+  const textures = perf.time('textureCreate', () => CreateTexture(dataShape));
   setMainTextures(textures);
 }
 

@@ -44,7 +44,7 @@ export default function ClientRoot({
 				<ThemeSwitch />
 			</div>
 			<main className="min-h-screen">{children}</main>
-			<Footer />
+			{/* <Footer /> */}
 		</ThemeProvider>
 	);
 }

@@ -4,6 +4,7 @@ import { useErrorStore, ZarrError } from '@/stores/ErrorStore';
 import { GetSize } from './utils';
 import * as zarr from 'zarrita';
 import { calculateStrides } from '@/lib/helpers';
+import * as perf from '@/lib/perf';
 
 interface FetchOutput{
     data: Float32Array
@@ -70,7 +71,10 @@ export function zarrFetcher() {
         },
         async fetchChunk(variable: string, selection: Selection): Promise<FetchOutput> {
             const chunkSlice = selection.map(s => Array.isArray(s) ? zarr.slice(s[0], s[1]) : s);
+            // zarr.get fetches and decodes together; decode = total - network time spent in this call
+            const t0 = perf.now(), net0 = perf.sumOf('chunkFetch');
             const chunk = await fetchWithRetry(() => zarr.get(outVar, chunkSlice), `variable ${variable}`, useGlobalStore.getState().setStatus);
+            perf.add('decode', Math.max(0, perf.now() - t0 - (perf.sumOf('chunkFetch') - net0)), t0);
             if (!chunk || chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array) {
                 throw new Error("BigInt arrays not supported.");
             }
@@ -106,7 +110,8 @@ export function NCFetcher() {
         async fetchChunk(variable: string, selection: Selection): Promise<FetchOutput> {
             const starts = selection.map(s => Array.isArray(s) ? s[0] : s);
             const counts = selection.map(s => Array.isArray(s) ? s[1] - s[0] : 1);
-            const data = await ncModule.getSlicedVariableArray(variable, starts, counts);
+            perf.note('netcdf: read+decode are one wasm call, reported as fetchDecode');
+            const data = await perf.time('fetchDecode', () => ncModule.getSlicedVariableArray(variable, starts, counts));
             // Scalar dims are collapsed so shape matches Zarrita behavior
             const shape = selectionShape(selection);
             return { data, shape, stride: calculateStrides(shape) };

@@ -6,6 +6,7 @@ import { usePlotStore } from "@/stores/PlotStore";
 import { useZarrStore } from "@/stores/ZarrStore";
 import { getPool } from "@/workers/pool";
 import { NCFetcher, Selection, zarrFetcher } from "./dataFetchers";
+import * as perf from "@/lib/perf";
 
 type Range = [number, number];
 
@@ -15,7 +16,7 @@ export async function GetArray(varOveride?: string) {
     const { cache } = useCacheStore.getState();
     const fetcher = useNC ? NCFetcher() : zarrFetcher();
     const targetVariable = (varOveride ?? variable) as string;
-    const { shape, chunkShape, fillValue, dtype } = await fetcher.getMetadata(targetVariable);
+    const { shape, chunkShape, fillValue, dtype } = await perf.time('metadata', () => fetcher.getMetadata(targetVariable));
     const rank = shape.length;
     const pool = getPool();
 
@@ -93,6 +94,7 @@ export async function GetArray(varOveride?: string) {
                     if (cached?.complete &&
                         cached.kernel.kernelSize === kernel.kernelSize &&
                         cached.kernel.kernelDepth === kernel.kernelDepth) {
+                        perf.cacheHit(true);
                         cache.set(cacheName, { ...cached, sliceStart });
                         chunkScalingFactors[chunkID] = cached.scaling;
                         if(Number.isFinite(cached.range.min)) minVals.push(cached.range.min)
@@ -100,6 +102,7 @@ export async function GetArray(varOveride?: string) {
                         setProgress(Math.round(++done / totalChunks * 100));
                         continue;
                     }
+                    perf.cacheHit(false);
                     // Only fetch the part of the chunk that overlaps the request
                     const bounds = [z, y, x].map((c, i): Range => [c * chunkDims[i], Math.min((c + 1) * chunkDims[i], extents[i])]);
                     const piece = bounds.map(([lo, hi], i): Range => [Math.max(lo, slices[i][0]), Math.min(hi, slices[i][1])]);
@@ -110,7 +113,8 @@ export async function GetArray(varOveride?: string) {
                     jobs.push(pool.dispatch('processChunk',
                         { raw, coarsen, compress, hasZ, kernelInfo, indices, scalingFactor: undefined, fillValue },
                         [raw.data.buffer]
-                    ).then(({ chunkF16, thisShape, chunkStride, newScalingFactor, range }) => {
+                    ).then(({ chunkF16, thisShape, chunkStride, newScalingFactor, range, timings }) => {
+                        for (const t of timings) perf.add(t.stage as perf.Stage, t.ms, t.start - performance.timeOrigin);
                         chunkScalingFactors[chunkID] = newScalingFactor;
                         if(Number.isFinite(range.min)) minVals.push(range.min)
                         if(Number.isFinite(range.max)) maxVals.push(range.max)
@@ -143,7 +147,10 @@ export async function GetArray(varOveride?: string) {
             const cacheName = `${cacheBase}_chunk_${id}`;
             const chunk = cache.get(cacheName);
             const {data, compressed} = chunk
-            const { array } = await pool.dispatch('rescaler', { array: data, delta: maxScaling - (f ?? 0), compressed }, [data.buffer]);
+            const t0 = perf.now();
+            const { array, ms } = await pool.dispatch('rescaler', { array: data, delta: maxScaling - (f ?? 0), compressed }, [data.buffer]);
+            // Count worker compute time; wall span (incl. transfer/queueing) shows in wallMs
+            perf.add('rescaleAll', ms, t0);
             cache.set(cacheName, { ...chunk, data: array, scaling: maxScaling });
         }));
     const scalingFactor = maxScaling !== 0 ? maxScaling : undefined;

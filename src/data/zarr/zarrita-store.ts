@@ -4,6 +4,24 @@ import { useGlobalStore } from "@/stores/GlobalStore";
 import { useErrorStore, ZarrError } from "@/stores/ErrorStore";
 import { useCacheStore } from "@/stores/CacheStore";
 import { getDtypeSize, calculateTotalElements, calculateChunkCount, formatBytes } from "./utils";
+import * as perf from "@/lib/perf";
+
+// Bench: time raw network requests for chunk keys (metadata keys are timed by the caller)
+const META_KEY = /(\.zarray|\.zattrs|\.zgroup|\.zmetadata|zarr\.json)$/;
+function instrumentFetchStore(store: zarr.FetchStore) {
+	for (const name of ['get', 'getRange'] as const) {
+		const orig = (store as any)[name]?.bind(store);
+		if (!orig) continue;
+		(store as any)[name] = async (key: string, ...rest: unknown[]) => {
+			if (META_KEY.test(key)) return orig(key, ...rest);
+			const t0 = perf.now();
+			const out = await orig(key, ...rest);
+			perf.add('chunkFetch', perf.now() - t0, t0);
+			if (out) perf.addBytes(out.byteLength);
+			return out;
+		};
+	}
+}
 
 export async function getFetchStore(
   storePath: string,
@@ -14,14 +32,14 @@ export async function getFetchStore(
 
   for (let attempt = 0; ; attempt++) {
     try {
-      const store = await zarr.withMaybeConsolidatedMetadata(
-        new zarr.FetchStore(storePath, {
-          overrides: {
-            headers: fetchOptions?.headers,
-            ...(fetchOptions?.withCredentials && { credentials: 'include' }),
-          },
-        })
-      );
+      const fetchStore = new zarr.FetchStore(storePath, {
+        overrides: {
+          headers: fetchOptions?.headers,
+          ...(fetchOptions?.withCredentials && { credentials: 'include' }),
+        },
+      });
+      if (perf.BENCH) instrumentFetchStore(fetchStore);
+      const store = await zarr.withMaybeConsolidatedMetadata(fetchStore);
       const gs = await zarr.open(store, { kind: 'group' });
       useGlobalStore.setState({ status: null });
       return gs;

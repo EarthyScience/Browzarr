@@ -17,6 +17,9 @@ import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/gpu/textures/ProjectionTexture';
 import { GetCurrentArray } from '@/lib/helpers';
 import * as u from '@/gpu/tsl/utils/uniforms'
+import * as perf from '@/lib/perf';
+import { PerfProbe, instrumentRenderer } from '@/components/perf/PerfProbe';
+import { PerfOverlay } from '@/components/perf/PerfOverlay';
 const TransectNotice = () =>{
   const selectTS = usePlotStore(s => s.selectTS)
   return (
@@ -234,6 +237,7 @@ const Plot = () => {
       {show && <Colorbar metadata={stableMetadata}/>}
       <Nav />
       <ShaderEditor visible={useEditor}/>
+      {perf.BENCH && <PerfOverlay/>}
       <Canvas id='main-canvas' camera={{ position: isFlat ? [0,0,5] : [-4.5, 3, 4.5], fov: 50 }}
         flat
         linear
@@ -242,11 +246,13 @@ const Plot = () => {
           const adapter = await navigator.gpu?.requestAdapter()
           const maxDim = adapter?.limits.maxTextureDimension2D ?? 8192
           const renderer = new THREE.WebGPURenderer({...(props as any), 
+            trackTimestamp: perf.BENCH,
             requiredLimits:{
             maxTextureDimension2D: Math.min(16384, maxDim),
             }
           })
           await renderer.init()
+          if (perf.BENCH) instrumentRenderer(renderer)
           const canvas = props.canvas as HTMLCanvasElement
           renderer.setPixelRatio(DPR)
           renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
@@ -255,6 +261,7 @@ const Plot = () => {
         dpr={[DPR,DPR]}
       >
         <KeyFramePreviewer/>
+        {perf.BENCH && show && <PerfProbe/>}
         {show && <CountryBorders/>}
         <ExportCanvas show={show}/>
         {show && <AxisLines />}
