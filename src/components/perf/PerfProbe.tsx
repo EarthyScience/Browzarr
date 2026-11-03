@@ -67,7 +67,7 @@ const REFRESH_RATES = [30, 60, 75, 90, 120, 144, 165, 240];
 // Fixed orbit so every run renders the same views: same start, radius and path
 // regardless of where the user left the camera. 3D plots do one full revolution
 // per run; flat plots sway ±30° since a full turn would view the plane edge-on.
-const ORBIT = { radius: 7, height: 3, startAngle: -Math.PI / 4, flatRadius: 5, flatSway: Math.PI / 6 };
+const ORBIT = { radius: 4, height: 3, startAngle: -Math.PI / 4, flatRadius: 5, flatSway: Math.PI / 6 };
 let orbit: { t0: number; ms: number; flat: boolean } | null = null;
 
 function orbitPosition(out: THREE.Vector3, progress: number, flat: boolean) {
