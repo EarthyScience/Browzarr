@@ -28,6 +28,32 @@ const GetBivariateCbarGeometry = (width: number, height: number) => {
     }
 }
 
+const GetCbarGeometry = (width: number, height: number) => {
+    const { doubleSize, cbarLoc } = useImageExportStore.getState()
+    const { bivariate } = useGlobalStore.getState()
+    if (bivariate){
+        const {size, cbarStartPos, cbarTop} = GetBivariateCbarGeometry(width, height)
+        return {cbarStartPos, cbarTop, cbarWidth: size, cbarHeight: size}
+    }
+    const length = doubleSize ? Math.min(1024, width*0.8) : Math.min(512, width*0.8)
+    const thickness = doubleSize ? 48 : 24
+    const margin = doubleSize ? 140 : 70
+    if (cbarLoc === 'right' || cbarLoc === 'left'){
+        return {
+            cbarStartPos: cbarLoc === 'right' ? width - margin : margin,
+            cbarTop: Math.round(height/2 - length/2),
+            cbarWidth: thickness,
+            cbarHeight: length
+        }
+    }
+    return {
+        cbarStartPos: Math.round(width/2 - length/2),
+        cbarTop: cbarLoc === 'top' ? margin : height - margin,
+        cbarWidth: length,
+        cbarHeight: thickness
+    }
+}
+
 const DrawText = (
     //Context and cbarlocs
     ctx: CanvasRenderingContext2D,
@@ -41,7 +67,7 @@ const DrawText = (
 
     const {variable, variable2, units, bivariate } = useGlobalStore.getState()
     const valueScales = getValueScales();
-    let {cbarStartPos, cbarTop, cbarWidth, cbarHeight} = cbarLocs;
+    const {cbarStartPos, cbarTop, cbarWidth, cbarHeight} = cbarLocs;
     const transpose = cbarLoc === 'right' || cbarLoc === 'left'
     const cbarTickSize = doubleSize ? 36 : 18
     const unitSize = doubleSize ? 52 : 26
@@ -105,23 +131,23 @@ const DrawText = (
         const valRange = valueScales.maxVal-valueScales.minVal;
         const valScale = 1/(labelNum-1)
         const posDelta = transpose ? 1/(labelNum-1)*cbarHeight : 1/(labelNum-1)*cbarWidth
+        const scaleFactor = Math.pow(10, useGlobalStore.getState().scalingFactors[0] ?? 0)
+        const tickLabel = (i: number) => Num2String((valueScales.minVal+(i*valScale*valRange))*scaleFactor)
         if (transpose){
-            cbarTop = Math.round(height/2 - cbarHeight/2)
-            cbarStartPos = cbarLoc === 'right' ? (doubleSize ? width - 140 : width - 70) : (doubleSize ? 140 : 70)
             ctx.textBaseline = 'middle'
             ctx.textAlign = cbarLoc == 'left' ? 'left' : 'right'
             for (let i =0; i < labelNum; i++){
                 if (cbarLoc == 'left'){
-                    ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos+cbarWidth+6, cbarTop+cbarHeight-i*posDelta) 
+                    ctx.fillText(tickLabel(i), cbarStartPos+cbarWidth+6, cbarTop+cbarHeight-i*posDelta)
                 } else{
-                    ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos-6, cbarTop+cbarHeight-i*posDelta) 
+                    ctx.fillText(tickLabel(i), cbarStartPos-6, cbarTop+cbarHeight-i*posDelta)
                 }
             }
         }else{
             ctx.textBaseline = 'top'
             ctx.textAlign = 'center'
             for (let i =0; i < labelNum; i++){
-                ctx.fillText(String((valueScales.minVal+(i*valScale*valRange)).toFixed(2)), cbarStartPos+i*posDelta, cbarTop+cbarHeight+6) 
+                ctx.fillText(tickLabel(i), cbarStartPos+i*posDelta, cbarTop+cbarHeight+6)
             }
         }
 
@@ -155,7 +181,7 @@ const DrawComposite = (
 ): HTMLCanvasElement | undefined => {
 
     const {bgColor, textColor} = colors;
-    const { doubleSize, includeBackground, cbarLoc, includeColorbar} = useImageExportStore.getState()
+    const { includeBackground, cbarLoc, includeColorbar} = useImageExportStore.getState()
     const { bivariate } = useGlobalStore.getState()
     const ctx = compositeCanvas.getContext('2d')
     if (!ctx){return}
@@ -170,53 +196,25 @@ const DrawComposite = (
     }
     ctx.drawImage(gl.domElement, 0, 0, width, height) 
 
-    let cbarWidth = doubleSize ? Math.min(1024, width*0.8)  : Math.min(512, width*0.8)
-    let cbarHeight = doubleSize ? 48: 24;
-
-    let cbarStartPos = Math.round(width/2 - cbarWidth/2)
-    let cbarTop = cbarLoc === 'top' ? (doubleSize ? 140 : 70) : (doubleSize ? height - 140 : height-70)
+    const {cbarStartPos, cbarTop, cbarWidth, cbarHeight} = GetCbarGeometry(width, height)
     const transpose = cbarLoc === 'right' || cbarLoc === 'left'
 
     // ---- COLORBAR ---- //
     if (includeColorbar){
         if (bivariate){
-            const {size, cbarStartPos: sqX, cbarTop: sqY} = GetBivariateCbarGeometry(width, height)
-            ctx.drawImage(getBivariateCanvas(size), sqX, sqY, size, size)
-            cbarStartPos = sqX
-            cbarTop = sqY
-            cbarWidth = size
-            cbarHeight = size
+            ctx.drawImage(getBivariateCanvas(cbarWidth), cbarStartPos, cbarTop, cbarWidth, cbarHeight)
         } else {
         const secondCanvas = document.getElementById('colorbar-canvas')
         if (secondCanvas instanceof HTMLCanvasElement) {
             if (transpose) {
-                [cbarWidth, cbarHeight] = [cbarHeight, cbarWidth] // Swap values
-                cbarTop = Math.round(height/2 - cbarHeight/2)
-                cbarStartPos = cbarLoc === 'right' ? (doubleSize ? width - 140 : width - 70) : (doubleSize ? 140 : 70)
-                // Save the current canvas state
                 ctx.save()
-                
-                // Calculate the center point for rotation
-                const centerX = cbarStartPos + cbarWidth/2
-                const centerY = cbarTop + cbarHeight/2
-                
-                // Move to the center point
-                ctx.translate(centerX, centerY)
-                
-                // Rotate anti-clockwise
+                // Rotate anti-clockwise around the colorbar center
+                ctx.translate(cbarStartPos + cbarWidth/2, cbarTop + cbarHeight/2)
                 ctx.rotate(-Math.PI / 2)
-                
-                // Draw the image centered at the origin (since we translated to center)
-                // Use original dimensions since we're rotating the canvas context
-                const originalWidth = doubleSize ? 1024 : 512
-                const originalHeight = doubleSize ? 48 : 24
-                ctx.drawImage(secondCanvas, -originalWidth/2, -originalHeight/2, originalWidth, originalHeight)
-                
-                // Restore the canvas state
+                // In the rotated frame the long side (cbarHeight) runs along x
+                ctx.drawImage(secondCanvas, -cbarHeight/2, -cbarWidth/2, cbarHeight, cbarWidth)
                 ctx.restore()
-            }else if(cbarLoc === 'top'){
-                ctx.drawImage(secondCanvas, cbarStartPos, cbarTop, cbarWidth, cbarHeight)
-            }else{
+            } else {
                 ctx.drawImage(secondCanvas, cbarStartPos, cbarTop, cbarWidth, cbarHeight)
             }
         }
@@ -243,7 +241,6 @@ async function DrawTextOverlay(
     ffmpeg: FFmpeg
 ){
     const scaling = 4;
-    const { doubleSize, cbarLoc } = useImageExportStore.getState();
     const textCanvas = document.createElement("canvas");
     textCanvas.width = width * scaling;
     textCanvas.height = height * scaling;
@@ -252,35 +249,10 @@ async function DrawTextOverlay(
 
     ctx.scale(scaling, scaling)
 
-    let cbarWidth = doubleSize ? Math.min(1024 , width*0.8)  : Math.min(512 , width*0.8)
-    let cbarHeight = doubleSize ? 48 : 24;
-
-    const transpose = cbarLoc === 'right' || cbarLoc === 'left'
-    if (transpose) {
-        [cbarWidth, cbarHeight] = [cbarHeight, cbarWidth] // Swap values
-    }
-    let cbarStartPos = Math.round(width/2 - cbarWidth/2)
-    let cbarTop;
-    if (transpose) {
-        cbarTop = (height / 2) - (cbarHeight / 2)
-        cbarStartPos = cbarLoc === 'right' ? (width - (doubleSize ? 140 : 70)) : (doubleSize ? 140 : 70)
-    } else {
-        cbarTop = cbarLoc === 'top' ? (doubleSize ? 140 : 70) : (height - (doubleSize ? 140 : 70))
-    }
-
-    const { bivariate } = useGlobalStore.getState();
-    if (bivariate){
-        const {size, cbarStartPos: sqX, cbarTop: sqY} = GetBivariateCbarGeometry(width, height)
-        cbarStartPos = sqX
-        cbarTop = sqY
-        cbarWidth = size
-        cbarHeight = size
-    }
-
     // ---- TEXT ---- //
     DrawText(
         ctx,
-        {cbarStartPos, cbarTop, cbarWidth, cbarHeight},
+        GetCbarGeometry(width, height),
         width,
         height,
         textColor
@@ -448,15 +420,15 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                 const radius = Math.sqrt(originalPos.x ** 2 + originalPos.z ** 2);
                 const originalAngle = Math.atan2(originalPos.x, originalPos.z);
                 let keyFrameIdx = 0;
+                const currentSize = new THREE.Vector2();
                 for (let frame=0; frame<frames; frame++){
                     // ----- UPDATE VISUALS ---- //
                     if (orbit){
-                        const angle = (frame / (frames+1)) * deg2rad(orbitDeg);
+                        const angle = (frame / frames) * deg2rad(orbitDeg); // Last frame stops one step short so 360° loops seamlessly
                         const newAngle = originalAngle + (orbitDir ? -angle : angle);
                         camera.position.x = radius * Math.sin(newAngle);
                         camera.position.z = radius * Math.cos(newAngle);
                         camera.lookAt(0, 0, 0);
-                        camera.updateProjectionMatrix();
                         !(useCustomRes || doubleSize) && invalidate(); // We will invalidate later if needed. Otherwise do it now
                     }
                     if (useTime){
@@ -523,12 +495,15 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                         });
                         camera.position.copy(lerpedCamState.position)
                         camera.rotation.copy(lerpedCamState.rotation)
-                        camera.updateProjectionMatrix();
                         !(useCustomRes || doubleSize) && invalidate();
                     }
 
                     }
-                    if (useCustomRes || doubleSize){
+                    // R3F can reset the renderer size mid-export (e.g. after the DPR change), so only
+                    // re-apply when it drifted instead of reallocating the drawing buffer every frame
+                    gl.getSize(currentSize)
+                    const aspectDrifted = camera instanceof THREE.PerspectiveCamera && camera.aspect !== docWidth / docHeight
+                    if (currentSize.x !== docWidth || currentSize.y !== docHeight || aspectDrifted){
                         SetCamera()
                     }
                     // ----- RENDER TO CANVAS---- //
