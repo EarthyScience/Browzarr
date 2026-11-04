@@ -3,14 +3,12 @@ import React, {ChangeEvent, useState} from 'react'
 import { Input } from '@/components/ui/input'
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { loadNetCDF, NETCDF_EXT_REGEX } from '@/data/loaders/loadNetCDF';
-import { saveFile } from '@/lib/IndexDB';
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from '@/components/ui/alert';
 import { isMobile } from '../MobileUIHider';
-import { useZarrStore } from '@/stores/ZarrStore';
 import { loadGeoTiff, GEOTIFF_EXT_REGEX } from '@/data/loaders/loadGeoTiff';
 
 interface LocalNCType {
@@ -37,9 +35,6 @@ const LocalFile = ({ setOpenVariables}:LocalNCType) => {
     } else{
       try {
         if (!(await loadNetCDF(file))) throw new Error('Could not open NetCDF');
-        const blobKey = `local_${file.name}`
-        await saveFile(file, blobKey)
-        useZarrStore.setState({blobKey})
         setOpenVariables(true)
       } catch (e) {
         setError(`Failed to load file: ${e instanceof Error ? e.message : String(e)}`);
