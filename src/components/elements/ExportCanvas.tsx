@@ -63,6 +63,7 @@ const DrawText = (
     ctx.fillText("browzarr.io", doubleSize ? 20 : 10, doubleSize ? height - 20 : height - 10) // Watermark
 
     if (includeColorbar){
+        ctx.fillStyle = textColor // Reset from watermark gray
         if (bivariate){
             // ---- TickLabels ---- //
             const {size, cbarStartPos: sqX, cbarTop: sqY} = GetBivariateCbarGeometry(width, height)
@@ -126,7 +127,7 @@ const DrawText = (
 
         // ---- Cbar Label/Units ---- //
         ctx.fillStyle = textColor
-        ctx.font = `${unitSize}px "Segoe UI" bold`
+        ctx.font = `bold ${unitSize}px "Segoe UI"`
         ctx.textAlign = 'center'
         const cbarString = `${cbarLabels[0]?? variable} [${cbarUnits[0]?? units[0]}]`
         if (transpose){
@@ -309,6 +310,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
     const bgColor = useCSSVariable('--background')
     const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const ffmpegRef = useRef(new FFmpeg());
+    const isExportingRef = useRef(false);
 
     useEffect(()=>{
         //The first time show is true, this will trigger an export if coming from code
@@ -322,6 +324,8 @@ const ExportCanvas = ({show}:{show: boolean}) => {
     },[show])
     useEffect(()=>{   
         if (!show || !enableExport) return;
+        if (isExportingRef.current) return; // Don't start a second export while one is running
+        isExportingRef.current = true;
         const {animProg} = usePlotStore.getState()
         const origQuality = usePlotStore.getState().quality;
         const dpr = useGlobalStore.getState().DPR;
@@ -333,8 +337,8 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         let docWidth = useCustomRes ? customRes[0] : (doubleSize ? domWidth * 2 : domWidth);
         let docHeight = useCustomRes ? customRes[1] : (doubleSize ? domHeight * 2 : domHeight);
         // Ensure even dimensions for encoding
-        docWidth /= dpr;
-        docHeight /= dpr;
+        docWidth = Math.floor(docWidth / dpr);
+        docHeight = Math.floor(docHeight / dpr);
         docWidth -= docWidth % 2;
         docHeight -= docHeight % 2;
         // Initialize Reusable Canvas
@@ -382,21 +386,55 @@ const ExportCanvas = ({show}:{show: boolean}) => {
             invalidate();
         }
         SetCamera(true);
+        const originalPosition = camera.position.clone();
+        const originalRotation = camera.rotation.clone();
+
+        function Restore(){
+            setHideAxis(false)
+            setHideAxisControls(false)
+            // Reset Camera Settings
+            if (camera instanceof THREE.PerspectiveCamera) {
+                camera.aspect = originalCameraSettings.aspect;
+            } else if (camera instanceof THREE.OrthographicCamera) {
+                camera.left = originalCameraSettings.left;
+                camera.right = originalCameraSettings.right;
+                camera.top = originalCameraSettings.top;
+                camera.bottom = originalCameraSettings.bottom;
+            }
+            camera.position.copy(originalPosition);
+            camera.rotation.copy(originalRotation);
+            gl.setSize(originalSize.x, originalSize.y);
+            camera.updateProjectionMatrix();
+            invalidate();
+            setQuality(origQuality);
+            useGlobalStore.setState({DPR: dpr})
+            isExportingRef.current = false;
+        }
+
         if (animate){
             usePlotStore.setState({animate:false}) // Disable animation if currently active
             const {keyFrames} = useImageExportStore.getState()
             const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
+            // Snapshot plot state touched by keyframes so it can be restored afterwards
+            const origVizState: Record<string, any> = {};
+            if (keyFrameList?.length){
+                const plotState = usePlotStore.getState() as Record<string, any>;
+                Object.keys(keyFrames?.get(keyFrameList[0])?.["visual"] ?? {}).forEach(key => {
+                    origVizState[key] = plotState[key];
+                });
+            }
+            const ffmpeg = ffmpegRef.current;
+            const onProgress = ({ progress }: { progress: number }) => {
+                // progress is a value between 0 and 1
+                setProgress(Math.min(Math.round(progress * 100), 100));
+            };
             async function Animate(){
                 setStatus("Loading Module")
-                const ffmpeg = ffmpegRef.current;
                 if (!ffmpeg.loaded) {
                     await ffmpeg.load();
                 }
 
-                ffmpeg.on('progress', ({ progress, time }) => {
-                    // progress is a value between 0 and 1
-                    setProgress(Math.min(Math.round(progress * 100), 100));
-                });
+                ffmpeg.on('progress', onProgress);
 
                 setStatus("Rendering Frames")
 
@@ -452,7 +490,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                                 if (typeof sourceValue === 'number' && typeof targetValue === 'number') {
                                     lerpedVizState[key] = lerp(sourceValue, targetValue, alpha);
                                 }
-                                else if (sourceValue.length){ // If Array
+                                else if (Array.isArray(sourceValue) && Array.isArray(targetValue)){
                                     lerpedVizState[key] = []
                                     for (let i = 0; i < sourceValue.length; i++){
                                         lerpedVizState[key][i] = lerp(sourceValue[i], targetValue[i], alpha);
@@ -462,9 +500,9 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                                 else if (sourceValue?.lerp && typeof sourceValue.lerp === 'function') {
                                     lerpedVizState[key] = sourceValue.clone().lerp(targetValue, alpha);
                                 }
-                                // For non-numeric values, just copy from target
+                                // For non-lerpable values (strings, booleans, null), switch at the end keyframe
                                 else {
-                                    lerpedVizState[key] = targetValue;
+                                    lerpedVizState[key] = alpha < 1 ? sourceValue : targetValue;
                                 }
                             });
                             usePlotStore.setState(lerpedVizState)
@@ -519,48 +557,43 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     '-pix_fmt', 'yuv420p',
                     '-preset', `${preview ? 'ultrafast' : 'fast'}`, 
                     '-crf', `${preview ? 28 : 16}`, 
-                    '-tune', 'stillimage',
-                    '-profile:v', 'high444',
+                    '-profile:v', 'high',
                     'output.mp4'
                 ]);
-                if (execResult === 1){setStatus(null)}
+                if (execResult !== 0){
+                    throw new Error(`ffmpeg exited with code ${execResult}`)
+                }
                 setStatus("Fetching Animation")
                 const videoData = await ffmpeg.readFile('output.mp4');
-                setStatus(null)
-                setProgress(0)
                 const videoBlob = new Blob([videoData as any], { type: 'video/mp4' });
                 const videoUrl = URL.createObjectURL(videoBlob);
                 const link = document.createElement('a')
                 link.download = 'browzarr-animation.mp4'
                 link.href = videoUrl
                 link.click()
-                URL.revokeObjectURL(videoUrl)
-
-                //Cleanup
-                for(let i=0; i<frames; i++) await ffmpeg.deleteFile(`frame${i.toString().padStart(4, '0')}.png`);
-                await ffmpeg.deleteFile('output.mp4');
+                setTimeout(() => URL.revokeObjectURL(videoUrl), 1000) // Revoking immediately can cancel the download
             }
 
-            Animate().then(()=>{
-                setHideAxis(false)
-                setHideAxisControls(false)
-                // Reset Camera Settings
-                if (useCustomRes || doubleSize) {
-                    if (camera instanceof THREE.PerspectiveCamera) {
-                        camera.aspect = originalCameraSettings.aspect;
-                    } else if (camera instanceof THREE.OrthographicCamera) {
-                        camera.left = originalCameraSettings.left;
-                        camera.right = originalCameraSettings.right;
-                        camera.top = originalCameraSettings.top;
-                        camera.bottom = originalCameraSettings.bottom;
-                    }         
-                    gl.setSize(originalSize.x, originalSize.y);                  
-                    camera.updateProjectionMatrix();
-                    invalidate();
+            async function CleanupFiles(){
+                // Files may not exist if export failed partway, so ignore delete errors
+                const files = ['textOverlay.png', 'output.mp4']
+                for (let i=0; i<frames; i++) files.push(`frame${i.toString().padStart(4, '0')}.png`)
+                for (const file of files){
+                    try { await ffmpeg.deleteFile(file) } catch {}
                 }
-                setQuality(origQuality);
-                useGlobalStore.setState({DPR: dpr})
-            });
+            }
+
+            Animate()
+                .catch(err => console.error("Animation export failed:", err))
+                .finally(async ()=>{
+                    ffmpeg.off('progress', onProgress)
+                    if (ffmpeg.loaded) await CleanupFiles()
+                    setStatus(null)
+                    setProgress(0)
+                    if (useTime) setAnimProg(animProg)
+                    if (Object.keys(origVizState).length) usePlotStore.setState(origVizState)
+                    Restore()
+                });
         } else {
             gl.render(scene, camera);
             DrawComposite(compositeCanvasRef.current as HTMLCanvasElement, gl, docWidth, docHeight,
@@ -573,26 +606,9 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                 link.download = 'browzarr-plot.png'
                 link.href = url
                 link.click()
-                URL.revokeObjectURL(url)
+                setTimeout(() => URL.revokeObjectURL(url), 1000) // Revoking immediately can cancel the download
             }, 'image/png')
-            setHideAxis(false)
-            setHideAxisControls(false)
-            // Reset Camera Settings
-            if (useCustomRes || doubleSize) {
-                if (camera instanceof THREE.PerspectiveCamera) {
-                    camera.aspect = originalCameraSettings.aspect;
-                } else if (camera instanceof THREE.OrthographicCamera) {
-                    camera.left = originalCameraSettings.left;
-                    camera.right = originalCameraSettings.right;
-                    camera.top = originalCameraSettings.top;
-                    camera.bottom = originalCameraSettings.bottom;
-                }           
-                gl.setSize(originalSize.x, originalSize.y);
-                camera.updateProjectionMatrix();
-                invalidate();
-            }
-            setQuality(origQuality);
-            useGlobalStore.setState({DPR: dpr})
+            Restore()
         }
     },[exportImg])
 
