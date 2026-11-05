@@ -81,10 +81,12 @@ function Borders({features}:{features: any}){
     const {xArray, yArray} = useDimAxis()
     const [xBounds, yBounds] = useMemo(()=>{ 
         const minX = xArray[0]
-        const maxX = xArray.at(-1)
+        const maxX = xArray.at(-1) as number
 		const minY = yArray[0]
-        const maxY = yArray.at(-1)
-        return [[minX, maxX] as [number, number], [minY, maxY] as [number, number]]
+        const maxY = yArray.at(-1) as number
+        const dx = (maxX - minX) / (xArray.length - 1) / 2  // Pad by half a cell to match shader bounds (useCoordBounds)
+        const dy = (maxY - minY) / (yArray.length - 1) / 2
+        return [[minX - dx, maxX + dx] as [number, number], [minY - dy, maxY + dy] as [number, number]]
     },[axisDimArrays, xArray, yArray ])
     const spherize = plotType ==='sphere'
     function toXYZ(lon: number, lat: number){
