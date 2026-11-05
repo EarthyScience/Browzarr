@@ -105,7 +105,7 @@ const ExportImageSettings = () => {
                                 <div className='flex flex-col gap-1'>
                                     <FieldLabel htmlFor='cbar-units'>Colorbar units</FieldLabel>
                                     <Input id='cbar-units' className='h-8' placeholder={units[0] ?? "undefined"} value={cbarUnits[0]} onChange={updateCbarUnits(0)} />
-                                    <Input id='cbar-units2' className='h-8' placeholder={units[1] ?? "undefined"} value={cbarUnits[1]} onChange={updateCbarUnits(1)} />
+                                    {bivariate && <Input id='cbar-units2' className='h-8' placeholder={units[1] ?? "undefined"} value={cbarUnits[1]} onChange={updateCbarUnits(1)} />}
                                 </div>
                             </Group>
                         </Hider>
@@ -162,7 +162,9 @@ const ExportImageSettings = () => {
                     <Popover open={showAnimation} onOpenChange={setShowAnimation}>
                         <PopoverTrigger asChild>
                             <div className='flex items-center'>
-                            <Button variant='secondary' size='sm' className='flex-grow justify-between cursor-pointer'>
+                            <Button variant='secondary' size='sm' className='flex-grow justify-between cursor-pointer'
+                                onClick={()=>setAnimate(true)}
+                            >
                                 Animation settings
                             </Button>
                             <ChevronRight className={`size-4 transition-transform duration-200 ${showAnimation ? 'rotate-180' : ''}`} />
