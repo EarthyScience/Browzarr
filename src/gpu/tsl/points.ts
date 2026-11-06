@@ -8,7 +8,7 @@ import * as u from './utils/uniforms';
 
 const GLOBAL_SCALE = 1/500
 
-export function createPointMaterial(bivariate: boolean, reproject = false){
+export function createPointMaterial(bivariate: boolean){
     const depth = uint( u.pointShape.x );
     const height = uint( u.pointShape.y );
     const width = uint( u.pointShape.z ).toVar();
