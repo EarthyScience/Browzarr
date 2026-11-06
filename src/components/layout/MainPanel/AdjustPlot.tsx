@@ -336,9 +336,7 @@ const GlobalOptions = () => {
     const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, useBorderTexture, cScale, cOffset,
         setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels} = usePlotStore(useShallow(s => s))
     const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
-    const {borderCompatible} = useGlobalStore(useShallow(s => ({
-        borderCompatible: s.borderCompatible
-    })))
+    const borderCompatible = useGlobalStore(s => s.borderCompatible)
     const isPC = plotType == 'point-cloud'
     const valueScales = useValueScales()
     // Slider labels match the colorbar's newMin/newMax, recovered from cScale/cOffset
