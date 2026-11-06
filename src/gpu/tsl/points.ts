@@ -1,6 +1,7 @@
 import {
-    bool,float,Fn,fract,If,instanceIndex,int,ivec2,ivec3,min,select,uint,
-    userData,varying,vec2,vec3,vec4
+    float, Fn, fract, If, instanceIndex, int,
+    ivec3, min, select, uint,
+    userData, varying, vec2, vec3, vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
