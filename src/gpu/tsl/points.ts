@@ -1,6 +1,7 @@
 import {
-    float,Fn,fract,If,instanceIndex,int,ivec3,min,select,uint,
-    userData,varying,vec2,vec3,vec4
+    float, Fn, fract, If, instanceIndex, int,
+    ivec3, min, select, uint,
+    userData, varying, vec2, vec3, vec4
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
@@ -23,7 +24,8 @@ export function createPointMaterial(bivariate: boolean){
 	).toVar()
 	const texCoord = Fn(() => {
 		const norm = vec3(voxel).div(vec3(width.sub(1), height.sub(1), depth.sub(1))).toVar()
-		return vec3(norm.x, norm.y, fract(norm.z.sub(u.animateProg)));
+		const xy = h.reprojectUV(norm.xy)
+		return vec3(xy, fract(norm.z.sub(u.animateProg)));
 	})()
     const positon = Fn(()=>{
         const px = texCoord.x.sub(0.5).mul(2)
@@ -76,7 +78,7 @@ export function createPointMaterial(bivariate: boolean){
                 .or(p.y.greaterThan(u.vertBounds.y))
                 .or(spriteValue.greaterThan(u.threshold.y))
                 .or(spriteValue.lessThan(u.threshold.x))
-                .or(isNaN);
+                .or(isNaN)
         If(outOfBounds, ()=>{
             pointScale.assign(0)
         })
