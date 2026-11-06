@@ -344,7 +344,7 @@ const GlobalOptions = () => {
         const {minVal: origMin, maxVal: origMax} = valueScales
         const newRange = (origMax - origMin) / cScale
         const minVal = origMin - cOffset * newRange
-        return {...valueScales, minVal, maxVal: minVal + newRange}
+        return {minVal, maxVal: minVal + newRange}
     }, [cScale, cOffset, valueScales])
     const throttleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const latestValue = useRef(borderColor);
