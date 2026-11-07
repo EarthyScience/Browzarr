@@ -1,6 +1,6 @@
 import {
     abs, any, Break, ceil, clamp, EPSILON, float, floor, greaterThanEqual, If, int,
-    ivec3, lessThan, Loop, max, min, select, sign, vec3
+    ivec3, lessThan, Loop, max, min, select, sign, step, vec3
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
@@ -34,6 +34,9 @@ const ddaTraverse: Traversal = (vOrigin, rayDir, bounds, comp) => {
     tDelta.assign( select(  degenerate, vec3( 1e30 ), tDelta ));
     const t = bounds.x.toVar('t');
     const maxSteps = int( gridRes.x.add( gridRes.y ).add( gridRes.z ) ).mul( 2 ).add( 8 );
+    // Axis of the face we entered the current voxel through. Start: the entry plane crossed last.
+    const tEnter = tMax.sub( tDelta );
+    const faceAxis = step( max( tEnter.yzx, tEnter.zxy ), tEnter ).toVar( "faceAxis" );
 
     // //Steps
     Loop( maxSteps, () => {
@@ -44,19 +47,22 @@ const ddaTraverse: Traversal = (vOrigin, rayDir, bounds, comp) => {
             const pHit = vOrigin.add(t.mul(rayDir)).toVar();
             const localPosContinuous = pHit.xy.sub(boxMin).div(u.volumeScale).toVar();
             return h.reprojectMask(localPosContinuous.xy);
-        });
+        }, faceAxis.mul( stepDir ).negate()); // normal of the face we entered through
         If(tMax.x.lessThan(tMax.y).and(tMax.x.lessThan(tMax.z)), () => {
             t.assign(tMax.x);
             tMax.x.addAssign(tDelta.x);
             voxel.x.addAssign(stepDirI.x);
+            faceAxis.assign(vec3(1.0, 0.0, 0.0));
         }).ElseIf(tMax.y.lessThan(tMax.z), () => {
             t.assign(tMax.y);
             tMax.y.addAssign(tDelta.y);
             voxel.y.addAssign(stepDirI.y);
+            faceAxis.assign(vec3(0.0, 1.0, 0.0));
         }).Else(() => {
             t.assign(tMax.z);
             tMax.z.addAssign(tDelta.z);
             voxel.z.addAssign(stepDirI.z);
+            faceAxis.assign(vec3(0.0, 0.0, 1.0));
         });
 
         If(any(lessThan( voxel, ivec3( 0 ) ))

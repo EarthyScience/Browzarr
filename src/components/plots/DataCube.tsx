@@ -16,12 +16,14 @@ export const DataCube = ( ) => {
 		shape:s.shape, flipY:s.flipY, remapTexture:s.remapTexture
 	}))) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const { useOrtho, valueRange, useRayMarch, volumeMode, transparency, 
-		vTransferScale, revTransparency, interpPixels, colorScale} = usePlotStore(useShallow(s => ({
+		vTransferScale, revTransparency, interpPixels, colorScale, useShading} = usePlotStore(useShallow(s => ({
 			useOrtho:s.useOrtho, valueRange:s.valueRange, useRayMarch:s.useRayMarch, volumeMode:s.volumeMode,
-			transparency:s.transparency, vTransferScale:s.vTransferScale, revTransparency:s.revTransparency, interpPixels:s.interpPixels, colorScale: s.colorScale
+			transparency:s.transparency, vTransferScale:s.vTransferScale, 
+			revTransparency:s.revTransparency, interpPixels:s.interpPixels, 
+			colorScale: s.colorScale, useShading: s.useShading
 		})))
   	const shaderMaterial = useMemo(() => createVolumeMaterial(useRayMarch ? 'raymarch' : 'dda', volumeMode, useOrtho)
-	, [useRayMarch, volumeMode, remapTexture, useOrtho, interpPixels, colorScale]);
+	, [useRayMarch, volumeMode, remapTexture, useOrtho, interpPixels, useShading, colorScale]);
   	const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
 	const cmapFunc = (val: number) => sampleColormap(val, cmap.value as THREE.DataTexture)
 	// --- GENERATE LUT --- //

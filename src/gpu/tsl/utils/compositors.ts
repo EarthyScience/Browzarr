@@ -6,7 +6,7 @@ import { colorTexel, finishRay, isMissing, rayAccumulators, rayBounds, sampleVox
 export type VolumeMode = 'additive' | 'max' | 'min';
 
 // One in-range sample handed from a traversal to a compositor. borderUV is lazy so it's only built when needed.
-export type VolumeSample = { d: any, biVal: any, isNan: any, borderUV: () => any };
+export type VolumeSample = { d: any, biVal: any, isNan: any, borderUV: () => any, normal?: any };
 
 // Folds the samples along a ray into a color. sample() may Break() to end the ray early.
 export type Compositor = { sample: (s: VolumeSample) => void, finish: () => any };
@@ -19,8 +19,11 @@ const additive = (): Compositor => {
     // Normal sampler from before
     const acc = rayAccumulators();
     return {
-        sample: ({ d, biVal, isNan, borderUV }) => {
+        sample: ({ d, biVal, isNan, borderUV, normal }) => {
+            const before = acc.accumColor.toVar();
             colorTexel(d, biVal, isNan, acc.accumColor, acc.alphaAcc);
+            // Light only this sample's color contribution
+            if (u.useShading.value && normal) acc.accumColor.assign(before.add(h.shadeFrag(acc.accumColor.sub(before), normal)));
             If(acc.alphaAcc.greaterThanEqual(0.99), () => {
                 acc.borderHit.assign(h.isBorder(borderUV()));
                 Break();
@@ -73,7 +76,7 @@ const makeCompositor = (mode: VolumeMode): Compositor => {
 };
 
 // --- SHARED PIPELINE --- //
-export const compositeAt = (comp: Compositor, p: any, borderUV: (maskUV: any) => any) => {
+export const compositeAt = (comp: Compositor, p: any, borderUV: (maskUV: any) => any, normal?: any) => {
     const texCoord = vec3(0).toVar('texCoord');
     const maskUV = vec2(0).toVar('maskUV');
     const skip = shouldSkip(p, texCoord, maskUV);
@@ -83,7 +86,7 @@ export const compositeAt = (comp: Compositor, p: any, borderUV: (maskUV: any) =>
         const isNan = bool(false).toVar();
         const inRange = sampleVoxel(texCoord, d, biVal, isNan);
         If(inRange, () => {
-            comp.sample({ d, biVal, isNan, borderUV: () => borderUV(maskUV) });
+            comp.sample({ d, biVal, isNan, borderUV: () => borderUV(maskUV), normal });
         });
     });
 };
