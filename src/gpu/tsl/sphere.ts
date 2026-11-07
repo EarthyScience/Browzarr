@@ -3,7 +3,8 @@ import * as h from './utils/commonHelpers';
 import * as THREE from 'three/webgpu'
 import { Fn, normalize, asin, atan, PI, mul, mod, vec2, vec4, If, float,
     fract, select, all, cos, positionGeometry, greaterThanEqual, lessThanEqual,
-    texture, cross, dFdx, dFdy, dot, sign, positionWorld } from 'three/tsl';
+    texture, cross, dFdx, dFdy, dot, sign, positionWorld, 
+    normalWorld} from 'three/tsl';
 
 const giveUV = Fn(( [position] : [any]) => {
     const n = normalize( position );
@@ -64,7 +65,8 @@ const sphereColor = Fn( () => {
             const faceNormal = normalize( cross( dFdx( positionWorld ), dFdy( positionWorld ) ) ).toVar( 'faceNormal' );
             // Derivative sign convention varies by backend; force it to point away from the sphere center
             faceNormal.mulAssign( sign( dot( faceNormal, fragPos ) ) );
-            Color.assign(vec4(h.shadeFrag(color.rgb, faceNormal), 1));
+            const normal = select(u.displacement.equal(0), normalWorld, faceNormal)
+            Color.assign(vec4(h.shadeFrag(color.rgb, normal), 1));
         } else Color.assign(color);
     }).Else(() => {Color.assign( vec4( u.nanColor, u.nanAlpha ) )});
     return Color
