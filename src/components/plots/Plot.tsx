@@ -3,7 +3,7 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three/webgpu';
 import { PointCloud, DataCube, FlatMap, Sphere, 
   CountryBorders, AxisLines, SphereBlocks, FlatBlocks, 
-  KeyFramePreviewer, SunDirection } from '@/components/plots';
+  KeyFramePreviewer, SunDirection, Sun } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, createDataTexture } from '@/gpu/textures';
 import { useAnalysisStore } from '@/stores/AnalysisStore';
@@ -274,6 +274,7 @@ const Plot = () => {
             {displaceFaces ? <SphereBlocks /> : <Sphere /> }
           </>
         }
+        {useShading && <Sun/>}
         {showSunHelper && useShading && <SunDirection />}
         <MemoOrbit isFlat={plotType == "flat"} />
         {plotType == "flat" && show && <>

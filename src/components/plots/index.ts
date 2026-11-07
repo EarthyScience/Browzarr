@@ -15,3 +15,4 @@ export {SphereBlocks} from './SphereBlocks'
 export {FlatBlocks} from './FlatBlocks'
 export {KeyFramePreviewer} from './KeyFramePreviewer'
 export { SunDirection } from './SunDirection';
+export { Sun } from './Sun';

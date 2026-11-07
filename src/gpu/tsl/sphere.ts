@@ -58,16 +58,8 @@ const sphereColor = Fn( () => {
         const {localCoord, textureIdx} = h.getLocalCoord(sampleCoord)
         // Scale up
         localCoord.assign( fract( localCoord ) );
-        const {color, strength} = h.sampleSurfaceColor(localCoord, textureIdx);
-        if (u.useShading.value){
-            const height = strength.sub(u.displaceZero).mul(u.displacement);
-            const fragPos = positionWorld.normalize().mul(float(1).add(height));
-            const faceNormal = normalize( cross( dFdx( positionWorld ), dFdy( positionWorld ) ) ).toVar( 'faceNormal' );
-            // Derivative sign convention varies by backend; force it to point away from the sphere center
-            faceNormal.mulAssign( sign( dot( faceNormal, fragPos ) ) );
-            const normal = select(u.displacement.equal(0), normalWorld, faceNormal)
-            Color.assign(vec4(h.shadeFrag(color.rgb, normal), 1));
-        } else Color.assign(color);
+        const {color} = h.sampleSurfaceColor(localCoord, textureIdx);
+        Color.assign(color);
     }).Else(() => {Color.assign( vec4( u.nanColor, u.nanAlpha ) )});
     return Color
 })
@@ -91,8 +83,11 @@ const sphereVertex = Fn(() =>{
     return newPosition;
 })
 
-export function createSphereMaterial(){
-    const material = new THREE.NodeMaterial();
+export function createSphereMaterial(useShading: boolean){
+    const material = useShading
+        ? new THREE.MeshStandardNodeMaterial()
+        : new THREE.MeshBasicNodeMaterial();
+        
     material.transparent = true;
     material.positionNode = sphereVertex();
     material.colorNode = Fn( () => h.overlayOr( maskAndBorder().toVar( 'early' ), () => sphereColor() ) )();

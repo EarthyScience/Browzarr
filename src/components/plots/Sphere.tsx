@@ -37,14 +37,27 @@ export const Sphere = () => {
     const {xArray, yArray, zArray} = useDimAxis();
     const dimSlices = [zArray, yArray, xArray];
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
-    const shaderMaterial = useMemo( () => createSphereMaterial() , [interpPixels, colorScale, useShading])
-    // No reprojection on Sphere. Remains static and can't update
-    uniformUpdater();
+    const shaderMaterial = useMemo( () => createSphereMaterial(useShading) , [interpPixels, colorScale, useShading])
     const backMaterial = useMemo(()=>{
       const mat = shaderMaterial.clone()
       mat.side = THREE.BackSide;
       return mat;
     },[shaderMaterial])
+    const mesh = useMemo(()=>{
+          const newMesh = new THREE.Mesh(geometry, shaderMaterial)
+          newMesh.castShadow = true;
+          newMesh.receiveShadow = true;
+          return newMesh
+      },[geometry, shaderMaterial])
+    const backMesh = useMemo(()=>{
+          const newMesh = new THREE.Mesh(geometry, backMaterial)
+          newMesh.castShadow = true;
+          newMesh.receiveShadow = true;
+          return newMesh
+      },[geometry, backMaterial])
+    // No reprojection on Sphere. Remains static and can't update
+    uniformUpdater();
+    
     const {lonBounds, latBounds} = useCoordBounds()
     function HandleTimeSeries(event: THREE.Intersection){
         const point = event.point.normalize();
@@ -92,8 +105,12 @@ export const Sphere = () => {
   return (
     <group scale={[1, 1, 1]}>
       <SquareMeshes />
-      <mesh renderOrder={1} geometry={geometry} material={shaderMaterial} onClick={e=>selectTS && HandleTimeSeries(e)}/>
-      <mesh renderOrder={0} geometry={geometry} material={backMaterial} />
+      <primitive
+        renderOrder={1}
+        object={mesh}
+        onClick={(e: THREE.Intersection) => selectTS && HandleTimeSeries(e)}
+      />
+      <primitive renderOrder={0} object={backMesh} />
     </group>
   )
 }

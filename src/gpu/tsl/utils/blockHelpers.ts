@@ -32,7 +32,8 @@ export const sampleBlockStrength = (localCoord: any, textureIdx: any) => {
     };
 }
 
-export const instanceColor = Fn(([strengths] : [any])=>{
+// Unshaded colormap color for a block
+export const instanceAlbedo = Fn(([strengths] : [any])=>{
     const albedo = vec3(0).toVar();
     if (u.bivariate.value){
         const biCol = h.colorMixer( strengths.x, strengths.y ).toVar();
@@ -41,6 +42,11 @@ export const instanceColor = Fn(([strengths] : [any])=>{
         const color = u.cmap.sample(vec2(strengths.x, 0.5))
         albedo.assign(color.rgb)
     }
+    return albedo
+})
+
+export const instanceColor = Fn(([strengths] : [any])=>{
+    const albedo = instanceAlbedo(strengths).toVar();
     if (u.useShading.value){
         albedo.assign(h.shadeFrag(albedo, normalWorld));
         return vec4(albedo, 1)

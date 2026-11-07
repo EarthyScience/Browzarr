@@ -49,7 +49,7 @@ const FlatBlocks = () => {
         return geo
     },[width, height])
     const material = useMemo(()=>{
-        const m = createFlatBlocksMaterial();
+        const m = createFlatBlocksMaterial(useShading);
         m.depthWrite = true;
         m.depthTest = true;
         return m;
@@ -58,6 +58,8 @@ const FlatBlocks = () => {
         const newMesh = new THREE.Mesh(geometry, material)
         newMesh.count = count;
         newMesh.frustumCulled = false;
+        newMesh.castShadow = true;
+        newMesh.receiveShadow = true;
         return newMesh
     },[geometry, material, count])
     // --- UNIFORMS --- //

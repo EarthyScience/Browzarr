@@ -32,11 +32,13 @@ const SphereBlocks = () => {
         geo.translate(0, boxHeight / 2, 0);
         return geo
     },[width, height])
-    const material = useMemo(()=>createSphereBlocksMaterial(), [colorScale, useShading])
+    const material = useMemo(()=>createSphereBlocksMaterial(useShading), [colorScale, useShading])
     const mesh = useMemo(()=>{
         const newMesh = new THREE.Mesh(geometry, material)
         newMesh.count = count;
         newMesh.frustumCulled = false;
+        newMesh.castShadow = true;
+        newMesh.receiveShadow = true;
         return newMesh
     },[geometry, material])
     const nanMaterial = useMemo(()=>{

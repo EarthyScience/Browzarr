@@ -279,9 +279,6 @@ const SphereOptions = () => {
                 value={displacement}
                 onChange={setDisplacement}
             />
-            <Hider show={displaceFaces}>
-                <SwitchField id='offset-switch' label='Offset negatives' checked={offsetNegatives} onChange={setOffsetNegatives} />
-            </Hider>
             <Hider show={!displaceFaces}>
                 <SliderField
                     label='Displacement resolution'
@@ -290,6 +287,7 @@ const SphereOptions = () => {
                     onChange={setSphereResolution}
                 />
             </Hider>
+            <SwitchField id='offset-switch' label='Offset negatives' checked={offsetNegatives} onChange={setOffsetNegatives} />
         </>
     )
 }

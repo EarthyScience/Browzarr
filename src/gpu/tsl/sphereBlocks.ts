@@ -41,10 +41,12 @@ const getOrientation = Fn(([spherePosition] : [any])=>{
     return orientation
 })
 
-export function createSphereBlocksMaterial(){
+export function createSphereBlocksMaterial(useShading: boolean){
     const thisUV = instanceUV()
 
-    const material = new THREE.NodeMaterial();
+    const material = useShading
+        ? new THREE.MeshStandardNodeMaterial()
+        : new THREE.MeshBasicNodeMaterial();
     material.depthWrite = true;
     material.depthTest = true;
     material.side = THREE.DoubleSide;

@@ -6,7 +6,7 @@ import {
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
 import * as u from './utils/uniforms';
-import { instanceColor, instanceUV, sampleBlockStrength } from './utils/blockHelpers';
+import { instanceAlbedo, instanceUV, sampleBlockStrength } from './utils/blockHelpers';
 
 const getUVs = Fn(([thisUV, isValid] : [any, any]) =>{
     const instanceUV = thisUV.toVar();
@@ -16,7 +16,9 @@ const getUVs = Fn(([thisUV, isValid] : [any, any]) =>{
     return vec4(instanceUV, maskUV)
 })
 
-export function createFlatBlocksMaterial(){
+// useShading is passed in rather than read from u.useShading: the uniform is only updated in a
+// useEffect, which runs after the component's useMemo builds this material, so it would be stale.
+export function createFlatBlocksMaterial(useShading: boolean){
 
     // --- VERTEX --- //
     const resolution = u.displacementResolution
@@ -30,7 +32,11 @@ export function createFlatBlocksMaterial(){
         return vec2(posX, posY)
     })()
 
-    const material = new THREE.NodeMaterial();
+    // Shading on: built-in lighting + shadow maps from the <Sun/> light.
+    // Shading off: unlit, so the colormap shows as-is.
+    const material = useShading
+        ? new THREE.MeshStandardNodeMaterial({ roughness: 1, metalness: 0 })
+        : new THREE.MeshBasicNodeMaterial();
     const isValid = bool(true).toVar();
 
     const uvInfo = varying(getUVs(thisUV, isValid))
@@ -55,6 +61,6 @@ export function createFlatBlocksMaterial(){
     // fragment stage
      const vertMask = h.reprojectUV(vertUV)
     const borderHit = h.isBorder(vertMask.rg);
-    material.colorNode = select(borderHit, u.borderColor, instanceColor(colorIn));
+    material.colorNode = select(borderHit, u.borderColor, vec4(instanceAlbedo(colorIn), 1));
     return material
 }
