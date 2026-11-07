@@ -60,10 +60,10 @@ const sphereColor = Fn( () => {
         const {color, strength} = h.sampleSurfaceColor(localCoord, textureIdx);
         if (u.useShading.value){
             const height = strength.sub(u.displaceZero).mul(u.displacement);
-            const fragPos = positionWorld.normalize().mul(float(1).add(height)); 
-            
+            const fragPos = positionWorld.normalize().mul(float(1).add(height));
+            const faceNormal = normalize( cross( dFdx( positionWorld ), dFdy( positionWorld ) ) ).toVar( 'faceNormal' );
             // Derivative sign convention varies by backend; force it to point away from the sphere center
-            faceNormal.mulAssign( sign( dot( faceNormal, positionWorld ) ) );
+            faceNormal.mulAssign( sign( dot( faceNormal, fragPos ) ) );
             Color.assign(vec4(h.shadeFrag(color.rgb, faceNormal), 1));
         } else Color.assign(color);
     }).Else(() => {Color.assign( vec4( u.nanColor, u.nanAlpha ) )});
