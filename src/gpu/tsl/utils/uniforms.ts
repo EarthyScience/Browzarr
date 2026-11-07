@@ -90,8 +90,14 @@ export const displacementResolution = uniform(vec2(0.0))
 export const widthFactor = uniform(1), vertFactor = uniform(1);
 
 // --- POINT UNIFORMS --- //
-export const pointShape = uniform(vec3(0))
-export const pointSize = uniform(float(0))
-export const timeScale = uniform(float(0))
-export const scaleByVal = uniform(bool(false))
-export const scaleIntensity = uniform(float(0))
+export const pointShape = uniform(vec3(0));
+export const pointSize = uniform(float(0));
+export const timeScale = uniform(float(0));
+export const scaleByVal = uniform(bool(false));
+export const scaleIntensity = uniform(float(0));
+
+// --- SHADE UNIFORMS --- //
+export const useShading = uniform(bool(false))
+export const sunDirection = uniform(vec3(0));
+export const worldColor = uniform(color());
+export const cameraAsSun = uniform(bool(false));

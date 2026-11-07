@@ -12,11 +12,12 @@ export function uniformUpdater(){
     const {cScale, cOffset, animProg, nanTransparency, nanColor, fillValue, maskValue, valueRange, 
         useBorderTexture, borderColor, borderWidth, is360Deg, showBorders, interpPixels, colorScale,
         xRange, yRange, zRange, quality, displacement, offsetNegatives, scalePoints,
-        pointSize, scaleIntensity, timeScale, plotType} = usePlotStore(useShallow(s => ({
+        pointSize, scaleIntensity, timeScale, plotType, useShading, sunDirection, cameraAsSun, worldColor} = usePlotStore(useShallow(s => ({
             cScale: s.cScale, cOffset: s.cOffset, animProg: s.animProg, nanTransparency: s.nanTransparency, nanColor: s.nanColor, fillValue: s.fillValue, maskValue: s.maskValue, valueRange: s.valueRange,
             useBorderTexture: s.useBorderTexture, borderColor: s.borderColor, borderWidth: s.borderWidth, is360Deg: s.is360Deg, showBorders: s.showBorders, interpPixels: s.interpPixels, colorScale: s.colorScale,
             xRange: s.xRange, yRange: s.yRange, zRange: s.zRange, quality: s.quality, displacement: s.displacement, offsetNegatives: s.offsetNegatives, scalePoints: s.scalePoints,
-            pointSize: s.pointSize, scaleIntensity: s.scaleIntensity, timeScale: s.timeScale, plotType: s.plotType
+            pointSize: s.pointSize, scaleIntensity: s.scaleIntensity, timeScale: s.timeScale, plotType: s.plotType, useShading: s.useShading,
+            sunDirection: s.sunDirection, cameraAsSun: s.cameraAsSun, worldColor: s.worldColor
         })))
     const { useF16Textures, bivariate, textureArrayDepths, remapTexture, isWebGPU, 
         flipY, remapBorders, isFlat, shape, dataShape, mainTextures} = useGlobalStore(useShallow(s => ({
@@ -161,4 +162,12 @@ export function uniformUpdater(){
         u.timeScale.value = timeScale;
         u.scaleByVal.value = scalePoints
     },[pointSize, scaleIntensity, timeScale, scalePoints])
+
+    // --- SHADING UNIFORMS --- //
+    useEffect(()=>{
+        u.useShading.value = useShading;
+        u.sunDirection.value = sunDirection;
+        u.worldColor.value = new THREE.Color(worldColor);
+        u.cameraAsSun.value = cameraAsSun
+    }, [useShading, sunDirection, cameraAsSun, worldColor])
 }

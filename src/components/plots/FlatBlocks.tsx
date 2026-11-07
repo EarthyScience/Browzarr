@@ -14,7 +14,7 @@ const FlatBlocks = () => {
         flipY: s.flipY, dataShape: s.dataShape, axisDimArrays: s.axisDimArrays, 
         remapTexture: s.remapTexture, 
     })))
-    const {rotateFlat, colorScale} = usePlotStore(useShallow(s => ({rotateFlat: s.rotateFlat, colorScale: s.colorScale})))
+    const {rotateFlat, colorScale, useShading} = usePlotStore(useShallow(s => ({rotateFlat: s.rotateFlat, colorScale: s.colorScale, useShading: s.useShading})))
     const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
     const {xArray, yArray} = useDimAxis()
     const {width, height} = useMemo(()=>{
@@ -49,11 +49,11 @@ const FlatBlocks = () => {
         return geo
     },[width, height])
     const material = useMemo(()=>{
-        const m = createFlatBlocksMaterial(count);
+        const m = createFlatBlocksMaterial();
         m.depthWrite = true;
         m.depthTest = true;
         return m;
-    },[count, colorScale])
+    },[colorScale, useShading])
     const mesh = useMemo(()=>{
         const newMesh = new THREE.Mesh(geometry, material)
         newMesh.count = count;

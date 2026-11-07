@@ -27,16 +27,17 @@ export const Sphere = () => {
             dataShape: s.dataShape, strides: s.strides, flipY: s.flipY, 
             setPlotDim: s.setPlotDim, updateDimCoords: s.updateDimCoords, updateTimeSeries: s.updateTimeSeries
           })))
-    const { selectTS, sphereResolution, interpPixels, colorScale,
+    const { selectTS, sphereResolution, interpPixels, colorScale, useShading,
       getColorIdx, incrementColorIdx} = usePlotStore(useShallow(s => ({
-        selectTS: s.selectTS, sphereResolution: s.sphereResolution, interpPixels: s.interpPixels, colorScale: s.colorScale,
+        selectTS: s.selectTS, sphereResolution: s.sphereResolution, interpPixels: s.interpPixels, 
+        colorScale: s.colorScale, useShading: s.useShading,
          getColorIdx: s.getColorIdx, incrementColorIdx: s.incrementColorIdx
       })))
     const {analysisMode, analysisArray} = useAnalysisStore(useShallow(s => s))   
     const {xArray, yArray, zArray} = useDimAxis();
     const dimSlices = [zArray, yArray, xArray];
     const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, sphereResolution), [sphereResolution]);
-    const shaderMaterial = useMemo( () => createSphereMaterial() , [interpPixels, colorScale])
+    const shaderMaterial = useMemo( () => createSphereMaterial() , [interpPixels, colorScale, useShading])
     // No reprojection on Sphere. Remains static and can't update
     uniformUpdater();
     const backMaterial = useMemo(()=>{

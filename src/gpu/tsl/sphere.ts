@@ -3,7 +3,7 @@ import * as h from './utils/commonHelpers';
 import * as THREE from 'three/webgpu'
 import { Fn, normalize, asin, atan, PI, mul, mod, vec2, vec4, If, float,
     fract, select, all, cos, positionGeometry, greaterThanEqual, lessThanEqual,
-    texture} from 'three/tsl';
+    texture, cross, dFdx, dFdy, dot, sign, positionWorld } from 'three/tsl';
 
 const giveUV = Fn(( [position] : [any]) => {
     const n = normalize( position );
@@ -57,7 +57,15 @@ const sphereColor = Fn( () => {
         const {localCoord, textureIdx} = h.getLocalCoord(sampleCoord)
         // Scale up
         localCoord.assign( fract( localCoord ) );
-        Color.assign( h.sampleSurfaceColor(localCoord, textureIdx).color );
+        const {color, strength} = h.sampleSurfaceColor(localCoord, textureIdx);
+        if (u.useShading.value){
+            const height = strength.sub(u.displaceZero).mul(u.displacement);
+            const fragPos = positionWorld.normalize().mul(float(1).add(height)); 
+            
+            // Derivative sign convention varies by backend; force it to point away from the sphere center
+            faceNormal.mulAssign( sign( dot( faceNormal, positionWorld ) ) );
+            Color.assign(vec4(h.shadeFrag(color.rgb, faceNormal), 1));
+        } else Color.assign(color);
     }).Else(() => {Color.assign( vec4( u.nanColor, u.nanAlpha ) )});
     return Color
 })

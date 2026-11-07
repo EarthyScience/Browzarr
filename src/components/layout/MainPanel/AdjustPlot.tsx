@@ -21,7 +21,7 @@ import { useColormapStore } from '@/stores/ColormapStore';
 import { useValueScales } from '@/hooks';
 import { PanelButton, usePanelSide } from './PanelButton';
 import { FieldLabel, Section, Group, Field, SliderField, SwitchField, ColorField } from '@/components/widgets/SettingFields';
-
+import { ShadingOptions } from '@/components/elements/ShadingOptions';
 export const MinMaxSlider = React.memo(function MinMaxSlider({range, setRange, valueScales, min=-1, array, units} :
     {
         range : number[],
@@ -382,6 +382,7 @@ const GlobalOptions = () => {
             }
             <Masker/>
             <Reprojection />
+            <ShadingOptions />
             <SwitchField
                 id='show-borders'
                 label='Show borders'

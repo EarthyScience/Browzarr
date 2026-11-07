@@ -1,4 +1,4 @@
-import { clamp, float, Fn, instanceIndex, mix, varying, vec2, vec4 } from 'three/tsl';
+import { clamp, float, Fn, instanceIndex, mix, normalWorld, varying, vec2, vec3, vec4 } from 'three/tsl';
 import * as h from './commonHelpers';
 import * as u from './uniforms';
 
@@ -33,11 +33,18 @@ export const sampleBlockStrength = (localCoord: any, textureIdx: any) => {
 }
 
 export const instanceColor = Fn(([strengths] : [any])=>{
-   if (u.bivariate.value){
+    const albedo = vec3(0).toVar();
+    if (u.bivariate.value){
         const biCol = h.colorMixer( strengths.x, strengths.y ).toVar();
-        return vec4(biCol.rgb, 1)
+        albedo.assign(biCol.rgb)
     } else{
         const color = u.cmap.sample(vec2(strengths.x, 0.5))
-        return vec4(color.rgb, 1)
+        albedo.assign(color.rgb)
+    }
+    if (u.useShading.value){
+        albedo.assign(h.shadeFrag(albedo, normalWorld));
+        return vec4(albedo, 1)
+    }else{
+        return vec4(albedo, 1)
     }
 })

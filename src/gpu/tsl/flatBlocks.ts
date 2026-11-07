@@ -16,7 +16,7 @@ const getUVs = Fn(([thisUV, isValid] : [any, any]) =>{
     return vec4(instanceUV, maskUV)
 })
 
-export function createFlatBlocksMaterial(count: number){
+export function createFlatBlocksMaterial(){
 
     // --- VERTEX --- //
     const resolution = u.displacementResolution

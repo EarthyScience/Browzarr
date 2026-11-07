@@ -2,7 +2,7 @@ import {
     bool, cos, cross, Fn, If,
     mat3, normalize, positionLocal,
     positionWorld, select, sin, texture,
-    vec2, vec3, vec4
+    vec2, vec3, vec4, normalLocal
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
@@ -36,7 +36,7 @@ const getSpherePosition= Fn(([instanceUV] : [any]) =>{
 const getOrientation = Fn(([spherePosition] : [any])=>{
     const normal = normalize(spherePosition);
     const tangent = normalize(cross(vec3(0, 1, 0), normal));
-    const bitangent = cross(normal, tangent);
+    const bitangent = cross(tangent, normal);
     const orientation = mat3(tangent, normal, bitangent);
     return orientation
 })
@@ -68,7 +68,10 @@ export function createSphereBlocksMaterial(){
             .or(isNan)
 
     const masked = h.maskOut(h.giveMaskUV(position.xyz))
-    material.positionNode = select(clipped.or(masked), vec3(0), newPos);
+    material.positionNode = Fn(() => {
+        normalLocal.assign(orientation.mul(normalLocal));
+        return select(clipped.or(masked), vec3(0), newPos);
+    })();
 
     // --- Frag --- //
     // Only build the mask UV when borders are on

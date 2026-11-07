@@ -63,6 +63,11 @@ type PlotState ={
   overRideCamera: boolean; // Prevent Camera from resetting until initial position is set. 
   preProject: boolean;
   colorScale: string | undefined;
+  sunDirection: THREE.Vector3;
+  worldColor: string;
+  useShading: boolean;
+  cameraAsSun: boolean;
+  showSunHelper: boolean;
 
   setQuality: (quality: number) => void;
   setTimeScale: (timeScale : number) =>void;
@@ -177,6 +182,11 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   overRideCamera: false,
   preProject : false, // reproject data on dataloader before 'show' is true;
   colorScale: undefined,
+  sunDirection: new THREE.Vector3(3,3,2).normalize(),
+  worldColor: "#777777",
+  useShading: false,
+  cameraAsSun: false,
+  showSunHelper: false,
 
   setVTransferRange: (vTransferRange) => set({ vTransferRange }),
   setVTransferScale: (vTransferScale) => set({ vTransferScale }),

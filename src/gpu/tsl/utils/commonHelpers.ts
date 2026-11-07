@@ -3,6 +3,7 @@ import {
   asin,
   atan,
   bool,
+  cameraPosition,
   clamp,
   float,
   floatBitsToUint,
@@ -218,6 +219,11 @@ export const overlayOr = (overlay: any, base: () => any) => {
     return color;
 }
 
+export const shadeFrag = (albedo: any, normal: any ) =>{
+  const lightDir = select(u.cameraAsSun, cameraPosition, u.sunDirection);
+  const diffuse = albedo.mul(lightDir.dot(normal)).max(0);
+  return diffuse.add(albedo.mul(u.worldColor)).min(albedo);
+}
 
 // --- REPROJECTION --- //
 // Shared core: optional remap texture lookup -> realCoords -> optional border remap -> 360 wrap.

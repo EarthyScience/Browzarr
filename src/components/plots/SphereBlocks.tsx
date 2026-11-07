@@ -9,8 +9,9 @@ import * as THREE from 'three/webgpu';
 import { useShallow } from 'zustand/shallow';
 import { createSphereBlocksMaterial } from '@/gpu/tsl/sphereBlocks';
 const SphereBlocks = () => {
-    const { nanColor, nanTransparency, colorScale} = usePlotStore(useShallow(s => ({
-        nanColor: s.nanColor, nanTransparency: s.nanTransparency, colorScale: s.colorScale
+    const { nanColor, nanTransparency, colorScale, useShading} = usePlotStore(useShallow(s => ({
+        nanColor: s.nanColor, nanTransparency: s.nanTransparency, 
+        colorScale: s.colorScale, useShading: s.useShading
     })))
     const dataShape = useGlobalStore(s => s.dataShape)
     const width = dataShape.at(-1) as number;
@@ -31,7 +32,7 @@ const SphereBlocks = () => {
         geo.translate(0, boxHeight / 2, 0);
         return geo
     },[width, height])
-    const material = useMemo(()=>createSphereBlocksMaterial(), [colorScale])
+    const material = useMemo(()=>createSphereBlocksMaterial(), [colorScale, useShading])
     const mesh = useMemo(()=>{
         const newMesh = new THREE.Mesh(geometry, material)
         newMesh.count = count;

@@ -1,7 +1,9 @@
 import { OrbitControls } from '@react-three/drei';
 import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three/webgpu';
-import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
+import { PointCloud, DataCube, FlatMap, Sphere, 
+  CountryBorders, AxisLines, SphereBlocks, FlatBlocks, 
+  KeyFramePreviewer, SunDirection } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
 import { ArrayToTexture, createDataTexture } from '@/gpu/textures';
 import { useAnalysisStore } from '@/stores/AnalysisStore';
@@ -158,8 +160,9 @@ const Plot = () => {
     setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus, valueScales: s.valueScales
     })))
   const keyFrameEditor = useImageExportStore(s => s.keyFrameEditor)
-  const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => ({
-    plotType: s.plotType, displaceFaces: s.displaceFaces, setPlotType: s.setPlotType
+  const {plotType, displaceFaces, showSunHelper, useShading, setPlotType} = usePlotStore(useShallow(s => ({
+    plotType: s.plotType, displaceFaces: s.displaceFaces, 
+    showSunHelper: s.showSunHelper, useShading: s.useShading, setPlotType: s.setPlotType
   })))
   const {analysisMode, analysisArray, useEditor} = useAnalysisStore(useShallow(s => ({
     analysisMode: s.analysisMode, analysisArray: s.analysisArray, useEditor: s.useEditor
@@ -271,6 +274,7 @@ const Plot = () => {
             {displaceFaces ? <SphereBlocks /> : <Sphere /> }
           </>
         }
+        {showSunHelper && useShading && <SunDirection />}
         <MemoOrbit isFlat={plotType == "flat"} />
         {plotType == "flat" && show && <>
           {!displaceFaces && <FlatMap /> }
