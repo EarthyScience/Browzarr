@@ -33,10 +33,18 @@ export function coarsen3DArray(
   const depthOffset = Math.floor(depthFactor / 2);
   const outputArray = new Float16Array(newSize)
 
+  // Loop over whole bins only, so a partial bin at the edge never adds an extra value
+  const outZ = Math.floor(dimZ / depthFactor);
+  const outY = Math.floor(dimY / spatialFactor);
+  const outX = Math.floor(dimX / spatialFactor);
+
   let outputIdx = 0;
-  for (let z = depthOffset; z < dimZ; z += depthFactor) {
-    for (let y = spatialOffset; y < dimY; y += spatialFactor) {
-      for (let x = spatialOffset; x < dimX; x += spatialFactor) {
+  for (let zi = 0; zi < outZ; zi++) {
+    const z = zi * depthFactor + depthOffset;
+    for (let yi = 0; yi < outY; yi++) {
+      const y = yi * spatialFactor + spatialOffset;
+      for (let xi = 0; xi < outX; xi++) {
+        const x = xi * spatialFactor + spatialOffset;
         // Calculate the flat index using strides
         const flatIndex = z * strideZ + y * strideY + x * strideX;
         outputArray[outputIdx] = array[flatIndex];
