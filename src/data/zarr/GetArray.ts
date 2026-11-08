@@ -89,17 +89,6 @@ export async function GetArray(varOveride?: string) {
                 for (let x = xChunks[0]; x < xChunks[1]; x++) {
                     const chunkID = `z${z}_y${y}_x${x}`;
                     const cacheName = `${cacheBase}_chunk_${chunkID}`;
-                    const cached = cache.get(cacheName);
-                    if (cached?.complete &&
-                        cached.kernel.kernelSize === kernel.kernelSize &&
-                        cached.kernel.kernelDepth === kernel.kernelDepth) {
-                        cache.set(cacheName, { ...cached, sliceStart });
-                        chunkScalingFactors[chunkID] = cached.scaling;
-                        if(Number.isFinite(cached.range.min)) minVals.push(cached.range.min)
-                        if(Number.isFinite(cached.range.max)) maxVals.push(cached.range.max)
-                        setProgress(Math.round(++done / totalChunks * 100));
-                        continue;
-                    }
                     // Only fetch the part of the chunk that overlaps the request
                     const bounds = [z, y, x].map((c, i): Range => [c * chunkDims[i], Math.min((c + 1) * chunkDims[i], extents[i])]);
                     const piece = bounds.map(([lo, hi], i): Range => [Math.max(lo, slices[i][0]), Math.min(hi, slices[i][1])]);
@@ -116,6 +105,23 @@ export async function GetArray(varOveride?: string) {
                     }
                     const fetchRange = bins.map(([bLo, bHi], i): Range => [slices[i][0] + bLo * kernels[i], slices[i][0] + bHi * kernels[i]]);
                     const origin = bins.map(([bLo], i) => bLo + sliceStart[i]);
+                    const binCounts = bins.map(([bLo, bHi]) => bHi - bLo);
+
+                    // A cached chunk is only reusable if its bin layout matches this request.
+                    // The layout depends on the slice start (mod kernel) and on where the slice ends.
+                    const cached = cache.get(cacheName);
+                    if (cached?.complete &&
+                        cached.kernel.kernelSize === kernel.kernelSize &&
+                        cached.kernel.kernelDepth === kernel.kernelDepth &&
+                        cached.origin.every((v: number, i: number) => v === origin[i]) &&
+                        binCounts.slice(-cached.shape.length).every((n, i) => n === cached.shape[i])) {
+                        cache.set(cacheName, { ...cached, sliceStart });
+                        chunkScalingFactors[chunkID] = cached.scaling;
+                        if(Number.isFinite(cached.range.min)) minVals.push(cached.range.min)
+                        if(Number.isFinite(cached.range.max)) maxVals.push(cached.range.max)
+                        setProgress(Math.round(++done / totalChunks * 100));
+                        continue;
+                    }
                     const selection = [...baseSelection];
                     dims.forEach((d, i) => { if (d >= 0) selection[d] = fetchRange[i]; });
                     const raw = await fetcher.fetchChunk(targetVariable, selection);
