@@ -73,7 +73,7 @@
   --modal-p: hsla(0, 0%, 0%, 0.5);
   --accent-1: gold;
   --accent-2: hsla(0, 0%, 95%, 1);
-  --accent-3: hsla(0, 0%, 0%, 0.1);
+  --accent-3: hsl(17, 95%, 75%);
   --background-funding: hsla(0, 0%, 95%, 1);
   --toggle-hover: hsla(0, 0%, 51%, 1);
   --text-heading: hsla(0, 0%, 10%, 1);
@@ -106,7 +106,7 @@
   --toggle-hover: rgb(121, 121, 121);
   --accent-1: gold;
   --accent-2: hsla(0, 0%, 20%, 1);
-  --accent-3: hsla(0, 0%, 20%, 0.6);
+  --accent-3: hsla(0, 61%, 61%, 0.6);
   --text-heading: hsla(0, 0%, 100%, 0.9);
   --text-paragraph: hsla(0, 0%, 100%, 0.7);
   --text-link: hsla(55, 17%, 86%, 0.8);
