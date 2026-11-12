@@ -146,6 +146,8 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
       maxDistance={50}
       minZoom={1} 
       maxZoom={3000}
+		onStart={() => useGlobalStore.setState({cameraMoving: true})}
+		onEnd={() => useGlobalStore.setState({cameraMoving: false})}
     />
   );
 }
