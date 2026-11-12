@@ -8,9 +8,9 @@ import { useThree } from '@react-three/fiber'
 import { useCSSVariable } from '@/components/ui';
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow';
-import { lerp } from 'three/src/math/MathUtils.js';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { deg2rad, linspace } from '@/lib/helpers';
+import { linspace } from '@/lib/helpers';
+import { applyAnimationFrame, createAnimationPlan, getSortedKeyFrames } from '@/lib/keyFrames';
 import { getValueScales } from '@/hooks';
 import { getBivariateCanvas } from '@/components/elements/BivariateCanvas';
 import { Num2String } from '@/components/elements/colorbarUtils';
@@ -270,13 +270,11 @@ async function DrawTextOverlay(
 
 
 const ExportCanvas = ({show}:{show: boolean}) => {
-    const {exportImg, enableExport, animate, frames, frameRate, useTime, timeRate, orbit, orbitDeg, orbitDir, loopTime,
+    const {exportImg, enableExport, animate, frames, frameRate, useTime,
         preview, useCustomRes, customRes, doubleSize, exportOnLoad, setHideAxis, setHideAxisControls
     } = useImageExportStore(useShallow(s => s))
     const {setAnimProg, setQuality} = usePlotStore.getState()
     const {setStatus, setProgress} = useGlobalStore.getState()
-    const {dataShape} = useGlobalStore(useShallow(s => s));
-    const timeFrames = dataShape[dataShape.length-3]
     const { gl, scene, camera, invalidate } = useThree();
     const textColor = useCSSVariable('--text-plot')
     const bgColor = useCSSVariable('--background')
@@ -386,10 +384,10 @@ const ExportCanvas = ({show}:{show: boolean}) => {
         if (animate){
             usePlotStore.setState({animate:false}) // Disable animation if currently active
             const {keyFrames} = useImageExportStore.getState()
-            const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
+            const keyFrameList = getSortedKeyFrames(keyFrames);
             // Snapshot plot state touched by keyframes so it can be restored afterwards
             const origVizState: Record<string, any> = {};
-            if (keyFrameList?.length){
+            if (keyFrameList.length){
                 const plotState = usePlotStore.getState() as Record<string, any>;
                 Object.keys(keyFrames?.get(keyFrameList[0])?.["visual"] ?? {}).forEach(key => {
                     origVizState[key] = plotState[key];
@@ -410,95 +408,13 @@ const ExportCanvas = ({show}:{show: boolean}) => {
 
                 setStatus("Rendering Frames")
 
-                const timeRatio = timeRate/frameRate;
-                const dt = 1/timeFrames
-                const originalPos = {
-                    x: camera.position.x,
-                    y: camera.position.y,
-                    z: camera.position.z
-                };
-                const radius = Math.sqrt(originalPos.x ** 2 + originalPos.z ** 2);
-                const originalAngle = Math.atan2(originalPos.x, originalPos.z);
-                let keyFrameIdx = 0;
+                const plan = createAnimationPlan(camera)
                 const currentSize = new THREE.Vector2();
-                for (let frame=0; frame<frames; frame++){
+                for (let i=0; i<frames; i++){
+                    const frame = i+1; // Keyframes use 1-based frames
                     // ----- UPDATE VISUALS ---- //
-                    if (orbit){
-                        const angle = (frame / frames) * deg2rad(orbitDeg); // Last frame stops one step short so 360° loops seamlessly
-                        const newAngle = originalAngle + (orbitDir ? -angle : angle);
-                        camera.position.x = radius * Math.sin(newAngle);
-                        camera.position.z = radius * Math.cos(newAngle);
-                        camera.lookAt(0, 0, 0);
-                        !(useCustomRes || doubleSize) && invalidate(); // We will invalidate later if needed. Otherwise do it now
-                    }
-                    if (useTime){
-                        let newProg = dt * Math.floor(frame*timeRatio) + animProg;
-                        newProg = loopTime ? newProg - Math.floor(newProg) : Math.min(newProg, 1);
-                        setAnimProg(newProg)
-                    }
-                    if (keyFrameList){
-                        const lerpedVizState: Record<string, any> = {};
-                        const lerpedCamState: Record<string, any> = {};
-                        const startFrame = keyFrameList[keyFrameIdx]
-
-                        if (keyFrameIdx+1 < keyFrameList.length){
-                            const endFrame = keyFrameList[keyFrameIdx+1]
-                            const thisFrames = endFrame-startFrame;
-                            const alpha = Math.max(frame-startFrame, 0)/thisFrames;
-                            if (frame == keyFrameList[keyFrameIdx+1]){
-                                keyFrameIdx++;
-                            }
-                            const startState = keyFrames?.get(startFrame)
-                            const startVizState = startState["visual"]
-                            const startCamState = startState["camera"]
-                            const endState = keyFrames?.get(endFrame)
-                            const endVizState = endState["visual"]
-                            const endCamState = endState["camera"]
-                            Object.keys(startVizState).forEach(key => {
-                                const sourceValue = startVizState[key];
-                                const targetValue = endVizState[key];
-                                
-                                // Check if both values are numbers
-                                if (typeof sourceValue === 'number' && typeof targetValue === 'number') {
-                                    lerpedVizState[key] = lerp(sourceValue, targetValue, alpha);
-                                }
-                                else if (Array.isArray(sourceValue) && Array.isArray(targetValue)){
-                                    lerpedVizState[key] = []
-                                    for (let i = 0; i < sourceValue.length; i++){
-                                        lerpedVizState[key][i] = lerp(sourceValue[i], targetValue[i], alpha);
-                                    }
-                                }
-                                // Handle Vector3, arrays, or other lerpable objects
-                                else if (sourceValue?.lerp && typeof sourceValue.lerp === 'function') {
-                                    lerpedVizState[key] = sourceValue.clone().lerp(targetValue, alpha);
-                                }
-                                // For non-lerpable values (strings, booleans, null), switch at the end keyframe
-                                else {
-                                    lerpedVizState[key] = alpha < 1 ? sourceValue : targetValue;
-                                }
-                            });
-                            usePlotStore.setState(lerpedVizState)
-
-                            Object.keys(startCamState).forEach(key => {
-                                const sourceValue = startCamState[key];
-                                const targetValue = endCamState[key];
-                                if (sourceValue.isEuler){
-                                    const startQuat = new THREE.Quaternion().setFromEuler(sourceValue);
-                                    const endQuat   = new THREE.Quaternion().setFromEuler(targetValue);
-
-                                    const resultQuat = new THREE.Quaternion().copy(startQuat).slerp(endQuat, alpha);
-                                    lerpedCamState[key]= new THREE.Euler().setFromQuaternion(resultQuat);
-
-                                } else{
-                                    lerpedCamState[key] = sourceValue.clone().lerp(targetValue,alpha)
-                                }
-                        });
-                        camera.position.copy(lerpedCamState.position)
-                        camera.rotation.copy(lerpedCamState.rotation)
-                        !(useCustomRes || doubleSize) && invalidate();
-                    }
-
-                    }
+                    applyAnimationFrame(plan, frame, camera)
+                    !(useCustomRes || doubleSize) && invalidate(); // We will invalidate later if needed. Otherwise do it now
                     // R3F can reset the renderer size mid-export (e.g. after the DPR change), so only
                     // re-apply when it drifted instead of reallocating the drawing buffer every frame
                     gl.getSize(currentSize)
@@ -518,7 +434,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     if (blob) {
                         const buf = await (blob as Blob).arrayBuffer();
                         // Write frames to internal ffMpeg filesystem
-                        await ffmpeg.writeFile(`frame${frame.toString().padStart(4, '0')}.png`, new Uint8Array(buf));
+                        await ffmpeg.writeFile(`frame${i.toString().padStart(4, '0')}.png`, new Uint8Array(buf));
                     }
                 }
                 setStatus("Building Animation")
@@ -565,7 +481,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     if (ffmpeg.loaded) await CleanupFiles()
                     setStatus(null)
                     setProgress(0)
-                    if (useTime) setAnimProg(animProg)
+                    if (useTime || keyFrameList.length) setAnimProg(animProg) // Keyframes also drive time
                     if (Object.keys(origVizState).length) usePlotStore.setState(origVizState)
                     Restore()
                 });
