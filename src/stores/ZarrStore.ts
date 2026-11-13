@@ -1,8 +1,6 @@
 import { create } from "zustand";
 import { FetchStoreOptions, IcechunkStoreOptions } from "@/types/Interfaces";
 
-const ESDC = 'https://s3.bgc-jena.mpg.de:9000/esdl-esdc-v3.0.2/esdc-16d-2.5deg-46x72x1440-3.0.2.zarr'
-
 type ZarrState = {
   zSlice: [number  , number | null],
   ySlice: [number  , number | null],
@@ -19,8 +17,6 @@ type ZarrState = {
   kernelDepth: number,
   icechunkOptions: IcechunkStoreOptions | null;
   fetchOptions: FetchStoreOptions | null;
-  abortController: AbortController | null;
-  fetchKey: number;
   ndSlices: [number, number][];
   axisMapping: { x: number, y: number, z: number };
   useGT: boolean;
@@ -29,11 +25,8 @@ type ZarrState = {
   setZSlice: (zSlice: [number , number | null]) => void;
   setYSlice: (ySlice: [number , number | null]) => void;
   setXSlice: (xSlice: [number , number | null]) => void;
-  setNdSlices: (ndSlices: [number, number][]) => void;
-  setAxisMapping: (mapping: { x: number, y: number, z: number }) => void;
   setCompress: (compress: boolean) => void;
   setCurrentStore: (currentStore: any) => void;
-  setReFetch: (reFetch: boolean) => void;
   ReFetch: () => void;
   setCurrentChunks: (currentChunks: {x:number[], y:number[], z:number[]}) => void;
   setArraySize: (arraySize: number) => void;
@@ -41,10 +34,6 @@ type ZarrState = {
   setCoarsen: (coarsen: boolean) => void;
   setKernelSize: (kernelSize: number) => void;
   setKernelDepth: (kernelDepth: number) => void;
-  setIcechunkOptions: (options: IcechunkStoreOptions | null) => void;
-  setFetchOptions: (options: FetchStoreOptions | null) => void;
-  setAbortController: (controller: AbortController | null) => void;
-  bumpFetchKey: () => void;
 }
 
 export const useZarrStore = create<ZarrState>((set, get) => ({
@@ -65,19 +54,14 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   kernelDepth: 2,
   icechunkOptions: null,
   fetchOptions: null,
-  abortController: null,
-  fetchKey: 0,
   useGT: false,
   gtSource: undefined,
 
   setZSlice: (zSlice) => set({ zSlice }),
   setYSlice: (ySlice) => set({ ySlice }),
   setXSlice: (xSlice) => set({ xSlice }),
-  setNdSlices: (ndSlices) => set({ ndSlices }),
-  setAxisMapping: (axisMapping) => set({ axisMapping }),
   setCompress: (compress) => set({ compress }),
   setCurrentStore: (currentStore) => set({ currentStore }),
-  setReFetch: (reFetch) => set({ reFetch }),
   ReFetch: () => set({ reFetch: !get().reFetch }),
   setCurrentChunks: (currentChunks) => set({ currentChunks }),
   setArraySize: (arraySize) => set({ arraySize }),
@@ -85,8 +69,4 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   setCoarsen: (coarsen) => set({ coarsen }),
   setKernelSize: (kernelSize) => set({ kernelSize }),
   setKernelDepth: (kernelDepth) => set({ kernelDepth }),
-  setIcechunkOptions: (options) => set({ icechunkOptions: options }),
-  setFetchOptions: (options) => set({ fetchOptions: options }),
-  setAbortController: (controller) => set({ abortController: controller }),
-  bumpFetchKey: () => set(s => ({ fetchKey: s.fetchKey + 1 })),
 }))

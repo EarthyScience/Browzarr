@@ -21,10 +21,10 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions
 
-      - name: prBuild
-        run: pnpm prBuild
-      - name: prLint
-        run: pnpm prLint || true
+      - name: Build
+        run: pnpm buildRepo
+      - name: Lint
+        run: pnpm lint || true
 
   compatibility:
     needs: core

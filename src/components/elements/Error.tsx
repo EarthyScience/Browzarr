@@ -1,5 +1,4 @@
 import React from 'react'
-import '../layout/css/Error.css'
 import { useErrorStore } from '@/stores/ErrorStore'
 import { errorList } from './errorList'
 import { useShallow } from 'zustand/shallow'

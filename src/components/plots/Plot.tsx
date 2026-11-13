@@ -11,7 +11,6 @@ import { useImageExportStore } from '@/stores/ImageExportStore';
 import { useShallow } from 'zustand/shallow';
 import { Navbar, Colorbar, ExportExtent, ShaderEditor, KeyFrames } from '../ui';
 import { overLayTunnel } from '@/components/elements/InfoViewer';
-import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import ExportCanvas from '@/components/elements/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/gpu/textures/ProjectionTexture';
@@ -33,7 +32,7 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
     cameraPosition: s.cameraPosition, overRideCamera: s.overRideCamera
   })))
   const setCameraRef = useImageExportStore(s => s.setCameraRef)
-  const orbitRef = useRef<OrbitControlsImpl | null>(null)
+  const orbitRef = useRef<React.ComponentRef<typeof OrbitControls> | null>(null)
   const hasMounted = useRef(false);
   const cameraRef = useRef<THREE.Camera | null>(null)
   const {set, camera, size} = useThree()

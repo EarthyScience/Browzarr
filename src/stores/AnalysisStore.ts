@@ -6,7 +6,6 @@ type AnalysisState = {
   analysisMode: boolean;
   axis: number;
   reduceOnAxis: boolean;
-  execute: boolean;
   useTwo: boolean;
   variable2: string | undefined;
   valueScalesOrig: {minVal: number, maxVal:number} | null
@@ -24,7 +23,6 @@ type AnalysisState = {
   setAnalysisMode: (analysisMode: boolean) => void;
   setAxis: (axis: number) => void;
   setReduceOnAxis: (reduceOnAxis: boolean) => void;
-  setExecute: (execute: boolean) => void;
   setUseTwo: (useTwo: boolean) => void;
   setVariable2: (variable2: string | undefined) => void;
   setValueScalesOrig: (valueScalesOrig: {minVal: number, maxVal:number} | null) => void;
@@ -41,7 +39,6 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   analysisMode: false,
   axis: 0,
   reduceOnAxis: false,
-  execute: false,
   useTwo: false,
   variable2: undefined,
   valueScalesOrig: null,
@@ -59,7 +56,6 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   setAnalysisMode: (analysisMode) => set({ analysisMode }),
   setAxis: (axis) => set({ axis }),
   setReduceOnAxis: (reduceOnAxis) => set({ reduceOnAxis }),
-  setExecute: (execute) => set({ execute }),
   setUseTwo: (useTwo) => set({ useTwo}),
   setVariable2: (variable2) => set({ variable2 }), 
   setValueScalesOrig: (valueScalesOrig) => set({ valueScalesOrig }),

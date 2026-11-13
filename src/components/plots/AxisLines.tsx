@@ -10,7 +10,6 @@ import { useShallow } from 'zustand/shallow'
 import { Text } from '@react-three/drei'
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { LineSegments2 } from 'three/addons/lines/webgpu/LineSegments2.js';
-import { LineMaterial } from 'three-stdlib';
 import { useFrame } from '@react-three/fiber';
 import { parseLoc, coarsenFlatArray, linspace } from '@/lib/helpers';
 import { useCSSVariable } from '../ui';

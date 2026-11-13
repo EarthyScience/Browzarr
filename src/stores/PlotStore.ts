@@ -14,7 +14,6 @@ type PlotState ={
   quality: number;
   selectTS: boolean;
   animate: boolean;
-  resetAnim: boolean;
   animProg: number;
   cOffset: number;
   cScale: number;
@@ -51,13 +50,10 @@ type PlotState ={
   coarsen: boolean, //Seperate from zarr store so dependencies don't update when changing coarsen in a menu
   kernel:{kernelSize:number, kernelDepth:number}
   is360Deg:boolean,
-  maskTexture: THREE.Texture | undefined;
-  borderTexture: THREE.Texture | undefined;
   useBorderTexture: boolean;
   borderWidth:number;
   maskValue: number;
   cameraPosition: THREE.Vector3;
-  camera: THREE.Camera | undefined;
   nativeCRS: string | undefined;
   destCRS: string | undefined;
   overRideCamera: boolean; // Prevent Camera from resetting until initial position is set. 
@@ -76,7 +72,6 @@ type PlotState ={
   setPlotType: (plotType: string) => void;
   setSelectTS: (selectTS: boolean) => void;
   setAnimate: (animate: boolean) => void;
-  setResetAnim: (resetAnim: boolean) => void;
   setAnimProg: (animProg: number) => void; 
   setCOffset: (cOffset: number) => void;
   setCScale: (cScale: number) => void;
@@ -91,7 +86,6 @@ type PlotState ={
   setBorderColor: (borderColor: string) => void;
   setLonExtent: (lonExtent: [number, number]) => void;
   setLatExtent: (latExtent: [number, number]) => void;
-  setOriginalExtent: (originalExtent: [number, number, number, number]) => void;
   setLonResolution: (lonResolution: number) => void;
   setLatResolution: (latResolution: number) => void;
   incrementColorIdx: () => void;
@@ -128,7 +122,6 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   zRange: [-1, 1],
   selectTS: false,
   animate: false,
-  resetAnim: false,
   animProg: 0,
   cOffset: 0,
   cScale: 1,
@@ -165,13 +158,10 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   coarsen: false,
   kernel:{kernelDepth:1, kernelSize:1},
   is360Deg:false,
-  maskTexture:undefined,
-  borderTexture: undefined,
   useBorderTexture: false,
   maskValue: 0, // This value is for which feature to mask. Not what value to mask out. 
   borderWidth: 0.05,
   cameraPosition: new THREE.Vector3(0, 0, 5),
-  camera: undefined,
   nativeCRS: undefined,
   destCRS: undefined,
   overRideCamera: false,
@@ -192,7 +182,6 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setPlotType: (plotType) => set({ plotType }),
   setSelectTS: (selectTS) => set({ selectTS }),
   setAnimate: (animate) => set({ animate }),
-  setResetAnim: (resetAnim) => set({ resetAnim }),
   setAnimProg: (animProg) => set({ animProg }),
   setCOffset: (cOffset) => set({ cOffset }),
   setCScale: (cScale) => set({ cScale }),
@@ -207,7 +196,6 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setBorderColor: (borderColor) => set({ borderColor }),
   setLonExtent: (lonExtent) => set({ lonExtent }),
   setLatExtent: (latExtent) => set({ latExtent }),
-  setOriginalExtent: (originalExtent) => set({ originalExtent }),
   setLonResolution: (lonResolution) => set({ lonResolution }),
   setLatResolution: (latResolution) => set({ latResolution }),
   incrementColorIdx: () => set(state => ({ 

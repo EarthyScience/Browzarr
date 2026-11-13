@@ -3,8 +3,7 @@ import * as THREE from 'three'
 import { useCacheStore } from '@/stores/CacheStore';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { useZarrStore } from '@/stores/ZarrStore';
-import { decompressSync } from 'fflate';
-import { copyChunkToArray } from '@/data/zarr/utils';
+import { copyChunkToArray, DecompressArray } from '@/data/zarr/utils';
 import { getNCDims } from '@/data/zarr/NCGetters';
 import { GetZarrDims } from '@/data/zarr/ZarrLoaderLRU';
 import { getGTDims } from '@/data/zarr/GTGetters';
@@ -220,12 +219,6 @@ export function getCRSTimeSeries(array: Uint8Array | Float16Array, TimeSeriesInf
 	return ts;
 }
 
-function DecompressArray(compressed : Uint8Array){
-	const decompressed = decompressSync(compressed)
-	const floatArray = new Float16Array(decompressed.buffer)
-	return floatArray
-}
-
 export function GetCurrentArray(overrideStore?: string, overrideVariable?: string){
   const { variable, is4D, idx4D, initStore, strides, dataShape }= useGlobalStore.getState()
   const { arraySize, currentChunks, ndSlices } = useZarrStore.getState()
@@ -284,16 +277,6 @@ export function HandleKernelNums(e: string){
   const newVal = parseInt(e);
   if (newVal % 2 == 0){
     return Math.max(1, newVal - 1)
-  }
-  else{
-    return newVal
-  }
-}
-
-export function HandleCoarselNums(e: string){
-  const newVal = parseInt(e);
-  if (newVal % 2 == 1){
-    return Math.max(1, newVal - 1 )
   }
   else{
     return newVal

@@ -60,10 +60,6 @@
   gap: 12px;
 }
 
-.nav-dropdown {
-  margin-left: 8px;
-}
-
 /* Trigger button (5 dots) */
 .navbar-trigger {
   display: flex;
@@ -74,20 +70,6 @@
   border: none;
   margin-bottom: -12px;
   cursor: pointer;
-}
-
-.navbar-trigger-icon {
-  width: 32px;
-  height: 32px;
-}
-
-.rotating {
-  animation: navbar-rotate 5s linear infinite;
-}
-
-@keyframes navbar-rotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 /* Collapsible content container */

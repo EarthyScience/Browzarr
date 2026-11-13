@@ -1,6 +1,5 @@
 import Navbar from "../layout/NavBar/Navbar";
 import Footer from "../layout/Footer";
-import AboutInfo from "../elements/AboutInfo";
 import  Metadata from "../layout/MetaData";
 import ResizeBar from "../layout/LinePlotArea/ResizeBar";
 import YScaler from "../layout/LinePlotArea/YScaler";
@@ -21,7 +20,6 @@ import PlayButton from "../layout/MainPanel/PlayButton";
 import AnalysisOptions from "../layout/MainPanel/AnalysisOptions";
 import KernelVisualizer from "../elements/KernelVisualizer";
 import ExportImageSettings from "../layout/NavBar/ExportImageSettings";
-import LogoDrawer from "../elements/AboutDrawer";
 import VersionSelector from "../widgets/VersionSelector";
 export { Error } from "../elements/Error";
 export { Hider } from "../widgets/Hider";
@@ -35,8 +33,6 @@ export {AxisBars} from "../elements/AxisBars";
 export {
   Navbar,
   Footer,
-  AboutInfo,
-  LogoDrawer,
   Metadata,
   ResizeBar,
   YScaler,
@@ -64,7 +60,6 @@ export { Alert, AlertTitle, AlertDescription } from "./alert";
 export { Badge, badgeVariants } from "./badge";
 export { Button, buttonVariants } from "./button-enhanced";
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card";
-export { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./collapsible";
 export {
   Command,
   CommandDialog,
@@ -89,7 +84,6 @@ export {
   DialogTrigger,
 } from "./dialog";
 
-export { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "./drawer";
 export {
   DropdownMenu,
   DropdownMenuPortal,
@@ -110,7 +104,6 @@ export {
 
 
 export { Popover, PopoverContent, PopoverTrigger } from "./popover";
-export { ScrollArea, ScrollBar } from "./scroll-area";
 export {
   Select,
   SelectContent,
@@ -127,16 +120,6 @@ export { Separator } from "./separator";
 export { Switch } from "./switch";
 export { Slider } from "./slider";
 export { Toaster } from "./sonner";
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption,
-} from "./table";
 
 export { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
 export {QuickTip} from "../widgets/QuickTip"

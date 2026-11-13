@@ -53,7 +53,6 @@ async function ZarrParser(files: any, store: any){
     }
     for (const variable of vars){
         const decoded = await store.get(variable)
-        console.log(decoded)
         metadata[variable.slice(1)] = jsonDecodeObject(decoded)
     }
     const v2_meta = {metadata, zarr_consolidated_format: 1}

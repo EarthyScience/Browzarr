@@ -44,13 +44,6 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   /* App background gradient (overridable per theme) */
   --app-background: linear-gradient(to bottom right, #f3f3f3, #e7e7e7);
@@ -136,13 +129,6 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
   --app-background: linear-gradient(to bottom right, #2a2a2a, #1c1c1c);
   --glass-bg: rgba(0, 0, 0, 0.2);
@@ -192,44 +178,6 @@ body {
   font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
 }
 
-.canvas {
-  display: block;
-  width: 100vw;
-  margin: 0;
-  padding: 0;
-  position: relative;
-  z-index: 0;
-
-  /* Same height strategy */
-  height: 100vh;
-  height: 100svh;
-  height: 100dvh;
-}
-
-.canvas-title {
-  position: absolute;
-  top: 2rem;
-  left: 2rem;
-  max-width: 60%;
-  padding: 0.25rem;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--background) 60%, transparent);
-  z-index: 1;
-}
-.canvas-title p {
-  display: none;
-  padding: 0.25rem;
-  background-image: linear-gradient(-125deg, var(--background) 0%, var(--background-modal) 100%);
-  max-height: 50vh;
-  border-radius: 10px;
-  overflow-y: auto;
-  z-index: 1;
-}
-
-.canvas-title:hover p {
-  display: block;
-}
-
 .warn-box {
   padding: 8px 12px;
   border: 1px solid #b91c1c;      /* red-700 */
@@ -252,18 +200,6 @@ ul {
 li {
   padding: 0.25rem 0;
   font-size: 13px;
-}
-
-.button {
-  background-color: var(--accent-2);
-  border: none;
-  padding: 0.25rem 1rem;
-  border-radius: 0.25rem;
-  margin-top: 0.5rem;
-  cursor: pointer;
-}
-.button:hover {
-  background-color: var(--button-hover);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -305,103 +241,6 @@ a[href]:hover::after {
   width: 100%;
 }
 
-/* Custom tweakpane containers */
-.data-stores-pane {
-  position: fixed;
-  top: 2.75rem;
-  right: 0.35rem;
-  z-index: 11;
-  transition: opacity 0.5s ease;
-}
-
-.data-stores-pane::before {
-  content: '';
-  position: absolute;
-  top: -0.25rem;
-  right: 0.5rem;
-  width: 10px;
-  height: 10px;
-  background-color: var(--foreground);
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.data-stores-pane:not(:hover)::before {
-  opacity: 1;
-}
-
-.data-stores-pane:hover::before {
-  opacity: 0;
-  pointer-events: none;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(2.5);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.data-stores-pane:hover {
-  opacity: 1;
-}
-
-.data-stores-pane:not(:hover) {
-  opacity: 0.6;
-}
-
-.data-settings-pane{
-  position: fixed;
-  top: 8rem;
-  right: 0.35rem;
-  z-index: 10;
-}
-
-.plot-pane{
-  position: fixed;
-  top: 17rem;
-  right: 0.35rem;
-  z-index: 10;
-}
-
-.plot-cloud{
-  position: fixed;
-  top: 17rem;
-  right: 0.35rem;
-  z-index: 10;
-}
-
-.line-plot-pane{
-  position: absolute;
-  bottom: 25.5%;
-  right: 0.35rem;
-  z-index: 10;
-}
-
-.analysis-tp{
-  position: absolute;
-  bottom: 20%;
-  right: 0.5rem;
-  z-index: 10;
-}
-
-.analysis {
-  position: fixed;
-  top: 3rem;
-  left: 3%;
-  z-index: 10;
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -436,14 +275,6 @@ a[href]:hover::after {
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
 }
 
 @layer base {
@@ -453,17 +284,6 @@ a[href]:hover::after {
   body {
     @apply bg-background text-foreground;
   }
-}
-
-.dark {
-  --sidebar: hsl(240 5.9% 10%);
-  --sidebar-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-primary: hsl(224.3 76.3% 48%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(240 3.7% 15.9%);
-  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-border: hsl(240 3.7% 15.9%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
 @keyframes glow-pulse {

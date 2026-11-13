@@ -10,7 +10,7 @@ import { useGlobalStore } from '@/stores/GlobalStore';
 import { QuickTip } from '@/components/widgets/QuickTip';
 
 const PlotLineButton = () => {
-    const {selectTS, resetAnim, displaceFaces, plotType, setSelectTS, setResetAnim} = usePlotStore(useShallow(s => s))
+    const {selectTS, displaceFaces, plotType, setSelectTS} = usePlotStore(useShallow(s => s))
     const isFlat = useGlobalStore(s => s.isFlat)
     const instanced = ['sphere','flatMap'].includes(plotType) && displaceFaces
     const exception = instanced || isFlat
@@ -36,7 +36,7 @@ const PlotLineButton = () => {
           size="icon"
           className="size-10 cursor-pointer"
           disabled={exception}
-          onClick={() => {setResetAnim(!resetAnim); setSelectTS(!selectTS)}}
+          onClick={() => setSelectTS(!selectTS)}
         >
           <VscGraphLine
             className="size-6"

@@ -55,7 +55,6 @@ type StoreState = {
   titleDescription: { title: string | null; description: string | null };
   textureArrayDepths: number[];
   textureData: Uint8Array | Uint16Array;
-  clampExtremes: boolean;
   useF16Textures: boolean;
   borderCompatible: boolean;
   mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined;
@@ -78,9 +77,6 @@ type StoreState = {
   setDimUnits: (dimUnits: string[]) => void;
   setDimCoords: (dimCoords?: Record<string, DimCoords>) => void;
   updateDimCoords: (newDims: Record<string, DimCoords>) => void;
-  setAxisDimArrays: (axisDimArrays: number[][]) => void;
-  setAxisDimNames: (axisDimNames: string[]) => void;
-  setAxisDimUnits: (axisDimUnits: string[]) => void;
   setPlotDim: (plotDim: number) => void;
   setFlipY: (flipY:boolean) => void;
   setInitStore: (initStore:string) => void;
@@ -88,7 +84,6 @@ type StoreState = {
   setVariable: (variable: string) => void;
   setVariable2: (variable2: string | undefined) => void;
   setVariables: (variables: string[]) => void;
-  setBivariate: (bivariate: boolean) => void,
   setOpenVariables: (openVariables: boolean) => void;
   setPlotOn: (plotOn: boolean) => void;
   setIsFlat: (isFlat: boolean) => void;
@@ -101,7 +96,6 @@ type StoreState = {
   setTextureData: (textureData: Uint8Array | Uint16Array ) => void;
   setDPR: (DPR: number) => void;
   setScalingFactors: (scalingFactors: number[]) => void;
-  setClampExtremes: (clampExtremes: boolean) => void;
   setUseF16Textures: (useF16Textures: boolean) => void;
   setMainTextures: (mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined) => void;
   setIsWebGPU: (isWebGPU: boolean) => void;
@@ -148,7 +142,6 @@ const createStore = () => create<StoreState>((set, get) => ({
   textureData: new Uint8Array(1),
   DPR: 1,
   scalingFactors: [],
-  clampExtremes: false,
   useF16Textures: false,
   borderCompatible: true,
   mainTextures: undefined,
@@ -190,9 +183,6 @@ const createStore = () => create<StoreState>((set, get) => ({
 
     set({ dimCoords: limitedDimCoords });
   },
-  setAxisDimArrays: (axisDimArrays) => set({ axisDimArrays }),
-  setAxisDimNames: (axisDimNames) => set({ axisDimNames }),
-  setAxisDimUnits: (axisDimUnits) => set({ axisDimUnits }),
   setPlotDim: (plotDim) => set({ plotDim }),
   setFlipY: (flipY) => set({ flipY }),
   setInitStore: (initStore) => set({ initStore }),
@@ -201,7 +191,6 @@ const createStore = () => create<StoreState>((set, get) => ({
   setVariable2: (variable2) => set({ variable2 }),
   setVariables: (variables) => set({ variables }),
   setOpenVariables: (openVariables) => set({ openVariables }),
-  setBivariate: (bivariate) => set({ bivariate }),
   setPlotOn: (plotOn) => set({ plotOn }),
   setIsFlat: (isFlat) => set({ isFlat }),
   setProgress: (progress) => set({ progress }),
@@ -212,7 +201,6 @@ const createStore = () => create<StoreState>((set, get) => ({
   setTextureData: (textureData) => set({ textureData }),
   setDPR: (DPR) => set({ DPR }),
   setScalingFactors: (scalingFactors) => set({ scalingFactors }),
-  setClampExtremes: (clampExtremes) => set({ clampExtremes }),
   setUseF16Textures: (useF16Textures) => set({ useF16Textures }),
   setMainTextures: (mainTextures) => set({ mainTextures }),
   setIsWebGPU: (isWebGPU) => set({ isWebGPU }),

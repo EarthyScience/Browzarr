@@ -48,7 +48,6 @@ const MIME = {
   ".svg":  "image/svg+xml",
   ".json": "application/json",
   ".woff2": "font/woff2",
-  ".glsl": "text/plain",
 };
 
 createServer((req, res) => {

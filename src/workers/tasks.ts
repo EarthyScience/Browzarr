@@ -2,18 +2,9 @@ import { getBaseImage } from '@/data/geo/baseImage';
 import { CompressArray, DecompressArray, RescaleArray } from '@/data/zarr/utils';
 import { arrayRange } from '@/lib/arrayMath';
 import { FetchStoreOptions } from '@/types/Interfaces';
-import { decompressSync } from 'fflate';
-import { toHalfFloat } from 'three/src/extras/DataUtils.js';
-import { createTextureData, textureIn, textureOut } from './tasks/createTextureData';
 import { processChunk, processIn, processOut } from './tasks/processChunk';
 import { TypedArray } from '@/lib/helpers';
 
-interface normalizeIn{
-    data: Uint8Array | Float16Array;
-    minVal: number;
-    range: number;
-    useF16: boolean;
-}
 interface readRasterIn {
     gtSource: File | string;
     fetchOptions?: FetchStoreOptions | null;
@@ -31,23 +22,6 @@ interface readRasterOut{
 }
 
 
-function normalizeTextureData({data, minVal, range, useF16}: normalizeIn){
-    const textureData = useF16 ? new Uint16Array(data.length) : new Uint8Array(data.length)
-    for (let i = 0; i < data.length; i++){
-        const normed = (data[i] - minVal) / range;
-        if (isNaN(normed)){
-        textureData[i] = useF16 
-            ?	toHalfFloat(NaN)
-            :	255;
-        } else {
-        textureData[i] = useF16
-            ?	toHalfFloat(normed)
-            :	normed * 254;
-        }
-    };
-    return {textureData}
-}
-
 async function readRasterData({gtSource, fetchOptions, imageNum, winX, winY, sample}: readRasterIn){
     const geotiff = await getBaseImage(gtSource, fetchOptions)
     const image = await geotiff.getImage(imageNum)
@@ -60,11 +34,6 @@ async function readRasterData({gtSource, fetchOptions, imageNum, winX, winY, sam
     return {data:data[0], width, height, valueScale}
 }
 
-function decompressArray({array}:{array:Uint8Array}){
-    const decompressed = decompressSync(array)
-	const newArray = new Float16Array(decompressed.buffer)
-	return {newArray}
-}
 interface RescalerIn{array:Float16Array | Uint8Array; 
     delta:number; 
     compressed: boolean
@@ -83,10 +52,7 @@ function rescaler({array, delta, compressed}:RescalerIn){
     
 
 export const tasks = {
-    normalizeData: (d: normalizeIn): {textureData: Uint8Array | Uint16Array} => normalizeTextureData(d),
     readRasterData: (d: readRasterIn): Promise<readRasterOut> => readRasterData(d),
-    decompress: (d: {array:Uint8Array}): {newArray: Float16Array} => decompressArray(d),
     processChunk: (d: processIn) : Promise<processOut> => processChunk(d),
-    textureData: (d: textureIn) : textureOut => createTextureData(d),
     rescaler: (d: RescalerIn) : {array: Float16Array | Uint8Array} => rescaler(d)
 };

@@ -1,21 +1,3 @@
-.analysis-canvas{
-    display: block;
-    position: fixed;
-    width: 40%;
-    height: 100vh;
-    left: 0%;
-    background-color:var(--background-plot);
-}
-
-.landing-title{
-    position: fixed;
-    top: 10%;
-    left: 50%;
-    font-size: xx-large;
-    font-weight: 700;
-    transform: translateX(-50%);
-}
-
 .main-canvas{
     position: fixed;
     display: block;
@@ -24,36 +6,6 @@
     right: 0%;
     overflow: hidden;
   }
-
-.analysis-ui{
-    display: block;
-    position: absolute;
-    justify-content: space-evenly;
-    left: 3%;
-    top: 5%;
-    z-index: 1;
-}
-
-.analysis-item{
-    display: flex;
-    justify-content: space-between;
-}
-
-.analysis-item select{
-    background-color: black;
-    cursor: pointer;
-}
-
-.analyze{
-    display: flex;
-    justify-content: center;
-}
-
-.analyze button{
-    width: 80%;
-    background-color: rgb(23, 29, 34);
-    cursor: pointer;
-}
 
 /* ── Hover tooltip card ─────────────────────────────────────────── */
 .analysis-overlay {
@@ -107,17 +59,6 @@
     font-weight: 500;
     color: var(--muted-foreground);
     letter-spacing: 0.03em;
-}
-
-/* Z & extra dimensions row */
-.analysis-overlay__z-coords {
-    padding: 3px 10px 4px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
-    background: rgba(0, 0, 0, 0.04);
 }
 
 /* Coordinates row – bottom */

@@ -23,7 +23,7 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
         variable:s.variable, variable2: s.variable2, bivariate: s.bivariate, units: s.units
     })));
     const colorScale = usePlotStore(s => s.colorScale);
-    const {variable2:analysisVar2, analysisMode, analysisInfo, execute} = useAnalysisStore(useShallow(s => s));
+    const {variable2:analysisVar2, analysisMode, analysisInfo} = useAnalysisStore(useShallow(s => s));
     const {operation, kernelOp} = analysisInfo?? {operation:undefined, kernelOp:undefined};
     const [bivariateSelection, setBivariateSelection] = useState(0);
     const thisVariable = [variable, variable2][bivariateSelection];
@@ -42,7 +42,7 @@ const Colorbar = ({metadata} : { metadata: Record<string, any>}) => {
         } else{
             return units ? `[${units}]` : ''
         }
-    },[analysisMode, execute, units, kernelOp, operation, analysisVar2])
+    },[analysisMode, units, kernelOp, operation, analysisVar2])
     const isMobile = useIsMobile();
     const thisWidth = isMobile ? 200 : 512
     useEffect(()=>{

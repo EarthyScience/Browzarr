@@ -112,14 +112,6 @@
   transition: filter 150ms, background 150ms, color 150ms;
 }
 .bz-btn:focus-visible { outline: 2px solid var(--bz-accent); outline-offset: 2px; }
-.bz-primary {
-  padding: 10px 20px;
-  border: 0;
-  background: var(--bz-accent);
-  color: #06121c;
-  font-weight: 600;
-}
-.bz-primary:hover { filter: brightness(1.1); }
 .bz-quiet {
   padding: 10px 6px;
   border: 0;

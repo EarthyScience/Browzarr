@@ -1,6 +1,5 @@
 export {useAxisIndices} from './useAxisIndices';
 export {useCoordBounds} from './useCoordBounds'
-export {usePaddedTextures} from './usePaddedTextures'
 export {useDataFetcher} from './useDataFetcher'
 export {useDimAxis} from './useDimAxis'
 export {getDimAxis, getAxisDimAxis} from './useDimAxis'
