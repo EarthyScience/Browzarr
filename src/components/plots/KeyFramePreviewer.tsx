@@ -55,7 +55,7 @@ export const KeyFramePreviewer = () => {
             if (typeof sourceValue === 'number' && typeof targetValue === 'number') {
                 lerpedVizState[key] = lerp(sourceValue, targetValue, alpha);
             }
-            else if (sourceValue.length){ // If Array
+            else if (Array.isArray(sourceValue) && Array.isArray(targetValue)){
                 lerpedVizState[key] = []
                 for (let i = 0; i < sourceValue.length; i++){
                     lerpedVizState[key][i] = lerp(sourceValue[i], targetValue[i], alpha);
@@ -65,9 +65,9 @@ export const KeyFramePreviewer = () => {
             else if (sourceValue?.lerp && typeof sourceValue.lerp === 'function') {
                 lerpedVizState[key] = sourceValue.clone().lerp(targetValue, alpha);
             }
-            // For non-numeric values, just copy from target
+            // For non-lerpable values (strings, booleans, null), switch at the end keyframe
             else {
-                lerpedVizState[key] = targetValue;
+                lerpedVizState[key] = alpha < 1 ? sourceValue : targetValue;
             }
         });
         usePlotStore.setState(lerpedVizState)
