@@ -1,5 +1,5 @@
 "use client";
-import React, {useEffect, useState} from 'react'
+import React, {useEffect} from 'react'
 import { IoImage } from "react-icons/io5";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Input, Hider, Button, Switcher, QuickTip } from "@/components/ui";
@@ -8,7 +8,6 @@ import { useGlobalStore } from '@/stores/GlobalStore';
 import { usePlotStore } from '@/stores/PlotStore';
 import { useZarrStore } from '@/stores/ZarrStore';
 import { useShallow } from 'zustand/shallow';
-import { ChevronRight } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -18,7 +17,7 @@ import {
 } from "@/components/ui/select"
 import { BsBoxArrowRight } from "react-icons/bs";
 import { FaLongArrowAltRight } from "react-icons/fa";
-import { FieldLabel, Section, CollapsibleSection, Group, Field, SwitchField } from '@/components/widgets/SettingFields';
+import { FieldLabel, CollapsibleSection, Group, Field, SwitchField } from '@/components/widgets/SettingFields';
 
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
@@ -34,23 +33,23 @@ const ExportImageSettings = () => {
     const {
         includeBackground, includeColorbar, doubleSize, cbarLoc, cbarNum,
         useCustomRes, customRes, includeAxis, mainTitle, cbarLabels, cbarUnits, animate, timeRate,
-        frames, frameRate, orbit, useTime, loopTime, orbitDeg, orbitDir, preview, pingpong,
+        frames, frameRate, orbit, useTime, loopTime, orbitDeg, orbitDir, preview, previewExtent, keyFrames,
         ExportImg, EnableExport, setIncludeBackground, setIncludeColorbar,
         setDoubleSize, setCbarLoc, setCbarNum, setUseCustomRes, setCustomRes, setIncludeAxis,
         setHideAxis, setHideAxisControls, setMainTitle, setCbarLabels, setAnimate,
         setFrames, setFrameRate, setTimeRate, setOrbit, setUseTime, setLoopTime, setKeyFrameEditor,
-        setCbarUnits, setPingpong, setPreview, setPreviewExtent, setOrbitDeg
+        setCbarUnits, setPreview, setPreviewExtent, setOrbitDeg
     } = useImageExportStore(useShallow(s => s))
 
     const {plotType, zSlice} = usePlotStore(useShallow(s => ({ plotType: s.plotType, zSlice: s.zSlice })))
     const {variable, variable2, dimArrays, bivariate, units} = useGlobalStore(useShallow(s => ({
         variable: s.variable, variable2: s.variable2, dimArrays: s.dimArrays, bivariate: s.bivariate, units: s.units
     })))
-    const [showAnimation, setShowAnimation] = useState(false)
     const axisMapping = useZarrStore(s => s.axisMapping);
     const cbarLocList = bivariate
         ? ['bottomLeft', 'bottomRight', 'topLeft', 'topRight']
         : ['left', 'right', 'top', 'bottom']
+    const resMode = useCustomRes ? 'custom' : doubleSize ? 'double' : 'screen'
 
     useEffect(()=>{
         const shapeLength = dimArrays?.length || 3;
@@ -93,32 +92,21 @@ const ExportImageSettings = () => {
                 className="w-[260px] max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden select-none"
             >
                 <div className='flex flex-col gap-3'>
-                    <CollapsibleSection title='Titles'>
-                        <StackedInput id='main-title' label='Main title' value={mainTitle} onChange={e => setMainTitle(e.target.value)} />
-                        <Hider show={includeColorbar}>
-                            <Group>
-                                <div className='flex flex-col gap-1'>
-                                    <FieldLabel htmlFor='cbar-title'>Colorbar label{bivariate ? 's' : ''}</FieldLabel>
-                                    <Input id='cbar-title' className='h-8' placeholder={variable} value={cbarLabels[0]} onChange={updateCbarLabels(0)} />
-                                    {bivariate && <Input id='cbar-title2' className='h-8' placeholder={variable2} value={cbarLabels[1]} onChange={updateCbarLabels(1)} />}
-                                </div>
-                                <div className='flex flex-col gap-1'>
-                                    <FieldLabel htmlFor='cbar-units'>Colorbar units</FieldLabel>
-                                    <Input id='cbar-units' className='h-8' placeholder={units[0] ?? "undefined"} value={cbarUnits[0]} onChange={updateCbarUnits(0)} />
-                                    {bivariate && <Input id='cbar-units2' className='h-8' placeholder={units[1] ?? "undefined"} value={cbarUnits[1]} onChange={updateCbarUnits(1)} />}
-                                </div>
-                            </Group>
-                        </Hider>
-                    </CollapsibleSection>
+                    <div className='flex flex-col gap-2'>
+                        <FieldLabel help='Export as an image or as a video'>Export as</FieldLabel>
+                        <Switcher className='!mb-0' leftText='Image' rightText='Video' state={!animate} onClick={()=> setAnimate(!animate)} />
+                    </div>
 
                     <CollapsibleSection title='Settings' defaultOpen>
-                        <SwitchField id='include-bg' label='Background' checked={includeBackground} onChange={setIncludeBackground} />
+                        {!animate &&
+                            <SwitchField id='include-bg' label='Background' checked={includeBackground} onChange={setIncludeBackground} />
+                        }
                         {plotType != 'sphere' &&
                             <SwitchField id='include-axis' label='Axis' checked={includeAxis} onChange={setIncludeAxis} />
                         }
                         <SwitchField id='include-cbar' label='Colorbar' checked={includeColorbar} onChange={setIncludeColorbar} />
                         <Hider show={includeColorbar}>
-                            <Group>
+                            <Group className='ml-1 pl-3 border-l'>
                                 <Field label='Location'>
                                     <Select value={cbarLoc} onValueChange={setCbarLoc}>
                                         <SelectTrigger className='h-7 w-full'>
@@ -132,105 +120,116 @@ const ExportImageSettings = () => {
                                     </Select>
                                 </Field>
                                 <Field label='Ticks' htmlFor='cbar-num'>
-                                    <Input className='h-7' id='cbar-num' type="number" min={0} max={20} step={1} value={cbarNum} onChange={e => setCbarNum(parseInt(e.target.value))} />
+                                    <Input className='h-7' id='cbar-num' type="number" min={0} max={20} step={1} value={cbarNum} onChange={e => setCbarNum(parseInt(e.target.value) || 0)} />
                                 </Field>
                             </Group>
                         </Hider>
 
-                        <SwitchField id='use-custom-res' label='Custom resolution' checked={useCustomRes} onChange={setUseCustomRes} />
+                        <Field label='Resolution'>
+                            <Select value={resMode} onValueChange={v => { setUseCustomRes(v === 'custom'); setDoubleSize(v === 'double') }}>
+                                <SelectTrigger className='h-7 w-full'>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value='screen'>Screen</SelectItem>
+                                    <SelectItem value='double'>2× screen</SelectItem>
+                                    <SelectItem value='custom'>Custom</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                         <Hider show={useCustomRes}>
-                            <Group>
+                            <Group className='ml-1 pl-3 border-l'>
                                 <div className='grid grid-cols-2 gap-2'>
-                                    <StackedInput id='res-width' label='Width' type='number' value={customRes[0]} onChange={e => setCustomRes([parseInt(e.target.value), customRes[1]])} />
-                                    <StackedInput id='res-height' label='Height' type='number' value={customRes[1]} onChange={e => setCustomRes([customRes[0], parseInt(e.target.value)])} />
+                                    <StackedInput id='res-width' label='Width' type='number' value={customRes[0]} onChange={e => setCustomRes([parseInt(e.target.value) || 2, customRes[1]])} />
+                                    <StackedInput id='res-height' label='Height' type='number' value={customRes[1]} onChange={e => setCustomRes([customRes[0], parseInt(e.target.value) || 2])} />
                                 </div>
                                 <Button
                                     variant='outline'
                                     size='sm'
-                                    disableRipple
-                                    onPointerEnter={()=>setPreviewExtent(true)}
-                                    onPointerLeave={()=>setPreviewExtent(false)}
+                                    className='cursor-pointer'
+                                    onClick={()=>setPreviewExtent(!previewExtent)}
                                 >
-                                    Hover to preview extent
+                                    {previewExtent ? 'Hide' : 'Show'} extent
                                 </Button>
                             </Group>
                         </Hider>
-                        <Hider show={!useCustomRes}>
-                            <SwitchField id='double-size' label='Double resolution' checked={doubleSize} onChange={setDoubleSize} />
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title='Titles'>
+                        <StackedInput id='main-title' label='Main title' value={mainTitle} onChange={e => setMainTitle(e.target.value)} />
+                        <Hider show={includeColorbar}>
+                            <Group>
+                                <Field label={`Colorbar label${bivariate ? 's' : ''}`} htmlFor='cbar-title'>
+                                    <div className='flex flex-col gap-1'>
+                                        <Input id='cbar-title' className='h-7' placeholder={variable} value={cbarLabels[0]} onChange={updateCbarLabels(0)} />
+                                        {bivariate && <Input id='cbar-title2' className='h-7' placeholder={variable2} value={cbarLabels[1]} onChange={updateCbarLabels(1)} />}
+                                    </div>
+                                </Field>
+                                <Field label='Colorbar units' htmlFor='cbar-units'>
+                                    <div className='flex flex-col gap-1'>
+                                        <Input id='cbar-units' className='h-7' placeholder={units[0] ?? "undefined"} value={cbarUnits[0]} onChange={updateCbarUnits(0)} />
+                                        {bivariate && <Input id='cbar-units2' className='h-7' placeholder={units[1] ?? "undefined"} value={cbarUnits[1]} onChange={updateCbarUnits(1)} />}
+                                    </div>
+                                </Field>
+                            </Group>
                         </Hider>
                     </CollapsibleSection>
-                    <Popover open={showAnimation} onOpenChange={setShowAnimation}>
-                        <PopoverTrigger asChild>
-                            <div className='flex items-center'>
-                            <Button variant='secondary' size='sm' className='flex-grow justify-between cursor-pointer'
-                                onClick={()=>setAnimate(true)}
-                            >
-                                Animation settings
+
+                    <Hider show={animate}>
+                        <CollapsibleSection title='Animation' defaultOpen>
+                            <Field label='Frames' htmlFor='frames'>
+                                <Input className='h-7' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(parseInt(e.target.value) || 1)} />
+                            </Field>
+                            <Field label={`FPS (${(frames / frameRate || 0).toFixed(1)}s)`} htmlFor='fps'>
+                                <Input className='h-7' id="fps" type='number' step={1} value={frameRate} onChange={e => setFrameRate(parseInt(e.target.value) || 1)} />
+                            </Field>
+
+                            <SwitchField id='use-orbit' label='Orbit' checked={orbit} onChange={setOrbit} />
+                            <Hider show={orbit}>
+                                <Group className='ml-1 pl-3 border-l'>
+                                    <Field label='Degrees' htmlFor='orbit-deg'>
+                                        <Input className='h-7' id="orbit-deg" type='number' step={1} value={orbitDeg} onChange={e => setOrbitDeg(parseInt(e.target.value) || 0)} />
+                                    </Field>
+                                    <Field label='Direction' htmlFor='orbit-dir'>
+                                        <Button
+                                            id='orbit-dir'
+                                            variant='outline'
+                                            size='sm'
+                                            className='h-7 w-full cursor-pointer'
+                                            onClick={()=>useImageExportStore.getState().flipOrbitDir()}
+                                        >
+                                            <FaLongArrowAltRight style={{ transform: orbitDir ? "rotate(180deg)" : "", transition: ".25s" }} />
+                                        </Button>
+                                    </Field>
+                                </Group>
+                            </Hider>
+
+                            <SwitchField id='use-time' label='Animate time' checked={useTime} onChange={setUseTime} />
+                            <Hider show={useTime}>
+                                <Group className='ml-1 pl-3 border-l'>
+                                    <Field label='Timesteps / sec' htmlFor='time-rate'>
+                                        <Input className='h-7' id="time-rate" type='number' step={1} value={timeRate} onChange={e => setTimeRate(parseInt(e.target.value) || 1)} />
+                                    </Field>
+                                    <SwitchField id='loop-time' label='Loop time' checked={loopTime} onChange={setLoopTime} />
+                                </Group>
+                            </Hider>
+
+                            <Button size='sm' className='cursor-pointer' onClick={()=>setKeyFrameEditor(true)}>
+                                Keyframes{keyFrames?.size ? ` (${keyFrames.size})` : ''} <BsBoxArrowRight/>
                             </Button>
-                            <ChevronRight className={`size-4 transition-transform duration-200 ${showAnimation ? 'rotate-180' : ''}`} />
+                            <div className='flex flex-col gap-2'>
+                                <FieldLabel help='Choose export quality. Preview for fast test renders'>Quality</FieldLabel>
+                                <Switcher className='!mb-0' leftText='Preview' rightText='Final' state={preview} onClick={()=> setPreview(!preview)} />
                             </div>
-                        </PopoverTrigger>
-                        <PopoverContent side='right' className='w-[260px] p-1'>
-                            <Section title='Animation'>
-                                <Field label='Frames' htmlFor='frames'>
-                                    <Input className='h-7' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(parseInt(e.target.value))} />
-                                </Field>
-                                <Field label='FPS' htmlFor='fps'>
-                                    <Input className='h-7' id="fps" type='number' step={1} value={frameRate} onChange={e => setFrameRate(parseInt(e.target.value))} />
-                                </Field>
+                        </CollapsibleSection>
+                    </Hider>
 
-                                <SwitchField id='use-orbit' label='Orbit' checked={orbit} onChange={setOrbit} />
-                                <Hider show={orbit}>
-                                    <Group>
-                                        <Field label='Degrees' htmlFor='orbit-deg'>
-                                            <Input className='h-7' id="orbit-deg" type='number' step={1} value={orbitDeg} onChange={e => setOrbitDeg(parseInt(e.target.value))} />
-                                        </Field>
-                                        <Field label='Direction' htmlFor='orbit-dir'>
-                                            <Button
-                                                id='orbit-dir'
-                                                variant='outline'
-                                                size='sm'
-                                                className='h-7 w-full cursor-pointer'
-                                                onClick={()=>useImageExportStore.getState().flipOrbitDir()}
-                                            >
-                                                <FaLongArrowAltRight style={{ transform: orbitDir ? "rotate(180deg)" : "", transition: ".25s" }} />
-                                            </Button>
-                                        </Field>
-                                        <SwitchField id='pingpong' label='Ping-pong' checked={pingpong} onChange={setPingpong} />
-                                    </Group>
-                                </Hider>
-
-                                <SwitchField id='use-time' label='Animate time' checked={useTime} onChange={setUseTime} />
-                                <Hider show={useTime}>
-                                    <Group>
-                                        <Field label='Time FPS' htmlFor='time-rate'>
-                                            <Input className='h-7' id="time-rate" type='number' step={1} value={timeRate} onChange={e => setTimeRate(parseInt(e.target.value))} />
-                                        </Field>
-                                        <SwitchField id='loop-time' label='Loop time' checked={loopTime} onChange={setLoopTime} />
-                                    </Group>
-                                </Hider>
-
-                                <Button size='sm' className='cursor-pointer' onClick={()=>setKeyFrameEditor(true)}>
-                                    Keyframe editor <BsBoxArrowRight/>
-                                </Button>
-                                <div className='flex flex-col gap-2'>
-                                    <FieldLabel help='Choose export quality. Preview for fast test renders'>Quality</FieldLabel>
-                                    <Switcher className='!mb-0' leftText='Preview' rightText='Final' state={preview} onClick={()=> setPreview(!preview)} />
-                                </div>
-                            </Section>
-                        </PopoverContent>
-                    </Popover>
-
-                    <div className='flex flex-col gap-2'>
-                        <FieldLabel help='Export as an image or as an animation'>Export as</FieldLabel>
-                        <Switcher className='!mb-0' leftText='Image' rightText='Animation' state={!animate} onClick={()=> setAnimate(!animate)} />
-                    </div>
                     <Button
                         variant='pink'
                         className='cursor-pointer'
-                        onClick={()=>{ExportImg(); setHideAxisControls(true); setHideAxis(!includeAxis)}}
+                        onClick={()=>{setPreviewExtent(false); ExportImg(); setHideAxisControls(true); setHideAxis(!includeAxis)}}
                     >
-                        Export
+                        Export {animate ? 'MP4' : 'PNG'}
                     </Button>
                 </div>
             </PopoverContent>
