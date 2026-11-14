@@ -11,7 +11,6 @@ import { uniformUpdater } from '@/gpu/tsl/utils/uniformUpdater';
 import { useEffect } from 'react';
 import { pointerPos } from '@/gpu/tsl/morphingPoints';
 import { WebGPUPlacard } from '@/components/elements/WebGPUPlacard';
-import WelcomeSplash from '../layout/WelcomeSplash';
 const MorphingPoints = () => {
   const count = 15625; // Total number of points
   const material = useMemo(()=>createMorphingMaterial(count), [count])
@@ -56,7 +55,6 @@ export const LandingShapes = () =>{
 	return(
 		<div className='w-[100vw] h-[100vh]'>
 		<WebGPUPlacard />
-		<WelcomeSplash />
 		<Canvas
 			camera={{position:[0, 0, 3]}}
 			flat
