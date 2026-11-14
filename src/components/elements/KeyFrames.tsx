@@ -21,34 +21,22 @@ import { toast } from "sonner"
 import { QuickTip } from '../widgets/QuickTip';
 import { KeyFramesHelper } from './KeyFramesHelper';
 import { BsBoxArrowUp } from 'react-icons/bs';
-function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
-  return keys.reduce((acc, key) => {
-    if (key in obj) {
-      acc[key] = obj[key];
-    }
-    return acc;
-  }, {} as Pick<T, K>);
-}
+const NON_VISUAL_KEYS = new Set<string>([
+    "plotType", "selectTS", "animate", "resetAnim", "animProg", "resetCamera",
+    "originalExtent", "lonResolution", "latResolution", "colorIdx",
+    "maxTextureSize", "max3DTextureSize", "zSlice", "ySlice", "xSlice",
+    "fillValue", "coarsen", "kernel", "is360Deg", "maskTexture", "borderTexture",
+    "cameraPosition", "camera", "nativeCRS", "destCRS", "overRideCamera", "preProject",
+])
 
 const SetKeyFrame = (frame: number) =>{
-    const {plotType} = usePlotStore.getState()
     const {addKeyFrame} = useImageExportStore.getState()
-    let vizStates = []
-    if (plotType === "volume"){
-        vizStates=["transparency", "vTransferRange", "vTransferScale"];
-    } else if (plotType === "point-cloud"){
-        vizStates=["scaleIntensity", "pointSize", "timeScale"];
-    } else {
-        vizStates=["displacement"]
-    }
-    if (["point-cloud", "volume"].includes(plotType)){
-        vizStates.push("valueRange", "xRange", "yRange", "zRange")
-    }
-    if (plotType != "pointCloud") {
-        vizStates.push("nanColor", "nanTransparency")
-    }
     const currentVizState = usePlotStore.getState()
-    const keyState = pick(currentVizState, vizStates as (keyof typeof currentVizState)[])
+    const keyState = Object.fromEntries(
+        Object.entries(currentVizState).filter(
+            ([key, value]) => typeof value !== "function" && !NON_VISUAL_KEYS.has(key)
+        )
+    )
     const currentCamState = useImageExportStore.getState().cameraRef?.current?.clone()
     const cameraState = {
         position: currentCamState?.position,
