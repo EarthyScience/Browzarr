@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { ButtonGroup } from "@/components/ui/button-group"
 import { useImageExportStore } from '@/stores/ImageExportStore';
 import { usePlotStore } from '@/stores/PlotStore';
+import { useGlobalStore } from '@/stores/GlobalStore';
+import { getTimeProgress } from '@/lib/keyFrames';
 import { useShallow } from 'zustand/shallow'
 import { Slider } from '@/components/ui/slider'
 import '../layout/css/KeyFrames.css'
@@ -18,7 +20,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner"
 import { QuickTip } from '../widgets/QuickTip';
 import { KeyFramesHelper } from './KeyFramesHelper';
-import { KeyFrameInfo } from './KeyFrameInfo';
 import { BsBoxArrowUp } from 'react-icons/bs';
 const NON_VISUAL_KEYS = new Set<string>([
     "plotType", "selectTS", "animate", "resetAnim", "animProg", "resetCamera",
@@ -236,7 +237,9 @@ export const KeyFrames = () => {
                 const v = Array.isArray(vals) ? vals[0] : 0
                 setCurrentFrame(v)
                 if (useTime && originalAnimProg.current){
-                    setAnimProg(originalAnimProg.current + (v / frames)*timeRatio)
+                    const {dataShape} = useGlobalStore.getState()
+                    const {loopTime} = useImageExportStore.getState()
+                    setAnimProg(getTimeProgress(v, originalAnimProg.current, timeRatio, dataShape[dataShape.length-3], loopTime))
                 }
                 }}
             />
