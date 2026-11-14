@@ -1,5 +1,5 @@
 "use client";
-import React, {useEffect, useRef, useState } from 'react'
+import React, {useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from "@/components/ui/button-group"
 import { useImageExportStore } from '@/stores/ImageExportStore';
@@ -11,7 +11,7 @@ import { Slider } from '@/components/ui/slider'
 import '../layout/css/KeyFrames.css'
 import { Input } from '@/components/ui/input';
 import { IoCloseCircleSharp } from "react-icons/io5";
-import { FaPlusCircle } from "react-icons/fa";
+import { FaPlusCircle, FaArrowAltCircleUp  } from "react-icons/fa";
 import { MdDeleteForever } from "react-icons/md";
 import { MdPreview } from "react-icons/md";
 import { TbKeyframeFilled } from "react-icons/tb";
@@ -21,6 +21,7 @@ import { toast } from "sonner"
 import { QuickTip } from '../widgets/QuickTip';
 import { KeyFramesHelper } from './KeyFramesHelper';
 import { BsBoxArrowUp } from 'react-icons/bs';
+import { IoMdArrowDropright } from "react-icons/io";
 const NON_VISUAL_KEYS = new Set<string>([
     "plotType", "selectTS", "animate", "resetAnim", "animProg", "resetCamera",
     "originalExtent", "lonResolution", "latResolution", "colorIdx",
@@ -54,14 +55,14 @@ export const KeyFrames = () => {
 
     const {animProg, setAnimProg} = usePlotStore(useShallow(s => s))
     const [showHelper, setShowHelper] = useState(false)
-
     const {keyFrames, frames, useTime, frameRate, timeRate, orbit, currentFrame, previewKeyFrames, setCurrentFrame, setFrames} = useImageExportStore(
         useShallow(s => s))
     const timeRatio = timeRate/frameRate
     const keyFrameList = keyFrames ? Array.from(keyFrames.keys()).sort((a, b) => a - b) : null;
     const originalAnimProg = useRef<number | null>(null)
     const [MdLg, setMdLg] = useState<"md" | "lg">("md");
-
+    const offScreen = useMemo(()=> keyFrames && keyFrames.keys().some(n => n > frames), [keyFrames, frames])
+    const updateKey = useMemo(()=> keyFrames && keyFrames.keys().some(n => n === currentFrame), [keyFrames, currentFrame])
 	useEffect(()=>{ // Clear KeyFrames if it is empty. 
 		if (keyFrameList && keyFrameList.length == 0){
 			useImageExportStore.setState({keyFrames: undefined})
@@ -71,7 +72,7 @@ export const KeyFrames = () => {
     useEffect(()=>{
         originalAnimProg.current = animProg;
         return ()=>{
-            if (originalAnimProg.current){
+            if (originalAnimProg.current !== null){
                 setAnimProg(originalAnimProg.current) // Reset animProg when done monkeying with values
             }
         }
@@ -145,14 +146,15 @@ export const KeyFrames = () => {
             </Button>
 			{/* Buttons */}
 			<ButtonGroup>
-				<QuickTip message='Add new Keyframe' side='top'>
+				<QuickTip message={updateKey ? 'Update Keyframe' : 'Add new Keyframe'} side='top'>
                     <Button 
                         className='cursor-pointer'
                         size="sm"
                         variant="outline"
                         onClick={()=>{SetKeyFrame(currentFrame)}}
                     > 
-                        <FaPlusCircle /> { MdLg === "lg" ? 'Keyframe' : <TbKeyframeFilled/>}
+                        {updateKey ? <FaArrowAltCircleUp/> : <FaPlusCircle /> }
+                        { MdLg === "lg" ? 'Keyframe' : <TbKeyframeFilled/>}
                     </Button>
                 </QuickTip>
                 <QuickTip message='Clear all Keyframes' side='top'>
@@ -185,7 +187,9 @@ export const KeyFrames = () => {
                         Frames
                     </Button>
                 </QuickTip>
-                <Input className='w-[60px] h-[32px] no-spinner' id="frames" type='number' step={1} value={frames} onChange={e => setFrames(Math.max(parseInt(e.target.value),2))} />
+                <Input className='w-[60px] h-[32px] no-spinner' id="frames" step={1} value={frames} 
+                    onChange={e => parseInt(e.target.value) && setFrames(Math.max(parseInt(e.target.value),2))} 
+                />
             </ButtonGroup>
             <ButtonGroup >
                 <QuickTip message='Curent Frame' side='top'>
@@ -197,7 +201,7 @@ export const KeyFrames = () => {
                     className='w-[60px] h-[32px] no-spinner'
                     min={1} 
                     step={1} 
-                    onChange={e =>parseInt(e.target.value) ? setCurrentFrame(Math.max(parseInt(e.target.value), 1)) : 1}
+                    onChange={e =>parseInt(e.target.value) ? setCurrentFrame(Math.max(parseInt(e.target.value), 1)) : setCurrentFrame(1)}
                 />
             </ButtonGroup>
             {/* <KeyFrameInfo keyframe={currentFrame} keyframesMap={keyFrames} /> */}
@@ -210,13 +214,13 @@ export const KeyFrames = () => {
                 <TbKeyframeFilled
                     key={frame}
                     style={{
-                    position: "absolute",
-                    left: `calc(${percent}% + ${thumbRadius}px - ${thumbRadius * 2 * percent / 100}px)`,
-					top:0,
-                    transform:"translate(-50%, -50%)",
-                    zIndex: 0, 
-                    cursor:"pointer",
-					visibility:percent <= 100 ? "visible" : "hidden"
+                        position: "absolute",
+                        left: `calc(${percent}% + ${thumbRadius}px - ${thumbRadius * 2 * percent / 100}px)`,
+                        top:0,
+                        transform:"translate(-50%, -50%)",
+                        zIndex: 0, 
+                        cursor:"pointer",
+                        visibility:percent <= 100 ? "visible" : "hidden"
                     }}
 					color='orangered'
 					size={18}
@@ -243,6 +247,7 @@ export const KeyFrames = () => {
                 }
                 }}
             />
+            {offScreen && <KeyframeOffscreen />}
 		</div>
 		
     </CardContent>
@@ -250,3 +255,18 @@ export const KeyFrames = () => {
     </Card>
   )
 }
+
+const KeyframeOffscreen = () => 
+    <QuickTip message='Keyframes outside frame range' side='top'>
+        <div style={{
+            position: "absolute",
+            right:'0%',
+            bottom:'100%',
+            display:'flex',
+            alignItems:'center'
+        }}>
+            <TbKeyframeFilled color='orangered' size={18}/>
+            <IoMdArrowDropright size={20}/>
+        </div>
+    </QuickTip>
+    
