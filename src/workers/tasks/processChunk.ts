@@ -10,6 +10,7 @@ interface FetchOutput{
 export interface processIn{
     raw:FetchOutput;
     fillValue: number;
+    packing?: { scale: number, offset: number }; // CF scale_factor / add_offset
     scalingFactor: number | undefined;
     coarsen:boolean;
     compress:boolean;
@@ -32,10 +33,15 @@ export interface processOut{
     range: {min: number, max: number}
 }
 
-export async function processChunk({raw, fillValue, scalingFactor, coarsen, compress, hasZ, indices, kernelInfo}:processIn): Promise<processOut>{
+export async function processChunk({raw, fillValue, packing, scalingFactor, coarsen, compress, hasZ, indices, kernelInfo}:processIn): Promise<processOut>{
     const {kernelSize, kernelDepth} = kernelInfo;
     const {zIndexInRaw, yIndexInRaw, xIndexInRaw} = indices;
-    const rawData = Number.isFinite(fillValue) ? raw.data.map((v: number) => v === fillValue ? NaN : v) : raw.data; // Don't map if no fillvalue
+    // Mask the fill value (in stored units) and unpack. Output is float so NaN survives integer inputs.
+    const hasFill = Number.isFinite(fillValue);
+    const { scale, offset } = packing ?? { scale: 1, offset: 0 };
+    const rawData = (hasFill || packing)
+        ? Float32Array.from(raw.data, (v: number) => (hasFill && v === fillValue) ? NaN : v * scale + offset)
+        : raw.data;
     
     const [chunkF16Raw, newScalingFactor, range] = ToFloat16(rawData, scalingFactor);
     let chunkF16 = chunkF16Raw;

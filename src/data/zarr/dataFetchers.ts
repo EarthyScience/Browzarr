@@ -19,6 +19,15 @@ function selectionShape(selection: Selection): number[] {
     return shape.length ? shape : [1];
 }
 
+// CF packing from attributes. NetCDF stores attribute values as arrays, Zarr as plain numbers.
+function cfPacking(atts: Record<string, any> | undefined): { scale: number, offset: number } | undefined {
+    const read = (v: any) => Number(Array.isArray(v) || ArrayBuffer.isView(v) ? (v as any)[0] : v);
+    const scale = atts?.scale_factor != null ? read(atts.scale_factor) : 1;
+    const offset = atts?.add_offset != null ? read(atts.add_offset) : 0;
+    if (!Number.isFinite(scale) || !Number.isFinite(offset)) return undefined;
+    return (scale !== 1 || offset !== 0) ? { scale, offset } : undefined;
+}
+
 //---- Zarr Fetch ----//
 
 async function fetchWithRetry<T>(
@@ -64,6 +73,7 @@ export function zarrFetcher() {
                 shape: outVar.shape,
                 chunkShape: GetSize(outVar)[2],
                 fillValue,
+                packing: cfPacking(outVar.attrs),
                 dtype: outVar.dtype,
                 _outVar: outVar, // carry through for fetchChunk
             } as any;
@@ -98,10 +108,7 @@ export function NCFetcher() {
             let validRange: { min: number; max: number } | undefined;
             if ("valid_min" in atts && "valid_max" in atts) validRange = { min: atts["valid_min"][0], max: atts["valid_max"][0] };
 
-            let preScaling: number | undefined;
-            if ("scale_factor" in atts && atts["scale_factor"][0] !== 1) preScaling = atts["scale_factor"][0];
-
-            return { shape, chunkShape, fillValue, validRange, preScaling, dtype: varInfo.dtype };
+            return { shape, chunkShape, fillValue, validRange, packing: cfPacking(atts), dtype: varInfo.dtype };
         },
         async fetchChunk(variable: string, selection: Selection): Promise<FetchOutput> {
             const starts = selection.map(s => Array.isArray(s) ? s[0] : s);

@@ -15,7 +15,7 @@ export async function GetArray(varOveride?: string) {
     const { cache } = useCacheStore.getState();
     const fetcher = useNC ? NCFetcher() : zarrFetcher();
     const targetVariable = (varOveride ?? variable) as string;
-    const { shape, chunkShape, fillValue, dtype } = await fetcher.getMetadata(targetVariable);
+    const { shape, chunkShape, fillValue, packing, dtype } = await fetcher.getMetadata(targetVariable);
     const rank = shape.length;
     const pool = getPool();
 
@@ -126,7 +126,7 @@ export async function GetArray(varOveride?: string) {
                     dims.forEach((d, i) => { if (d >= 0) selection[d] = fetchRange[i]; });
                     const raw = await fetcher.fetchChunk(targetVariable, selection);
                     jobs.push(pool.dispatch('processChunk',
-                        { raw, coarsen, compress, hasZ, kernelInfo, indices, scalingFactor: undefined, fillValue },
+                        { raw, coarsen, compress, hasZ, kernelInfo, indices, scalingFactor: undefined, fillValue, packing },
                         [raw.data.buffer]
                     ).then(({ chunkF16, thisShape, chunkStride, newScalingFactor, range }) => {
                         chunkScalingFactors[chunkID] = newScalingFactor;
