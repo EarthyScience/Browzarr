@@ -46,16 +46,7 @@ export const useDataFetcher = () => {
             // ---- FETCH DATA ---- //
             try {
                 //---- Texture Cleanup ----//
-                if (mainTextures) {
-                    const oldTextures = mainTextures;
-                    setTimeout(() => {
-                        oldTextures.forEach((tex) => {
-                            tex.dispose();
-                            if (tex.source) (tex.source as any).data = null;
-                        });
-                    }, 0);
-                    setMainTextures(undefined);
-                }
+                if (mainTextures) setMainTextures(undefined);
                 //----- TimeSeries Cleanup ----//
                 useGlobalStore.setState({timeSeries:{}, dimCoords:{}})
                 //---- Main Fetch ----//
