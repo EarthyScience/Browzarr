@@ -226,13 +226,24 @@ function DecompressArray(compressed : Uint8Array){
 	return floatArray
 }
 
+// Cache-key part for the fixed (non-plotted) dims: a scalar index or a length-1 range.
+// Position is kept so the same index on a different dim gives a different key.
+export function sliceCacheKey(ndSlices: unknown[] | undefined): string {
+    const parts = (ndSlices ?? []).map(s => {
+        if (typeof s === "number") return String(s);
+        if (Array.isArray(s) && s[1] != null && s[1] - s[0] === 1) return String(s[0]);
+        return "";
+    });
+    return parts.some(p => p !== "") ? parts.join("_") : "";
+}
+
 export function GetCurrentArray(overrideStore?: string, overrideVariable?: string){
   const { variable, is4D, idx4D, initStore, strides, dataShape }= useGlobalStore.getState()
   const { arraySize, currentChunks, ndSlices } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
   const store = overrideStore ? overrideStore : initStore
   const thisVar = overrideVariable?? variable
-  const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : (idx4D ?? "");
+  const scalarIndices = (ndSlices && ndSlices.length > 0) ? sliceCacheKey(ndSlices) : (idx4D ?? "");
   const cacheBase = scalarIndices !== "" ? `${store}_${thisVar}_${scalarIndices}` : `${store}_${thisVar}`;
   if (cache.has(cacheBase)){
       const chunk = cache.get(cacheBase)

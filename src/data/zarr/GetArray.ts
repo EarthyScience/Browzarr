@@ -1,4 +1,4 @@
-import { calculateStrides } from "@/lib/helpers";
+import { calculateStrides, sliceCacheKey } from "@/lib/helpers";
 import { useCacheStore } from "@/stores/CacheStore";
 import { useErrorStore } from "@/stores/ErrorStore";
 import { useGlobalStore } from "@/stores/GlobalStore";
@@ -56,7 +56,7 @@ export async function GetArray(varOveride?: string) {
     // Where the output array starts, in (coarsened) absolute coordinates
     const sliceStart = slices.map(([lo], i) => lo / kernels[i]);
 
-    const scalarIndices = (ndSlices && ndSlices.length > 0) ? ndSlices.filter(s => typeof s === "number").join("_") : "";
+    const scalarIndices = sliceCacheKey(ndSlices);
     let cacheBase = scalarIndices !== "" ? `${initStore}_${targetVariable}_${scalarIndices}` : `${initStore}_${targetVariable}`;
     if (rank >= 4 && idx4D !== undefined && idx4D !== null) {
         cacheBase = `${cacheBase}_time${idx4D}`;

@@ -4,7 +4,7 @@ import { useZarrStore } from "@/stores/ZarrStore";
 import { getBaseImage } from "@/data/geo/baseImage";
 import { FetchStoreOptions } from "@/types/Interfaces";
 import { parseGeoKeys } from "@/data/geo/geoKeyParser";
-import { calculateStrides } from "@/lib/helpers";
+import { calculateStrides, sliceCacheKey } from "@/lib/helpers";
 import { usePlotStore } from "@/stores/PlotStore";
 import { getPool } from "@/workers/pool";
 import { epsgToProj } from "../geo/epsgToProj";
@@ -111,7 +111,10 @@ export async function getRasterData(overrideVar?: string){
         sliceStart: [0, 0, 0],
         complete: true,
     }
-    cache.set(`${initStore}_${thisVar}_chunk_z0_y0_x0`, cacheChunk)
+    // Same key layout as GetArray, so GetCurrentArray finds it
+    const sliceKey = sliceCacheKey(ndSlices)
+    const cacheBase = sliceKey !== "" ? `${initStore}_${thisVar}_${sliceKey}` : `${initStore}_${thisVar}`
+    cache.set(`${cacheBase}_chunk_z0_y0_x0`, cacheChunk)
     setStatus(null)
     return { shape: thisShape, indices: [axisMapping.y, axisMapping.x], scalingFactor: 0, valueScale }
 }
