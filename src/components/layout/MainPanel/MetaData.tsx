@@ -274,8 +274,8 @@ export const MetaData = ({ meta, metadata }: Props) => {
     }), [meta?.dimInfo]);
     const dataShape = meta?.shape || [];
     const dataLength = dataShape.length;
-    const { initStore, variable2, bivariate, setDimArrays, setDimNames, setDimUnits, setVariable, setTextureArrayDepths, } = useGlobalStore(useShallow(s => ({
-        initStore: s.initStore, variable2: s.variable2, bivariate: s.bivariate, setDimArrays: s.setDimArrays, setDimNames: s.setDimNames, 
+    const { variable2, bivariate, setDimArrays, setDimNames, setDimUnits, setVariable, setTextureArrayDepths, } = useGlobalStore(useShallow(s => ({
+        variable2: s.variable2, bivariate: s.bivariate, setDimArrays: s.setDimArrays, setDimNames: s.setDimNames, 
         setDimUnits: s.setDimUnits, setVariable: s.setVariable, setTextureArrayDepths: s.setTextureArrayDepths
     })));
     const { maxSize, setMaxSize } = useCacheStore(useShallow(s => ({
@@ -287,14 +287,16 @@ export const MetaData = ({ meta, metadata }: Props) => {
         setCompress: s.setCompress, setCoarsen: s.setCoarsen, setKernelSize: s.setKernelSize, setKernelDepth: s.setKernelDepth,
         ReFetch: s.ReFetch
     })))
-    // --- Reset States --- //
-    useEffect(()=>{
-        setIsBivariate(false)
-        useGlobalStore.setState({variable2: undefined})
-    },[initStore])
+    // A second variable only carries over if it exists in this store with the same shape.
+    // Checked instead of clearing global variable2, which would break a bivariate plot still on screen.
+    const isValidSecond = (v2?: string) => {
+        const zMeta = useGlobalStore.getState().zMeta as Record<string, {name: string, shape: number[]}> | undefined;
+        const shape = zMeta && Object.values(zMeta).find(e => e?.name === v2)?.shape;
+        return !!v2 && v2 !== meta.name && !!shape && shape.length === dataShape.length && dataShape.every((n, i) => n === shape[i]);
+    };
     // --- States --- //
     const [cacheSize, setCacheSize] = useState(maxSize);
-    const [isBivariate, setIsBivariate] = useState(bivariate);
+    const [isBivariate, setIsBivariate] = useState(() => bivariate && isValidSecond(variable2));
     // --- Coarsen Values --- //
     const [displaySpat, setDisplaySpat] = useState(String(Math.floor(kernelSize / 2)));
     const [displayDepth, setDisplayDepth] = useState(String(Math.floor(kernelDepth / 2)));
@@ -356,7 +358,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
         }
         // --- (Re)set States --- //
         useZarrStore.setState({ndSlices, axisMapping})
-        useGlobalStore.setState({bivariate:isBivariate})
+        useGlobalStore.setState({bivariate: isBivariate && isValidSecond(useGlobalStore.getState().variable2)})
         useColormapStore.setState({bivariateSelection: 0})
         useAnalysisStore.setState({ analysisMode: false, analysisDim: null });
         const {texDepths} = sizeData;
