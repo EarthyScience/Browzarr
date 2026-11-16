@@ -12,6 +12,7 @@ import { parseExtent } from '@/data/geo/parseExtent';
 import { createDataTexture } from '@/gpu/textures/TextureMakers';
 import { useAnalysisStore } from '@/stores/AnalysisStore';
 import { getRasterData } from '@/data/zarr/GTGetters';
+import { useErrorStore } from '@/stores/ErrorStore';
 
 export const useDataFetcher = () => {
     const { variable, bivariate, variable2, mainTextures, setUnits, setIsFlat, setUseF16Textures, setValueScales,
@@ -134,6 +135,15 @@ export const useDataFetcher = () => {
                     setStatus(null);
                     setUnits(units)
                     setScalingFactors(scalingFactors)
+                }).catch((err) => {
+                    // Without this a failed fetch leaves the status spinner up forever
+                    console.error("Failed to load variable:", err);
+                    setStatus(null);
+                    const { error, setError, setCustomError } = useErrorStore.getState();
+                    if (!error) { // Keep a more specific error (zarrFetch, largeArray) if one was set
+                        setError("loadFailed");
+                        setCustomError(err instanceof Error ? err.message : String(err));
+                    }
                 });
             } catch (error) {
                 setStatus(null);

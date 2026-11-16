@@ -38,5 +38,9 @@ export const errorList = {
     glsl :{
         title: "Invalid Shader Code",
         description: "The given function is invalid. Check the console error message for additional information"
+    },
+    loadFailed :{
+        title: "Failed to Load Variable",
+        description: "The variable could not be loaded. Check the console for details."
     }
 }
