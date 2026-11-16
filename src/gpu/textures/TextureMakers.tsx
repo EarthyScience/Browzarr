@@ -2,6 +2,7 @@
 import { GetCurrentArray, TypedArray, TypedArrayBufferLike } from '@/lib/helpers';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import * as THREE from 'three';
+import * as u from '@/gpu/tsl/utils/uniforms';
 
 interface Array {
     data: TypedArray | TypedArrayBufferLike;
@@ -95,6 +96,7 @@ export function createDataTexture(){
     StoreData(dataArray, valueScales[0]);
   }
   const textures = CreateTexture(dataShape);
+  if (textures) u.setMapTextures(textures); 
   setMainTextures(textures);
 }
 
