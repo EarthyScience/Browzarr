@@ -2,6 +2,7 @@ import { useGlobalStore } from '@/stores/GlobalStore'
 import { usePlotStore } from '@/stores/PlotStore'
 import { useColormapStore } from '@/stores/ColormapStore'
 import { useEffect, useRef } from 'react'
+import { invalidate } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow'
 import { useCoordBounds } from '@/hooks/useCoordBounds'
@@ -116,6 +117,7 @@ export function uniformUpdater(){
         if (mainTextures === prev.current) return;
         prev.current = mainTextures;
         mainTextures && u.setMapTextures(mainTextures);
+		invalidate(); // frameloop is "demand", so request a frame once the new texture is bound
     })
     // --- COLORSCALE --- //
     useEffect(()=>{
