@@ -26,9 +26,11 @@ async function handleCoarse(){
 	coarseText.format = THREE.RGFormat;
 	coarseText.minFilter = THREE.NearestFilter;
 	coarseText.magFilter = THREE.NearestFilter;
-	coarseText.type = THREE.UnsignedByteType
+	coarseText.type = u16 ? THREE.HalfFloatType : THREE.UnsignedByteType
 	coarseText.needsUpdate = true;
-	useGlobalStore.setState({coarseVolume:coarseText, coarseShape:shape, coarseKernel:kernel})
+	useGlobalStore.setState({coarseVolume:coarseText})
+	u.coarseKernel.value.set(kernel[2], kernel[1], kernel[0])	// [z,y,x] -> (x,y,z)
+	u.coarseShape.value.set(shape[2], shape[1], shape[0])
 }
 
 function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxVal: number, minVal: number}, useF16=false){

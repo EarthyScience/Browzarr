@@ -1,6 +1,6 @@
 import {
     abs, any, Break, ceil, clamp, Discard, EPSILON, float, floor, Fn, greaterThanEqual, If, int,
-    ivec3, lessThan, Loop, max, min, normalize, select, sign, vec3
+    ivec3, lessThan, Loop, max, min, normalize, select, sign, vec3, bool
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
@@ -18,7 +18,7 @@ export const createVolumeMaterial = (type: VolumeTraversal, mode: VolumeMode = '
     material.transparent = true;
     material.depthWrite = false;
     const { vOrigin, vDirection } = rayVaryings(material, isOrtho);
-    material.colorNode = volumeShader(traversals[type], mode)(vOrigin, vDirection);
+    material.colorNode = volumeShader(traversals[type], mode, useBricks)(vOrigin, vDirection);
     return material
 }
 
@@ -29,7 +29,7 @@ const volumeShader = (traverse: Traversal, mode: VolumeMode, useBricks=false) =>
 	const bounds = hitBox(vOrigin, rayDir).toVar('bounds');
 	If(bounds.x.greaterThan(bounds.y), () => { Discard(); });
 	bounds.x.assign(max(bounds.x, 0.0));
-
+    if (useBricks) skipLeadingEmpty(vOrigin, rayDir, bounds);
     const comp = makeCompositor(mode);
     traverse(vOrigin, rayDir, bounds, comp);
     return comp.finish();
@@ -119,3 +119,63 @@ const marchTraverse: Traversal = (vOrigin, rayDir, bounds, comp) => {
 }
 
 const traversals: Record<VolumeTraversal, Traversal> = { dda: ddaTraverse, raymarch: marchTraverse };
+
+// --- EMPTY-SPACE SKIP --- //
+// Moves bounds.x to the entry of the first coarse brick whose [min,max] overlaps the threshold range.
+// Discards the pixel if no brick along the ray is occupied.
+const skipLeadingEmpty = (vOrigin: any, rayDir: any, bounds: any) => {
+	const gridRes = u.coarseShape;
+	const boxMin = u.volumeScale.mul(0.5).negate();
+	// Brick size = kernelShape fine voxels, so partial edge bricks still line up with the fine grid
+	const voxelSize = u.volumeScale.div(u.dataShape).mul(u.coarseKernel);
+
+	const p0 = vOrigin.add(bounds.x.mul(rayDir));
+	const localPos = p0.sub(boxMin).div(voxelSize);
+	const cell = clamp(ivec3(floor(localPos)), ivec3(0), ivec3(gridRes).sub(1)).toVar('cell');
+
+	const stepDir = sign(rayDir);
+	const stepDirI = ivec3(stepDir);
+	const nextBoundary = boxMin.add(vec3(cell).add(max(stepDir, 0.0)).mul(voxelSize));
+	const tMax = nextBoundary.sub(vOrigin).div(rayDir).toVar('cTMax');
+	const tDelta = voxelSize.div(abs(rayDir)).toVar('cTDelta');
+	const degenerate = lessThan(abs(rayDir), vec3(EPSILON));
+	tMax.assign(select(degenerate, vec3(1e30), tMax));
+	tDelta.assign(select(degenerate, vec3(1e30), tDelta));
+
+	const t = bounds.x.toVar('cT');
+	const found = bool(false).toVar('found');
+	const maxSteps = int(gridRes.x.add(gridRes.y).add(gridRes.z)).add(4);
+
+	Loop(maxSteps, () => {
+		If(t.greaterThan(bounds.y), () => { Break(); });
+
+		const mm = u.coarseVolume.load(cell).toVar();	// .x = min, .y = max
+		// u8 all-NaN bricks are coded 255 -> 1.0 after unorm; f16 NaN fails the comparisons on its own
+		const allNaN = mm.x.greaterThan(254.5 / 255);
+		const occupied = allNaN.not().and(mm.y.greaterThanEqual(u.threshold.x)).and(mm.x.lessThanEqual(u.threshold.y));
+		If(occupied, () => {
+			found.assign(bool(true));
+			Break();
+		});
+		If(tMax.x.lessThan(tMax.y).and(tMax.x.lessThan(tMax.z)), () => {
+			t.assign(tMax.x);
+			tMax.x.addAssign(tDelta.x);
+			cell.x.addAssign(stepDirI.x);
+		}).ElseIf(tMax.y.lessThan(tMax.z), () => {
+			t.assign(tMax.y);
+			tMax.y.addAssign(tDelta.y);
+			cell.y.addAssign(stepDirI.y);
+		}).Else(() => {
+			t.assign(tMax.z);
+			tMax.z.addAssign(tDelta.z);
+			cell.z.addAssign(stepDirI.z);
+		});
+
+		If(any(lessThan(cell, ivec3(0))).or(any(greaterThanEqual(cell, ivec3(gridRes)))), () => {
+			Break();
+		});
+	});
+
+	If(found.not(), () => { Discard(); });
+	bounds.x.assign(t);
+};
