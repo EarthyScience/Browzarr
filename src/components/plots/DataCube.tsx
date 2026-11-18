@@ -20,12 +20,11 @@ export const DataCube = ( ) => {
 			useOrtho:s.useOrtho, valueRange:s.valueRange, useRayMarch:s.useRayMarch, volumeMode:s.volumeMode,
 			transparency:s.transparency, vTransferScale:s.vTransferScale, revTransparency:s.revTransparency, interpPixels:s.interpPixels, colorScale: s.colorScale
 		})))
-  	const shaderMaterial = useMemo(() => createVolumeMaterial(useRayMarch ? 'raymarch' : 'dda', volumeMode, useOrtho)
-	, [useRayMarch, volumeMode, remapTexture, useOrtho, interpPixels, colorScale]);
+  	const shaderMaterial = useMemo(() => createVolumeMaterial(useRayMarch ? 'raymarch' : 'dda', volumeMode, useOrtho, Boolean(coarseVolume))
+	, [useRayMarch, volumeMode, remapTexture, useOrtho, interpPixels, colorScale, coarseVolume]);
   	const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
 	const cmapFunc = (val: number) => sampleColormap(val, cmap.value as THREE.DataTexture)
 	// --- GENERATE LUT --- //
-	console.log(coarseVolume)
 	useEffect(()=>{
 		const newLUT = buildTransferLUT({ 
 			cmap:cmapFunc,

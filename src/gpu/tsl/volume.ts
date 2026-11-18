@@ -23,7 +23,7 @@ export const createVolumeMaterial = (type: VolumeTraversal, mode: VolumeMode = '
 }
 
 // --- PER-PIXEL --- //
-const volumeShader = (traverse: Traversal, mode: VolumeMode) => Fn(([vOrigin, vDirection]: [any, any]) => {
+const volumeShader = (traverse: Traversal, mode: VolumeMode, useBricks=false) => Fn(([vOrigin, vDirection]: [any, any]) => {
     const rayDir = normalize(vDirection).toVar('rayDir');
 	// Entry/exit distances, discarding rays that miss the box
 	const bounds = hitBox(vOrigin, rayDir).toVar('bounds');

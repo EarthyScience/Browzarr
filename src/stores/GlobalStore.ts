@@ -61,7 +61,8 @@ type StoreState = {
   borderCompatible: boolean;
   mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined;
   coarseVolume: THREE.Data3DTexture | undefined;
-  coarseShape: [number, number, number]
+  coarseShape: [number, number, number];
+  coarseKernel: [number, number, number];
   isWebGPU: boolean;
   
   // setters
@@ -157,6 +158,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   mainTextures: undefined,
   coarseVolume: undefined,
   coarseShape: [1,1,1],
+  coarseKernel: [1,1,1],
   isWebGPU: true,
 
   // setters

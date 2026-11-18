@@ -14,10 +14,10 @@ async function handleCoarse(){
 	const {textureData, dataShape, strides, coarseVolume, bivariate} = useGlobalStore.getState();
 	if (coarseVolume) coarseVolume.dispose();
 	const shouldReduce = dataShape.some(num => num >= 256);
-	if (!shouldReduce){useGlobalStore.setState({coarseVolume:undefined}); return;}
+	if (!shouldReduce || bivariate){useGlobalStore.setState({coarseVolume:undefined}); return;}
 	const u16 = textureData instanceof Uint16Array;
 	const pool = getPool();
-	const {data, shape} = await pool.dispatch('coarseVolume', {
+	const {data, shape, kernel} = await pool.dispatch('coarseVolume', {
 		array:textureData, 
 		origShape: dataShape as [number, number, number], 
 		origStrides: strides as [number, number, number]}
@@ -28,7 +28,7 @@ async function handleCoarse(){
 	coarseText.magFilter = THREE.NearestFilter;
 	coarseText.type = THREE.UnsignedByteType
 	coarseText.needsUpdate = true;
-	useGlobalStore.setState({coarseVolume:coarseText})
+	useGlobalStore.setState({coarseVolume:coarseText, coarseShape:shape, coarseKernel:kernel})
 }
 
 function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxVal: number, minVal: number}, useF16=false){
