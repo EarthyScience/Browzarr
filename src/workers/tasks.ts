@@ -7,7 +7,7 @@ import { toHalfFloat } from 'three/src/extras/DataUtils.js';
 import { createTextureData, textureIn, textureOut } from './tasks/createTextureData';
 import { processChunk, processIn, processOut } from './tasks/processChunk';
 import { TypedArray } from '@/lib/helpers';
-
+import { coarseIn, coarsenOut, coarsenVolume } from './tasks/createCoarseTexture';
 interface normalizeIn{
     data: Uint8Array | Float16Array;
     minVal: number;
@@ -81,12 +81,12 @@ function rescaler({array, delta, compressed}:RescalerIn){
     }
 }
     
-
 export const tasks = {
     normalizeData: (d: normalizeIn): {textureData: Uint8Array | Uint16Array} => normalizeTextureData(d),
     readRasterData: (d: readRasterIn): Promise<readRasterOut> => readRasterData(d),
     decompress: (d: {array:Uint8Array}): {newArray: Float16Array} => decompressArray(d),
     processChunk: (d: processIn) : Promise<processOut> => processChunk(d),
     textureData: (d: textureIn) : textureOut => createTextureData(d),
-    rescaler: (d: RescalerIn) : {array: Float16Array | Uint8Array} => rescaler(d)
+    rescaler: (d: RescalerIn) : {array: Float16Array | Uint8Array} => rescaler(d),
+    coarseVolume: (d: coarseIn) : Promise<coarsenOut> => coarsenVolume(d)
 };

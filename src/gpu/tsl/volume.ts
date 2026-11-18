@@ -13,7 +13,7 @@ export type VolumeTraversal = 'dda' | 'raymarch';
 // Walks the ray from bounds.x to bounds.y, calling compositeAt for every sample position.
 type Traversal = (vOrigin: any, rayDir: any, bounds: any, comp: Compositor) => void;
 
-export const createVolumeMaterial = (type: VolumeTraversal, mode: VolumeMode = 'additive', isOrtho = false) => {
+export const createVolumeMaterial = (type: VolumeTraversal, mode: VolumeMode = 'additive', isOrtho = false, useBricks = false) => {
     const material = new THREE.NodeMaterial();
     material.transparent = true;
     material.depthWrite = false;

@@ -60,8 +60,9 @@ type StoreState = {
   useF16Textures: boolean;
   borderCompatible: boolean;
   mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined;
+  coarseVolume: THREE.Data3DTexture | undefined;
+  coarseShape: [number, number, number]
   isWebGPU: boolean;
-
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -154,6 +155,8 @@ const createStore = () => create<StoreState>((set, get) => ({
   useF16Textures: false,
   borderCompatible: true,
   mainTextures: undefined,
+  coarseVolume: undefined,
+  coarseShape: [1,1,1],
   isWebGPU: true,
 
   // setters

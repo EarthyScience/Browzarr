@@ -3,10 +3,32 @@ import { GetCurrentArray, TypedArray, TypedArrayBufferLike } from '@/lib/helpers
 import { useGlobalStore } from '@/stores/GlobalStore';
 import * as THREE from 'three';
 import * as u from '@/gpu/tsl/utils/uniforms';
+import { getPool } from '@/workers/pool';
 
 interface Array {
     data: TypedArray | TypedArrayBufferLike;
     shape: number[];
+}
+
+async function handleCoarse(){
+	const {textureData, dataShape, strides, coarseVolume, bivariate} = useGlobalStore.getState();
+	if (coarseVolume) coarseVolume.dispose();
+	const shouldReduce = dataShape.some(num => num >= 256);
+	if (!shouldReduce){useGlobalStore.setState({coarseVolume:undefined}); return;}
+	const u16 = textureData instanceof Uint16Array;
+	const pool = getPool();
+	const {data, shape} = await pool.dispatch('coarseVolume', {
+		array:textureData, 
+		origShape: dataShape as [number, number, number], 
+		origStrides: strides as [number, number, number]}
+	)
+	const coarseText = new THREE.Data3DTexture(data, shape[2], shape[1], shape[0]);
+	coarseText.format = THREE.RGFormat;
+	coarseText.minFilter = THREE.NearestFilter;
+	coarseText.magFilter = THREE.NearestFilter;
+	coarseText.type = THREE.UnsignedByteType
+	coarseText.needsUpdate = true;
+	useGlobalStore.setState({coarseVolume:coarseText})
 }
 
 function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxVal: number, minVal: number}, useF16=false){
@@ -30,8 +52,8 @@ function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxV
             textureData[i] = scaled !== scaled ? 255 : scaled
         }
     }
-
     setTextureData(textureData)
+	handleCoarse()
 }
 
 export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, useF16=false) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {

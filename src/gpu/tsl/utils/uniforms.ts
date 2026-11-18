@@ -82,6 +82,7 @@ export const flatBounds = uniform(vec4());
 export const vertBounds = uniform(vec2());
 export const dataShape = uniform(vec3())
 export const tfLUT = texture( new DataTexture() );
+export const coarseVolume = texture( new DataTexture())
 
 // --- BLOCK UNIFORMS --- //
 export const displacement = uniform(float(2));
