@@ -1,14 +1,51 @@
 import {
-    abs, any, Break, ceil, clamp, EPSILON, float, floor, greaterThanEqual, If, int,
-    ivec3, lessThan, Loop, max, min, select, sign, vec3
+    abs, any, Break, ceil, clamp, Discard, EPSILON, float, floor, Fn, greaterThanEqual, If, int,
+    ivec3, lessThan, Loop, max, min, normalize, select, sign, vec3
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
 import * as u from './utils/uniforms';
-import { rayVaryings } from './utils/volumeHelpers';
-import { compositeAt, Traversal, VolumeMode, volumeShader } from './utils/compositors';
+import { hitBox, locateSample, readVoxel, rayVaryings } from './utils/volumeHelpers';
+import { Compositor, makeCompositor, VolumeMode } from './utils/compositors';
 
 export type VolumeTraversal = 'dda' | 'raymarch';
+
+// Walks the ray from bounds.x to bounds.y, calling compositeAt for every sample position.
+type Traversal = (vOrigin: any, rayDir: any, bounds: any, comp: Compositor) => void;
+
+export const createVolumeMaterial = (type: VolumeTraversal, mode: VolumeMode = 'additive', isOrtho = false) => {
+    const material = new THREE.NodeMaterial();
+    material.transparent = true;
+    material.depthWrite = false;
+    const { vOrigin, vDirection } = rayVaryings(material, isOrtho);
+    material.colorNode = volumeShader(traversals[type], mode)(vOrigin, vDirection);
+    return material
+}
+
+// --- PER-PIXEL --- //
+const volumeShader = (traverse: Traversal, mode: VolumeMode) => Fn(([vOrigin, vDirection]: [any, any]) => {
+    const rayDir = normalize(vDirection).toVar('rayDir');
+	// Entry/exit distances, discarding rays that miss the box
+	const bounds = hitBox(vOrigin, rayDir).toVar('bounds');
+	If(bounds.x.greaterThan(bounds.y), () => { Discard(); });
+	bounds.x.assign(max(bounds.x, 0.0));
+
+    const comp = makeCompositor(mode);
+    traverse(vOrigin, rayDir, bounds, comp);
+    return comp.finish();
+});
+
+// --- PER-SAMPLE --- //
+// borderUV turns the sample's maskUV into the UV used for the border lookup (identity by default)
+const compositeAt = (comp: Compositor, p: any, borderUV = (maskUV: any) => maskUV) => {
+	const loc = locateSample(p);
+	If(loc.skip.not(), () => {
+		const v = readVoxel(loc.texCoord);
+		If(v.inRange, () => {
+			comp.sample({ d: v.d, biVal: v.biVal, isNan: v.isNan, borderUV: () => borderUV(loc.maskUV) });
+		});
+	});
+};
 
 // --- DDA --- //
 // Visits every voxel the ray crosses exactly once
@@ -35,16 +72,18 @@ const ddaTraverse: Traversal = (vOrigin, rayDir, bounds, comp) => {
     const t = bounds.x.toVar('t');
     const maxSteps = int( gridRes.x.add( gridRes.y ).add( gridRes.z ) ).mul( 2 ).add( 8 );
 
+	// Samples sit at voxel centers, but borders use the continuous hit point so they stay sharp
+	const hitPointMaskUV = () => {
+		const pHit = vOrigin.add(t.mul(rayDir)).toVar();
+		const localPosContinuous = pHit.xy.sub(boxMin).div(u.volumeScale).toVar();
+		return h.reprojectMask(localPosContinuous.xy);
+	};
+
     // //Steps
     Loop( maxSteps, () => {
         If( t.greaterThan( bounds.y ), () => {Break();});
-        // Sample at the center of the current voxel; borders use the continuous hit point.
         const pCenter = boxMin.add( vec3( voxel ).add( 0.5 ).mul( voxelSize ) );
-        compositeAt(comp, pCenter, () => {
-            const pHit = vOrigin.add(t.mul(rayDir)).toVar();
-            const localPosContinuous = pHit.xy.sub(boxMin).div(u.volumeScale).toVar();
-            return h.reprojectMask(localPosContinuous.xy);
-        });
+		compositeAt(comp, pCenter, hitPointMaskUV);
         If(tMax.x.lessThan(tMax.y).and(tMax.x.lessThan(tMax.z)), () => {
             t.assign(tMax.x);
             tMax.x.addAssign(tDelta.x);
@@ -75,17 +114,8 @@ const marchTraverse: Traversal = (vOrigin, rayDir, bounds, comp) => {
     Loop(nSteps, ({ i }: { i: any }) => {
         const t = bounds.x.add(float(i).mul(delta));
         const p = vOrigin.add(rayDir.mul(t)).toVar("p");
-        compositeAt(comp, p, maskUV => maskUV);
+		compositeAt(comp, p);
     });
 }
 
 const traversals: Record<VolumeTraversal, Traversal> = { dda: ddaTraverse, raymarch: marchTraverse };
-
-export const createVolumeMaterial = (type: VolumeTraversal, mode: VolumeMode = 'additive', isOrtho = false) => {
-    const material = new THREE.NodeMaterial();
-    material.transparent = true;
-    material.depthWrite = false;
-    const { vOrigin, vDirection } = rayVaryings(material, isOrtho);
-    material.colorNode = volumeShader(traversals[type], mode)(vOrigin, vDirection);
-    return material
-}

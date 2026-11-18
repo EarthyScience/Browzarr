@@ -1,13 +1,16 @@
 import {
     abs,
-    any,bool,cameraPosition,cameraWorldMatrix,clamp,Discard,EPSILON,float,Fn,If,
+    any,bool,cameraPosition,cameraWorldMatrix,clamp,EPSILON,float,Fn,If,
     max,min,mod,modelWorldMatrixInverse,normalize,positionLocal,pow,select,varying,vec2,vec3,vec4
 } from 'three/tsl';
 import * as h from './commonHelpers';
 import * as u from './uniforms';
 import * as THREE from 'three/webgpu'
 
-export const shouldSkip = (p: any, texCoord: any, maskUV: any) => {
+// Maps a box-space position to texture/mask coords. skip is true when the point is clipped, masked or off the map.
+export const locateSample = (p: any) => {
+	const texCoord = vec3(0).toVar('texCoord');
+	const maskUV = vec2(0).toVar('maskUV');
     const skip = bool(false).toVar();
     const outOfBounds = p.x.greaterThan(u.flatBounds.x.negate())
         .or(p.x.lessThan(u.flatBounds.y.negate()))
@@ -40,11 +43,14 @@ export const shouldSkip = (p: any, texCoord: any, maskUV: any) => {
         texCoord.assign(clamp(texCoord, vec3(0.0), vec3(1.0).sub(vec3(EPSILON))));
     });
 
-    return skip;
+	return { skip, texCoord, maskUV };
 };
 
-export const sampleVoxel = (texCoord: any, d: any, biVal: any, isNan: any) => {
-    // This gets the sample value. If d is clipped by value-range return false
+// Reads the data value(s) at texCoord. inRange is false when d falls outside the threshold range.
+export const readVoxel = (texCoord: any) => {
+	const d = float(0.0).toVar();
+	const biVal = float(0.0).toVar();
+	const isNan = bool(false).toVar();
     const {localCoord, textureIdx} = h.getLocalCoord3D(texCoord);
     If(u.bivariate, () => {
         const bivar = h.sample2ToOrder(localCoord, textureIdx, u.bivariateSelection).toVar();
@@ -58,15 +64,17 @@ export const sampleVoxel = (texCoord: any, d: any, biVal: any, isNan: any) => {
         d.assign(max(min(d.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
     });
 
-    return d.greaterThanEqual(u.threshold.x).and(d.lessThanEqual(u.threshold.y)).toVar();
+	const inRange = d.greaterThanEqual(u.threshold.x).and(d.lessThanEqual(u.threshold.y)).toVar();
+	return { d, biVal, isNan, inRange };
 };
 
 // NaN or the dataset's fill value
 export const isMissing = (d: any, isNan: any) => isNan.or(abs(d.sub(u.fillValue)).lessThan(0.005));
 
-export const colorTexel = (d: any, biVal: any, isNan: any, accumColor: any, alphaAcc: any ) => {
-    isNan.assign(isMissing(d, isNan));
-    If(isNan, () => {
+// Front-to-back blends one sample's transfer-function color into acc
+export const blendSample = (acc: { accumColor: any, alphaAcc: any }, d: any, biVal: any, isNan: any) => {
+	const { accumColor, alphaAcc } = acc;
+    If(isMissing(d, isNan), () => {
         If(u.nanAlpha.greaterThan(0.0), () => {
             const nanA = pow(u.nanAlpha, 5.0);
             accumColor.addAssign(float(1.0).sub(alphaAcc).mul(nanA).mul(u.nanColor));
@@ -110,25 +118,6 @@ export const rayVaryings = (material: THREE.NodeMaterial, isOrtho: boolean) => {
     material.side = THREE.BackSide;
     const vOrigin = varying(modelWorldMatrixInverse.mul(vec4(cameraPosition, 1)).xyz);
     return { vOrigin, vDirection: varying(positionLocal.sub(vOrigin)) };
-}
-
-// Entry/exit distances, discarding rays that miss the box
-export const rayBounds = (vOrigin: any, rayDir: any) => {
-    const bounds = hitBox( vOrigin, rayDir ).toVar("bounds");
-    If(bounds.x.greaterThan(bounds.y), () => { Discard(); });
-    bounds.x.assign(max(bounds.x, 0.0));
-    return bounds;
-}
-
-export const rayAccumulators = () => ({
-    accumColor: vec3( 0.0 ).toVar('accumColor'),
-    alphaAcc: float( 0.0 ).toVar('alphaAcc'),
-    borderHit: bool(false).toVar('borderHit'),
-})
-
-export const finishRay = (acc: ReturnType<typeof rayAccumulators>) => {
-    If( acc.alphaAcc.lessThanEqual( 0.0 ), () => Discard());
-    return select(acc.borderHit, vec4(u.borderColor, 1.0), vec4(acc.accumColor, acc.alphaAcc));
 }
 
 export function buildTransferLUT(p: {
