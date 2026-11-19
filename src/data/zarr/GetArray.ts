@@ -43,7 +43,7 @@ export async function GetArray(varOveride?: string) {
     const sizes = slices.map(([lo, hi], i) => Math.floor((hi - lo) / kernels[i]));
     const outputShape = hasZ ? sizes : sizes.slice(1);
     const totalElements = outputShape.reduce((a, b) => a * b, 1);
-    if (totalElements > 1e9) {
+    if (totalElements > 2 ** 30) {
         useErrorStore.getState().setError("largeArray");
         throw new Error("Cannot allocate array. Details printed to console.");
     }

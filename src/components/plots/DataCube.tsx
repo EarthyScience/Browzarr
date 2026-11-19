@@ -35,6 +35,7 @@ export const DataCube = ( ) => {
 			useClipScale:false
 		})
 		u.tfLUT.value = newLUT;
+		u.transparency.value = transparency;
 	},[valueRange, revTransparency, transparency, vTransferScale, cmap.value])
 	uniformUpdater();
 	// --- CLEANUP --- //

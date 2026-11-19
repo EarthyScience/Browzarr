@@ -33,12 +33,16 @@ const volumeShader = (traverse: Traversal, mode: VolumeMode, useBricks=false) =>
 	If(bounds.x.greaterThan(bounds.y), () => { Discard(); });
 	bounds.x.assign(max(bounds.x, 0.0));
 	if (useBricks && DEBUG_COARSE) {
-		const cell = skipLeadingEmpty(vOrigin, rayDir, bounds);
+		const cell = skipEmptyPadding(vOrigin, rayDir, bounds);
 		// Color = normalized brick index; checkerboard darkens every other brick so neighbours are distinct
 		const checker = mod(float(cell.x.add(cell.y).add(cell.z)), 2.0).mul(0.4).add(0.6);
 		return vec4(vec3(cell).add(0.5).div(vec3(u.coarseShape)).mul(checker), 1.0);
 	}
-    if (useBricks) skipLeadingEmpty(vOrigin, rayDir, bounds);
+    if (useBricks) {
+		skipEmptyPadding(vOrigin, rayDir, bounds);
+		// Fully opaque rays stop at the first hit, so trailing empty space is never reached
+		If(u.transparency.greaterThan(0.0), () => { skipEmptyPadding(vOrigin, rayDir, bounds, true); });
+	}
     const comp = makeCompositor(mode);
     traverse(vOrigin, rayDir, bounds, comp);
     return comp.finish();
@@ -131,14 +135,19 @@ const traversals: Record<VolumeTraversal, Traversal> = { dda: ddaTraverse, rayma
 
 // --- EMPTY-SPACE SKIP --- //
 // Moves bounds.x to the entry of the first coarse brick whose [min,max] overlaps the threshold range.
+// reverse: marches back from bounds.y and moves bounds.y to the exit of the last occupied brick instead.
 // Discards the pixel if no brick along the ray is occupied.
-const skipLeadingEmpty = (vOrigin: any, rayDir: any, bounds: any) => {
+const skipEmptyPadding = (vOrigin: any, rayDirIn: any, bounds: any, reverse = false) => {
+	// Reversed ray: p(s) = vOrigin - s*rayDir, so the forward range [x, y] becomes s in [-y, -x]
+	const rayDir = reverse ? rayDirIn.negate() : rayDirIn;
+	const tStart = reverse ? bounds.y.negate() : bounds.x;
+	const tEnd = reverse ? bounds.x.negate() : bounds.y;
 	const gridRes = u.coarseShape;
 	const boxMin = u.volumeScale.mul(0.5).negate();
 	// Brick size = kernelShape fine voxels, so partial edge bricks still line up with the fine grid
 	const voxelSize = u.volumeScale.div(u.dataShape).mul(u.coarseKernel);
 
-	const p0 = vOrigin.add(bounds.x.mul(rayDir));
+	const p0 = vOrigin.add(tStart.mul(rayDir));
 	const localPos = p0.sub(boxMin).div(voxelSize);
 	const cell = clamp(ivec3(floor(localPos)), ivec3(0), ivec3(gridRes).sub(1)).toVar('cell');
 
@@ -151,7 +160,7 @@ const skipLeadingEmpty = (vOrigin: any, rayDir: any, bounds: any) => {
 	tMax.assign(select(degenerate, vec3(1e30), tMax));
 	tDelta.assign(select(degenerate, vec3(1e30), tDelta));
 
-	const t = bounds.x.toVar('cT');
+	const t = tStart.toVar('cT');
 	const found = bool(false).toVar('found');
 	const maxSteps = int(gridRes.x.add(gridRes.y).add(gridRes.z)).add(4);
 
@@ -165,16 +174,15 @@ const skipLeadingEmpty = (vOrigin: any, rayDir: any, bounds: any) => {
 		};
 
 	Loop(maxSteps, () => {
-		If(t.greaterThan(bounds.y), () => { Break(); });
+		If(t.greaterThan(tEnd), () => { Break(); });
 		// Each cell covers z-range [z0, z1) of the volume (normalized 0..1). With the z-animation
 		// offset applied (and wrapped), find the coarse bricks at both ends of that range.
 		const zStart = float(cell.z).mul(kz).div(Dz);
 		const zEnd = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5); // epsilon keeps end inside the cell
 		// coarseVolume texel: .x = min, .y = max of the brick.
 		// u8: all-NaN bricks are encoded as 255 (-> 1.0 after unorm). f16: NaN fails the comparisons on its own.
-		const U8_NAN = 254.5 / 255;
 		const isOccupied = (minMax: any) => {
-			const isNaNBrick = minMax.x.greaterThan(U8_NAN).toVar();
+			const isNaNBrick = h.isNanVal(minMax.x).toVar();
 			minMax.x.assign(h.rescaler(minMax.x)); 
 			isNaNBrick.assign(h.isNanVal(minMax.x).and(h.isNanVal(minMax.y)));
 			minMax.x.assign(max(min(minMax.x.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
@@ -212,6 +220,7 @@ const skipLeadingEmpty = (vOrigin: any, rayDir: any, bounds: any) => {
 	});
 
 	If(found.not(), () => { Discard(); });
-	bounds.x.assign(t);
+	if (reverse) bounds.y.assign(t.negate());
+	else bounds.x.assign(t);
 	return cell;
 };
