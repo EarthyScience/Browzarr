@@ -96,10 +96,12 @@ export const blendSample = (acc: { accumColor: any, alphaAcc: any }, d: any, biV
 
 export const hitBox = Fn(([orig, dir]: any[]) => {
         const boxMax = u.volumeScale.mul(0.5);
-        const boxMin = boxMax.negate();
+		// Crop box (same limits as locateSample's outOfBounds), kept inside the volume box
+		const cropMin = max(boxMax.negate(), vec3(u.flatBounds.y.negate(), u.vertBounds.x, u.flatBounds.z));
+		const cropMax = min(boxMax, vec3(u.flatBounds.x.negate(), u.vertBounds.y, u.flatBounds.w));
         const invDir = vec3(1.0).div(dir);
-        const tA = boxMin.sub(orig).mul(invDir);
-        const tB = boxMax.sub(orig).mul(invDir);
+        const tA = cropMin.sub(orig).mul(invDir);
+        const tB = cropMax.sub(orig).mul(invDir);
         const tmin = min(tA, tB);
         const tmax = max(tA, tB);
         const t0 = max(tmin.x, max(tmin.y, tmin.z));

@@ -1,5 +1,5 @@
 import {
-    abs, any, Break, ceil, clamp, Discard, EPSILON, float, floor, Fn, greaterThanEqual, If, int,
+    abs, any, Break, ceil, clamp, Discard, EPSILON, float, floor, Fn, fract, greaterThanEqual, If, int,
     ivec3, lessThan, Loop, max, min, normalize, select, sign, vec3, bool
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
@@ -149,10 +149,20 @@ const skipLeadingEmpty = (vOrigin: any, rayDir: any, bounds: any) => {
 	Loop(maxSteps, () => {
 		If(t.greaterThan(bounds.y), () => { Break(); });
 
-		const mm = u.coarseVolume.load(cell).toVar();	// .x = min, .y = max
-		// u8 all-NaN bricks are coded 255 -> 1.0 after unorm; f16 NaN fails the comparisons on its own
-		const allNaN = mm.x.greaterThan(254.5 / 255);
-		const occupied = allNaN.not().and(mm.y.greaterThanEqual(u.threshold.x)).and(mm.x.lessThanEqual(u.threshold.y));
+		// animateProg shifts texCoord.z (see locateSample), so a geometric brick covers up to two data bricks
+		const kz = float(u.coarseKernel.z);
+		const Dz = float(u.dataShape.z);
+		const lastZ = int(gridRes.z).sub(1);
+		const z0 = float(cell.z).mul(kz).div(Dz);
+		const z1 = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5);
+		const b0 = clamp(int(floor(fract(z0.add(u.animateProg)).mul(Dz).div(kz))), int(0), lastZ);
+		const b1 = clamp(int(floor(fract(z1.add(u.animateProg)).mul(Dz).div(kz))), int(0), lastZ);
+		// .x = min, .y = max. u8 all-NaN bricks are coded 255 -> 1.0 after unorm; f16 NaN fails the comparisons on its own
+		const isOcc = (mm: any) => mm.x.greaterThan(254.5 / 255).not()
+			.and(mm.y.greaterThanEqual(u.threshold.x)).and(mm.x.lessThanEqual(u.threshold.y));
+		const mmA = u.coarseVolume.load(ivec3(cell.x, cell.y, b0)).toVar();
+		const mmB = u.coarseVolume.load(ivec3(cell.x, cell.y, b1)).toVar();
+		const occupied = isOcc(mmA).or(isOcc(mmB));
 		If(occupied, () => {
 			found.assign(bool(true));
 			Break();
