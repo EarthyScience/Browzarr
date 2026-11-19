@@ -146,7 +146,6 @@ export function uniformUpdater(){
             : new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])
         u.steps.value = quality;
     },[shape, xRange, yRange, zRange, dataShape, quality, flipY, remapTexture, plotType])
-
     // --- DISPLACEMENT UNIFORMS ---//
      useEffect(()=>{
             u.displacement.value = displacement

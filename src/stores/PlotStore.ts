@@ -139,7 +139,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   revTransparency: false,
   nanTransparency: 1,
   nanColor: "#000000",
-  showBorders: false,
+  showBorders: true,
   borderColor: "#000000",
   lonExtent: [-180, 180],
   latExtent: [-90, 90],

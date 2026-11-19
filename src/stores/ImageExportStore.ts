@@ -23,7 +23,6 @@ type ImageExportState = {
   orbit: boolean;
   orbitDeg: number;
   orbitDir: boolean;
-  pingpong: boolean;
   useTime: boolean;
   timeRate: number;
   loopTime: boolean;
@@ -62,7 +61,6 @@ type ImageExportState = {
   setOrbit: (orbit: boolean) => void;
   setOrbitDeg: (orbitDeg: number) => void;
   flipOrbitDir: () => void;
-  setPingpong: (pingpong: boolean) => void;
   setUseTime: (useTime: boolean) => void;
   setTimeRate: (timeRate: number) => void;
   setLoopTime: (loopTime: boolean) => void;
@@ -98,7 +96,6 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   orbit: false,
   orbitDeg: 360,
   orbitDir: false,
-  pingpong: false,
   useTime: false,
   timeRate: 12,
   loopTime: false,
@@ -139,7 +136,6 @@ export const useImageExportStore = create<ImageExportState>((set, get) => ({
   setOrbit: (orbit) => set({ orbit }),
   setOrbitDeg: (orbitDeg) => set({ orbitDeg }),
   flipOrbitDir: () => set({ orbitDir: !get().orbitDir }),
-  setPingpong: (pingpong) => set({ pingpong }),
   setUseTime: (useTime) => set({ useTime }),
   setTimeRate: (timeRate) => set({ timeRate }),
   setLoopTime: (loopTime) => set({ loopTime }),

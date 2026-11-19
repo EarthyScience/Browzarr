@@ -5,7 +5,6 @@ import { useZarrStore } from '@/stores/ZarrStore';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { Input } from '@/components/ui/input';
 import ZarrParser from '@/data/zarr/ZarrParser';
-import { saveFile } from '@/lib/IndexDB';
 import { setupZarr } from '@/components/layout/StoreInitializer';
 
 interface LocalZarrType {
@@ -43,10 +42,9 @@ export async function LoadLocalZarr(files:File[]){
         store = await ZarrParser(files, customStore)
       }
       const gs = await zarr.open(store, {kind: 'group'});
-      const blobKey = `local_${baseDir}`
-      useGlobalStore.setState({initStore:blobKey})
+      useGlobalStore.setState({initStore:`local_${baseDir}`})
       const currentStore = Promise.resolve(gs)
-      useZarrStore.setState({ useNC: false, useGT:false, blobKey, currentStore})
+      useZarrStore.setState({ useNC: false, useGT:false, currentStore})
       await setupZarr(currentStore)
     } catch (error) {
       
@@ -66,9 +64,7 @@ const LocalZarr = ({setShowLocal, setOpenVariables}:LocalZarrType) => {
 			setStatus(null)
 			return;
 		}
-		const baseDir = files[0].webkitRelativePath.split('/')[0];
 		LoadLocalZarr(Array.from(files)).then(()=>{
-      saveFile(Array.from(files), `local_${baseDir}`)
       setShowLocal(false);
       setOpenVariables(true);
       setStatus(null)

@@ -19,7 +19,6 @@ import {AxisCropper} from '@/components/elements/AxisCropper';
 import { Masker } from '@/components/elements/Masker';
 import { useColormapStore } from '@/stores/ColormapStore';
 import { useValueScales } from '@/hooks';
-import { transformedRange } from '@/lib/shaderToJs';
 import { PanelButton, usePanelSide } from './PanelButton';
 import { FieldLabel, Section, Group, Field, SliderField, SwitchField, ColorField } from '@/components/widgets/SettingFields';
 
@@ -334,19 +333,19 @@ const SpatialExtent = () => {
 }
 
 const GlobalOptions = () => {
-    const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, useBorderTexture,
+    const {valueRange, showBorders, borderWidth, borderColor, nanColor, nanTransparency, plotType, interpPixels, useBorderTexture, cScale, cOffset,
         setValueRange, setShowBorders, setBorderColor, setNanColor, setNanTransparency, setInterpPixels} = usePlotStore(useShallow(s => s))
     const {analysisMode, analysisDim:axis} = useAnalysisStore(useShallow(s => s))
-    const {borderCompatible, transferFunc} = useGlobalStore(useShallow(s => ({
-        borderCompatible: s.borderCompatible, transferFunc: s.transferFunc
-    })))
+    const borderCompatible = useGlobalStore(s => s.borderCompatible)
     const isPC = plotType == 'point-cloud'
     const valueScales = useValueScales()
-    // Slider labels in transferFunc space, matching what the shader thresholds against
+    // Slider labels match the colorbar's newMin/newMax, recovered from cScale/cOffset
     const theseScales = useMemo(() => {
-        const trans = transformedRange(transferFunc, valueScales.minVal, valueScales.maxVal)
-        return trans ? {...valueScales, ...trans} : valueScales
-    }, [transferFunc, valueScales])
+        const {minVal: origMin, maxVal: origMax} = valueScales
+        const newRange = (origMax - origMin) / cScale
+        const minVal = origMin - cOffset * newRange
+        return {minVal, maxVal: minVal + newRange}
+    }, [cScale, cOffset, valueScales])
     const throttleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const latestValue = useRef(borderColor);
     const handleColorChange = useCallback((setter: (color:string) => void)=>(e: React.ChangeEvent<HTMLInputElement>) => {

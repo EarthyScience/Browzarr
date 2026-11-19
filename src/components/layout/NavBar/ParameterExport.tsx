@@ -7,6 +7,8 @@ import { FiCopy } from "react-icons/fi";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from '@/components/ui/button';
 import { useImageExportStore } from '@/stores/ImageExportStore';
+import { useColormapStore } from '@/stores/ColormapStore';
+import { useGraphStore } from '@/stores/GraphStore';
 import { Select, SelectValue, SelectItem, SelectContent, SelectTrigger, QuickTip } from '@/components/ui'
 import { BsFiletypeJson } from "react-icons/bs";
 import { IoLink } from "react-icons/io5";
@@ -17,12 +19,27 @@ function pick(obj: Record<string, any>, keys: string[]) {
         keys.map((k) => [k, obj[k]])
     )
 }
+const bigintReplacer = (_: string, v: any) => typeof v === 'bigint' ? v.toString() : v;
 const globalValues = [
     'initStore',
     'storeFromURL',
     'variable',
+]
+
+const colormapValues = [
     'colormapName',
     'flipColormap',
+]
+
+const graphValues = [
+    'showPoints',
+    'lineWidth',
+    'lineColor',
+    'pointColor',
+    'useLineColor',
+    'lineResolution',
+    'useCustomColor',
+    'useCustomPointColor',
 ]
 
 const plotValues = [
@@ -35,18 +52,8 @@ const plotValues = [
     'xRange',
     'yRange',
     'zRange',
-    'showPoints',
-    'linePointSize',
-    'lineWidth',
-    'lineColor',
-    'pointColor',
-    'useLineColor',
-    'lineResolution',
     'cOffset',
     'cScale',
-    'useFragOpt',
-    'useCustomColor',
-    'useCustomPointColor',
     'transparency',
     'nanTransparency',
     'nanColor',
@@ -62,7 +69,6 @@ const plotValues = [
     'vTransferScale',
     'sphereResolution',
     'displacement',
-    'displaceSurface',
     'offsetNegatives',
     'zSlice',
     'ySlice',
@@ -93,7 +99,6 @@ const zarrValues = [
     'kernelDepth',
     'icechunkOptions',
     'fetchKey',
-    'blobKey'
 ]
 
 
@@ -110,8 +115,35 @@ export const ParameterExport = () => {
             globalState: pick(useGlobalStore.getState(), globalValues),
             plotState: pick(usePlotStore.getState(), plotValues),
             zarrState: pick(useZarrStore.getState(), zarrValues),
+            colormapState: pick(useColormapStore.getState(), colormapValues),
+            graphState: pick(useGraphStore.getState(), graphValues),
         }
-		return JSON.stringify(fullObj, (_, v) => typeof v === 'bigint' ? v.toString() : v);;
+		return JSON.stringify(fullObj, bigintReplacer);
+	}
+
+	// Flat key=value params, matching what StoreInitializer reads
+	const getFlatParams = () => {
+		const {cameraRef} = useImageExportStore.getState();
+		usePlotStore.setState({cameraPosition:cameraRef?.current?.position})
+		const params = new URLSearchParams();
+		const flat = {
+			...pick(useZarrStore.getState(), zarrValues),
+			...pick(usePlotStore.getState(), plotValues),
+			...pick(useGraphStore.getState(), graphValues),
+			...pick(useColormapStore.getState(), colormapValues),
+			...pick(useGlobalStore.getState(), globalValues),
+		}
+		for (const [key, val] of Object.entries(flat)) {
+			if (val === undefined || val === null) continue;
+			if (key === 'initStore') {
+				// StoreInitializer re-adds the "local:" prefix; browser-uploaded stores (local_*) can't be restored
+				if (typeof val !== 'string' || !val || val.startsWith('local_')) continue;
+				params.set(key, val.replace(/^local:/, ''));
+			} else {
+				params.set(key, JSON.stringify(val, bigintReplacer));
+			}
+		}
+		return params;
 	}
 
 	const getJSON = () =>{
@@ -134,13 +166,14 @@ export const ParameterExport = () => {
 	}
 
     function generateURL(){
-        let jString;
-		if (exportVal === "Full State")jString = getGlobalStateJSON();
-		else jString = JSON.stringify(
-			{plotState: {cameraPosition: usePlotStore.getState().cameraPosition}}, null, 2
-		);
-        const params = `https://browzarr.io/latest/?data=${encodeURIComponent(jString)}`;
-        return params;
+		let params: URLSearchParams;
+		if (exportVal === "Full State") params = getFlatParams();
+		else {
+			params = new URLSearchParams();
+			const {cameraPosition} = usePlotStore.getState();
+			if (cameraPosition) params.set('cameraPosition', JSON.stringify(cameraPosition));
+		}
+		return `https://browzarr.io/latest/?${params.toString()}`;
     }
 
 	const copyToClipboard = async (e: React.MouseEvent<HTMLButtonElement>, text:string) => {

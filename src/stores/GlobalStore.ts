@@ -49,6 +49,7 @@ type StoreState = {
   status: string | null;
   progress: number;
   DPR: number,
+	cameraMoving: boolean;
   scalingFactors: number[];
   is4D: boolean;
   idx4D: number | null;
@@ -59,8 +60,8 @@ type StoreState = {
   useF16Textures: boolean;
   borderCompatible: boolean;
   mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined;
+  coarseVolume: THREE.Data3DTexture | undefined;
   isWebGPU: boolean;
-
   
   // setters
   setDataShape: (dataShape: number[]) => void;
@@ -147,11 +148,13 @@ const createStore = () => create<StoreState>((set, get) => ({
   textureArrayDepths: [1,1,1], 
   textureData: new Uint8Array(1),
   DPR: 1,
+	cameraMoving: false,
   scalingFactors: [],
   clampExtremes: false,
   useF16Textures: false,
   borderCompatible: true,
   mainTextures: undefined,
+  coarseVolume: undefined,
   isWebGPU: true,
 
   // setters

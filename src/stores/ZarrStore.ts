@@ -21,7 +21,6 @@ type ZarrState = {
   fetchOptions: FetchStoreOptions | null;
   abortController: AbortController | null;
   fetchKey: number;
-  blobKey: string | undefined; // The key for the stored File blob for a local NC
   ndSlices: [number, number][];
   axisMapping: { x: number, y: number, z: number };
   useGT: boolean;
@@ -68,7 +67,6 @@ export const useZarrStore = create<ZarrState>((set, get) => ({
   fetchOptions: null,
   abortController: null,
   fetchKey: 0,
-  blobKey: undefined,
   useGT: false,
   gtSource: undefined,
 

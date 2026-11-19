@@ -48,7 +48,7 @@ export const RemoteDataset = ({ setInitStore, onOpenDescription, selectedUrl = '
         value={url}
         onChange={e => setUrl(e.target.value)}
       />
-      <Button onClick={handleSubmit} variant="outline" className="cursor-pointer h-6">
+      <Button onClick={handleSubmit} variant="outline" className="cursor-pointer h-8 bg-[var(--accent-3)]">
         Fetch
       </Button>
       <FetchOptions value={opts} onChange={setOpts} inline={inlineOptions} />

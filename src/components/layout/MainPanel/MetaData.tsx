@@ -274,8 +274,8 @@ export const MetaData = ({ meta, metadata }: Props) => {
     }), [meta?.dimInfo]);
     const dataShape = meta?.shape || [];
     const dataLength = dataShape.length;
-    const { variable, variable2, bivariate, setDimArrays, setDimNames, setDimUnits, setVariable, setTextureArrayDepths, } = useGlobalStore(useShallow(s => ({
-        variable: s.variable, variable2: s.variable2, bivariate: s.bivariate, setDimArrays: s.setDimArrays, setDimNames: s.setDimNames, 
+    const { initStore, variable2, bivariate, setDimArrays, setDimNames, setDimUnits, setVariable, setTextureArrayDepths, } = useGlobalStore(useShallow(s => ({
+        initStore: s.initStore, variable2: s.variable2, bivariate: s.bivariate, setDimArrays: s.setDimArrays, setDimNames: s.setDimNames, 
         setDimUnits: s.setDimUnits, setVariable: s.setVariable, setTextureArrayDepths: s.setTextureArrayDepths
     })));
     const { maxSize, setMaxSize } = useCacheStore(useShallow(s => ({
@@ -287,12 +287,17 @@ export const MetaData = ({ meta, metadata }: Props) => {
         setCompress: s.setCompress, setCoarsen: s.setCoarsen, setKernelSize: s.setKernelSize, setKernelDepth: s.setKernelDepth,
         ReFetch: s.ReFetch
     })))
-    
+    // --- Reset States --- //
+    useEffect(()=>{
+        setIsBivariate(false)
+        useGlobalStore.setState({variable2: undefined})
+    },[initStore])
+    // --- States --- //
     const [cacheSize, setCacheSize] = useState(maxSize);
     const [isBivariate, setIsBivariate] = useState(bivariate);
     // --- Coarsen Values --- //
-    const [displaySpat, setDisplaySpat] = useState(String(kernelSize));
-    const [displayDepth, setDisplayDepth] = useState(String(kernelDepth));
+    const [displaySpat, setDisplaySpat] = useState(String(Math.floor(kernelSize / 2)));
+    const [displayDepth, setDisplayDepth] = useState(String(Math.floor(kernelDepth / 2)));
     // --- Selected Dim-Data --- //
     const [selectionInfo, setSelectionInfo] = useState<Map<string, any>>(new Map())
     const updateSelectionInfo = useCallback((dim: string, dimObj: Record<string,any> ) => {
@@ -361,6 +366,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
         clearProjectionData();
         ReFetch();
     }
+
     return (
         <div className="flex flex-col gap-2 min-w-0">
             <div className="flex flex-col gap-4 min-w-0">
@@ -411,7 +417,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
                     <Hider show={coarsen}>
                         <Group>
                             {dataShape.length >= 3 &&
-                                <Field label="Temporal (2ⁿ)" htmlFor="coarsen-depth">
+                                <Field label="Temporal (2n)" htmlFor="coarsen-depth">
                                     <Input
                                         id="coarsen-depth"
                                         type='number'
@@ -421,12 +427,12 @@ export const MetaData = ({ meta, metadata }: Props) => {
                                         className="h-7"
                                         onChange={(e) => {
                                             setDisplayDepth(e.target.value);
-                                            setKernelDepth(Math.pow(2, parseInt(e.target.value)));
+                                            setKernelDepth(Math.max(1, 2 * parseInt(e.target.value)));
                                         }}
                                     />
                                 </Field>
                             }
-                            <Field label="Spatial (2ⁿ)" htmlFor="coarsen-size">
+                            <Field label="Spatial (2n)" htmlFor="coarsen-size">
                                 <Input
                                     id="coarsen-size"
                                     type='number'
@@ -436,7 +442,7 @@ export const MetaData = ({ meta, metadata }: Props) => {
                                     className="h-7"
                                     onChange={(e) => {
                                         setDisplaySpat(e.target.value);
-                                        setKernelSize(Math.pow(2, parseInt(e.target.value)));
+                                        setKernelSize(Math.max(1, 2 * parseInt(e.target.value)));
                                     }}
                                 />
                             </Field>

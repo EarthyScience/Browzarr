@@ -12,16 +12,16 @@ import { buildTransferLUT } from '@/gpu/tsl/utils/volumeHelpers';
 import { sampleColormap } from '@/gpu/textures/colormap';
 import { ColumnMeshes } from './TransectMeshes';
 export const DataCube = ( ) => {
-    const {shape, flipY, remapTexture} = useGlobalStore(useShallow(s => ({
-		shape:s.shape, flipY:s.flipY, remapTexture:s.remapTexture
+    const {shape, flipY, remapTexture, hasBricks} = useGlobalStore(useShallow(s => ({
+		shape:s.shape, flipY:s.flipY, remapTexture:s.remapTexture, hasBricks: Boolean(s.coarseVolume)
 	}))) //We have to useShallow when returning an object instead of a state. I don't fully know the logic yet
     const { useOrtho, valueRange, useRayMarch, volumeMode, transparency, 
 		vTransferScale, revTransparency, interpPixels, colorScale} = usePlotStore(useShallow(s => ({
 			useOrtho:s.useOrtho, valueRange:s.valueRange, useRayMarch:s.useRayMarch, volumeMode:s.volumeMode,
 			transparency:s.transparency, vTransferScale:s.vTransferScale, revTransparency:s.revTransparency, interpPixels:s.interpPixels, colorScale: s.colorScale
 		})))
-  	const shaderMaterial = useMemo(() => createVolumeMaterial(useRayMarch ? 'raymarch' : 'dda', volumeMode, useOrtho)
-	, [useRayMarch, volumeMode, remapTexture, useOrtho, interpPixels, colorScale]);
+  	const shaderMaterial = useMemo(() => createVolumeMaterial(useRayMarch ? 'raymarch' : 'dda', volumeMode, useOrtho, hasBricks)
+	, [useRayMarch, volumeMode, remapTexture, useOrtho, interpPixels, colorScale, hasBricks]);
   	const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
 	const cmapFunc = (val: number) => sampleColormap(val, cmap.value as THREE.DataTexture)
 	// --- GENERATE LUT --- //

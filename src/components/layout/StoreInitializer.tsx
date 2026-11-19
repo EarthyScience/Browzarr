@@ -5,12 +5,11 @@ import { useGlobalStore } from "@/stores/GlobalStore";
 import { useZarrStore } from '@/stores/ZarrStore';
 import { usePlotStore } from "@/stores/PlotStore";
 import { loadNetCDF, NETCDF_EXT_REGEX } from "@/data/loaders/loadNetCDF";
-import { loadFile } from "@/lib/IndexDB";
-import { LoadLocalZarr } from "./MainPanel/LocalZarr";
 import { isRemoteStore, toHttps } from "@/data/geo/isRemoteStore";
 import { GetStore } from "@/data/zarr/ZarrLoaderLRU";
 import { useImageExportStore } from "@/stores/ImageExportStore";
 import { useColormapStore } from "@/stores/ColormapStore";
+import { useGraphStore } from "@/stores/GraphStore";
 import { GetZarrMetadata, GetTitleDescription } from '@/data/zarr/ZarrLoaderLRU';
 import { GetVariableNames } from '@/data/zarr/utils';
 import { loadGeoTiff, GEOTIFF_EXT_REGEX } from "@/data/loaders/loadGeoTiff";
@@ -118,11 +117,11 @@ function StoreInitializerInner() {
 		if (searchParams.size === 0) {initializeStore(); return;}
 		
 		const urlStates = Array.from(searchParams.keys());
-		const [globalKeys, plotKeys, zarrKeys, colormapKeys, exportkeys] = // Get keys for each store
-			[useGlobalStore, usePlotStore, useZarrStore, useColormapStore, useImageExportStore].map(store => (
+		const [globalKeys, plotKeys, zarrKeys, colormapKeys, exportkeys, graphKeys] = // Get keys for each store
+			[useGlobalStore, usePlotStore, useZarrStore, useColormapStore, useImageExportStore, useGraphStore].map(store => (
 				urlStates.filter(val => Object.keys(store.getState()).includes(val))))
-		const [globalStates, plotStates, zarrStates, colormapStates, exportStates] = // Get states for each store
-			[globalKeys, plotKeys, zarrKeys, colormapKeys, exportkeys].map(keys => (
+		const [globalStates, plotStates, zarrStates, colormapStates, exportStates, graphStates] = // Get states for each store
+			[globalKeys, plotKeys, zarrKeys, colormapKeys, exportkeys, graphKeys].map(keys => (
 				Object.fromEntries(keys.map(key => [key, safeJsonParse(searchParams.get(key))]))))		
 
 		const setAllStates = () => {
@@ -131,31 +130,13 @@ function StoreInitializerInner() {
 			usePlotStore.setState(plotStates);
 			useColormapStore.setState(colormapStates);
 			useImageExportStore.setState(exportStates);
+			useGraphStore.setState(graphStates);
 		}
 		const keyFramesPath = searchParams.get("keyFramesPath");
 		const exportPlot = searchParams.get("export")
 		const reproject = searchParams.get("reproject")
 		// ---- Handle States ---- //
-		const zarrParam = searchParams.get('zarrState')
-		if (zarrParam){
-			const zarrState = JSON.parse(zarrParam)
-			if (zarrState.blobKey){
-				const blobKey = zarrState.blobKey
-				const isNC = zarrState.useNC
-				loadFile(blobKey).then(cache =>{
-					if (!isNC){
-						console.log(cache?.blob)
-						LoadLocalZarr(cache?.blob as File[])
-					} else {
-						//@ts-ignore cache is what we want
-						const file = cache.blob as File
-						loadNetCDF(file).then(() => {
-							setAllStates()
-						})
-					}
-				})
-			}
-		} else setAllStates();
+		setAllStates();
 		// ---- Handle KeyFrames ---- //
 		if (keyFramesPath){
 			// Fetch JSON 

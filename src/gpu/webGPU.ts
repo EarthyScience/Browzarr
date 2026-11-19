@@ -3,7 +3,7 @@ import {
   makeStructuredView,
 } from 'webgpu-utils';
 
-import { createShaders } from './WGSLShaders';
+import { createShaders, coarsenMinMaxShader } from './WGSLShaders';
 import { ArrayMinMax } from '@/lib/arrayMath';
 import { RescaleArray } from '@/data/zarr/utils';
 
@@ -254,6 +254,88 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
     const {kernelSize:size, kernelDepth:depth} = kernel;
     const output = await DataProcess(inputArray, undefined, dimInfo, "Convolution", "Mean", {size, depth}, undefined, undefined)
     return output?.array;
+}
+
+// Block-reduces Uint8 (255 = NaN) or Uint16 (half-float bits) data into RG [min, max] per output voxel (NaN-coded if the block is all NaN).
+// Edge blocks are partial (outShape uses ceil), so no input voxels are dropped.
+export async function CoarsenMinMaxNaN(
+	inputArray: Uint8Array | Uint16Array,
+	dimInfo: {shape: [number, number, number], strides: [number, number, number]},
+	kernel: [number, number, number]
+){
+	const {device} = await InitializeDevice();
+	if (!device) {
+		throw new Error('need a browser that supports WebGPU');
+	}
+	const isU16 = inputArray instanceof Uint16Array;
+	const [dimZ, dimY, dimX] = dimInfo.shape;
+	const [zStride, yStride, xStride] = dimInfo.strides;
+	const [kz, ky, kx] = kernel;
+	const outShape = [Math.ceil(dimZ / kz), Math.ceil(dimY / ky), Math.ceil(dimX / kx)] as [number, number, number];
+	const [outZ, outY, outX] = outShape;
+	const nVoxels = outZ * outY * outX;
+
+	const module = device.createShaderModule({label: 'coarsen min/max module', code: coarsenMinMaxShader});
+	const pipeline = device.createComputePipeline({label: 'coarsen min/max pipeline', layout: 'auto', compute: {module}});
+
+	const defs = makeShaderDataDefinitions(coarsenMinMaxShader);
+	const uniforms = makeStructuredView(defs.uniforms.params);
+	uniforms.set({zStride, yStride, xStride, dimZ, dimY, dimX, outZ, outY, outX, kz, ky, kx, isU16: Number(isU16)});
+
+	const dataBytes = nVoxels * (isU16 ? 4 : 2);
+	const outputBytes = align4(dataBytes);
+	const inputBuffer = device.createBuffer({
+		label: 'Coarsen Input Buffer',
+		size: align4(inputArray.byteLength),
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+	});
+	const outputBuffer = device.createBuffer({
+		label: 'Coarsen Output Buffer',
+		size: outputBytes,
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+	});
+	const uniformBuffer = device.createBuffer({
+		label: 'Coarsen Uniform Buffer',
+		size: uniforms.arrayBuffer.byteLength,
+		usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+	});
+	const readBuffer = device.createBuffer({
+		label: 'Coarsen Read Buffer',
+		size: outputBytes,
+		usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+	});
+
+	writeAligned(device, inputBuffer, inputArray);
+	device.queue.writeBuffer(uniformBuffer, 0, uniforms.arrayBuffer as GPUAllowSharedBufferSource);
+
+	const bindGroup = device.createBindGroup({
+		layout: pipeline.getBindGroupLayout(0),
+		entries: [
+			{binding: 0, resource: {buffer: inputBuffer}},
+			{binding: 1, resource: {buffer: outputBuffer}},
+			{binding: 2, resource: {buffer: uniformBuffer}},
+		],
+	});
+
+	const encoder = device.createCommandEncoder({label: 'coarsen encoder'});
+	const pass = encoder.beginComputePass({label: 'coarsen pass'});
+	pass.setPipeline(pipeline);
+	pass.setBindGroup(0, bindGroup);
+	pass.dispatchWorkgroups(Math.ceil(outX / 4), Math.ceil(outY / 4), Math.ceil(outZ / 4));
+	pass.end();
+	encoder.copyBufferToBuffer(outputBuffer, 0, readBuffer, 0, outputBytes);
+	device.queue.submit([encoder.finish()]);
+
+	await readBuffer.mapAsync(GPUMapMode.READ);
+	const mapped = readBuffer.getMappedRange().slice(0, dataBytes);
+	readBuffer.unmap();
+	inputBuffer.destroy();
+	outputBuffer.destroy();
+	uniformBuffer.destroy();
+	readBuffer.destroy();
+
+	const data = isU16 ? new Uint16Array(mapped) : new Uint8Array(mapped);
+	return {data, shape: outShape};
 }
 
 

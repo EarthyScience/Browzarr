@@ -1,5 +1,6 @@
 "use client";
 
+import CacheInfo from '@/components/elements/CacheInfo';
 import { Button } from '@/components/ui/button-enhanced';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from '@/components/ui/separator';
@@ -58,6 +59,7 @@ const Dataset = () => {
           }}
         >
           <div className="flex flex-col items-start max-w-[220px] p-3 gap-1 w-auto">
+            <CacheInfo />
             <Button
               variant="outline"
               className="cursor-pointer w-full justify-between gap-2 mb-1"

@@ -53,8 +53,8 @@ export const CollapsibleSection = ({title, defaultOpen = false, className, child
 }
 
 // Hider wraps children in a plain div, so re-apply the column spacing inside it
-export const Group = ({children} : {children: React.ReactNode}) => (
-    <div className='flex flex-col gap-2'>{children}</div>
+export const Group = ({className, children} : {className?: string, children: React.ReactNode}) => (
+    <div className={`flex flex-col gap-2 ${className ?? ''}`}>{children}</div>
 )
 
 // Label on the left, control taking the right half
