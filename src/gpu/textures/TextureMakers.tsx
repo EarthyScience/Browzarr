@@ -10,27 +10,45 @@ interface Array {
     shape: number[];
 }
 
-async function handleCoarse(){
-	const {textureData, dataShape, strides, coarseVolume, bivariate} = useGlobalStore.getState();
-	if (coarseVolume) coarseVolume.dispose();
+// Swap in the new coarse texture before disposing the old one, so nothing samples a destroyed texture.
+function swapCoarse(tex?: THREE.Data3DTexture){
+	const prev = useGlobalStore.getState().coarseVolume;
+	u.coarseVolume.value = tex ?? u.coarsePlaceholder;
+	useGlobalStore.setState({coarseVolume: tex});
+	if (prev && prev !== tex) prev.dispose();
+}
+
+let coarseGen = 0;	// Increments per call; older results that finish late are dropped
+export async function handleCoarse(){
+	const gen = ++coarseGen;
+	const {textureData, dataShape, strides, bivariate, setStatus} = useGlobalStore.getState();
 	const shouldReduce = dataShape.some(num => num >= 256);
-	if (!shouldReduce || bivariate){useGlobalStore.setState({coarseVolume:undefined}); return;}
+	if (!shouldReduce || bivariate || !textureData){ swapCoarse(undefined); return; }
+	setStatus("Optimizing Large Dataset")
 	const u16 = textureData instanceof Uint16Array;
-	const pool = getPool();
-	const {data, shape, kernel} = await pool.dispatch('coarseVolume', {
-		array:textureData, 
-		origShape: dataShape as [number, number, number], 
-		origStrides: strides as [number, number, number]}
-	)
-	const coarseText = new THREE.Data3DTexture(data, shape[2], shape[1], shape[0]);
-	coarseText.format = THREE.RGFormat;
-	coarseText.minFilter = THREE.NearestFilter;
-	coarseText.magFilter = THREE.NearestFilter;
-	coarseText.type = u16 ? THREE.HalfFloatType : THREE.UnsignedByteType
-	coarseText.needsUpdate = true;
-	useGlobalStore.setState({coarseVolume:coarseText})
-	u.coarseKernel.value.set(kernel[2], kernel[1], kernel[0])	// [z,y,x] -> (x,y,z)
-	u.coarseShape.value.set(shape[2], shape[1], shape[0])
+	try {
+		const {data, shape, kernel, array} = await getPool().dispatch('coarseVolume', {
+			array:textureData,
+			origShape: dataShape as [number, number, number],
+			origStrides: strides as [number, number, number]}, [textureData.buffer]
+		)
+		if (gen !== coarseGen) return;	// A newer load owns textureData now
+		useGlobalStore.setState({textureData:array})
+		const coarseText = new THREE.Data3DTexture(data, shape[2], shape[1], shape[0]);
+		coarseText.format = THREE.RGFormat;
+		coarseText.minFilter = THREE.NearestFilter;
+		coarseText.magFilter = THREE.NearestFilter;
+		coarseText.type = u16 ? THREE.HalfFloatType : THREE.UnsignedByteType
+		coarseText.needsUpdate = true;
+		u.coarseKernel.value.set(kernel[2], kernel[1], kernel[0])	// [z,y,x] -> (x,y,z)
+		u.coarseShape.value.set(shape[2], shape[1], shape[0])
+		swapCoarse(coarseText)
+	} catch (e) {
+		console.error("Coarse volume failed, rendering without bricks:", e)
+		if (gen === coarseGen) swapCoarse(undefined);
+	} finally {
+		if (gen === coarseGen) setStatus(null)
+	}
 }
 
 function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxVal: number, minVal: number}, useF16=false){
@@ -55,7 +73,6 @@ function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxV
         }
     }
     setTextureData(textureData)
-	handleCoarse()
 }
 
 export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, useF16=false) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
@@ -122,11 +139,13 @@ export function createDataTexture(){
   const textures = CreateTexture(dataShape);
   if (textures) u.setMapTextures(textures); 
   setMainTextures(textures);
+  handleCoarse();
 }
 
 export function ArrayToTexture(array: Array, valueScales: {maxVal: number, minVal: number}, useF16=false): THREE.Data3DTexture[] | THREE.DataTexture[]{
     StoreData(array.data, valueScales, useF16);
     const textures = CreateTexture(array.shape, undefined, useF16)
+    handleCoarse();
     return textures as THREE.Data3DTexture[] | THREE.DataTexture[];
 }
 

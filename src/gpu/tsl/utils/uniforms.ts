@@ -82,7 +82,8 @@ export const flatBounds = uniform(vec4());
 export const vertBounds = uniform(vec2());
 export const dataShape = uniform(vec3())
 export const tfLUT = texture( new DataTexture() );
-export const coarseVolume = texture3D(placeholder3D());
+export const coarsePlaceholder = placeholder3D();
+export const coarseVolume = texture3D(coarsePlaceholder);
 export const coarseKernel = uniform(vec3());
 export const coarseShape = uniform(vec3());
 

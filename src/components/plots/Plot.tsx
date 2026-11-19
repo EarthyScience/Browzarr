@@ -194,7 +194,7 @@ const Plot = () => {
           setMainTextures(newText)
         }
       })()
-    } setStatus(null)
+    }
   },[useF16Textures])
 
   const prevUniqueRep = useRef(false);

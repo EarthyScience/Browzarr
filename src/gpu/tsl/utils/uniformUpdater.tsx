@@ -19,9 +19,9 @@ export function uniformUpdater(){
             pointSize: s.pointSize, scaleIntensity: s.scaleIntensity, timeScale: s.timeScale, plotType: s.plotType
         })))
     const { useF16Textures, bivariate, textureArrayDepths, remapTexture, isWebGPU, 
-        flipY, remapBorders, isFlat, shape, dataShape, mainTextures, coarseVolume} = useGlobalStore(useShallow(s => ({
+        flipY, remapBorders, isFlat, shape, dataShape, mainTextures} = useGlobalStore(useShallow(s => ({
         useF16Textures: s.useF16Textures, bivariate: s.bivariate, textureArrayDepths: s.textureArrayDepths, remapTexture: s.remapTexture, isWebGPU: s.isWebGPU,
-        flipY: s.flipY, remapBorders: s.remapBorders, isFlat: s.isFlat, shape: s.shape, dataShape: s.dataShape, mainTextures: s.mainTextures, coarseVolume: s.coarseVolume
+        flipY: s.flipY, remapBorders: s.remapBorders, isFlat: s.isFlat, shape: s.shape, dataShape: s.dataShape, mainTextures: s.mainTextures
         })))
     const {lonBounds, latBounds} = useCoordBounds()
     const {colormap, bottomLeft, bottomRight, topLeft, resolution, mixMode, bivariateSelection} = useColormapStore(useShallow(s => ({
@@ -146,9 +146,6 @@ export function uniformUpdater(){
             : new THREE.Vector3(dataShape[2], dataShape[1], dataShape[0])
         u.steps.value = quality;
     },[shape, xRange, yRange, zRange, dataShape, quality, flipY, remapTexture, plotType])
-    useEffect(()=>{
-        if (coarseVolume) u.coarseVolume.value = coarseVolume;
-    }, [coarseVolume])
     // --- DISPLACEMENT UNIFORMS ---//
      useEffect(()=>{
             u.displacement.value = displacement

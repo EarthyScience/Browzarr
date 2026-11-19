@@ -1,6 +1,7 @@
 import { CoarsenMinMaxNaN } from "@/gpu/webGPU";
 export interface coarsenOut{
 	data: Uint8Array | Uint16Array;
+	array: Uint8Array | Uint16Array; // Pass back to main thread since we are using transfers
 	shape: [number, number, number];   // coarse [z, y, x]
 	kernel: [number, number, number];  // block size per axis [kernelDepth, kernelY, kernelX]
 }
@@ -24,5 +25,5 @@ export async function coarsenVolume({array, origShape, origStrides} : coarseIn):
 	// RG per voxel: [min, max], both NaN-coded if the block is all NaN
 	const {data, shape} = await CoarsenMinMaxNaN(array, {shape: origShape, strides: origStrides}, kernel);
 
-	return {data, shape, kernel};
+	return {data, shape, kernel, array};
 }
