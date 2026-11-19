@@ -19,6 +19,7 @@ export const ExportExtent = React.memo(function ExportExtent(){
             top:'50%',
             transform:'translate(-50%, -50%)',
             display: previewExtent ? '' : "none",
+            pointerEvents:'none',
             background:"rgba(200,30,30,0.2)",
             zIndex:4
         }}
