@@ -38,7 +38,7 @@ const volumeShader = (traverse: Traversal, mode: VolumeMode, useBricks=false) =>
 		const checker = mod(float(cell.x.add(cell.y).add(cell.z)), 2.0).mul(0.4).add(0.6);
 		return vec4(vec3(cell).add(0.5).div(vec3(u.coarseShape)).mul(checker), 1.0);
 	}
-    if (useBricks) {
+    if (useBricks && !u.reproject.value) {
 		skipEmptyPadding(vOrigin, rayDir, bounds);
 		// Fully opaque rays stop at the first hit, so trailing empty space is never reached
 		If(u.transparency.greaterThan(0.0), () => { skipEmptyPadding(vOrigin, rayDir, bounds, true); });
