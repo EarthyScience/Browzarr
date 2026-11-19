@@ -19,12 +19,15 @@ function swapCoarse(tex?: THREE.Data3DTexture){
 	if (prev && prev !== tex) prev.dispose();
 }
 
+// ?noBricks disables the coarse brick volume (empty-space skipping)
+const NO_BRICKS = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('noBricks');
+
 let coarseGen = 0;	// Increments per call; older results that finish late are dropped
 export async function handleCoarse(){
 	const gen = ++coarseGen;
 	const {textureData, dataShape, strides, bivariate, setStatus} = useGlobalStore.getState();
 	const shouldReduce = dataShape.some(num => num >= 256);
-	if (!shouldReduce || bivariate || !textureData){ swapCoarse(undefined); return; }
+	if (NO_BRICKS || !shouldReduce || bivariate || !textureData){ swapCoarse(undefined); return; }
 	setStatus("Optimizing Large Dataset")
 	const u16 = textureData instanceof Uint16Array;
 	try {
