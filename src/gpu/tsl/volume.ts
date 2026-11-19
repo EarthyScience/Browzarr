@@ -1,12 +1,15 @@
 import {
     abs, any, Break, ceil, clamp, Discard, EPSILON, float, floor, Fn, fract, greaterThanEqual, If, int,
-    ivec3, lessThan, Loop, max, min, normalize, select, sign, vec3, bool
+    ivec3, lessThan, Loop, max, min, mod, normalize, select, sign, vec3, vec4, bool
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
 import * as u from './utils/uniforms';
 import { hitBox, locateSample, readVoxel, rayVaryings } from './utils/volumeHelpers';
 import { Compositor, makeCompositor, VolumeMode } from './utils/compositors';
+
+// DEBUG: render the first occupied coarse brick instead of the volume (only when useBricks)
+const DEBUG_COARSE = false;
 
 export type VolumeTraversal = 'dda' | 'raymarch';
 
@@ -29,6 +32,12 @@ const volumeShader = (traverse: Traversal, mode: VolumeMode, useBricks=false) =>
 	const bounds = hitBox(vOrigin, rayDir).toVar('bounds');
 	If(bounds.x.greaterThan(bounds.y), () => { Discard(); });
 	bounds.x.assign(max(bounds.x, 0.0));
+	if (useBricks && DEBUG_COARSE) {
+		const cell = skipLeadingEmpty(vOrigin, rayDir, bounds);
+		// Color = normalized brick index; checkerboard darkens every other brick so neighbours are distinct
+		const checker = mod(float(cell.x.add(cell.y).add(cell.z)), 2.0).mul(0.4).add(0.6);
+		return vec4(vec3(cell).add(0.5).div(vec3(u.coarseShape)).mul(checker), 1.0);
+	}
     if (useBricks) skipLeadingEmpty(vOrigin, rayDir, bounds);
     const comp = makeCompositor(mode);
     traverse(vOrigin, rayDir, bounds, comp);
@@ -146,23 +155,39 @@ const skipLeadingEmpty = (vOrigin: any, rayDir: any, bounds: any) => {
 	const found = bool(false).toVar('found');
 	const maxSteps = int(gridRes.x.add(gridRes.y).add(gridRes.z)).add(4);
 
+	const kz = float(u.coarseKernel.z);
+	const Dz = float(u.dataShape.z);
+	const lastBrick = int(gridRes.z).sub(1);
+
+	const brickAt = (zNorm: any) => {
+			const zShifted = fract(zNorm.add(u.animateProg)); // wrap around the volume
+			return clamp(int(floor(zShifted.mul(Dz).div(kz))), int(0), lastBrick);
+		};
+
 	Loop(maxSteps, () => {
 		If(t.greaterThan(bounds.y), () => { Break(); });
+		// Each cell covers z-range [z0, z1) of the volume (normalized 0..1). With the z-animation
+		// offset applied (and wrapped), find the coarse bricks at both ends of that range.
+		const zStart = float(cell.z).mul(kz).div(Dz);
+		const zEnd = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5); // epsilon keeps end inside the cell
+		// coarseVolume texel: .x = min, .y = max of the brick.
+		// u8: all-NaN bricks are encoded as 255 (-> 1.0 after unorm). f16: NaN fails the comparisons on its own.
+		const U8_NAN = 254.5 / 255;
+		const isOccupied = (minMax: any) => {
+			const isNaNBrick = minMax.x.greaterThan(U8_NAN).toVar();
+			minMax.x.assign(h.rescaler(minMax.x)); 
+			isNaNBrick.assign(h.isNanVal(minMax.x).and(h.isNanVal(minMax.y)));
+			minMax.x.assign(max(min(minMax.x.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
+			minMax.y.assign(max(min(minMax.y.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
+			const overlapsThreshold = minMax.y.greaterThanEqual(u.threshold.x)
+				.and(minMax.x.lessThanEqual(u.threshold.y));
+			return isNaNBrick.not().and(overlapsThreshold);
+		};
 
-		// animateProg shifts texCoord.z (see locateSample), so a geometric brick covers up to two data bricks
-		const kz = float(u.coarseKernel.z);
-		const Dz = float(u.dataShape.z);
-		const lastZ = int(gridRes.z).sub(1);
-		const z0 = float(cell.z).mul(kz).div(Dz);
-		const z1 = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5);
-		const b0 = clamp(int(floor(fract(z0.add(u.animateProg)).mul(Dz).div(kz))), int(0), lastZ);
-		const b1 = clamp(int(floor(fract(z1.add(u.animateProg)).mul(Dz).div(kz))), int(0), lastZ);
-		// .x = min, .y = max. u8 all-NaN bricks are coded 255 -> 1.0 after unorm; f16 NaN fails the comparisons on its own
-		const isOcc = (mm: any) => mm.x.greaterThan(254.5 / 255).not()
-			.and(mm.y.greaterThanEqual(u.threshold.x)).and(mm.x.lessThanEqual(u.threshold.y));
-		const mmA = u.coarseVolume.load(ivec3(cell.x, cell.y, b0)).toVar();
-		const mmB = u.coarseVolume.load(ivec3(cell.x, cell.y, b1)).toVar();
-		const occupied = isOcc(mmA).or(isOcc(mmB));
+		const brickStart = u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zStart))).toVar();
+		const brickEnd = u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zEnd))).toVar();
+		const occupied = isOccupied(brickStart).or(isOccupied(brickEnd));
+
 		If(occupied, () => {
 			found.assign(bool(true));
 			Break();
@@ -188,4 +213,5 @@ const skipLeadingEmpty = (vOrigin: any, rayDir: any, bounds: any) => {
 
 	If(found.not(), () => { Discard(); });
 	bounds.x.assign(t);
+	return cell;
 };
