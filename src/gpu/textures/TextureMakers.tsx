@@ -23,7 +23,11 @@ export async function handleCoarse(){
 	const gen = ++coarseGen;
 	const {textureData, dataShape, strides, bivariate, setStatus} = useGlobalStore.getState();
 	const shouldReduce = dataShape.some(num => num >= 256);
-	if (!shouldReduce || bivariate || !textureData){ swapCoarse(undefined); return; }
+	if (!shouldReduce || bivariate || !textureData){
+		swapCoarse(undefined);
+		setStatus(null);	// Callers (e.g. the F16 toggle) rely on this to clear their status
+		return;
+	}
 	setStatus("Optimizing Large Dataset")
 	const u16 = textureData instanceof Uint16Array;
 	try {

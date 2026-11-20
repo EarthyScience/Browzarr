@@ -20,8 +20,10 @@ export const DataCube = ( ) => {
 			useOrtho:s.useOrtho, valueRange:s.valueRange, useRayMarch:s.useRayMarch, volumeMode:s.volumeMode,
 			transparency:s.transparency, vTransferScale:s.vTransferScale, revTransparency:s.revTransparency, interpPixels:s.interpPixels, colorScale: s.colorScale
 		})))
-  	const shaderMaterial = useMemo(() => createVolumeMaterial(useRayMarch ? 'raymarch' : 'dda', volumeMode, useOrtho, hasBricks)
-	, [useRayMarch, volumeMode, remapTexture, useOrtho, interpPixels, colorScale, hasBricks]);
+	// Brick space doesn't match data space under reprojection, so bricks are off while remapped
+	const useBricks = hasBricks && !remapTexture;
+  	const shaderMaterial = useMemo(() => createVolumeMaterial(useRayMarch ? 'raymarch' : 'dda', volumeMode, useOrtho, useBricks)
+	, [useRayMarch, volumeMode, remapTexture, useOrtho, interpPixels, colorScale, useBricks]);
   	const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
 	const cmapFunc = (val: number) => sampleColormap(val, cmap.value as THREE.DataTexture)
 	// --- GENERATE LUT --- //

@@ -38,10 +38,13 @@ const volumeShader = (traverse: Traversal, mode: VolumeMode, useBricks=false) =>
 		const checker = mod(float(cell.x.add(cell.y).add(cell.z)), 2.0).mul(0.4).add(0.6);
 		return vec4(vec3(cell).add(0.5).div(vec3(u.coarseShape)).mul(checker), 1.0);
 	}
-    if (useBricks && !u.reproject.value) {
-		skipEmptyPadding(vOrigin, rayDir, bounds);
-		// Fully opaque rays stop at the first hit, so trailing empty space is never reached
-		If(u.transparency.greaterThan(0.0), () => { skipEmptyPadding(vOrigin, rayDir, bounds, true); });
+    if (useBricks) {
+		// NaN/fill voxels are tinted when nanAlpha > 0, but bricks only track valid min/max, so skipping could hide the tint
+		If(u.nanAlpha.lessThanEqual(0.0), () => {
+			skipEmptyPadding(vOrigin, rayDir, bounds);
+			// Fully opaque rays stop at the first hit, so trailing empty space is never reached
+			If(u.transparency.greaterThan(0.0), () => { skipEmptyPadding(vOrigin, rayDir, bounds, true); });
+		});
 	}
     const comp = makeCompositor(mode);
     traverse(vOrigin, rayDir, bounds, comp);
@@ -184,6 +187,7 @@ const skipEmptyPadding = (vOrigin: any, rayDirIn: any, bounds: any, reverse = fa
 		const isOccupied = (minMax: any) => {
 			const isNaNBrick = h.isNanVal(minMax.x).toVar();
 			minMax.x.assign(h.rescaler(minMax.x)); 
+			minMax.y.assign(h.rescaler(minMax.y)); 
 			isNaNBrick.assign(h.isNanVal(minMax.x).and(h.isNanVal(minMax.y)));
 			minMax.x.assign(max(min(minMax.x.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
 			minMax.y.assign(max(min(minMax.y.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
