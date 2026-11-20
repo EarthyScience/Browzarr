@@ -22,7 +22,9 @@ let coarseGen = 0;	// Increments per call; older results that finish late are dr
 export async function handleCoarse(){
 	const gen = ++coarseGen;
 	const {textureData, dataShape, strides, bivariate, setStatus} = useGlobalStore.getState();
-	const shouldReduce = dataShape.some(num => num >= 256);
+	// Bricks are only used by the volume renderer, so skip 2D and effectively-flat (a dimension of 1) data
+	const isVolume = dataShape.length === 3 && !dataShape.includes(1);
+	const shouldReduce = isVolume && dataShape.some(num => num >= 256);
 	if (!shouldReduce || bivariate || !textureData){
 		swapCoarse(undefined);
 		setStatus(null);	// Callers (e.g. the F16 toggle) rely on this to clear their status
@@ -31,13 +33,14 @@ export async function handleCoarse(){
 	setStatus("Optimizing Large Dataset")
 	const u16 = textureData instanceof Uint16Array;
 	try {
-		const {data, shape, kernel, array} = await getPool().dispatch('coarseVolume', {
+		const {data, shape, kernel, array, error} = await getPool().dispatch('coarseVolume', {
 			array:textureData,
 			origShape: dataShape as [number, number, number],
 			origStrides: strides as [number, number, number]}, [textureData.buffer]
 		)
 		if (gen !== coarseGen) return;	// A newer load owns textureData now
-		useGlobalStore.setState({textureData:array})
+		useGlobalStore.setState({textureData:array})	// Restore the transferred buffer, even if coarsening failed
+		if (!data) throw new Error(error);
 		const coarseText = new THREE.Data3DTexture(data, shape[2], shape[1], shape[0]);
 		coarseText.format = THREE.RGFormat;
 		coarseText.minFilter = THREE.NearestFilter;

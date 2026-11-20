@@ -1488,12 +1488,14 @@ export const coarsenMinMaxShader = /* WGSL */`
 			return;
 		}
 
-		let z0 = oz * params.kz;
-		let y0 = oy * params.ky;
-		let x0 = ox * params.kx;
-		let z1 = min(z0 + params.kz, params.dimZ);
-		let y1 = min(y0 + params.ky, params.dimY);
-		let x1 = min(x0 + params.kx, params.dimX);
+		// Include a 1-voxel halo around each block: with linear filtering, samples near a brick edge
+		// blend in the neighbouring voxel, so the brick's range has to cover those values too
+		let z0 = max(oz * params.kz, 1u) - 1u;
+		let y0 = max(oy * params.ky, 1u) - 1u;
+		let x0 = max(ox * params.kx, 1u) - 1u;
+		let z1 = min((oz + 1u) * params.kz + 1u, params.dimZ);
+		let y1 = min((oy + 1u) * params.ky + 1u, params.dimY);
+		let x1 = min((ox + 1u) * params.kx + 1u, params.dimX);
 
 		var minV: f32 = 3.0e38;
 		var maxV: f32 = -3.0e38;
