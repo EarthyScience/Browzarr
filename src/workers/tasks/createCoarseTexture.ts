@@ -24,7 +24,7 @@ export function getCoarsenKernel(origShape: [number, number, number]): [number, 
 export async function coarsenVolume({array, origShape, origStrides} : coarseIn): Promise<coarsenOut>{
 	const kernel = getCoarsenKernel(origShape);
 	try {
-		// RG per voxel: [min, max], both NaN-coded if the block is all NaN
+		// RG per voxel: [min, max]; R NaN-coded if the block is all NaN, G if it has any NaN
 		const {data, shape} = await CoarsenMinMaxNaN(array, {shape: origShape, strides: origStrides}, kernel);
 		return {data, shape, kernel, array};
 	} catch (e) {

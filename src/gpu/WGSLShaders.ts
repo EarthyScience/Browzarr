@@ -1437,7 +1437,7 @@ export const createShaders = (precision: Precision, wgs: {wgx: number, wgy:numbe
 
 // Block min/max/NaN reduction over Uint8 (255 = NaN) or Uint16 (half-float bits) texture data.
 // Input and output are bound as u32 since WGSL has no 8/16-bit storage types.
-// Output per voxel: RG = [min, max], both NaN-coded if the whole block is NaN.
+// Output per voxel: RG = [min, max]. R is NaN-coded if the whole block is NaN, G if any voxel is NaN.
 export const coarsenMinMaxShader = /* WGSL */`
 	struct Params {
 		zStride: u32,
@@ -1521,17 +1521,19 @@ export const coarsenMinMaxShader = /* WGSL */`
 		}
 
 		let allNaN = nanCount == total;
+		let someNaN = nanCount > 0u;
 		let outIdx = (oz * params.outY + oy) * params.outX + ox;
 
+		// R = min (NaN only if all NaN), G = max (NaN if any NaN, so the max is lost for partial bricks)
 		if (params.isU16 == 1u) {
 			let nanH = 0x7E00u;
 			let r = select(minB, nanH, allNaN);
-			let g = select(maxB, nanH, allNaN);
+			let g = select(maxB, nanH, someNaN);
 			atomicOr(&outputData[outIdx], r | (g << 16u));
 		} else {
 			// Two voxels share a u32, so OR into the zero-initialized buffer to avoid races
 			let r = select(minB, 255u, allNaN);
-			let g = select(maxB, 255u, allNaN);
+			let g = select(maxB, 255u, someNaN);
 			atomicOr(&outputData[outIdx >> 1u], (r | (g << 8u)) << ((outIdx & 1u) * 16u));
 		}
 	}

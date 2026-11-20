@@ -256,7 +256,7 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
     return output?.array;
 }
 
-// Block-reduces Uint8 (255 = NaN) or Uint16 (half-float bits) data into RG [min, max] per output voxel (NaN-coded if the block is all NaN).
+// Block-reduces Uint8 (255 = NaN) or Uint16 (half-float bits) data into RG [min, max] per output voxel (R NaN-coded if the block is all NaN, G if it has any NaN).
 // Edge blocks are partial (outShape uses ceil), so no input voxels are dropped.
 export async function CoarsenMinMaxNaN(
 	inputArray: Uint8Array | Uint16Array,

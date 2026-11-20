@@ -142,6 +142,18 @@ const marchTraverse: Traversal = (vOrigin, rayDir, bounds, comp) => {
 const traversals: Record<VolumeTraversal, Traversal> = { dda: ddaTraverse, raymarch: marchTraverse };
 
 // --- COARSE USERS --- //
+// Decodes a coarseVolume texel (.x = min, .y = max) into colormap space [0, 0.995].
+// .x is NaN-coded only if the whole brick is NaN; .y is NaN-coded if any voxel is NaN,
+// in which case the max is unknown and hi is left unbounded (1.0).
+const decodeBrick = (texel: any) => {
+    const allNaN = h.isNanVal(texel.x).toVar();
+    const someNaN = h.isNanVal(texel.y).toVar();
+    const lo = clamp(h.rescaler(texel.x).mul(u.cScale).add(u.cOffset), 0.0, 0.995).toVar();
+    const hi = select(someNaN, float(1.0), clamp(h.rescaler(texel.y).mul(u.cScale).add(u.cOffset), 0.0, 0.995)).toVar();
+    const overlaps = allNaN.not().and(hi.greaterThanEqual(u.threshold.x)).and(lo.lessThanEqual(u.threshold.y));
+    return { lo, hi, allNaN, someNaN, overlaps };
+};
+
 // Moves bounds.x to the entry of the first coarse brick whose [min,max] overlaps the threshold range.
 // reverse: marches back from bounds.y and moves bounds.y to the exit of the last occupied brick instead.
 // Discards the pixel if no brick along the ray is occupied.
@@ -186,23 +198,9 @@ const skipEmptyPadding = (vOrigin: any, rayDirIn: any, bounds: any, reverse = fa
 		// offset applied (and wrapped), find the coarse bricks at both ends of that range.
 		const zStart = float(cell.z).mul(kz).div(Dz);
 		const zEnd = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5); // epsilon keeps end inside the cell
-		// coarseVolume texel: .x = min, .y = max of the brick.
-		// u8: all-NaN bricks are encoded as 255 (-> 1.0 after unorm). f16: NaN fails the comparisons on its own.
-		const isOccupied = (minMax: any) => {
-			const isNaNBrick = h.isNanVal(minMax.x).toVar();
-			minMax.x.assign(h.rescaler(minMax.x)); 
-			minMax.y.assign(h.rescaler(minMax.y)); 
-			isNaNBrick.assign(h.isNanVal(minMax.x).and(h.isNanVal(minMax.y)));
-			minMax.x.assign(max(min(minMax.x.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
-			minMax.y.assign(max(min(minMax.y.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
-			const overlapsThreshold = minMax.y.greaterThanEqual(u.threshold.x)
-				.and(minMax.x.lessThanEqual(u.threshold.y));
-			return isNaNBrick.not().and(overlapsThreshold);
-		};
-
-		const brickStart = u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zStart))).toVar();
-		const brickEnd = u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zEnd))).toVar();
-		const occupied = isOccupied(brickStart).or(isOccupied(brickEnd));
+		const brickStart = decodeBrick(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zStart))));
+		const brickEnd = decodeBrick(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zEnd))));
+		const occupied = brickStart.overlaps.or(brickEnd.overlaps);
 
 		If(occupied, () => {
 			found.assign(bool(true));
@@ -275,14 +273,11 @@ const findCoarseMIP = (vOrigin: any, rayDir: any, bounds: any, mode: VolumeMode)
         const zEnd = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5); // epsilon keeps end inside the cell
         const tExit = min(tMax.x, min(tMax.y, tMax.z)).toVar();
         const consider = (texel: any) => {
-            const raw = vec2(h.rescaler(texel.x), h.rescaler(texel.y)).toVar();
-            const isNaNBrick = h.isNanVal(raw.x).and(h.isNanVal(raw.y));
-            const lo = clamp(raw.x.mul(u.cScale).add(u.cOffset), 0.0, 0.995).toVar();
-            const hi = clamp(raw.y.mul(u.cScale).add(u.cOffset), 0.0, 0.995).toVar();
-            const overlaps = hi.greaterThanEqual(u.threshold.x).and(lo.lessThanEqual(u.threshold.y));
-            If(isNaNBrick.not().and(overlaps), () => {
-                // Only bricks fully inside the threshold guarantee their samples are composited
-                If(lo.greaterThanEqual(u.threshold.x).and(hi.lessThanEqual(u.threshold.y)), () => {
+            const { lo, hi, someNaN, overlaps } = decodeBrick(texel);
+            If(overlaps, () => {
+                // Only NaN-free bricks fully inside the threshold guarantee their samples are composited:
+                // a ray through a partly NaN brick may only hit NaN voxels and never see lo/hi
+                If(someNaN.not().and(lo.greaterThanEqual(u.threshold.x)).and(hi.lessThanEqual(u.threshold.y)), () => {
                     miv.assign(useMin ? min(miv, hi) : max(miv, lo));
                 });
                 const reachable = useMin
