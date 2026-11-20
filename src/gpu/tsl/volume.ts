@@ -1,6 +1,7 @@
 import {
     abs, any, Break, ceil, clamp, Discard, EPSILON, float, floor, Fn, fract, greaterThanEqual, If, int,
-    ivec3, lessThan, Loop, max, min, mod, normalize, select, sign, vec3, vec4, bool
+    ivec3, lessThan, Loop, max, min, mod, normalize, select, sign, vec3, vec4, bool,
+	vec2
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
@@ -39,12 +40,16 @@ const volumeShader = (traverse: Traversal, mode: VolumeMode, useBricks=false) =>
 		return vec4(vec3(cell).add(0.5).div(vec3(u.coarseShape)).mul(checker), 1.0);
 	}
     if (useBricks) {
-		// NaN/fill voxels are tinted when nanAlpha > 0, but bricks only track valid min/max, so skipping could hide the tint
-		If(u.nanAlpha.lessThanEqual(0.0), () => {
-			skipEmptyPadding(vOrigin, rayDir, bounds);
-			// Fully opaque rays stop at the first hit, so trailing empty space is never reached
-			If(u.transparency.greaterThan(0.0), () => { skipEmptyPadding(vOrigin, rayDir, bounds, true); });
-		});
+		if(mode == 'additive'){
+			// NaN/fill voxels are tinted when nanAlpha > 0, but bricks only track valid min/max, so skipping could hide the tint
+			If(u.nanAlpha.lessThanEqual(0.0), () => {
+				skipEmptyPadding(vOrigin, rayDir, bounds);
+				// Fully opaque rays stop at the first hit, so trailing empty space is never reached
+				If(u.transparency.greaterThan(0.0), () => { skipEmptyPadding(vOrigin, rayDir, bounds, true); });
+			});
+		} else {
+			findCoarseMIP(vOrigin, rayDir, bounds, mode)
+		}
 	}
     const comp = makeCompositor(mode);
     traverse(vOrigin, rayDir, bounds, comp);
@@ -136,12 +141,11 @@ const marchTraverse: Traversal = (vOrigin, rayDir, bounds, comp) => {
 
 const traversals: Record<VolumeTraversal, Traversal> = { dda: ddaTraverse, raymarch: marchTraverse };
 
-// --- EMPTY-SPACE SKIP --- //
+// --- COARSE USERS --- //
 // Moves bounds.x to the entry of the first coarse brick whose [min,max] overlaps the threshold range.
 // reverse: marches back from bounds.y and moves bounds.y to the exit of the last occupied brick instead.
 // Discards the pixel if no brick along the ray is occupied.
 const skipEmptyPadding = (vOrigin: any, rayDirIn: any, bounds: any, reverse = false) => {
-	// Reversed ray: p(s) = vOrigin - s*rayDir, so the forward range [x, y] becomes s in [-y, -x]
 	const rayDir = reverse ? rayDirIn.negate() : rayDirIn;
 	const tStart = reverse ? bounds.y.negate() : bounds.x;
 	const tEnd = reverse ? bounds.x.negate() : bounds.y;
@@ -226,5 +230,90 @@ const skipEmptyPadding = (vOrigin: any, rayDirIn: any, bounds: any, reverse = fa
 	If(found.not(), () => { Discard(); });
 	if (reverse) bounds.y.assign(t.negate());
 	else bounds.x.assign(t);
+	return cell;
+};
+
+const findCoarseMIP = (vOrigin: any, rayDir: any, bounds: any, mode: VolumeMode) => {
+	const gridRes = u.coarseShape;
+    const boxMin = u.volumeScale.mul( 0.5 ).negate();
+    const voxelSize = u.volumeScale.div(u.dataShape).mul(u.coarseKernel);
+	const tStart = bounds.x;
+	const tEnd = bounds.y;
+    const p0 = vOrigin.add(tStart.mul(rayDir));
+	const localPos = p0.sub(boxMin).div(voxelSize);
+	const cell = clamp(ivec3(floor(localPos)), ivec3(0), ivec3(gridRes).sub(1)).toVar('cell');
+
+	const stepDir = sign(rayDir);
+	const stepDirI = ivec3(stepDir);
+	const nextBoundary = boxMin.add(vec3(cell).add(max(stepDir, 0.0)).mul(voxelSize));
+	const tMax = nextBoundary.sub(vOrigin).div(rayDir).toVar('cTMax');
+	const tDelta = voxelSize.div(abs(rayDir)).toVar('cTDelta');
+	const degenerate = lessThan(abs(rayDir), vec3(EPSILON));
+	tMax.assign(select(degenerate, vec3(1e30), tMax));
+	tDelta.assign(select(degenerate, vec3(1e30), tDelta));
+
+	const t = tStart.toVar('cT');
+	const found = bool(false).toVar('found');
+	const maxSteps = int(gridRes.x.add(gridRes.y).add(gridRes.z)).add(4);
+
+	const kz = float(u.coarseKernel.z);
+	const Dz = float(u.dataShape.z);
+	const lastBrick = int(gridRes.z).sub(1);
+
+	const brickAt = (zNorm: any) => {
+		const zShifted = fract(zNorm.add(u.animateProg)); // wrap around the volume
+		return clamp(int(floor(zShifted.mul(Dz).div(kz))), int(0), lastBrick);
+	};
+	const useMin = mode == 'min'
+	const winningVal = float(useMin ? 1e10 : -1e10).toVar();
+	Loop(maxSteps, () => {
+		const isNaNBrick = bool(false).toVar();
+		If(t.greaterThan(tEnd), () => { Break(); });
+		const zStart = float(cell.z).mul(kz).div(Dz);
+		const zEnd = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5); // epsilon keeps end inside the cell
+		const cellValue = (minMax: any) => {
+			isNaNBrick.assign(h.isNanVal(minMax.x));
+			minMax.x.assign(h.rescaler(minMax.x)); 
+			minMax.y.assign(h.rescaler(minMax.y)); 
+			isNaNBrick.assign(h.isNanVal(minMax.x).and(h.isNanVal(minMax.y)));
+			minMax.x.assign(max(min(minMax.x.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
+			minMax.y.assign(max(min(minMax.y.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
+			return useMin ? minMax.x.min(minMax.y) : minMax.x.max(minMax.y)
+		};
+
+		const brickStart = u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zStart))).toVar();
+		const brickEnd = u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zEnd))).toVar();
+		const miv = useMin 
+					? cellValue(brickStart).min(cellValue(brickEnd)) 
+					: cellValue(brickStart).max(cellValue(brickEnd))
+		const condition = useMin
+						? miv.lessThan(winningVal).or(found.not())
+						: miv.greaterThan(winningVal).or(found.not())
+		
+		If(condition.and(isNaNBrick.not()), () => {
+			winningVal.assign(miv)
+			bounds.assign(vec2(t,tMax))
+			found.assign(bool(true))
+		})
+		If(tMax.x.lessThan(tMax.y).and(tMax.x.lessThan(tMax.z)), () => {
+			t.assign(tMax.x);
+			tMax.x.addAssign(tDelta.x);
+			cell.x.addAssign(stepDirI.x);
+		}).ElseIf(tMax.y.lessThan(tMax.z), () => {
+			t.assign(tMax.y);
+			tMax.y.addAssign(tDelta.y);
+			cell.y.addAssign(stepDirI.y);
+		}).Else(() => {
+			t.assign(tMax.z);
+			tMax.z.addAssign(tDelta.z);
+			cell.z.addAssign(stepDirI.z);
+		});
+
+		If(any(lessThan(cell, ivec3(0))).or(any(greaterThanEqual(cell, ivec3(gridRes)))), () => {
+			Break();
+		});
+	});
+
+	If(found.not(), () => { Discard(); });
 	return cell;
 };
