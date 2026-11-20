@@ -412,14 +412,16 @@ export const MetaData = ({ meta, metadata }: Props) => {
                         )}
                     </div>
                     <SecondVariable dataShape={dataShape} isBivariate={isBivariate} setIsBivariate={setIsBivariate}/>
-                    <SwitchField
-                        id="compress-data"
-                        label="Compress"
-                        help="Compress data to preserve memory at the expense of slightly longer load times"
-                        checked={compress}
-                        onChange={setCompress}
-                    />
-                    <SwitchField id="coarsen" label="Coarsen" checked={coarsen} onChange={setCoarsen} />
+                    <div className="grid grid-cols-2 items-center gap-x-4">
+                        <SwitchField
+                            id="compress-data"
+                            label="Compress"
+                            help="Compress data to preserve memory at the expense of slightly longer load times"
+                            checked={compress}
+                            onChange={setCompress}
+                        />
+                        <SwitchField id="coarsen" label="Coarsen" checked={coarsen} onChange={setCoarsen} />
+                    </div>
                     <Hider show={coarsen}>
                         <Group>
                             {dataShape.length >= 3 &&
