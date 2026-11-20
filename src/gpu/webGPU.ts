@@ -3,7 +3,7 @@ import {
   makeStructuredView,
 } from 'webgpu-utils';
 
-import { createShaders, coarsenMinMaxShader } from './WGSLShaders';
+import { createShaders, coarsenMinMaxShader } from './shaders';
 import { ArrayMinMax } from '@/lib/arrayMath';
 import { RescaleArray } from '@/data/zarr/utils';
 
