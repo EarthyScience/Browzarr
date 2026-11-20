@@ -61,8 +61,9 @@ type StoreState = {
   borderCompatible: boolean;
   mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined;
   isWebGPU: boolean;
+    limits: Record<string, number> | undefined;
 
-  
+
   // setters
   setDataShape: (dataShape: number[]) => void;
   setActiveIndices: (indices: number[]) => void;
@@ -106,6 +107,7 @@ type StoreState = {
   setUseF16Textures: (useF16Textures: boolean) => void;
   setMainTextures: (mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined) => void;
   setIsWebGPU: (isWebGPU: boolean) => void;
+    setLimits: (limits: Record<string, number> | undefined) => void;
   transferFunc: (x: number) => number;
 };
 
@@ -155,6 +157,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   borderCompatible: true,
   mainTextures: undefined,
   isWebGPU: true,
+    limits: undefined,
 
   // setters
   setDataShape: (dataShape) => set({ dataShape }),
@@ -218,6 +221,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   setUseF16Textures: (useF16Textures) => set({ useF16Textures }),
   setMainTextures: (mainTextures) => set({ mainTextures }),
   setIsWebGPU: (isWebGPU) => set({ isWebGPU }),
+    setLimits: (limits) => set({ limits }),
   transferFunc: (x: number) => x
 }));
 
