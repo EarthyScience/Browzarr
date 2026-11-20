@@ -252,68 +252,70 @@ const findCoarseMIP = (vOrigin: any, rayDir: any, bounds: any, mode: VolumeMode)
 	tMax.assign(select(degenerate, vec3(1e30), tMax));
 	tDelta.assign(select(degenerate, vec3(1e30), tDelta));
 
-	const t = tStart.toVar('cT');
-	const found = bool(false).toVar('found');
-	const maxSteps = int(gridRes.x.add(gridRes.y).add(gridRes.z)).add(4);
+    const t = tStart.toVar('cT');
+    const maxSteps = int(gridRes.x.add(gridRes.y).add(gridRes.z)).add(4);
 
-	const kz = float(u.coarseKernel.z);
-	const Dz = float(u.dataShape.z);
-	const lastBrick = int(gridRes.z).sub(1);
+    const kz = float(u.coarseKernel.z);
+    const Dz = float(u.dataShape.z);
+    const lastBrick = int(gridRes.z).sub(1);
 
-	const brickAt = (zNorm: any) => {
-		const zShifted = fract(zNorm.add(u.animateProg)); // wrap around the volume
-		return clamp(int(floor(zShifted.mul(Dz).div(kz))), int(0), lastBrick);
-	};
-	const useMin = mode == 'min'
-	const winningVal = float(useMin ? 1e10 : -1e10).toVar();
-	Loop(maxSteps, () => {
-		const isNaNBrick = bool(false).toVar();
-		If(t.greaterThan(tEnd), () => { Break(); });
-		const zStart = float(cell.z).mul(kz).div(Dz);
-		const zEnd = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5); // epsilon keeps end inside the cell
-		const cellValue = (minMax: any) => {
-			isNaNBrick.assign(h.isNanVal(minMax.x));
-			minMax.x.assign(h.rescaler(minMax.x)); 
-			minMax.y.assign(h.rescaler(minMax.y)); 
-			isNaNBrick.assign(h.isNanVal(minMax.x).and(h.isNanVal(minMax.y)));
-			minMax.x.assign(max(min(minMax.x.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
-			minMax.y.assign(max(min(minMax.y.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
-			return useMin ? minMax.x.min(minMax.y) : minMax.x.max(minMax.y)
-		};
+    const brickAt = (zNorm: any) => {
+        const zShifted = fract(zNorm.add(u.animateProg)); // wrap around the volume
+        return clamp(int(floor(zShifted.mul(Dz).div(kz))), int(0), lastBrick);
+    };
+    const useMin = mode == 'min';
+    // Value the ray is guaranteed to reach: max of brick mins (min mode: min of brick maxes).
+    // Bricks that can't beat it are skipped; bounds shrink to [first, last] remaining brick.
+    const miv = float(useMin ? 1e10 : -1e10).toVar('mivalue');
+    const tFirst = float(1e30).toVar('mipFirst');
+    const tLast = float(-1e30).toVar('mipLast');
+    Loop(maxSteps, () => {
+        If(t.greaterThan(tEnd), () => { Break(); });
+        const zStart = float(cell.z).mul(kz).div(Dz);
+        const zEnd = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5); // epsilon keeps end inside the cell
+        const tExit = min(tMax.x, min(tMax.y, tMax.z)).toVar();
+        const consider = (texel: any) => {
+            const raw = vec2(h.rescaler(texel.x), h.rescaler(texel.y)).toVar();
+            const isNaNBrick = h.isNanVal(raw.x).and(h.isNanVal(raw.y));
+            const lo = clamp(raw.x.mul(u.cScale).add(u.cOffset), 0.0, 0.995).toVar();
+            const hi = clamp(raw.y.mul(u.cScale).add(u.cOffset), 0.0, 0.995).toVar();
+            const overlaps = hi.greaterThanEqual(u.threshold.x).and(lo.lessThanEqual(u.threshold.y));
+            If(isNaNBrick.not().and(overlaps), () => {
+                // Only bricks fully inside the threshold guarantee their samples are composited
+                If(lo.greaterThanEqual(u.threshold.x).and(hi.lessThanEqual(u.threshold.y)), () => {
+                    miv.assign(useMin ? min(miv, hi) : max(miv, lo));
+                });
+                const reachable = useMin
+                    ? max(lo, u.threshold.x).lessThanEqual(miv)
+                    : min(hi, u.threshold.y).greaterThanEqual(miv);
+                If(reachable, () => {
+                    tFirst.assign(min(tFirst, t));
+                    tLast.assign(max(tLast, tExit));
+                });
+            });
+        };
+        consider(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zStart))));
+        consider(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zEnd))));
 
-		const brickStart = u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zStart))).toVar();
-		const brickEnd = u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zEnd))).toVar();
-		const miv = useMin 
-					? cellValue(brickStart).min(cellValue(brickEnd)) 
-					: cellValue(brickStart).max(cellValue(brickEnd))
-		const condition = useMin
-						? miv.lessThan(winningVal).or(found.not())
-						: miv.greaterThan(winningVal).or(found.not())
-		
-		If(condition.and(isNaNBrick.not()), () => {
-			winningVal.assign(miv)
-			bounds.assign(vec2(t,tMax))
-			found.assign(bool(true))
-		})
-		If(tMax.x.lessThan(tMax.y).and(tMax.x.lessThan(tMax.z)), () => {
-			t.assign(tMax.x);
-			tMax.x.addAssign(tDelta.x);
-			cell.x.addAssign(stepDirI.x);
-		}).ElseIf(tMax.y.lessThan(tMax.z), () => {
-			t.assign(tMax.y);
-			tMax.y.addAssign(tDelta.y);
-			cell.y.addAssign(stepDirI.y);
-		}).Else(() => {
-			t.assign(tMax.z);
-			tMax.z.addAssign(tDelta.z);
-			cell.z.addAssign(stepDirI.z);
-		});
+        If(tMax.x.lessThan(tMax.y).and(tMax.x.lessThan(tMax.z)), () => {
+            t.assign(tMax.x);
+            tMax.x.addAssign(tDelta.x);
+            cell.x.addAssign(stepDirI.x);
+        }).ElseIf(tMax.y.lessThan(tMax.z), () => {
+            t.assign(tMax.y);
+            tMax.y.addAssign(tDelta.y);
+            cell.y.addAssign(stepDirI.y);
+        }).Else(() => {
+            t.assign(tMax.z);
+            tMax.z.addAssign(tDelta.z);
+            cell.z.addAssign(stepDirI.z);
+        });
 
-		If(any(lessThan(cell, ivec3(0))).or(any(greaterThanEqual(cell, ivec3(gridRes)))), () => {
-			Break();
-		});
-	});
-
-	If(found.not(), () => { Discard(); });
-	return cell;
+        If(any(lessThan(cell, ivec3(0))).or(any(greaterThanEqual(cell, ivec3(gridRes)))), () => {
+            Break();
+        });
+    });
+    If(tLast.lessThan(tFirst), () => { Discard(); });
+    bounds.assign(vec2(max(tFirst, bounds.x), min(tLast, bounds.y)));
+    return cell;
 };
