@@ -22,6 +22,7 @@ import { QuickTip } from '../widgets/QuickTip';
 import { KeyFramesHelper } from './KeyFramesHelper';
 import { BsBoxArrowUp } from 'react-icons/bs';
 import { IoMdArrowDropright } from "react-icons/io";
+import { KeyFrameMarker } from './KeyFrameMarker';
 const NON_VISUAL_KEYS = new Set<string>([
     "plotType", "selectTS", "animate", "resetAnim", "animProg", "resetCamera",
     "originalExtent", "lonResolution", "latResolution", "colorIdx",
@@ -207,30 +208,9 @@ export const KeyFrames = () => {
             {/* <KeyFrameInfo keyframe={currentFrame} keyframesMap={keyFrames} /> */}
 		</div>
         <div className="relative w-full my-2 px-2 drop-shadow-[0_0_4px_var(--notice-shadow)] rounded-lg">
-            {keyFrameList?.map((frame) => {
-                const thumbRadius = 8 + 8; //Thumbradius plus padding
-                const percent = ((frame - 1 )/(frames - 1)) * 100; 
-                return (
-                <TbKeyframeFilled
-                    key={frame}
-                    style={{
-                        position: "absolute",
-                        left: `calc(${percent}% + ${thumbRadius}px - ${thumbRadius * 2 * percent / 100}px)`,
-                        top:0,
-                        transform:"translate(-50%, -50%)",
-                        zIndex: 0, 
-                        cursor:"pointer",
-                        visibility:percent <= 100 ? "visible" : "hidden"
-                    }}
-					color='orangered'
-					size={18}
-					onClick={()=>setCurrentFrame(frame)}
-					onDoubleClick={()=>{
-						useImageExportStore.getState().removeKeyFrame(frame)
-					}}
-                />
-                );
-            })}
+            {keyFrameList?.map((frame) => (
+                <KeyFrameMarker key={frame} frame={frame} frames={frames} currentFrame={currentFrame} />
+            ))}
             <Slider
                 value={[currentFrame]}
                 min={1}
