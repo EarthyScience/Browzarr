@@ -16,3 +16,146 @@
     gap:8px;
     user-select: none;
 }
+
+/* Shared column layout so the main track and property lanes line up */
+.kf-grid{
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    align-items: center;
+    column-gap: 4px;
+}
+@media (max-width: 767px){
+    .kf-grid{
+        grid-template-columns: 4.5rem minmax(0, 1fr);
+    }
+}
+
+/* Main track */
+.kf-marker{
+    position: absolute;
+    top: 0;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    display: flex;
+    padding: 0;
+    border: none;
+    background: none;
+    line-height: 0;
+    cursor: grab;
+    touch-action: none;
+}
+.kf-marker:focus-visible{
+    outline: 2px solid var(--ring, orangered);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+.kf-marker-selected{
+    z-index: 2;
+    filter: drop-shadow(0 0 3px orangered);
+}
+.kf-marker-dragging{
+    cursor: grabbing;
+    z-index: 3;
+}
+.kf-drag-label{
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 10px;
+    line-height: 14px;
+    color: white;
+    background: orangered;
+    pointer-events: none;
+}
+.kf-segment{
+    position: absolute;
+    top: 0;
+    height: 3px;
+    transform: translateY(-50%);
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+/* Property tracks */
+.kf-group-header{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+}
+.kf-track-label{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    padding-left: 4px;
+    font-size: 12px;
+}
+.kf-lock{
+    display: flex;
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    opacity: 0.6;
+}
+.kf-lock:hover, .kf-lock[aria-pressed="true"]{
+    opacity: 1;
+}
+.kf-track-locked .kf-lane{
+    opacity: 0.4;
+}
+.kf-lane{
+    position: relative;
+    height: 20px;
+}
+.kf-lane-line{
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: 50%;
+    border-top: 1px solid hsla(0, 0%, 50%, 0.3);
+}
+.kf-lane-segment{
+    position: absolute;
+    top: 50%;
+    height: 4px;
+    transform: translateY(-50%);
+    border-radius: 2px;
+    pointer-events: none;
+}
+.kf-dot{
+    position: absolute;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    padding: 0;
+    transform: translate(-50%, -50%) rotate(45deg);
+    border: 1.5px solid orangered;
+    border-radius: 1px;
+    background: var(--modal-shadow, transparent);
+    cursor: pointer;
+}
+.kf-dot-changed{
+    background: orangered;
+}
+.kf-dot-step{
+    border-radius: 0;
+    transform: translate(-50%, -50%);
+}
+.kf-dot:hover, .kf-dot:focus-visible{
+    outline: 2px solid orangered;
+    outline-offset: 1px;
+}
