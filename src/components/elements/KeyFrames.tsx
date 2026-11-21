@@ -31,7 +31,7 @@ const NON_VISUAL_KEYS = new Set<string>([
     "cameraPosition", "camera", "nativeCRS", "destCRS", "overRideCamera", "preProject",
 ])
 
-const SetKeyFrame = (frame: number) =>{
+export const SetKeyFrame = (frame: number) =>{
     const {addKeyFrame} = useImageExportStore.getState()
     const currentVizState = usePlotStore.getState()
     const keyState = Object.fromEntries(
