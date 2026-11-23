@@ -1,6 +1,7 @@
 import {
     abs, any, Break, ceil, clamp, Discard, EPSILON, float, floor, Fn, fract, greaterThanEqual, If, int,
-    ivec3, lessThan, Loop, max, min, mod, normalize, select, sign, vec3, vec4, bool
+    ivec3, lessThan, Loop, max, min, mod, normalize, select, sign, vec3, vec4, bool,
+	vec2
 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import * as h from './utils/commonHelpers';
@@ -9,7 +10,7 @@ import { hitBox, locateSample, readVoxel, rayVaryings } from './utils/volumeHelp
 import { Compositor, makeCompositor, VolumeMode } from './utils/compositors';
 
 // DEBUG: render the first occupied coarse brick instead of the volume (only when useBricks)
-const DEBUG_COARSE = false;
+const DEBUG_COARSE = true;
 
 export type VolumeTraversal = 'dda' | 'raymarch';
 
@@ -38,10 +39,17 @@ const volumeShader = (traverse: Traversal, mode: VolumeMode, useBricks=false) =>
 		const checker = mod(float(cell.x.add(cell.y).add(cell.z)), 2.0).mul(0.4).add(0.6);
 		return vec4(vec3(cell).add(0.5).div(vec3(u.coarseShape)).mul(checker), 1.0);
 	}
-    if (useBricks && !u.reproject.value) {
-		skipEmptyPadding(vOrigin, rayDir, bounds);
-		// Fully opaque rays stop at the first hit, so trailing empty space is never reached
-		If(u.transparency.greaterThan(0.0), () => { skipEmptyPadding(vOrigin, rayDir, bounds, true); });
+    if (useBricks) {
+		if(mode == 'additive'){
+			// NaN/fill voxels are tinted when nanAlpha > 0, but bricks only track valid min/max, so skipping could hide the tint
+			If(u.nanAlpha.lessThanEqual(0.0), () => {
+				skipEmptyPadding(vOrigin, rayDir, bounds);
+				// Fully opaque rays stop at the first hit, so trailing empty space is never reached
+				If(u.transparency.greaterThan(0.0), () => { skipEmptyPadding(vOrigin, rayDir, bounds, true); });
+			});
+		} else {
+			findCoarseMIP(vOrigin, rayDir, bounds, mode)
+		}
 	}
     const comp = makeCompositor(mode);
     traverse(vOrigin, rayDir, bounds, comp);
@@ -133,12 +141,26 @@ const marchTraverse: Traversal = (vOrigin, rayDir, bounds, comp) => {
 
 const traversals: Record<VolumeTraversal, Traversal> = { dda: ddaTraverse, raymarch: marchTraverse };
 
-// --- EMPTY-SPACE SKIP --- //
+// --- COARSE USERS --- //
+// Decodes a coarseVolume texel (.xy = [min, max]) into colormap space [0, 0.995].
+// Both are NaN-coded only if the whole brick is NaN. A brick with some NaN voxels stores them swapped (x > y);
+// x == y is ambiguous and treated as someNaN, which only weakens MIP culling.
+const decodeBrick = (texel: any) => {
+	const allNaN = h.isNanVal(texel.x).toVar();
+	// Compare raw texels: rescaling/cScale could flip the order
+	const someNaN = allNaN.or(texel.x.greaterThanEqual(texel.y)).toVar();
+	const a = clamp(h.rescaler(texel.x).mul(u.cScale).add(u.cOffset), 0.0, 0.995);
+	const b = clamp(h.rescaler(texel.y).mul(u.cScale).add(u.cOffset), 0.0, 0.995);
+	const lo = min(a, b).toVar();
+	const hi = max(a, b).toVar();
+    const overlaps = allNaN.not().and(hi.greaterThanEqual(u.threshold.x)).and(lo.lessThanEqual(u.threshold.y));
+    return { lo, hi, allNaN, someNaN, overlaps };
+};
+
 // Moves bounds.x to the entry of the first coarse brick whose [min,max] overlaps the threshold range.
 // reverse: marches back from bounds.y and moves bounds.y to the exit of the last occupied brick instead.
 // Discards the pixel if no brick along the ray is occupied.
 const skipEmptyPadding = (vOrigin: any, rayDirIn: any, bounds: any, reverse = false) => {
-	// Reversed ray: p(s) = vOrigin - s*rayDir, so the forward range [x, y] becomes s in [-y, -x]
 	const rayDir = reverse ? rayDirIn.negate() : rayDirIn;
 	const tStart = reverse ? bounds.y.negate() : bounds.x;
 	const tEnd = reverse ? bounds.x.negate() : bounds.y;
@@ -179,22 +201,9 @@ const skipEmptyPadding = (vOrigin: any, rayDirIn: any, bounds: any, reverse = fa
 		// offset applied (and wrapped), find the coarse bricks at both ends of that range.
 		const zStart = float(cell.z).mul(kz).div(Dz);
 		const zEnd = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5); // epsilon keeps end inside the cell
-		// coarseVolume texel: .x = min, .y = max of the brick.
-		// u8: all-NaN bricks are encoded as 255 (-> 1.0 after unorm). f16: NaN fails the comparisons on its own.
-		const isOccupied = (minMax: any) => {
-			const isNaNBrick = h.isNanVal(minMax.x).toVar();
-			minMax.x.assign(h.rescaler(minMax.x)); 
-			isNaNBrick.assign(h.isNanVal(minMax.x).and(h.isNanVal(minMax.y)));
-			minMax.x.assign(max(min(minMax.x.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
-			minMax.y.assign(max(min(minMax.y.mul(u.cScale).add(u.cOffset), 0.995), 0.0));
-			const overlapsThreshold = minMax.y.greaterThanEqual(u.threshold.x)
-				.and(minMax.x.lessThanEqual(u.threshold.y));
-			return isNaNBrick.not().and(overlapsThreshold);
-		};
-
-		const brickStart = u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zStart))).toVar();
-		const brickEnd = u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zEnd))).toVar();
-		const occupied = isOccupied(brickStart).or(isOccupied(brickEnd));
+		const brickStart = decodeBrick(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zStart))));
+		const brickEnd = decodeBrick(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zEnd))));
+		const occupied = brickStart.overlaps.or(brickEnd.overlaps);
 
 		If(occupied, () => {
 			found.assign(bool(true));
@@ -223,4 +232,88 @@ const skipEmptyPadding = (vOrigin: any, rayDirIn: any, bounds: any, reverse = fa
 	if (reverse) bounds.y.assign(t.negate());
 	else bounds.x.assign(t);
 	return cell;
+};
+
+const findCoarseMIP = (vOrigin: any, rayDir: any, bounds: any, mode: VolumeMode) => {
+	const gridRes = u.coarseShape;
+    const boxMin = u.volumeScale.mul( 0.5 ).negate();
+    const voxelSize = u.volumeScale.div(u.dataShape).mul(u.coarseKernel);
+	const tStart = bounds.x;
+	const tEnd = bounds.y;
+    const p0 = vOrigin.add(tStart.mul(rayDir));
+	const localPos = p0.sub(boxMin).div(voxelSize);
+	const cell = clamp(ivec3(floor(localPos)), ivec3(0), ivec3(gridRes).sub(1)).toVar('cell');
+
+	const stepDir = sign(rayDir);
+	const stepDirI = ivec3(stepDir);
+	const nextBoundary = boxMin.add(vec3(cell).add(max(stepDir, 0.0)).mul(voxelSize));
+	const tMax = nextBoundary.sub(vOrigin).div(rayDir).toVar('cTMax');
+	const tDelta = voxelSize.div(abs(rayDir)).toVar('cTDelta');
+	const degenerate = lessThan(abs(rayDir), vec3(EPSILON));
+	tMax.assign(select(degenerate, vec3(1e30), tMax));
+	tDelta.assign(select(degenerate, vec3(1e30), tDelta));
+
+    const t = tStart.toVar('cT');
+    const maxSteps = int(gridRes.x.add(gridRes.y).add(gridRes.z)).add(4);
+
+    const kz = float(u.coarseKernel.z);
+    const Dz = float(u.dataShape.z);
+    const lastBrick = int(gridRes.z).sub(1);
+
+    const brickAt = (zNorm: any) => {
+        const zShifted = fract(zNorm.add(u.animateProg)); // wrap around the volume
+        return clamp(int(floor(zShifted.mul(Dz).div(kz))), int(0), lastBrick);
+    };
+    const useMin = mode == 'min';
+    // Value the ray is guaranteed to reach: max of brick mins (min mode: min of brick maxes).
+    // Bricks that can't beat it are skipped; bounds shrink to [first, last] remaining brick.
+    const miv = float(useMin ? 1e10 : -1e10).toVar('mivalue');
+    const tFirst = float(1e30).toVar('mipFirst');
+    const tLast = float(-1e30).toVar('mipLast');
+    Loop(maxSteps, () => {
+        If(t.greaterThan(tEnd), () => { Break(); });
+        const zStart = float(cell.z).mul(kz).div(Dz);
+        const zEnd = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5); // epsilon keeps end inside the cell
+        const tExit = min(tMax.x, min(tMax.y, tMax.z)).toVar();
+        const consider = (texel: any) => {
+            const { lo, hi, someNaN, overlaps } = decodeBrick(texel);
+            If(overlaps, () => {
+                // Only NaN-free bricks fully inside the threshold guarantee their samples are composited:
+                // a ray through a partly NaN brick may only hit NaN voxels and never see lo/hi
+                If(someNaN.not().and(lo.greaterThanEqual(u.threshold.x)).and(hi.lessThanEqual(u.threshold.y)), () => {
+                    miv.assign(useMin ? min(miv, hi) : max(miv, lo));
+                });
+                const reachable = useMin
+                    ? max(lo, u.threshold.x).lessThanEqual(miv)
+                    : min(hi, u.threshold.y).greaterThanEqual(miv);
+                If(reachable, () => {
+                    tFirst.assign(min(tFirst, t));
+                    tLast.assign(max(tLast, tExit));
+                });
+            });
+        };
+        consider(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zStart))));
+        consider(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zEnd))));
+
+        If(tMax.x.lessThan(tMax.y).and(tMax.x.lessThan(tMax.z)), () => {
+            t.assign(tMax.x);
+            tMax.x.addAssign(tDelta.x);
+            cell.x.addAssign(stepDirI.x);
+        }).ElseIf(tMax.y.lessThan(tMax.z), () => {
+            t.assign(tMax.y);
+            tMax.y.addAssign(tDelta.y);
+            cell.y.addAssign(stepDirI.y);
+        }).Else(() => {
+            t.assign(tMax.z);
+            tMax.z.addAssign(tDelta.z);
+            cell.z.addAssign(stepDirI.z);
+        });
+
+        If(any(lessThan(cell, ivec3(0))).or(any(greaterThanEqual(cell, ivec3(gridRes)))), () => {
+            Break();
+        });
+    });
+    If(tLast.lessThan(tFirst), () => { Discard(); });
+    bounds.assign(vec2(max(tFirst, bounds.x), min(tLast, bounds.y)));
+    return cell;
 };

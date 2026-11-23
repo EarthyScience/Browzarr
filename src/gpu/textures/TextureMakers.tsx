@@ -26,18 +26,25 @@ let coarseGen = 0;	// Increments per call; older results that finish late are dr
 export async function handleCoarse(){
 	const gen = ++coarseGen;
 	const {textureData, dataShape, strides, bivariate, setStatus} = useGlobalStore.getState();
-	const shouldReduce = dataShape.some(num => num >= 256);
-	if (NO_BRICKS || !shouldReduce || bivariate || !textureData){ swapCoarse(undefined); return; }
+	// Bricks are only used by the volume renderer, so skip 2D and effectively-flat (a dimension of 1) data
+	const isVolume = dataShape.length === 3 && !dataShape.includes(1);
+	const shouldReduce = isVolume && dataShape.some(num => num >= 256);
+	if (NO_BRICKS || !shouldReduce || bivariate || !textureData){
+		swapCoarse(undefined);
+		setStatus(null);	// Callers (e.g. the F16 toggle) rely on this to clear their status
+		return;
+	}
 	setStatus("Optimizing Large Dataset")
 	const u16 = textureData instanceof Uint16Array;
 	try {
-		const {data, shape, kernel, array} = await getPool().dispatch('coarseVolume', {
+		const {data, shape, kernel, array, error} = await getPool().dispatch('coarseVolume', {
 			array:textureData,
 			origShape: dataShape as [number, number, number],
 			origStrides: strides as [number, number, number]}, [textureData.buffer]
 		)
 		if (gen !== coarseGen) return;	// A newer load owns textureData now
-		useGlobalStore.setState({textureData:array})
+		useGlobalStore.setState({textureData:array})	// Restore the transferred buffer, even if coarsening failed
+		if (!data) throw new Error(error);
 		const coarseText = new THREE.Data3DTexture(data, shape[2], shape[1], shape[0]);
 		coarseText.format = THREE.RGFormat;
 		coarseText.minFilter = THREE.NearestFilter;
@@ -55,27 +62,13 @@ export async function handleCoarse(){
 	}
 }
 
-function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxVal: number, minVal: number}, useF16=false){
+async function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxVal: number, minVal: number}, useF16=false){
     const { setTextureData } = useGlobalStore.getState()
-    const {minVal, maxVal} = valueScales;
-    const len = array.length
-    const invRange = 1 / (maxVal - minVal)
-    let textureData: Uint8Array | Uint16Array
-    if (useF16) {
-        textureData = new Uint16Array(len)
-        const nanHalf = THREE.DataUtils.toHalfFloat(NaN)
-        for (let i = 0; i < len; i++) {
-            const normed = (array[i] - minVal) * invRange
-            textureData[i] = normed !== normed ? nanHalf : THREE.DataUtils.toHalfFloat(normed)
-        }
-    } else {
-        textureData = new Uint8Array(len)
-        const scale = 254 * invRange
-        for (let i = 0; i < len; i++) {
-            const scaled = (array[i] - minVal) * scale
-            textureData[i] = scaled !== scaled ? 255 : scaled
-        }
-    }
+    const pool = getPool();
+	// array's buffer is transferred (detached), so callers must pass an array nothing else holds
+    const {textureData} = await pool.dispatch("textureData",
+      {array:array as Float16Array, valueScales, useF16}, [array.buffer])
+	coarseGen++;	// Drop any in-flight coarse job so it can't restore its stale buffer over this one
     setTextureData(textureData)
 }
 
@@ -86,7 +79,6 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
 
   const numComponents = bivariate ? 2 : 1;
   const format = bivariate ? THREE.RGFormat : THREE.RedFormat;
-
   if (shape.length == 2){
     const width = shape[1];
     const height = shape[0];
@@ -131,15 +123,15 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
   }
 }
 
-export function createDataTexture(){
+export async function createDataTexture(){
   const { dataShape, bivariate, valueScales, setMainTextures} = useGlobalStore.getState();
   if (bivariate){
     perf.note('bivariate: cache assembly included in uint8Normalize');
     perf.time('uint8Normalize', () => storeBivariate(valueScales));
   }
   else{
-    const dataArray = perf.time('cacheAssemble', () => GetCurrentArray());
-    perf.time('uint8Normalize', () => StoreData(dataArray, valueScales[0]));
+    const dataArray = perf.time('cacheAssemble', () => GetCurrentArray(undefined, undefined, true));
+    await perf.time('uint8Normalize', () =>  StoreData(dataArray, valueScales[0]));
   }
   const textures = perf.time('textureCreate', () => CreateTexture(dataShape));
   if (textures) u.setMapTextures(textures); 
@@ -147,22 +139,45 @@ export function createDataTexture(){
   handleCoarse();
 }
 
-export function ArrayToTexture(array: Array, valueScales: {maxVal: number, minVal: number}, useF16=false): THREE.Data3DTexture[] | THREE.DataTexture[]{
-    StoreData(array.data, valueScales, useF16);
+export async function ArrayToTexture(array: Array, valueScales: {maxVal: number, minVal: number}, useF16=false): Promise<THREE.Data3DTexture[] | THREE.DataTexture[]>{
+    await StoreData(array.data, valueScales, useF16);
     const textures = CreateTexture(array.shape, undefined, useF16)
     handleCoarse();
     return textures as THREE.Data3DTexture[] | THREE.DataTexture[];
 }
+
+// export async function storeBivariate(valueScales: {minVal: number, maxVal: number}[], useF16=false){
+// 	const {variable, variable2, shareScale, dataShape, setTextureData} = useGlobalStore.getState();
+// 	const pool = getPool();
+// 	const dataLength = dataShape.reduce((a, b) => a * b , 1)
+//   	let textureData: Uint8Array<ArrayBufferLike> | Uint16Array<ArrayBufferLike> = useF16 
+//   		? new Uint16Array(dataLength * 2) 
+// 		: new Uint8Array(dataLength * 2)
+// 	const variables = [variable, variable2];
+// 	const absoluteScales = {
+// 		minVal: Math.min(valueScales[0].minVal, valueScales[1].minVal),
+// 		maxVal: Math.max(valueScales[0].maxVal, valueScales[1].maxVal)
+// 	}
+// 	for (const [idx, thisVar] of variables.entries()) {
+// 		const array = GetCurrentArray(undefined, thisVar);
+// 		const theseScales = shareScale ? absoluteScales : valueScales[idx];
+// 		const result = await pool.dispatch("biTextureData", {
+// 			array, textureData, valueScales: theseScales, idx, dataLength, useF16
+// 		},[array.buffer, textureData.buffer]);
+// 		textureData = result.textureData; // reassign before next iteration
+// 	}
+// 	setTextureData(textureData)
+// }
 
 export function storeBivariate(valueScales: {minVal: number, maxVal: number}[], useF16=false){
 	const {variable, variable2, shareScale, dataShape, setTextureData} = useGlobalStore.getState();
 	const dataLength = dataShape.reduce((a, b) => a * b , 1)
 	const textureData = useF16 ? new Uint16Array(dataLength * 2) : new Uint8Array(dataLength * 2)
 	const variables = [variable, variable2];
-  const absoluteScales = {
-    minVal: Math.min(valueScales[0].minVal, valueScales[1].minVal),
-    maxVal: Math.max(valueScales[0].maxVal, valueScales[1].maxVal)
-  }
+	const absoluteScales = {
+		minVal: Math.min(valueScales[0].minVal, valueScales[1].minVal),
+		maxVal: Math.max(valueScales[0].maxVal, valueScales[1].maxVal)
+	}
 	variables.forEach((thisVar, idx) =>{
 		const array = GetCurrentArray(undefined, thisVar);
 		const {minVal, maxVal} = shareScale ? absoluteScales : valueScales[idx];
@@ -181,6 +196,7 @@ export function storeBivariate(valueScales: {minVal: number, maxVal: number}[], 
             }
         }
 	})
+	coarseGen++;
 	setTextureData(textureData)
 }
 

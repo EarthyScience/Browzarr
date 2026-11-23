@@ -4,10 +4,10 @@ import { arrayRange } from '@/lib/arrayMath';
 import { FetchStoreOptions } from '@/types/Interfaces';
 import { decompressSync } from 'fflate';
 import { toHalfFloat } from 'three/src/extras/DataUtils.js';
-import { createTextureData, textureIn, textureOut } from './tasks/createTextureData';
+import { BiTextureIn, createTextureData, createBiVarTextureData, textureIn, textureOut } from './tasks/createTextureData';
 import { processChunk, processIn, processOut } from './tasks/processChunk';
 import { TypedArray } from '@/lib/helpers';
-import { coarseIn, coarsenOut, coarsenVolume } from './tasks/createCoarseTexture';
+import { coarseIn, coarsenOut, coarsenVolume, } from './tasks/createCoarseTexture';
 interface normalizeIn{
     data: Uint8Array | Float16Array;
     minVal: number;
@@ -90,6 +90,7 @@ export const tasks = {
     decompress: (d: {array:Uint8Array}): {newArray: Float16Array} => decompressArray(d),
     processChunk: (d: processIn) : Promise<processOut> => processChunk(d),
     textureData: (d: textureIn) : textureOut => createTextureData(d),
-    rescaler: (d: RescalerIn) : {array: Float16Array | Uint8Array, ms: number} => rescaler(d),
+    biTextureData: (d: BiTextureIn) : textureOut => createBiVarTextureData(d),
+    rescaler: (d: RescalerIn) : {array: Float16Array | Uint8Array} => rescaler(d),
     coarseVolume: (d: coarseIn) : Promise<coarsenOut> => coarsenVolume(d)
 };
