@@ -189,7 +189,7 @@ const Plot = () => {
   useEffect(()=>{ // Switch Texture array bit-depth
     if(show){
       (async () =>{
-        const newText = await ArrayToTexture({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape},valueScales[0],useF16Textures);
+        const newText = await ArrayToTexture({data:analysisMode ? analysisArray.slice() : GetCurrentArray(undefined, undefined, true), shape:dataShape},valueScales[0],useF16Textures);
         if (newText){
           setMainTextures(newText)
         }

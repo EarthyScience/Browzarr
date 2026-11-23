@@ -124,7 +124,7 @@ export const useDataFetcher = () => {
                     setValueScales(valueScales)
                     setStatus("Building textures...");
                     await yieldToPaint();
-                    createDataTexture();
+                    await createDataTexture();
                     if (preProject) {
                         usePlotStore.setState({
                             nativeCRS: urlNativeCRS ?? usePlotStore.getState().nativeCRS,

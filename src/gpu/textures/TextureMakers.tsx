@@ -61,8 +61,10 @@ export async function handleCoarse(){
 async function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxVal: number, minVal: number}, useF16=false){
     const { setTextureData } = useGlobalStore.getState()
     const pool = getPool();
-    const {textureData} = await pool.dispatch("textureData", 
+	// array's buffer is transferred (detached), so callers must pass an array nothing else holds
+    const {textureData} = await pool.dispatch("textureData",
       {array:array as Float16Array, valueScales, useF16}, [array.buffer])
+	coarseGen++;	// Drop any in-flight coarse job so it can't restore its stale buffer over this one
     setTextureData(textureData)
 }
 
@@ -117,14 +119,14 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
   }
 }
 
-export function createDataTexture(){
+export async function createDataTexture(){
   const { dataShape, bivariate, valueScales, setMainTextures} = useGlobalStore.getState();
   if (bivariate){
     storeBivariate(valueScales);
   }
   else{
-    const dataArray = GetCurrentArray();
-    StoreData(dataArray, valueScales[0]);
+    const dataArray = GetCurrentArray(undefined, undefined, true);
+    await StoreData(dataArray, valueScales[0]);
   }
   const textures = CreateTexture(dataShape);
   if (textures) u.setMapTextures(textures); 
@@ -132,8 +134,8 @@ export function createDataTexture(){
   handleCoarse();
 }
 
-export function ArrayToTexture(array: Array, valueScales: {maxVal: number, minVal: number}, useF16=false): THREE.Data3DTexture[] | THREE.DataTexture[]{
-    StoreData(array.data, valueScales, useF16);
+export async function ArrayToTexture(array: Array, valueScales: {maxVal: number, minVal: number}, useF16=false): Promise<THREE.Data3DTexture[] | THREE.DataTexture[]>{
+    await StoreData(array.data, valueScales, useF16);
     const textures = CreateTexture(array.shape, undefined, useF16)
     handleCoarse();
     return textures as THREE.Data3DTexture[] | THREE.DataTexture[];
@@ -189,6 +191,7 @@ export function storeBivariate(valueScales: {minVal: number, maxVal: number}[], 
             }
         }
 	})
+	coarseGen++;
 	setTextureData(textureData)
 }
 

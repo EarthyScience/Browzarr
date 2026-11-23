@@ -226,7 +226,8 @@ function DecompressArray(compressed : Uint8Array){
 	return floatArray
 }
 
-export function GetCurrentArray(overrideStore?: string, overrideVariable?: string){
+// owned=true guarantees the returned array isn't referenced by the cache, so its buffer can be transferred to a worker
+export function GetCurrentArray(overrideStore?: string, overrideVariable?: string, owned=false){
   const { variable, is4D, idx4D, initStore, strides, dataShape }= useGlobalStore.getState()
   const { arraySize, currentChunks, ndSlices } = useZarrStore.getState()
   const {cache} = useCacheStore.getState();
@@ -237,7 +238,7 @@ export function GetCurrentArray(overrideStore?: string, overrideVariable?: strin
   if (cache.has(cacheBase)){
       const chunk = cache.get(cacheBase)
       const compressed = chunk?.compressed
-      const thisData = compressed ? DecompressArray(chunk.data) : chunk.data
+      const thisData = compressed ? DecompressArray(chunk.data) : owned ? chunk.data.slice() : chunk.data
 			return thisData
   }
   else{

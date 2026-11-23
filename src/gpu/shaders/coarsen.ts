@@ -1,6 +1,6 @@
 // Block min/max/NaN reduction over Uint8 (255 = NaN) or Uint16 (half-float bits) texture data.
 // Input and output are bound as u32 since WGSL has no 8/16-bit storage types.
-// Output per voxel: RG = [min, max]. R is NaN-coded if the whole block is NaN, G if any voxel is NaN.
+// Output per voxel: RG = [min, max], NaN-coded if the whole block is NaN. If some voxels are NaN, R and G are swapped (R > G).
 export const coarsenMinMaxShader = /* WGSL */`
 	struct Params {
 		zStride: u32,
@@ -87,16 +87,20 @@ export const coarsenMinMaxShader = /* WGSL */`
 		let someNaN = nanCount > 0u;
 		let outIdx = (oz * params.outY + oy) * params.outX + ox;
 
-		// R = min (NaN only if all NaN), G = max (NaN if any NaN, so the max is lost for partial bricks)
+		// RG = [min, max], both NaN-coded only if the whole block is NaN.
+		// Order encodes someNaN: R <= G for NaN-free bricks, swapped (R > G) if any voxel is NaN
+		let swap = someNaN && !allNaN;
+		let lo = select(minB, maxB, swap);
+		let hi = select(maxB, minB, swap);
 		if (params.isU16 == 1u) {
 			let nanH = 0x7E00u;
-			let r = select(minB, nanH, allNaN);
-			let g = select(maxB, nanH, someNaN);
+			let r = select(lo, nanH, allNaN);
+			let g = select(hi, nanH, allNaN);
 			atomicOr(&outputData[outIdx], r | (g << 16u));
 		} else {
 			// Two voxels share a u32, so OR into the zero-initialized buffer to avoid races
-			let r = select(minB, 255u, allNaN);
-			let g = select(maxB, 255u, someNaN);
+			let r = select(lo, 255u, allNaN);
+			let g = select(hi, 255u, allNaN);
 			atomicOr(&outputData[outIdx >> 1u], (r | (g << 8u)) << ((outIdx & 1u) * 16u));
 		}
 	}
