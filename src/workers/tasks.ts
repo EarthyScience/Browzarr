@@ -91,6 +91,6 @@ export const tasks = {
     processChunk: (d: processIn) : Promise<processOut> => processChunk(d),
     textureData: (d: textureIn) : textureOut => createTextureData(d),
     biTextureData: (d: BiTextureIn) : textureOut => createBiVarTextureData(d),
-    rescaler: (d: RescalerIn) : {array: Float16Array | Uint8Array} => rescaler(d),
+    rescaler: (d: RescalerIn) : {array: Float16Array | Uint8Array, ms:number} => rescaler(d),
     coarseVolume: (d: coarseIn) : Promise<coarsenOut> => coarsenVolume(d)
 };
