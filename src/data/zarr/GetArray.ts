@@ -148,7 +148,7 @@ export async function GetArray(varOveride?: string) {
         }
         await Promise.all(jobs);
     } finally {
-        setProgress(0);
+        setProgress(undefined);
     }
 
     // --- CHUNK SCALING --- //

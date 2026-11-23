@@ -70,7 +70,7 @@ export async function getRasterData(overrideVar?: string){
     const {cache} = useCacheStore.getState()
     const {initStore, variable, setStrides, setStatus} = useGlobalStore.getState()
     const thisVar = overrideVar?? variable as string
-    setStatus("Fetching...")
+    setStatus("Downloading...")
     const pool = getPool();
     const xSlice = ndSlices[axisMapping.x]
     const ySlice = ndSlices[axisMapping.y]
@@ -112,6 +112,5 @@ export async function getRasterData(overrideVar?: string){
         complete: true,
     }
     cache.set(`${initStore}_${thisVar}_chunk_z0_y0_x0`, cacheChunk)
-    setStatus(null)
     return { shape: thisShape, indices: [axisMapping.y, axisMapping.x], scalingFactor: 0, valueScale }
 }

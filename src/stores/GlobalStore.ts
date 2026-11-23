@@ -47,7 +47,7 @@ type StoreState = {
   plotOn: boolean;
   isFlat: boolean;
   status: string | null;
-  progress: number;
+  progress: number | undefined;
   DPR: number,
 	cameraMoving: boolean;
   scalingFactors: number[];
@@ -93,7 +93,7 @@ type StoreState = {
   setOpenVariables: (openVariables: boolean) => void;
   setPlotOn: (plotOn: boolean) => void;
   setIsFlat: (isFlat: boolean) => void;
-  setProgress: (progress: number) => void;
+  setProgress: (progress: number | undefined) => void;
   setStatus: (status: string | null) => void;
   setIs4D: (is4D: boolean) => void;
   setIdx4D: (idx4D: number | null) => void;

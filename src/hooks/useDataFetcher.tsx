@@ -138,9 +138,7 @@ export const useDataFetcher = () => {
                     setPlotOn(true);
                     setUnits(units)
                     setScalingFactors(scalingFactors)
-                    setStatus("Uploading to GPU...");               
                     await yieldToPaint();
-                    if (!useGlobalStore.getState().coarseVolume ) setStatus(null);
                 });
             } catch (error) {
                 setStatus(null);

@@ -30,7 +30,7 @@ export async function handleCoarse(){
 		setStatus(null);	
 		return;
 	}
-	setStatus("Optimizing Large Dataset")
+	setStatus("Optimizing large volume...")
 	const u16 = textureData instanceof Uint16Array;
 	try {
 		const {data, shape, kernel, array, error} = await getPool().dispatch('coarseVolume', {
