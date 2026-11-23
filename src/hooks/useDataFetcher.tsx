@@ -136,7 +136,6 @@ export const useDataFetcher = () => {
                     else handleIrregularGrid();
                     setShow(true);
                     setPlotOn(true);
-                    setStatus(null);
                     setUnits(units)
                     setScalingFactors(scalingFactors)
                     setStatus("Uploading to GPU...");               
