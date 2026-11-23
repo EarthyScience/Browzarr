@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import * as u from '@/gpu/tsl/utils/uniforms';
 import { getPool } from '@/workers/pool';
 import * as perf from '@/lib/perf';
+import { invalidate } from '@react-three/fiber';
 
 interface Array {
     data: TypedArray | TypedArrayBufferLike;
@@ -36,6 +37,10 @@ export async function handleCoarse(){
 	}
 	setStatus("Optimizing Large Dataset")
 	const u16 = textureData instanceof Uint16Array;
+	// Bench: register synchronously so finishLoad waits for the coarse stages
+	let benchDone = () => {};
+	perf.track(new Promise<void>(res => { benchDone = res; }));
+	const t0 = perf.now();
 	try {
 		const {data, shape, kernel, array, error} = await getPool().dispatch('coarseVolume', {
 			array:textureData,
@@ -54,11 +59,18 @@ export async function handleCoarse(){
 		u.coarseKernel.value.set(kernel[2], kernel[1], kernel[0])	// [z,y,x] -> (x,y,z)
 		u.coarseShape.value.set(shape[2], shape[1], shape[0])
 		swapCoarse(coarseText)
+		perf.add('coarseVolume', perf.now() - t0, t0);
+		if (perf.BENCH) {
+			const uploaded = perf.armCoarseFrame();
+			invalidate();
+			await uploaded;
+		}
 	} catch (e) {
 		console.error("Coarse volume failed, rendering without bricks:", e)
 		if (gen === coarseGen) swapCoarse(undefined);
 	} finally {
 		if (gen === coarseGen) setStatus(null)
+		benchDone();
 	}
 }
 

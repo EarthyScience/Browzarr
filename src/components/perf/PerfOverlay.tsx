@@ -31,7 +31,7 @@ export function PerfOverlay() {
 			</div>
 			{open && runs.map(run => 'stages' in run ? (
 				<div key={run.id} style={{ marginTop: 6 }}>
-					<div>#{run.id} {run.cache} TTFV <b>{run.ttfvMs} ms</b> <span style={{ opacity: 0.6 }}>{run.label}</span></div>
+					<div>#{run.id} {run.cache} TTFV <b>{run.ttfvMs} ms</b>{run.readyMs !== undefined && <> ready <b>{run.readyMs} ms</b></>} <span style={{ opacity: 0.6 }}>{run.label}</span></div>
 					{Object.entries(run.stages).map(([k, v]) => (
 						<div key={k} style={{ paddingLeft: 8 }}>{k}: {v!.sumMs} ms (n={v!.count}, wall {v!.wallMs})</div>
 					))}

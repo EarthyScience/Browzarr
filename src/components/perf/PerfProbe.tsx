@@ -25,13 +25,14 @@ export function instrumentRenderer(renderer: THREE.WebGPURenderer) {
 	renderer.render = ((scene: THREE.Object3D, camera: THREE.Camera) => {
 		const t0 = perf.now();
 		const first = perf.takeFirstFrame();
+		const coarse = first ? null : perf.takeCoarseFrame();
 		const out = orig(scene, camera);
 		const t1 = perf.now();
-		if (first) {
+		if (first || coarse) {
 			// Texture upload happens lazily inside this render; wait for the GPU to finish it
 			const done: Promise<unknown> = backend?.device?.queue?.onSubmittedWorkDone?.()
 				?? Promise.resolve(backend?.gl?.finish?.());
-			done.then(() => perf.finishLoad(perf.now() - t0, t0));
+			done.then(() => first ? perf.finishLoad(perf.now() - t0, t0) : coarse!(perf.now() - t0, t0));
 		}
 		if (frame.recording) {
 			if (frame.lastStart) frame.wall.push(t0 - frame.lastStart);

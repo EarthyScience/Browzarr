@@ -6,6 +6,7 @@ export const BENCH = typeof window !== 'undefined' && new URLSearchParams(window
 export const STAGES = [
 	'metadata', 'chunkFetch', 'decode', 'fetchDecode', 'float16', 'coarsen', 'gzip',
 	'rescaleAll', 'cacheAssemble', 'uint8Normalize', 'textureCreate', 'uploadFirstFrame',
+	'coarseVolume', 'coarseUpload',
 ] as const;
 export type Stage = typeof STAGES[number];
 
@@ -19,6 +20,7 @@ export interface LoadRun {
 	bytes: number;
 	stages: Partial<Record<Stage, { sumMs: number; count: number; wallMs: number }>>;
 	ttfvMs?: number;
+	readyMs?: number;	// Load start until tracked async work (coarse bricks) finished
 	notes: string[];
 }
 export interface FrameRun {
@@ -36,7 +38,7 @@ export interface FrameStats { median: number; p95: number; p99: number; mean: nu
 
 const state = {
 	runs: [] as (LoadRun | FrameRun)[],
-	cur: null as null | { start: number; stats: Map<Stage, StageStat>; hits: number; misses: number; bytes: number; notes: Set<string>; label: string },
+	cur: null as null | { start: number; stats: Map<Stage, StageStat>; hits: number; misses: number; bytes: number; notes: Set<string>; label: string; pending: Promise<unknown>[]; finishing: boolean },
 	firstFrameArmed: false,
 	listeners: new Set<() => void>(),
 	runId: 0,
@@ -47,7 +49,7 @@ export const now = () => performance.now();
 
 export function beginLoad(label: string) {
 	if (!BENCH) return;
-	state.cur = { start: now(), stats: new Map(), hits: 0, misses: 0, bytes: 0, notes: new Set(), label };
+	state.cur = { start: now(), stats: new Map(), hits: 0, misses: 0, bytes: 0, notes: new Set(), label, pending: [], finishing: false };
 	performance.mark('bz:load-start');
 }
 
@@ -81,7 +83,23 @@ export function cacheHit(hit: boolean) {
 export function addBytes(n: number) { if (state.cur) state.cur.bytes += n; }
 export function note(s: string) { state.cur?.notes.add(s); }
 
-export function armFirstFrame() { if (BENCH && state.cur) state.firstFrameArmed = true; }
+// Work that runs after the main textures are set (coarse bricks) can finish after the
+// first frame. finishLoad waits for tracked promises so their stages land in the same run.
+export function track(p: Promise<unknown>) { if (BENCH) state.cur?.pending.push(p); }
+
+// Times the next rendered frame (where the coarse texture uploads) into coarseUpload.
+// Resolves after that frame's GPU work, or after a timeout if no frame renders.
+let coarseFrame: null | ((ms: number, t0: number) => void) = null;
+export function armCoarseFrame(): Promise<void> {
+	if (!BENCH || !state.cur) return Promise.resolve();
+	return new Promise(res => {
+		const timer = setTimeout(() => { coarseFrame = null; res(); }, 2000);
+		coarseFrame = (ms, t0) => { clearTimeout(timer); add('coarseUpload', ms, t0); res(); };
+	});
+}
+export function takeCoarseFrame() { const f = coarseFrame; coarseFrame = null; return f; }
+
+export function armFirstFrame() { if (BENCH && state.cur && !state.cur.finishing) state.firstFrameArmed = true; }
 
 // Called from the wrapped renderer.render. Returns true if this frame should be timed.
 export function takeFirstFrame() {
@@ -92,10 +110,17 @@ export function takeFirstFrame() {
 
 export function finishLoad(uploadFirstFrameMs: number, t0: number) {
 	const cur = state.cur;
-	if (!cur) return;
+	if (!cur || cur.finishing) return;
+	cur.finishing = true;
 	add('uploadFirstFrame', uploadFirstFrameMs, t0);
 	performance.mark('bz:first-frame');
 	performance.measure('bz:ttfv', 'bz:load-start', 'bz:first-frame');
+	const ttfvMs = r(now() - cur.start);
+	const pending = cur.pending;
+	Promise.allSettled(pending).then(() => writeRun(cur, ttfvMs, pending.length ? r(now() - cur.start) : undefined));
+}
+
+function writeRun(cur: NonNullable<typeof state.cur>, ttfvMs: number, readyMs?: number) {
 	const stages: LoadRun['stages'] = {};
 	for (const st of STAGES) {
 		const s = cur.stats.get(st);
@@ -105,11 +130,11 @@ export function finishLoad(uploadFirstFrameMs: number, t0: number) {
 		id: ++state.runId, label: cur.label,
 		cache: cur.misses === 0 ? 'warm' : cur.hits === 0 ? 'cold' : 'mixed',
 		hits: cur.hits, misses: cur.misses, bytes: cur.bytes,
-		stages, ttfvMs: r(now() - cur.start), notes: [...cur.notes],
+		stages, ttfvMs, readyMs, notes: [...cur.notes],
 	};
-	state.cur = null;
+	if (state.cur === cur) state.cur = null;
 	push(run);
-	console.groupCollapsed(`%c[bench] load #${run.id} ${run.label} — ${run.cache} — TTFV ${run.ttfvMs} ms`, 'color:#0a7');
+	console.groupCollapsed(`%c[bench] load #${run.id} ${run.label} — ${run.cache} — TTFV ${run.ttfvMs} ms${run.readyMs !== undefined ? ` — ready ${run.readyMs} ms` : ''}`, 'color:#0a7');
 	console.table(Object.fromEntries(Object.entries(stages)));
 	console.log({ hits: run.hits, misses: run.misses, bytes: run.bytes, notes: run.notes });
 	console.groupEnd();
