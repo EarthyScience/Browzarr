@@ -27,7 +27,6 @@ export const DataCube = ( ) => {
   	const geometry = useMemo(() => new THREE.BoxGeometry(shape.x, shape.y, shape.z), [shape]);
 	const cmapFunc = (val: number) => sampleColormap(val, cmap.value as THREE.DataTexture)
 	// --- GENERATE LUT --- //
-	console.log(u.coarseShape.value)
 	useEffect(()=>{
 		const newLUT = buildTransferLUT({ 
 			cmap:cmapFunc,

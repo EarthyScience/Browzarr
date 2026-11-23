@@ -1,4 +1,4 @@
-import React, {useRef} from 'react'
+import React, {useEffect, useRef, useState} from 'react'
 import { Button, Input } from '@/components/ui'
 import { glslValidator } from '@/lib/glslValidator'
 import { QuickTip } from '../widgets/QuickTip'
@@ -8,7 +8,7 @@ import { usePlotStore } from '@/stores/PlotStore'
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { useGlobalStore } from '@/stores/GlobalStore'
 import { compileShaderExpression } from '@/lib/shaderToJs'
-
+import { Loader2 } from 'lucide-react'
 const sharedFunctions = [
 	'abs(x)', 'sqrt(x)', 'min(x, y)', 'max(x, y)', 
 	'log(x)', 'log2(x)',  'exp(x)', 'exp2(x)', 
@@ -22,9 +22,10 @@ const ColorAdjuster = () => {
 		setError: s.setError, setCustomError: s.setCustomError
 	})))
 	const colorScale = usePlotStore(s => s.colorScale)
-	const {useF16Textures, setUseF16Textures, setStatus} = useGlobalStore(useShallow(s => ({
-		useF16Textures: s.useF16Textures, setUseF16Textures: s.setUseF16Textures, setStatus: s.setStatus
+	const {useF16Textures, mainTextures, setUseF16Textures, setStatus} = useGlobalStore(useShallow(s => ({
+		useF16Textures: s.useF16Textures, mainTextures: s.mainTextures, setUseF16Textures: s.setUseF16Textures, setStatus: s.setStatus
 	})))
+	const [showLoader, setShowLoader] = useState(false)
 	const handleShader = () =>{
 		const shader = customShader.current
 		const {ok, log} = glslValidator(shader)
@@ -43,6 +44,9 @@ const ColorAdjuster = () => {
 		usePlotStore.setState({colorScale:glslString})
 		useGlobalStore.setState({transferFunc: compileShaderExpression(glslString)})
 	}
+	useEffect(()=>{
+		setShowLoader(false)
+	},[mainTextures])
 	return (
 		<div className='grid gap-2'>
 			{colorScale 
@@ -79,7 +83,7 @@ const ColorAdjuster = () => {
 					</PopoverContent>
 				</Popover>
 			</div>
-			<QuickTip message={
+			<QuickTip  message={
 				<div>
 					By default, Browzarr uses <span className='font-mono'>8-bit</span> textures
 					to save memory.<br/>
@@ -87,11 +91,15 @@ const ColorAdjuster = () => {
 					greater granularity for high variability datasets.
 				</div>
 			}>
-				<Button variant='pink'
-					onClick={() =>{ setUseF16Textures(!useF16Textures); setStatus("Converting")}}
-				>
+				<div className='flex items-center'>
+					<Button variant='pink'
+						className='flex grow'
+						onClick={() =>{ setUseF16Textures(!useF16Textures); setStatus("Converting"); setShowLoader(true)}}
+					>
 					Use <span className='font-mono'>{useF16Textures ? '8-bit' : '16-bit'}</span> textures
-				</Button>
+					</Button>
+					{showLoader && <Loader2 className='w-4 h-4 animate-spin mr-2' />}
+				</div>
 			</QuickTip>
 			
 			
