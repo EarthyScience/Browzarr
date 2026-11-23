@@ -256,12 +256,11 @@ export async function Convolve(inputArray :  ArrayBufferView, dimInfo : {shape: 
     return output?.array;
 }
 
-// Block-reduces Uint8 (255 = NaN) or Uint16 (half-float bits) data into RG [min, max] per output voxel (R NaN-coded if the block is all NaN, G if it has any NaN).
-// Edge blocks are partial (outShape uses ceil), so no input voxels are dropped.
 export async function CoarsenMinMaxNaN(
 	inputArray: Uint8Array | Uint16Array,
 	dimInfo: {shape: [number, number, number], strides: [number, number, number]},
-	kernel: [number, number, number]
+	kernel: [number, number, number],
+    nComp = 1 // 2 for interlaced bivariate data -> RGBA output
 ){
 	const {device} = await InitializeDevice();
 	if (!device) {
@@ -280,9 +279,9 @@ export async function CoarsenMinMaxNaN(
 
 	const defs = makeShaderDataDefinitions(coarsenMinMaxShader);
 	const uniforms = makeStructuredView(defs.uniforms.params);
-	uniforms.set({zStride, yStride, xStride, dimZ, dimY, dimX, outZ, outY, outX, kz, ky, kx, isU16: Number(isU16)});
+	uniforms.set({zStride, yStride, xStride, dimZ, dimY, dimX, outZ, outY, outX, kz, ky, kx, isU16: Number(isU16), nComp});
 
-	const dataBytes = nVoxels * (isU16 ? 4 : 2);
+    const dataBytes = nVoxels * nComp * (isU16 ? 4 : 2);
 	const outputBytes = align4(dataBytes);
 	const inputBuffer = device.createBuffer({
 		label: 'Coarsen Input Buffer',

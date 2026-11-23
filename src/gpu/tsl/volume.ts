@@ -10,7 +10,7 @@ import { hitBox, locateSample, readVoxel, rayVaryings } from './utils/volumeHelp
 import { Compositor, makeCompositor, VolumeMode } from './utils/compositors';
 
 // DEBUG: render the first occupied coarse brick instead of the volume (only when useBricks)
-const DEBUG_COARSE = true;
+const DEBUG_COARSE = false;
 
 export type VolumeTraversal = 'dda' | 'raymarch';
 
@@ -142,17 +142,16 @@ const marchTraverse: Traversal = (vOrigin, rayDir, bounds, comp) => {
 const traversals: Record<VolumeTraversal, Traversal> = { dda: ddaTraverse, raymarch: marchTraverse };
 
 // --- COARSE USERS --- //
-// Decodes a coarseVolume texel (.xy = [min, max]) into colormap space [0, 0.995].
-// Both are NaN-coded only if the whole brick is NaN. A brick with some NaN voxels stores them swapped (x > y);
-// x == y is ambiguous and treated as someNaN, which only weakens MIP culling.
-const decodeBrick = (texel: any) => {
-	const allNaN = h.isNanVal(texel.x).toVar();
-	// Compare raw texels: rescaling/cScale could flip the order
-	const someNaN = allNaN.or(texel.x.greaterThanEqual(texel.y)).toVar();
-	const a = clamp(h.rescaler(texel.x).mul(u.cScale).add(u.cOffset), 0.0, 0.995);
-	const b = clamp(h.rescaler(texel.y).mul(u.cScale).add(u.cOffset), 0.0, 0.995);
-	const lo = min(a, b).toVar();
-	const hi = max(a, b).toVar();
+const decodeBrick = (texelIn: any) => {
+    const flip = u.bivariate.and(u.bivariateSelection.notEqual(0));
+    const texel = select(flip, texelIn.zw, texelIn.xy).toVar();
+    const allNaN = h.isNanVal(texel.x).toVar();
+    // Compare raw texels: rescaling/cScale could flip the order
+    const someNaN = allNaN.or(texel.x.greaterThanEqual(texel.y)).toVar();
+    const a = select(u.bivariate, texel.x, clamp(h.rescaler(texel.x).mul(u.cScale).add(u.cOffset), 0.0, 0.995));
+    const b = select(u.bivariate, texel.y, clamp(h.rescaler(texel.y).mul(u.cScale).add(u.cOffset), 0.0, 0.995));
+    const lo = min(a, b).toVar();
+    const hi = max(a, b).toVar();
     const overlaps = allNaN.not().and(hi.greaterThanEqual(u.threshold.x)).and(lo.lessThanEqual(u.threshold.y));
     return { lo, hi, allNaN, someNaN, overlaps };
 };

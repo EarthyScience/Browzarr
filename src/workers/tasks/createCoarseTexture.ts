@@ -11,6 +11,7 @@ export interface coarseIn{
     array: Uint8Array | Uint16Array;
     origShape: [number, number, number];
     origStrides: [number, number, number];
+    nComp?: number; // 2 for interlaced bivariate data
 }
 
 const TARGET_DIM = 64;
@@ -21,11 +22,11 @@ export function getCoarsenKernel(origShape: [number, number, number]): [number, 
 	return origShape.map(factorFor) as [number, number, number];
 }
 
-export async function coarsenVolume({array, origShape, origStrides} : coarseIn): Promise<coarsenOut>{
+export async function coarsenVolume({array, origShape, origStrides, nComp = 1} : coarseIn): Promise<coarsenOut>{
 	const kernel = getCoarsenKernel(origShape);
 	try {
-		// RG per voxel: [min, max]; R NaN-coded if the block is all NaN, G if it has any NaN
-		const {data, shape} = await CoarsenMinMaxNaN(array, {shape: origShape, strides: origStrides}, kernel);
+		// [min, max] pair per component (RG, or RGBA when bivariate); see coarsenMinMaxShader for the NaN encoding
+        const {data, shape} = await CoarsenMinMaxNaN(array, {shape: origShape, strides: origStrides}, kernel, nComp);
 		return {data, shape, kernel, array};
 	} catch (e) {
 		// Don't throw: the main thread transferred `array` to us and needs it back either way

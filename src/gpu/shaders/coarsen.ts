@@ -1,6 +1,7 @@
 // Block min/max/NaN reduction over Uint8 (255 = NaN) or Uint16 (half-float bits) texture data.
 // Input and output are bound as u32 since WGSL has no 8/16-bit storage types.
 // Output per voxel: RG = [min, max], NaN-coded if the whole block is NaN. If some voxels are NaN, R and G are swapped (R > G).
+// With nComp = 2 (interlaced bivariate input) the output is RGBA = [minA, maxA, minB, maxB], same encoding per pair.
 export const coarsenMinMaxShader = /* WGSL */`
 	struct Params {
 		zStride: u32,
@@ -16,6 +17,7 @@ export const coarsenMinMaxShader = /* WGSL */`
 		ky: u32,
 		kx: u32,
 		isU16: u32,
+        nComp: u32,
 	};
 	@group(0) @binding(0) var<storage, read> inputData: array<u32>;
 	@group(0) @binding(1) var<storage, read_write> outputData: array<atomic<u32>>;
@@ -60,48 +62,53 @@ export const coarsenMinMaxShader = /* WGSL */`
 		let y1 = min((oy + 1u) * params.ky + 1u, params.dimY);
 		let x1 = min((ox + 1u) * params.kx + 1u, params.dimX);
 
-		var minV: f32 = 3.0e38;
-		var maxV: f32 = -3.0e38;
-		var minB: u32 = 0u;
-		var maxB: u32 = 0u;
-		var nanCount: u32 = 0u;
-		var total: u32 = 0u;
+        let outIdx = (oz * params.outY + oy) * params.outX + ox;
 
-		for (var z = z0; z < z1; z++) {
-			for (var y = y0; y < y1; y++) {
-				for (var x = x0; x < x1; x++) {
-					let b = readRaw(z * params.zStride + y * params.yStride + x * params.xStride);
-					total++;
-					if (rawIsNaN(b)) {
-						nanCount++;
-						continue;
-					}
-					let v = rawToF32(b);
-					if (v < minV) { minV = v; minB = b; }
-					if (v > maxV) { maxV = v; maxB = b; }
-				}
-			}
-		}
+        // Interlaced input (bivariate): component c of voxel i is at i * nComp + c.
+        // Each component gets its own [min, max] pair, so output is RG (nComp = 1) or RGBA (nComp = 2)
+        for (var c = 0u; c < params.nComp; c++) {
+            var minV: f32 = 3.0e38;
+            var maxV: f32 = -3.0e38;
+            var minB: u32 = 0u;
+            var maxB: u32 = 0u;
+            var nanCount: u32 = 0u;
+            var total: u32 = 0u;
 
-		let allNaN = nanCount == total;
-		let someNaN = nanCount > 0u;
-		let outIdx = (oz * params.outY + oy) * params.outX + ox;
+            for (var z = z0; z < z1; z++) {
+                for (var y = y0; y < y1; y++) {
+                    for (var x = x0; x < x1; x++) {
+                        let i = z * params.zStride + y * params.yStride + x * params.xStride;
+                        let b = readRaw(i * params.nComp + c);
+                        total++;
+                        if (rawIsNaN(b)) {
+                            nanCount++;
+                            continue;
+                        }
+                        let v = rawToF32(b);
+                        if (v < minV) { minV = v; minB = b; }
+                        if (v > maxV) { maxV = v; maxB = b; }
+                    }
+                }
+            }
 
-		// RG = [min, max], both NaN-coded only if the whole block is NaN.
-		// Order encodes someNaN: R <= G for NaN-free bricks, swapped (R > G) if any voxel is NaN
-		let swap = someNaN && !allNaN;
-		let lo = select(minB, maxB, swap);
-		let hi = select(maxB, minB, swap);
-		if (params.isU16 == 1u) {
-			let nanH = 0x7E00u;
-			let r = select(lo, nanH, allNaN);
-			let g = select(hi, nanH, allNaN);
-			atomicOr(&outputData[outIdx], r | (g << 16u));
-		} else {
-			// Two voxels share a u32, so OR into the zero-initialized buffer to avoid races
-			let r = select(lo, 255u, allNaN);
-			let g = select(hi, 255u, allNaN);
-			atomicOr(&outputData[outIdx >> 1u], (r | (g << 8u)) << ((outIdx & 1u) * 16u));
-		}
+            let allNaN = nanCount == total;
+            let someNaN = nanCount > 0u;
+
+            let swap = someNaN && !allNaN;
+            let lo = select(minB, maxB, swap);
+            let hi = select(maxB, minB, swap);
+            let pairIdx = outIdx * params.nComp + c;
+            if (params.isU16 == 1u) {
+                let nanH = 0x7E00u;
+                let r = select(lo, nanH, allNaN);
+                let g = select(hi, nanH, allNaN);
+                atomicOr(&outputData[pairIdx], r | (g << 16u));
+            } else {
+                // Two pairs share a u32, so OR into the zero-initialized buffer to avoid races
+                let r = select(lo, 255u, allNaN);
+                let g = select(hi, 255u, allNaN);
+                atomicOr(&outputData[pairIdx >> 1u], (r | (g << 8u)) << ((pairIdx & 1u) * 16u));
+            }
+        }
 	}
 `

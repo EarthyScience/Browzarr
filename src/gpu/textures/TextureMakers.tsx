@@ -25,9 +25,9 @@ export async function handleCoarse(){
 	// Bricks are only used by the volume renderer, so skip 2D and effectively-flat (a dimension of 1) data
 	const isVolume = dataShape.length === 3 && !dataShape.includes(1);
 	const shouldReduce = isVolume && dataShape.some(num => num >= 256);
-	if (!shouldReduce || bivariate || !textureData){
+	if (!shouldReduce || !textureData){
 		swapCoarse(undefined);
-		setStatus(null);	// Callers (e.g. the F16 toggle) rely on this to clear their status
+		setStatus(null);	
 		return;
 	}
 	setStatus("Optimizing Large Dataset")
@@ -36,13 +36,14 @@ export async function handleCoarse(){
 		const {data, shape, kernel, array, error} = await getPool().dispatch('coarseVolume', {
 			array:textureData,
 			origShape: dataShape as [number, number, number],
-			origStrides: strides as [number, number, number]}, [textureData.buffer]
+			origStrides: strides as [number, number, number],
+      nComp: bivariate ? 2 : 1}, [textureData.buffer]	
 		)
 		if (gen !== coarseGen) return;	// A newer load owns textureData now
 		useGlobalStore.setState({textureData:array})	// Restore the transferred buffer, even if coarsening failed
 		if (!data) throw new Error(error);
 		const coarseText = new THREE.Data3DTexture(data, shape[2], shape[1], shape[0]);
-		coarseText.format = THREE.RGFormat;
+        coarseText.format = bivariate ? THREE.RGBAFormat : THREE.RGFormat;	// RGBA = [minA, maxA, minB, maxB]
 		coarseText.minFilter = THREE.NearestFilter;
 		coarseText.magFilter = THREE.NearestFilter;
 		coarseText.type = u16 ? THREE.HalfFloatType : THREE.UnsignedByteType
@@ -61,10 +62,9 @@ export async function handleCoarse(){
 async function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxVal: number, minVal: number}, useF16=false){
     const { setTextureData } = useGlobalStore.getState()
     const pool = getPool();
-	// array's buffer is transferred (detached), so callers must pass an array nothing else holds
     const {textureData} = await pool.dispatch("textureData",
       {array:array as Float16Array, valueScales, useF16}, [array.buffer])
-	coarseGen++;	// Drop any in-flight coarse job so it can't restore its stale buffer over this one
+	  coarseGen++;	
     setTextureData(textureData)
 }
 
