@@ -51,7 +51,7 @@ export function createBiVarTextureData({array, textureData, idx, dataLength, val
         const scale = 254 * invRange
         for (let i = 0, j = idx; i < dataLength; i++, j += 2) {
             const scaled = (array[i] - minVal) * scale
-            textureData[j] = scaled !== scaled ? 255 : scaled < 0 ? 0 : scaled > 254 ? 254 : scaled
+            textureData[j] = scaled !== scaled ? 255 : scaled
         }
     }
     return {textureData}

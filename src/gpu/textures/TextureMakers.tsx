@@ -1,6 +1,7 @@
 //This File will have functions converting the array information into 2D or 3D textures that we will pass to the corresponding 2D or 3D object
 import { GetCurrentArray, TypedArray, TypedArrayBufferLike } from '@/lib/helpers';
 import { useGlobalStore } from '@/stores/GlobalStore';
+import { useAnalysisStore } from '@/stores/AnalysisStore';
 import * as THREE from 'three';
 import * as u from '@/gpu/tsl/utils/uniforms';
 import { getPool } from '@/workers/pool';
@@ -120,15 +121,15 @@ export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, 
 }
 
 export async function createDataTexture(){
-  const { dataShape, bivariate, valueScales, setMainTextures} = useGlobalStore.getState();
+  const { dataShape, bivariate, valueScales, useF16Textures, setMainTextures} = useGlobalStore.getState();
   if (bivariate){
-    storeBivariate(valueScales);
+    storeBivariate(valueScales, useF16Textures);
   }
   else{
     const dataArray = GetCurrentArray(undefined, undefined, true);
-    await StoreData(dataArray, valueScales[0]);
+    await StoreData(dataArray, valueScales[0], useF16Textures);
   }
-  const textures = CreateTexture(dataShape);
+  const textures = CreateTexture(dataShape, undefined, useF16Textures);
   if (textures) u.setMapTextures(textures); 
   setMainTextures(textures);
   handleCoarse();
@@ -139,6 +140,19 @@ export async function ArrayToTexture(array: Array, valueScales: {maxVal: number,
     const textures = CreateTexture(array.shape, undefined, useF16)
     handleCoarse();
     return textures as THREE.Data3DTexture[] | THREE.DataTexture[];
+}
+
+// Flips useF16Textures and rebuilds the current textures (analysis result or loaded data) at the new bit depth
+export async function toggleTextureBitDepth(){
+	const {useF16Textures, dataShape, valueScales, setStatus, setMainTextures} = useGlobalStore.getState();
+	const {analysisMode, analysisArray} = useAnalysisStore.getState();
+	useGlobalStore.setState({useF16Textures: !useF16Textures});
+	setStatus("Converting...");
+	if (analysisMode){
+		const textures = await ArrayToTexture({data: analysisArray.slice(), shape: dataShape}, valueScales[0], !useF16Textures);
+		if (textures) u.setMapTextures(textures);
+		setMainTextures(textures);
+	} else await createDataTexture();
 }
 
 // export async function storeBivariate(valueScales: {minVal: number, maxVal: number}[], useF16=false){
