@@ -14,7 +14,7 @@ import { useGlobalStore } from '@/stores/GlobalStore';
 import { usePlotStore } from '@/stores/PlotStore';
 import { useZarrStore } from '@/stores/ZarrStore';
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import { useShallow } from 'zustand/shallow';
 import { ArrayInfo, SecondVariable, SliderGroup } from '../MetaComponents';
@@ -281,17 +281,23 @@ export const MetaData = ({ meta, metadata }: Props) => {
     const { maxSize, setMaxSize } = useCacheStore(useShallow(s => ({
         maxSize: s.maxSize, setMaxSize: s.setMaxSize
     })))
-    const {  compress, coarsen, kernelSize, kernelDepth, setCompress, setCoarsen, setKernelSize, setKernelDepth, ReFetch } = useZarrStore(
+    const {  compress, coarsen, kernelSize, kernelDepth, ndSlices,
+        setCompress, setCoarsen, setKernelSize, setKernelDepth, ReFetch } = useZarrStore(
     useShallow(s => ({
         compress: s.compress, coarsen: s.coarsen, kernelSize: s.kernelSize, kernelDepth: s.kernelDepth,
+        ndSlices: s.ndSlices,
         setCompress: s.setCompress, setCoarsen: s.setCoarsen, setKernelSize: s.setKernelSize, setKernelDepth: s.setKernelDepth,
         ReFetch: s.ReFetch
     })))
     // --- Reset States --- //
+    const prevInitStore = useRef(initStore);
     useEffect(()=>{
+        if (prevInitStore.current === initStore) return;
+        prevInitStore.current = initStore;
         setIsBivariate(false)
         useGlobalStore.setState({variable2: undefined})
     },[initStore])
+
     // --- States --- //
     const [cacheSize, setCacheSize] = useState(maxSize);
     const [isBivariate, setIsBivariate] = useState(bivariate);
@@ -335,12 +341,12 @@ export const MetaData = ({ meta, metadata }: Props) => {
         if (duplicates.length) setDuplicateWarning(`${duplicates}`)
         else if(duplicateWarning) setDuplicateWarning(undefined)
     },[selectionInfo])
+
     // --- PLOT FUNCTION --- //
     function handlePlot(){
         setDimArrays(dimArrays);
         setDimNames(dimNames);
         setDimUnits(dimUnits);
-
         let ndSlices:[number, number][] = Array.from({length: dataLength})
         let axisIdices = Array.from({length: activeDims})
         Array.from(selectionInfo.values()).forEach((dimObj) => {
@@ -406,14 +412,16 @@ export const MetaData = ({ meta, metadata }: Props) => {
                         )}
                     </div>
                     <SecondVariable dataShape={dataShape} isBivariate={isBivariate} setIsBivariate={setIsBivariate}/>
-                    <SwitchField
-                        id="compress-data"
-                        label="Compress"
-                        help="Compress data to preserve memory at the expense of slightly longer load times"
-                        checked={compress}
-                        onChange={setCompress}
-                    />
-                    <SwitchField id="coarsen" label="Coarsen" checked={coarsen} onChange={setCoarsen} />
+                    <div className="grid grid-cols-2 items-center gap-x-4">
+                        <SwitchField
+                            id="compress-data"
+                            label="Compress"
+                            help="Compress data to preserve memory at the expense of slightly longer load times"
+                            checked={compress}
+                            onChange={setCompress}
+                        />
+                        <SwitchField id="coarsen" label="Coarsen" checked={coarsen} onChange={setCoarsen} />
+                    </div>
                     <Hider show={coarsen}>
                         <Group>
                             {dataShape.length >= 3 &&

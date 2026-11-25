@@ -305,7 +305,7 @@ const Variables = () => {
             data-meta-popover
             side="left"
             align="start"
-            className="max-h-[80vh] overflow-y-auto w-[350px]"
+            className="max-h-[80vh] overflow-y-auto w-[350px] no-scrollbar"
           >
             {metadata && meta && (
               <MetaData
@@ -318,7 +318,7 @@ const Variables = () => {
       )}
       {popoverSide === "top" && (
         <Dialog open={showMeta} onOpenChange={setShowMeta} modal={false}>
-          <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-[85vw] md:max-w-2xl max-h-[80vh] overflow-y-auto px-4 sm:px-6">
+          <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-[85vw] md:max-w-2xl max-h-[80vh] no-scrollbar overflow-y-auto px-4 sm:px-6">
             <DialogTitle>{ }</DialogTitle>
             <DialogDescription className="sr-only">Variables configuration dialog</DialogDescription>
             <div className="-mt-4">

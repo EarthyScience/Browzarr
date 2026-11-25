@@ -228,13 +228,17 @@ const Plot = () => {
         frameloop={useEditor ? "never" : "demand"}
         gl={async (props) => {
           const adapter = await navigator.gpu?.requestAdapter()
-          const maxDim = adapter?.limits.maxTextureDimension2D ?? 8192
-          const renderer = new THREE.WebGPURenderer({...(props as any), 
-            requiredLimits:{
-            maxTextureDimension2D: Math.min(16384, maxDim),
-            }
+          const lim = adapter?.limits
+          const renderer = new THREE.WebGPURenderer({
+            ...(props as any),
+            requiredLimits: {
+              maxTextureDimension2D: Math.min(16384, lim?.maxTextureDimension2D ?? 8192),
+              maxSampledTexturesPerShaderStage: Math.min(32, lim?.maxSampledTexturesPerShaderStage ?? 16),
+              maxSamplersPerShaderStage: Math.min(32, lim?.maxSamplersPerShaderStage ?? 16),
+            },
           })
           await renderer.init()
+          useGlobalStore.getState().setLimits((renderer.backend as any).device.limits)
           const canvas = props.canvas as HTMLCanvasElement
           renderer.setPixelRatio(DPR)
           renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
