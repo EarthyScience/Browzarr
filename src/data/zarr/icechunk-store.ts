@@ -35,6 +35,7 @@ export async function getIcechunkNodes(
 export async function getIcechunkStore(
 	storePath: string,
 	options?: IcechunkStoreOptions,
+	signal?: AbortSignal,
 ): Promise<zarr.Group<IcechunkStore> | undefined> {
 	const headers = options?.headers;
 	const withCredentials = options?.withCredentials;
@@ -77,6 +78,7 @@ export async function getIcechunkStore(
 
 			return gs;
 		} catch (error) {
+			if (signal?.aborted) throw new ZarrError(`Aborted opening ${storePath} as icechunk`, error);
 			if (attempt < maxRetries) {
 				await new Promise((resolve) => setTimeout(resolve, retryDelay));
 				continue;

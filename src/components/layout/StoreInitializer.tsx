@@ -13,6 +13,25 @@ import { useGraphStore } from "@/stores/GraphStore";
 import { GetZarrMetadata, GetTitleDescription } from '@/data/zarr/ZarrLoaderLRU';
 import { GetVariableNames } from '@/data/zarr/utils';
 import { loadGeoTiff, GEOTIFF_EXT_REGEX } from "@/data/loaders/loadGeoTiff";
+import { getFetchStore } from "@/data/zarr/zarrita-store";
+import { getIcechunkStore } from "@/data/zarr/icechunk-store";
+import { buildIcechunkOptions, DEFAULT_ICECHUNK_OPTS } from "@/components/layout/MainPanel/IcechunkOptions";
+import type { FetchStoreOptions } from "@/types/Interfaces";
+
+function openRemoteAutoDetect(url: string, fetchOptions?: FetchStoreOptions) {
+    const iceOpts = { ...fetchOptions, ...buildIcechunkOptions(DEFAULT_ICECHUNK_OPTS) };
+    const path = url.toLowerCase();
+    if (path.includes("icechunk")) return getIcechunkStore(url, iceOpts);
+    if (path.includes("zarr")) return getFetchStore(url, fetchOptions);
+
+    const ac = new AbortController();
+    return Promise.any([
+        getFetchStore(url, fetchOptions, ac.signal),
+        getIcechunkStore(url, iceOpts, ac.signal),
+    ])
+        .then(group => { ac.abort(); return group; })
+        .catch((e: AggregateError) => { throw e.errors[0]; });
+}
 
 // Bumped on every setupZarr call so a slower, older store can't overwrite a newer one
 let loadToken = 0;
@@ -88,11 +107,9 @@ export async function initializeStore(): Promise<boolean> {
 			return loadGeoTiff(url, fetchOptions);
 		} else {
 			// ---- Remote Zarr ---- //
-			const newStore = GetStore(
-				url,
-				fetchOptions   ?? undefined,
-				icechunkOptions ?? undefined
-			);
+			const newStore = icechunkOptions
+				? GetStore(url, fetchOptions ?? undefined, icechunkOptions)
+				: openRemoteAutoDetect(url, fetchOptions ?? undefined);
 			setCurrentStore(newStore);
 			const {remapTexture} = useGlobalStore.getState();
 			if (remapTexture) remapTexture.dispose();
