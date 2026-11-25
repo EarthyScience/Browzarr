@@ -200,9 +200,15 @@ const skipEmptyPadding = (vOrigin: any, rayDirIn: any, bounds: any, reverse = fa
 		// offset applied (and wrapped), find the coarse bricks at both ends of that range.
 		const zStart = float(cell.z).mul(kz).div(Dz);
 		const zEnd = min(float(cell.z).add(1).mul(kz), Dz).div(Dz).sub(1e-5); // epsilon keeps end inside the cell
-		const brickStart = decodeBrick(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zStart))));
-		const brickEnd = decodeBrick(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zEnd))));
-		const occupied = brickStart.overlaps.or(brickEnd.overlaps);
+		const bS = brickAt(zStart);
+		const bE = brickAt(zEnd);
+		const brickStart = decodeBrick(u.coarseVolume.load(ivec3(cell.x, cell.y, bS)));
+		const brickEnd = decodeBrick(u.coarseVolume.load(ivec3(cell.x, cell.y, bE)));
+		const occupied = brickStart.overlaps.or(brickEnd.overlaps).toVar();
+		// wrapped: partial last brick lies in between
+		If(bE.lessThan(bS), () => {
+			occupied.assign(occupied.or(decodeBrick(u.coarseVolume.load(ivec3(cell.x, cell.y, lastBrick))).overlaps));
+		});
 
 		If(occupied, () => {
 			found.assign(bool(true));
@@ -291,8 +297,12 @@ const findCoarseMIP = (vOrigin: any, rayDir: any, bounds: any, mode: VolumeMode)
                 });
             });
         };
-        consider(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zStart))));
-        consider(u.coarseVolume.load(ivec3(cell.x, cell.y, brickAt(zEnd))));
+        const bS = brickAt(zStart);
+        const bE = brickAt(zEnd);
+        consider(u.coarseVolume.load(ivec3(cell.x, cell.y, bS)));
+        consider(u.coarseVolume.load(ivec3(cell.x, cell.y, bE)));
+		// wrapped: partial last brick lies in between
+		If(bE.lessThan(bS), () => { consider(u.coarseVolume.load(ivec3(cell.x, cell.y, lastBrick))); });
 
         If(tMax.x.lessThan(tMax.y).and(tMax.x.lessThan(tMax.z)), () => {
             t.assign(tMax.x);
