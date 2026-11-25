@@ -43,7 +43,7 @@ export async function GetArray(varOveride?: string) {
     const sizes = slices.map(([lo, hi], i) => Math.floor((hi - lo) / kernels[i]));
     const outputShape = hasZ ? sizes : sizes.slice(1);
     const totalElements = outputShape.reduce((a, b) => a * b, 1);
-    if (totalElements > 1e9) {
+    if (totalElements > (2 ** 30) * 2) { // 2**30 is gigabyte/1e9. Multiply by 2 as textureData array is 2byte (uint16) and allocation limit is 4gb
         useErrorStore.getState().setError("largeArray");
         throw new Error("Cannot allocate array. Details printed to console.");
     }
@@ -148,7 +148,7 @@ export async function GetArray(varOveride?: string) {
         }
         await Promise.all(jobs);
     } finally {
-        setProgress(0);
+        setProgress(undefined);
     }
 
     // --- CHUNK SCALING --- //

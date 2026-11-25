@@ -47,7 +47,7 @@ type StoreState = {
   plotOn: boolean;
   isFlat: boolean;
   status: string | null;
-  progress: number;
+  progress: number | undefined;
   DPR: number,
 	cameraMoving: boolean;
   scalingFactors: number[];
@@ -60,6 +60,7 @@ type StoreState = {
   useF16Textures: boolean;
   borderCompatible: boolean;
   mainTextures: THREE.DataTexture[] | THREE.Data3DTexture[] | undefined;
+  coarseVolume: THREE.Data3DTexture | undefined;
   isWebGPU: boolean;
     limits: Record<string, number> | undefined;
 
@@ -94,7 +95,7 @@ type StoreState = {
   setOpenVariables: (openVariables: boolean) => void;
   setPlotOn: (plotOn: boolean) => void;
   setIsFlat: (isFlat: boolean) => void;
-  setProgress: (progress: number) => void;
+  setProgress: (progress: number | undefined) => void;
   setStatus: (status: string | null) => void;
   setIs4D: (is4D: boolean) => void;
   setIdx4D: (idx4D: number | null) => void;
@@ -156,6 +157,7 @@ const createStore = () => create<StoreState>((set, get) => ({
   useF16Textures: false,
   borderCompatible: true,
   mainTextures: undefined,
+  coarseVolume: undefined,
   isWebGPU: true,
     limits: undefined,
 

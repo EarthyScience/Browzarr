@@ -480,7 +480,7 @@ const ExportCanvas = ({show}:{show: boolean}) => {
                     ffmpeg.off('progress', onProgress)
                     if (ffmpeg.loaded) await CleanupFiles()
                     setStatus(null)
-                    setProgress(0)
+                    setProgress(undefined)
                     if (useTime || keyFrameList.length) setAnimProg(animProg) // Keyframes also drive time
                     if (Object.keys(origVizState).length) usePlotStore.setState(origVizState)
                     Restore()

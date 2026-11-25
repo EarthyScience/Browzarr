@@ -3,7 +3,7 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three/webgpu';
 import { PointCloud, DataCube, FlatMap, Sphere, CountryBorders, AxisLines, SphereBlocks, FlatBlocks, KeyFramePreviewer } from '@/components/plots';
 import { Canvas, invalidate, useThree } from '@react-three/fiber';
-import { ArrayToTexture, createDataTexture } from '@/gpu/textures';
+import { createDataTexture } from '@/gpu/textures';
 import { useAnalysisStore } from '@/stores/AnalysisStore';
 import { useGlobalStore } from '@/stores/GlobalStore';
 import { usePlotStore } from '@/stores/PlotStore';
@@ -15,7 +15,6 @@ import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import ExportCanvas from '@/components/elements/ExportCanvas';
 import { useDataFetcher } from '@/hooks/useDataFetcher';
 import { reproject } from '@/gpu/textures/ProjectionTexture';
-import { GetCurrentArray } from '@/lib/helpers';
 import * as u from '@/gpu/tsl/utils/uniforms'
 const TransectNotice = () =>{
   const selectTS = usePlotStore(s => s.selectTS)
@@ -155,16 +154,15 @@ const Orbiter = ({isFlat} : {isFlat  : boolean}) =>{
 const MemoOrbit = React.memo(Orbiter)
 
 const Plot = () => {
-  const {isFlat, DPR, dataShape, useF16Textures, setMainTextures, setIsFlat, setStatus, valueScales } = useGlobalStore(useShallow(s =>({
-    isFlat: s.isFlat, DPR: s.DPR, dataShape: s.dataShape, useF16Textures: s.useF16Textures,
-    setMainTextures: s.setMainTextures, setIsFlat: s.setIsFlat, setStatus: s.setStatus, valueScales: s.valueScales
+  const {isFlat, DPR, dataShape, setIsFlat } = useGlobalStore(useShallow(s =>({
+    isFlat: s.isFlat, DPR: s.DPR, dataShape: s.dataShape, setIsFlat: s.setIsFlat
     })))
   const keyFrameEditor = useImageExportStore(s => s.keyFrameEditor)
   const {plotType, displaceFaces, setPlotType} = usePlotStore(useShallow(s => ({
     plotType: s.plotType, displaceFaces: s.displaceFaces, setPlotType: s.setPlotType
   })))
-  const {analysisMode, analysisArray, useEditor} = useAnalysisStore(useShallow(s => ({
-    analysisMode: s.analysisMode, analysisArray: s.analysisArray, useEditor: s.useEditor
+  const {analysisMode, useEditor} = useAnalysisStore(useShallow(s => ({
+    analysisMode: s.analysisMode, useEditor: s.useEditor
   })))
   
   //DATA LOADING
@@ -185,18 +183,6 @@ const Plot = () => {
       createDataTexture();
     }
   },[analysisMode])
-
-  useEffect(()=>{ // Switch Texture array bit-depth
-    if(show){
-      (async () =>{
-        const newText = await ArrayToTexture({data:analysisMode ? analysisArray : GetCurrentArray(), shape:dataShape},valueScales[0],useF16Textures);
-        if (newText){
-          setMainTextures(newText)
-        }
-      })()
-    } setStatus(null)
-  },[useF16Textures])
-
   const prevUniqueRep = useRef(false);
     `
     Point cloud and sphere need unique reprojections. However, reprojecting from volume

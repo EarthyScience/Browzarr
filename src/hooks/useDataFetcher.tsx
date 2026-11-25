@@ -13,6 +13,9 @@ import { createDataTexture } from '@/gpu/textures/TextureMakers';
 import { useAnalysisStore } from '@/stores/AnalysisStore';
 import { getRasterData } from '@/data/zarr/GTGetters';
 
+const yieldToPaint = () => new Promise<void>(r => requestAnimationFrame(() => setTimeout(r, 0)));
+
+
 export const useDataFetcher = () => {
     const { variable, bivariate, variable2, mainTextures, setUnits, setIsFlat, setUseF16Textures, setValueScales,
     setShape, setDataShape, setFlipY, setMainTextures, setMetadata, setPlotOn, setStatus, setScalingFactors} = useGlobalStore(
@@ -119,7 +122,9 @@ export const useDataFetcher = () => {
                         await parseExtent();
                     } catch{}
                     setValueScales(valueScales)
-                    createDataTexture();
+                    setStatus("Building textures...");
+                    await yieldToPaint();
+                    await createDataTexture();
                     if (preProject) {
                         usePlotStore.setState({
                             nativeCRS: urlNativeCRS ?? usePlotStore.getState().nativeCRS,
@@ -131,9 +136,9 @@ export const useDataFetcher = () => {
                     else handleIrregularGrid();
                     setShow(true);
                     setPlotOn(true);
-                    setStatus(null);
                     setUnits(units)
                     setScalingFactors(scalingFactors)
+                    await yieldToPaint();
                 });
             } catch (error) {
                 setStatus(null);
