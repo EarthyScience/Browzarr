@@ -7,7 +7,8 @@ import { getDtypeSize, calculateTotalElements, calculateChunkCount, formatBytes 
 
 export async function getFetchStore(
   storePath: string,
-  fetchOptions?: FetchStoreOptions
+  fetchOptions?: FetchStoreOptions,
+    signal?: AbortSignal
 ): Promise<zarr.Group<zarr.FetchStore | zarr.Listable<zarr.FetchStore>> | undefined> {
   const maxRetries = 10;
   const retryDelay = 500;
@@ -26,6 +27,7 @@ export async function getFetchStore(
       useGlobalStore.setState({ status: null });
       return gs;
     } catch (error) {
+        if (signal?.aborted) throw new ZarrError(`Aborted opening ${storePath} as zarr`, error);
       if (attempt < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, retryDelay));
         continue;
