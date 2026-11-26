@@ -134,7 +134,6 @@ export function createAnimationPlan(camera: THREE.Camera): AnimationPlan {
     }
 }
 
-// Apply keyframes, time and orbit for one frame. The caller is responsible for rendering.
 export function applyAnimationFrame(plan: AnimationPlan, frame: number, camera: THREE.Camera) {
     const { setAnimProg } = usePlotStore.getState()
     const state = plan.keyFrames ? interpolateKeyFrames(plan.keyFrames, plan.keyFrameList, frame) : null
@@ -152,4 +151,21 @@ export function applyAnimationFrame(plan: AnimationPlan, frame: number, camera: 
     if (plan.orbit) {
         applyOrbit(camera, plan, frame)
     }
+}
+
+const isEqual = (a: unknown, b: unknown) =>
+  Object.is(a, b) || JSON.stringify(a) === JSON.stringify(b); // swap for lodash isEqual if needed
+
+function changedKeys(objs: Record<string, unknown>[]): string[] {
+  const keys = new Set(objs.flatMap(o => Object.keys(o ?? {})));
+  return [...keys].filter(k => objs.some(o => !isEqual(o?.[k], objs[0]?.[k])));
+}
+
+export function getChangedStates(keyframes: KeyFrameMap | undefined) {
+  if (!keyframes || keyframes.size < 2) return { visual: [], camera: [] };
+  const states = Array.from(keyframes.values());
+  return {
+    visual: changedKeys(states.map(s => s.visual)),
+    camera: changedKeys(states.map(s => s.camera)),
+  };
 }

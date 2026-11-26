@@ -5,7 +5,7 @@ import { ButtonGroup } from "@/components/ui/button-group"
 import { useImageExportStore } from '@/stores/ImageExportStore';
 import { usePlotStore } from '@/stores/PlotStore';
 import { useGlobalStore } from '@/stores/GlobalStore';
-import { getTimeProgress } from '@/lib/keyFrames';
+import { getTimeProgress, getChangedStates } from '@/lib/keyFrames';
 import { useShallow } from 'zustand/shallow'
 import { Slider } from '@/components/ui/slider'
 import '../layout/css/KeyFrames.css'
@@ -53,7 +53,6 @@ export const SetKeyFrame = (frame: number) =>{
 }
 
 export const KeyFrames = () => {
-
     const {animProg, setAnimProg} = usePlotStore(useShallow(s => s))
     const [showHelper, setShowHelper] = useState(false)
     const {keyFrames, frames, useTime, frameRate, timeRate, orbit, currentFrame, previewKeyFrames, setCurrentFrame, setFrames} = useImageExportStore(
@@ -79,14 +78,16 @@ export const KeyFrames = () => {
         }
     },[])
 
-      useEffect(() => {
+    useEffect(() => {
         const handleResize = () => {
-          setMdLg(window.innerWidth < 768 ? "md" : "lg");
+            setMdLg(window.innerWidth < 768 ? "md" : "lg");
         };
         handleResize();
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
-      }, []);
+    }, []);
+
+    const states = useMemo(() => getChangedStates(keyFrames) , [keyFrames])
 
     {/* Information */}
     useEffect(() => {
