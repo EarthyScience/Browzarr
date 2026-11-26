@@ -283,6 +283,12 @@ export async function CoarsenMinMaxNaN(
 
     const dataBytes = nVoxels * nComp * (isU16 ? 4 : 2);
 	const outputBytes = align4(dataBytes);
+	// createBuffer doesn't throw on oversized buffers (it raises an async validation error), so check up front
+	const limit = Math.min(device.limits.maxBufferSize, device.limits.maxStorageBufferBindingSize);
+	const largest = Math.max(align4(inputArray.byteLength), outputBytes);
+	if (largest > limit) {
+		throw new Error(`Coarsen buffer of ${largest} bytes exceeds GPU limit of ${limit} bytes`);
+	}
 	const inputBuffer = device.createBuffer({
 		label: 'Coarsen Input Buffer',
 		size: align4(inputArray.byteLength),
