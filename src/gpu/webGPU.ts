@@ -274,6 +274,29 @@ export async function CoarsenMinMaxNaN(
 	const [outZ, outY, outX] = outShape;
 	const nVoxels = outZ * outY * outX;
 
+    const dataBytes = nVoxels * nComp * (isU16 ? 4 : 2);
+	const outputBytes = align4(dataBytes);
+	// createBuffer doesn't throw on oversized buffers (it raises an async validation error), so check up front
+	const limit = Math.min(device.limits.maxBufferSize, device.limits.maxStorageBufferBindingSize);
+	const largest = Math.max(align4(inputArray.byteLength), outputBytes);
+	if (largest > limit) {
+        if (outZ < 2) throw new Error(`Coarsen buffer of ${largest} bytes exceeds GPU limit of ${limit} bytes`);
+        // Split in half along Z on a block boundary. Each half is padded by one kernel at the seam
+        // so the shader's 1-voxel halo stays correct and the block grid stays aligned
+        const outA = Math.floor(outZ / 2);
+        const zSplit = outA * kz;
+        const sliceZ = (z0: number, z1: number) =>
+            inputArray.subarray(z0 * zStride * nComp, z1 * zStride * nComp) as typeof inputArray;
+        const zEndA = Math.min(zSplit + kz, dimZ);
+        const a = await CoarsenMinMaxNaN(sliceZ(0, zEndA), {shape: [zEndA, dimY, dimX], strides: dimInfo.strides}, kernel, nComp);
+        const b = await CoarsenMinMaxNaN(sliceZ(zSplit - kz, dimZ), {shape: [dimZ - zSplit + kz, dimY, dimX], strides: dimInfo.strides}, kernel, nComp);
+        const slab = outY * outX * nComp * 2; // elements per output Z slice ([min, max] per component)
+        const data = isU16 ? new Uint16Array(outZ * slab) : new Uint8Array(outZ * slab);
+        data.set(a.data.subarray(0, outA * slab), 0); // drop A's padded last slab
+        data.set(b.data.subarray(slab), outA * slab); // drop B's padded first slab
+        return {data, shape: outShape};
+	}
+
 	const module = device.createShaderModule({label: 'coarsen min/max module', code: coarsenMinMaxShader});
 	const pipeline = device.createComputePipeline({label: 'coarsen min/max pipeline', layout: 'auto', compute: {module}});
 
@@ -281,14 +304,6 @@ export async function CoarsenMinMaxNaN(
 	const uniforms = makeStructuredView(defs.uniforms.params);
 	uniforms.set({zStride, yStride, xStride, dimZ, dimY, dimX, outZ, outY, outX, kz, ky, kx, isU16: Number(isU16), nComp});
 
-    const dataBytes = nVoxels * nComp * (isU16 ? 4 : 2);
-	const outputBytes = align4(dataBytes);
-	// createBuffer doesn't throw on oversized buffers (it raises an async validation error), so check up front
-	const limit = Math.min(device.limits.maxBufferSize, device.limits.maxStorageBufferBindingSize);
-	const largest = Math.max(align4(inputArray.byteLength), outputBytes);
-	if (largest > limit) {
-		throw new Error(`Coarsen buffer of ${largest} bytes exceeds GPU limit of ${limit} bytes`);
-	}
 	const inputBuffer = device.createBuffer({
 		label: 'Coarsen Input Buffer',
 		size: align4(inputArray.byteLength),
