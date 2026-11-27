@@ -60,13 +60,22 @@ export async function handleCoarse(){
 	}
 }
 
-async function StoreData(array:  TypedArray | TypedArrayBufferLike, valueScales: {maxVal: number, minVal: number}, useF16=false){
-    const { setTextureData } = useGlobalStore.getState()
-    const pool = getPool();
-    const {textureData} = await pool.dispatch("textureData",
-      {array:array as Float16Array, valueScales, useF16}, [array.buffer])
-	  coarseGen++;	
-    setTextureData(textureData)
+async function StoreData(parts: (TypedArray | TypedArrayBufferLike)[], valueScales: {maxVal: number, minVal: number}, useF16=false){
+	const { setTextureData } = useGlobalStore.getState()
+	const pool = getPool();
+	// Offsets must be read before dispatch, since transferring detaches each part
+	const offsets: number[] = [];
+	let total = 0;
+	for (const part of parts) { offsets.push(total); total += part.length; }
+	// Convert all parts in parallel on the worker pool
+	const results = await Promise.all(parts.map(part =>
+		pool.dispatch("textureData", {array: part as Float16Array, valueScales, useF16}, [part.buffer])
+	));
+	// Stitch the converted parts back into one array
+	const textureData = useF16 ? new Uint16Array(total) : new Uint8Array(total);
+	results.forEach(({textureData: part}, i) => textureData.set(part, offsets[i]));
+	coarseGen++;
+	setTextureData(textureData)
 }
 
 export function CreateTexture(shape: number[], data?: Uint8Array | Uint16Array, useF16=false) : THREE.DataTexture[] | THREE.Data3DTexture[] | undefined {
@@ -127,7 +136,7 @@ export async function createDataTexture(){
   }
   else{
     const dataArray = GetCurrentArray(undefined, undefined, true);
-    await StoreData(dataArray, valueScales[0], useF16Textures);
+    await StoreData(splitForWorkers(dataArray as Float16Array), valueScales[0], useF16Textures);
   }
   const textures = CreateTexture(dataShape, undefined, useF16Textures);
   if (textures) u.setMapTextures(textures); 
@@ -136,7 +145,7 @@ export async function createDataTexture(){
 }
 
 export async function ArrayToTexture(array: Array, valueScales: {maxVal: number, minVal: number}, useF16=false): Promise<THREE.Data3DTexture[] | THREE.DataTexture[]>{
-    await StoreData(array.data, valueScales, useF16);
+    await StoreData([array.data], valueScales, useF16);
     const textures = CreateTexture(array.shape, undefined, useF16)
     handleCoarse();
     return textures as THREE.Data3DTexture[] | THREE.DataTexture[];
@@ -267,4 +276,24 @@ function chunkArray(
   }
 
   return chunks;
+}
+
+function splitForWorkers(big: Float16Array): Float16Array[] {
+	const MAX_BYTES = 2 * 1024 ** 3;
+	const n = big.length;
+	const pieces = Math.max(1, Math.ceil(big.byteLength / MAX_BYTES));
+	const size = Math.ceil(n / pieces);
+
+	// Copy out every piece after the first before touching the original buffer.
+	const rest: Float16Array[] = [];
+	for (let i = 1; i < pieces; i++) {
+		rest.push(big.slice(i * size, Math.min((i + 1) * size, n)));
+	}
+
+	// First piece takes ownership of the original buffer, truncated to its length.
+	// This detaches `big`, so the large allocation is released instead of kept alive.
+	const firstBytes = Math.min(size, n) * big.BYTES_PER_ELEMENT;
+	const first = new Float16Array((big.buffer as ArrayBuffer).transfer(firstBytes));
+
+	return [first, ...rest];
 }

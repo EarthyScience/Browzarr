@@ -54,7 +54,14 @@ export const LandingShapes = () =>{
   	uniformUpdater();
 
 	return(
-		<div className='w-[100vw] h-[100vh]'>
+		<div className='w-[100vw] h-[100vh]'
+			onDragEnter={()=>console.log("Enter")}
+			onDragOver={(e) => e.preventDefault()}   // <-- this is the key
+			onDrop={(e) => {
+				e.preventDefault();
+				console.log("That simple");
+			}}
+		>
 		<WebGPUPlacard />
 		<WelcomeSplash />
 		<Canvas
